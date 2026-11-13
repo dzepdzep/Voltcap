@@ -75,7 +75,7 @@ data class CloudSyncSettings(
     val backgroundHours: Int = 0,
     val lastSyncAt: Long = 0L,
     val lastResult: String? = null,
-    /** "Saves safe on Google Drive" notifications after background syncs are on unless this is set
+    /** "Saves uploaded and confirmed" notifications after background syncs are on unless this is set
      * (negated so settings saved before it existed read as "on"). */
     val syncNotificationsOff: Boolean = false
 ) {
@@ -129,7 +129,9 @@ data class SyncOutcome(
     /** Failed because of the connection or a Google hiccup: trying again later can work. */
     val retry: Boolean = false,
     /** Google wants the sign-in confirmed again; retrying can't help until then. */
-    val needsSignIn: Boolean = false
+    val needsSignIn: Boolean = false,
+    /** Update 529: Drive's side was NOT applied here (an emulator still holds the save): only uploads ran. */
+    val heldBack: Boolean = false
 )
 
 /**
@@ -748,7 +750,8 @@ object CloudSync {
     }
 
     /** One save file that differs from what the last sync recorded. */
-    data class ChangedSave(val folder: String, val path: String, val size: Long, val modified: Long)
+    /** [md5]: the content as it is now (update 529: the watcher compares content, not only size and date). */
+    data class ChangedSave(val folder: String, val path: String, val size: Long, val modified: Long, val md5: String = "")
 
     /**
      * Cheap probe (no hashing, no network): this game's save files whose size/date no longer match
@@ -770,10 +773,14 @@ object CloudSync {
             tree.list().forEach { (rel, entry) ->
                 if (!kind.accepts(rel) || !only(rel)) return@forEach
                 val base = state.base[rel]
-                val hashed = state.hashes[rel]
-                val unchanged = base != null && hashed != null && hashed.size == entry.size &&
-                    hashed.modified == entry.modified && hashed.md5 == base.md5
-                if (!unchanged) out += ChangedSave(folder.name, rel, entry.size, entry.modified)
+                // (Update 529, findings 3 / 4: a save is only taken as unchanged when its CONTENT matches what was last
+                // synced. A remembered hash counts only when the file's date can be trusted (SaveChangeDetect); otherwise the
+                // file is read again - a same-size save rewritten within one date step, or in a folder that reports no date,
+                // was invisible here before. This look runs while a game is open and keeps its own hashes in memory: it never
+                // writes the folder state a running sync is using.)
+                val md5 = runCatching { watchHash(folder.name, tree, rel, entry, state) }.getOrNull()
+                val unchanged = base != null && md5 != null && md5.equals(base.md5, ignoreCase = true)
+                if (!unchanged) out += ChangedSave(folder.name, rel, entry.size, entry.modified, md5 ?: "")
             }
         }
         return out
@@ -792,7 +799,7 @@ object CloudSync {
         val held = withContext(Dispatchers.IO) { EmulatorGuard.downloadsBlocked(context) }
             ?: return syncScopedLocked(context, game, false)
         val out = syncScopedLocked(context, game, true)
-        return out.copy(summary = "$held — saves on this device weren't replaced. Close it fully to get Drive's newest save.")
+        return out.copy(summary = "$held — saves on this device weren't replaced. Close it fully to get Drive's newest save.", heldBack = true)
     }
 
     private suspend fun syncScopedLocked(context: Context, game: ScopedGame, uploadOnly: Boolean): SyncOutcome = mutex.withLock {
@@ -858,6 +865,8 @@ object CloudSync {
                     val moved = outcome.uploaded + outcome.downloaded
                     old.copy(
                         state = SyncState.SYNCED, message = null, updatedAt = now, lastSuccessAt = now,
+                        // (Update 529: only a both-ways check - Drive's side looked at AND applied - says "matches Drive" for Play.)
+                        checkedAt = if (!uploadOnly) now else old.checkedAt,
                         lastDirection = when {
                             outcome.downloaded > 0 -> SyncDirection.DOWNLOAD
                             outcome.uploaded > 0 -> SyncDirection.UPLOAD
@@ -1069,7 +1078,10 @@ object CloudSync {
                                 copy.parentFile?.mkdirs()
                                 tree.open(rel).use { input -> copy.outputStream().use { input.copyTo(it) } }
                             }
-                            pull(context, drive, tree, rel, c.remoteId, c.remoteModified, null, state, c.remoteDevice)
+                            // (Update 529: Drive's checksum is checked on what arrives, and the save is backed up - verified - before
+                            // it is replaced, as in every other download. It was downloaded unchecked here.)
+                            val want = drive.file(c.remoteId)?.md5 ?: error("Drive didn't report the checksum of $rel - nothing was replaced.")
+                            pull(context, drive, tree, rel, c.remoteId, c.remoteModified, want, state, c.remoteDevice, backupFolder = folderName)
                         } else {
                             // Park Drive's version first.
                             val tag = c.remoteDevice?.replace(Regex("[^A-Za-z0-9]+"), "-") ?: "drive"
@@ -1261,8 +1273,8 @@ object CloudSync {
     /** [at]: when this device last synced the file; [from]: the device whose
      * version it is now (for "Saves synced 5 min ago · from AYN Odin 2"). */
     private data class Base(val md5: String, val remoteId: String, val at: Long = 0L, val from: String? = null)
-    /** A file's hash, reused while its size and date stay the same. */
-    private data class Hashed(val size: Long, val modified: Long, val md5: String)
+    /** A file's hash; [at]: when it was taken (update 529 - reused only under [SaveChangeDetect.trusted]; 0 in older records). */
+    private data class Hashed(val size: Long, val modified: Long, val md5: String, val at: Long = 0L)
     private data class FolderState(
         val base: MutableMap<String, Base> = mutableMapOf(),
         val hashes: MutableMap<String, Hashed> = mutableMapOf()
@@ -1314,9 +1326,23 @@ object CloudSync {
     private fun md5(file: File): String = md5(file.inputStream())
 
     private fun localHash(state: FolderState, tree: SyncTree, rel: String, entry: LocalEntry): String {
-        state.hashes[rel]?.let { if (it.size == entry.size && it.modified == entry.modified) return it.md5 }
+        state.hashes[rel]?.let { if (SaveChangeDetect.trusted(it.size, it.modified, it.at, entry.size, entry.modified)) return it.md5 }
+        val at = System.currentTimeMillis()
         val hash = md5(tree.open(rel))
-        state.hashes[rel] = Hashed(entry.size, entry.modified, hash)
+        state.hashes[rel] = Hashed(entry.size, entry.modified, hash, at)
+        return hash
+    }
+
+    /** The watcher's own remembered hashes ("folder/rel" -> hash), kept in memory only (see [changedSaves]). */
+    private val watchHashes = java.util.concurrent.ConcurrentHashMap<String, Hashed>()
+
+    private fun watchHash(folder: String, tree: SyncTree, rel: String, entry: LocalEntry, state: FolderState): String {
+        val key = "$folder/$rel"
+        for (h in listOfNotNull(watchHashes[key], state.hashes[rel]))
+            if (SaveChangeDetect.trusted(h.size, h.modified, h.at, entry.size, entry.modified)) return h.md5
+        val at = System.currentTimeMillis()
+        val hash = md5(tree.open(rel))
+        watchHashes[key] = Hashed(entry.size, entry.modified, hash, at)
         return hash
     }
 
@@ -1335,16 +1361,20 @@ object CloudSync {
             if (md5Hint != null && !md5Hint.equals(md5, ignoreCase = true)) {
                 error("Download of $rel was incomplete — the save on this device was left untouched.")
             }
-            // The version about to be replaced goes to Voltcap/Sync backups first (last 3 kept).
-            backupFolder?.let { backupBeforeOverwrite(context, tree, rel, it) }
+            // The version about to be replaced goes to Voltcap/Sync backups first - verified, or nothing is replaced (update 529).
+            backupFolder?.let { backupBeforeOverwrite(context, tree, rel, it, replacedBy = md5) }
             tree.write(rel, tmp, modified)
-            tree.entry(rel)?.let { state.hashes[rel] = Hashed(it.size, it.modified, md5) }
+            tree.entry(rel)?.let { state.hashes[rel] = Hashed(it.size, it.modified, md5, System.currentTimeMillis()) }
             state.base[rel] = Base(md5, id, System.currentTimeMillis(), from)
             return md5
         } finally {
             tmp.delete()
         }
     }
+
+    /** Update 529: which of several Drive files with one name counts - the newest, ties broken by id (the same on every device). Pure. */
+    internal fun pickTwin(same: List<DriveFile>): DriveFile =
+        same.sortedWith(compareByDescending<DriveFile> { it.modifiedTime }.thenBy { it.id }).first()
 
     /** Update 222: Drive's copy of the file changed after the folder was listed — nothing was uploaded. */
     private class RemoteMoved : Exception("Changed on Drive meanwhile")
@@ -1372,7 +1402,10 @@ object CloudSync {
                 if (now?.md5 != null && !now.md5.equals(expectRemoteMd5, ignoreCase = true)) throw RemoteMoved()
             }
             val up = drive.upload(snap.asRequestBody("application/octet-stream".toMediaType()), rel, remoteDir, existingId, entry.modified)
-            if (up.md5 != null && !up.md5.equals(sent, ignoreCase = true)) error("Drive didn't get all of $rel — it stays marked as not synced.")
+            // (Update 529: verified, never assumed. A reply without Drive's checksum used to count as a good upload; now
+            // Drive's file is read back, and only its checksum equal to the bytes sent marks this revision as synced.)
+            val got = up.md5 ?: drive.file(up.id)?.md5
+            if (got == null || !got.equals(sent, ignoreCase = true)) error("Drive didn't confirm $rel — it stays marked as not synced.")
             state.base[rel] = Base(sent, up.id, System.currentTimeMillis(), Build.MODEL)
             // Written again while it was read: the recorded hash belongs to the old bytes, so it's looked at afresh next time.
             if (!sent.equals(md5, ignoreCase = true)) state.hashes.remove(rel)
@@ -1382,30 +1415,24 @@ object CloudSync {
     }
 
     /**
-     * Copies the local [rel] (if any) to Voltcap/Sync backups/<folder>/ before Drive's version replaces it,
-     * keeping the newest [BACKUPS_KEPT] per file. Best effort: a failed backup never blocks the sync, but
-     * a save is never replaced by an unverified download (see [pull]).
+     * Copies the local [rel] (if any) to Voltcap/Sync backups/<folder>/ before Drive's version replaces it ([SaveBackups]).
+     * Update 529 (save sync P0): no longer best effort. The copy is verified (hash and size read back) and must exist before the
+     * save is replaced; if it can't be made, this throws and [pull] leaves the save on this device untouched (the file is
+     * reported as not synced and tried again next time). Retention: [SaveBackups.KEEP_NEWEST] per file, never younger than
+     * [SaveBackups.KEEP_DAYS] days.
      */
-    private fun backupBeforeOverwrite(context: Context, tree: SyncTree, rel: String, folderName: String) {
-        runCatching {
-            if (tree.entry(rel) == null) return
-            val base = File(Environment.getExternalStorageDirectory(), "Voltcap/Sync backups")
-                .takeIf { it.mkdirs() || it.isDirectory }
-                ?: File(context.getExternalFilesDir(null) ?: context.filesDir, "Sync backups")
-            val dir = File(File(base, folderName), rel).parentFile ?: return
-            dir.mkdirs()
-            val name = rel.substringAfterLast('/')
-            val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-            val out = File(dir, "$name.$stamp")
-            tree.open(rel).use { input -> out.outputStream().use { input.copyTo(it) } }
-            dir.listFiles { f -> f.isFile && f.name.startsWith("$name.") }
-                ?.sortedByDescending { it.name }
-                ?.drop(BACKUPS_KEPT)
-                ?.forEach { it.delete() }
-        }
+    private fun backupBeforeOverwrite(context: Context, tree: SyncTree, rel: String, folderName: String, replacedBy: String? = null) {
+        val entry = tree.entry(rel) ?: return
+        SaveBackups.backup(
+            backupsBase(context), folderName, rel, { tree.open(rel) }, entry.modified,
+            device = Build.MODEL ?: "this device", reason = "replaced by Google Drive's version", replacedBy = replacedBy
+        )
     }
 
-    private const val BACKUPS_KEPT = 3
+    /** Voltcap/Sync backups on shared storage, or the app's own folder when that can't be written. */
+    internal fun backupsBase(context: Context): File =
+        File(Environment.getExternalStorageDirectory(), "Voltcap/Sync backups").takeIf { it.mkdirs() || it.isDirectory && it.canWrite() }
+            ?: File(context.getExternalFilesDir(null) ?: context.filesDir, "Sync backups")
 
     private fun conflictsDir(context: Context, folder: String): File {
         val base = File(Environment.getExternalStorageDirectory(), "Voltcap/Sync conflicts")
@@ -1437,8 +1464,11 @@ object CloudSync {
         val kind = folder.saveKind
         // Only real saves, both ways: anything else an older version uploaded
         // is simply ignored (left in Drive, never downloaded).
+        // (Update 529: twins - the same name twice in a Drive folder - are picked deterministically: the newest, ties by id - so
+        // two devices always agree which one counts. The newest is kept as before: it is the one another device may have just
+        // uploaded, and the base comparison below then sees its change. Nothing is deleted.)
         val remote = drive.list(remoteDir).filter { !it.isFolder && kind.accepts(it.name) }
-            .groupBy { it.name }.mapValues { (_, same) -> same.maxByOrNull { it.modifiedTime }!! }
+            .groupBy { it.name }.mapValues { (_, same) -> pickTwin(same) }
         val local = tree.list().filterKeys { kind.accepts(it) }
         val all = (local.keys + remote.keys).filter { only == null || only(it) }.sorted()
         // PS2 folder memory cards (ARMSX2 / NetherSX2 "Mcd001.ps2/…") are one save made of many files:

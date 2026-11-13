@@ -95,7 +95,10 @@ fun SaveSyncBadge(
 
 private fun stateTitle(status: GameSyncStatus?): String = when (status?.state) {
     null -> "Not synced yet"
-    SyncState.SYNCED -> "Saves are safe on Google Drive"
+    // (Update 529: says what was verified, and when it was - never a standing "safe". A save changed after that, e.g. by an emulator
+    // opened outside Voltcap, is only seen at the next check.)
+    SyncState.SYNCED -> if (status.lastDirection == com.shelf.launcher.data.SyncDirection.UPLOAD && status.lastTransferAt > 0L && status.lastTransferAt == status.lastSuccessAt)
+        "Last save uploaded and confirmed on Google Drive" else "Matched Google Drive at the last check"
     SyncState.PENDING -> if (status.lastSuccessAt > 0L) "Changes waiting to sync" else "Not synced yet"
     SyncState.UPLOADING -> "Sending saves to Google Drive…"
     SyncState.DOWNLOADING -> "Getting the newest saves from Google Drive…"

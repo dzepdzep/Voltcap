@@ -165,9 +165,11 @@ object SyncNotifier {
         outcome.needsSignIn -> "Sign in to Google Drive again — saves can't be backed up until you do"
         outcome.retry -> "Saves not backed up yet — offline, Voltcap will try again"
         outcome.conflicts > 0 -> "Save conflict — $name · open its sync to choose"
-        !outcome.ok -> null
+        // (Update 529: a sync that didn't finish is said, not skipped - "nothing said" read as "all fine".)
+        outcome.heldBack -> outcome.summary
+        !outcome.ok -> if (outcome.summary == "Sync stopped.") null else "Saves not synced yet — $name · Voltcap will try again"
         outcome.downloaded > 0 -> "Saves restored — $name"
-        outcome.uploaded > 0 -> "Saves safe on Google Drive — $name · ${files(outcome.uploaded)}"
+        outcome.uploaded > 0 -> "Saves uploaded and confirmed on Google Drive — $name · ${files(outcome.uploaded)}"
         else -> null
     }
 
@@ -192,7 +194,11 @@ object SyncNotifier {
             )
             outcome.ok && outcome.uploaded > 0 -> post(
                 app, idFor(key),
-                build(app, SyncNoticeKind.DONE, "Saves safe on Google Drive", "$name · ${files(outcome.uploaded)} backed up")
+                build(app, SyncNoticeKind.DONE, "Saves uploaded and confirmed", "$name · ${files(outcome.uploaded)} on Google Drive")
+            )
+            // (Update 529: a failed upload is shown once - not on every retry; the status in Save Vault stays until it is sent.)
+            !outcome.ok && firstAttempt && outcome.summary != "Sync stopped." -> post(
+                app, idFor(key), build(app, SyncNoticeKind.PROBLEM, "Saves not synced yet", "$name · Voltcap will try again by itself")
             )
         }
     }

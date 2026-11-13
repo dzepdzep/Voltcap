@@ -5694,12 +5694,65 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // drawer — it took the whole game path before (second-screen info page, play-time session, save watch, overlays).
         if (_uiState.value.isContinueApp(game)) { launchApp(game); return }
         com.shelf.launcher.data.ThemeRotator.onLaunch(getApplication(), _uiState.value.appTheme)?.let { setTheme(it) }
+        // Update 529 (save sync P0, finding 5): Play waits - briefly - until this device's save is known to match Google Drive.
+        // It used to STOP the check started when the game's window opened and start the game on whatever was here.
+        if (driveCheckNeededBeforePlay(game)) { checkDriveThenLaunch(game); return }
         val check = preparedCheck?.second
         if (check != null && check.isActive) com.shelf.launcher.data.CloudSync.stop()
         com.shelf.launcher.data.CloudSync.stopWatching()
         preparedCheck = null
         showSyncNotice(null)
         launchNow(game)
+    }
+
+    /** Update 529: sync is on for [game] and its save wasn't confirmed against Drive moments ago ([com.shelf.launcher.data.PrelaunchCheck]). */
+    private fun driveCheckNeededBeforePlay(game: Game): Boolean {
+        val app = getApplication<Application>()
+        if (com.shelf.launcher.CrashGuard.safeMode || game.sourceType != com.shelf.launcher.data.SourceType.ROM) return false
+        val active = runCatching {
+            com.shelf.launcher.data.CloudSync.shouldSyncAroundGames(app) && !com.shelf.launcher.data.CloudSync.qaPaused(app) &&
+                effectiveProfile(game).syncSaves.value && !com.shelf.launcher.data.PlaySession.isOpen(app)
+        }.getOrDefault(false)
+        return com.shelf.launcher.data.PrelaunchCheck.needed(active, com.shelf.launcher.data.SyncStatusStore.get(app, game.stableKey), System.currentTimeMillis())
+    }
+
+    /**
+     * Update 529: waits for the check of [game]'s saves (the one its window started, or a new one) for at most
+     * [com.shelf.launcher.data.PrelaunchCheck.TIMEOUT_MS], then starts the game, opens the conflict choice, or - when Drive could not
+     * be checked - asks (Play anyway / Retry). A check that runs out of time is stopped and its end awaited before anything else
+     * happens, so no file changes under the emulator, and it is never reported as a success.
+     */
+    private var checkingBeforePlay: String? = null
+
+    private fun checkDriveThenLaunch(game: Game) {
+        val app = getApplication<Application>()
+        // (A second Play while this game's check runs changes nothing: the check already ends in Play, a question or the conflict.)
+        if (launchAfterSync?.isActive == true && checkingBeforePlay == game.stableKey) return
+        checkingBeforePlay = game.stableKey
+        launchAfterSync?.cancel()
+        launchAfterSync = viewModelScope.launch {
+            showSyncNotice("Checking Google Drive for newer saves…", forMs = null)
+            val prepared = preparedCheck?.takeIf { it.first == game.stableKey && it.second.isActive }?.second
+            preparedCheck = null
+            val job = prepared ?: com.shelf.launcher.data.CloudSync.syncForGameInBackground(app, game)
+            var outcome = if (job == null) null else kotlinx.coroutines.withTimeoutOrNull(com.shelf.launcher.data.PrelaunchCheck.TIMEOUT_MS) { job.await() }
+            if (outcome == null && job != null) {
+                com.shelf.launcher.data.CloudSync.stop()
+                // (The file being written finishes; nothing new starts. Its result - whatever it is - is not a pass.)
+                kotlinx.coroutines.withTimeoutOrNull(8_000) { runCatching { job.await() } }
+                outcome = null
+            }
+            showSyncNotice(null)
+            when (com.shelf.launcher.data.PrelaunchCheck.next(outcome)) {
+                com.shelf.launcher.data.PrelaunchCheck.Next.PLAY -> { com.shelf.launcher.data.CloudSync.stopWatching(); launchNow(game) }
+                com.shelf.launcher.data.PrelaunchCheck.Next.CONFLICT -> _uiState.update { it.copy(gameWaitingOnConflicts = game) }
+                com.shelf.launcher.data.PrelaunchCheck.Next.ASK -> _uiState.update {
+                    it.copy(syncOfflinePrompt = SyncOfflinePrompt(game, outcome?.summary?.takeIf { s -> s.isNotBlank() }
+                        ?: if (job == null) "Google Drive couldn't be checked right now — this device's save may not be the newest."
+                        else "Google Drive didn't answer in time — this device's save may not be the newest."))
+                }
+            }
+        }
     }
 
     private var syncNoticeJob: Job? = null

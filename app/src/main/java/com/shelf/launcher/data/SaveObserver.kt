@@ -122,7 +122,8 @@ object SaveObserver {
             if (!CloudSync.isActive(app)) continue
             val changed = runCatching { CloudSync.changedSaves(app, g) }.getOrDefault(emptyList())
             if (changed.isEmpty()) { lastSig = null; continue }
-            val sig = changed.sortedBy { it.folder + "/" + it.path }.joinToString("|") { "${it.folder}/${it.path}:${it.size}:${it.modified}" }
+            // (Update 529: the content hash is part of it - a same-size save rewritten within one date step is a new state.)
+            val sig = changed.sortedBy { it.folder + "/" + it.path }.joinToString("|") { SaveChangeDetect.signature(it.folder, it.path, it.size, it.modified, it.md5) }
             val newest = changed.maxOf { it.modified }
             val settled = sig == lastSig && System.currentTimeMillis() - newest >= SETTLE_MS
             lastSig = sig
@@ -138,9 +139,8 @@ object SaveObserver {
 }
 
 /**
- * Update 222 (#103): uploads one game's changed saves now (upload-only), queued by [SaveObserver]. One unique job per
- * game (KEEP: an upload is never cut off by the next change); a change made while it uploads is sent by the same job
- * right after. Offline → WorkManager retries with backoff; survives Voltcap being closed.
+ * Update 222 (#103): uploads one game's changed saves now (upload-only), queued by [SaveObserver]. One unique queue per
+ * game: an upload is never cut off by the next change, and (update 529) a change made while it uploads queues the next job. Offline → WorkManager retries with backoff; survives Voltcap being closed.
  */
 class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -160,11 +160,19 @@ class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorke
             round++
         }
         SyncNotifier.afterBackgroundSync(app, game.key, game.name, outcome, firstAttempt = runAttemptCount == 0)
+        // (Update 529, finding 2: a change still unsent when this job ends is never dropped - it used to end in success after
+        // three rounds, and the watcher had already counted that change as sent. Retried with backoff until it is on Drive;
+        // a change that is blocked (sign-in) stays PENDING in the status and is sent by the next sync that can.)
+        val unsent = !outcome.needsSignIn && CloudSync.changedSaves(app, game).isNotEmpty()
         return when {
             outcome.needsSignIn -> Result.success()
             outcome.retry -> Result.retry()
-            // Stopped halfway (a game start stops syncs) with the change still unsent: try again shortly.
-            !outcome.ok && runAttemptCount < 4 && CloudSync.changedSaves(app, game).isNotEmpty() -> Result.retry()
+            unsent && runAttemptCount < MAX_ATTEMPTS -> Result.retry()
+            unsent -> {
+                SyncStatusStore.update(app, game.key) { it.copy(state = SyncState.PENDING, message = "Not on Google Drive yet — will try again", updatedAt = System.currentTimeMillis()) }
+                PostGameSyncWorker.enqueue(app, game)
+                Result.success()
+            }
             else -> Result.success()
         }
     }
@@ -174,6 +182,11 @@ class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorke
 
     companion object {
         private const val NOTIFICATION_ID = 0x5A_4FFB
+        /** Retries (30 s, 1, 2, 4 ... min) before the change is handed to the after-game queue. */
+        internal const val MAX_ATTEMPTS = 8
+
+        /** Update 529: [game]'s unique save-now queue name. Pure. */
+        internal fun workName(key: String): String = "voltcap-save-now-" + PostGameSyncWorker.stableId(key)
 
         fun enqueue(context: Context, game: CloudSync.ScopedGame) {
             val request = OneTimeWorkRequestBuilder<SaveNowWorker>()
@@ -188,7 +201,9 @@ class SaveNowWorker(context: Context, params: WorkerParameters) : CoroutineWorke
                 .build()
             runCatching {
                 WorkManager.getInstance(context.applicationContext)
-                    .enqueueUniqueWork("voltcap-save-now-" + game.key.hashCode(), ExistingWorkPolicy.KEEP, request)
+                    // (Update 529, finding 2: APPEND_OR_REPLACE, was KEEP - a save made while this game's upload runs was dropped by
+                    // KEEP; now it queues a job that runs right after, which sends it, or finds it already sent.)
+                    .enqueueUniqueWork(workName(game.key), ExistingWorkPolicy.APPEND_OR_REPLACE, request)
             }
         }
     }

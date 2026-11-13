@@ -181,6 +181,13 @@ class PostGameSyncWorker(context: Context, params: WorkerParameters) : Coroutine
     companion object {
         private const val NAME = "voltcap-post-game-sync"
 
+        /** Update 529: the unique work name for [key]'s after-game sync (its own queue); null = the full sync alone. Pure. */
+        internal fun workName(key: String?): String = if (key == null) "$NAME-full" else "$NAME-" + stableId(key)
+
+        /** A short, stable id for a game key (the same on every run and device; unlike String.hashCode, wide enough). */
+        internal fun stableId(key: String): String =
+            java.security.MessageDigest.getInstance("SHA-1").digest(key.toByteArray()).take(8).joinToString("") { "%02x".format(it) }
+
         /** [game] null: only the full sync. */
         fun enqueue(context: Context, game: CloudSync.ScopedGame?) {
             val data = Data.Builder().apply {
@@ -195,9 +202,12 @@ class PostGameSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
                 .setInputData(data)
                 .build()
-            // REPLACE: the newest game's job wins; an older one that already ran is just done.
+            // Update 529 (save sync P0, finding 1): one queue PER GAME, appended to. It was a single name for every game with
+            // REPLACE: ending game B cancelled game A's after-game upload while it still waited for a network or a retry, and
+            // A's new save then waited for the periodic sync (hours, deferred by Android). Now a later job for the same game runs
+            // after the one in flight (never cuts it off), and another game's job never touches it.
             WorkManager.getInstance(context.applicationContext)
-                .enqueueUniqueWork(NAME, ExistingWorkPolicy.REPLACE, request)
+                .enqueueUniqueWork(workName(game?.key), ExistingWorkPolicy.APPEND_OR_REPLACE, request)
         }
     }
 }

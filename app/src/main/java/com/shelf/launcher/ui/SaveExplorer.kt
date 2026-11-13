@@ -1522,7 +1522,7 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
             Text(
                 com.shelf.launcher.data.ConsoleNames.display(game.platform) + " · " +
                     (capsule?.saves?.size?.takeIf { it > 0 }?.let { n -> "$n save${if (n == 1) "" else "s"} · " } ?: "") + if (elsewhere != null) "on Google Drive, from $elsewhere" else if (!synced) "on this device" else when (st.state) {
-                    SyncState.SYNCED -> "safe on Google Drive"
+                    SyncState.SYNCED -> "matched Google Drive at the last check" // (update 529: never a standing "safe")
                     SyncState.CONFLICT -> "differs on two devices — choose which to keep"
                     SyncState.UPLOADING -> "uploading…"
                     SyncState.DOWNLOADING -> "downloading…"
