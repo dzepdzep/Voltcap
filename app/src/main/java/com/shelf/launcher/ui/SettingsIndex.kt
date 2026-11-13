@@ -410,8 +410,6 @@ internal object SettingsIndex {
         E("Notifications", "Device", null, "dev_notes", "Notifications"),
         E("Game header", "Home", "Next to the row", "home_header", "Game header"),
         E("Achievement views", "Achievements", "Achievement views", null, null),
-        // Update 151: a game's achievements open the comments of the one you rest on.
-        E("Show comments (achievements)", "Achievements", "Achievement views", null, null),
         E("Shade on the game's art", "Theme", "Background", "bg_shade", "Shade on the game's art"),
         E("Dark corners", "Theme", "Background", "bg_shade", "Shade on the game's art"),
         E("Vignette", "Theme", "Background", "bg_shade", "Shade on the game's art"),

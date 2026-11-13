@@ -163,10 +163,8 @@ internal fun SteamAchievementsDialog(game: Game, onDismiss: () -> Unit) {
             l == null -> MutedNote("Loading…")
             l.isEmpty() -> MutedNote("Steam has no achievements for this game, or your profile's game details aren't public.")
             else -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-              ChipFlow {
-                  Chip("Badges", accent = wall) { wall = true }
-                  Chip("List", accent = !wall) { wall = false }
-              }
+              // (Achievements compact hotfix, update 529: one small key for the view - A switches Badges / List.)
+              Row { Chip(if (wall) "View: Badges ⇄" else "View: List ⇄", accent = false) { wall = !wall } }
               if (wall) {
                 val dateFmt = remember { java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM) }
                 BadgeWall(

@@ -2701,10 +2701,9 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
             list.forEach { a ->
                 androidx.compose.runtime.key(a.id) {
                     val opened = openId == a.id
-                    WinRow(look, onClick = {
-                        openId = if (opened) null else a.id
-                        if (!opened) onLoadComments(a.id)
-                    }) { on ->
+                    // (Achievements compact hotfix, update 529: opening an achievement shows its facts; its comments are a folded row
+                    // of their own, fetched only when opened.)
+                    WinRow(look, onClick = { openId = if (opened) null else a.id }) { on ->
                         val rowInk = if (on) look.btnOnInk else look.btnInk
                         AsyncImage(
                             com.shelf.launcher.data.RaBadges.url(a.badgeName), a.title, contentScale = ContentScale.Crop,
@@ -2730,7 +2729,7 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                             androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    if (opened) TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading)
+                    AchDetailReveal(opened) { TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading) { onLoadComments(a.id) } }
                 }
             }
         }
@@ -2753,7 +2752,9 @@ private fun trophyOrder(all: List<com.shelf.launcher.data.RaAchievementDetail>, 
 
 /** Update 132: under an opened achievement — when you earned it, how rare it is, and the comments people left. */
 @Composable
-private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean) {
+private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean, onLoad: () -> Unit) {
+    var commentsOpen by remember(a.id) { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = commentsOpen) { commentsOpen = false }
     Column(
         Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, bottom = 4.dp)
             .clip(RoundedCornerShape(8.dp)).background(ink.copy(alpha = 0.07f)).padding(horizontal = 10.dp, vertical = 8.dp),
@@ -2765,10 +2766,17 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
             if (a.isMissable) add("Missable")
         }
         if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        androidx.compose.material3.Text(if (look.caps) "COMMENTS" else "Comments", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        when {
+        WinRow(look, onClick = { commentsOpen = !commentsOpen; if (commentsOpen && comments == null && !loading) onLoad() }) { on ->
+            val rowInk = if (on) look.btnOnInk else look.btnInk
+            androidx.compose.material3.Text(
+                (if (look.caps) "COMMENTS" else "Comments") + (comments?.let { "  ${it.size}" } ?: ""), color = rowInk, fontSize = 12.sp,
+                fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+            )
+            androidx.compose.material3.Text(if (commentsOpen) "▴" else "▾", color = rowInk, fontSize = 12.sp)
+        }
+        if (commentsOpen) when {
             comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-            comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close it and open it again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close Comments and open them again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
             else -> comments.take(8).forEach { cm ->
                 Column {

@@ -20,6 +20,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -128,6 +132,10 @@ fun AchievementDetailDialog(
     onDismiss: () -> Unit
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AchievementDetailDialog")
+    var detailsOpen by remember(achievement.id) { mutableStateOf(false) }
+    var commentsOpen by remember(achievement.id) { mutableStateOf(false) }
+    // B folds an open section before it closes the window.
+    androidx.activity.compose.BackHandler(enabled = detailsOpen || commentsOpen) { if (commentsOpen) commentsOpen = false else detailsOpen = false }
     ShelfDialog(
         icon = Icons.Filled.EmojiEvents,
         title = achievement.title ?: "Unknown achievement",
@@ -160,7 +168,12 @@ fun AchievementDetailDialog(
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
+            // (Achievements compact hotfix: the status stays in view; dates, points, rarity, type and the set fold under Details.)
+            Text(if (achievement.isUnlocked) "Unlocked" else "Locked", color = if (achievement.isUnlocked) ShelfTheme.accent else ShelfTheme.textMuted,
+                fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            AchFoldHeader("Details", detailsOpen) { detailsOpen = !detailsOpen }
+            AchPanelBody(detailsOpen) { Column {
             val soft = formatRaDate(achievement.dateEarned)
             val hard = formatRaDate(achievement.dateEarnedHardcore)
             if (!achievement.isUnlocked) {
@@ -177,6 +190,7 @@ fun AchievementDetailDialog(
             if (matchInfo != null && matchInfo.isVerified) {
                 DetailLine("Set", "Verified by file hash")
             }
+            } }
         }
 
         if (achievement.isMissable) {
@@ -202,10 +216,13 @@ fun AchievementDetailDialog(
             }
         }
 
-        Spacer(Modifier.height(12.dp))
-        SectionLabel("Community comments")
-        Spacer(Modifier.height(6.dp))
-        LaunchedEffect(achievement.id) { onLoadComments() }
+        Spacer(Modifier.height(8.dp))
+        // (Folded until asked for; fetched when first opened.)
+        AchFoldHeader("Community comments", commentsOpen, count = comments?.let { "${it.size}${if (commentsHasMore) "+" else ""}" }) {
+            commentsOpen = !commentsOpen
+            if (commentsOpen && comments == null && !commentsLoading) onLoadComments()
+        }
+        AchPanelBody(commentsOpen) { Column {
         when {
             comments == null && commentsLoading -> MutedNote("Loading comments…")
             comments == null && commentsFailed -> {
@@ -247,6 +264,7 @@ fun AchievementDetailDialog(
                 }
             }
         }
+        } }
     }
 }
 
@@ -286,7 +304,10 @@ internal fun AchievementInlineDetail(
     /** RetroAchievements game id: offers "Pin to the in-game overlay" for a locked achievement. */
     raGameId: Int? = null
 ) {
-    LaunchedEffect(achievement.id) { if (comments == null) onLoadComments() }
+    // (Achievements compact hotfix, update 529: the comments stay folded until you open them - and only then are they fetched.
+    // B closes them before it closes the details.)
+    var commentsOpen by remember(achievement.id) { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = commentsOpen) { commentsOpen = false }
     Column(
         Modifier
             .fillMaxWidth()
@@ -324,14 +345,17 @@ internal fun AchievementInlineDetail(
                 Chip(if (markedMissed) "Undo \"missed\"" else "I missed this", accent = false) { onMarkMissed(!markedMissed) }
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(6.dp))
+        AchFoldHeader("Comments", commentsOpen, count = comments?.let { "${it.size}${if (commentsHasMore) "+" else ""}" }) {
+            commentsOpen = !commentsOpen
+            if (commentsOpen && comments == null && !commentsLoading) onLoadComments()
+        }
+        AchPanelBody(commentsOpen) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("COMMENTS", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
             Chip(if (commentsNewestFirst.value) "Newest first" else "Oldest first", accent = false) {
                 commentsNewestFirst.value = !commentsNewestFirst.value
             }
-            Spacer(Modifier.width(6.dp))
-            Chip("Close", accent = false, onClick = onClose)
         }
         Spacer(Modifier.height(4.dp))
         val loadOlder: @Composable () -> Unit = {
@@ -371,6 +395,7 @@ internal fun AchievementInlineDetail(
                 if (commentsNewestFirst.value) loadOlder()
                 if (commentsFailed) MutedNote("Couldn't load more — try \"Load older\" again.")
             }
+        }
         }
     }
 }

@@ -1755,15 +1755,8 @@ private fun AchievementsContent(
                     com.shelf.launcher.data.Features.AchView.LIST -> "The plain list."
                 }
             )
-            // Update 151: the comments of the achievement you rest on open by themselves (on by default).
-            Spacer(Modifier.height(10.dp))
-            SwitchRow(
-                icon = Icons.Filled.EmojiEvents,
-                title = "Show comments",
-                subtitle = "In a game's achievements, the one you rest on opens its details and comments by itself. Off: A opens them.",
-                checked = com.shelf.launcher.data.Features.achCommentsAuto.state.value,
-                onChange = { com.shelf.launcher.data.Features.achCommentsAuto.value = it }
-            )
+            // (Achievements compact hotfix, update 529, owner: no row opens by itself any more - A opens one, and its comments are a
+            // folded section of their own. The "Show comments" switch of update 151 had nothing left to switch; its pref stays stored.)
             Spacer(Modifier.height(10.dp))
             RowChoice("The Achievements screen", com.shelf.launcher.data.Features.AchHubView.values(), com.shelf.launcher.data.Features.achHubView.state.value, { it.label }) {
                 com.shelf.launcher.data.Features.achHubView.value = it
