@@ -116,6 +116,16 @@ def after_more(ctl, more, tol):
     return min(right, key=lambda lb: lb[1][0]) if right else None
 
 
+def page_tabs(acts, pb, tol):
+    """Controls (any, not only action words) wholly above Play's line that form one row of at least three (a page-tab strip),
+    else []. Pure."""
+    above = [(l, b) for l, b in acts if b[1] + b[3] <= pb[1] + 2]
+    rows = {}
+    for l, b in above: rows.setdefault((b[1] + b[3] // 2) // max(1, tol), []).append((l, b))
+    strip = max(rows.values(), key=len) if rows else []
+    return strip if len(strip) >= 3 else []
+
+
 def hierarchy(main, home):
     """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
     home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
@@ -131,8 +141,12 @@ def hierarchy(main, home):
     pl, pb = play[0]
     acts = [(l, b) for l, b in ctl if geomcheck._is_action({"label": l})]
     tol = max(8, pb[3] // 2)
-    first = min(acts, key=lambda lb: (lb[1][1] // tol, lb[1][0]))
     probs, notes = [], []
+    # (Update 529c: a strip of page tabs above the actions - Storage boxes' approved record layout: INFO / DETAILS / ACHIEVEMENTS /
+    # OPTIONS over the PLAY line - is navigation between pages, not an action placed before Play (mlast529 / 529c false FAIL).)
+    tabs = page_tabs(ctl, pb, tol)
+    if tabs: notes.append("page tabs above the actions (" + ", ".join(l for l, _ in tabs) + ")")
+    first = min([a for a in acts if a not in tabs] or acts, key=lambda lb: (lb[1][1] // tol, lb[1][0]))
     if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
     det = [(l, b) for l, b in ctl if DET_RE.match(l)]
     if det:

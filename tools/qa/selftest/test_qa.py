@@ -998,6 +998,30 @@ class TestPopupGate(unittest.TestCase):
         none = {"windows": [{"focus": True, "nodes": [n for n in d["windows"][0]["nodes"] if n["label"] != "Play"]}]}
         self.assertEqual(popclip.hierarchy(none, None)[0], "FAIL")
 
+    def test_hierarchy_page_tabs_above_play_are_not_actions(self):
+        # Update 529c: Storage boxes' tabs (INFO / DETAILS / ACHIEVEMENTS / OPTIONS) above the PLAY line passed as navigation (real
+        # Flip 2 dump mlast529c); one Details key above Play is still an action before Play.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_storage_tabs_529.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "PASS", why); self.assertIn("page tabs", why)
+        play = ("Play", [100, 300, 200, 60])
+        self.assertEqual(popclip.page_tabs([("Details", [100, 200, 120, 50]), play], play[1], 30), [])
+        tabs = [("INFO", [100, 200, 90, 50]), ("DETAILS", [200, 200, 90, 50]), ("OPTIONS", [300, 200, 90, 50])]
+        self.assertEqual(len(popclip.page_tabs(tabs + [play], play[1], 30)), 3)
+
+    def test_glyph_in_a_see_through_pill_is_measured_against_the_pill(self):
+        # Update 529c: Spotlight's SELECT key - a see-through pill over a dark picture - read 40 px off centre (the walk ran through
+        # the pill's low-contrast edge). Centred in the real screenshot; the pill's edge is a sharp step, now found.
+        import glyphcheck
+        from PIL import Image
+        im = Image.open(os.path.join(HERE, "fixtures", "glyph_select_seethrough_529.png")).convert("RGB")
+        r = glyphcheck.check(im, [140, 39, 89, 21], True, "SELECT")
+        self.assertEqual(r["verdict"], "PASS", r)
+        # The same glyph moved 12 px right inside the same pill is still caught.
+        moved = im.copy(); ink = im.crop((140, 39, 229, 60)); moved.paste(im.crop((128, 39, 140, 60)), (140, 39)); moved.paste(ink, (152, 39))
+        self.assertEqual(glyphcheck.check(moved, [152, 39, 89, 21], True, "SELECT")["verdict"], "FAIL")
+
     def test_play_for_another_game_fails(self):
         # Update 469: the blocked launch must be the run's own game.
         import popclip
