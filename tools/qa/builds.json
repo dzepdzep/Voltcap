@@ -836,6 +836,17 @@
    "apk_sha256": "b43b192dcaa718eb4feb3f944af9e44c9a235da35112efb95f8f42ff01316ed8",
    "base_commit": "ff043d51",
    "note": "Update 529i: QA update-prompt crash fix + Airy facts as two lines (KONKR q0672k3). assembleQa in worktree int 13 Nov 17:37Z (BUILD SUCCESSFUL 1m 36s, verifyQaIsolation); testDebugUnitTest 2572 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests dc9d1191 (worktree int)",
+   "id": "qa-0.6.72-repair-dc9d1191",
+   "apk_sha256": "2e8ba9bfcc02e393f1f0f1cf0675976eda7c78c226369b6c3ff3a34b380f89bb",
+   "base_commit": "dc9d1191",
+   "note": "Update 529j: category strips glide (WholeChipRow / Live words / Pocket Quest plate / bar fades), Night bars ModulateAlpha in motion, QA A/B hooks voltcap_test_chipglide / voltcap_test_nmlayers. assembleQa in worktree int 13 Nov 18:30Z (BUILD SUCCESSFUL 1m 42s, verifyQaIsolation); testDebugUnitTest 2576 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed. Not installed (KONKR owner-blocked this round)."
   }
  ]
 }
