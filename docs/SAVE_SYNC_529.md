@@ -62,7 +62,20 @@ your rule I kept it off `main`.
   - RetroArch: `cloud_sync_enable = "false"`. Saves are in `/sdcard/RetroArch/saves`, sorted by core.
   - `saves/` contains empty **`.stfolder` / `.stversions`**, which are Syncthing markers. No Syncthing app is installed on the GT78 now. If Syncthing runs on another handheld on the same folder, two sync engines write the same files, and that would mix devices. Please check the KONKR (I couldn't: it is not connected).
   - Pokémon Silver: every kept version was read (play time and money from the save, read-only). The live save is the furthest along: **75 h 46 min** (the save's play-time field), 14 badges. The copies in Sync backups are 72:51, 74:20 and 75:21, and the parked conflict copy from 29 Oct is 20 h. **No retained copy is ahead of the live save.**
+- **Flip 2 smoke run (isolated QA app only, about 2 min):**
+  - Built `assembleQa` with R8: OK.
+  - Installed over the QA app; the real Voltcap was unchanged (versionCode 78).
+  - Home opened. Game window → Play: the launch went straight through. Sync is off in the QA app, so Play didn't wait; it ended at the QA app's launch block.
+  - No crash in logcat.
+  - The QA app was stopped afterwards, so the Flip 2 is back on its normal home. The snapshot folder was untouched.
 - **KONKR**: not connected, so it was not inspected and not tested.
+
+## CI
+
+Not run on this branch. The remote tools push only `main` and the branches `feature/popup-native`, `exp/shelf-3d-flip` and
+`feature/connected-ignition`, so `fix/save-sync` can't reach GitHub from here. The same checks were run locally on the PC:
+- full `testDebugUnitTest`: green;
+- `assembleQa` with R8: green, secrets check clean.
 
 ## 4. Not proven / remaining risks
 
