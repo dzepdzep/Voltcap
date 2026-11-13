@@ -109,6 +109,16 @@ internal object NightMotion {
      * still has to go ([lag], rows), relaxing to a straight column at rest. Pure.
      */
     fun bend(lag: Float, d: Float, rowH: Float): Float = kotlin.math.abs(lag.coerceIn(-2f, 2f)) * kotlin.math.abs(d) * rowH * 0.07f
+    /**
+     * 529j (KONKR q0672km, Full busy p90 28 ms vs Lite 16 ms): while the bars fade with a motion (the category sweep, the
+     * entrance, the game window stepping the list back) every bar had alpha < 1 at once, and each was drawn into an
+     * offscreen buffer of its own every frame - about nine per frame on the KONKR's GPU. Lite has no category sweep, so its
+     * bars stayed opaque. During those motions a bar's alpha now applies to each of its draws (ModulateAlpha: no buffer);
+     * at rest a bar is drawn exactly as before. [legacyLayers]: the old way, for a same-build A/B (QA app only).
+     */
+    @Volatile var legacyLayers = false
+    /** Whether a bar's fade comes from a motion (entrance [inE], category [catE], window [w]) rather than only the list's ends. Pure. */
+    fun movingFade(inE: Float, catE: Float, w: Float): Boolean = inE < 1f || catE < 1f || w > 0f
 }
 
 /** Update 330: Night menu's D-pad: ▲ ▼ through the list, ◀ ▶ a screen at a time; past the ends what lies there. */
@@ -378,6 +388,8 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                                 scaleX = sc; scaleY = sc
                                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0.5f)
                                 alpha = (1f - ((abs(d) - rowsN / 2f) / 1.2f).coerceIn(0f, 1f)) * inE * (1f - (1f - catE) * 0.85f) * (1f - 0.45f * w)
+                                compositingStrategy = if (!NightMotion.legacyLayers && NightMotion.movingFade(inE, catE, w))
+                                    androidx.compose.ui.graphics.CompositingStrategy.ModulateAlpha else androidx.compose.ui.graphics.CompositingStrategy.Auto
                             }
                             .zIndex(if (on) 2f else 1f).qaLit(on)
                             .pointerInput(i) { detectTapGestures { if (latestFocus == i) open() else select(i) } }

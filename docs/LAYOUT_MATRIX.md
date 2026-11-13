@@ -21,7 +21,7 @@ decision (`winPresentation`); B from a page focuses its opener directly (Play ne
 | 11 | `BAR` | Icon bar | `DOCK_FLYOUT` | shared page |  | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
 | 12 | `SHELF` | Game shelf | `INDEX_CARD` | shared page | yes | INVESTIGATED → IMPLEMENTED → PC TESTED → HARDWARE PENDING → HARDWARE VERIFIED | Pages: shared page. Case flight hand-over (CaseFlightGate, ShownScans) - no picture flash; owner's spine flicker NOT confirmed fixed. ShelfTextRoboTest passes (Storage-style facts give way whole, by design). HW: Functional on the Retroid Pocket Flip 2 (QA app, RC3 b018aca, popvid 14:24 + s525 spine / flash runs): A opens the index-card window, B closes, fast A B A B: 0 launches; R1/L1 no pages by design; 10 fast steps each way: 0 one-frame flashes / dark dips (flash513 + brightness), no lost frames >25 ms. Visual approval: owner pending. |
 | 13 | `HUB` | Console hub | `HUB_PLATE` | shared page | yes | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
-| 14 | `RESUME` | Resume & discover | `DISCOVER_CARD` | shared page |  | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
+| 14 | `RESUME` | Resume & discover | `DISCOVER_CARD` | shared page | yes | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
 | 15 | `CHAN` | Channel grid | `WII_PREVIEW` | shared page |  | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
 | 16 | `CIRCUIT` | Circuit board | `CHIP_SHEET` | shared page | yes | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
 | 17 | `LIBRARY` | Library panel | `LIBRARY_PAGE` | shared page | yes | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
@@ -63,3 +63,67 @@ decision (`winPresentation`); B from a page focuses its opener directly (Play ne
 | 53 | `ARTLIB` | Artwork library | `GALLERY_PLACARD` | shared page | yes | INVESTIGATED → PC TESTED | PC TESTED = the shared window rules on its real window (WinFocusRoboTest, Robolectric): opens on Play, Play works after the guard, B from Options lands on the opener on every frame, rapid B A and B mid-change never start the game, an A 100 ms after B acts on the opener. Pages: shared readable page (sharedPageFor); no native pages yet - redesign waits for the owner. |
 
 Latest status per layout: PC TESTED 43, HARDWARE VERIFIED 10
+
+## Overhaul status per layout - the seven checks (529j)
+
+A layout is COMPLETE only when every column is done: own window, native pages, opening and return motion right for what
+the home shows (a real pickup where it shows physical games), controller rules, small screen (KONKR) incl. x1.3,
+hardware on both handhelds, and your visual approval. Facts in `tools/popup_audit/overhaul.json`.
+
+| # | Layout | Game window | Native Details / Stats / Options | Opening | Closing / return | Controller | Small screen (KONKR) | Hardware | Your visual approval | Complete |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | `CLASSIC` Voltcap row | own (`VOLT_PANEL`) | SHARED page | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2, 13 Nov) | none | pending | no |
+| 2 | `TILES` Tile home | own (`TILE_CARD`) | NATIVE | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2) | Flip 2 functional | pending | no |
+| 3 | `HERO` Hero carousel | own (`HERO_BANNER`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 4 | `GRID` Grid | own (`TILE_CARD`) | NATIVE | scene motion | scene reverse | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 5 | `TV` TV room | PLAIN (TV window) | SHARED page | MISSING pickup (cases beside the TV; TV window) | MISSING return | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 6 | `DASH` Dashboard | own (`DASH_CARD`) | SHARED page | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2) | none | pending | no |
+| 7 | `LIVE` Live tiles | own (`LIVE_PANEL`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 8 | `SIDE` Side menu | own (`SIDE_DRAWER`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 9 | `CROSS` Cross menu | own (`CROSS_OPTIONS`) | PARTIAL (own Options list) | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 10 | `SPOT` Spotlight | own (`SPOT_POSTER`) | SHARED page | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2) | none | pending | no |
+| 11 | `BAR` Icon bar | own (`DOCK_FLYOUT`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 12 | `SHELF` Game shelf | own (`INDEX_CARD`) | SHARED page | PICKUP: case flight (the case itself flies out and back; home copy hidden) | RETURN to its slot | PC TESTED | PASS x1.0 (q0672k2) | Flip 2 functional | pending | no |
+| 13 | `HUB` Console hub | own (`HUB_PLATE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 14 | `RESUME` Resume & discover | own (`DISCOVER_CARD`) | SHARED page | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2) | none | pending | no |
+| 15 | `CHAN` Channel grid | own (`WII_PREVIEW`) | SHARED page | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2) | none | pending | no |
+| 16 | `CIRCUIT` Circuit board | own (`CHIP_SHEET`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 17 | `LIBRARY` Library panel | own (`LIBRARY_PAGE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 18 | `STACKS` Case stacks | own (`INDEX_CARD`) | SHARED page | PICKUP: case flight (the case itself flies out and back; home copy hidden) | RETURN to its slot | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 19 | `TIMELINE` Timeline | own (`TIMELINE_ENTRY`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 20 | `ARCADE` Arcade cabinets | own (`ARCADE_MENU`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 21 | `CONSOLES` Console stack | own (`INDEX_CARD`) | SHARED page | PICKUP: card / case flight (window out of the picked piece, piece hidden in the home) | RETURN to its slot | PC TESTED | NOT CHECKED | none | pending | no |
+| 22 | `DISCS` Disc station | own (`DISC_PANEL`) | SHARED page | PICKUP: piece flight (the discs in a disc station piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | NOT CHECKED | none | pending | no |
+| 23 | `HERO_TILES` Hero tiles | own (`HERO_BANNER`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 24 | `TWIN_DESK` Twin desk | own (`TWIN_HINGE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 25 | `TWIN_ICONS` Twin icons | own (`TWIN_HINGE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 26 | `TWIN_SHOWCASE` Twin showcase | own (`TWIN_HINGE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 27 | `CRATE` Record crate | own (`RECORD_SLEEVE`) | SHARED page | PICKUP: card / case flight (window out of the picked piece, piece hidden in the home) | RETURN to its slot | PC TESTED | NOT CHECKED | none | pending | no |
+| 28 | `CARDS` Card binder | own (`CARD_BACK`) | SHARED page | PICKUP: card / case flight (window out of the picked piece, piece hidden in the home) | RETURN to its slot | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 29 | `CUSTOM` Layout Studio | own (`STUDIO_PANEL`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 30 | `POCKET_CLASSIC` Pocket classic | own (`POCKET_LCD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 31 | `POCKET_RIBBON` Pocket ribbon | own (`POCKET_LCD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 32 | `GREENCORE` Green Core (2001) | own (`CORE_PANEL`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 33 | `POCKET` Pocket Quest | own (`POCKET_LCD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 34 | `CUBE` Cube menu | own (`CUBE_FACE`) | SHARED page | MISSING pickup (cartridges / discs; opens out of the picture) | MISSING return | PC TESTED | NOT CHECKED | none | pending | no |
+| 35 | `MEMCARD` Memory card (2000) | own (`MEMCARD_INFO`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 36 | `CASEFLOW` Case flow | own (`CASE_MEDIA`) | SHARED page | PICKUP: piece flight (the cases piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | NOT CHECKED | none | pending | no |
+| 37 | `BOX` Cardboard box | own (`BOX_SHEET`) | SHARED page | PICKUP: piece flight (the cases in a cardboard box piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | NOT CHECKED | none | pending | no |
+| 38 | `STORAGE` Storage boxes | own (`STORAGE_RECORD`) | NATIVE | MISSING pickup (game boxes; opens out of the picture) | MISSING return | PC TESTED | PASS x1.0 (q0672k2) | Flip 2 functional | pending | no |
+| 39 | `FILESELECT` File select (1996) | own (`FILE_CARD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 40 | `ORBIT` Orbit deck (1995) | own (`ORBIT_TERMINAL`) | SHARED page | PICKUP: disc flight (the disc flies to the terminal and back) | RETURN to its slot | PC TESTED | NOT CHECKED | none | pending | no |
+| 41 | `AIRY` Airy home (1999) | own (`AIRY_PANEL`) | SHARED page | scene motion | scene reverse | PC TESTED | FAIL readability x1.0 (q0672k2, q0672k3) - fixed in code ff043d51, rerun pending | none | pending | no |
+| 42 | `NIGHT` Night menu (2006) | own (`NIGHT_STATUS`) | NATIVE | scene motion | scene reverse | PC TESTED | PASS x1.0 (q0672k2); Night Full motion p90 28 ms (q0672km) | Flip 2 functional | pending | no |
+| 43 | `BLADES` Blades (2005) | own (`BLADE_GUIDE`) | NATIVE | scene motion | scene reverse | PC TESTED | NOT CHECKED | Flip 2 functional | pending | no |
+| 44 | `BUBBLES` Bubble home (2011) | own (`BUBBLE_CARD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 45 | `CAMERA` Pocket camera (1998) | own (`CAMERA_MENU`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 46 | `PANELS` Panel dashboard (2008) | own (`PANEL_DETAIL`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 47 | `MAGAZINE` Game magazine | own (`MAG_PAGE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 48 | `SHOP` Rental shop | own (`SHOP_TAG`) | SHARED page | PICKUP: piece flight (the rental cases piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | NOT CHECKED | none | pending | no |
+| 49 | `TERMINAL` Terminal | own (`TERM_RUN`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 50 | `CINEMA` Cinema | own (`CINEMA_PREMIERE`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 51 | `ARCTIC` Arctic hub | own (`ARCTIC_DRAWER`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+| 52 | `COVERDETAILS` Coverflow details | own (`INDEX_CARD`) | SHARED page | PICKUP: piece flight (the cases piece, when the game look shows one) | RETURN (piece flies back) | PC TESTED | NOT CHECKED | none | pending | no |
+| 53 | `ARTLIB` Artwork library | own (`GALLERY_PLACARD`) | SHARED page | scene motion | scene reverse | PC TESTED | NOT CHECKED | none | pending | no |
+
+Counts: own window 52 / 53; native pages 5 / 53; physical homes with a real pickup 11 / 14; KONKR small-screen pass 9 / 53; hardware (Flip 2) 10 / 53; your visual approval 0 / 53; COMPLETE 0 / 53.

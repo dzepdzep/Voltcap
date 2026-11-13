@@ -709,7 +709,7 @@ internal fun PlatformFilterRow(
     Row(Modifier.padding(bottom = bottomGap), verticalAlignment = Alignment.CenterVertically) {
     GlidingChipRow(
         count = itemKeys.size, focused = itemKeys.indexOf(selectedKey), modifier = Modifier.weight(1f),
-        spacing = 6.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e
+        spacing = 6.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e, memory = "home"
     ) { i ->
         val key = itemKeys[i]
         when {
@@ -762,22 +762,39 @@ internal object GlidingChips {
         val steady = onScreenL >= margin && onScreenL <= (viewW * 0.5f).toInt() && onScreenR <= viewW - margin
         return if (steady) cur else want
     }
+    /**
+     * 529j (owner video VID20261113180355: categories "spawn at the edge" on compact screens): how strongly an end fades,
+     * 0..1, from how far the row can still scroll that way. The fades used to switch on / off in one frame at the list's
+     * ends (the last pill went from faded to solid at once as the row arrived). Pure.
+     */
+    fun fadeStrength(room: Int, fadePx: Float): Float = if (fadePx <= 0f) (if (room > 0) 1f else 0f) else (room / fadePx).coerceIn(0f, 1f)
+    /** 529j: where each remembered row was scrolled, so a bar that is built again (an empty category drops it) starts there. */
+    val lastScroll = HashMap<String, Int>()
+    /** 529j: QA A/B only (voltcap_test_chipglide legacy): the old hard on / off end fades. */
+    @Volatile var legacyFade = false
 }
 
 @Composable
 internal fun GlidingChipRow(
     count: Int, focused: Int, modifier: Modifier = Modifier, spacing: androidx.compose.ui.unit.Dp = 6.dp,
     align: Alignment.Horizontal = Alignment.Start, startPadding: androidx.compose.ui.unit.Dp = 0.dp,
-    endPadding: androidx.compose.ui.unit.Dp = 0.dp, chip: @Composable (Int) -> Unit
+    endPadding: androidx.compose.ui.unit.Dp = 0.dp,
+    /** 529j: remembers the scroll under this name when the row is dropped and built again (null: not remembered). */
+    memory: String? = null,
+    chip: @Composable (Int) -> Unit
 ) {
-    val scroll = androidx.compose.foundation.rememberScrollState()
+    val memKey = memory?.let { "$it/$count" }
+    val restored = memKey?.let { GlidingChips.lastScroll[it] }
+    val scroll = androidx.compose.foundation.rememberScrollState(restored ?: 0)
+    if (memKey != null) androidx.compose.runtime.DisposableEffect(memKey) { onDispose { GlidingChips.lastScroll[memKey] = scroll.value } }
     val lefts = remember(count) { IntArray(count) }
     val widths = remember(count) { IntArray(count) }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val margin = with(density) { 48.dp.roundToPx() }
     var viewW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var laidOut by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-    val first = remember { booleanArrayOf(true) }
+    // (529j: a row built again where it was glides from there - only a truly new row jumps to its place.)
+    val first = remember { booleanArrayOf(restored == null) }
     // Update 310: remeasuring a pill should not cancel/restart the ongoing scroll animation.
     // This repeated restart could look like a flashing category bar on dual screens.
     androidx.compose.runtime.LaunchedEffect(focused, viewW, count) {
@@ -801,12 +818,15 @@ internal fun GlidingChipRow(
             .drawWithContent {
                 drawContent()
                 val fade = GlidingChips.FADE_DP.dp.toPx() // (Sprint 527: wider - a pill past the end fades out, no cut word)
-                if (scroll.value > 0) drawRect(
-                    Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = 0f, endX = fade),
+                // (529j: each end fades in as the row moves away from it, out as it arrives - never on / off in one frame.)
+                val fl = if (GlidingChips.legacyFade) (if (scroll.value > 0) 1f else 0f) else GlidingChips.fadeStrength(scroll.value, fade)
+                val fr = if (GlidingChips.legacyFade) (if (scroll.value < scroll.maxValue) 1f else 0f) else GlidingChips.fadeStrength(scroll.maxValue - scroll.value, fade)
+                if (fl > 0f) drawRect(
+                    Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 1f - fl), Color.Black), startX = 0f, endX = fade),
                     size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                 )
-                if (scroll.value < scroll.maxValue) drawRect(
-                    Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+                if (fr > 0f) drawRect(
+                    Brush.horizontalGradient(listOf(Color.Black, Color.Black.copy(alpha = 1f - fr)), startX = size.width - fade, endX = size.width),
                     topLeft = androidx.compose.ui.geometry.Offset(size.width - fade, 0f),
                     size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                 )

@@ -57,3 +57,46 @@ for l, lab in layouts:
     cov[l] = dict(name=lab, scene=sc, pages=('native' if sc in native else 'shared'), status=e['status'], tests=tests, hardware=e.get('hardware', 'none'))
 json.dump(cov, open(os.path.join(root, 'tools/popup_audit/coverage.json'), 'w'), indent=1, ensure_ascii=False)
 print('\nLatest status per layout: ' + ', '.join('%s %d' % (k2, v) for k2, v in sorted(counts.items(), key=lambda kv: LABELS.index(kv[0]))))
+
+# 529j (owner, 13 Nov: "all 53 layouts ... separate statuses for game window, native pages, opening, closing / return,
+# controller, small screen, hardware - do not mark a layout complete just because a shared popup works"): the overhaul table.
+ov = json.load(open(os.path.join(root, 'tools/popup_audit/overhaul.json'), encoding='utf-8'))
+pk = gw[gw.index('internal val PICKUP_CARD_LAYOUTS'):]; pk = pk[:pk.index('\n')]
+pickup = {l: 'card / case flight (window out of the picked piece, piece hidden in the home)' for l in re.findall(r'HomeLayout\.([A-Z_]+)', pk)}
+for l in ('SHELF', 'STACKS'): pickup[l] = 'case flight (the case itself flies out and back; home copy hidden)'
+pickup['ORBIT'] = 'disc flight (the disc flies to the terminal and back)'
+# Scenes that open out of the picture itself (a physical piece only when Inspect asks for it) - GameWindow's sceneOwnsOpen.
+so = gw[gw.index('val sceneOwnsOpen = '):]; so = so[:so.index('&& !askedInspect')]
+owns_open = set(re.findall(r'WinScene\.([A-Z_]+)', so))
+print('\n## Overhaul status per layout - the seven checks (529j)\n')
+print('A layout is COMPLETE only when every column is done: own window, native pages, opening and return motion right for what')
+print('the home shows (a real pickup where it shows physical games), controller rules, small screen (KONKR) incl. x1.3,')
+print('hardware on both handhelds, and your visual approval. Facts in `tools/popup_audit/overhaul.json`.\n')
+print('| # | Layout | Game window | Native Details / Stats / Options | Opening | Closing / return | Controller | Small screen (KONKR) | Hardware | Your visual approval | Complete |')
+print('|---|---|---|---|---|---|---|---|---|---|---|')
+done = {k3: 0 for k3 in ('window', 'pages', 'open', 'small', 'hw', 'visual', 'complete', 'pickup_needed', 'pickup_done')}
+for n, (l, lab) in enumerate(layouts, 1):
+    sc = scene.get(l, other)
+    if sc in (None, 'null'): sc = None
+    win = ('own (`%s`)' % sc) if sc else 'PLAIN (TV window)'
+    pg = 'NATIVE' if sc in native else ('PARTIAL (own Options list)' if sc == 'CROSS_OPTIONS' else 'SHARED page')
+    phys = ov['physical'].get(l)
+    if l in pickup: op = 'PICKUP: ' + pickup[l]; cl = 'RETURN to its slot'
+    elif phys and sc and sc not in owns_open:
+        # (GameWindow: the game's own piece - case / disc / cartridge, per the game look - flies out of the home and back.)
+        op = 'PICKUP: piece flight (the %s piece, when the game look shows one)' % phys; cl = 'RETURN (piece flies back)'
+        pickup[l] = 'piece'
+    elif phys: op = 'MISSING pickup (%s; %s)' % (phys, 'opens out of the picture' if sc in owns_open else 'TV window'); cl = 'MISSING return'
+    elif sc: op = 'scene motion'; cl = 'scene reverse'
+    else: op = 'system'; cl = 'system'
+    e = st.get(l, st['_default'])
+    hw = 'Flip 2 functional' if 'HARDWARE VERIFIED' in e['status'] else 'none'
+    kk = ov['konkr'].get(l, 'NOT CHECKED')
+    vis = ov['owner_visual'].get(l, 'pending')
+    complete = bool(sc) and sc in native and (l in pickup or not phys) and kk.startswith('PASS') and 'x1.3' in kk and hw != 'none' and vis.startswith('approved')
+    done['window'] += bool(sc); done['pages'] += sc in native; done['small'] += kk.startswith('PASS'); done['hw'] += hw != 'none'
+    done['visual'] += vis.startswith('approved'); done['complete'] += complete
+    done['pickup_needed'] += bool(phys); done['pickup_done'] += bool(phys) and l in pickup
+    print('| %d | `%s` %s | %s | %s | %s | %s | PC TESTED | %s | %s | %s | %s |' % (n, l, lab, win, pg, op, cl, kk, hw, vis, 'YES' if complete else 'no'))
+print('\nCounts: own window %(window)d / 53; native pages %(pages)d / 53; physical homes with a real pickup %(pickup_done)d / %(pickup_needed)d; '
+      'KONKR small-screen pass %(small)d / 53; hardware (Flip 2) %(hw)d / 53; your visual approval %(visual)d / 53; COMPLETE %(complete)d / 53.' % done)

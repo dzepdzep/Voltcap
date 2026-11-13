@@ -1,0 +1,11 @@
+{
+ "_about": "529j: hand-kept facts for the overhaul table (layout_matrix.py). physical = what the home shows as a physical game object (needs a real pickup / return); konkr = KONKR GT78 (960x640, 240 dpi) popup evidence; owner_visual = the owner's visual approval (none yet).",
+ "physical": {"SHELF": "cases on a shelf", "STACKS": "case stacks", "CONSOLES": "cases in console bays", "DISCS": "discs in a disc station",
+  "CRATE": "record sleeves", "CARDS": "cards in a binder", "CASEFLOW": "cases", "BOX": "cases in a cardboard box", "STORAGE": "game boxes",
+  "COVERDETAILS": "cases", "ORBIT": "discs on an orbit", "SHOP": "rental cases", "CUBE": "cartridges / discs", "TV": "cases beside the TV"},
+ "konkr": {"CLASSIC": "PASS x1.0 (q0672k2, 13 Nov)", "SPOT": "PASS x1.0 (q0672k2)", "SHELF": "PASS x1.0 (q0672k2)", "TILES": "PASS x1.0 (q0672k2)",
+  "CHAN": "PASS x1.0 (q0672k2)", "STORAGE": "PASS x1.0 (q0672k2)", "NIGHT": "PASS x1.0 (q0672k2); Night Full motion p90 28 ms (q0672km)",
+  "DASH": "PASS x1.0 (q0672k2)", "RESUME": "PASS x1.0 (q0672k2)",
+  "AIRY": "FAIL readability x1.0 (q0672k2, q0672k3) - fixed in code ff043d51, rerun pending"},
+ "owner_visual": {}
+}

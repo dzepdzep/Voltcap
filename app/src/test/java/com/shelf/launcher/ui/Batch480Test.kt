@@ -78,7 +78,8 @@ class Batch480Test {
     @Test fun longCategoryNamesStayInTheirRow() {
         val w = src("WholeChipRow.kt")
         assertTrue(w.contains("val roomMax = (avail - padS - padE - (if (count > 1) 2 * (hw + gap) else 0)).coerceAtLeast(0)"))
-        assertTrue(src("StyleLiveTiles.kt").contains("StableFullText(\n                // (Update 136: as written"))
+        // (529j: the word is its own LiveWord now, shared by the strip and the one-word window.)
+        assertTrue(src("StyleLiveTiles.kt").contains("StableFullText(\n        // (Update 136: as written"))
         assertTrue(src("GameTitles.kt").contains("TestHooks.catName.value != null"))
     }
 }

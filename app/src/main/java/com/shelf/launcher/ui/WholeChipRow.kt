@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 /*
  * Update 294 (Toni: "nothing cut off at the screen edge, anywhere"): one rule for every row of chips / tabs that used to
@@ -46,6 +47,56 @@ private class ChipWindow {
     var lastFocus = -1
     /** Paged by hand (a hint tap / a drag): leave the window where it was put until the chip you're on changes. */
     var manual = false
+    // 529j (owner video VID20261113180355, compact screens: "the incoming categories suddenly spawn at the edge"): the
+    // window used to be re-laid at once - every chip jumped a chip's width and the next one appeared whole at the edge in
+    // one frame. Now the strip glides from the old window to the new one: [fromShift] -> [toShift] is the strip's offset,
+    // [fromL..fromR] -> [toL..toR] the span where chips show whole (ChipGlide), the hints fade with it.
+    var fromShift = 0f; var toShift = 0f
+    var fromL = 0f; var toL = 0f; var fromR = 0f; var toR = 0f
+    var fromHl = 0f; var toHl = 0f; var fromHr = 0f; var toHr = 0f
+    var hlText = ""; var hrText = ""
+    var placed = false; var lastCount = -1; var lastWidth = -1
+    /** QA: the row's id in the chipglide log, and whether its last logged frame was at rest. */
+    val qaId = Integer.toHexString(System.identityHashCode(this))
+    var qaRest = true
+    var qaShift = Float.NaN
+    var job: kotlinx.coroutines.Job? = null
+}
+
+/**
+ * 529j: the pure parts of [WholeChipRow]'s glide (ChipGlide529Test). At rest the row is exactly update 294's: only whole
+ * chips show. Between two windows the strip moves as one piece and a chip shows as much as it is inside the span of whole
+ * chips - an incoming chip slides in from the edge and comes up as it enters, never appears whole at once.
+ */
+internal object ChipGlide {
+    const val MS = 280
+    /** QA A/B only (voltcap_test_chipglide legacy): the old instant re-layout, for a same-build before / after recording. */
+    @Volatile var legacy = false
+    /** Tests only (ChipStrip529RoboTest): each placement's chip x and how much of each shows. Null in the app. */
+    @Volatile var probe: ((FloatArray, FloatArray) -> Unit)? = null
+
+    /**
+     * QA only (QaTrace on): one `chipglide` line per placed frame of a row that is moving, and its first frame at rest -
+     * `row=<id> k=<progress> a=<how much of each chip shows> x=<each chip's x>` - so tools/qa/tools/chipglide.py can check
+     * frame by frame on the handheld that nothing came in whole in one frame (a pop-in) and nothing jumped.
+     */
+    fun qa(row: String, k: Float, xs: FloatArray, al: FloatArray) {
+        if (!QaTrace.on) return
+        QaTrace.event("chipglide", "row=$row k=${"%.3f".format(k)} a=" + al.joinToString(",") { "%.2f".format(it) } +
+            " x=" + xs.joinToString(",") { it.toInt().toString() })
+    }
+    fun lerp(a: Float, b: Float, k: Float): Float = a + (b - a) * k
+    /** Where each chip starts on the strip (chip 0 at 0). */
+    fun starts(widths: IntArray, gap: Int): IntArray {
+        val out = IntArray(widths.size); var x = 0
+        for (i in widths.indices) { out[i] = x; x += widths[i] + gap }
+        return out
+    }
+    /** How much of a chip at [x] (width [w]) lies inside [l, r]: 0 (none) .. 1 (whole). */
+    fun inside(x: Float, w: Float, l: Float, r: Float): Float {
+        if (w <= 0f || r <= l) return 0f
+        return ((minOf(x + w, r) - maxOf(x, l)) / w).coerceIn(0f, 1f)
+    }
 }
 
 @Composable
@@ -72,6 +123,10 @@ internal fun WholeChipRow(
     val focusIdx = remember { mutableIntStateOf(-1) }
     val stepPx = with(LocalDensity.current) { 40.dp.toPx() }
     val drag = remember { floatArrayOf(0f) }
+    // 529j: the glide's progress (0 = where the strip was, 1 = the new window); read only when placing, so a glide
+    // re-places the chips each frame without measuring them again.
+    val glide = remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     SubcomposeLayout(
         modifier
             // (Update 467, QA only: a row that shows whole chips and "+N" for the rest — the gate reads its hidden chips
@@ -147,15 +202,21 @@ internal fun WholeChipRow(
 
         val hiddenL = s
         val hiddenR = (count - 1 - e).coerceAtLeast(0)
-        val hl = if (hiddenL > 0) subcompose("hl") {
-            ChipHint("‹ +$hiddenL", hintColor, hintSize) {
+        if (hiddenL > 0) win.hlText = "‹ +$hiddenL"
+        if (hiddenR > 0) win.hrText = "+$hiddenR ›"
+        // (529j: a hint that is going away stays composed while it fades out, with the last count it showed.)
+        val k0 = androidx.compose.runtime.snapshots.Snapshot.withoutReadObservation { glide.floatValue }
+        val hlShown = hiddenL > 0 || ChipGlide.lerp(win.fromHl, win.toHl, k0) > 0.001f
+        val hrShown = hiddenR > 0 || ChipGlide.lerp(win.fromHr, win.toHr, k0) > 0.001f
+        val hl = if (hlShown && win.hlText.isNotEmpty()) subcompose("hl") {
+            ChipHint(win.hlText, hintColor, hintSize) {
                 // A page back: as many chips as the window shows.
                 val shown = (endFor(win.start) - win.start + 1).coerceAtLeast(1)
                 win.start = (win.start - shown).coerceAtLeast(0); win.manual = true; tick.intValue++
             }
         }.first().measure(Constraints()) else null
-        val hr = if (hiddenR > 0) subcompose("hr") {
-            ChipHint("+$hiddenR ›", hintColor, hintSize) { win.start = (endFor(win.start) + 1).coerceAtMost(count - 1); win.manual = true; tick.intValue++ }
+        val hr = if (hrShown && win.hrText.isNotEmpty()) subcompose("hr") {
+            ChipHint(win.hrText, hintColor, hintSize) { win.start = (endFor(win.start) + 1).coerceAtMost(count - 1); win.manual = true; tick.intValue++ }
         }.first().measure(Constraints()) else null
 
         val height = maxOf(ps.maxOfOrNull { it.height } ?: 0, hl?.height ?: 0, hr?.height ?: 0).coerceIn(cs.minHeight, cs.maxHeight)
@@ -163,30 +224,83 @@ internal fun WholeChipRow(
         for (i in s..e) if (i in ps.indices) content += ps[i].width + if (i > s) gap else 0
         // As wide as its chips when they all fit (at least what the caller asks for: fillMaxWidth / weight); the whole
         // width when some are hidden.
-        val needed = padS + content + padE + (if (hl != null) hw + gap else 0) + (if (hr != null) hw + gap else 0)
-        val width = if (hl == null && hr == null || !cs.hasBoundedWidth) needed.coerceIn(cs.minWidth, cs.maxWidth) else cs.maxWidth
-        val leftEdge = padS + if (hl != null) hw + gap else 0
-        val rightEdge = width - padE - if (hr != null) hw + gap else 0
+        val hasL = hiddenL > 0; val hasR = hiddenR > 0
+        val needed = padS + content + padE + (if (hasL) hw + gap else 0) + (if (hasR) hw + gap else 0)
+        val width = if (!hasL && !hasR || !cs.hasBoundedWidth) needed.coerceIn(cs.minWidth, cs.maxWidth) else cs.maxWidth
+        val leftEdge = padS + if (hasL) hw + gap else 0
+        val rightEdge = width - padE - if (hasR) hw + gap else 0
         val x0 = when (align) {
             Alignment.CenterHorizontally -> leftEdge + ((rightEdge - leftEdge - content) / 2).coerceAtLeast(0)
             Alignment.End -> (rightEdge - content).coerceAtLeast(leftEdge)
             else -> leftEdge
         }
-        layout(width, height) {
-            var x = x0
-            for (i in s..e) {
-                if (i !in ps.indices) continue
-                val p = ps[i]
-                p.place(x, (height - p.height) / 2)
-                x += p.width + gap
+        val starts = ChipGlide.starts(IntArray(ps.size) { ps[it].width }, gap)
+        // The new window: the strip's offset (chip [s] at x0), the span of whole chips, which hints show.
+        val tShift = (x0 - (starts.getOrNull(s) ?: 0)).toFloat()
+        val tL = x0.toFloat(); val tR = (x0 + content).toFloat()
+        val tHl = if (hasL) 1f else 0f; val tHr = if (hasR) 1f else 0f
+        val fresh = !win.placed || count != win.lastCount || width != win.lastWidth || ChipGlide.legacy
+        if (fresh) {
+            // First layout, another list or another width: straight to it (nothing to glide from).
+            win.job?.cancel()
+            win.fromShift = tShift; win.toShift = tShift; win.fromL = tL; win.toL = tL; win.fromR = tR; win.toR = tR
+            win.fromHl = tHl; win.toHl = tHl; win.fromHr = tHr; win.toHr = tHr
+            glide.floatValue = 1f
+        } else if (tShift != win.toShift || tL != win.toL || tR != win.toR || tHl != win.toHl || tHr != win.toHr) {
+            // From where it is drawn now (mid-glide too: a fast run of presses never jumps back) to the new window.
+            win.fromShift = ChipGlide.lerp(win.fromShift, win.toShift, k0); win.toShift = tShift
+            win.fromL = ChipGlide.lerp(win.fromL, win.toL, k0); win.toL = tL
+            win.fromR = ChipGlide.lerp(win.fromR, win.toR, k0); win.toR = tR
+            win.fromHl = ChipGlide.lerp(win.fromHl, win.toHl, k0); win.toHl = tHl
+            win.fromHr = ChipGlide.lerp(win.fromHr, win.toHr, k0); win.toHr = tHr
+            win.job?.cancel()
+            glide.floatValue = 0f
+            win.job = scope.launch {
+                // (On Voltcap's motion clock - MotionLevel: Off / Android's Remove animations finish it at once.)
+                androidx.compose.animation.core.Animatable(0f).animateTo(
+                    1f, androidx.compose.animation.core.tween(ChipGlide.MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                ) { glide.floatValue = value }
+                glide.floatValue = 1f
             }
-            // The others just past the edges (clipped), still there for D-pad focus to move onto.
+        }
+        win.placed = true; win.lastCount = count; win.lastWidth = width
+        layout(width, height) {
+            val k = glide.floatValue
+            val shift = ChipGlide.lerp(win.fromShift, win.toShift, k)
+            val l = ChipGlide.lerp(win.fromL, win.toL, k)
+            val r = ChipGlide.lerp(win.fromR, win.toR, k)
+            // Every chip stays placed (D-pad focus can move onto the next one); the ones not in the span sit just past the
+            // edges (clipped, not under a finger), the ones in it at their place on the strip, shown as much as they are in.
+            // (Off-span chips keep the strip's order past each edge, nearest first, so D-pad left / right from the end chip
+            // lands on its neighbour, as before.)
+            val xs = FloatArray(ps.size) { starts[it] + shift }
+            val al = FloatArray(ps.size) { ChipGlide.inside(xs[it], ps[it].width.toFloat(), l, r) }
+            ChipGlide.probe?.invoke(xs, al)
+            if (QaTrace.on) {
+                // (Every frame of a glide, the first frame at rest after it, and any frame the strip stands somewhere new -
+                // the legacy instant path included, so the A/B's "before" is in the log too.)
+                val moved = shift != win.qaShift
+                if (k < 1f || moved || !win.qaRest) { ChipGlide.qa(win.qaId, k, xs, al); win.qaRest = k >= 1f && !moved; win.qaShift = shift }
+            }
+            // (Placed in update 294's order - the shown chips left to right, then the hidden ones before them nearest first,
+            // then the ones after - so drawing, accessibility and "the last one drawn" stay as they were.)
+            for (i in ps.indices) {
+                if (al[i] > 0.001f) { val p = ps[i]; p.placeWithLayer(kotlin.math.round(xs[i]).toInt(), (height - p.height) / 2) { alpha = al[i] } }
+            }
             var lx = -gap
-            for (i in s - 1 downTo 0) { val p = ps[i]; lx -= p.width; p.place(lx, (height - p.height) / 2); lx -= gap }
+            for (i in ps.indices.reversed()) {
+                val p = ps[i]
+                if (al[i] <= 0.001f && xs[i] < l) { lx -= p.width; p.place(lx, (height - p.height) / 2); lx -= gap }
+            }
             var rx = width + gap
-            for (i in e + 1 until count) { val p = ps[i]; p.place(rx, (height - p.height) / 2); rx += p.width + gap }
-            hl?.place(padS, (height - hl.height) / 2)
-            hr?.place(width - padE - hr.width, (height - hr.height) / 2)
+            for (i in ps.indices) {
+                val p = ps[i]
+                if (al[i] <= 0.001f && xs[i] >= l) { p.place(rx, (height - p.height) / 2); rx += p.width + gap }
+            }
+            val aHl = ChipGlide.lerp(win.fromHl, win.toHl, k)
+            val aHr = ChipGlide.lerp(win.fromHr, win.toHr, k)
+            hl?.let { if (aHl > 0.001f) it.placeWithLayer(padS, (height - it.height) / 2) { alpha = aHl } else it.place(-width, 0) }
+            hr?.let { if (aHr > 0.001f) it.placeWithLayer(width - padE - it.width, (height - it.height) / 2) { alpha = aHr } else it.place(width * 2, 0) }
         }
     }
 }

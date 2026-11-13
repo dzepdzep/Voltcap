@@ -387,6 +387,16 @@ internal object TestHooks {
             if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
             android.util.Log.e("VoltcapQA", "clipshade $v")
         }
+        // 529j: same-build A/B for the category strips (`voltcap_test_chipglide legacy|new`: the old instant window / hard end
+        // fades) and the Night menu's bar layers (`voltcap_test_nmlayers legacy|new`). Isolated QA app only, session only.
+        intent?.getStringExtra("voltcap_test_chipglide")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) { ChipGlide.legacy = v == "legacy"; GlidingChips.legacyFade = v == "legacy"; LivePivot.legacy = v == "legacy" }
+            android.util.Log.e("VoltcapQA", "chipglide $v")
+        }
+        intent?.getStringExtra("voltcap_test_nmlayers")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) NightMotion.legacyLayers = v == "legacy"
+            android.util.Log.e("VoltcapQA", "nmlayers $v")
+        }
         intent?.getStringExtra("voltcap_test_catscreen")?.let { v ->
             if (enabled(context)) catScreen.value = (catScreen.value.first + 1) to (v == "open")
             android.util.Log.e("VoltcapQA", "catscreen $v")
