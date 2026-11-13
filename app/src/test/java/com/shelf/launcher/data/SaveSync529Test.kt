@@ -12,7 +12,7 @@ import java.security.MessageDigest
 /** Update 529 (save sync P0): one test per confirmed finding. Pure JVM - no Drive, no account, no real save. */
 class SaveSync529Test {
     private val src = { name: String ->
-        listOf("src/main/java/com/shelf/launcher/data/$name", "app/src/main/java/com/shelf/launcher/data/$name").map(::File).first { it.exists() }.readText()
+        listOf("src/main/java/com/shelf/launcher/data/$name", "app/src/main/java/com/shelf/launcher/data/$name").map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
     }
     private fun md5(b: ByteArray) = MessageDigest.getInstance("MD5").digest(b).joinToString("") { "%02x".format(it) }
 
@@ -195,8 +195,8 @@ class SaveSync529Test {
     }
 
     @Test fun aCheckThatFailsOrStopsAsksInsteadOfStartingOrHanging() {
-        val vm = File("src/main/java/com/shelf/launcher/LauncherViewModel.kt").takeIf { it.isFile }?.readText()
-            ?: File("app/src/main/java/com/shelf/launcher/LauncherViewModel.kt").readText()
+        val vm = File("src/main/java/com/shelf/launcher/LauncherViewModel.kt").takeIf { it.isFile }?.readText()?.replace("\r\n", "\n")
+            ?: File("app/src/main/java/com/shelf/launcher/LauncherViewModel.kt").readText().replace("\r\n", "\n")
         val f = vm.substring(vm.indexOf("private fun checkDriveThenLaunch"), vm.indexOf("private var syncNoticeJob"))
         // A failed check becomes a not-ok outcome (asks), a stopped check too; only this wait's own timeout is passed on.
         assertTrue(f.contains("catch (e: Exception) {") && f.contains("SyncOutcome(false, \"Google Drive couldn't be checked"))

@@ -197,6 +197,17 @@ class SyncGuards529Test {
         assertFalse(QaDriveTest.confined(s(), root))
     }
 
+    /** 529e: the confinement check reads Android paths the same way on a Windows build machine as on the device. */
+    @Test fun qaDrivePathsAreReadAsAndroidPathsOnAnyComputer() {
+        assertEquals("/a/c", QaDriveTest.plainAndroidPath("/a/./b/../c"))
+        assertEquals("/a/b", QaDriveTest.plainAndroidPath("/a//b/"))
+        assertNull(QaDriveTest.plainAndroidPath("/a/../.."))
+        assertNull(QaDriveTest.plainAndroidPath("qa_drive_saves/A"))
+        val root = "/storage/emulated/0/Android/data/com.shelf.launcher.qa/files"
+        val one = CloudSyncSettings(syncSaves = true, syncLauncherData = false, folders = listOf(SyncFolder("F", "qa_drive_saves/A", treeUri = null)))
+        assertFalse("a relative folder is never trusted", QaDriveTest.confined(one, root))
+    }
+
     /**
      * Rule 11 on the save screens (13 Nov, 529c): a game's name, a save's file name or place, a Drive problem or a sync line is never
      * cut with "..." - two saves that differ only at the end of the name (region, revision, hack) must stay told apart.

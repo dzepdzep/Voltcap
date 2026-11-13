@@ -28,8 +28,32 @@ internal object QaDriveTest {
         if (!settings.syncSaves || settings.syncLauncherData) return false
         if (settings.folders.isEmpty()) return false
         val base = root.trimEnd('/') + "/"
-        return settings.folders.all { f ->
-            f.treeUri == null && runCatching { File(f.path).canonicalPath + "/" }.getOrNull()?.startsWith(base) == true
+        return settings.folders.all { f -> f.treeUri == null && inside(f.path, base) }
+    }
+
+    /**
+     * Update 529e: a folder counts as inside [base] only if BOTH hold:
+     *  - written out as an Android path ("." and ".." resolved by hand, the same on any computer - so the unit test
+     *    also means something on a Windows build machine, where File.canonicalPath turns "/storage/..." into "C:\storage\...");
+     *  - on hosts with Android-style paths (the device, Linux CI), after symlinks are followed (canonicalPath, as before 529e).
+     * Either one failing keeps the real-Drive test off; the rule on the device is never looser than before.
+     */
+    private fun inside(path: String, base: String): Boolean {
+        val plain = plainAndroidPath(path) ?: return false
+        if (!(plain + "/").startsWith(base)) return false
+        if (File.separatorChar != '/') return true
+        return runCatching { File(path).canonicalPath + "/" }.getOrNull()?.startsWith(base) == true
+    }
+
+    /** "/a/./b/../c" -> "/a/c". Null for a relative path or one that climbs above "/". */
+    internal fun plainAndroidPath(path: String): String? {
+        if (!path.startsWith("/")) return null
+        val parts = mutableListOf<String>()
+        for (part in path.split('/')) when (part) {
+            "", "." -> Unit
+            ".." -> if (parts.isEmpty()) return null else parts.removeAt(parts.lastIndex)
+            else -> parts.add(part)
         }
+        return "/" + parts.joinToString("/")
     }
 }
