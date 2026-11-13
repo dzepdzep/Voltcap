@@ -111,6 +111,8 @@ internal object TestHooks {
     val sort = mutableStateOf(false)
     /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
     val window = mutableStateOf(false)
+    /** Update 529 (achievements compact hotfix): `--ez voltcap_test_achlist true` - the per-game achievement list of the game you're on. */
+    val achList = mutableStateOf(false)
     /** v0.6.66 (D123): `--ez voltcap_test_scenecover false` — the scene's colours from the cover off/on for this preview only. */
     val sceneCover = mutableStateOf<Boolean?>(null)
     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
@@ -338,6 +340,7 @@ internal object TestHooks {
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
+        if (intent?.getBooleanExtra("voltcap_test_achlist", false) == true && enabled(context)) achList.value = true
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }

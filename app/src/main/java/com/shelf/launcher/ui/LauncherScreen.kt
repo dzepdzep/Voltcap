@@ -1126,6 +1126,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails() else GamePopup.game = g
         }
     }
+    // (Update 529, achievements compact hotfix QA: the list of the game you're on, as its window's Full list opens it.)
+    if (TestHooks.achList.value) LaunchedEffect(Unit) {
+        TestHooks.achList.value = false
+        focusedGame?.let { g -> if (g.raGameId != null) { closeAllDialogs(); viewingAchievementsForGame = g } }
+    }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
     // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
     // once per library in the background — LabelIds.
