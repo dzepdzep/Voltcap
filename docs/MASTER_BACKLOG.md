@@ -25,7 +25,9 @@ Statuses:
 | Storage "INFO before PLAY" (popclip hierarchy) | CLOSED: checker false positive (page tabs); gate fixed 04abd6a2, selftest | mlast529c PASS |
 | Spotlight SELECT glyph "40 px off centre" | CLOSED: checker false positive (see-through pill); glyphcheck fixed 04abd6a2, selftest | Pocket ribbon START 3 px still to re-grade |
 | D298 Airy no-art title white on white | IMPL (e68e300d), not built | PC build + Flip 2 screenshot |
-| integration/0.6.72 (popup-native + save sync + blur) | PREPARED in cloud (f52f21e9) | PC build, CI; push needs the push tool allow-list (PC) or the owner |
+| Save screens never cut a name / place / problem (rule 11, 22 places, `fix/save-sync` 2992f7eb) | IMPL, source test fails on old code; not built | PC build + Save Vault / conflict screenshot with a long name |
+| integration/0.6.72 (popup-native + save sync + blur) | PREPARED in cloud (d664938d, bundles verified in a fresh clone) | PC build, CI; push needs the push tool allow-list (PC) or the owner |
+| Older requests dropped from this backlog (LEFT_TO_DO 20 Oct, ROADMAP_STATUS 19 Oct, NEXT_OVERHAUL 4 Nov) | RECONCILED 13 Nov: 21 items, see REQUEST_COVERAGE_529 section F | mostly owner decisions / hardware; static TRUNCATE now 259 |
 
 ## Protected baselines (regression only, never redo)
 

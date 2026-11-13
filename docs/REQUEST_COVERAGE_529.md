@@ -14,7 +14,8 @@ Nothing below is marked DONE without the evidence named in its row or in the sou
 | `tools/qa/defects.json` (309 entries) | Yes: every entry not marked verified / closed / wontfix / deliberate (≈ 95) was listed and triaged below |
 | Sprint reports 525–528, RELEASE_0.6.71, SAVE_SYNC_529, UPDATE_529B (project) | Yes, their open / remaining sections |
 | REQUESTS_CHECKLIST (updates 453–466) | Yes; its open rows are already carried by MASTER_BACKLOG / defects.json (checked) |
-| LEFT_TO_DO (20 Oct), ROADMAP_STATUS (19 Oct), ROADMAP_070, NEXT_OVERHAUL, UPDATE_454_PENDING, POPUP_BATCH_505–516, QA_PHASE*, CARTS_468/469, older audits | **Not re-read line by line this session.** MASTER_BACKLOG says it absorbed them on 8–11 Nov; I did not re-verify that claim. **GAP.** |
+| LEFT_TO_DO (20 Oct), ROADMAP_STATUS (19 Oct), NEXT_OVERHAUL (4 Nov), UPDATE_454_PENDING | **Re-read in full 13 Nov (529c continued).** MASTER_BACKLOG had NOT carried most of their open items: they are now section F below. |
+| ROADMAP_070, POPUP_BATCH_505–516, QA_PHASE*, CARTS_468/469, older audits | Not re-read line by line. MASTER_BACKLOG cites them as reconciled 8–11 Nov; spot checks only. **GAP (smaller).** |
 | `SUMMARY.md` (2 MB, ~1,000 update entries), `COWORK_HANDOFF.md`, `CURRENT_TASK.md` | Top entries only. **GAP:** a request mentioned only inside an old SUMMARY entry and never carried into the backlog or defects would be missed here |
 | Earlier chat conversations (before this session) | **Not accessible** from here: only what they wrote into the repo / project docs |
 | GitHub issues | **Not accessible** (this session has no GitHub API access to dzepdzep/Voltcap; `gh` → 403). Branches were audited from the local clone |
@@ -88,8 +89,36 @@ Nothing below is marked DONE without the evidence named in its row or in the sou
 - **open:** D24, D60 (Thor accessibility service), D61, D64, D67, D73, D109 (Cardboard Box cold category empty box), D138, D165, D172, D185, D196, D218 - see D10 / D7 / D20.
 - **partly:** D207 (D11), D270 / D271 (Thor / long names in about a dozen window scenes).
 
+## F. Older requests that MASTER_BACKLOG had dropped (re-read 13 Nov from LEFT_TO_DO, ROADMAP_STATUS, NEXT_OVERHAUL)
+
+Status from the code and SUMMARY as they are now; nothing here was hardware-tested this session.
+
+| # | Requested (where) | Done so far | Status | Next action |
+|---|---|---|---|---|
+| F1 | #99 RP Classic overheats while charging (19–20 Oct) | Read-only charging log (271). The fix ("Cool charging": lower current while hot) was never written (no code) | **BLOCKED-OWNER** (changes charging) | Your yes/no on a charging change; then RP Classic on USB to read the log |
+| F2 | #101 Pokémon Silver older-save mystery | Every copy compared, nothing lost (Oct) | **BLOCKED-OWNER** | Only Drive's "Manage versions" of the Silver `.srm` (17 Oct) is left; needs your Google sign-in in a browser. Read-only |
+| F3 | #102 launch every console | Thor, RP Classic done; Sega CD works | **BLOCKED-OWNER** | Switch: your OK + Eden or Citron. PS3 / RP Classic PS2: only games with real saves - not started (save rule) |
+| F4 | #104 stability matrix: two-device save conflict, Bluetooth reconnect, Doze | Two-device conflict is now the real-Drive QA (A-section, `QaDriveTest`) | Two-device: waits for the OAuth step. Bluetooth reconnect, Doze: **NOT TESTED**, never scheduled | Added to the hardware plan (Flip 2 / KONKR, QA app only, no system setting changed: Doze via `dumpsys deviceidle` force-idle is a system change → needs your OK) |
+| F5 | #68 first sync on a new device | Fresh install checked on the PC emulator (259) | **NOT TESTED** on real Drive | Part of the real-Drive QA (spare account, synthetic saves) |
+| F6 | #118 iiDB artwork | - | **BLOCKED** (no public API) | none |
+| F7 | #120 every popup / control on Odin 2 Portal; questions 45–47 | Superseded by the popclip gate (R26) on Flip 2 / KONKR / RP Classic / GT78 (505–529) | Odin 2 Portal: **NOT TESTED** (not connected since Oct). `QUESTIONS_FOR_TONI.md` is not in the repo any more: Q45–47 text lost | Odin 2 on USB when convenient |
+| F8 | Optical-system pack: `packs\v1\disc_playstation_3.webp` is 0 bytes | App treats an empty picture as missing (PS3 uses the cartridge pack) | **OPEN-OWNER**, not re-checked since 20 Oct | Re-upload that pack file (it's your asset; not in the repo by design) |
+| F9 | Real cartridge labels: Thor label audit per platform (GB…Switch), fallbacks, per-label metadata, gallery, report (20 Oct, A3) | ScreenScraper support-texture printed; support-2D path and a label folder exist in code; MobyGames dropped (your decision) | **PARTIAL**: the per-platform "which games lack a label" count on the Thor was never reported | Thor on USB: `voltcap_test_labelaudit all` (QA app), then a counts table |
+| F10 | Custom cases "turned" side view (your check on 0.6.20) | - | **OWNER** (look check) | Say if it still looks wrong |
+| F11 | Thor ANR while inspecting (0.6.21) | 285 precaution; 492: the ANR screens seen in QA came from key presses while the Thor slept | **CLOSED-UNVERIFIED** (your exported crash report never came in) | Only if it happens again: crash screen > Export crash report |
+| F12 | Folder icon pack (Folders view logos: Android robot, "OTHER APPS") | Second-screen dock got a one-colour icon pack; the Folders view did not | **OPEN-OWNER** (style to agree) | Your pick of style; then implement |
+| F13 | Layout Studio ("we gotta work on that layout creator") | Layout Studio's own window (506); PC / phone Layout Maker page | **PARTIAL** - scope never agreed | Name what the creator must do next |
+| F14 | Q3: RetroArch video driver → GL on the RP Classic | Decided 20 Oct | **NOT DONE** on purpose: it changes your real emulator configuration | Needs your explicit go for that one change (config backed up first, reversible) |
+| F15 | Design questions Q12–Q14 (SteamGridDB vs box scan, discs in wide capsules, plain case PS3/PS4/PS5/Xbox/Neo Geo CD), Q17 / Q18 / Q21 (Palette Ribbon, TwinDex screens), Q19 (Save Vault colours), Q28 (three RP Classic spots), Q31 (3DS 60 Hz profile), Q32 (Azahar touch buttons), Q33 (try Shared move) | Shared move shipped (Glance) | **OWNER** (unanswered as far as the repo shows) | Answer any that still matter; the rest close as "no longer relevant" |
+| F16 | Performance: Game shelf first-visit hitch, Pocket (~20 % late) / Green Core (~11 %), Twin icons animated covers | Game shelf re-measured on the RP Classic in 514: 98–100 % on time, no change needed | Pocket / Green Core / Twin icons: **NOT RE-MEASURED** since Oct | frames.py run on the Flip 2 (QA app) |
+| F17 | Clean-up of ~15 settings nothing reads | Inventory + classification 12 Nov (`SETTINGS_CLASSIFICATION.md`): obsolete keys kept on purpose (a saved value is ignored; removing them risks restores) | **DONE** (by design: keep keys) | none |
+| F18 | Ideas: Recently added category; Time-to-beat sort; random game; per-game L2 / R2 mode and Mode / Fan; "Fixes for this handheld"; per-game notes | Recently added (`NEWLY_ADDED`), "How long to beat" sort (`TIME_TO_BEAT`), random game (platform screen) exist | Per-game L2/R2 + Mode/Fan, handheld fixes, per-game notes: **NOT DONE** (ideas, never picked) | Your pick |
+| F19 | NEXT_OVERHAUL V1–V8 (471 review) | V1 crop → Smart Fill (523) + QA image-fit check (474); V6 "…" → rule-11 work; V7 documented 24 dp limit; V8 text-cut / zero-height checks (474, D244–D246 verified) | V2 Case flow short bars, V3 Box Manual alone at 280 dpi, V4 "0 / 96" wraps, V5 Bubbles logo gap: **NOT RE-CHECKED** since 4 Nov | KONKR (280 dpi) popclip pass on those four |
+| F20 | NEXT_OVERHAUL R1–R8 (carried requests) | R2 image fitting DONE (523 Smart Fill); R7 GameNative `.steam` DONE-O (522); R1 category logos / looks largely done (527 / 528; Sega CD blocked); R3 row stability (Endless 523) | R4 dual-screen lifecycle **BLOCKED-HW** (Thor); R5 independent brightness per screen **NOT DONE** (only the second-screen dim); R6 performance-reading accuracy **NOT RE-CHECKED**; R8 per-layout colours **PARTIAL** | R5 / R8: your go on scope |
+| F21 | Rule 11, no "…" anywhere (standing) | 585 places (Oct) → 281 (13 Nov) → **259** after 529c's save screens (22 places) | **OPEN**, tracked by static TRUNCATE | Next by size: SettingsDialog 17, GameDetailsOverlay 13, GameWindowBanner 12 - each needs a popclip / visual pass |
+
 ## Gaps I can't close from here
 
-1. Older history not re-read (see the first table). If you remember a request that isn't here, name it and it goes into this matrix.
+1. Older history: LEFT_TO_DO / ROADMAP_STATUS / NEXT_OVERHAUL now re-read (section F). Still only spot-checked: ROADMAP_070, POPUP_BATCH_505–516, QA_PHASE*, CARTS_468/469, and requests that live only inside old SUMMARY entries. If you remember one that isn't here, name it.
 2. GitHub issues: not readable in this session.
 3. Everything marked "not compiled" waits for the PC link (the remote-devices bridge failed to connect this session).
