@@ -123,3 +123,17 @@ Branch copies on the PC:
 **Not proven on hardware:** the upload to Drive and its verification. The isolated QA app never syncs, and a real Drive test needs your Google sign-in on it. The KONKR is not connected. RetroArch was not started on any handheld: that is your real app with your real configuration, and the Flip 2 has no emulators.
 
 **RetroArch setting (KONKR or any handheld), safe and reversible:** In RetroArch go to *Settings → Saving → SaveRAM Autosave Interval*. Set 10 s (the GT78 already uses this). Then *Main Menu → Configuration File → Save Current Configuration*. It is the line `autosave_interval = "10"` in `retroarch.cfg`, and `"0"` turns it back off. With it off, RetroArch keeps SaveRAM in memory until you close the content: no app can upload a save that is not on disk yet. Save states are a different thing and are never synced.
+
+
+### Hardware run: Flip 2, isolated QA app, synthetic saves (13 Nov, 11:40)
+
+The QA app never talks to Drive. So the "upload" here is the dry run (`QaSaveDryRun`): a snapshot copied to `qa_drive/`, refused if the bytes changed since the decision and checked after the copy. Everything before it is the real watcher (file events, polling, settling, restart). Script: `tools/qa/device/midsave529.sh`; trace: `adb logcat -s VoltcapSync`.
+
+| Step | Write → verified snapshot | Revisions sent |
+|---|---|---|
+| 1 save (32 KB) | **8.2 s** (found 4.7 s after the write, settled 8.7 s) | 1 |
+| 3 saves 1 s apart | **8.0 s after the last one** | 1, the last; the two earlier ones were superseded and never sent |
+| 8 MB memory card written in 8 slow chunks (≈5 s) | **8.9 s after the last chunk** | 1, the finished card; never a half-written one |
+| Voltcap's process ended in the background (`am kill`, as low memory does), then a save | **43.5 s**: WorkManager started the process again 24 s later, and the watcher restarted. The rest was its first 15 s wait, now removed (`32711b96`): the first look is immediate | 1 |
+
+No crashes. File dates on the Flip 2's shared storage come in whole seconds (`mtime=…442000`), the coarse dates the content check (finding 4) is there for. Afterwards the files were removed and the dry run switched off. The script had put a read-only Settings info screen in front, which one Back closed.
