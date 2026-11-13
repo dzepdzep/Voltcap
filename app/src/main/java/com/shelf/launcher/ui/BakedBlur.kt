@@ -48,7 +48,7 @@ internal object BakedBlur {
 
     /** [src] shrunk to at most [side] px on its long side, then blurred. Null if it can't be read. */
     fun of(src: Bitmap, radius: Int, side: Int = SIDE): Bitmap? = runCatching {
-        val s = if (src.config == Bitmap.Config.HARDWARE) src.copy(Bitmap.Config.ARGB_8888, false) else src
+        val s = if (src.isHardwareBitmap()) src.copy(Bitmap.Config.ARGB_8888, false) else src
         val k = side / max(s.width, s.height).toFloat()
         val small = if (k >= 1f) s.copy(Bitmap.Config.ARGB_8888, true)
         else Bitmap.createScaledBitmap(s, (s.width * k).toInt().coerceAtLeast(2), (s.height * k).toInt().coerceAtLeast(2), true)

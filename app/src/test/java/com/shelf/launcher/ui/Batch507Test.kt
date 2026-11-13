@@ -50,7 +50,10 @@ class Batch507Test {
         assertEquals(1f, caseHomeHidden(0.5f), 0f)
         assertEquals(1f, caseHomeHidden(0.01f), 0f)
         assertEquals(0f, caseHomeHidden(0f), 0f)
-        assertTrue(src("ui/GameWindow.kt").contains("if (caseFlight) caseHomeHidden(it) else it.coerceIn(0f, 1f)"))
+        // (Shelf flash work, 12 Nov: still hidden for the whole flight, no cross-fade - from the frame the flying copy is drawn,
+        // CaseFlightGate; before that the home's copy is the one on screen. ShelfCaseHandOverTest covers the hand-over.)
+        assertTrue(src("ui/GameWindow.kt").contains("if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)"))
+        assertEquals(1f, caseHomeHiddenGated(0.01f, ready = true), 0f)
     }
 
     @Test fun stagesAndGeometry() {

@@ -2639,6 +2639,40 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             metadata = it.metadata + meta) }
     }
 
+    /**
+     * Hardware QA, 12 Nov (QA app only - returns at once in the ordinary Voltcap): scanned pictures for the fixture games, in
+     * this session's state only (nothing saved, no scraper asked), so the Game shelf's 3D case can be checked on a handheld
+     * (QaArtFixture.scans). [on] false takes back exactly what it put in.
+     */
+    fun qaScanFixture(on: Boolean) {
+        val app = getApplication<android.app.Application>()
+        if (!com.shelf.launcher.data.QaVariant.isolated(app)) return
+        val dir = app.getExternalFilesDir("qa_art")?.absolutePath ?: return
+        if (!on) {
+            val gone = qaScanKeys.toSet(); qaScanKeys.clear()
+            _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia - gone) }
+            return
+        }
+        val games = _uiState.value.games.filter { it.sourceType == SourceType.ROM }.sortedBy { it.stableKey }
+        val add = HashMap<String, List<Pair<String, String>>>()
+        // (A box-front scan at its real case's shape - qa_art/box_<shape>_<n>.png, 058 / 071 / 100 / 113 - as a real scan is:
+        // the 3D case takes only scans its real case keeps whole, Shelf3D.shapeAgrees.)
+        val shapes = listOf(0.58f to "058", 0.71f to "071", 1.0f to "100", 1.13f to "113")
+        games.forEachIndexed { i, g ->
+            if (g.stableKey in _uiState.value.physicalMedia && g.stableKey !in qaScanKeys) return@forEachIndexed   // its own scans: left alone
+            val a = com.shelf.launcher.ui.CaseCatalog.forGame(g)?.aspect ?: 0.71f
+            val box = "$dir/box_${shapes.minBy { kotlin.math.abs(it.first - a) }.second}_${i % 3}.png"
+            add[g.stableKey] = when (i % 3) {
+                0 -> listOf("Box" to box, "Spine" to "$dir/spine_${i % 4}.png")
+                1 -> listOf("Box" to box, "Spine" to "$dir/spine_custom.png")
+                else -> emptyList()
+            }
+        }
+        qaScanKeys.addAll(add.keys)
+        _uiState.update { st -> st.copy(physicalMedia = st.physicalMedia + add) }
+    }
+    private val qaScanKeys = HashSet<String>()
+
     /** Background upscaling for one game: null = automatic, 1 = off, 2/4/6/8 = times. */
     fun setHeroUpscale(game: Game, factor: Int?) {
         heroUpscaleStore.set(game.stableKey, factor)
@@ -7299,7 +7333,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         // Read on a background thread (a big library's list takes a moment to parse) while the intro
         // plays, instead of holding up the first frame. A scan that finishes first wins.
         val romCacheLoad = viewModelScope.launch {
-            val cached = withContext(Dispatchers.IO) { loadRomCache() }
+            val cached = try { withContext(Dispatchers.IO) { loadRomCache() } } finally { _uiState.update { it.copy(libraryLoaded = true) } }
             if (!romScanApplied && currentRomGames.isEmpty() && cached.isNotEmpty()) {
                 currentRomGames = cached
                 recombineGames()

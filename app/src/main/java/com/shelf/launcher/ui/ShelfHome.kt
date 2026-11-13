@@ -57,6 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -169,6 +170,13 @@ internal fun StyleShelf(c: StyleCtx, modifier: Modifier) {
 
 @Composable
 private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
+    // (QA, 12 Nov: tell shelf3d_qa.sh the Game shelf is composed - it records nothing and sends no move until it is AND the
+    // profile picker's own mark (voltcap_qa_screen) is not PICKER. Only a log line: the home is composed under the picker, so
+    // writing the mark here hid the picker on the Flip 2 - the mark stays the picker's.)
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        QaTrace.event("screen", "SHELF")
+        onDispose { QaTrace.event("screen", "SHELF-gone") }
+    }
     val real = Features.shelfRealSizes.state.value
     val select by rememberUpdatedState(c.actions.select)
     val open by rememberUpdatedState(c.actions.open)
@@ -323,13 +331,24 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
         // front no longer hides the spines next to it; they close up again as it goes back.
         val sideOut = Features.shelfPulled.state.value == Features.ShelfPulled.SIDE
         // (Update 156: [r] / [fromRow] are the shelves counted on round the endless bookcase; without it, the shelves.)
-        fun makeRoom(i: Int, r: Int, from: Int, fromRow: Int, p: Float): Dp {
+        fun makeRoom(i: Int, r: Int, from: Int, fromRow: Int, p: Float, closing: Boolean = false): Dp {
             if (from !in games.indices || i == from || p <= 0f) return 0.dp
             val sf = plan.slots.getOrNull(from) ?: return 0.dp
             if (plan.slots.getOrNull(i) == null || r != fromRow) return 0.dp
             val bigW = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f) * pulledAspect(games[from].platform, sideOut)
-            val push = ((bigW - sf.w) / 2 + 6.dp).coerceAtLeast(0.dp) * shelfFront(p)
+            // (Sprint 525, the shared slot jump: the game coming out stood aside for the game going back and slid ~120-170 px
+            // into its own place in the fastest third of that game's way back. It now slides across the whole way back -
+            // shelfClose - while the rest of the shelf closes the gap as before.)
+            val k = if (closing && i == c.focus && r == focusVRow) shelfClose(p) else shelfFront(p)
+            val push = ((bigW - sf.w) / 2 + 6.dp).coerceAtLeast(0.dp) * k
             return if (i < from) -push else push
+        }
+        /** Sprint 525: where the shelf draws slot [i] on shelf [r] right now, sideways (the room it makes for games out). */
+        fun slotRoom(i: Int, r: Int): Dp {
+            var room = makeRoom(i, r, c.focus, focusVRow, focusPull())
+            for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value, closing = true)
+            pendingBack()?.let { pb -> room += makeRoom(i, r, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value, closing = true) }
+            return room
         }
 
         // (Update 229, #94: the shelves end above the footer — a shelf more than fit stood half behind the game's name and
@@ -397,22 +416,25 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                                 // a front / turned case hands over to the pulled-out one as that comes forward.
                                 .graphicsLayer {
                                     val pv = pulled(i, r)
-                                    var room = makeRoom(i, r, c.focus, focusVRow, focusPull())
-                                    for (b in backs) room += makeRoom(i, r, indexOf[b.key] ?: -1, backVRow(b), b.a.value)
-                                    pendingBack()?.let { pb -> room += makeRoom(i, r, indexOf[pb.key] ?: -1, backVRow(pb), pb.a.value) }
-                                    translationX = room.toPx()
+                                    translationX = slotRoom(i, r).toPx()
                                     // (Update 501: turned round the spine's own middle, not the taller layer's.)
                                     if (cap > 0.dp) transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, (cap.toPx() + s.h.toPx() / 2f) / size.height)
                                     if (pv > 0f) {
                                         translationY = -s.h.toPx() * PULL_LIFT * shelfSlide(pv)
                                         if (stand == Features.ShelfStand.SPINES) {
                                             // (Batch 523: the box's spine face — turning with the front, beside it, never over it.)
-                                            val t = shelfTurn(pv)
+                                            // (With the 3D case on, the 3D case's own turn - the two coincide through the hand-over.)
+                                            val t = if (Shelf3D.on(g.stableKey)) shelfTurn3D(pv) else shelfTurn(pv)
                                             rotationY = -SPINE_SIDE * 90f * t
                                             cameraDistance = 14f * density
                                             val frontW = s.h.toPx() * pulledAspect(g.platform, Features.shelfPulled.state.value == Features.ShelfPulled.SIDE)
                                             translationX += shelfBoxFaces(t, s.w.toPx(), frontW).first
-                                            alpha = if (t >= 0.999f) 0f else 1f
+                                            // (Shelf 3D work: while the 3D case has it, this spine - its picture, top and shading -
+                                            // stays whole under the 3D case fading in on top, and goes once that is whole:
+                                            // Shelf3D.shelfSpineAlpha / blendIn. Two half-faded layers let the dark show through.)
+                                            alpha = if (t >= 0.999f) 0f else if (Shelf3D.on(g.stableKey)) Shelf3D.shelfSpineAlpha(t, g.stableKey in Shelf3D.drawnWhole) else 1f
+                                            // (QA trace only, hardware QA 12 Nov: this spine's own frames of a pull, beside shelf3dframe.)
+                                            if (QaTrace.on && Shelf3D.enabled && pv < 1f) android.util.Log.e("VoltcapQA", "shelfspineframe ${g.stableKey} pv=${"%.3f".format(pv)} t=${"%.3f".format(t)} alpha=${"%.2f".format(alpha)} on=${Shelf3D.on(g.stableKey)}")
                                         } else {
                                             alpha = if (shelfTurn(pv) > 0f) 0f else 1f
                                         }
@@ -426,7 +448,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                             when (stand) {
                                 Features.ShelfStand.SPINES -> Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(s.h)) {
                                     // (The top is drawn on the spine picture itself — SpineSlot — which can be narrower than its slot.)
-                                    androidx.compose.runtime.CompositionLocalProvider(LocalCaseTopVanish provides CaseTop(with(androidx.compose.ui.platform.LocalDensity.current) { vanish.toPx() }, cardboardBoxConsole(g.platform))) {
+                                    androidx.compose.runtime.CompositionLocalProvider(
+                                        LocalCaseTopVanish provides CaseTop(with(androidx.compose.ui.platform.LocalDensity.current) { vanish.toPx() }, cardboardBoxConsole(g.platform)),
+                                        // (Shelf 3D work: the drawn spine's width / height, for the 3D case's thickness.)
+                                        LocalSpineDrawn provides (if (Shelf3D.enabled) ({ r: Float -> Shelf3D.drawnDepth[g.stableKey] = r }) else null)
+                                    ) {
                                         Spine(c, g, Modifier.fillMaxSize())
                                     }
                                 }
@@ -451,6 +477,46 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // (Batch 523: [spin] turns it round at the shelf's size, then [turn] brings it forward and up to size.)
                 val spin = shelfTurn(p)
                 val turn = shelfGrow(p)
+                // (Shelf 3D work: the pulled-out case as one rigid 3D case, when on - ShelfCase3D.kt. While it is still being
+                // made it is drawn invisibly and the flat path below carries on; it takes over only before the turn starts.)
+                // (Hardware QA, 12 Nov: only where the 3D case draws the shelf's own pictures - Shelf3D.sameArtSources.)
+                if (Shelf3D.enabled && stand == Features.ShelfStand.SPINES && Features.shelfPulled.state.value != Features.ShelfPulled.SIDE && p > 0f &&
+                    Shelf3D.sameArtSources(g.platform, c.state.physicalMedia[g.stableKey])) {
+                    val rowTop3 = top + plan.rowH * (vrow - scroll.value)
+                    val rowLeft3 = ((areaW - plan.rowW[s.row]) / 2).coerceAtLeast(0.dp)
+                    // (Hardware QA, 12 Nov: the case's place at rest is the flat path's - a box bigH tall at the console's front
+                    // shape - and its front is the scan at the very shape the shelf shows it in that box (ScanCase: scanShown),
+                    // never cut to the console's case shape: on the Flip 2 a portrait scan lost its title band.)
+                    val box3 = pulledAspect(g.platform, false)
+                    val bigH3 = (plan.rowH * 0.9f).coerceAtMost(areaH * 0.7f)
+                    val bigW3 = bigH3 * box3
+                    val endX3 = (rowLeft3 + s.x + s.w / 2 - bigW3 / 2).coerceIn(0.dp, (areaW - bigW3).coerceAtLeast(0.dp))
+                    val endY3 = (rowTop3 + plan.rowH * 0.9f - bigH3 - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH3).coerceAtLeast(0.dp))
+                    val cp3 = LookStyles.casePlatform(g.platform) ?: g.platform
+                    val scan3 = BoxTexture.front(c.state.physicalMedia[g.stableKey], g.platform)
+                    val scanAspect3 = MediaCovers.used(cp3)?.frontAspect ?: realCaseMm(cp3)?.let { it.first / it.second } ?: 0.7f
+                    // (Its shape measured before it takes over - a shape learnt mid-pull would change the case's size.)
+                    val shapeKnown3 = scan3 != null && CoverAspects.rawOf(scan3) != null
+                    if (scan3 != null && !shapeKnown3) {
+                        val probe = rememberSoftBitmap(scan3, 256, trim = false)
+                        androidx.compose.runtime.LaunchedEffect(probe) { probe?.let { CoverAspects.note(scan3, it.width.toFloat(), it.height.toFloat()) } }
+                    }
+                    val shape3 = if (scan3 != null) scanShown(scan3, scanAspect3, null).second else box3
+                    val frontH3 = if (shape3 <= box3) bigH3 else bigH3 * box3 / shape3
+                    // (A scan far from the real case's shape would be cut by Case3D: the shelf's own path for it.)
+                    val caseAspect3 = remember(g.stableKey, g.platform, Features.caseRegion.state.value, LookStyles.casePlatform(g.platform)) { CaseCatalog.forGame(g)?.aspect }
+                    // (Hardware QA, Flip 2, 12 Nov - the "40 degree pop": while the game you left goes back, the shelf moves this
+                    // game's slot aside to make room for it (makeRoom - the spine layer above draws it there). The 3D case took
+                    // the slot's place without that shift, ~170 px to the left over the case going back, so its first frames were
+                    // hidden behind that case and it was first seen half turned somewhere else. It now starts from the slot
+                    // exactly where the shelf draws it - the same sum as the spine layer's translationX - and the shift eases out
+                    // with the case going back, as the slot's own does.)
+                    val room3 = slotRoom(index, vrow)
+                    if (!shapeKnown3 || Shelf3D.shapeAgrees(shape3, caseAspect3)) if (ShelfPulled3D(c, g, p, resting,
+                            slotCx = rowLeft3 + s.x + s.w / 2 + room3, slotBottom = rowTop3 + plan.rowH * 0.9f, slotW = s.w, slotH = s.h,
+                            bigCx = endX3 + bigW3 / 2, bigTop = endY3 + (bigH3 - frontH3) / 2, bigH = frontH3, shape = shape3,
+                            shapeKnown = shapeKnown3, open = { open() })) return
+                }
                 if (spin <= 0f) return
                 // (Update 156: [vrow] is its shelf counted on round the endless bookcase; without it, its own shelf.)
                 val rowTop = top + plan.rowH * (vrow - scroll.value)
@@ -464,7 +530,11 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // its front part) and ends a little above its shelf.
                 val startH = s.h
                 val startW = when (stand) { Features.ShelfStand.FRONTS -> s.w; else -> startH * frontAspect }
-                val startX = when (stand) {
+                // (Sprint 525, the shared slot jump: the flat case came out at its slot's place WITHOUT the room the shelf was
+                // still making there for the game going back - its spine stood up to ~170 px further along, so the case
+                // appeared beside it. It follows its slot now, as the spine layer draws it - slotRoom, as the 3D case does.)
+                val room = slotRoom(index, vrow)
+                val startX = room + when (stand) {
                     Features.ShelfStand.SPINES -> rowLeft + s.x + s.w / 2 - startW / 2
                     Features.ShelfStand.FRONTS -> rowLeft + s.x
                     Features.ShelfStand.ANGLED -> rowLeft + s.x + s.w - startW
@@ -472,7 +542,7 @@ private fun StyleShelfBody(c: StyleCtx, modifier: Modifier) {
                 // The angle it comes round from: edge-on for a spine, its turned angle for a turned case, none facing forward.
                 val fromAngle = when (stand) { Features.ShelfStand.SPINES -> -90f; Features.ShelfStand.FRONTS -> 0f; Features.ShelfStand.ANGLED -> ANGLE_FRONT_DEG }
                 val startY = rowTop + plan.rowH * 0.9f - s.h - s.h * PULL_LIFT
-                val endX = (rowLeft + s.x + s.w / 2 - bigW / 2).coerceIn(0.dp, (areaW - bigW).coerceAtLeast(0.dp))
+                val endX = (rowLeft + s.x + room + s.w / 2 - bigW / 2).coerceIn(0.dp, (areaW - bigW).coerceAtLeast(0.dp))
                 val endY = (rowTop + plan.rowH * 0.9f - bigH - plan.rowH * 0.06f).coerceIn(top - 10.dp, (fullH - footerH - bigH).coerceAtLeast(0.dp))
                 val w = startW + (bigW - startW) * turn
                 val h = startH + (bigH - startH) * turn
@@ -612,6 +682,79 @@ private fun AngledCase(c: StyleCtx, g: Game, modifier: Modifier) {
     }
 }
 
+/**
+ * Shelf 3D work (12 Nov): the pulled-out case as one rigid 3D case (Case3D), posed by [shelfCasePose]. True when it is the one
+ * drawn (the caller draws nothing else for this game); false while it is still being made (drawn invisibly) or when this pull
+ * keeps the flat path ([Shelf3D.decide]).
+ */
+@Composable
+private fun ShelfPulled3D(
+    c: StyleCtx, g: Game, p: Float, resting: Boolean,
+    slotCx: androidx.compose.ui.unit.Dp, slotBottom: androidx.compose.ui.unit.Dp, slotW: androidx.compose.ui.unit.Dp, slotH: androidx.compose.ui.unit.Dp,
+    bigCx: androidx.compose.ui.unit.Dp, bigTop: androidx.compose.ui.unit.Dp, bigH: androidx.compose.ui.unit.Dp, shape: Float,
+    shapeKnown: Boolean = true, open: () -> Unit
+): Boolean {
+    val key = g.stableKey
+    var ready by remember(key) { mutableStateOf(false) }
+    var mode by remember(key) { mutableStateOf(Shelf3D.Mode.WAITING) }
+    // (Hardware QA, 12 Nov: the spine Case3D made is not the game's own - a stand-in the shelf doesn't show: the shelf's path.)
+    var foreignSpine by remember(key) { mutableStateOf(false) }
+    val next = if (foreignSpine && mode == Shelf3D.Mode.WAITING) Shelf3D.Mode.FLAT else Shelf3D.decide(mode, ready && shapeKnown, shelfTurn3D(p))
+    if (next != mode) androidx.compose.runtime.SideEffect { mode = next }
+    val on = next == Shelf3D.Mode.CASE_3D
+    androidx.compose.runtime.SideEffect { if (on) Shelf3D.active[key] = true else Shelf3D.active.remove(key) }
+    androidx.compose.runtime.DisposableEffect(key) { onDispose { Shelf3D.active.remove(key); Shelf3D.drawnWhole.remove(key) } }
+    // (Back on the shelf, or its turn not begun: drawn whole has to happen again on the next pull.)
+    if (shelfTurn3D(p) <= 0f) Shelf3D.drawnWhole.remove(key)
+    // (QA trace only: which path this pull took - shelf3d_qa.sh collects it with the recording.)
+    if (QaTrace.on) androidx.compose.runtime.LaunchedEffect(key, next) { android.util.Log.e("VoltcapQA", "shelf3d $key ${next.name} ready=$ready") }
+    // (QA trace only, hardware QA 12 Nov: every frame of a 3D pull - the pull, its turn, the decision, what shows - to find a jump
+    // the Flip 2 recording showed: the case first seen ~40 degrees into its turn.)
+    if (QaTrace.on) androidx.compose.runtime.SideEffect {
+        android.util.Log.e("VoltcapQA", "shelf3dframe $key p=${"%.3f".format(p)} turn=${"%.3f".format(shelfTurn3D(p))} mode=${next.name} ready=$ready shape=$shapeKnown")
+    }
+    if (next == Shelf3D.Mode.FLAT) return false
+    // (Its thickness: exactly the spine picture's as the shelf draws it - SpineSlot can draw it narrower than its slot.)
+    val depth = (Shelf3D.drawnDepth[key] ?: (slotW / slotH)).coerceIn(0.03f, 0.4f)
+    val d = androidx.compose.ui.platform.LocalDensity.current
+    val pose = with(d) {
+        shelfCasePose(p, slotCx.toPx(), slotBottom.toPx(), slotH.toPx(), bigCx.toPx(), bigTop.toPx(), bigH.toPx(), shape, depth, PULL_LIFT,
+            ::shelfSlide, ::shelfTurn3D, ::shelfGrow)
+    }
+    // (Resting: the gentle bob as before - here a real turn of the case and a small rise.)
+    val bob = if (resting && p >= 0.999f && Features.shelfBob.state.value) rememberShelfBob() else null
+    val roomH = with(d) { pose.h.toDp() }
+    val roomW = roomH * 2.2f
+    val frontH = with(d) { pose.apparentH.toDp() }
+    val original = Features.originalCases.state.value || Features.shelfPulled.state.value == Features.ShelfPulled.FRONT
+    Box(
+        Modifier
+            .offset { IntOffset((pose.cx - roomW.toPx() / 2f).roundToInt(), (pose.cy - pose.h / 2f).roundToInt()) }
+            .size(roomW, roomH)
+            .graphicsLayer {
+                // (Hand-over: drawn at ~1 level while the shelf's spine rises - its pictures ready on the GPU - then fading in
+                // over the turn's start - Shelf3D.caseAlpha.)
+                alpha = if (on) Shelf3D.caseAlpha(shelfTurn3D(p)) else 0f
+                translationY = bob?.let { -size.height * 0.03f * (0.5f - 0.5f * kotlin.math.cos(it.first.value * 2f * Math.PI.toFloat())) } ?: 0f
+            }
+            // (Drawn whole at least once: from the next frame on the shelf's spine may go - Shelf3D.shelfSpineAlpha.)
+            .drawWithContent { drawContent(); if (on && Shelf3D.blendIn(shelfTurn3D(p)) >= 1f) Shelf3D.drawnWhole.add(key) }
+    ) {
+        // The front's own place (the window flies out of it; the focus ring is round it), centred like the case.
+        if (on) Box(Modifier.align(Alignment.Center).size(frontH * shape, frontH)
+            .then(if (resting) Modifier.focusedCard() else Modifier)
+            .then(if (resting) Modifier.pointerInput(key) { detectTapGestures { open() } } else Modifier))
+        Case3D(
+            g, c.cover(g), c.state.physicalMedia[key], pose.yaw, shape, Modifier.fillMaxSize(),
+            pitch = pose.pitch, realFront = original, fill = 1f,
+            yawOf = { pose.yaw + (bob?.let { 14f * kotlin.math.sin(it.second.value * 2f * Math.PI.toFloat()) } ?: 0f) },
+            onReady = { ready = true }, depthOverride = depth,
+            onSpineSource = { from -> if (from != "own") foreignSpine = true }
+        )
+    }
+    return on
+}
+
 /** How far a pulled-out spine rises out of its gap, as a share of its height. */
 private const val PULL_LIFT = 0.42f
 
@@ -626,9 +769,29 @@ private fun ease(t: Float): Float = FastOutSlowInEasing.transform(t.coerceIn(0f,
  */
 private fun shelfSlide(p: Float): Float = ease(p / 0.3f)
 internal fun shelfTurn(p: Float): Float = ease((p - 0.3f) / 0.4f)
+/**
+ * The 3D case's turn (owner, 12 Nov: "rotation begins while the case is already visibly moving ... reaches its full position
+ * naturally"). The flat path's FastOutSlowIn over 30-70 % turned up to ~15 degrees in one 120 Hz frame on the Flip 2 - fine
+ * for a flat card coming round edge-on, a snap for a rigid case. Here a symmetric smoothstep over 22-80 %: it starts while the
+ * case is still rising and is at most ~3.6 % of the turn (~3 degrees) per 120 Hz frame of a 620 ms pull. Pure.
+ */
+internal fun shelfTurn3D(p: Float): Float {
+    val x = ((p - TURN3D_FROM) / (TURN3D_TO - TURN3D_FROM)).coerceIn(0f, 1f)
+    return x * x * (3f - 2f * x)
+}
+internal const val TURN3D_FROM = 0.22f
+internal const val TURN3D_TO = 0.80f
 internal fun shelfGrow(p: Float): Float = ease((p - 0.62f) / 0.38f)
 /** How far the neighbours have made room: along with the turn and the growth. */
 private fun shelfFront(p: Float): Float = ease((p - 0.3f) / 0.7f)
+/**
+ * Sprint 525: how much room a game going back (at pull [p], 1 = out) still leaves the slot of the game coming out - a
+ * smoothstep over the whole way back (at most ~1.5 x the average speed) instead of [shelfFront]'s fast middle third (~2.7 x
+ * over 70 % of it), so that slot glides into its place instead of jumping. 0 at 0, 1 at 1. Pure.
+ */
+internal fun shelfClose(p: Float): Float { val x = p.coerceIn(0f, 1f); return x * x * (3f - 2f * x) }
+/** Sprint 525: [shelfFront] for the motion tests. Pure. */
+internal fun shelfFrontFor(p: Float): Float = shelfFront(p)
 /** Which side of the front the spine is on as the box turns (-1: left, as a case's spine is). */
 private const val SPINE_SIDE = -1f
 
@@ -696,7 +859,12 @@ internal fun PulledOutCase(
      * in over that plain case, not over the cover. (Moving along the shelf showed the cover, or a wide picture, first
      * and only then the real case.)
      */
-    waitForCase: Boolean = false
+    waitForCase: Boolean = false,
+    /**
+     * Shelf flash work (12 Nov): called once what this draws is complete - the scan drawn, else at once (the plain case, the
+     * cover case, the 3D box draw their own stand-ins as the shelf does). The window's flying case waits for it.
+     */
+    onArtReady: (() -> Unit)? = null
 ) {
     val mode = Features.shelfPulled.state.value
     // Update 228 (#18): R1 › Case (one console's case for every game) did nothing here — the shelf drew each game in its
@@ -712,6 +880,9 @@ internal fun PulledOutCase(
     val ownSpine = if (original) BoxTexture.spine(phys, g.platform) else null
     // Update 151: not known yet → the plain case shape (only where a scan would win over the cover).
     val waiting = waitForCase && phys == null && ((side && box != null) || mode == Features.ShelfPulled.FRONT)
+    // (Everything but the scan is complete as drawn: the plain case while scans are looked up is the shelf's own too.)
+    val scanPath = !waiting && !(side && box != null) && mode == Features.ShelfPulled.FRONT && scan != null && !androidOwnCase(g.platform)
+    if (onArtReady != null && !scanPath) androidx.compose.runtime.LaunchedEffect(Unit) { onArtReady() }
     if (waiting) {
         val aspect = if (side && box != null) box.aspect * 1.12f
             else MediaCovers.used(cp)?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f
@@ -731,7 +902,8 @@ internal fun PulledOutCase(
     // (Update 202: never for an Android game — its case is Voltcap's own with the Android band, androidOwnCase.)
     if (mode == Features.ShelfPulled.FRONT && scan != null && !scanFailed && !androidOwnCase(g.platform)) {
         // (Update 151: on the shelf the scan fades in over the plain case, not over the cover.)
-        ScanCase(scan, cov?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover)
+        ScanCase(scan, cov?.frontAspect ?: realCaseMm(cp)?.let { it.first / it.second } ?: 0.7f, modifier, onFail = { scanFailed = true }, cover = if (waitForCase) null else cover,
+            onShown = onArtReady)
         return
     }
     // (Update 173: an app without art: its icon in the case's window.)
@@ -796,11 +968,20 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
     val realSpine = if (forAll || matching) null else BoxTexture.userSpine(scans, g.platform) ?: scans?.firstOrNull { it.first == "Spine" }?.second
     val own = realSpine ?: if (Features.originalCases.state.value && !forAll && !matching) BoxTexture.spine(scans, g.platform) else null
     var failed by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
+    // (Sprint 525, the original Shelf's spine flicker - QA trace only: which picture this spine shows and how it changed,
+    // per game: EMPTY / SWAP / REDECODE as for the 3D cases' spines, and a spine composed again from nothing - ENTER.)
+    if (QaTrace.on) OldSpineTrace.Track(g.stableKey, when {
+        own != null && !failed -> if (own == realSpine && realSpine == BoxTexture.userSpine(scans, g.platform)) "custom" else "real"
+        else -> "own-or-strip"
+    }, own)
     if (own != null && !failed) {
-        var lying by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(false) }
         // Update 147: the scan's own shape (width / height standing up), so a slot wider than the spine no longer
         // stretches it sideways; until it has loaded, the usual spine shape.
-        var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SPINE_ASPECT) }
+        // (Sprint 525: what this picture measured the last time it loaded - SpineGeom - so a spine composed again (a shelf
+        // coming back into view, a category, the layout reopened) stands at its own width and the right way up from its
+        // first frame, instead of a frame at the usual width and lying the wrong way while its picture comes back.)
+        var lying by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableStateOf(SpineGeom.lying(own) ?: false) }
+        var shape by androidx.compose.runtime.remember(own) { androidx.compose.runtime.mutableFloatStateOf(SpineGeom.shape(own) ?: SPINE_ASPECT) }
         SpineSlot(shape, modifier, g.stableKey.hashCode()) { inner ->
             Box(inner.clip(RoundedCornerShape(2.dp)).background(placeholderBrush(g.hue))) {
                 // (Update 410, D97: [onTone] reports the scan's own colour — the Cardboard box paints a case's body in it — so the
@@ -818,10 +999,11 @@ private fun SpineBody(g: Game, physical: List<Pair<String, String>>?, modifier: 
                         if (d.intrinsicWidth > 0 && d.intrinsicHeight > 0) {
                             val a = if (lying) d.intrinsicHeight.toFloat() / d.intrinsicWidth else d.intrinsicWidth.toFloat() / d.intrinsicHeight
                             shape = a.coerceIn(0.03f, 0.35f)
-                            RealSpineShape.note(g.platform, shape)
+                            SpineGeom.put(own, shape, lying)
+                            RealSpineShape.note(g.platform, shape, own)
                         }
                     },
-                    onError = { failed = true },
+                    onError = { failed = true; if (QaTrace.on) android.util.Log.e("VoltcapQA", "oldspine ${g.stableKey} ERROR") },
                     modifier = if (lying) Modifier.spineText().fillMaxSize() else Modifier.fillMaxSize()
                 )
             }
@@ -884,6 +1066,7 @@ private fun SpineSlot(aspect: Float, modifier: Modifier, seed: Int, content: @Co
             val inset = with(androidx.compose.ui.platform.LocalDensity.current) { ((maxWidth - w) / 2).toPx() }
             Modifier.drawBehind { drawCaseTop(Features.spineDepth.state.value, caseTop.vanish - inset, caseTop.cardboard) }
         }
+        LocalSpineDrawn.current?.let { report -> if (maxHeight > 0.dp && maxHeight != androidx.compose.ui.unit.Dp.Infinity) { val r = w / maxHeight; androidx.compose.runtime.SideEffect { report(r) } } }
         content(Modifier.width(w).fillMaxHeight().then(top).spineDepth(seed))
     }
 }
@@ -1095,21 +1278,83 @@ private class ShelfBack(
  * as wide again as the real ones). Null until three have loaded.
  */
 internal object RealSpineShape {
-    private val seen = java.util.concurrent.ConcurrentHashMap<String, MutableList<Float>>()
+    private val seen = java.util.concurrent.ConcurrentHashMap<String, MutableMap<String, Float>>()
     private val shape = androidx.compose.runtime.mutableStateMapOf<String, Float>()
 
-    fun note(platform: String, aspect: Float) {
+    /**
+     * (Sprint 525, the original Shelf's spine flicker: this shape sets every slot of the shelf (spineAspect), so each
+     * change re-lays the whole shelf - every spine moving at once. It changed whenever a spine loaded: the same spine
+     * counted again each time it came back into view, the median moving by a hair each time. Now each picture ([id]) counts
+     * once, and the shape only changes when it moves by more than [SPINE_SHAPE_STEP] - so the shelf settles after its
+     * first few real spines and stays put while you browse.)
+     */
+    fun note(platform: String, aspect: Float, id: String = "") {
         if (LookStyles.spineForAll()) return
-        val list = seen.getOrPut(platform) { java.util.Collections.synchronizedList(ArrayList()) }
-        if (list.size >= 40) return
-        list += aspect
-        if (list.size >= 3) {
-            val m = synchronized(list) { list.sorted()[list.size / 2] }
-            if (shape[platform]?.let { kotlin.math.abs(it - m) > 0.002f } != false) shape[platform] = m
+        val byId = seen.getOrPut(platform) { java.util.concurrent.ConcurrentHashMap() }
+        if (byId.size >= 40 || byId.containsKey(id)) return
+        byId[id.ifEmpty { "#" + byId.size }] = aspect
+        if (byId.size >= 3) {
+            val now = shape[platform]
+            val m = settledSpineShape(now, byId.values.toList()) ?: return
+            if (now != m) {
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "oldspine shape $platform ${now ?: "-"} -> $m (${byId.size} spines)")
+                shape[platform] = m
+            }
         }
     }
 
     fun of(platform: String?): Float? = platform?.let { shape[it] }
+}
+
+/** Sprint 525: how far (a share of it) the learnt spine shape must move before the shelf is laid out again. */
+internal const val SPINE_SHAPE_STEP = 0.04f
+
+/** Sprint 525: the shape to show - the median of [samples], or null to keep [now] when it is within [SPINE_SHAPE_STEP]. Pure. */
+internal fun settledSpineShape(now: Float?, samples: List<Float>): Float? {
+    if (samples.isEmpty()) return null
+    val m = samples.sorted()[samples.size / 2]
+    if (now != null && kotlin.math.abs(m - now) <= now * SPINE_SHAPE_STEP) return null
+    return m
+}
+
+/** Sprint 525: what a spine picture measured when it last loaded (its shape standing up, and whether it was lying), by address. */
+internal object SpineGeom {
+    private val map = object : LinkedHashMap<String, Pair<Float, Boolean>>(128, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<Float, Boolean>>?) = size > 1024
+    }
+    @Synchronized fun put(id: String, shape: Float, lying: Boolean) { map[id] = shape to lying }
+    @Synchronized fun shape(id: String): Float? = map[id]?.first
+    @Synchronized fun lying(id: String): Boolean? = map[id]?.second
+}
+
+/**
+ * Sprint 525 (owner: "instrument the original Shelf spine-rendering path"; QA trace only, a few lines per change, nothing
+ * per frame): which picture each standing spine shows and how it changed, logged as `oldspine <game> <event>` -
+ * FIRST <kind>, SWAP a->b (another picture: generic for custom, a previous game's), REDECODE (the same picture again),
+ * ENTER (composed again from nothing). Kinds: custom (your own cut), real (its spine scan), own-or-strip (Voltcap's).
+ */
+internal object OldSpineTrace {
+    private val last = object : LinkedHashMap<String, Pair<String, String?>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<String, String?>>?) = size > 256
+    }
+    @Synchronized fun change(game: String, kind: String, id: String?): String? {
+        val before = last.put(game, kind to id)
+        return when {
+            before == null -> "FIRST $kind"
+            before.first == kind && before.second == id -> null
+            before.first != kind -> "SWAP ${before.first}->$kind"
+            else -> "REDECODE $kind"
+        }
+    }
+    @Composable fun Track(game: String, kind: String, id: String?) {
+        androidx.compose.runtime.LaunchedEffect(kind, id) {
+            change(game, kind, id)?.let { android.util.Log.e("VoltcapQA", "oldspine $game $it") }
+        }
+        androidx.compose.runtime.DisposableEffect(game) {
+            if (synchronized(this@OldSpineTrace) { last.containsKey(game) }) android.util.Log.e("VoltcapQA", "oldspine $game ENTER")
+            onDispose { }
+        }
+    }
 }
 
 /** Update 505: the one style a spine's name is both measured and drawn in (size [s] sp, bold, centred, tight lines). */

@@ -57,7 +57,17 @@ internal fun Case3D(
     /** Update 414: false = the front and back pictures are not decoded yet (a case standing edge-on in a crowded box shows its spine only); true once it is wanted. */
     faces: Boolean = true,
     /** Update 424: the spine picture once it is made (the Cardboard box draws a resting case's top itself, through its own camera). */
-    onSpine: ((android.graphics.Bitmap) -> Unit)? = null
+    onSpine: ((android.graphics.Bitmap) -> Unit)? = null,
+    /**
+     * Shelf 3D work (12 Nov): the case's thickness against its height, when the caller's own place for it says it (the Game
+     * shelf's spine slot), so the 3D case's spine is exactly the spine it takes over from. Null: the case's own (below).
+     */
+    depthOverride: Float? = null,
+    /**
+     * Hardware QA, 12 Nov: which source the spine picture came from once it is made ("own": the game's own spine; "cut",
+     * "template", "console": stand-ins of Voltcap's). The Game shelf's 3D case takes over only with "own" (Shelf3D.sameArtSources).
+     */
+    onSpineSource: ((String) -> Unit)? = null
 ) {
     val title = gameDisplayName(g.name)
     val ctx = androidx.compose.ui.platform.LocalContext.current
@@ -155,7 +165,9 @@ internal fun Case3D(
     // title down the middle reads as "both flaps side by side": its left half was kept and stretched to twice its width.
     // The twin flaps are a jewel case insert's (update 298), so only there — and never on your own cut.)
     val twinsPossible = spec?.shell == CaseShell.JEWEL && userSpine == null
-    val ownUpright = rememberDerived(ownBmp, if (twinsPossible) "spine|1" else "spine|0") { b ->
+    // (Spine flicker work: kept by the spine picture's address too - `own` at 600 - so a case back on screen has it at once.)
+    val ownKey = own?.let { "$it|600" }
+    val ownUpright = rememberDerived(ownBmp, if (twinsPossible) "spine|1" else "spine|0", model = ownKey) { b ->
         val up = orientSpine(b, landscape = false)
         if (twinsPossible) singleSpine(up) else up
     }
@@ -165,7 +177,8 @@ internal fun Case3D(
     // when the two are far apart — a scan of the long edge of a landscape box (N64 / SNES "box-2D-side"), or one cut a little
     // wide, made the box half as thick or a third too thick; within a quarter the scan's own shape still says (a release's
     // own box can differ). Up to 0.26 of its height: an N64 / SNES box is 32 mm deep on 127 (0.22 cut it to 28 mm).)
-    val depth = remember(ownUpright, tpl, ownCase, spec, g.platform) {
+    val depth = remember(ownUpright, tpl, ownCase, spec, g.platform, depthOverride) {
+        if (depthOverride != null) return@remember depthOverride.coerceIn(0.03f, 0.4f)
         // Update 171: Voltcap's own Steam / Android cases slim, like a game card's case (they were as thick as a DVD case).
         if (ownCase != null && ownUpright == null) return@remember OWN_CASE_DEPTH
         // (Update 166: without a spine picture, the console's real case thickness — a Game Boy box is far thicker for its
@@ -203,17 +216,17 @@ internal fun Case3D(
     // (Update 321: the game's own Spine fit — its menu — over the usual fitting.)
     val spineMode = com.shelf.launcher.data.SpineFits.of(g.stableKey)
     val ownFitted: List<android.graphics.Bitmap>? =
-        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth") { b ->
+        if (spineMode != com.shelf.launcher.data.SpineFits.Mode.AUTO && userSpine == null) rememberDerived(ownUpright, "spineMode|${spineMode.name}|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b ->
             listOf(when (spineMode) {
                 com.shelf.launcher.data.SpineFits.Mode.FILL -> fillCrop(b, depth, 0.02f)
                 com.shelf.launcher.data.SpineFits.Mode.WHOLE -> fitSpineInside(b, depth, false)
                 else -> scaleAcross(b, depth)
             })
         }
-        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth") { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
+        else if (cardboard) rememberDerived(ownUpright, if (widenN64) "spineBox|n64-align317|$depth" else "spineBox319|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b -> listOfNotNull(boxSideSpine(b, depth, widenN64)) }
         // (Update 317: keep cases as update 240 had them — the middle cut keeps the spine of a scan that carries slivers of
         // the back and front beside it, as the GameCube ones do; see the note above SPINE_TOO_WIDE.)
-        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth") { b ->
+        else rememberDerived(ownUpright, if (userSpine != null) "spineUser|$depth" else "spineFit318|$depth", model = ownKey?.let { "$it|${twinsPossible}" }) { b ->
             // (Update 317: your own cut is the spine exactly — fitted to the side whole, scaled across, never cut.)
             // (A scraped spine that's wrong — Melee's is a slice with part of the back — can't be fitted right: set the cut on
             // the full case scan instead, Artwork & details › Full case scan › Adjust the cuts…, and that's used.)
@@ -223,8 +236,9 @@ internal fun Case3D(
     val cutWanted = cutModel != null && !cardboard && ownFitted?.isEmpty() == true
     val cutLoad = rememberSoftLoad(if (cutWanted) cutModel else null, 600)
     val cutBmp = cutLoad.bitmap
-    val cutUpright = rememberDerived(cutBmp, "spine|1") { b -> singleSpine(orientSpine(b, landscape = false)) }
-    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth") { b ->
+    val cutKey = if (cutWanted) cutModel?.let { "$it|600" } else null
+    val cutUpright = rememberDerived(cutBmp, "spine|1", model = cutKey) { b -> singleSpine(orientSpine(b, landscape = false)) }
+    val cutFitted = rememberDerived(cutUpright, "spineFit2|$depth", model = cutKey) { b ->
         val cur = b.width.toFloat() / b.height.coerceAtLeast(1)
         if (depth > 0f && cur / depth > SPINE_TOO_WIDE) emptyList() else listOf(fillCrop(b, depth, 0.1f))
     }
@@ -244,7 +258,30 @@ internal fun Case3D(
             ?: if (!tplSpine.done) SpineCache.WAITING
             else madeConsoleSpine ?: SpineCache.WAITING
     }
+    // (Phase 6, spine flicker diagnostics - QA trace only: which source drew this game's spine, and how it changed. Tells an
+    // empty texture (EMPTY), a different texture (SWAP) and a new copy of the same one (REDECODE) apart in a capture; a
+    // flicker with none of them logged is lighting / compositing, not the texture.)
+    if (QaTrace.on) {
+        val from = when {
+            spine === SpineCache.WAITING -> SpineTrace.WAITING
+            spine === ownFitted?.firstOrNull() -> "own"
+            spine === cutFitted?.firstOrNull() -> "cut"
+            spine === tplSpine.bitmap -> "template"
+            else -> "console"
+        }
+        androidx.compose.runtime.LaunchedEffect(spine) {
+            SpineTrace.note(g.stableKey, from, System.identityHashCode(spine))?.let { android.util.Log.e("VoltcapQA", "spine ${g.stableKey} $it") }
+        }
+    }
     if (onSpine != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) { onSpine(spine) }
+    if (onSpineSource != null && spine !== SpineCache.WAITING) androidx.compose.runtime.LaunchedEffect(spine) {
+        onSpineSource(when {
+            spine === ownFitted?.firstOrNull() -> "own"
+            spine === cutFitted?.firstOrNull() -> "cut"
+            spine === tplSpine.bitmap -> "template"
+            else -> "console"
+        })
+    }
     if (onReady != null) {
         val wholeNow = spine !== SpineCache.WAITING && (!readyNeedsFront || (cover == null && ownFront == null) || front != null)
         androidx.compose.runtime.LaunchedEffect(wholeNow) { if (wholeNow) onReady() }
@@ -692,6 +729,31 @@ private fun framed(art: android.graphics.Bitmap, frame: android.graphics.Bitmap,
  * again on the screen's thread every time a case came into a row: scrolling a long row of cases, or switching to a
  * category of them, spent most of its frames copying pictures.
  */
+/**
+ * Phase 6 (12 Nov): classifies how a game's 3D spine texture changes (QA trace only). Pure and bounded; see Case3D's use.
+ * EMPTY: a real spine went back to the dark stand-in strip. SWAP: a different source's spine (own scan / your cut / template /
+ * console). REDECODE: the same source, a new bitmap (usually invisible). FIRST: the first one seen. Null: unchanged.
+ */
+internal object SpineTrace {
+    const val WAITING = "waiting"
+    private const val MAX = 256
+    private val last = object : LinkedHashMap<String, Pair<String, Int>>(64, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Pair<String, Int>>?) = size > MAX
+    }
+    @Synchronized fun note(game: String, from: String, id: Int): String? {
+        val before = last.put(game, from to id)
+        return when {
+            before == null -> "FIRST $from"
+            before.second == id && before.first == from -> null
+            from == WAITING && before.first != WAITING -> "EMPTY ${before.first}->$from"
+            before.first == WAITING -> "FILLED $from"
+            before.first != from -> "SWAP ${before.first}->$from"
+            else -> "REDECODE $from"
+        }
+    }
+    @Synchronized fun reset() = last.clear()
+}
+
 internal object DerivedArt {
     private class Entry(val src: java.lang.ref.WeakReference<Any>?, val value: Any, val bytes: Int)
 
@@ -755,6 +817,34 @@ internal object DerivedArt {
         return cache.get("n|$key")?.value?.takeUnless { it is android.graphics.Bitmap && it.isRecycled } as? T
     }
 
+    /**
+     * Spine flicker work (12 Nov): what was made from the picture at [model] under [kind], kept by the picture's address rather
+     * than by the decoded copy. The same file decoded again (it left Coil's memory, a case scrolled back in) found nothing by
+     * [peek] - keyed by that copy - and the case showed its dark spine strip / its colour front until it was made again.
+     * Counted at its real size (a list of pictures too). [model] must say everything the picture is made from: a scan's
+     * address, or a cut model ("voltcrop:spine@cut:platform:url") with the cut in it.
+     */
+    fun putModel(model: String, kind: String, value: Any) {
+        val bytes = when (value) {
+            is android.graphics.Bitmap -> runCatching { value.allocationByteCount }.getOrDefault(64)
+            is List<*> -> value.sumOf { (it as? android.graphics.Bitmap)?.let { b -> runCatching { b.allocationByteCount }.getOrDefault(64) } ?: 64 }
+            else -> 64
+        }.coerceAtLeast(64)
+        cache.put("m|$kind|$model", Entry(null, value, bytes))
+    }
+
+    /** [putModel]'s entry for [model] / [kind], or null; never a recycled picture. */
+    fun <T : Any> peekModel(model: String, kind: String): T? {
+        val v = cache.get("m|$kind|$model")?.value ?: return null
+        val gone = when (v) {
+            is android.graphics.Bitmap -> v.isRecycled
+            is List<*> -> v.any { (it as? android.graphics.Bitmap)?.isRecycled == true }
+            else -> false
+        }
+        @Suppress("UNCHECKED_CAST")
+        return if (gone) null else v as? T
+    }
+
     /** [make] for a [key] that says everything it's made from (a hue, a name). */
     fun <T : Any> named(key: String, make: () -> T): T {
         @Suppress("UNCHECKED_CAST")
@@ -778,9 +868,14 @@ internal fun <T : Any> rememberDerived(
     src: android.graphics.Bitmap?, kind: String,
     /** What's made is a picture [make] already keeps under its own kind: remembered here without counting it twice. */
     alias: Boolean = false,
+    /**
+     * Spine flicker work: the address of the picture [src] is made from (null: none, as before). With it, what was made is
+     * also kept by that address (DerivedArt.putModel) and found again at once - even before the picture is decoded again.
+     */
+    model: String? = null,
     make: (android.graphics.Bitmap) -> T?
 ): T? {
-    val known = remember(src, kind) { src?.let { DerivedArt.peek<T>(it, kind) } }
+    val known = remember(src, kind, model) { src?.let { DerivedArt.peek<T>(it, kind) } ?: model?.let { DerivedArt.peekModel<T>(it, kind) } }
     val made = remember(src, kind) { androidx.compose.runtime.mutableStateOf<T?>(null) }
     androidx.compose.runtime.LaunchedEffect(src, kind) {
         if (src == null || known != null) return@LaunchedEffect
@@ -789,6 +884,7 @@ internal fun <T : Any> rememberDerived(
                 make(src)?.let { m -> if (alias) { DerivedArt.alias(src, kind, m); m } else DerivedArt.of(src, kind) { m } }
             }.getOrNull()
         }
+        if (v != null && model != null) DerivedArt.putModel(model, kind, v)
         made.value = v
     }
     return known ?: made.value
@@ -838,7 +934,7 @@ private fun fitFace(src: android.graphics.Bitmap, aspect: Float): android.graphi
 private fun boxSideSpine(src: android.graphics.Bitmap, aspect: Float, widenN64: Boolean = false): android.graphics.Bitmap? = runCatching {
     val w = src.width; val h = src.height
     if (w < 8 || h < 24) return@runCatching fillCrop(src, aspect, 0.1f)
-    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val soft = if (src.isHardwareBitmap()) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     val px = IntArray(w * h)
     soft.getPixels(px, 0, w, 0, 0, w, h)
     // How much of row y differs from the row above it (share of the columns, a little in from the edges).
@@ -904,7 +1000,7 @@ private fun fitSpineInside(src: android.graphics.Bitmap, aspect: Float, widenN64
     val c = android.graphics.Canvas(out)
     // The scan's edge colour still reaches the box edges; a genuine printed
     // title/logo stays readable, with no top/bottom crop or substituted template.
-    val safe = if (src.config == android.graphics.Bitmap.Config.HARDWARE)
+    val safe = if (src.isHardwareBitmap())
         src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     c.drawColor(safe.getPixel(0, (safe.height / 2).coerceAtMost(safe.height - 1)))
     val scale = minOf(w.toFloat() / safe.width.coerceAtLeast(1), h.toFloat() / safe.height.coerceAtLeast(1))
@@ -1129,7 +1225,7 @@ internal object CaseLod {
      * down across only (to a half, quarter or eighth) and keeps its full height.
      */
     fun pick(full: android.graphics.Bitmap, quad: FloatArray): android.graphics.Bitmap {
-        if (full.width < 48 || full.height < 48 || full.isRecycled || full.config == android.graphics.Bitmap.Config.HARDWARE) return full
+        if (full.width < 48 || full.height < 48 || full.isRecycled || full.isHardwareBitmap()) return full
         fun len(a: Int, b: Int): Float = kotlin.math.hypot(quad[b * 2] - quad[a * 2], quad[b * 2 + 1] - quad[a * 2 + 1])
         val nx = steps(maxOf(len(0, 1), len(3, 2)) / full.width)
         val ny = steps(maxOf(len(0, 3), len(1, 2)) / full.height)
@@ -1165,7 +1261,7 @@ internal object CaseLod {
     }
 }
 
-private object CaseDraw {
+internal object CaseDraw { // (internal: ShelfCompareRenderTest draws with it directly - 12 Nov)
     private val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val fill = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val line = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { style = android.graphics.Paint.Style.STROKE }
@@ -1587,7 +1683,7 @@ private fun fillCropOrFit(src: android.graphics.Bitmap, aspect: Float): android.
     return runCatching {
         val w: Int; val h: Int
         if (cur < aspect) { h = src.height; w = (h * aspect).toInt().coerceAtLeast(1) } else { w = src.width; h = (w / aspect).toInt().coerceAtLeast(1) }
-        val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+        val soft = if (src.isHardwareBitmap()) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
         val out = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
         val c = android.graphics.Canvas(out)
         c.drawColor(averageColor(soft) or (0xFF shl 24))

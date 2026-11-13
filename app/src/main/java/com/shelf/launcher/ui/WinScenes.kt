@@ -1,5 +1,10 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayCircle
@@ -241,7 +246,12 @@ internal class WinAction(
     /** Closes the window / back to its first page. */
     val back: Boolean = false,
     /** Needs you (a save sync problem). */
-    val urgent: Boolean = false
+    val urgent: Boolean = false,
+    /**
+     * Popup motion work: drawn only - a page on its way out, the game blade under a page blade. Not focusable, not clickable:
+     * the D-pad can't wander onto something covered or leaving.
+     */
+    val inert: Boolean = false
 )
 
 /** Update 330: everything a layout's own window gets from GameWindow (see SceneBody there). */
@@ -284,7 +294,13 @@ internal class WinSceneCtx(
     /** The details / options / achievements / performance page, in the layout's colours. */
     val pageBody: @Composable (Modifier) -> Unit,
     /** Update 347: the window is on its way out (a scene can leave differently from how it came — Bubble's peel). */
-    val closing: () -> Boolean = { false }
+    val closing: () -> Boolean = { false },
+    /** Popup motion work: any page's body; [live] false for a page on its way out (it gets no list focus). */
+    val pageFor: @Composable (WinPage, Modifier, Boolean) -> Unit = { _, m, _ -> pageBody(m) },
+    /** Popup motion work: open a page as its button does (B comes back onto that button). */
+    val open: (WinPage) -> Unit = setPage,
+    /** Popup motion work: the pages this window has as pages (L1 / R1 walk only these; the others open a list or a menu). */
+    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS)
 ) {
     val played: String get() = stylePlaytime(playtime, lastPlayed != null)
     val last: String? get() = lastPlayed?.let { lastPlayedLabel(it) }
@@ -355,7 +371,7 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
             .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
-            .clickable(interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
+            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
 }
@@ -764,52 +780,146 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
     val labStorage = PopupLab.active.storage // (523t: approved - everyone)
-    val tabs = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
-    // (Achievements and Options open as GameWindow opens them: their page, else the full list / the game's menu.)
-    fun openTab(t: WinPage) = when (t) {
-        WinPage.TROPHIES -> ctx.tools.firstOrNull { it.label == "Achievements" }?.onClick?.invoke() ?: Unit
-        WinPage.OPTIONS -> ctx.tools.firstOrNull { it.label == "Options" }?.onClick?.invoke() ?: Unit
-        else -> ctx.setPage(t)
-    }
+    val tabs = STORAGE_TABS
+    // (Popup motion work: a tab - tapped, or L1 / R1 - opens its page as its button does, so B comes back onto that button;
+    // Achievements and Options still open the full list / the game's menu when there is no page for them.)
+    fun openTab(t: WinPage) { if (t != ctx.page) ctx.open(t) }
+    val anim = rememberAnimationsEnabled()
     Column(
         Modifier.size(w, h).pixelFrame(RecPanel, 10.dp)
             // L1 / R1 turn the tabs.
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                 val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
-                val at = tabs.indexOf(ctx.page).coerceAtLeast(0)
-                openTab(tabs[(at + step).mod(tabs.size)])
+                openTab(pageStep(tabs.filter { it in ctx.pages }, ctx.page, step))
                 true
             }
     ) {
-        // The title band with the tabs.
-        Row(
-            Modifier.fillMaxWidth().background(RecBand).padding(start = 12.dp, end = 8.dp, top = 6.dp),
-            verticalAlignment = Alignment.Bottom
-        ) {
-            if (w >= 640.dp) Text("STORED ENTRY", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
-                modifier = Modifier.padding(bottom = 8.dp))
-            Spacer(Modifier.weight(1f))
-            // (Update 467, popup gate: in a narrow window — beside the case — the four tabs ran off the band and Options was
-            // squeezed to 6 px; there the tabs are tighter and the L1 / R1 marks give way.)
-            val narrow = w < 560.dp
-            if (!narrow) Text("L1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, end = 4.dp))
-            tabs.forEach { t ->
-                val sel = ctx.page == t
-                val a = WinAction(pageName(t), androidx.compose.material.icons.Icons.Filled.Info, { openTab(t) })
-                SceneControl(a, Modifier.padding(horizontal = 2.dp)) { on ->
-                    Box(
-                        Modifier.clip(CutCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                            .background(if (sel) RecPanel else if (on) red else RecNavy)
-                            .padding(horizontal = if (narrow) 5.dp else 12.dp, vertical = if (sel) 8.dp else 6.dp)
-                    ) {
-                        Text(pageName(t).uppercase(), color = if (sel) RecInk else Color.White, fontSize = if (narrow) 10.sp else 12.sp, fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
+        StorageTabs(ctx, tabs, w, red, anim, ::openTab)
+        // Popup motion work (Storage boxes, owner-approved direction): the pages are sheets of the record. The new sheet files in
+        // from the side the D-pad went, over the old one, which slides back a little and fades; going back runs it the other way.
+        // The record, its band and its tabs stay put: the page never turns into another design.
+        androidx.compose.animation.AnimatedContent(
+            targetState = ctx.page,
+            transitionSpec = {
+                val dir = pageDirection(tabs, initialState, targetState)
+                if (!anim) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                else (androidx.compose.animation.slideInHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it * dir * 3 / 5 } +
+                    androidx.compose.animation.fadeIn(tween(90))) togetherWith
+                    (androidx.compose.animation.slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { -it * dir / 6 } +
+                        androidx.compose.animation.fadeOut(tween(NATIVE_PAGE_MS)))
+            },
+            contentKey = { it },
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            label = "storagePage"
+        ) { p ->
+            // (The leaving sheet keeps no focus requester: it can't take the D-pad back while it slides away.)
+            val live = p == ctx.page
+            Column(Modifier.fillMaxSize().background(RecPanel)) {
+                if (p == WinPage.MAIN) StorageRecordMain(ctx, w, red, labStorage, live)
+                else StorageRecordPage(ctx, p, red, live)
+            }
+        }
+    }
+}
+
+/** Storage boxes' pages in tab order (Info, Details, Achievements, Options). */
+internal val STORAGE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
+
+/** [this] as drawn on a live sheet, or with no focus requester on a sheet on its way out. */
+private fun WinAction.live(live: Boolean): WinAction = if (live) this else inert()
+
+/**
+ * Storage's title band: STORED ENTRY and the tabs. The open tab's paper (the record's own) slides from tab to tab under the
+ * labels (popup motion work), instead of the tabs swapping colours at once.
+ */
+@Composable
+private fun StorageTabs(ctx: WinSceneCtx, tabs: List<WinPage>, w: Dp, red: Color, anim: Boolean, openTab: (WinPage) -> Unit) {
+    val boxes = remember { mutableStateMapOf<WinPage, androidx.compose.ui.layout.LayoutCoordinates>() }
+    var band by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
+    val mx = remember { androidx.compose.animation.core.Animatable(Float.NaN) }
+    val mw = remember { androidx.compose.animation.core.Animatable(0f) }
+    val mt = remember { androidx.compose.animation.core.Animatable(0f) }
+    fun target(p: WinPage): androidx.compose.ui.geometry.Rect? {
+        val b = band ?: return null; val c = boxes[p] ?: return null
+        if (!b.isAttached || !c.isAttached) return null
+        val o = b.localPositionOf(c, Offset.Zero)
+        return androidx.compose.ui.geometry.Rect(o, Size(c.size.width.toFloat(), c.size.height.toFloat()))
+    }
+    val placed = boxes.size == tabs.size && band != null
+    // (The paper slides only when animations are on; otherwise - and until the tabs are placed - the open tab draws its own
+    // paper in the same frame its page changes. The first placement is not a change: nothing is drawn from the marker before it.)
+    val slide = anim && !mx.value.isNaN()
+    LaunchedEffect(ctx.page, placed, anim) { // qa-ok: SNAP-ANIMATE (snaps only when the marker is not drawn: first placement, animations off)
+        val r = target(ctx.page) ?: return@LaunchedEffect
+        if (!anim || mx.value.isNaN()) { mx.snapTo(r.left); mw.snapTo(r.width); mt.snapTo(r.top); return@LaunchedEffect } // qa-ok: SNAP-ANIMATE (first placement / animations off: the marker isn't drawn then, see [slide])
+        val spec = tween<Float>(NATIVE_PAGE_MS - 40, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+        kotlinx.coroutines.coroutineScope {
+            launch { mx.animateTo(r.left, spec) }; launch { mw.animateTo(r.width, spec) }; launch { mt.animateTo(r.top, spec) }
+        }
+    }
+    // How much of tab [t] the sliding paper covers (0..1): its label turns dark once the paper is under most of it.
+    fun covered(t: WinPage): Float {
+        val r = target(t) ?: return 0f
+        val l = maxOf(r.left, mx.value); val rr = minOf(r.right, mx.value + mw.value)
+        return if (r.width <= 0f) 0f else ((rr - l) / r.width).coerceIn(0f, 1f)
+    }
+    val cut = with(androidx.compose.ui.platform.LocalDensity.current) { 6.dp.toPx() }
+    Row(
+        Modifier.fillMaxWidth().background(RecBand)
+            .onGloballyPositioned { band = it }
+            .drawBehind {
+                if (!slide) return@drawBehind
+                // The tabs' navy plates, then the open tab's paper over them (cut top corners, down into the record), then the
+                // labels on top (drawn by the tabs). One layer, so the paper is never hidden behind a tab while it slides.
+                tabs.forEach { t ->
+                    val r = target(t) ?: return@forEach
+                    val plate = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(r.left, r.bottom); lineTo(r.left, r.top + cut); lineTo(r.left + cut, r.top); lineTo(r.right - cut, r.top); lineTo(r.right, r.top + cut); lineTo(r.right, r.bottom); close()
                     }
+                    drawPath(plate, RecNavy)
+                }
+                val x = mx.value; val wd = mw.value; val top = mt.value
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(x, size.height); lineTo(x, top + cut); lineTo(x + cut, top); lineTo(x + wd - cut, top); lineTo(x + wd, top + cut); lineTo(x + wd, size.height); close()
+                }
+                drawPath(path, RecPanel)
+            }
+            .padding(start = 12.dp, end = 8.dp, top = 6.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        if (w >= 640.dp) Text("STORED ENTRY", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(bottom = 8.dp))
+        Spacer(Modifier.weight(1f))
+        // (Update 467, popup gate: in a narrow window — beside the case — the four tabs ran off the band and Options was
+        // squeezed to 6 px; there the tabs are tighter and the L1 / R1 marks give way.)
+        val narrow = w < 560.dp
+        if (!narrow) Text("L1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, end = 4.dp))
+        tabs.forEach { t ->
+            val sel = ctx.page == t
+            val a = WinAction(pageName(t), androidx.compose.material.icons.Icons.Filled.Info, { openTab(t) })
+            SceneControl(a, Modifier.padding(horizontal = 2.dp)) { on ->
+                // (Sliding: the band draws the plates and the paper; the label is dark where the paper is. Not sliding: as before.)
+                val dark = if (slide) covered(t) > 0.5f else sel
+                Box(
+                    Modifier.onGloballyPositioned { boxes[t] = it }
+                        .clip(CutCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                        .background(if (on && !sel) red else if (slide) Color.Transparent else if (sel) RecPanel else RecNavy)
+                        .padding(horizontal = if (narrow) 5.dp else 12.dp, vertical = 7.dp)
+                ) {
+                    Text(pageName(t).uppercase(), color = if (dark && !(on && !sel)) RecInk else Color.White, fontSize = if (narrow) 10.sp else 12.sp, fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
                 }
             }
-            if (!narrow) Text("R1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, start = 4.dp))
         }
+        if (!narrow) Text("R1", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 9.dp, start = 4.dp))
+    }
+}
+
+/** Storage's Info sheet: the sprite on its stand, the facts, the menu with its pointer (as before the popup motion work). */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, labStorage: Boolean, live: Boolean) {
         Row(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
             // The sprite on its stand, the name plate, the console tag.
             Column(Modifier.width(w * 0.33f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -853,7 +963,6 @@ private fun StorageRecord(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                if (ctx.page == WinPage.MAIN) {
                     // The facts in cells.
                     @Composable
                     fun cell(label: String, value: String?) {
@@ -906,45 +1015,29 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                         // are counted from the menu's own width now: two a row unless the column is wide.)
                         // (Batch 523 design lab "storage": Play, Details and ••• on one line - the main choice and its two neighbours.)
                         if (labStorage) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.weight(1.6f)) }
+                            primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.weight(1.6f)) }
                             inLine.forEach { a ->
-                                if (PopupLab.isMore(a)) SceneControl(a, Modifier) { on ->
+                                if (PopupLab.isMore(a)) SceneControl(a.live(live), Modifier) { on ->
                                     Box(Modifier.size(40.dp).clip(CircleShape).background(if (on) Color(0xFFE6EEF8) else Color.Transparent)
                                         .border(1.5.dp, if (on || a.label == "Less") red else RecInk.copy(alpha = 0.4f), CircleShape), contentAlignment = Alignment.Center) {
                                         Text("•••", color = RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black)
                                     }
-                                } else StorageKey(a, red, big = false, modifier = Modifier.weight(1f))
+                                } else StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f))
                             }
                         } else
-                        primary.forEach { a -> StorageKey(a, red, big = true, modifier = Modifier.fillMaxWidth()) }
+                            primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.fillMaxWidth()) }
                         rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                row.forEach { a -> StorageKey(a, red, big = false, modifier = Modifier.weight(1f)) }
+                                row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }
                                 repeat(storageKeysPerRow(w.value * 0.67f) - row.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }
-                } else {
-                    Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) { ctx.pageBody(Modifier.fillMaxSize()) }
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ctx.buttons.forEach { a ->
-                            SceneControl(a, Modifier) { on ->
-                                Box(Modifier.pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(if (on) "▶ " else "  ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                                        Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
                 if (ctx.chips.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         ctx.chips.forEach { a ->
-                            SceneControl(a, Modifier) { on ->
+                            SceneControl(a.live(live), Modifier) { on ->
                                 // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
                                 Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
                                     verticalAlignment = Alignment.CenterVertically) {
@@ -954,6 +1047,63 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                                     WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        }
+}
+
+/**
+ * Storage's Details / Achievements / Options sheet (popup motion work): the page fills the record's sheet under a slim name
+ * line - the sprite small, the name in whole words, the console tag - with the page's keys along the bottom, all in the
+ * record's pixel frames and navy. It was the shared expanded page in the window's colours: another design.
+ */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Color, live: Boolean) {
+    Column(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
+                StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize(0.8f))
+            }
+            Spacer(Modifier.width(10.dp))
+            WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 10.dp, vertical = 3.dp)) {
+                WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
+        Spacer(Modifier.height(8.dp))
+        // (The page's keys: Play first, the page's own, Back last - one row; whole words, never cut.)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            ctx.buttons.forEach { a0 ->
+                val a = a0.live(live)
+                SceneControl(a, Modifier) { on ->
+                    Box(Modifier.heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.CenterStart) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (on) "▶ " else "  ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                            Text(a.label.uppercase(), color = if (a.primary) red else RecInk, fontSize = 13.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
+                        }
+                    }
+                }
+            }
+        }
+        if (ctx.chips.isNotEmpty()) {
+            Spacer(Modifier.height(6.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                ctx.chips.forEach { a ->
+                    SceneControl(a.live(live), Modifier) { on ->
+                        // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
+                        Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
+                            Spacer(Modifier.width(4.dp))
+                            // (Batch 523 gate, p523all: "Saves: Save sync isn't set up" was cut at one line - whole now.)
+                            WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
                         }
                     }
                 }
@@ -1642,75 +1792,113 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val col = com.shelf.launcher.data.Features.nmColor.state.value
     val hi = Color(col.hi)
     val w = ctx.maxW; val h = ctx.maxH
+    val anim = rememberAnimationsEnabled()
+    val tabs = NIGHT_TABS
     fun slide(order: Int): Modifier = Modifier.graphicsLayer {
         val k = ((ctx.reveal() - order * 0.12f) / 0.6f).coerceIn(0f, 1f)
         val e = 1f - (1f - k) * (1f - k) * (1f - k)
         translationX = (1f - e) * size.width * (if (order % 2 == 0) -0.6f else 0.6f)
         alpha = e
     }
-    Box(Modifier.size(w, h)) {
-        // The name across the top.
+    Box(
+        Modifier.size(w, h)
+            // (Popup motion work: L1 / R1 walk Status, Details, Achievements, Options - as their commands open them.)
+            .onPreviewKeyEvent { e ->
+                if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
+                val to = pageStep(tabs.filter { it in ctx.pages }, ctx.page, step)
+                if (to != ctx.page) ctx.open(to)
+                true
+            }
+    ) {
+        // Popup motion work (Night menu, owner-approved direction): Status's cover and stats, or the page's big slanted panel.
+        // A page change sweeps the old panels out along the slant the way the D-pad went and the new ones in after them, solid,
+        // over them; back runs the other way. The commands stay on the right.
+        val slant = 0.105f
+        androidx.compose.animation.AnimatedContent(
+            targetState = ctx.page,
+            transitionSpec = {
+                val dir = pageDirection(tabs, initialState, targetState)
+                if (!anim) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                else androidx.compose.animation.slideIn(tween(NATIVE_PAGE_MS, delayMillis = 40, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { sz ->
+                    val dx = (sz.width * 0.75f * dir); androidx.compose.ui.unit.IntOffset(dx.toInt(), (-dx * kotlin.math.tan(slant)).toInt())
+                } togetherWith (androidx.compose.animation.slideOut(tween(NATIVE_PAGE_MS - 60, easing = androidx.compose.animation.core.FastOutLinearInEasing)) { sz ->
+                    val dx = -(sz.width * 0.6f * dir); androidx.compose.ui.unit.IntOffset(dx.toInt(), (-dx * kotlin.math.tan(slant)).toInt())
+                } + androidx.compose.animation.fadeOut(tween(110)))
+            },
+            contentKey = { it },
+            modifier = Modifier.matchParentSize(),
+            label = "nightPage"
+        ) { p ->
+            val live = p == ctx.page
+            Box(Modifier.fillMaxSize()) {
+                if (p == WinPage.MAIN) {
+                // The cover in its slanted frame.
+                Box(slide(1).padding(start = w * 0.03f, top = h * 0.2f).size(h * 0.52f, h * 0.68f).graphicsLayer { rotationZ = -3f }) {
+                    Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
+                    Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
+                        if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
+                    }
+                }
+                // The stats panel.
+                // (Sprint 525, owner: at ×1.3 "the Saves line sits below the visible panel" - reachable by scrolling, but the
+                // settled panel should show it. The panel keeps its size while everything fits (×1.0 unchanged) and grows down
+                // to the cover frame's foot when the lines need it; only beyond that does it scroll.)
+                Box(
+                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
+                        .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
+                        .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
+                ) {
+                    Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                        @Composable
+                        fun stat(label: String, value: String?) {
+                            // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
+                            // column is at most 40 % of the panel now and the value keeps whole words, stepping its size down if it must.)
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            val labelW = minOf(96.dp, maxWidth * 0.4f)
+                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
+                                // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
+                                // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
+                                // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
+                                WholeWordsText(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            }
+                            }
+                        }
+                        stat("PLAY TIME", ctx.played)
+                        stat("LAST", ctx.last)
+                        if (ctx.total > 0) {
+                            stat("ACHIEVED", "${ctx.earned} / ${ctx.total}")
+                            Box(Modifier.padding(start = 96.dp, top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
+                                Box(Modifier.fillMaxHeight().fillMaxWidth((ctx.earned.toFloat() / ctx.total).coerceIn(0f, 1f)).background(hi))
+                            }
+                        }
+                        stat("RELEASED", ctx.year)
+                        stat("MAKER", ctx.developer)
+                        stat("KIND", ctx.genres)
+                        stat("SYSTEM", ctx.console)
+                        Spacer(Modifier.height(6.dp))
+                        ctx.chips.forEachIndexed { i, a ->
+                            // (Update 470: 10 dp between the status lines — they touched edge to edge on the turned panel, and their boxes
+                            // crossed by 19 px on the Odin, o470F.)
+                            if (i > 0) Spacer(Modifier.height(10.dp))
+                            SceneControl(a.live(live), Modifier) { on ->
+                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
+                                    textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
+                            }
+                        }
+                    }
+                }
+
+                } else NightPagePanel(ctx, p, live, w, h, col, hi, Modifier.then(slide(1)))
+            }
+        }
+        // (Drawn after the panels: a panel sweeping in along the slant passes under the banner, not over it.)
+        // The name across the top (Status), or the page's name with the game under it; a page change wipes the banner's words
+        // with a dark slanted band, so it is never empty and the old and new words never run together.
         Box(slide(0).padding(top = 6.dp).fillMaxWidth(0.82f).height(64.dp).graphicsLayer { rotationZ = -2f }
-            .clip(slantShape(0.5f)).background(Color.White).padding(start = 40.dp, end = 30.dp), contentAlignment = Alignment.CenterStart) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("STATUS", color = hi.copy(alpha = 1f).let { mixS(it, Color.Black, 0.45f) }, fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                Spacer(Modifier.width(16.dp))
-                WinFullText(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, maxLines = 2,
-                    style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
-            }
-        }
-        // The cover in its slanted frame.
-        Box(slide(1).padding(start = w * 0.03f, top = h * 0.2f).size(h * 0.52f, h * 0.68f).graphicsLayer { rotationZ = -3f }) {
-            Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
-            Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
-                if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
-            }
-        }
-        // The stats panel.
-        Box(
-            slide(2).padding(start = w * 0.33f, top = h * 0.2f).size(w * 0.38f, h * 0.56f).graphicsLayer { rotationZ = -2f }
-                .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
-                .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
-        ) {
-            if (ctx.page == WinPage.MAIN) Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
-                @Composable
-                fun stat(label: String, value: String?) {
-                    // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
-                    // column is at most 40 % of the panel now and the value keeps whole words, stepping its size down if it must.)
-                    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val labelW = minOf(96.dp, maxWidth * 0.4f)
-                    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
-                        // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
-                        // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
-                        // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
-                        WholeWordsText(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    }
-                    }
-                }
-                stat("PLAY TIME", ctx.played)
-                stat("LAST", ctx.last)
-                if (ctx.total > 0) {
-                    stat("ACHIEVED", "${ctx.earned} / ${ctx.total}")
-                    Box(Modifier.padding(start = 96.dp, top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
-                        Box(Modifier.fillMaxHeight().fillMaxWidth((ctx.earned.toFloat() / ctx.total).coerceIn(0f, 1f)).background(hi))
-                    }
-                }
-                stat("RELEASED", ctx.year)
-                stat("MAKER", ctx.developer)
-                stat("KIND", ctx.genres)
-                stat("SYSTEM", ctx.console)
-                Spacer(Modifier.height(6.dp))
-                ctx.chips.forEachIndexed { i, a ->
-                    // (Update 470: 10 dp between the status lines — they touched edge to edge on the turned panel, and their boxes
-                    // crossed by 19 px on the Odin, o470F.)
-                    if (i > 0) Spacer(Modifier.height(10.dp))
-                    SceneControl(a, Modifier) { on ->
-                        Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFFFB74D) else hi.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2,
-                            textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
-                    }
-                }
-            } else ctx.pageBody(Modifier.fillMaxSize())
+            .clip(slantShape(0.5f)).background(Color.White)) {
+            NightBannerWipe(ctx.page, anim) { p -> NightBannerWords(ctx, p, hi) }
         }
         // The commands.
         Column(
@@ -1734,15 +1922,86 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
                                 .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
                         ) {
-                            Text(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
-                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                maxLines = 2)
+                            // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
+                            // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
+                            WinFullText(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
+                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
+                                style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
                         }
                     }
                 }
             }
         }
     }
+}
+
+/** Night menu's pages in command order (Status, Details, Achievements, Options). */
+internal val NIGHT_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
+
+/** The banner's words for page [p]: STATUS and the game's name, or the page's name with the game's name small under it. */
+@Composable
+private fun NightBannerWords(ctx: WinSceneCtx, p: WinPage, hi: Color) {
+    val italic = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+    Box(Modifier.fillMaxSize().padding(start = 40.dp, end = 30.dp), contentAlignment = Alignment.CenterStart) {
+        if (p == WinPage.MAIN) Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("STATUS", color = mixS(hi, Color.Black, 0.45f), fontSize = 14.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+            Spacer(Modifier.width(16.dp))
+            WinFullText(ctx.name.uppercase(), color = Color(0xFF0B1424), fontSize = 28.sp, fontWeight = FontWeight.Black, maxLines = 2, style = italic)
+        } else Column(verticalArrangement = Arrangement.Center) {
+            WinFullText(winPageTitle(p).uppercase(), color = Color(0xFF0B1424), fontSize = 22.sp, fontWeight = FontWeight.Black, maxLines = 1, style = italic)
+            // (The game stays named on every page: whole, smaller, sliding slowly only when it can't fit one line.)
+            WinFullText(ctx.name.uppercase(), color = mixS(hi, Color.Black, 0.45f), fontSize = 11.sp, fontWeight = FontWeight.Black, maxLines = 1, style = italic)
+        }
+    }
+}
+
+/**
+ * Night menu's banner wipe: the new page's words are revealed from the left as the old ones are covered, behind a dark
+ * slanted band at the wipe's edge (popup motion review: a plain wipe left the banner empty for a moment, a cross-wipe made
+ * the two titles run together). Animations off: the new words at once.
+ */
+@Composable
+private fun NightBannerWipe(page: WinPage, anim: Boolean, words: @Composable (WinPage) -> Unit) {
+    var shown by remember { mutableStateOf(page) }
+    var leaving by remember { mutableStateOf<WinPage?>(null) }
+    val k = remember { androidx.compose.animation.core.Animatable(1f) }
+    LaunchedEffect(page) { // qa-ok: SNAP-ANIMATE (the old words are drawn whole until this catches up - see [cur])
+        if (page == shown) return@LaunchedEffect
+        if (!anim) { shown = page; leaving = null; return@LaunchedEffect } // (the new words in this frame's recomposition)
+        leaving = shown; shown = page; k.snapTo(0f) // qa-ok: SNAP-ANIMATE (the band starts at the left edge with the old words whole)
+        k.animateTo(1f, tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        leaving = null
+    }
+    // (Until the effect catches up with a new page the old words stay whole: no frame shows the new words before the wipe.)
+    val cur = if (page != shown && anim) shown else page
+    val old = leaving
+    val band = with(androidx.compose.ui.platform.LocalDensity.current) { 18.dp.toPx() }
+    Box(Modifier.fillMaxSize()) {
+        if (old != null) Box(Modifier.fillMaxSize().drawWithContent {
+            val x = size.width * k.value + band / 2f
+            clipRect(left = x) { this@drawWithContent.drawContent() }
+        }) { words(old) }
+        Box(Modifier.fillMaxSize().drawWithContent {
+            if (old == null) drawContent() else {
+                val x = size.width * k.value - band / 2f
+                clipRect(right = x) { this@drawWithContent.drawContent() }
+                drawRect(Color(0xFF0B1424), Offset(x, 0f), Size(band, size.height))
+            }
+        }) { words(cur) }
+    }
+}
+
+/**
+ * Night menu's page (popup motion work): Details / Achievements / Options in one big slanted panel left of the commands, in
+ * the menu's colours and frame - the page has the room it needs instead of the stats panel's corner.
+ */
+@Composable
+private fun NightPagePanel(ctx: WinSceneCtx, p: WinPage, live: Boolean, w: Dp, h: Dp, col: com.shelf.launcher.data.Features.NmColor, hi: Color, modifier: Modifier) {
+    Box(
+        modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).graphicsLayer { rotationZ = -2f }
+            .clip(slantShape(0.06f)).background(Brush.horizontalGradient(listOf(Color(col.top), Color(col.bottom))))
+            .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.06f)).padding(start = 30.dp, end = 26.dp, top = 12.dp, bottom = 12.dp)
+    ) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
 }
 
 /**

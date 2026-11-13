@@ -132,6 +132,31 @@ class TestRecordingValidation(Base):
         self.assertEqual(qalib.check_recording(v, min_frames=10, min_bytes=100)[0].status, INFRA)
 
 
+class TestRecheck(Base):
+    """Sprint 525: recheck.py grades a rec.sh recording against how long the recorder really ran."""
+    def log(self, name, segs):
+        lines = [f"rec {name} limit=20s"] + [f"seg {k} file={fn} start={s} end={e} exit=0 why={w}" for k, fn, s, e, w in segs] + ["done"]
+        self.write(name + ".rec.txt", "\n".join(lines) + "\n")
+
+    @needs_video
+    def test_grades(self):
+        make_video(self.p("a.mp4"), fps=60, frames=120)            # 2.0 s
+        self.log("a", [(1, "a.mp4", 100.0, 102.1, "stop")])
+        code, out = run("recheck.py", self.p("a.mp4"))
+        self.assertEqual(code, 0, out); self.assertIn("COMPLETE", out)
+        shutil.copy(self.p("a.mp4"), self.p("b.mp4"))           # the recorder ran 8 s, the file holds 2 s
+        self.log("b", [(1, "b.mp4", 100.0, 108.0, "time")])
+        code, out = run("recheck.py", self.p("b.mp4"))
+        self.assertEqual(code, 1); self.assertIn("TRUNCATED", out)
+        shutil.copy(self.p("a.mp4"), self.p("c.mp4")); shutil.copy(self.p("a.mp4"), self.p("c_p2.mp4"))
+        self.log("c", [(1, "c.mp4", 100.0, 102.0, "EARLY"), (2, "c_p2.mp4", 102.3, 104.3, "stop")])
+        code, out = run("recheck.py", self.p("c.mp4"))
+        self.assertEqual(code, 1); self.assertIn("PARTIAL", out); self.assertIn("gaps [0.3]", out)
+        shutil.copy(self.p("a.mp4"), self.p("d.mp4"))           # a file without its log proves nothing
+        code, out = run("recheck.py", self.p("d.mp4"))
+        self.assertEqual(code, 1); self.assertIn("UNVERIFIED", out)
+
+
 class TestLogValidation(Base):
     def test_missing_and_empty(self):
         self.assertEqual(qalib.check_log(self.p("x.txt"))[0].status, INFRA)

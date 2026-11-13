@@ -170,7 +170,7 @@ internal object CollectorBacks {
     }
 
     private fun averageLuminance(b: Bitmap): Float? = runCatching {
-        val soft = if (b.config == Bitmap.Config.HARDWARE) b.copy(Bitmap.Config.ARGB_8888, false) else b
+        val soft = if (b.isHardwareBitmap()) b.copy(Bitmap.Config.ARGB_8888, false) else b
         val step = maxOf(1, minOf(soft.width, soft.height) / 48)
         var sum = 0.0; var n = 0
         var y = 0

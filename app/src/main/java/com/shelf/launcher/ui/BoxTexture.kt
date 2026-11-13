@@ -223,7 +223,7 @@ internal object BoxTexture {
         // Look at a small copy: a column that is a fold has a colour change across most of the height.
         val aw = minOf(360, w)
         val ah = (h.toLong() * aw / w).toInt().coerceAtLeast(24)
-        val soft = if (src.config == Bitmap.Config.HARDWARE) src.copy(Bitmap.Config.ARGB_8888, false) else src
+        val soft = if (src.isHardwareBitmap()) src.copy(Bitmap.Config.ARGB_8888, false) else src
         val small = runCatching { Bitmap.createScaledBitmap(soft, aw, ah, true) }.getOrNull() ?: return null
         val px = IntArray(aw * ah)
         small.getPixels(px, 0, aw, 0, 0, aw, ah)
@@ -303,7 +303,7 @@ internal object BoxTexture {
         if (w < 40 || h < 40 || !src.hasAlpha()) return null
         val aw = minOf(360, w)
         val ah = (h.toLong() * aw / w).toInt().coerceAtLeast(24)
-        val soft = if (src.config == Bitmap.Config.HARDWARE) src.copy(Bitmap.Config.ARGB_8888, false) else src
+        val soft = if (src.isHardwareBitmap()) src.copy(Bitmap.Config.ARGB_8888, false) else src
         val small = runCatching { Bitmap.createScaledBitmap(soft, aw, ah, true) }.getOrNull() ?: return null
         val px = IntArray(aw * ah)
         small.getPixels(px, 0, aw, 0, 0, aw, ah)
@@ -392,7 +392,7 @@ internal class BoxCrop(private val part: BoxPart, private val platform: String?,
         val maxSide = if (part == BoxPart.SPINE || part == BoxPart.SPINE3D) 720 else 960
         val k = minOf(1f, maxSide.toFloat() / maxOf(rect.width(), rect.height()))
         val out = Bitmap.createBitmap((rect.width() * k).toInt().coerceAtLeast(1), (rect.height() * k).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
-        val soft = if (input.config == Bitmap.Config.HARDWARE) input.copy(Bitmap.Config.ARGB_8888, false) else input
+        val soft = if (input.isHardwareBitmap()) input.copy(Bitmap.Config.ARGB_8888, false) else input
         android.graphics.Canvas(out).drawBitmap(
             soft, rect, android.graphics.Rect(0, 0, out.width, out.height),
             android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)

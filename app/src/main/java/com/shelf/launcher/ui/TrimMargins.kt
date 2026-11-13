@@ -41,7 +41,7 @@ internal object TrimToOpaque : Transformation {
 
     fun trim(src: Bitmap): Bitmap {
         val w = src.width; val h = src.height
-        if (w < 32 || h < 32 || !src.hasAlpha() || src.config == Bitmap.Config.HARDWARE) return src
+        if (w < 32 || h < 32 || !src.hasAlpha() || src.isHardwareBitmap()) return src
         val row = IntArray(w); val col = IntArray(h)
         fun rowEmpty(y: Int): Boolean { src.getPixels(row, 0, w, 0, y, w, 1); return row.all { (it ushr 24) < 24 } }
         fun colEmpty(x: Int): Boolean { src.getPixels(col, 0, 1, x, 0, 1, h); return col.all { (it ushr 24) < 24 } }
@@ -81,7 +81,7 @@ internal object TrimUniformMargins : Transformation {
     /** [src] with its flat margins cut off, or [src] itself when it has none (or they don't pass the rules above). */
     fun trim(src: Bitmap): Bitmap {
         val w = src.width; val h = src.height
-        if (w < 48 || h < 48 || src.config == Bitmap.Config.HARDWARE) return src
+        if (w < 48 || h < 48 || src.isHardwareBitmap()) return src
         val buf = IntArray(maxOf(w, h))
         // See-through edges: an icon, a logo, a cut-out disc. Left alone.
         if (src.hasAlpha() && (0..3).any { e -> seeThrough(src, e, buf) }) return src

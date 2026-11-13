@@ -107,7 +107,7 @@ internal object BoxSides {
         measured["${title.lowercase().replace("é", "e").trim()}|${platform?.lowercase()}"]
 
     fun boxColour(front: Bitmap, platform: String? = null): Int? = runCatching {
-        val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+        val f = if (front.isHardwareBitmap()) front.copy(Bitmap.Config.ARGB_8888, false) else front
         val w = f.width; val h = f.height
         if (w < 8 || h < 8) return@runCatching null
         // (Where the console's box has a printed band — the N64's red NINTENDO 64 strip, a DS box's banner — only its art
@@ -205,7 +205,7 @@ internal object BoxSides {
 
     /** Update 319: the average colour of [front]'s edge that meets [side] (its outer 6 %), or null. */
     fun edgeColor(front: Bitmap, side: BoxSide): Int? = runCatching {
-        val f = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+        val f = if (front.isHardwareBitmap()) front.copy(Bitmap.Config.ARGB_8888, false) else front
         val w = f.width; val h = f.height
         if (w < 4 || h < 4) return@runCatching null
         val band = (minOf(w, h) * 0.06f).toInt().coerceAtLeast(1)
@@ -405,7 +405,7 @@ internal object BoxColourQa {
             runCatching {
                 val o = java.io.File(d, "qa_boxcolour").apply { mkdirs() }
                 val safe = name.replace(Regex("[^A-Za-z0-9]+"), "_").take(60)
-                val b = if (front.config == Bitmap.Config.HARDWARE) front.copy(Bitmap.Config.ARGB_8888, false) else front
+                val b = if (front.isHardwareBitmap()) front.copy(Bitmap.Config.ARGB_8888, false) else front
                 java.io.FileOutputStream(java.io.File(o, "$safe.png")).use { b.compress(Bitmap.CompressFormat.PNG, 100, it) }
                 java.io.File(o, "colours.tsv").appendText("$name\t${b.width}x${b.height}\t" + (col?.let { "#%06x".format(it and 0xffffff) } ?: "none") + "\n")
             }

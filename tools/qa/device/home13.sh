@@ -38,6 +38,6 @@ for sz in 10 13; do
   done
 done
 A --es voltcap_test_scale off; sleep 1; A --es voltcap_test_snapshot restore; sleep 3; A --ez voltcap_test_preview false
-rm -f $F/qa_nolaunch
+# (Sprint 525: the launch block stays - only the final device clean-up lifts it; QA selftest TestLaunchGuard)
 echo "real=$(pidof com.shelf.launcher) fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')" >> $OUT/log.txt
 ev_end $OUT 2>/dev/null; echo DONE >> $OUT/log.txt

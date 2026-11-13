@@ -472,7 +472,7 @@ private fun CardHand(c: StyleCtx, g: Game, modifier: Modifier) {
                         c, i, real, geo, dims, posRead, centre = centre, focused = centre && inGames,
                         flip = if (centre && flipFor == g.stableKey) flipRead else null,
                         sheen = if (centre) sheenRead else null, tap = tap, hold = hold,
-                        modifier = Modifier.zIndex(if (near) 1000f - dist else -dist.toFloat())
+                        modifier = Modifier.zIndex(if (near) 1000f - dist else -dist.toFloat()).qaLit(centre && inGames)
                     )
                 }
             }

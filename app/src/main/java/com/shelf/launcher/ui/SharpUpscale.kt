@@ -48,7 +48,7 @@ class SharpUpscale(
      * Android 8+; on older versions, or if the copy fails, the software bitmap is kept.
      */
     private fun toHardware(bitmap: Bitmap): Bitmap {
-        if (android.os.Build.VERSION.SDK_INT < 26 || bitmap.config == Bitmap.Config.HARDWARE) return bitmap
+        if (android.os.Build.VERSION.SDK_INT < 26 || bitmap.isHardwareBitmap()) return bitmap
         return runCatching { bitmap.copy(Bitmap.Config.HARDWARE, false) }.getOrNull() ?: bitmap
     }
 

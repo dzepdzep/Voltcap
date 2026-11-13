@@ -584,6 +584,9 @@ private fun HubCoverFlow(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifi
         for (v in (vf - 4)..(vf + 4)) {
             val idx = if (loop) v.mod(n) else v
             if (idx < 0 || idx >= n) continue
+            // (Batch 524, owner: "three games should look like three games": going round with fewer games than the fan
+            // holds, each game once - drawnOnce - not the same box on both sides.)
+            if (loop && !drawnOnce(v - vf, n)) continue
             val gg = c.games[idx]
             key("${keys[idx]}#${if (loop) Math.floorDiv(v, n) else 0}") {
                 val dist = abs(v - vf)
@@ -672,7 +675,8 @@ private fun HubSystems(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifier
             val tileH = tileW * 0.8f
             val gap = tileW * 0.86f
             for (d in -3..3) {
-                if (sys.size < 7 && abs(d) > sys.size / 2) continue
+                // (Batch 524: each console once - an even count put the same console at both ends, e.g. 4 as 5 places.)
+                if (sys.size < 7 && (d < -((sys.size - 1) / 2) || d > sys.size / 2)) continue
                 val i = (f + d).mod(sys.size)
                 val (_, st) = sys[i]
                 val p = st.platform!!

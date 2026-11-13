@@ -314,7 +314,7 @@ internal object FlatArt {
      */
     fun flat(b: android.graphics.Bitmap): Boolean = runCatching {
         if (b.width < 8 || b.height < 8) return false
-        val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+        val soft = if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
         val small = android.graphics.Bitmap.createScaledBitmap(soft, FLAT_GRID, FLAT_GRID, true)
         val px = IntArray(FLAT_GRID * FLAT_GRID)
         small.getPixels(px, 0, FLAT_GRID, 0, 0, FLAT_GRID, FLAT_GRID)

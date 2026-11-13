@@ -92,6 +92,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.shelf.launcher.ui.theme.ShelfTheme
+import androidx.compose.ui.draw.drawWithContent
 
 /**
  * Root of the launcher. Sets up interface sounds for everything below it —
@@ -470,7 +471,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
 
     val visibleGames = state.visibleGames
     // (Update 258: what an empty shelf says — StyleHomes.kt EmptyShelf.)
-    val emptyLine = EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
+    // (Sprint 528: nothing is said about an empty shelf until the saved library has been read - see libraryLoaded)
+    val emptyLine = if (!state.libraryLoaded && state.searchQuery.isBlank()) "" else
+        EmptyShelf.textFor(state.searchQuery, state.games.none { it.sourceType != com.shelf.launcher.data.SourceType.APP })
     SideEffect { if (EmptyShelf.text != emptyLine) EmptyShelf.text = emptyLine }
     // 0.6.17: the Metacritic chip on the wide / row cards reads the details from here (GameCard).
     SideEffect { if (MetacriticCards.metadata !== state.metadata) MetacriticCards.metadata = state.metadata }
@@ -1112,6 +1115,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
     // (Update 503: the fixture library's late-arriving art + achievements, QA app only — QaArtFixture.kt.)
     QaArtFixture.spec.value?.let { d -> LaunchedEffect(d, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaArtFixture() } }
+    QaArtFixture.scans.value?.let { on -> LaunchedEffect(on, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaScanFixture(on) } }
     // (0.6.15: the Sort window for a test run.)
     if (TestHooks.sort.value) LaunchedEffect(Unit) { closeAllDialogs(); showSortDialog = true; TestHooks.sort.value = false }
     // (Update 330, phase 4: the game window of the game you're on, for the window review — as A opens it, but never the game.)
@@ -1541,6 +1545,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         categoryScreenOpen = true
         sounds?.play(UiSound.OPEN)
     }
+    // (Sprint 527 QA: the category-look audit opens / closes the category screen - voltcap_test_catscreen.)
+    val catReq = TestHooks.catScreen.value
+    LaunchedEffect(catReq) { if (catReq.first > 0) { if (catReq.second) openCategoryScreen() else categoryScreenOpen = false } }
     // Shows a category (from the category screen, or the second screen's Wall).
     fun applyCategory(tile: CategoryTile) {
         when {
@@ -2767,7 +2774,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // place saved there floated at that fixed spot, and once the tiles moved (Middle) they covered them.)
         if (moved && droppedNow && atTiles && TileRowSpan.bottom > TileRowSpan.top) {
             val r = PartRects.at[HomeWidgets.SHORTCUTS]
-            if (r != null && r.top < TileRowSpan.bottom + 120f && r.bottom > TileRowSpan.top) HomeWidgets.reset(HomeWidgets.SHORTCUTS)
+            // (Sprint 527: dropped anywhere along Tile home's rows - not only on the tiles - they go back by the row, at the
+            // insertion line shown while dragging: their place in the row order.)
+            val dd = android.content.res.Resources.getSystem().displayMetrics.density
+            if (r != null && (TileRowEdit.nearRows(r.top * dd, r.bottom * dd, 120f * dd) || (r.top < TileRowSpan.bottom + 120f && r.bottom > TileRowSpan.top))) {
+                HomeWidgets.reset(HomeWidgets.SHORTCUTS)
+                TileRowEdit.insert(TileRows.BUTTONS, r.center.y * dd)
+            }
         }
         if (moved && shortcutsMovable && a.shortcutSpot != com.shelf.launcher.data.ShortcutSpot.FREE && !atTiles) {
             viewModel.setAppearance(a.copy(shortcutSpot = com.shelf.launcher.data.ShortcutSpot.FREE, tileShortcuts = true))
@@ -3430,7 +3443,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             kotlinx.coroutines.delay(1600)
             videoReadyFor = game.stableKey
         }
-        val videoUrl = focusedGame?.stableKey?.let { key -> state.videoUrls[key]?.takeIf { videoReadyFor == key } }
+        val videoUrl = TestHooks.video.value?.takeIf { focusedGame != null } ?: focusedGame?.stableKey?.let { key -> state.videoUrls[key]?.takeIf { videoReadyFor == key } }
         // The Gaming room plays the clip on its monitor instead of across the whole screen.
         val roomClip = backgroundStyle == com.shelf.launcher.data.BackgroundStyle.ANIMATED &&
             (pickedScene?.motif ?: state.appTheme.motif) == com.shelf.launcher.ui.theme.ThemeMotif.GAMING_ROOM &&
@@ -3603,7 +3616,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             MovableWidget(
                 HomeWidgets.SHORTCUTS,
                 defaultAlign = if (state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM) Alignment.TopCenter else Alignment.BottomCenter,
-                defaultPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                defaultPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                defaultCentre = if (tileLayout && HomeEditState.active) TileRowEdit.buttonsCentre else null
             ) {
                 HomeShortcutBar(
                     tileShortcuts, tileBarFocus ?: HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.SHORTCUTS },
@@ -3749,6 +3763,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 pos == com.shelf.launcher.data.MusicPlayerPosition.BOTTOM_RIGHT
             val right = pos == com.shelf.launcher.data.MusicPlayerPosition.TOP_RIGHT ||
                 pos == com.shelf.launcher.data.MusicPlayerPosition.BOTTOM_RIGHT
+            // (Sprint 528, Flip 2 t527o: in Edit Home the stand-in sat 52 dp down on the left although Home keeps this player in
+            // the status bar - a row moved to the top ran under it. It now stands in the status bar's band, compact, as on Home.)
+            val statusHolds = pos == com.shelf.launcher.data.MusicPlayerPosition.TOP_LEFT && state.appearance.statusOn &&
+                HomeWidgets.position(HomeWidgets.MUSIC) == null
+            val musicInStatus = statusHolds && playerElsewhere == null
+            // (…and where Home does show it in a top corner, Tile home's rows keep clear of it - TileRowEdit.musicBottomPx.)
+            val musicTopCorner = !bottom && !statusHolds && HomeWidgets.position(HomeWidgets.MUSIC) == null && playerElsewhere != null
             // Movable in Edit Home; until moved it sits in the corner picked in Settings.
             MovableWidget(
                 HomeWidgets.MUSIC,
@@ -3761,11 +3782,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // Clear of the status bar at the top and the legend at the bottom.
                 defaultPadding = PaddingValues(
                     start = 14.dp, end = 14.dp,
-                    top = if (bottom) 0.dp else 52.dp,
+                    top = if (bottom) 0.dp else if (musicInStatus) 6.dp else 52.dp,
                     bottom = if (bottom) (if (state.appearance.legendOn) 36.dp else 10.dp) else 0.dp
-                )
+                ),
+                // (Edit Home places an unmoved part by fractions of the safe zone: the status-bar stand-in at its very top -
+                // KONKR k528 m_buttons_top: at 8 % down it still met the round buttons moved to the top.)
+                defaultFrac = if (musicInStatus) 0f to 0f else null
             ) {
-                if (playerElsewhere == null) MusicPlayerPlaceholder() else MiniMusicPlayer(
+                androidx.compose.runtime.DisposableEffect(musicTopCorner) { onDispose { TileRowEdit.musicBottomPx = 0f } }
+                Box(Modifier.onGloballyPositioned { c ->
+                    val b = if (musicTopCorner) c.boundsInRoot().bottom else 0f
+                    if (TileRowEdit.musicBottomPx != b) TileRowEdit.musicBottomPx = b
+                }) {
+                if (playerElsewhere == null) MusicPlayerPlaceholder(compact = musicInStatus) else MiniMusicPlayer(
                     playerElsewhere,
                     onPlayPause = { viewModel.mediaPlayPause() },
                     onNext = { viewModel.mediaNext() },
@@ -3775,6 +3804,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     focusedSlot = miniFocus ?: HomeReach.index.takeIf { HomeReach.zone == HomeReach.Zone.MUSIC },
                     onSeek = { viewModel.mediaSeekTo(it) }
                 )
+                }
             }
         }
 
@@ -4280,14 +4310,29 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             // the same room. Only "by the tiles" buttons (not "Anywhere", not taken off with ✕); other layouts unchanged.)
             val tileBarReserved = state.appearance.tileShortcuts && state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW &&
                 shortcutsFloating && tileShortcuts.isNotEmpty() && !HomeWidgets.hidden(HomeWidgets.SHORTCUTS)
+            // Sprint 527: Tile home's rows are one ordered stack (TileRows; Features.tileRowOrder, empty = the order your settings
+            // give). The buttons count as "under the tiles" (centred with them in the middle) only where the order puts them.
+            val tileOrderDefault = TileRows.defaultOrder(dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW)
+            val tileOrder = TileRows.resolve(com.shelf.launcher.data.Features.tileRowOrder.state.value, tileOrderDefault)
+            // (Sprint 527, Flip 2: the buttons moved above the tiles in the middle went up under the clock - a moved order keeps
+            // its first row clear of the status bar, like a moved tiles row; the order your settings give is placed as before.)
+            val tileOrderMoved = tileOrder != tileOrderDefault
             val buttonsUnder0 = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && state.appearance.tileShortcuts &&
-                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && (!shortcutsFloating || tileBarReserved) && tileShortcuts.isNotEmpty()
+                state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && (!shortcutsFloating || tileBarReserved) && tileShortcuts.isNotEmpty() &&
+                tileOrder.indexOf(TileRows.BUTTONS) > tileOrder.indexOf(TileRows.TILES)
             // Update 480 (D257): in the middle with no round buttons under the tiles, the room under them was left empty (~45 %
             // of the screen): the tiles grow a little (LocalTileRoom) and the focused game's facts sit under them, centred
             // with the tiles as one group (as the buttons are).
             val tileInfoUnder = dockPosition == com.shelf.launcher.data.DockPosition.MIDDLE && !buttonsUnder0 && visibleGames.isNotEmpty() &&
                 com.shelf.launcher.data.Features.tileInfoStrip.state.value
             val buttonsUnder = buttonsUnder0 || tileInfoUnder
+            // (Sprint 527: the round buttons dragged along the rows in Edit Home: the insertion line where they would go.)
+            val shortcutsDragRect = if (HomeEditState.active && HomeNest.dragging == HomeWidgets.SHORTCUTS) PartRects.at[HomeWidgets.SHORTCUTS] else null
+            val tileDropLine = shortcutsDragRect?.let { r ->
+                val dd = androidx.compose.ui.platform.LocalDensity.current.density
+                if (TileRowEdit.nearRows(r.top * dd, r.bottom * dd, 120f * dd)) TileRowEdit.lineFor(TileRows.BUTTONS, r.center.y * dd) else null
+            } ?: TileRowEdit.rowDropLine.takeIf { HomeEditState.active && TileRowEdit.dragging != null }
+            val tileDropAccent = ShelfTheme.accent
             Column(
                 Modifier
                     .align(
@@ -4320,7 +4365,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                             val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }
                             val mid = if (buttonsUnder && top != androidx.compose.ui.layout.AlignmentLine.Unspecified)
                                 (top + (p.height - bottomPadPx)) / 2f else tilesMid
-                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceIn(0, (h - p.height).coerceAtLeast(0))
+                            // (Sprint 527, KONKR 960 x 640 at x1.3: the centred group's first row - the "All" pill - ran under the
+                            // Switch-style profile pictures with the order your settings give too; the pictures' measured bottom
+                            // is a floor for every order now - only where it would collide does anything move.)
+                            val badgeFloor = if (TileSwitch.profiles && TileRowEdit.badgeBottomPx > 0f) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0
+                            val musicFloor = if (TileRowEdit.musicBottomPx > 0f) (TileRowEdit.musicBottomPx + 8.dp.toPx()).toInt() else 0
+                            val yFloor = maxOf(if (tileOrderMoved) TileRows.TOP_CLEAR_DP.dp.roundToPx() else 0, badgeFloor, musicFloor)
+                            val y0 = (h / 2f - mid - tileScreenShift.floatValue).toInt().coerceAtLeast(yFloor).coerceIn(0, (h - p.height).coerceAtLeast(0))
                             // (Batch 521: a row moved up / down in Edit Home is still kept whole on the screen - a big move from
                             // before this version must not put the tiles past the edge now that Middle no longer undoes it.)
                             val y = if (rowShiftPx == 0f || top == androidx.compose.ui.layout.AlignmentLine.Unspecified ||
@@ -4342,15 +4393,26 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
                         // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
                         top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
-                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp) else 0.dp,
+                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty())
+                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)
+                            // (Sprint 528: and below a music player Home shows in a top corner)
+                            else maxOf(10.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.musicBottomPx.toDp() } + 8.dp)) else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
+                    .then(androidx.compose.ui.Modifier.drawWithContent {
+                        drawContent()
+                        val ly = tileDropLine ?: return@drawWithContent
+                        val y = ly - rowTopPx
+                        drawLine(tileDropAccent, androidx.compose.ui.geometry.Offset(size.width * 0.2f, y), androidx.compose.ui.geometry.Offset(size.width * 0.8f, y), 2.5.dp.toPx(),
+                            cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                        drawCircle(tileDropAccent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(size.width * 0.2f, y))
+                        drawCircle(tileDropAccent, 4.dp.toPx(), androidx.compose.ui.geometry.Offset(size.width * 0.8f, y))
+                    })
             ) {
                 // Category names on the same side as the classic row puts them (Appearance › Categories).
                 // Round buttons: right above the tiles when they sit at the bottom, otherwise right under them.
                 // Or in a corner instead (shortcutSpot).
-                val shortcutsAbove = dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM
                 val shortcutsByRow = state.appearance.tileShortcuts && state.appearance.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW
                 // The category names filter the row, so they hug the tiles too — on the side away from the
                 // round buttons (never pushed out past them). Without buttons by the row: the usual side setting.
@@ -4358,6 +4420,19 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 // buttons sit above the tiles). "Under the row" puts them right under the tiles.
                 val tileCategoryBelow = state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW
                 val showCats = state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF
+                // Sprint 527: the rows shown now, in their order (TileRows). Moving one in Edit Home changes the order: the others
+                // move to make room (animated only while editing - a category change never moves the shell, rule 14).
+                val buttonsRowShown = shortcutsByRow && (!shortcutsFloating || tileBarReserved)
+                val infoGame = if (tileInfoUnder) visibleGames.getOrNull(state.focusedIndex.coerceIn(0, visibleGames.lastIndex)) else null
+                val shownRows = buildSet {
+                    if (buttonsRowShown) add(TileRows.BUTTONS)
+                    if (showCats) add(TileRows.CATS)
+                    add(TileRows.TILES)
+                    if (infoGame != null) add(TileRows.INFO)
+                }
+                TileRowEdit.update(shownRows, TileRows.defaultOrder(dockPosition == com.shelf.launcher.data.DockPosition.BOTTOM, tileCategoryBelow))
+                val rowsShown = tileOrder.filter { it in shownRows }
+                val buttonsAboveTiles = rowsShown.indexOf(TileRows.BUTTONS).let { it >= 0 && it < rowsShown.indexOf(TileRows.TILES) }
                 state.statusMessage?.let { message ->
                     Box(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp)) {
                         Text(
@@ -4371,91 +4446,92 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         )
                     }
                 }
-                if (shortcutsAbove && shortcutsByRow && !shortcutsFloating) Box(Modifier.rowRevealFade()) { // (523y: fades under a row-style window)
-                    HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight)
-                } else if (shortcutsAbove && tileBarReserved) {
-                    ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = true, highlight = state.appearance.shortcutHighlight) }
-                }
-                // A one-line name takes one line's room: the second line's room goes up here (above the
-                // category), so the category sits right on the name and the tiles never move.
-                if (dockPosition != com.shelf.launcher.data.DockPosition.TOP && tileNameAnchor.nameLines == 1) {
-                    Spacer(Modifier.height(22.dp * LocalTileScale.current))
-                }
-                if (!tileCategoryBelow && showCats) {
-                    // Smaller here: on this layout the bar sits near the music player's lyrics.
-                    androidx.compose.runtime.CompositionLocalProvider(LocalCompactPills provides true) {
-                        CategoriesBar()
-                    }
-                    Spacer(Modifier.height(2.dp))
-                }
-                if (visibleGames.isEmpty()) {
-                    Text(
-                        EmptyShelf.text,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
-                    )
-                } else {
-                    // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
-                    // Game row (update 202) — Tile home was out of the list when that came.)
-                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")
-                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid()
-                            // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
-                            val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
-                            TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
-                    androidx.compose.runtime.CompositionLocalProvider(LocalTileRoom provides (if (tileInfoUnder) 1.14f else 1f)) {
-                    TileHomeRow(
-                        lastPlayedAt = state.lastPlayedAt,
-                        onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
-                        onTilesMid = { y -> tileMidRoot[0] = y; measureTileMid() },
-                        games = visibleGames,
-                        art = displayArt,
-                        artOverrides = state.artOverrides,
-                        focusedIndex = state.focusedIndex,
-                        raProgress = state.raProgress,
-                        favorites = state.favorites,
-                        cardArtType = state.appearance.cardArtFor(),
-                        cardSize = state.appearance.cardSize,
-                        dimmed = tileBarFocus != null,
-                        onFocus = { tileBarFocus = null; viewModel.setFocus(it) },
-                        onOpen = { tileBarFocus = null; openGame() },
-                        physicalMedia = state.physicalMedia,
-                        screenshots = state.screenshots,
-                        awards = awardsByKey,
-                        // At the top the name goes under the tiles (like the classic row), so the tiles touch the top.
-                        nameBelow = dockPosition == com.shelf.launcher.data.DockPosition.TOP,
-                        focusAnchor = state.appearance.tileFocus,
-                        nameAnchor = tileNameAnchor,
-                        onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
-                        onNeedScreenshots = { viewModel.loadMedia(it) },
-                        // Update 156: going round at the end is one step (TileHome.kt).
-                        loopTick = state.loopTick, loopStep = state.loopStep
-                    )
-                    }
-                    }
-                    if (tileInfoUnder) {
-                        val g = visibleGames.getOrNull(state.focusedIndex.coerceIn(0, visibleGames.lastIndex))
-                        if (g != null) {
-                            val p = state.raProgress[g.stableKey]
-                            val total = p?.NumPossibleAchievements ?: 0
-                            Spacer(Modifier.height(18.dp * LocalTileScale.current))
-                            TileInfoStrip(
-                                g, LocalTitleOptions.current.console(g.platform), state.playtime[g.stableKey], state.lastPlayedAt[g.stableKey],
-                                if (total > 0) (p?.NumAchieved ?: 0) to total else null, tileNameAnchor
-                            )
+                val tileScaleNow = LocalTileScale.current
+                rowsShown.forEachIndexed { idx, rowId ->
+                    androidx.compose.runtime.key(rowId) {
+                        val prev = rowsShown.getOrNull(idx - 1)
+                        val gap = TileRows.gapBefore(prev, rowId, dockPosition == com.shelf.launcher.data.DockPosition.TOP, tileScaleNow)
+                        if (gap > 0f) Spacer(Modifier.height(gap.dp))
+                        // A one-line name takes one line's room: the second line's room goes up here (above the
+                        // category), so the category sits right on the name and the tiles never move.
+                        val nameRoomHere = dockPosition != com.shelf.launcher.data.DockPosition.TOP && tileNameAnchor.nameLines == 1 &&
+                            ((rowId == TileRows.CATS && rowsShown.getOrNull(idx + 1) == TileRows.TILES) || (rowId == TileRows.TILES && prev != TileRows.CATS))
+                        if (nameRoomHere) Spacer(Modifier.height(22.dp * tileScaleNow))
+                        Box(Modifier.fillMaxWidth().tileRowPlacement(rowId)) {
+                            when (rowId) {
+                                // (523y: the buttons fade under a row-style window)
+                                TileRows.BUTTONS -> if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) } else Box(
+                                    // (Sprint 527: the floating buttons sit on this room in Edit Home - the preview is the home.)
+                                    Modifier.onGloballyPositioned { c -> c.boundsInRoot().center.let { if (TileRowEdit.buttonsCentre != it) TileRowEdit.buttonsCentre = it } }
+                                ) {
+                                    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { TileRowEdit.buttonsCentre = null } }
+                                    ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, labelOnTop = buttonsAboveTiles, highlight = state.appearance.shortcutHighlight) }
+                                }
+                                TileRows.CATS -> Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, TileRowEdit.CATS_PART), "Categories")) {
+                                    // Smaller here: on this layout the bar sits near the music player's lyrics.
+                                    androidx.compose.runtime.CompositionLocalProvider(LocalCompactPills provides true) {
+                                        CategoriesBar()
+                                    }
+                                }
+                                TileRows.TILES -> if (visibleGames.isEmpty()) {
+                                    Text(
+                                        EmptyShelf.text,
+                                        color = Color.White.copy(alpha = 0.7f),
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 24.dp)
+                                    )
+                                } else {
+                                    // (Update 235, #15/#16: the tiles are moved / resized / taken off in Edit Home like the Voltcap row's
+                                    // Game row (update 202) — Tile home was out of the list when that came.)
+                                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"), "Game row")
+                                        .onGloballyPositioned { tileCoords[1] = it; measureTileMid()
+                                            // (QA pass 4, D39: where the tiles are, in dp from the top, for the round buttons' drop check.)
+                                            val y = it.positionInRoot().y; val d = android.content.res.Resources.getSystem().displayMetrics.density
+                                            TileRowSpan.top = y / d; TileRowSpan.bottom = (y + it.size.height) / d }) {
+                                    androidx.compose.runtime.CompositionLocalProvider(LocalTileRoom provides (if (tileInfoUnder) 1.14f else 1f)) {
+                                        TileHomeRow(
+                                            lastPlayedAt = state.lastPlayedAt,
+                                            onTilesTop = { y -> if (kotlin.math.abs(y - artTopPx) > 1f) artTopPx = y },
+                                            onTilesMid = { y -> tileMidRoot[0] = y; measureTileMid() },
+                                            games = visibleGames,
+                                            art = displayArt,
+                                            artOverrides = state.artOverrides,
+                                            focusedIndex = state.focusedIndex,
+                                            raProgress = state.raProgress,
+                                            favorites = state.favorites,
+                                            cardArtType = state.appearance.cardArtFor(),
+                                            cardSize = state.appearance.cardSize,
+                                            dimmed = tileBarFocus != null,
+                                            onFocus = { tileBarFocus = null; viewModel.setFocus(it) },
+                                            onOpen = { tileBarFocus = null; openGame() },
+                                            physicalMedia = state.physicalMedia,
+                                            screenshots = state.screenshots,
+                                            awards = awardsByKey,
+                                            // At the top the name goes under the tiles (like the classic row), so the tiles touch the top.
+                                            nameBelow = dockPosition == com.shelf.launcher.data.DockPosition.TOP,
+                                            focusAnchor = state.appearance.tileFocus,
+                                            nameAnchor = tileNameAnchor,
+                                            onNeedPhysical = { viewModel.loadPhysicalMedia(it) },
+                                            onNeedScreenshots = { viewModel.loadMedia(it) },
+                                            // Update 156: going round at the end is one step (TileHome.kt).
+                                            loopTick = state.loopTick, loopStep = state.loopStep
+                                        )
+                                    }
+                                    }
+                                }
+                                TileRows.INFO -> infoGame?.let { g ->
+                                    Box(Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, TileRowEdit.INFO_PART), "Game facts")) {
+                                        val p = state.raProgress[g.stableKey]
+                                        val total = p?.NumPossibleAchievements ?: 0
+                                        TileInfoStrip(
+                                            g, LocalTitleOptions.current.console(g.platform), state.playtime[g.stableKey], state.lastPlayedAt[g.stableKey],
+                                            if (total > 0) (p?.NumAchieved ?: 0) to total else null, tileNameAnchor
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
-                }
-                if (tileCategoryBelow && showCats) {
-                    Spacer(Modifier.height(4.dp))
-                    androidx.compose.runtime.CompositionLocalProvider(LocalCompactPills provides true) {
-                        CategoriesBar()
-                    }
-                }
-                if (!shortcutsAbove && shortcutsByRow && (!shortcutsFloating || tileBarReserved)) {
-                    Spacer(Modifier.height(if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) 2.dp else 8.dp))
-                    if (!shortcutsFloating) Box(Modifier.rowRevealFade()) { HomeShortcutBar(tileShortcuts, tileBarFocus, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
-                    else ReservedRoom { HomeShortcutBar(tileShortcuts, null, themed = state.appearance.tileShortcutTheme, highlight = state.appearance.shortcutHighlight) }
                 }
             }
         } else {
@@ -4907,8 +4983,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             }
         }
         // Update 358: Tile home › Switch style › Profiles top-left (a tap opens Who's playing).
-        if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active) {
-            Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)) {
+        // (Sprint 527, owner: on the category screen it sat on the screen's title - that screen has its own header.)
+        if (tileLayout && TileSwitch.profiles && !screensaverOn && !HomeEditState.active && !viewModel.categoryScreenOpenState.value) {
+            Box(Modifier.align(Alignment.TopStart).padding(start = 22.dp, top = 12.dp).zIndex(5f)
+                // (Sprint 527: its real bottom, so the rows keep clear of it at any text size - it sat on the first pill at x1.3.)
+                .onGloballyPositioned { c -> val b = c.boundsInRoot().bottom; if (TileRowEdit.badgeBottomPx != b) TileRowEdit.badgeBottomPx = b }) {
                 TileSwitchProfiles(state.raAccounts, com.shelf.launcher.data.SteamAchievements.avatarUrl.value)
             }
         }
@@ -6898,7 +6977,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 if (tileLayout && !aDialogIsOpen && !showDetails && quickJump == null && miniFocus == null) {
                     val code = event.nativeKeyEvent.keyCode
                     // The buttons sit above the tiles when the tiles are at the bottom: ▲ goes to them there.
-                    val buttonsAbove = state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM
+                    // (Sprint 527: where the order puts them - above the tiles: ▲ goes to them, under: ▼.)
+                    val buttonsAbove = TileRows.buttonsAbove(
+                        com.shelf.launcher.data.Features.tileRowOrder.value,
+                        state.appearance.dockHere == com.shelf.launcher.data.DockPosition.BOTTOM, state.appearance.categorySide == com.shelf.launcher.data.RowSide.BELOW
+                    )
                     val tileBarEnterKey = if (buttonsAbove) Key.DirectionUp else Key.DirectionDown
                     val tileBarLeaveKey = if (buttonsAbove) Key.DirectionDown else Key.DirectionUp
                     if (event.type == KeyEventType.KeyUp && dockKeysDown.remove(code)) return@onKeyEvent true

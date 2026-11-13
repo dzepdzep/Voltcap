@@ -131,7 +131,7 @@ object MusicTheme {
     internal fun softCopy(art: Bitmap): Bitmap? = runCatching { soften(art) }.getOrNull()
 
     private fun soften(art: Bitmap): Bitmap {
-        val src = if (art.config == Bitmap.Config.HARDWARE) art.copy(Bitmap.Config.ARGB_8888, false) else art
+        val src = if (art.isHardwareBitmap()) art.copy(Bitmap.Config.ARGB_8888, false) else art
         val side = min(src.width, src.height)
         val square = Bitmap.createBitmap(src, (src.width - side) / 2, (src.height - side) / 2, side, side)
         val n = 64
@@ -153,7 +153,7 @@ object MusicTheme {
      * ripple, sleeve), 320 px on small-memory devices.
      */
     private fun sharpen(art: Bitmap): Bitmap? = runCatching {
-        val src = if (art.config == Bitmap.Config.HARDWARE) art.copy(Bitmap.Config.ARGB_8888, false) else art
+        val src = if (art.isHardwareBitmap()) art.copy(Bitmap.Config.ARGB_8888, false) else art
         val side = min(src.width, src.height)
         val square = Bitmap.createBitmap(src, (src.width - side) / 2, (src.height - side) / 2, side, side)
         val n = if (smallMemory) 320 else 512

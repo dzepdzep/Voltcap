@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
@@ -1011,20 +1012,23 @@ internal fun GameWindow(
     }) else null
     // Update 421: Classic means the classic details window, whichever path set the game (second screen, reopen, a
     // layout's own button): never this layout's scene. An explicit Inspect (MediaInspect.force) still opens here.
-    if (PopupStyle.opensClassic(layout.name) && !askedInspect && MediaInspect.force != g.stableKey) {
+    // (Popup infrastructure, 12 Nov: which presentation opens is decided in one place, winPresentation (WinPageFlow.kt).)
+    val presentation = winPresentation(layout, askedInspect, MediaInspect.force == g.stableKey)
+    if (presentation == WinPresentation.CLASSIC) {
         val toDetails by rememberUpdatedState(onFullDetails)
         androidx.compose.runtime.LaunchedEffect(g.stableKey) { toDetails() }
         return
     }
     // (Update 250, #119: the shared move — Game Glance's open, GlanceWindow.kt.)
-    if (rowMotion == Features.WinMotion.SHARED && !askedInspect) {
+    if (presentation == WinPresentation.GLANCE) {
         GlanceWindow(g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)
         return
     }
-    if (rowMotion != Features.WinMotion.NONE && !askedInspect &&
+    if (presentation == WinPresentation.ROW_MOTION &&
         RowMotionWindow(rowMotion, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onInspect = inspectOther)) return
     // Update 146: the banner page (Settings › Game window › Style), the same for every layout.
-    if (PopupStyle.banner(layout.name) && !askedInspect) {
+    // (A row motion with no row to open falls back to the banner page where the banner is the default, else to the layout's own.)
+    if (presentation == WinPresentation.BANNER || (presentation == WinPresentation.ROW_MOTION && PopupStyle.banner(layout.name))) {
         BannerGameWindow(
             layout, g, state, art, onClose, onPlay, onFullDetails, onNeedMedia, onOptions, onAchievements, onSync, options, onLoadComments,
             perf = perfState, sync = syncView, hasFan = hasFan, onPerfAdvanced = onPerfAdvanced, onSyncSetUp = onSyncSetUp,
@@ -1183,7 +1187,7 @@ internal fun GameWindow(
     androidx.compose.ui.window.Dialog(
         onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
-    ) {
+    ) { WithTestScale {
         ImmersiveDialogWindow()
         // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
         androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
@@ -1249,6 +1253,9 @@ internal fun GameWindow(
         LaunchedEffect(askedInspect) { if (askedInspect) { kotlinx.coroutines.delay(80); runCatching { playFocus.requestFocus() } } }
         // Update 125: the picture, the details, the options and the achievements are pages of the same window.
         var page by remember { mutableStateOf(WinPage.MAIN) }
+        // (Popup motion work: the control that opened the current page - B comes back onto it. Shared with SceneBody.)
+        val pageOpener = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
+        val pageOpeners = remember(pageOpener) { PageOpeners(pageOpener) }
         val details = page != WinPage.MAIN
         val listFocus = remember { FocusRequester() }
         androidx.activity.compose.BackHandler(enabled = details) { page = WinPage.MAIN }
@@ -1281,15 +1288,34 @@ internal fun GameWindow(
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
         var turned by remember { mutableStateOf(false) }
+        // (Popup motion work: one rule, WinPageFlow.pageFocusTarget. Back on the first page the opener is asked first - it used to
+        // be Play at 60 ms and the opener at 120 ms, so Play was lit for a moment and a quick A after B started the game. A layout
+        // window that draws its own pages keeps the leaving page inert and without requesters, so the new page's focus is asked
+        // at once - no ignored first press while the pages move.)
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
-            kotlinx.coroutines.delay(60)
-            if (page == WinPage.OPTIONS || page == WinPage.TROPHIES || page == WinPage.PERF) {
-                if (runCatching { listFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
-            } else if (page == WinPage.MAIN && fromPerf) {
-                fromPerf = false
-                if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
-            } else runCatching { playFocus.requestFocus() }
+            val opener = pageOpener[0]
+            when (pageFocusTarget(page, fromPerf, opener != null)) {
+                PageFocus.LIST -> {
+                    // (A native page's leaving copy holds no requester and is inert: no wait for it - Phase 2, WinFocusRoboTest: the
+                    // 60 ms left nothing lit for 4 frames and an L1 / R1 in them was lost. The shared page still waits for its own.)
+                    if (!nativePages(scene)) kotlinx.coroutines.delay(60)
+                    if (!focusWhenAttached(listFocus)) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.PERF -> {
+                    fromPerf = false
+                    kotlinx.coroutines.delay(60)
+                    if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.OPENER -> {
+                    pageOpener[0] = null
+                    if (!focusWhenAttached(opener!!)) runCatching { playFocus.requestFocus() }
+                }
+                PageFocus.PLAY -> {
+                    if (!nativePages(scene)) kotlinx.coroutines.delay(60) // (as LIST: no wait on a native page)
+                    if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
+                }
+            }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
         // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)
@@ -1308,14 +1334,25 @@ internal fun GameWindow(
         if (discFlight || cardFlight || caseFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
-                // (Update 507: the flying case IS the home's case — its copy at home is gone from the first frame and back only once
-                // the case has landed; a cross-fade showed two cases on the way.)
-                androidx.compose.runtime.snapshotFlow { grow.value }.collect { MediaInspect.amount.floatValue = if (caseFlight) caseHomeHidden(it) else it.coerceIn(0f, 1f) }
+                // (Update 507: the flying case IS the home's case — its copy at home is gone and back only once the case has
+                // landed; a cross-fade showed two cases on the way.)
+                // (Shelf flash work, 12 Nov: gone from the frame the flying copy is drawn - placed, its scan in - not from the
+                // reveal's first frame: CaseFlightGate. At most MAX_WAIT_MS, then it flies with the shelf's plain case.)
+                if (caseFlight) {
+                    CaseFlightGate.hold(winToken)
+                    launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken) }
+                }
+                androidx.compose.runtime.snapshotFlow { grow.value to CaseFlightGate.ready.value }.collect { (gv, ready) ->
+                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)
+                }
             }
-            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
+            DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.release(winToken); if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
         }
         LaunchedEffect(target != null) {
             if (target == null) return@LaunchedEffect
+            // (Shelf flash work: a case flight opens once the flying case is drawn - CaseFlightGate, at most its MAX_WAIT_MS -
+            // so its first frame is the case where it was, not a jump along its way.)
+            if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }
             if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else caseFlightMs(sceneOpenMs(scene), caseFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
                 else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing))
         }
@@ -1379,7 +1416,7 @@ internal fun GameWindow(
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                     ) {
-                        TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside)
+                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
                     }
                     if (outside) Box(
                         Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
@@ -1390,7 +1427,7 @@ internal fun GameWindow(
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                             .padding(8.dp)
                     ) {
-                        TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp)
+                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
                     }
                 }
             }
@@ -1433,8 +1470,8 @@ internal fun GameWindow(
                         onPlaced = { r -> if (target == null) target = r },
                         onFocusIn = { focusInside = true }
                     ) { w, h ->
-                        if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { motion.closing }) { motion.lift.floatValue } }
-                        else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                        if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { motion.closing }) { motion.lift.floatValue } }
+                        else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, w, h, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                     }
                 } else Box(
                     Modifier
@@ -1480,9 +1517,9 @@ internal fun GameWindow(
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
                     if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, closing = { shrinking }) { grow.value } }
+                        androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { shrinking }) { grow.value } }
                     }
-                    else WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options)
+                    else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                 }
             }
           }
@@ -1493,11 +1530,16 @@ internal fun GameWindow(
         }
         }
     }
-    }
+    } }
 }
 
 /** Update 347: how long after the window opens Play starts accepting a press (see GameWindow). */
 internal const val PLAY_GUARD_MS = 450L
+
+/** The plain / TV windows' opener names (PageOpeners). */
+internal const val OPENER_DETAILS = "details"
+internal const val OPENER_OPTIONS = "options"
+internal const val OPENER_TROPHIES = "trophies"
 
 internal fun playAllowed(sinceOpenMs: Long): Boolean = sinceOpenMs >= PLAY_GUARD_MS
 
@@ -1612,10 +1654,12 @@ private fun winButtonItems(
     look: WinLook, page: WinPage, setPage: (WinPage) -> Unit, onClose: () -> Unit, onPlay: () -> Unit,
     onFullDetails: () -> Unit, extras: WinExtras,
     /** Update 213: the Performance button after Play (null: none here — no tuner, or a narrow row that has its icon). */
-    onPerf: (() -> Unit)? = null
+    onPerf: (() -> Unit)? = null,
+    /** Phase 2: Details registers as the page's opener (B comes back onto it). */
+    openers: PageOpeners? = null
 ): List<Triple<String, () -> Unit, Boolean>> {
     val rest: List<Pair<String, () -> Unit>> = when (page) {
-        WinPage.MAIN -> listOfNotNull(onPerf?.let { PERF_LABEL to it }, look.details to { setPage(WinPage.DETAILS) }, look.back to onClose)
+        WinPage.MAIN -> listOfNotNull(onPerf?.let { PERF_LABEL to it }, look.details to { openers?.opened(OPENER_DETAILS); setPage(WinPage.DETAILS) }, look.back to onClose)
         WinPage.DETAILS -> listOf("Full details" to onFullDetails, "Back" to { setPage(WinPage.MAIN) })
         WinPage.TROPHIES -> listOf("Full list" to extras.onFullAchievements, "Back" to { setPage(WinPage.MAIN) })
         WinPage.OPTIONS, WinPage.PERF -> listOf("Back" to { setPage(WinPage.MAIN) })
@@ -1722,9 +1766,13 @@ private fun WinInfo(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(5.dp))
+                    // (Shelf fitting work, physical-media audit 5a: "Achievements 141 /" - one line beside a fixed 70 dp bar, the
+                    // total was cut in a narrow window. The words take the room the bar leaves, a size step smaller, two lines.)
                     androidx.compose.material3.Text(
-                        (if (look.caps) "ACHIEVEMENTS" else "Achievements") + " $earned / $total", color = ink, fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold, maxLines = 1, fontFamily = family
+                        (if (look.caps) "ACHIEVEMENTS" else "Achievements") + " $earned\u00A0/\u00A0$total", color = ink, fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold, maxLines = 2, fontFamily = family,
+                        autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 12.sp),
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     Spacer(Modifier.width(8.dp))
                     Box(Modifier.width(70.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(ink.copy(alpha = 0.2f))) {
@@ -1746,14 +1794,14 @@ private fun WinInfo(
 
 /** A small round button in the window's style: the game's options, its achievements, its save sync (update 119). */
 @Composable
-private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Dp, onClick: () -> Unit) {
+private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, size: Dp, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
     val shape: Shape = when (look.btn) { Btn.SQUARE -> RoundedCornerShape(0.dp); Btn.LCD -> RoundedCornerShape(6.dp); else -> CircleShape }
     Box(
-        Modifier.size(size)
+        modifier.size(size)
             .graphicsLayer { val k = if (focused) 1.08f else 1f; scaleX = k; scaleY = k }
             .clip(shape)
             .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.White.copy(alpha = 0.1f)) else look.btnFill)
@@ -1769,8 +1817,12 @@ private fun WinIconButton(look: WinLook, icon: androidx.compose.ui.graphics.vect
 private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: WinSlot = WinSlot.INFO) {
     if (!extras.at(WinPart.ICONS, slot)) return
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, extras.onOptions)
-        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, extras.onAchievements)
+        // (Phase 2: they register as the page's opener - B comes back onto them, never onto Play.)
+        val openers = LocalPageOpeners.current
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Settings, "Game options", size, { openers?.opened(OPENER_OPTIONS); extras.onOptions() },
+            if (openers != null) Modifier.focusRequester(openers.requester(OPENER_OPTIONS)) else Modifier)
+        WinIconButton(look, androidx.compose.material.icons.Icons.Filled.EmojiEvents, "Achievements", size, { openers?.opened(OPENER_TROPHIES); extras.onAchievements() },
+            if (openers != null) Modifier.focusRequester(openers.requester(OPENER_TROPHIES)) else Modifier)
         WinIconButton(look, androidx.compose.material.icons.Icons.Filled.CloudSync, "Save sync", size, extras.onSync)
         // Update 202: the game's manual (downloaded the first time it's opened).
         extras.onManual?.let { WinIconButton(look, androidx.compose.material.icons.Icons.Filled.MenuBook, "Manual", size, it) }
@@ -1830,11 +1882,13 @@ private fun TvControls(
         }
         val status = LocalWinStatus.current
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras)
+            val openers = LocalPageOpeners.current
+            val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, openers = openers)
             ButtonRow(tvItems.map { it.first }) { tvItems.forEach { (l, f, isPlay) ->
                 WinButton(
                     look, if (look.caps) l.uppercase() else l,
-                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus) else Modifier),
+                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus)
+                        else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier),
                     wideButton = false, stretch = true, compact = true, onClick = f
                 )
             } }
@@ -1926,9 +1980,11 @@ private fun WindowBody(
         // Update 213: Performance as a button after Play — or, where the buttons share a narrow row, as a round icon
         // at the row's end (the window's own action strip).
         val perfHere = status?.perf != null
-        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, if (perfHere && !fill) status!!.onPerf else null)
+        val openers = LocalPageOpeners.current
+        val all = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, if (perfHere && !fill) status!!.onPerf else null, openers)
         fun btnMod(l: String, isPlay: Boolean): Modifier =
-            if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus) else Modifier
+            if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus)
+            else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier
         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
             ButtonRow(all.map { it.first }) { all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) } }
             // (Update 119: the game's options, achievements and save sync under them.)
@@ -1941,7 +1997,7 @@ private fun WindowBody(
           // they go to a row under them.)
           fun est(items: List<Triple<String, () -> Unit, Boolean>>) = items.sumOf { (l, _, _) -> l.length * 9 + 60 } + (items.size - 1) * 12
           val share = fill || maxWidth.value < est(all)
-          val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null) else all
+          val items = if (share && !fill) winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, null, openers) else all
           val iconsBelow = !share && !details && maxWidth.value < est(all) + (3 + (if (extras.onManual != null) 1 else 0) + (if (extras.onInspect != null) 1 else 0)) * 52
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -2195,6 +2251,7 @@ private fun SceneBody(
     scene: WinScene, look: WinLook, g: Game, state: LauncherUiState, cover: String?, wide: String?, backdrop: String?,
     page: WinPage, setPage: (WinPage) -> Unit, maxW: Dp, maxH: Dp, playFocus: FocusRequester, listFocus: FocusRequester,
     onClose: () -> Unit, onPlay: () -> Unit, onFullDetails: () -> Unit, extras: WinExtras, options: List<WinOption>,
+    pageOpener: Array<FocusRequester?>,
     closing: () -> Boolean = { false },
     reveal: () -> Float
 ) {
@@ -2209,16 +2266,9 @@ private fun SceneBody(
     val detailsF = remember { FocusRequester() }
     val optionsF = remember { FocusRequester() }
     val trophiesF = remember { FocusRequester() }
-    val returnTo = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
-    fun opener(f: FocusRequester, act: () -> Unit): () -> Unit = { returnTo[0] = f; act() }
-    LaunchedEffect(page) {
-        if (page != WinPage.MAIN) return@LaunchedEffect
-        val f = returnTo[0] ?: return@LaunchedEffect
-        returnTo[0] = null
-        // (After the window's own ask for Play, 60 ms after the page changes.)
-        kotlinx.coroutines.delay(120)
-        runCatching { f.requestFocus() }
-    }
+    // (Popup motion work: the opener is GameWindow's [pageOpener]; its page effect brings the D-pad back to it, with no Play
+    // in between. A page turned to from another page (L1 / R1) keeps the first page's opener.)
+    fun opener(f: FocusRequester, act: () -> Unit): () -> Unit = { if (page == WinPage.MAIN) pageOpener[0] = f; act() }
     // v0.6.67 (update 451): the windows that showed every action as a wall of chips keep Play, Details, Inspect and Back in
     // view and put the rest (Performance, Options, Achievements, Save sync, Manual, the save / performance lines) behind
     // More, opened in place. B closes More first; focus goes to the first revealed action, and back to More when it closes.
@@ -2302,12 +2352,39 @@ private fun SceneBody(
                 WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, m, extras.onLoadComments)
                 WinPage.PERF -> WindowPerformance(look, listFocus, m)
             }
+        },
+        // (Popup motion work: a native scene draws a page that is leaving with its own, unattached list focus.)
+        pageFor = { p, m, live ->
+            val lf = if (live) listFocus else remember { FocusRequester() }
+            when (p) {
+                WinPage.MAIN -> {}
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.OPTIONS -> WindowOptions(look, options, lf, m)
+                WinPage.TROPHIES -> WindowTrophies(look, g, state, lf, m, extras.onLoadComments)
+                WinPage.PERF -> WindowPerformance(look, lf, m)
+            }
+        },
+        pages = buildSet {
+            add(WinPage.MAIN); add(WinPage.DETAILS)
+            if (list.isNotEmpty() && LocalSceneLayout.current?.let { crossTrophiesOn(it) } != true) add(WinPage.TROPHIES)
+            if (options.isNotEmpty()) add(WinPage.OPTIONS)
+            if (perf) add(WinPage.PERF)
+        },
+        open = { p ->
+            when (p) {
+                WinPage.DETAILS -> opener(detailsF) { setPage(WinPage.DETAILS) }()
+                WinPage.TROPHIES -> opener(trophiesF, extras.onAchievements)()
+                WinPage.OPTIONS -> opener(optionsF, extras.onOptions)()
+                else -> setPage(p)
+            }
         }
     )
     // Update 426: Details / Options / Achievements / Performance were drawn inside the scene's own small picture or panel
     // (the Wii preview's well, a cartridge label, a card) — microscopic lists. They now open as a readable page of their
     // own in the window's colours, the scene's quick window coming back on B / Back.
-    if (page != WinPage.MAIN && scene != WinScene.CROSS_OPTIONS) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
+    // (Popup motion work: a layout that draws its own pages (WinPageFlow.NATIVE_PAGE_SCENES) keeps them - Storage's record
+    // turning its tabs - instead of the shared page; that swap was the "Storage → unrelated Details" regression.)
+    if (sharedPageFor(scene, page)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
     else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
@@ -2550,15 +2627,14 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                         opt.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk)
                         else -> look.btnInk
                     }
-                    androidx.compose.material3.Text(
+                    // (Phase 6, 12 Nov, rule 11 / static TRUNCATE: an option's long name ended in "…" (Night's Options page, the
+                    // ShelfTextRoboTest). Whole now: two lines, then a readable smaller size, then it slides.)
+                    WinFullText(
                         if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null
                     )
                     opt.sub?.let {
-                        androidx.compose.material3.Text(
-                            it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
-                        )
+                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1, fontFamily = if (look.mono) FontFamily.Monospace else null)
                     }
                 }
             }

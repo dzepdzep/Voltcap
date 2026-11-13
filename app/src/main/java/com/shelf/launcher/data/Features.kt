@@ -438,6 +438,7 @@ object Features {
     val modelFinishLast = EnumPref("model_finish_last", com.shelf.launcher.ui.ModelFinish.REAL, com.shelf.launcher.ui.ModelFinish.values())
     val modelAngle = EnumPref("model_angle", com.shelf.launcher.ui.ModelAngle.FACE_PICKED, com.shelf.launcher.ui.ModelAngle.values())
     /** Update 136: the game's name on a strip along the bottom of the 3D model's label (Settings › Game look › 3D models). */
+    /** DEPRECATED CANDIDATE (owner 12 Nov): no effect today (every live caller passes alwaysName); no control. Key kept for old backups / presets. */
     val modelName = BoolPref("model_name", false)
     // Update 158: off by default (the one you're on stands still, facing you); switched off once for existing installs too
     // ([migrate158]), and switching it back on sticks.
@@ -447,6 +448,7 @@ object Features {
      * faces you straight on (true) or stands turned like the others (PickedFacing.kt).
      */
     val pickedFaces = BoolPref("picked_faces", true)
+    /** DEPRECATED CANDIDATE (owner 12 Nov): read only by Model3DLive, which nothing calls; no control. Key kept for old backups / presets. */
     val modelReflect = BoolPref("model_reflect", false)
     /**
      * Update 136, Art drop (R1 › Art drop, Settings › Game look): how far the cover drops below the top of the window, 0–100,
@@ -833,6 +835,8 @@ object Features {
     val hiddenParts = SetPref("hidden_parts")
     /** How far the layouts' own parts were moved in Edit Home (update 108): "part:LAYOUT:name=dx,dy;…" in dp. */
     val partShifts = StringPref("part_shifts", "")
+    /** Sprint 527: Tile home's rows top to bottom (ui/TileRows: buttons, cats, tiles, info); empty = the order the settings give. */
+    val tileRowOrder = StringPref("tile_row_order", "")
     /** The backing behind the floating game info parts (update 104). */
     enum class PartBacking(val label: String) {
         LAYOUT("Layout's colours"), THEME("Theme colours"), GLASS("Dark glass"), CAPSULE("Capsule"),
@@ -1054,7 +1058,16 @@ object Features {
      * past both edges with the games again (on), or shows each game once (off, update 226's way — the row stops short when
      * the category has few games). Hold the R1 Endless tile.
      */
-    val endlessFill = BoolPref("endless_fill", true)
+    val endlessFill = BoolPref(ENDLESS_FILL_KEY, false)
+    /**
+     * Sprint 525 (owner: "use a versioned migration approach; do not silently destroy intentional saved settings"),
+     * replacing Batch 524's one-time reset: Fill the row is kept under a NEW key. Every value saved under the old
+     * "endless_fill" (the old default ON, written by backups, settings snapshots, your own layout presets, "Only this
+     * layout" values and the QA snapshot) is simply never read again, wherever it comes back from - so an old file can't
+     * bring the repeated games back, and nothing has to be reset (the old key stays as it was; an older Voltcap still
+     * reads it). Choosing Fill the row in the R1 Endless menu writes the new key, which backups and presets carry along.
+     */
+    internal const val ENDLESS_FILL_KEY = "endless_fill_v2"
     /** Update 321: how the one-colour icons are drawn — the app's drawing kept see-through (DETAIL), or one solid shape. */
     enum class MonoIconStyle(val label: String) { DETAIL("Detail"), SOLID("Solid"), ORIGINAL("Own colours") }
     val monoIconStyle = EnumPref("mono_icon_style", MonoIconStyle.DETAIL, arrayOf(MonoIconStyle.DETAIL, MonoIconStyle.SOLID))
@@ -2450,8 +2463,12 @@ object Features {
     /** Update 158, Card binder: where a card's frame colour comes from (mastered games are always gold). */
     enum class CardFrame(val label: String) { CONSOLE("Console"), ART("Game's art") }
     val cardsFrame = EnumPref("cards_frame", CardFrame.CONSOLE, CardFrame.values())
-    /** Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts). */
-    val cardsAPlays = BoolPref("cards_a_plays", true)
+    /**
+     * Update 158, Card binder: A starts the game straight away (off: A opens the game's window, as on other layouts).
+     * Popup-first (owner, 12 Nov): off by default - A opens the game's window on every layout that has one. Same key: a choice
+     * someone saved (on) is kept; only the unset default changes.
+     */
+    val cardsAPlays = BoolPref("cards_a_plays", false)
 
     // ---- Update 202: Pocket Quest (StylePocketQuest.kt, PocketQuestScenery.kt, PocketQuestSettings.kt) ----
     // Update 202: declared here (not in the layout's own files) because only prefs declared in Features are read by init().
@@ -2494,8 +2511,11 @@ object Features {
      * everyone gets the new default once; turning it on again is kept.
      */
     val pqBumpers = BoolPref("pq_bumpers2", false)
-    /** Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts). */
-    val pqAPlays = BoolPref("pq_a_plays", true)
+    /**
+     * Update 202, Pocket Quest: A starts the game (off: A opens the game window, as on the other layouts).
+     * Popup-first (owner, 12 Nov): off by default; same key, so a saved choice is kept.
+     */
+    val pqAPlays = BoolPref("pq_a_plays", false)
 
     // ---- Quick Menu while in a game ----
     val quickMenuInGame = BoolPref("quick_menu_in_game", true)

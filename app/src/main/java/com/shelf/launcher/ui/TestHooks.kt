@@ -28,6 +28,13 @@ internal object TestHooks {
     val settingsSearch = mutableStateOf<String?>(null)
     /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
     val screensaver = mutableStateOf(false)
+    /**
+     * Sprint 527 (video ambient light, isolated QA app only): `--es voltcap_test_video <file:///…mp4>|off` — this clip plays as the
+     * focused game's background clip for this session (the QA handhelds have no scraped clips). Nothing saved.
+     */
+    val video = mutableStateOf<String?>(null)
+    /** Sprint 527 (category-look audit): `--es voltcap_test_catscreen open|close` - the category screen (n: request number, open?). */
+    val catScreen = mutableStateOf(0 to false)
     /** Update 432: `--es voltcap_test_bg ANIMATED|ART|…` — the home background style for this session only (nothing saved). */
     val bg = mutableStateOf<String?>(null)
     /**
@@ -313,6 +320,8 @@ internal object TestHooks {
                     v == "save" -> HomeEditSession.save()
                     v == "discard" -> HomeEditSession.discard()
                     v.startsWith("reset:") -> HomeEditSession.resetSelected(v.removePrefix("reset:"))
+                    // Sprint 527: pick the part Edit Home's D-pad moves (then real ▲ ▼ presses move it), for the row-order run.
+                    v.startsWith("select:") -> HomeEditState.selected = v.removePrefix("select:")
                     v.startsWith("resetlayout:") -> com.shelf.launcher.data.HomeLayout.values().firstOrNull { it.name == v.removePrefix("resetlayout:") }
                         ?.let { HomeEditSession.resetLayout(it) }
                 }
@@ -339,6 +348,10 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_warm")?.let { if (enabled(context)) warmMode = it }
         intent?.getStringExtra("voltcap_test_badgewarm")?.let { v -> if (enabled(context)) BadgeWarm.enabled = v != "off" }
         // Update 503: `--es voltcap_test_artfix "delay=800"|off` — late-arriving fixture art + achievements, QA app only (QaArtFixture.kt).
+        // Hardware QA, 12 Nov: `--es voltcap_test_scanfix on|off` - session-only scanned spines / fronts for the fixture games (QaArtFixture.scans).
+        intent?.getStringExtra("voltcap_test_scanfix")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) QaArtFixture.scans.value = v == "on"
+        }
         intent?.getStringExtra("voltcap_test_artfix")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) QaArtFixture.parse(v).let { d -> QaArtFixture.delayMs = d ?: 0L; QaArtFixture.spec.value = d }
         }
@@ -360,6 +373,20 @@ internal object TestHooks {
         val pm = intent?.getStringExtra("voltcap_test_perf")
         intent?.getStringExtra("voltcap_test_battery")?.let { v -> if (enabled(context)) battery.value = if (v == "off") null else v.split("|").let { p -> BatteryInfo(p[0].toIntOrNull()?.coerceIn(0, 100) ?: 50, p.getOrNull(1) == "true") } }
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
+        // Sprint 527: `--es voltcap_test_clipshade legacy|new` - the background clip's old (theme fog) or new shading, for a
+        // same-frame before / after (isolated QA app only, session only).
+        intent?.getStringExtra("voltcap_test_clipshade")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
+            android.util.Log.e("VoltcapQA", "clipshade $v")
+        }
+        intent?.getStringExtra("voltcap_test_catscreen")?.let { v ->
+            if (enabled(context)) catScreen.value = (catScreen.value.first + 1) to (v == "open")
+            android.util.Log.e("VoltcapQA", "catscreen $v")
+        }
+        intent?.getStringExtra("voltcap_test_video")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) video.value = v.takeIf { it != "off" }
+            android.util.Log.e("VoltcapQA", "test video $v")
+        }
         // Update 431: `--es voltcap_test_tune stock|uc:MEDIUM|auto:EFFICIENT[:60]|tier:SAVER|off` — a tuner profile for this
         // process only, instead of every saved one (nothing saved, nothing learned; `off` puts yours back). Hardware comparisons.
         intent?.getStringExtra("voltcap_test_tune")?.let { t ->
@@ -379,6 +406,8 @@ internal object TestHooks {
         // (not saved: the owner's own switch stays as it is).
         if (intent?.getBooleanExtra("voltcap_test_screensaver", false) == true && enabled(context)) screensaver.value = true
         if (intent?.hasExtra("voltcap_test_vault_dry") == true && enabled(context)) vaultDry = intent.getBooleanExtra("voltcap_test_vault_dry", false)
+        // (Shelf 3D work, 12 Nov: `--ez voltcap_test_shelf3d true|false` - the Game shelf's pulled-out case as the 3D case; QA app only.)
+        if (intent?.hasExtra("voltcap_test_shelf3d") == true && enabled(context)) Shelf3D.enabled = intent.getBooleanExtra("voltcap_test_shelf3d", false)
         // Batch 523: `--es voltcap_test_popuplab "font=inter,weights=on,actions=on,storage=on"|off` - the popup design lab
         // (PopupLab), isolated QA app only, this run only.
         intent?.getStringExtra("voltcap_test_popuplab")?.let { v ->
@@ -799,3 +828,19 @@ internal fun cloudHold(context: android.content.Context, mode: String) {
     android.util.Log.e("VoltcapQA", "cloudhold $mode original=${f.readText()} now=${now()}")
 }
 
+/**
+ * Batch 521b's `voltcap_test_scale` (QA / debuggable builds only - TestHooks sets it): [content] drawn at that text size /
+ * display scale, without touching the system's settings. 12 Nov (Flip 2): used in the game window's own Dialog too - a Dialog
+ * is a window of its own whose root provides its view's density again, so the activity-level override never reached the
+ * popups' text (a x1.3 popup run measured x1.0).
+ */
+@androidx.compose.runtime.Composable
+internal fun WithTestScale(content: @androidx.compose.runtime.Composable () -> Unit) {
+    val s = TestHooks.scale.value
+    if (s == null) content() else {
+        val base = androidx.compose.ui.platform.LocalDensity.current
+        androidx.compose.runtime.CompositionLocalProvider(
+            androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * s.second, base.fontScale * s.first)
+        ) { content() }
+    }
+}

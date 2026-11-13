@@ -633,7 +633,7 @@ internal object CartShells {
      * fills the label round a cover fitted inside it. The label's paper colour when the pixels can't be read.
      */
     private fun edgeColour(b: Bitmap, topBottom: Boolean): Int = runCatching {
-        val soft = if (b.config == Bitmap.Config.HARDWARE) b.copy(Bitmap.Config.ARGB_8888, false) else b
+        val soft = if (b.isHardwareBitmap()) b.copy(Bitmap.Config.ARGB_8888, false) else b
         var r = 0L; var g = 0L; var bl = 0L; var n = 0
         val steps = 24
         for (i in 0 until steps) {

@@ -22,11 +22,17 @@ assert(H.GRADLE_TASKS.includes('assembleQa'));
 assert(/Tag v\$\{v\} already exists/.test(src) && /isn't newer than the latest published release/.test(src), 'publish guards present');
 assert(/Not on main - nothing done/.test(src) && /Commit everything first/.test(src) && /not signed in/.test(src), 'old safeguards kept');
 // FW1: isolated worktree builds - a fixed allow-list, git-ignored folder, fast-forward only, no signing keys copied.
-const wts = src.match(/const WORKTREES = (\{[^\n]+\});/); assert(wts, 'WORKTREES allow-list present');
+const wts = src.match(/const WORKTREES = (\{[\s\S]*?\n?\});/); assert(wts, 'WORKTREES allow-list present'); // (multi-line since 12 Nov)
 assert(/'Claude outputs', 'worktrees', 'fw1'/.test(wts[1]) && /branch: 'feature\/dual-welcome'/.test(wts[1]), 'fw1 -> feature/dual-welcome in Claude outputs');
 const copy = src.match(/const WORKTREE_COPY = (\[[^\]]+\])/)[1];
 assert(!/keystore|\.jks/i.test(copy), 'no signing keys copied into a worktree');
 assert(/'merge', '--ff-only'/.test(src) && /has local changes - nothing done/.test(src), 'worktree update is fast-forward only and refuses local changes');
 assert(/\^\[A-Za-z0-9_.-\]\+\\\\.bundle\$/.test(src) || /\.bundle\$\/\.test\(name\)/.test(src), 'bundle is a plain file name in backups');
 assert(/'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add'/.test(src), 'worktrees are checked out with LF like the main tree');
+// Sprint 525: the branch push checks every value the APK check knows, in every pushed commit; only pnat / s3d / ci are pushable.
+assert(/require\('\.\/push_guard'\)/.test(src) && /'rev-list', head, '--not', '--remotes=origin'/.test(src) && /pg\.secretFiles\(/.test(src), 'push secret check: push_guard, every new commit, secret files');
+const pushable = src.match(/const PUSHABLE = (\{[^}]+\})/)[1];
+assert(/pnat/.test(pushable) && /s3d/.test(pushable) && /ci:/.test(pushable) && !/int|main|fw1/.test(pushable), 'only the three development branches are pushable');
+{ const body = src.slice(src.indexOf("case 'git_push_branch'"), src.indexOf("case 'git_commit_push'"));
+  assert(/\['push', '--no-follow-tags', 'origin', head \+ ':refs\/heads\/' \+ branch\]/.test(body) && !/'--force'|'--tags'/.test(body), 'never forced, no tags'); }
 console.log('adb_mcp helpers: OK');

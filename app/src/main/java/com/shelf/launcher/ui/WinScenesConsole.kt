@@ -1,5 +1,12 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.snap
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -110,6 +117,13 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 820.dp)
     val h = minOf(ctx.maxH, 520.dp)
     val compact = h < 380.dp
+    val anim = rememberAnimationsEnabled()
+    val onMain = ctx.page == WinPage.MAIN
+    // (A plain holder, not state: written while drawing the first page, read under a page blade - writing state while composing
+    // would recompose without end.)
+    val mainRows = androidx.compose.runtime.remember(ctx.g.stableKey) { arrayOf<List<WinAction>>(emptyList()) }
+    // (Popup motion work: the visible strip of the game blade under a page blade - its curved edge and the name standing up.)
+    val edgeW = w * 0.05f + 44.dp
     Box(
         Modifier.size(w, h).graphicsLayer {
             // (Update 347: the blade slides in edge first, turned a little away, and squares up as it lands; closing runs
@@ -123,57 +137,42 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
             alpha = (e * 1.6f).coerceIn(0f, 1f)
             // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
             flatTextFor3d()
+        }.onPreviewKeyEvent { e ->
+            // (Popup motion work: L1 / R1 walk the game, Details, Achievements, Options - as their commands open them.)
+            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
+            val to = pageStep(BLADE_TABS.filter { it in ctx.pages }, ctx.page, step)
+            if (to != ctx.page) ctx.open(to)
+            true
         }
     ) {
         // The blade itself: a curved leading edge, its colour, a gloss and a lit rim.
-        Canvas(Modifier.fillMaxSize()) {
-            val tab = size.width * 0.05f
-            val corner = tab * 0.6f
-            val path = Path().apply {
-                moveTo(tab + corner, 0f)
-                lineTo(size.width - 6f, 0f)
-                quadraticTo(size.width, 0f, size.width, 6f)
-                lineTo(size.width, size.height - 6f)
-                quadraticTo(size.width, size.height, size.width - 6f, size.height)
-                lineTo(tab + corner, size.height)
-                quadraticTo(tab, size.height, tab * 0.8f, size.height - corner)
-                quadraticTo(-tab * 0.5f, size.height / 2f, tab * 0.8f, corner)
-                quadraticTo(tab, 0f, tab + corner, 0f)
-                close()
-            }
-            // (Update 346: the same blade as the home's — a deep shadow on what it slides over, a bevel and a lit sheen
-            // along its curved edge, the gloss band and a diagonal shine — so it reads as one more blade, not a card.)
-            val edge = Path().apply {
-                moveTo(tab + corner, size.height)
-                quadraticTo(tab, size.height, tab * 0.8f, size.height - corner)
-                quadraticTo(-tab * 0.5f, size.height / 2f, tab * 0.8f, corner)
-                quadraticTo(tab, 0f, tab + corner, 0f)
-            }
-            translate(left = -tab * 0.5f, top = 6f) { drawPath(path, Color.Black.copy(alpha = 0.25f)) }
-            translate(left = -tab * 0.22f, top = 10f) { drawPath(path, Color.Black.copy(alpha = 0.35f)) }
-            drawPath(path, Brush.linearGradient(listOf(lerp(p.hi, Color.White, 0.08f), lerp(p.hi, p.lo, 0.55f), p.lo), start = Offset.Zero, end = Offset(size.width, size.height)))
-            clipPath(path) {
-                drawPath(edge, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent), startX = -tab * 0.5f, endX = tab * 2.2f), style = Stroke(tab * 0.9f))
-                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.04f), Color.Transparent), endY = size.height * 0.32f))
-                drawRect(Brush.linearGradient(0f to Color.Transparent, 0.42f to Color.Transparent, 0.5f to Color.White.copy(alpha = 0.09f), 0.58f to Color.Transparent,
-                    1f to Color.Transparent, start = Offset.Zero, end = Offset(size.width, size.height)))
-            }
-            drawPath(edge, Color.White.copy(alpha = 0.8f), style = Stroke(2.4f))
-            drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
-        }
-        Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
+        BladeBody(p, Modifier.fillMaxSize())
+        // (Phase 6, 12 Nov: while a page blade lies over it, the game blade's words are hidden from accessibility services - a
+        // screen reader read the covered text - and from the QA text checks; nothing changes on screen, its keys are inert.)
+        // (Hardware QA, Flip 2, 12 Nov - popup gate R26: under a page blade the first letters of the game blade's own name and
+        // console ("Cra", "Pla") showed in the strip beside the page's heading, over the standing name; they fade out as the page
+        // blade comes in - the strip shows the standing name alone - and back when it goes.)
+        val coveredText by animateFloatAsState(if (onMain) 0f else 1f, if (anim) tween(NATIVE_PAGE_MS) else snap(), label = "bladeText")
+        // (…and once wholly covered it isn't composed at all: invisible texts still laid out under the page were measured as
+        // drawn over the page's own heading by the popup gate. It comes back, fading in, as the page blade leaves.)
+        if (coveredText < 0.999f) Column(Modifier.fillMaxSize().padding(start = w * 0.08f, end = 18.dp, top = 14.dp, bottom = 12.dp)
+            .graphicsLayer { alpha = 1f - coveredText }
+            .then(if (ctx.page != WinPage.MAIN) Modifier.clearAndSetSemantics { } else Modifier)) {
             // (Update 478: one line that shrinks, then slides — a second line pushed the commands' Back under the blade's
             // edge on the Odin with a long name, T3 o478D.)
             WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Light, maxLines = 1)
             Text(
-                ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""),
+                ctx.console,
                 color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1
             )
             Spacer(Modifier.height(if (compact) 6.dp else 12.dp))
             Row(Modifier.fillMaxSize()) {
                 // The commands.
                 Column(Modifier.weight(0.46f).fillMaxHeight().then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
+                    // (Popup motion work: under a page blade the game blade keeps its first page's commands, drawn and inert.)
+                    val rows = if (onMain) (ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }).also { mainRows[0] = it.map { r -> r.inert() } }
+                        else mainRows[0].map { it.copyInert() }
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
                             val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgRow")
@@ -195,7 +194,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                             }
                         }
                     }
-                    if (ctx.page == WinPage.MAIN && ctx.chips.isNotEmpty()) {
+                    if (onMain && ctx.chips.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
                         ctx.chips.forEach { a ->
                             SceneControl(a, Modifier.fillMaxWidth()) { on ->
@@ -210,7 +209,7 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                 Spacer(Modifier.width(16.dp))
                 // The game: its cover and facts, or the page.
                 Column(Modifier.weight(0.54f).fillMaxHeight()) {
-                    if (ctx.page == WinPage.MAIN) {
+                    run {
                         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                         // (Batch 522, popup sweep on the RP Classic: a tall, narrow column - the cover took its height's 0.72 as width,
                         // the whole column, and the facts beside it were laid out 0 px wide ("Played" not shown). The cover now
@@ -263,7 +262,133 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                             Spacer(Modifier.height(8.dp))
                             Text(it, color = Color.White.copy(alpha = 0.82f), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 4)
                         }
-                    } else ctx.pageBody(Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.22f)))
+                    }
+                }
+            }
+        }
+        // The game blade's name, standing up on its visible strip while a page blade lies over it.
+        val covered by animateFloatAsState(if (onMain) 0f else 1f, if (anim) tween(NATIVE_PAGE_MS) else snap(), label = "bladeEdge")
+        if (covered > 0.01f) Box(Modifier.width(edgeW).fillMaxHeight().padding(start = w * 0.05f, top = 16.dp, bottom = 16.dp).graphicsLayer { alpha = covered }) {
+            BladeEdgeName(ctx.name, Modifier.fillMaxSize())
+        }
+        // Popup motion work (Blades, owner-approved direction): each page is a blade of its own. Going forward the new blade
+        // slides in from the right over the one you were on; going back (B, L1) the blade you were on slides away to the right
+        // and the one under it is there. The page blade leaves the game blade's edge in view, its name readable on it.
+        androidx.compose.animation.AnimatedContent(
+            targetState = ctx.page,
+            transitionSpec = {
+                val dir = pageDirection(BLADE_TABS, initialState, targetState)
+                if (!anim) androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None
+                else if (dir > 0) (androidx.compose.animation.slideInHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it } togetherWith
+                    androidx.compose.animation.fadeOut(tween(1, delayMillis = NATIVE_PAGE_MS))).apply { targetContentZIndex = 1f }
+                else (androidx.compose.animation.EnterTransition.None togetherWith
+                    androidx.compose.animation.slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { it }).apply { targetContentZIndex = -1f }
+            },
+            contentKey = { it },
+            modifier = Modifier.fillMaxSize(),
+            label = "bladePage"
+        ) { pg ->
+            if (pg != WinPage.MAIN) BladePageBlade(ctx, pg, pg == ctx.page, p, Modifier.padding(start = edgeW).fillMaxSize(), compact)
+            else Box(Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** Blades' pages in command order (the game, Details, Achievements, Options). */
+internal val BLADE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
+
+/** A copy of an inert row (fresh object, no focus, does nothing): the game blade's commands while a page lies over them. */
+private fun WinAction.copyInert(): WinAction = WinAction(label, icon, {}, focus = null, primary = primary, back = back, urgent = urgent, inert = true)
+
+/** One blade: a curved leading edge, its colour, a gloss and a lit rim (update 346), drawn in [modifier]'s box. */
+@Composable
+private fun BladeBody(p: BladePalette, modifier: Modifier) {
+    Canvas(modifier) {
+            val tab = size.width * 0.05f
+            val corner = tab * 0.6f
+            val path = Path().apply {
+                moveTo(tab + corner, 0f)
+                lineTo(size.width - 6f, 0f)
+                quadraticTo(size.width, 0f, size.width, 6f)
+                lineTo(size.width, size.height - 6f)
+                quadraticTo(size.width, size.height, size.width - 6f, size.height)
+                lineTo(tab + corner, size.height)
+                quadraticTo(tab, size.height, tab * 0.8f, size.height - corner)
+                quadraticTo(-tab * 0.5f, size.height / 2f, tab * 0.8f, corner)
+                quadraticTo(tab, 0f, tab + corner, 0f)
+                close()
+            }
+            // (Update 346: the same blade as the home's — a deep shadow on what it slides over, a bevel and a lit sheen
+            // along its curved edge, the gloss band and a diagonal shine — so it reads as one more blade, not a card.)
+            val edge = Path().apply {
+                moveTo(tab + corner, size.height)
+                quadraticTo(tab, size.height, tab * 0.8f, size.height - corner)
+                quadraticTo(-tab * 0.5f, size.height / 2f, tab * 0.8f, corner)
+                quadraticTo(tab, 0f, tab + corner, 0f)
+            }
+            translate(left = -tab * 0.5f, top = 6f) { drawPath(path, Color.Black.copy(alpha = 0.25f)) }
+            translate(left = -tab * 0.22f, top = 10f) { drawPath(path, Color.Black.copy(alpha = 0.35f)) }
+            drawPath(path, Brush.linearGradient(listOf(lerp(p.hi, Color.White, 0.08f), lerp(p.hi, p.lo, 0.55f), p.lo), start = Offset.Zero, end = Offset(size.width, size.height)))
+            clipPath(path) {
+                drawPath(edge, Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent), startX = -tab * 0.5f, endX = tab * 2.2f), style = Stroke(tab * 0.9f))
+                drawRect(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.04f), Color.Transparent), endY = size.height * 0.32f))
+                drawRect(Brush.linearGradient(0f to Color.Transparent, 0.42f to Color.Transparent, 0.5f to Color.White.copy(alpha = 0.09f), 0.58f to Color.Transparent,
+                    1f to Color.Transparent, start = Offset.Zero, end = Offset(size.width, size.height)))
+            }
+            drawPath(edge, Color.White.copy(alpha = 0.8f), style = Stroke(2.4f))
+            drawPath(path, Color.White.copy(alpha = 0.3f), style = Stroke(1.5f))
+    }
+}
+
+/**
+ * The game blade's name standing up on its edge (popup motion work): whole, in up to two lines across the strip, a step smaller
+ * when it must; only a name too long even then slides slowly along the edge (never cut, never "…").
+ */
+@Composable
+private fun BladeEdgeName(name: String, modifier: Modifier) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+        val along = maxHeight; val across = maxWidth
+        Box(Modifier.requiredSize(along, across).graphicsLayer { rotationZ = -90f }, contentAlignment = Alignment.CenterStart) {
+            WinFullText(name.uppercase(), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2, letterSpacing = 1.sp,
+                modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
+/**
+ * A page of Blades' window as its own blade (popup motion work): the page's name over the game's, the page in a darker well,
+ * its keys as the blade's lit rows along the bottom.
+ */
+@Composable
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: BladePalette, modifier: Modifier, compact: Boolean) {
+    Box(modifier) {
+        BladeBody(p, Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().padding(start = 40.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)) {
+            WinFullText(winPageName(pg), color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Light, maxLines = 1)
+            WinFullText(ctx.name, color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+            Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.22f))) {
+                ctx.pageFor(pg, Modifier.fillMaxSize(), live)
+            }
+            Spacer(Modifier.height(8.dp))
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ctx.buttons.forEach { a0 ->
+                    val a = if (live) a0 else a0.inert()
+                    SceneControl(a, Modifier) { on ->
+                        val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgKey")
+                        Row(
+                            Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(3.dp))
+                                .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
+                                .border(1.dp, Color.White.copy(alpha = 0.35f * (1f - k)), RoundedCornerShape(3.dp))
+                                .padding(horizontal = 12.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(a.icon, null, tint = if (on) p.ink else Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(a.label, color = if (on) p.ink else Color.White, fontSize = 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal)
+                        }
+                    }
                 }
             }
         }

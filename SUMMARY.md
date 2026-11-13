@@ -1,3 +1,156 @@
+# Sprint 528 — overnight QA and polish: overlaps, Connected Ignition with photos, real covers, category looks (12 Nov 2026, `feature/popup-native`)
+
+- **Profile pictures vs the first pill** (`ui/LauncherScreen.kt`): the Switch-style pictures' measured bottom is a floor for every row
+  order and the Top dock (d03d077f); the music player shown in a top corner is a floor too (98027061). Checked Top / Middle / Bottom,
+  x1.0 / x1.3, pill row start / end, two themes, Flip 2 + KONKR (QaClip overlap PASS in every dump).
+- **Edit Home music stand-in** (`ui/HomeEdit.kt`, `LauncherScreen.kt`): where Home keeps the player in the status bar the stand-in sits in
+  that band, compact, at the safe zone's top (98027061, d125a5ec) - rows / buttons moved to the top no longer run under it.
+- **Category looks**: Wall slices under the action bar (ec656b35); Drawers on short drawers allow a third line (ec656b35); Slides / Wall
+  don't repeat the name without a logo picture; Stage plate wraps (30498094); look counts keep together (5aeb212f).
+- **Cold start** (`LauncherUiState.libraryLoaded`, e480758f): no "No games yet" line while the saved library is still being read.
+- **QA**: `art=covers` fixture (QaFixture: pictures QA pushes to the QA app's own files/qa_covers, matched by name), `sp528.sh`
+  (badge / covers / music), `cat527.sh realart` with ART from the environment. Connected Ignition branch: `realphoto` demo profiles.
+- Not changed (checked): Tile cover crop (placeholder title band removed by the deliberate upward bias; real covers fine).
+- Tests: TileRowsTest, Batch521Test, CategoryLooks527Test, QaFixture528Test, EmptyLibraryFlash528Test; PC testDebugUnitTest green.
+  EndlessOnceRoboTest PANELS n=5: 1 failure in 7 runs (timing; see docs). Not in RC4; no release published.
+
+# Sprint 527 follow-up — owner review: drag / reset, same-frame video A/B, first category batch, KONKR compact (12 Nov 2026, `feature/popup-native`)
+
+- **Tile rows, finger drop** (`ui/TileRows.kt` `tileRowPlacement`): a dropped row glides from where the finger left it (its drawn top
+  handed over by `dropRow` → `dropAt`), the glide starts in the same layout pass (`onPlaced` + `placeWithLayer`, a layer shift so the
+  Middle centre line stays put; the last drawn place is used until the glide's coroutine has started), the row under the finger never
+  glides on its own, the selected / dragged row is drawn above the others. Was: the new order for one frame, then every row back at
+  its old place, the dropped row snapping from the finger (Flip 2 60 fps: largest frame change 31.7 / 43.2 → 10.3).
+  `VoltcapRows` log lines (Edit Home only) for QA.
+- **Badge floor for every order** (`ui/LauncherScreen.kt`): the Switch-style profile pictures' measured bottom keeps the centred group
+  clear in the order your settings give too (KONKR ×1.3: the All pill ran under them). Nothing moves where there is room.
+- **Tile name scrim** (`ui/TileHome.kt`): after the name's own placement (it sat ~70 px left of the name, Flip 2 still-clip A/B).
+- **Collector's Drawers, compact** (`ui/CategoryLooks.kt`): short drawers (cell < 84 dp, KONKR) get thinner margins and pull, em-high
+  card lines - "Sega Mega Drive / Genesis" whole on two lines at 960 × 640 (was sliding).
+- **QA**: `tile527.sh vidab TAG vs` (still clips `vs_*.mp4`: identical frame before / after), `cat527.sh pills` sets the test layout
+  again after a text-size change.
+- Tests: TileRowsTest (glideStart, same-pass glide, badge floor), ClipLightTest (scrim order), CategoryLooks527Test (short drawer fits).
+- Hardware: Flip 2 + KONKR, isolated QA app only; both left on the RC4 QA build (c3a45817), owner snapshot files identical.
+- Not done: third-priority look items (Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation); real cover art
+  (none available to the QA app); Intro OFF classic-picker jank (separate defect).
+
+# Sprint 527 — Tile Home rows, video background light, category-look audit (12 Nov 2026, `feature/popup-native`)
+
+- **Tile rows** (`ui/TileRows.kt`, `Features.tileRowOrder`): the Edit Home parts (round buttons, chips, game row, facts) are one ordered
+  stack; ▲ ▼ moves the selected part (the round buttons too while they sit in the stack), neighbours slide, dashed insertion line;
+  Undo / Discard / Reset part / Reset layout; persisted across restart, category and layout switches. Flip 2 fixes: the floating
+  buttons sit on their row's room in Edit Home (MovableWidget `defaultCentre`), no empty Undo step at the ends, a moved order's
+  first row 40 dp below the top (Middle).
+- **Video light** (`ui/VideoPreview.kt`, `ClipLight`): the clip's shading is a deep tone of the clip's own colour (<= 14 % bright),
+  eased from mid-screen, 42-78 % at the bottom by the lower half's luminance, top band by the top's; a 24 x 14 read-back every
+  1.5 s while playing (none while held), 1.2 s glides. Was the theme background at 85-97 % (a fog; pale with art-derived themes).
+- **QA**: `voltcap_test_video`, `voltcap_test_edithome select:<part>`, `voltcap_test_catscreen open|close`; `tile527.sh`
+  (rows / edit / video / video2 / restore), `cat527.sh` (17 category looks, Follow home layout, pill bar).
+- Tests: TileRowsTest, ClipLightTest (PC: testDebugUnitTest 2471, 0 failed at 49a5ce7d). Not in RC4.
+
+# Sprint 525 — v0.6.71 RC4, Endless Fill versioned key, Tiles edges, Night ×1.3, Shelf slot / spine, QA recorder and push guard (12 Nov 2026)
+
+Branch `feature/popup-native` (pushed), candidate `integration/0.6.71` c827ff9 (local + PC worktree `int`), `feature/connected-ignition`
+48c546e (pushed). Full report: `docs/SPRINT525_20261112.md`; readiness: `docs/INTEGRATION_0.6.71.md`.
+- **Endless › Fill the row** stored under `endless_fill_v2` (no reset, the old key ignored and kept); one lit copy proven on PC
+  (EndlessFillLitRoboTest, QaClip.Lit marks, tests only) and on the Flip 2 (8 layouts × 1/2/3/25 games, Fill on / off).
+- **Tiles**: each game once at the screen edges with Fill off (tilesOnceFirst). **Night ×1.3**: stats panel grows before scrolling.
+- **Old Shelf**: slot of the game coming out glides (shelfClose), flat pulled case follows its slot (slotRoom); learnt spine shape
+  stable (RealSpineShape, SPINE_SHAPE_STEP), re-composed spines keep their shape (SpineGeom); QA trace `oldspine`.
+- **QA**: rec.sh / recheck.py (recordings graded by real frames), s525.sh, ci525.sh, home13.sh launch block kept; adb_mcp
+  push_guard.js (all APK-check secrets + signing / Worker, every pushed commit, no secret files). Connected Ignition:
+  `voltcap_test_intro` hook (QA app only) and a 12-cold-start hardware run.
+- Files (app): data/Features.kt, ui/QaClip.kt, ui/StyleHomes.kt, ui/FocusedCard.kt, ui/StyleNightMenu.kt, ui/StyleAiryHome.kt,
+  ui/StyleArtLibrary.kt, ui/StyleCaseFlow.kt, ui/StyleCardBinder.kt, ui/StylePocketQuest.kt, ui/TileHome.kt, ui/WinScenes.kt,
+  ui/ShelfHome.kt (+ tests). These were edited in the worktree's app/ directly (the branch workflow), not via src_copy.
+- Not tested: KONKR / small screen (asleep), reduced motion, several QA profiles, full-length cold-start recordings.
+
+# Popup native pages — sprint: PC build, real-window behaviour tests, three bugs fixed (12 Nov 2026, branch feature/popup-native @ c2a52d4, local, not pushed)
+
+- **Built and tested on the PC** (`gradle_start … worktree pnat`): `testDebugUnitTest` BUILD SUCCESSFUL (~1,495 tests, 0 failures);
+  `assembleDebug` SUCCESS (QA package, debug signer, secrets clean). `lintRelease` 75 errors (none new; `ci` baseline 76), +6 warnings
+  only on the test-only dependency lines (see docs/MORNING_20261112.md); `assembleCompat` not run (release key). static_checks PASS, identical to v0.6.70.
+- **Test-only infrastructure**: Robolectric 4.16 + Compose ui-test (`app/build.gradle.kts` testImplementation, unit tests include
+  resources, 2 GB heap, `app/src/test/resources/robolectric.properties` sdk=34). Nothing of it is in an APK.
+- **`WinFocusRoboTest`**: the real `GameWindow` of all 53 layouts (+3 plain windows) on the JVM, keys through the window's dialog,
+  focus checked every frame: opens on Play, B → opener (never Play), rapid B A, B mid-change, A soon after B, L1/R1.
+- **Fixed (found by it):** TV room / plain window: B from Game options came back onto Play and an A 100 ms later started the game —
+  Details / Game options / Achievements register as the page's opener (`PageOpeners`, `LocalPageOpeners`). Native pages: the 60 ms
+  focus wait after a page change left nothing focused for 4 frames, L1/R1 presses were lost — no wait on native pages.
+- **Fixed (found by `ShelfTextRoboTest`, native graphics):** Night menu commands at ×1.3: "ACHIEVEMENTS" wrapped and its second
+  line was cut by the 26 dp key — now one line that fits (`WinFullText`). 72 text cases pass (6 windows × titles × ×1.0/×1.3 × achievements).
+- **One presentation decision:** `winPresentation()` / `sharedPageFor()` (`WinPageFlow.kt`), read by `GameWindow`; `WinPresentationTest`
+  covers every layout × every combination of the 5 popup-style prefs.
+- **Shelf hand-over:** the flying case starts from the shelf's own bitmap (`ShownScans`, Coil placeholder key); gate owned per window
+  (`CaseFlightGate.hold/release`); wait 250 → 150 ms (cold scans only). Spine flicker: QA-trace diagnostics only (`SpineTrace`), not fixed.
+- **Docs / tools:** `docs/LAYOUT_MATRIX.md` (+ `tools/popup_audit/`), `docs/SETTINGS_USAGE.md` (+ `tools/settings_audit/usage.py`),
+  `docs/MORNING_20261112.md`.
+- Files: `ui/GameWindow.kt`, `ui/WinPageFlow.kt`, `ui/WinScenes.kt`, `ui/WinSceneFamilies.kt`, `ui/CoverCases.kt`, `ui/Case3D.kt`,
+  `app/build.gradle.kts`, tests `WinFocusRoboTest`, `ShelfTextRoboTest`, `WinPresentationTest`, `PopupNativeStorageTest` (+classes),
+  `Visual426Test`, `Batch507Test`, `Batch512Test`.
+- NOT TESTED: hardware (both devices ineligible all night); the 3D flip is not implemented (needs review on a handheld).
+
+# Popup native pages P1–P4 — Storage boxes, Night menu, Tiles, Blades (12 Nov 2026, branch feature/popup-native, local, not built on the PC yet)
+
+- **Storage boxes keeps its own Details / Achievements / Options** (owner-reported regression "Storage → unrelated Details"):
+  - Cause: `SceneBody` replaced every layout window's non-main page with the shared `ExpandedWinPage` (update 426), so Storage's
+    record (which already had tabs and in-record pages) never showed them.
+  - Now a scene in `WinPageFlow.NATIVE_PAGE_SCENES` (Storage only so far) draws its pages itself.
+- **Storage's pages as sheets of the record** (`ui/WinScenes.kt` `StorageRecord`, `StorageTabs`, `StorageRecordMain`, `StorageRecordPage`):
+  - The record, its band and its tabs stay; the new sheet files in from the side the D-pad went over the old one (280 ms),
+    going back runs the other way; the open tab's paper slides from tab to tab. Animations off: instant, same end states.
+  - Sub-pages fill the record under a slim name line (small sprite, whole-word name, console tag) with Play / page keys / Back.
+  - The leaving sheet carries no focus requesters; focus moves into the new page after the change.
+- **Night menu** (`NightStatus`, `NightBannerWipe`, `NightPagePanel`): pages in one big slanted panel left of the commands
+  (they were squeezed into the stats panel, hence update 426); panels sweep in and out along the −6° slant in the D-pad's
+  direction, solid, under the banner; the banner shows the page's name with the game's under it and changes with a wipe whose
+  edge is a dark slanted band (never empty, the two titles never run together); L1 / R1.
+- **Tiles** (`TileLiftCard`, `TileLiftPage`): the lifted tile and the card stay; the card's writing turns over like a tile for each
+  page (right to left forward, left to right back); pages are the card's own side, taller than Info; L1 / R1.
+- **Blades** (`BladeGuide`, `BladeBody`, `BladePageBlade`, `BladeEdgeName`): each page is a blade of its own — forward it slides
+  in from the right over the current one, back (B / L1) the current one slides away on top and reveals the one under it; the
+  covered game blade keeps its curved edge with its name standing up in up to two lines (fixed edge width, no layout jump);
+  its first-page commands stay drawn but inert underneath; L1 / R1.
+- **Popup-first** (owner, 12 Nov; `data/Features.kt`): Card binder's `cards_a_plays` and Pocket Quest's `pq_a_plays` (the only
+  layout switches that started a game on A) default to off — A opens the game's window. Same keys: a saved "on" is kept; no
+  migration, no new setting. A double A inside the window is still covered by PLAY_GUARD_MS (450 ms). Test `PopupFirstDefaultsTest`.
+- **3D case spine kept by its picture's address** (custom-spine flicker investigation; `ui/Case3D.kt` `DerivedArt.putModel/peekModel`,
+  `rememberDerived(model = …)`): the upright and fitted spine (and the strip cut from a box scan) were cached only by the decoded
+  Bitmap's identity — a re-decode of the same file (left Coil's memory, case scrolled back in, slot reused) missed and the case
+  showed the dark WAITING strip until load → upright → fit ran again (two async hops for a custom spine). Now also kept by the
+  model string + size + kind (exact: a cut model carries its cut), counted at real size in the same bounded LruCache, and found
+  even before the picture is decoded again. Code-level root cause; the owner's live flicker is NOT confirmed fixed (hardware).
+- **Game shelf / Case stacks: no picture flash as the case comes out** (owner footage; `ui/WinSceneFamilies.kt` `SceneCase`,
+  `SceneFlyingCase`, `CaseFlightGate`; `ui/ShelfHome.kt` `PulledOutCase(onArtReady)`; `ui/CoverCases.kt` `ScanCase(onShown)`;
+  `ui/GameWindow.kt`): root causes — (1) the window's flying copy called `PulledOutCase` without the shelf's `waitForCase`, so
+  `ScanCase` drew the flat cover until its scan's onSuccess: the case that flew out showed another picture for a moment;
+  (2) the home's copy was hidden from the reveal's first frame while the flying copy was not placed yet (one frame) and still
+  loading. Now the window's case is the shelf's (same waiting rule); the home's copy hides in the frame the flying copy is
+  placed and drawn, and the reveal waits for that hand-over (one frame when the scan is in memory; at most 250 ms, then the
+  shelf's own plain case flies). Tests `ShelfCaseHandOverTest`. Hardware: NOT verified.
+- **Window's achievements line keeps its total** (physical-media audit 5a, "Achievements 141 /"; `ui/GameWindow.kt` `WinInfo`): the
+  one-line label beside a fixed 70 dp bar was cut in narrow windows; it now takes the room the bar leaves, steps down to 9 sp
+  and may use a second line; "141 / 160" never breaks. The audit's title-over-subtitle overlap is not reproduced here (needs a
+  settled capture) — open.
+- **L1 / R1 walk only the pages a window has** (`WinSceneCtx.pages`): a game with no achievements page (or no options page)
+  is skipped over instead of a bumper opening the full achievements list / the game's menu mid-cycle (Storage did that in
+  v0.6.70 already; the new native windows inherited it). Tapping a tab still opens what its button opens. Test `BumpersWalkRealPagesTest`.
+- **Covered / leaving controls can't take the D-pad** (`WinAction.inert`, `SceneControl` clickable(enabled = !inert)): found in
+  self-review — the game blade's commands under a Blades page blade were still focusable (removing their focus requester
+  wasn't enough), so the D-pad could move under the blade; leaving sheets for ~280 ms likewise. Test `InertControlsTest`.
+- **B never lights Play first** (finding C, all scene windows): `GameWindow` asked Play at 60 ms and `SceneBody` the opener at
+  120 ms — Play was lit for ~60 ms and a quick A started the game. One rule now (`WinPageFlow.pageFocusTarget`), the opener is
+  asked directly (each frame until attached). L1 / R1 and tabs open pages through their buttons' openers; a page turned to from
+  another page keeps the first opener.
+- **Files:** `ui/WinPageFlow.kt` (new), `ui/GameWindow.kt`, `ui/WinScenes.kt`, `ui/WinSceneFamilies.kt`, `ui/WinScenesConsole.kt`;
+  tests `ui/PopupNativeStorageTest.kt` (new, 9),
+  `ui/Visual426Test.kt` + `ui/Batch523cTest.kt` (assertions updated to the new text, same intent).
+- **Checked (cloud):** Kotlin 2.2.10 + Compose type-check 0 errors; all 1064 unit tests run with real JUnit 4.13.2 — the same 134
+  fail on unchanged v0.6.70 (Android stubs: no `isReturnDefaultValues` in this harness), no new failure; static_checks PASS
+  (summary identical to v0.6.70).
+- **Not done:** PC Gradle build (the PC tool builds only the `fw1` / `ci` worktrees — needs an allow-list entry + restart);
+  hardware (KONKR asleep, Flip 2 showing the real Voltcap). Statistics is still its own dialog (not a window page).
+
 # v0.6.70 published (11 Nov 2026)
 
 - Owner-approved release of the verified 523z3 candidate: main `aed4501` (RC) + `cc646b4` ("Voltcap 0.6.70", versionCode 77).
@@ -5,6 +158,26 @@
 - Voltcap-0.6.70.apk c842251c145820de58f2e5d828a1705fd6d5795519af2dfa56ea5aa7ceccfde8; Voltcap-0.6.70-compat.apk f295b1db532d11e8b827f3fa2bc66d31e6ba910cb477269b6a0b6cd0ea62ff91; plus two baseline-profile .dm files. GitHub digests match the local build.
 - Checks: com.shelf.launcher 0.6.70 (77), signer 88ce4b67…f344197, debuggable=False, verifyNoEmbeddedSecrets 4 values clean, apk_secret_scan clean, pattern scan 0 hits.
 - FW1 (dual welcome) kept out; RP Classic ×1.3 grading = accepted documented risk. No production app installed or updated on any handheld.
+
+# Update 523z3 (11 Nov 2026) — ×1.3 home-screen fixes before v0.6.70 (owner-approved scope; next/0.6.70, local)
+
+- **Category name next to the status bar** (`ui/HomeParts.kt` `CategoryNamePart` + `categoryNameRoomPx`, `ui/LauncherScreen.kt`):
+  - It now stops 8 dp before the clock / icons cluster, but only where the two really share the top band.
+  - This fixes the ×1.3 collisions on Card binder, Cover details, TV room and Twin icons.
+  - It's unchanged wherever there's room.
+- **File select** (`ui/StyleFileSelect.kt`):
+  - The caption keeps a gap after SELECT FILE and is shown whole.
+  - A file's name drops to one line only when the block is too short, so the stars and "Never played" stay visible.
+- **Copy:**
+  - `src_copy/ui/{HomeParts,LauncherScreen,StyleFileSelect}.kt`
+  - `app/src/test/.../ui/Batch523zTest.kt`
+  - `tools/qa/device/home13.sh`
+- **Checked:**
+  - Unit tests and the type-check pass.
+  - `home13.sh` before / after on KONKR + Flip 2 at ×1.0 / ×1.3.
+  - File select popup gate: 6 / 6 PASS at both sizes on KONKR.
+  - Release build R8 + secret scan.
+- **Not re-run:** the full 318 popup gates, because popups are untouched apart from File select, which was re-gated.
 
 # Update 523 (10–11 Nov 2026) — owner's UX batch 1–18, Save Vault art, popup design lab (local, next/0.6.70)
 

@@ -995,7 +995,7 @@ internal fun Modifier.styleFocus(on: Boolean, corner: Dp, pulse: Float, color: C
     val shape = uiRounded(corner)
     // Update 389: [alpha] (read while drawing) fades the whole look — a followed row's highlight moves with the row (EndlessRow.kt).
     val fade: () -> Float = alpha ?: { 1f }
-    return this
+    return this.qaLit(true) // (Sprint 525: the lit game, for the Fill-the-row test)
         .then(
             when (effect) {
                 FocusEffect.GLOW -> Modifier.softGlow(color, corner, { (0.55f + 0.6f * pulse) * fade() })

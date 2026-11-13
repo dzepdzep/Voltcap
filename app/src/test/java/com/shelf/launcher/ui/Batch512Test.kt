@@ -17,11 +17,12 @@ class Batch512Test {
         .first { it.exists() }.readText()
 
     // (Batch 517: the security hotfix 0.6.69 / 76 — higher than the published 0.6.68 / 75 so it updates over it.)
-    @Test fun releaseIdentityIs0669Code76() {
+    // (12 Nov: the published release is 0.6.70 / 77 — the bump left this test at 0.6.69 / 76, failing on v0.6.70 itself.)
+    @Test fun releaseIdentityIs0670Code77() {
         val g = gradle()
         // (QA builds may rename themselves with a suffix; the code is the release's.)
-        assertTrue(Regex("versionCode = 76\\b").containsMatchIn(g))
-        assertTrue(g.contains("versionName = \"0.6.69"))
+        assertTrue(Regex("versionCode = 77\\b").containsMatchIn(g))
+        assertTrue(g.contains("versionName = \"0.6.70"))
         assertTrue(g.contains("namespace = \"com.shelf.launcher\""))
     }
 

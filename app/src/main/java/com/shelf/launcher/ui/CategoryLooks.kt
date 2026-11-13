@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -87,6 +88,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.shelf.launcher.data.ConsoleArt
@@ -142,7 +144,8 @@ internal fun lookFacts(tile: CategoryTile): String? = tile.platform?.let { p ->
     listOfNotNull(PlatformInfo.maker(p), PlatformInfo.year(p)?.toString()).joinToString(" · ").takeIf { it.isNotBlank() }
 }
 
-internal fun lookCount(tile: CategoryTile): String = if (tile.count == 1) "1 game" else "${tile.count} games"
+// (Sprint 528, KONKR System Stage: a wrapped plate split "2 / games" over two lines - the count keeps together: a no-break space.)
+internal fun lookCount(tile: CategoryTile): String = if (tile.count == 1) "1\u00A0game" else "${tile.count}\u00A0games"
 
 /**
  * Where a picture's visible part is (its non-transparent pixels), as fractions of the picture — left, top, right, bottom —
@@ -385,10 +388,13 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                         .clip(RoundedCornerShape(3.dp)).background(Color(0xFF0B0B0D)).border(0.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    // (Sprint 528, KONKR: on the narrow plate the facts slid on one line - a still showed "O · 1996"; the name and
+                    // the facts wrap onto a second line first.)
+                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
                     Spacer(Modifier.height(3.dp))
                     FullText(
-                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp
+                        listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp,
+                        maxLines = 2, reserve = false
                     )
                 }
                 // The object, standing on the plinth's top.
@@ -580,16 +586,25 @@ internal fun DrawersLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                             }
                             .border(if (on) 2.dp else 0.dp, if (on) accent else Color.Transparent, RoundedCornerShape(4.dp))
                     ) {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
-                            Box(Modifier.fillMaxWidth(0.80f).height(cellH * 0.36f).clip(RoundedCornerShape(2.dp))
+                        // (Sprint 527, KONKR 960 x 640: a drawer front is ~55 dp tall there - 8 dp margins, a 12 dp pull and two
+                        // 12.5 sp lines did not fit, so the long names slid on one line again. On a short drawer the margins and
+                        // the pull shrink, and the lines are em-high so they shrink with the type.)
+                        val tight = cellH < DRAWER_TIGHT_DP.dp
+                        Column(Modifier.fillMaxSize().padding(horizontal = if (tight) 5.dp else 10.dp, vertical = if (tight) 2.dp else 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceEvenly) {
+                            // (Sprint 527, owner: "Sega Mega Drive / Genesis" showed as "a Drive / Genesi" - the card was a fixed
+                            // 36 % of the drawer, too short for two lines, so the name slid inside it. The card is now at least
+                            // two lines tall and wider, the type a little smaller with tight lines: whole names on the card.)
+                            Box(Modifier.fillMaxWidth(if (tight) 0.94f else 0.88f).heightIn(min = cellH * if (tight) 0.3f else 0.36f).clip(RoundedCornerShape(2.dp))
                                 .background(Brush.verticalGradient(listOf(Color(0xFFE8CF8E), brass, Color(0xFF8E6F33))))
-                                .padding(3.dp).background(Color(0xFFF2EAD6)).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+                                .padding(3.dp).background(Color(0xFFF2EAD6)).padding(horizontal = 4.dp, vertical = 2.dp), contentAlignment = Alignment.Center) {
                                 // (Two lines before it shrinks or slides: on a narrow screen every label slid at once.)
-                                FullText(tile.label, color = Color(0xFF2B2016), fontSize = 12.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
-                                    style = androidx.compose.ui.text.TextStyle(lineHeight = 14.sp, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
+                                // (Sprint 528, KONKR: "Nintendo Entertainment System" needs three lines on a short drawer's card - it
+                                // slid slowly on one. A short drawer allows a third line and keeps no empty line room.)
+                                FullText(tile.label, color = Color(0xFF2B2016), fontSize = 11.sp, maxLines = if (tight) 3 else 2, reserve = !tight, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, textAlign = TextAlign.Center,
+                                    style = androidx.compose.ui.text.TextStyle(lineHeight = DRAWER_LINE_EM.em, platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)))
                             }
                             // Cup pull: a half-round brass shell with its shadow.
-                            Canvas(Modifier.width(cellW * 0.26f).height(12.dp)) {
+                            Canvas(Modifier.width(cellW * 0.26f).height(if (tight) 6.dp else 12.dp)) {
                                 drawArc(Color.Black.copy(alpha = 0.35f), 0f, 180f, true, Offset(0f, -size.height * 0.2f), Size(size.width, size.height * 2.2f))
                                 drawArc(Brush.verticalGradient(listOf(Color(0xFFF1DDA5), brass, Color(0xFF7A5C26))), 0f, 180f, true, Offset(0f, -size.height * 0.6f), Size(size.width, size.height * 2f))
                             }
@@ -893,6 +908,21 @@ internal fun ArchiveLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
 // 6. Channel Surf — a CRT set: each system is a channel with its own ident
 // ---------------------------------------------------------------------------------------------
 
+internal object ChannelChange {
+    const val SNOW_FROM = 0.35f; const val SNOW_TO = 0.7f
+    /** The picture: full until it is a line, gone for the snow, back as the new channel rolls in (short ramps, no pop). Pure. */
+    fun pictureAlpha(c: Float): Float = when {
+        c < SNOW_FROM - 0.05f -> 1f
+        c < SNOW_FROM -> (SNOW_FROM - c) / 0.05f
+        c < SNOW_TO -> 0f
+        c < SNOW_TO + 0.06f -> (c - SNOW_TO) / 0.06f
+        else -> 1f
+    }
+    /** The snow's strength: rises and falls over its band instead of switching on and off. Pure. */
+    fun snowAlpha(c: Float): Float = if (c <= SNOW_FROM - 0.03f || c >= SNOW_TO + 0.03f) 0f else
+        kotlin.math.sin(Math.PI.toFloat() * ((c - (SNOW_FROM - 0.03f)) / (SNOW_TO - SNOW_FROM + 0.06f))).coerceIn(0f, 1f)
+}
+
 @Composable
 internal fun ChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     // The change: the picture collapses (0 → 0.35), a burst of snow (0.35 → 0.7), the new channel rolls in (0.7 → 1).
@@ -901,10 +931,15 @@ internal fun ChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
     var dwell by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     LaunchedEffect(selected) { dwell = false; kotlinx.coroutines.delay(900); dwell = true }
     val t0 = tiles.getOrNull(selected)
+    // (Sprint 527, owner: Channel Surf's change looked like an abrupt swap - the NEW channel's picture was the one that
+    // collapsed, then it popped back. Now the channel you leave collapses to the line, the snow comes and goes softly, and
+    // the new one rolls in.)
+    val chans = androidx.compose.runtime.remember { intArrayOf(selected, selected) }
+    if (chans[1] != selected) { chans[0] = chans[1]; chans[1] = selected }
     if (t0 != null) BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF17130F), Color(0xFF0A0806))))) {
-        val t = t0
         val boxW = maxWidth; val boxH = maxHeight
         val c = change.now()
+        val t = if (c < ChannelChange.SNOW_FROM) tiles.getOrNull(chans[0]) ?: t0 else t0
         // The set: dark plastic cabinet, the glass in a rounded "tube" shape.
         Box(
             Modifier.padding(start = 64.dp, end = 64.dp, top = 70.dp, bottom = 50.dp).fillMaxSize()
@@ -917,7 +952,7 @@ internal fun ChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                     val collapse = if (c < 0.35f) 1f - c / 0.35f * 0.98f else if (c < 0.7f) 0.02f else ((c - 0.7f) / 0.3f).coerceIn(0.02f, 1f)
                     scaleY = collapse
                     translationY = if (c >= 0.7f) (1f - (c - 0.7f) / 0.3f) * size.height * 0.08f else 0f
-                    alpha = if (c in 0.35f..0.7f) 0f else 1f
+                    alpha = ChannelChange.pictureAlpha(c)
                 }) {
                     CategoryArt(t, CardShape.WIDE, Modifier.fillMaxSize())
                     val video = t.platform?.let { PlatformInfo.media(it)?.video }
@@ -932,9 +967,10 @@ internal fun ChannelLook(tiles: List<CategoryTile>, selected: Int, animate: Bool
                     while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.10f), Offset(0f, y), Size(size.width, step * 0.45f)); y += step }
                     drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)), center, size.maxDimension * 0.62f))
                     drawOval(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.07f), Color.Transparent), Offset(size.width * 0.25f, size.height * 0.15f), size.width * 0.4f), Offset(-size.width * 0.1f, -size.height * 0.2f), Size(size.width * 0.75f, size.height * 0.7f))
-                    if (c in 0.35f..0.7f) {
+                    val snow = ChannelChange.snowAlpha(c)
+                    if (snow > 0f) {
                         val rnd = java.util.Random((c * 997).toLong())
-                        for (k in 0 until 520) drawRect(Color.White.copy(alpha = 0.18f + 0.35f * rnd.nextFloat()), Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height), Size(4f, 2f))
+                        for (k in 0 until 520) drawRect(Color.White.copy(alpha = (0.18f + 0.35f * rnd.nextFloat()) * snow), Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height), Size(4f, 2f))
                     }
                     if (c < 0.35f) drawRect(Color.White.copy(alpha = 0.5f * (c / 0.35f)), Offset(0f, size.height / 2f - 1.dp.toPx()), Size(size.width, 2.dp.toPx()))
                 }
@@ -1498,3 +1534,8 @@ private fun DashboardLower(tiles: List<CategoryTile>, selected: Int, onFocus: (I
         }
     }
 }
+
+/** Sprint 527: a drawer shorter than this (cell, dp) gets the compact front - thinner margins and pull (KONKR 960 x 640). */
+internal const val DRAWER_TIGHT_DP = 84
+/** Sprint 527: the drawer card's line height, relative to its type, so it shrinks with the auto-fit size. */
+internal const val DRAWER_LINE_EM = 1.14f

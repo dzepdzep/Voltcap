@@ -973,7 +973,7 @@ internal object PieceShots {
  * the same over the node) — what the offscreen sides drew, made once on the CPU. Null when it can't be read.
  */
 internal fun sideArtOf(src: android.graphics.Bitmap, tone: Int): android.graphics.Bitmap? = runCatching {
-    val soft = if (src.config == android.graphics.Bitmap.Config.HARDWARE) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
+    val soft = if (src.isHardwareBitmap()) src.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else src
     val w0 = soft.width; val h = soft.height
     if (w0 <= 0 || h <= 0) return@runCatching null
     val src0 = IntArray(w0 * h)
@@ -1069,7 +1069,7 @@ private object SolidLight {
  * hardware bitmap's pixels can't be read, update 192).
  */
 internal fun photoShellTone(b: android.graphics.Bitmap): Color? = runCatching {
-    val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+    val soft = if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
     val y = soft.height / 2
     var found: Color? = null
     for (x in 0 until soft.width / 3) {

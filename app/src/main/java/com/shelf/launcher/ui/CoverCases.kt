@@ -90,7 +90,7 @@ internal fun isTwinSpine(gray: IntArray): Boolean {
 /** Update 298: an upright spine scan that is two copies of the spine side by side ([isTwinSpine]) cut to one; else itself. */
 internal fun singleSpine(b: android.graphics.Bitmap): android.graphics.Bitmap = runCatching {
     if (b.width < 16 || b.height < 64 || b.width.toFloat() / b.height < 0.07f) return b
-    val soft = if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
+    val soft = if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b
     val g = IntArray(16 * 64)
     // (Each cell the average of 4 × 4 points in it — single points landed on or off thin lettering by chance.)
     for (y in 0 until 64) for (x in 0 until 16) {
@@ -877,6 +877,26 @@ internal fun CoverCase(
     }
 }
 
+
+/**
+ * ScanCase's picture and shape for a front [scan] (pulled out of ScanCase, Hardware QA 12 Nov, so the Game shelf's 3D case
+ * takes exactly the shape the shelf shows the scan at - it cropped a portrait scan to the console's case shape and lost its
+ * title band): the scan's own shape once known (CoverAspects), kept near the real case's / template's [aspect]; the front cut
+ * from a whole unfolded box scan. Before the shape is known: [aspect].
+ */
+internal fun scanShown(scan: Any, aspect: Float, platform: String?, cutLeft: Float = 0f): Pair<Any, Float> {
+    val raw = CoverAspects.rawOf(scan.toString())
+    val real = if (cutLeft > 0f) null else CaseCatalog.frontAspect(platform)
+    // (A jewel case's front scan, or a PlayStation one cut at its band, keeps the old leeway: a booklet or the whole case.)
+    val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
+    val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
+    val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
+        raw != null && looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)
+    val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    val own = (if (unfolded) CoverAspects.rawOf(shown.toString()) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
+    return shown to (own ?: aspect)
+}
+
 /**
  * The game's own scanned case seen from the front (update 101): the scan itself is the case (its printed banner and all),
  * at [aspect] (the console's real case proportions), with the plastic sheen and a shadow. [onFail] is called when the
@@ -888,7 +908,9 @@ internal fun ScanCase(
     /** Update 143: this share of the scan's width is cut off its left side (a PlayStation cover's band, see [PS1_BAND]). */
     cutLeft: Float = 0f,
     /** (Update 240, #27/#58: the game's console, for its real case's shape (CaseCatalog.frontAspect) and the full-scan cut.) */
-    platform: String? = null
+    platform: String? = null,
+    /** Shelf flash work (12 Nov): called once the scan is drawn (or can't be) - the window's flying case waits for it. */
+    onShown: (() -> Unit)? = null
 ) {
     // Update 186: the scan's own shape once it's known (CoverAspects), so nothing of it is cut off — a GoldenEye box lost
     // the "G" when drawn at the template's shape. Kept near the template's (a wrong scan can't make a strange case).
@@ -898,40 +920,57 @@ internal fun ScanCase(
     // A scan far wider than the case — the whole unfolded box, back | spine | front — has its front cut out (BoxTexture).)
     val key = scan.toString()
     val raw = CoverAspects.rawOf(key)
-    val real = if (cutLeft > 0f) null else CaseCatalog.frontAspect(platform)
-    // (A jewel case's front scan, or a PlayStation one cut at its band, keeps the old leeway: a booklet or the whole case.)
-    val lo = if (real != null) minOf(aspect, real) * 0.92f else aspect * 0.75f
-    val hi = if (real != null) maxOf(aspect, real) * 1.08f else aspect * 1.33f
-    val unfolded = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null &&
-        raw != null && looksUnfolded(raw, hi) && !BoxTexture.frontCutFailed(scan)
-    val shown: Any = if (unfolded) BoxTexture.model(scan as String, BoxPart.FRONT, platform) else scan
+    val (shown, shape) = scanShown(scan, aspect, platform, cutLeft)
     // Batch 520: a scan whose shape isn't known yet may be the whole unfolded box (back | spine | front): until it is
     // measured it loads invisibly (the cover / plate shows), so its middle — the spine — never flashes before the front cut.
     val probing = platform != null && cutLeft <= 0f && scan is String && BoxTexture.parse(scan) == null && raw == null
     val shownKey = shown.toString()
-    val own = (if (unfolded) CoverAspects.rawOf(shownKey) else raw)?.let { r -> (r * (1f - cutLeft.coerceIn(0f, 0.5f))).coerceIn(lo, hi) }
-    val shape = own ?: aspect
     BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val w = minOf(maxWidth, maxHeight * shape)
         val h = w / shape
         // Update 119: the game's cover (usually already loaded) while its case scan comes in — never a dark box first.
-        var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(false) }
+        // (Phase 4, 12 Nov: the window's flying copy - onShown - starts from the very bitmap the shelf already drew for this scan
+        // (ShownScans), as its placeholder, so it is complete in its first frame even when its own decode size differs and
+        // Coil has to decode again: no wait for the hand-over, no picture change mid-flight.)
+        val ctxNow = androidx.compose.ui.platform.LocalContext.current
+        val heldKey = if (onShown != null && !probing) ShownScans.inMemory(ctxNow, shownKey) else null
+        var loaded by androidx.compose.runtime.remember(shown) { androidx.compose.runtime.mutableStateOf(heldKey != null) }
         val scanIn = loaded && !probing
+        if (onShown != null) androidx.compose.runtime.LaunchedEffect(scanIn) { if (scanIn) onShown() }
         // Update 202: the grey placeholder only until the scan is in: a scan with see-through corners (or one a hair off
         // the box's shape) never shows grey round it once drawn — the scan itself fills the box (Crop, centred).
         Box(Modifier.size(w, h).caseShadow().then(caseModifier).then(if (scanIn) Modifier else Modifier.background(CaseArtPlaceholder)).then(if (cutLeft > 0f) Modifier.clipToBounds() else Modifier)) {
             if (cover != null && !scanIn) AsyncImage(cardArtModel(cover), null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            val model = cardArtModel(shown).let { m -> if (heldKey != null && m is coil.request.ImageRequest) m.newBuilder().placeholderMemoryCacheKey(heldKey).build() else m }
             AsyncImage(
-                cardArtModel(shown), null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
+                model, null, contentScale = ContentScale.Crop, alignment = if (cutLeft > 0f) Alignment.CenterEnd else Alignment.Center,
                 // (Update 240: the front cut's own shape under its own address — the scan's stays the whole scan's.)
-                onSuccess = { r -> loaded = true; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
-                onError = { onFail() },
+                onSuccess = { r -> loaded = true; r.result.memoryCacheKey?.let { ShownScans.note(shownKey, it) }; r.painter.intrinsicSize.let { sz -> CoverAspects.note(shownKey, sz.width, sz.height) } },
+                onError = { onFail(); onShown?.invoke() },
                 modifier = (if (cutLeft > 0f) Modifier.fillMaxHeight().wrapContentWidth(Alignment.End, unbounded = true).width(w / (1f - cutLeft.coerceIn(0f, 0.5f)))
                 else Modifier.fillMaxSize()).graphicsLayer { alpha = if (probing) 0f else 1f }
             )
             CaseSheen(Modifier.fillMaxSize())
         }
     }
+}
+
+/**
+ * Phase 4 (12 Nov): the memory-cache key of the bitmap last drawn for each case scan address (ScanCase), so another view of
+ * the same scan - the window's flying case - can show that very bitmap at once while its own decode runs. Bounded; only
+ * keys, the bitmaps stay Coil's.
+ */
+internal object ShownScans {
+    const val MAX = 96
+    private val keys = object : LinkedHashMap<String, coil.memory.MemoryCache.Key>(MAX, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, coil.memory.MemoryCache.Key>?) = size > MAX
+    }
+    @Synchronized fun note(address: String, key: coil.memory.MemoryCache.Key) { keys[address] = key }
+    @Synchronized fun keyFor(address: String): coil.memory.MemoryCache.Key? = keys[address]
+    @Synchronized fun size(): Int = keys.size
+    /** The key for [address] when its bitmap is still in memory, else null. */
+    fun inMemory(context: android.content.Context, address: String): coil.memory.MemoryCache.Key? =
+        keyFor(address)?.takeIf { k -> runCatching { coil.Coil.imageLoader(context).memoryCache?.get(k) != null }.getOrDefault(false) }
 }
 
 /** Update 143: how much of a PlayStation (PS1) cover scan's width its black "PlayStation" band down the left takes; cut off. */

@@ -23,6 +23,7 @@
 const { execFile, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const zlib = require('zlib');
 const guard = require('./guard');                                     // Batch 521: fail-closed protection of the real Voltcap
 
@@ -42,7 +43,18 @@ const GRADLE_TASKS = ['assembleQa', 'assembleRelease', 'assembleCompat', 'assemb
 let job = null;                                                          // the one Gradle run at a time
 // FW1 (owner, 11 Nov 2026): isolated builds of a feature branch in its own git worktree, never in the release candidate's tree.
 // A fixed allow-list: the name picks the folder (git-ignored, under Claude outputs) and the only branch it may hold.
-const WORKTREES = { fw1: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'fw1'), branch: 'feature/dual-welcome' } };
+const WORKTREES = {
+  fw1: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'fw1'), branch: 'feature/dual-welcome' },
+  // Connected Ignition (owner-approved 11 Nov): its own isolated worktree, QA app only.
+  ci: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'ci'), branch: 'feature/connected-ignition' },
+  // Popup native pages (owner-approved 12 Nov, applied by Claude; active after the next desktop restart): its own isolated worktree, QA app only.
+  pnat: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'pnat'), branch: 'feature/popup-native' },
+  // Shelf 3D experiment (owner-approved 12 Nov, applied by Claude; active after the next desktop restart): its own isolated worktree, QA app only.
+  s3d: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 's3d'), branch: 'exp/shelf-3d-flip' },
+  // v0.6.71 release candidate (owner-approved 12 Nov: "build the exact integration candidate"): its own worktree, builds and
+  // QA app only - never pushed by git_push_branch, never main, never tagged or published from here.
+  int: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'int'), branch: 'integration/0.6.71' }
+};
 // Git-ignored files a build needs, copied from the main tree into a worktree (no signing keys: QA builds use the debug key).
 const WORKTREE_COPY = ['local.properties', 'voltcap_api.properties', 'screenscraper.properties', 'igdb.properties', 'secret_denylist.txt', 'qa_variant.properties'];
 const BACKUPS = path.join(ROOT, 'Claude outputs', 'backups');
@@ -215,6 +227,10 @@ const TOOLS = [
   { name: 'git_status', description: 'Read-only: current branch, uncommitted files and the last commits of the project.', inputSchema: { type: 'object', properties: {} } },
   { name: 'publish_release', description: 'Publish a Voltcap release with tools\\release\\release.ps1: bumps versionName/versionCode (or keeps an already staged version and its code), builds the release + compat APKs, commits + pushes, and creates the GitHub release the in-app updater offers. Needs everything committed first, and a version higher than the current one, or equal to the staged one when it is newer than the latest published release and its tag does not exist yet. Runs in the background: check with gradle_status.',
     inputSchema: { type: 'object', properties: { version: { type: 'string', description: 'e.g. 0.6.9' }, notes: { type: 'string', description: 'Release notes (plain text)' } }, required: ['version', 'notes'] } },
+  // (Owner, 12 Nov 2026: "push the following existing development branches ... feature/popup-native, exp/shelf-3d-flip,
+  // feature/connected-ignition ... Do not force-push, rewrite history ... Do not merge into main, publish a release".)
+  { name: 'git_push_branch', description: 'Push ONE owner-approved development branch (pnat = feature/popup-native, s3d = exp/shelf-3d-flip, ci = feature/connected-ignition) from its worktree to origin under its own name. Never force (a push that is not a fast-forward is refused by git), never main, never tags. The worktree must be clean and its HEAD must be [expect]; the tree is checked against secret_denylist.txt (values never printed) first. Afterwards the remote tip is read back and compared.',
+    inputSchema: { type: 'object', properties: { worktree: { type: 'string', enum: ['pnat', 's3d', 'ci'] }, expect: { type: 'string', description: 'The commit the branch must be at (7-40 hex)' } }, required: ['worktree', 'expect'] } },
   { name: 'git_commit_push', description: 'Commit everything (git add -A) with the given message and push to origin main. Only on branch main, never force; refuses while Gradle runs or when nothing changed.',
     inputSchema: { type: 'object', properties: { message: { type: 'string', description: 'Commit title, e.g. "Update 217: ..."' }, body: { type: 'string', description: 'Optional second paragraph (e.g. Co-Authored-By lines)' } }, required: ['message'] } }
 ];
@@ -259,7 +275,7 @@ let serial = Promise.resolve();
 function queued(fn) { const run = serial.then(fn, fn); serial = run.catch(() => {}); return run; }
 
 async function call(name, a) {
-  if (name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release' || name === 'worktree_prepare') return queued(() => call2(name, a));
+  if (name === 'git_push_branch' || name === 'git_commit_push' || name === 'sync_sources' || name === 'git_status' || name === 'publish_release' || name === 'worktree_prepare') return queued(() => call2(name, a));
   return call2(name, a);
 }
 
@@ -490,6 +506,65 @@ async function call2(name, a) {
       p.on('error', (e) => { ws.write('\n' + e.message + '\n'); });
       p.on('close', (code) => { j.code = code === null ? -1 : code; j.ended = Date.now(); ws.end(); });
       return text(`Publishing Voltcap ${v} (${staged ? 'staged' : 'was ' + cur}). Log: ${log}\nCheck with gradle_status.`);
+    }
+    case 'git_push_branch': {
+      if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');
+      const PUSHABLE = { pnat: 'feature/popup-native', s3d: 'exp/shelf-3d-flip', ci: 'feature/connected-ignition' };
+      const branch = PUSHABLE[a.worktree];
+      if (!branch) throw new Error('Only pnat, s3d and ci may be pushed.');
+      const wt = worktreeOf(a.worktree);
+      if (!wt || wt.branch !== branch || !fs.existsSync(wt.dir)) throw new Error('Worktree ' + a.worktree + ' is not prepared.');
+      const expect = String(a.expect || '').trim().toLowerCase();
+      if (!/^[0-9a-f]{7,40}$/.test(expect)) throw new Error('expect must be a commit id (7-40 hex).');
+      const out = [];
+      const g = async (args) => { const r = await runCapture('git', args, { cwd: wt.dir }); out.push('$ git ' + args.join(' ') + ' -> ' + r.code + (r.out.trim() ? '\n' + tail(r.out, 8) : '')); return r; };
+      const br = (await g(['rev-parse', '--abbrev-ref', 'HEAD'])).out.trim();
+      if (br !== branch) throw new Error('Worktree is on ' + br + ', expected ' + branch + ' - nothing pushed.\n' + out.join('\n'));
+      const st = (await g(['status', '--porcelain', '--untracked-files=no'])).out.trim();
+      if (st) throw new Error('Worktree has local changes - nothing pushed.\n' + st);
+      const head = (await g(['rev-parse', 'HEAD'])).out.trim();
+      if (!head.startsWith(expect)) throw new Error('HEAD is ' + head + ', not ' + expect + ' - nothing pushed.');
+      // Secrets (Sprint 525: the same values the APK check knows, plus signing and Worker secrets - push_guard.js), searched in
+      // EVERY commit this push sends (not only the tip), and no file that holds secrets in any of them. Only the source names
+      // of a hit are shown, never the value.
+      const pg = require('./push_guard');
+      const miss = pg.missingSources(ROOT);
+      if (miss.length) throw new Error('Secret sources missing (' + miss.join(', ') + ') - nothing pushed.');
+      const deny = pg.denyValues(ROOT);
+      if (!deny.length) throw new Error('No secret values to check against - nothing pushed.');
+      const revs = (await g(['rev-list', head, '--not', '--remotes=origin'])).out.split(/\s+/).filter((x) => /^[0-9a-f]{40}$/.test(x));
+      if (!revs.length) revs.push(head);
+      const tracked = (await g(['ls-tree', '-r', '--name-only', head])).out.split(/\r?\n/);
+      const touched = (await g(['log', '--name-only', '--format=', head, '--not', '--remotes=origin'])).out.split(/\r?\n/);
+      const badFiles = [...new Set(pg.secretFiles(tracked.concat(touched)))];
+      if (badFiles.length) throw new Error('A file that holds secrets is in a commit being pushed - nothing pushed:\n' + badFiles.join('\n'));
+      const pat = path.join(os.tmpdir(), 'voltcap_deny_' + process.pid + '.txt');
+      fs.writeFileSync(pat, deny.map((e) => e.value).join('\n') + '\n');
+      const hitFiles = [];
+      try {
+        for (let i = 0; i < revs.length; i += 150) {
+          const hits = await runCapture('git', ['grep', '-l', '-F', '-f', pat].concat(revs.slice(i, i + 150)), { cwd: wt.dir });
+          if (hits.code === 0) hitFiles.push(tail(hits.out, 20));
+          else if (hits.code !== 1) throw new Error('Secret check failed to run (git grep exit ' + hits.code + ') - nothing pushed.');
+        }
+      } finally { try { fs.unlinkSync(pat); } catch (e) {} }
+      if (hitFiles.length) {
+        // which source matched, by name only (each value grepped alone, in the same commits)
+        const from = [];
+        for (const e of deny) {
+          const one = path.join(os.tmpdir(), 'voltcap_deny1_' + process.pid + '.txt');
+          fs.writeFileSync(one, e.value + '\n');
+          try { const h = await runCapture('git', ['grep', '-q', '-F', '-f', one].concat(revs.slice(0, 150)), { cwd: wt.dir }); if (h.code === 0) from.push(e.from); }
+          finally { try { fs.unlinkSync(one); } catch (x) {} }
+        }
+        throw new Error('A secret value is in a commit being pushed (' + from.join('; ') + ') - nothing pushed. Files:\n' + hitFiles.join('\n'));
+      }
+      out.push('secret check: ' + deny.length + ' values (' + [...new Set(deny.map((e) => e.from.split(' ')[0]))].join(', ') + ') in ' + revs.length + ' commit(s), no hit; no secret files');
+      // Never forced: no +, no --force; git refuses a non-fast-forward. No tags.
+      const p = await g(['push', '--no-follow-tags', 'origin', head + ':refs/heads/' + branch]);
+      if (p.code !== 0) throw new Error('Push refused / failed - see:\n' + out.join('\n'));
+      const ls = (await g(['ls-remote', 'origin', 'refs/heads/' + branch])).out.trim().split(/\s+/)[0] || '';
+      return text(`${branch}: local ${head}\nremote ${ls}\n${ls === head ? 'MATCH' : 'MISMATCH'}\n\n` + out.join('\n'));
     }
     case 'git_commit_push': {
       if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');

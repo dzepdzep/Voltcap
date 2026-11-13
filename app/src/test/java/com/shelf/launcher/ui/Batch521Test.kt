@@ -37,7 +37,10 @@ class Batch521Test {
         val ls = src("ui/LauncherScreen.kt")
         assertTrue(ls.contains("val line = p[TilesMidLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }"))
         assertTrue(ls.contains("val top = p[TilesTopLine].let { if (it == androidx.compose.ui.layout.AlignmentLine.Unspecified) it else (it - rowShiftPx).toInt() }"))
-        assertTrue(ls.contains("com.shelf.launcher.data.Profiles.list.value.isNotEmpty()) 60.dp else 10.dp"))
+        // (Sprint 527: at least 60 dp, more when the badge's measured bottom needs it - x1.3.)
+        assertTrue(ls.contains("maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)"))
+        // (Sprint 528: without the pictures still 10 dp - or below a music player Home shows in a top corner.)
+        assertTrue(ls.contains("else maxOf(10.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.musicBottomPx.toDp() } + 8.dp)) else 0.dp,"))
         assertTrue("a moved row stays on the screen", ls.contains("y0.toFloat().coerceIn(minOf(minY, maxY), maxOf(minY, maxY)).toInt()"))
         // The profiles row itself: 12 dp from the top, 40 dp tall at most (TileSwitchProfiles) - 60 dp clears it.
         assertTrue(ls.contains("padding(start = 22.dp, top = 12.dp)"))

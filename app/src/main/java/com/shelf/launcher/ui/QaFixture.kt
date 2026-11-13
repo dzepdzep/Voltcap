@@ -17,6 +17,7 @@ import java.io.File
  * or setting is touched, and the drawn pictures live in cache/qa_fixture_art (deleted when it goes off).
  *   names = real | long (very long, with Unicode) | short (three letters) — both keep the real names' alphabetical order
  *   art   = real | none | wide (16:9) | square | portrait (2:3) | ultrawide (3:1) | lowres (64 × 96, shown much bigger)
+ *           | covers (Sprint 528: pictures QA pushed to the QA app's own files/qa_covers, matched by game name)
  *   meta  = real | none (no description, maker, genre, year, achievements, screenshots, clips)
  * Every drawn picture carries its own shape in words ("QA 16:9 …") so a screenshot shows which fixture is on.
  */
@@ -71,6 +72,7 @@ internal object QaFixture {
 
     /** Draws the pictures for [mode] once ([SLOTS] of them, numbered, hues far apart) into cache/qa_fixture_art/<mode>. */
     fun prepare(context: Context, mode: String, done: (File?) -> Unit) {
+        if (mode == "covers") return prepareCovers(context, done)
         val wh = shape(mode) ?: return done(null)
         Thread {
             val dir = File(context.cacheDir, "qa_fixture_art/$mode").apply { mkdirs() }
@@ -98,6 +100,25 @@ internal object QaFixture {
         }.start()
     }
 
+    /**
+     * Sprint 528 (owner: verify with representative real covers): `art=covers` - pictures pushed by QA into the QA app's OWN
+     * external files/qa_covers/ (never read from the real Voltcap, never in the repository), matched to a game by its name
+     * (letters and digits, any case). A game without one gets no picture, so the fallbacks show as they really would.
+     */
+    private fun prepareCovers(context: Context, done: (File?) -> Unit) {
+        Thread {
+            val src = context.getExternalFilesDir("qa_covers")
+            val dir = File(context.cacheDir, "qa_fixture_art/covers").apply { deleteRecursively(); mkdirs() }
+            runCatching {
+                src?.listFiles()?.filter { it.isFile && it.length() > 0 }?.forEach { f -> f.copyTo(File(dir, "n_" + coverKey(f.nameWithoutExtension) + ".img"), overwrite = true) }
+            }
+            done(dir)
+        }.start()
+    }
+
+    /** A game's or a cover file's name as the match key (letters and digits, lower case). Pure. */
+    fun coverKey(name: String): String = name.substringBefore(" (").lowercase().filter { it.isLetterOrDigit() }
+
     fun clear(context: Context) { runCatching { File(context.cacheDir, "qa_fixture_art").deleteRecursively() } }
 
     // (The renamed list and the drawn art are kept while the real list is the same object — a new list on every state change
@@ -119,6 +140,10 @@ internal object QaFixture {
                 sp.art == "real" -> null
                 sp.art == "none" -> emptyMap()
                 dir == null -> null
+                sp.art == "covers" -> s.games.mapNotNull { g ->
+                    val f = File(dir, "n_" + coverKey(g.name) + ".img")
+                    if (f.exists()) g.stableKey to "file://${f.absolutePath}".let { u -> GameArt(gridUrl = u, wideGridUrl = null, heroUrl = null) } else g.stableKey to GameArt(gridUrl = null, heroUrl = null)
+                }.toMap()
                 // (Numbered by the games' alphabetical rank, over SLOTS pictures: neighbours in any name-sorted list — a console
                 // or All — get different pictures. Numbered by list position over 8, games 8 apart sat side by side, k474p.)
                 else -> run {

@@ -263,7 +263,7 @@ internal object Engraving {
 
     /** The average colour of [b]'s visible pixels in [r] (a few samples), as opaque ARGB; null when none show there. */
     fun sampleTone(b: Bitmap, r: RectF): Int? {
-        if (b.config == Bitmap.Config.HARDWARE) return null
+        if (b.isHardwareBitmap()) return null
         var rs = 0L; var gs = 0L; var bs = 0L; var n = 0
         for (iy in 0 until 4) for (ix in 0 until 6) {
             val x = (r.left + (ix + 0.5f) / 6f * r.width()).toInt().coerceIn(0, b.width - 1)
@@ -297,7 +297,7 @@ internal object Engraving {
         val out = runCatching { Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888) }.getOrNull() ?: return null
         val c = Canvas(out)
         val raw = runCatching { PlatformLogos.baked(context, platform)?.asAndroidBitmap() }.getOrNull()
-        val logo = raw?.let { if (it.config == Bitmap.Config.HARDWARE) it.copy(Bitmap.Config.ARGB_8888, false) else it }
+        val logo = raw?.let { if (it.isHardwareBitmap()) it.copy(Bitmap.Config.ARGB_8888, false) else it }
         if (logo != null && logo.width > 0 && logo.height > 0) {
             val sc = min((w - 2 * PAD).toFloat() / logo.width, (h - 2 * PAD).toFloat() / logo.height)
             val dw = logo.width * sc; val dh = logo.height * sc

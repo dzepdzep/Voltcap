@@ -715,6 +715,61 @@
    "apk_sha256": "cbf9162ca7895e4153d31eb0c6941ace8832a8a4c123c77e7d07c9de0012e320",
    "base_commit": "6bc73b9",
    "note": "batch 523z3: 523z2 + File select line count from real heights, category name limited only when it really shares the clock band; GT78 + Flip 2"
+  },
+  {
+   "version_name": "0.6.70-qa-s3d",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.70-s3d-daef44e",
+   "apk_sha256": "876f7bd7814a52a5e075189c8f784e1a0c07dea549df48b093655b5eeb775445",
+   "base_commit": "daef44e",
+   "note": "exp/shelf-3d-flip: native popups + 3D Shelf on (art gate, shape gate, tilt 14); Flip 2 runs s3final2, nat10, nat13 (x1.3 hook not reaching popups)"
+  },
+  {
+   "version_name": "0.6.70-qa-s3d",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.70-s3d-2ac8326",
+   "apk_sha256": "efa86771fb5aabb1172191bb16b180e5d2d8030a13347cfa9678c71e1e002b97",
+   "base_commit": "2ac8326",
+   "note": "exp/shelf-3d-flip: + slot-room fix, per-frame trace, Blades text fade, QA text scale in the game window's Dialog; Flip 2 runs fix, bl10, n13b (x1.3)"
+  },
+  {
+   "version_name": "0.6.70-qa-s3d",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": null,
+   "id": "qa-0.6.70-s3d-eb06ea7",
+   "apk_sha256": "3a31b5ab57cbd37407f4b0fb87d5793a0f91245c0c8c23cedc39b031711f311e",
+   "base_commit": "eb06ea7",
+   "note": "exp/shelf-3d-flip: + 3D warm draw / drawn-whole hand-over, Blades covered text not composed; Flip 2 runs fix2, blf10, blf13, popvid"
+  },
+  {
+   "version_name": "0.6.70-qa",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "same tree as feature/popup-native 8cb1ae8",
+   "id": "qa-0.6.70-int-b018aca",
+   "apk_sha256": "1b75be1cafbf4864685940553c04d194ce41ccdc811a241b2b71e90970fa1c43",
+   "base_commit": "b018aca",
+   "note": "v0.6.71 integration candidate RC3 (integration/0.6.71 = popup-native 8cb1ae8 + main 65f7cca; 3D Shelf off). Built 12 Nov 14:03 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). sha256 of the installed base.apk on the Flip 2 (55,375,174 bytes; the PC file is too deep to stage). testDebugUnitTest: Gradle build-cache hit of the identical inputs run at popup-native 96693b6 (app/ and tests byte-identical). lintRelease 49 E / 967 W / 109 H."
+  },
+  {
+   "version_name": "0.6.70-qa",
+   "version_code": 77,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "same tree as feature/popup-native 07520c9",
+   "id": "qa-0.6.70-int-c827ff9",
+   "apk_sha256": "c3a458177b55a32b8f5d1d46216d989b4d4f144f9f9f6df24472859329c59f57",
+   "base_commit": "c827ff9",
+   "note": "v0.6.71 integration candidate RC4 (integration/0.6.71 = RC3 b018aca + popup-native 07520c9; 3D Shelf off). Built 12 Nov 15:04 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). testDebugUnitTest EXECUTED in int 14:55 (BUILD SUCCESSFUL; EndlessFillLitRoboTest 460/460, EndlessOnceRoboTest 279/279, WinFocusRoboTest 448 (51 skipped by design), ShelfTextRoboTest 144 (24 skipped by design)). sha256 = installed base.apk on the Flip 2 (55,375,174 bytes). App code = RC3 + a QA-trace-only rename (OldSpineTrace.Track); hardware runs were on RC3, RC4 smoke on the Flip 2 (starts, Shelf composes, 0 crashes)."
   }
  ]
 }

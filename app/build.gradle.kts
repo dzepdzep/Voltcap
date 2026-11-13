@@ -69,7 +69,14 @@ if (debugIsProduction) logger.warn("Voltcap: qa_variant.properties debugIsProduc
 
 android {
     // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
-    testOptions { unitTests.isReturnDefaultValues = true }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+        // (Popup native pages, 12 Nov: the Robolectric + Compose UI tests compose the real game windows and drive them with
+        // key events; they need the app's resources. Test-only: nothing of this reaches an APK.)
+        unitTests.isIncludeAndroidResources = true
+        // (Robolectric loads the whole app's classes; the default test heap ran out.)
+        unitTests.all { it.maxHeapSize = "2g" }
+    }
     namespace = "com.shelf.launcher"
     compileSdk = 36
 
@@ -78,8 +85,8 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 77
-        versionName = "0.6.70"
+        versionCode = 78
+        versionName = "0.6.71"
 
         // (Batch 517: no credential is built in any more — see above. Only these two non-secret values.)
         buildConfigField("String", "SS_SOFT_NAME", buildConfigString(screenScraperProps.getProperty("softName")))
@@ -204,6 +211,11 @@ composeCompiler {
 dependencies {
     // Update 245 (#79): plain JVM unit tests for the parsers and matchers (app/src/test, gradlew testDebugUnitTest).
     testImplementation("junit:junit:4.13.2")
+    // (12 Nov: real focus / key behaviour of the game windows on the JVM - Robolectric + Compose UI test. Test-only.)
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation(platform("androidx.compose:compose-bom:2026.02.01"))
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.compose.ui:ui-test-manifest")
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
 
     implementation("androidx.core:core-ktx:1.16.0")

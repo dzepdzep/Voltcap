@@ -190,6 +190,11 @@ data class LauncherUiState(
     /** Console folders recognised at any depth. */
     val deepSearch: Boolean = true,
     val isScanning: Boolean = false,
+    /**
+     * Sprint 528: the saved library has been read (or there was none) - until then an empty list means "not read yet", not
+     * "no games": a cold start showed "No games yet - add your ROM folder" for a moment before the games came in (Flip 2).
+     */
+    val libraryLoaded: Boolean = false,
     val art: Map<String, GameArt> = emptyMap(), // keyed by Game.stableKey
     val focusedIndex: Int = 0,
     val artState: ArtConnectionState = ArtConnectionState.OFF,

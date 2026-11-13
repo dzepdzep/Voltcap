@@ -540,7 +540,7 @@ private fun rememberDiscShellFront(shell: DiscShells.Shell, art: Any?, platform:
             val loader = coil.Coil.imageLoader(ctx)
             suspend fun load(req: coil.request.ImageRequest): android.graphics.Bitmap? =
                 ((loader.execute(req) as? coil.request.SuccessResult)?.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                    ?.let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b }
+                    ?.let { b -> if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b }
             val shellBmp = load(
                 coil.request.ImageRequest.Builder(ctx).data(file).size(560, 560).scale(coil.size.Scale.FIT)
                     .precision(coil.size.Precision.INEXACT).allowHardware(false).build()

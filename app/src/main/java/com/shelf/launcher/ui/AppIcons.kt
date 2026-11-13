@@ -457,7 +457,7 @@ internal object AppArtTones {
         val key = packageName ?: "#" + System.identityHashCode(icon)
         cache.get(key)?.let { return it }
         val t = appArtTones(runCatching {
-            averageColor(icon.asAndroidBitmap().let { b -> if (b.config == android.graphics.Bitmap.Config.HARDWARE) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b })
+            averageColor(icon.asAndroidBitmap().let { b -> if (b.isHardwareBitmap()) b.copy(android.graphics.Bitmap.Config.ARGB_8888, false) else b })
         }.getOrDefault(0xFF2A2F3A.toInt()))
         cache.put(key, t)
         return t

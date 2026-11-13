@@ -438,6 +438,10 @@ object HomeEditState {
 
     /** Update 212: moves [id] one step ([dx], [dy]: -1, 0 or 1) — the D-pad, and the inspector's Move. One step of Undo. */
     fun nudge(id: String, dx: Int, dy: Int, fast: Boolean = false) {
+        // Sprint 527: Tile home's rows move up / down in their order (the others make room) - one step of Undo per real move
+        // (TileRowEdit.move); a press at the top / bottom changes nothing and adds no step (Flip 2 t527e: Y after a press at
+        // the bottom "undid" that empty step and the row stayed).
+        if (dy != 0) TileRowEdit.movableRow(id)?.let { row -> TileRowEdit.move(row, dy); return }
         HomeEditSession.push("move:$id")
         // (Update 241, #05: on the 2 % grid — two steps at a time while the button is held — never pulled back to an
         // edge or the middle on the way (the step used to have to beat that pull); a part inside a hollow one moves
@@ -560,6 +564,11 @@ internal fun BoxScope.MovableWidget(
      * its top where it was, so it ends just above the row (down to half its size). Not in Edit Home: there it shows as it is.
      */
     clearOfDock: Boolean = false,
+    /**
+     * Sprint 527 (owner: "the Edit Home preview matches the final Home"): the root point its middle sits on while it hasn't
+     * been moved - Tile home's round buttons in their row of the stack (the room they keep there), not the screen's bottom.
+     */
+    defaultCentre: androidx.compose.ui.geometry.Offset? = null,
     content: @Composable () -> Unit
 ) {
     val editing = HomeEditState.active
@@ -577,7 +586,7 @@ internal fun BoxScope.MovableWidget(
     val nestedAt = if (HomeNest.dragging != id) HomeNest.centreOf(id) else null
     // Where the layer it's drawn in starts on the screen (root px), to put a nested part at a screen place.
     var origin by remember { mutableStateOf<androidx.compose.ui.geometry.Offset?>(null) }
-    if (stored == null && !editing && defaultFrac == null && nestedAt == null) {
+    if (stored == null && !editing && defaultFrac == null && defaultCentre == null && nestedAt == null) {
         // (Update 125: the parts you add are always drawn over the games, never under them.)
         Box(Modifier.align(defaultAlign).zIndex(PartsLayer.z).padding(defaultPadding).onSizeChanged { size = it; HomeEditState.sizes[id] = it }.rowRevealFade()) {
             Box(Modifier.stretched(sx, sy)) { ScaledWidget(scale) { StyledPart(id, content) } }
@@ -590,7 +599,11 @@ internal fun BoxScope.MovableWidget(
     val clearOf = if (keepClearOf.isEmpty() || stored != null || nestedAt != null || size == IntSize.Zero) null
         else PartRects.clearSpot(defaultFrac ?: defaultFractions(defaultAlign), zone, w, h, keepClearOf.mapNotNull { PartRects.at[it] })
     // Where it is now: the stored fractions, or (first time in edit mode) its normal corner.
-    val f = stored ?: clearOf ?: defaultFrac ?: defaultFractions(defaultAlign)
+    val centreFrac = if (defaultCentre != null && stored == null && size != IntSize.Zero) with(density) {
+        val o = origin ?: androidx.compose.ui.geometry.Offset.Zero
+        zone.fractionOf((defaultCentre.x - o.x).toDp() - w / 2, (defaultCentre.y - o.y).toDp() - h / 2, w, h)
+    } else null
+    val f = stored ?: clearOf ?: centreFrac ?: defaultFrac ?: defaultFractions(defaultAlign)
     val placed = zone.place(f.first, f.second, w, h)
     val pos = if (nestedAt != null) with(density) {
         val o = origin ?: androidx.compose.ui.geometry.Offset.Zero
@@ -672,6 +685,9 @@ internal fun BoxScope.MovableWidget(
                             // (Update 241, #06: let go with its middle in a hollow part's inner area: it goes in (moves with
                             // it from now on); anywhere else it comes out.)
                             HomeEditState.bounds[id]?.let { HomeNest.drop(id, it.center) }
+                            // (Sprint 527: Tile home's round buttons let go along the rows join the row order at once - the
+                            // Edit Home preview is then the home, not a floating bar that only snaps in at Done.)
+                            if (id == HomeWidgets.SHORTCUTS) TileRowEdit.dropButtons()
                             HomeNest.dragging = null; HomeNest.hover = null
                             HomeEditState.guideX = null; HomeEditState.guideY = null
                         }
@@ -868,12 +884,14 @@ internal fun defaultFractions(a: Alignment): Pair<Float, Float> = when (a) {
 
 /** What stands in for the music player in Edit Home when nothing is playing. */
 @Composable
-internal fun MusicPlayerPlaceholder() {
+internal fun MusicPlayerPlaceholder(compact: Boolean = false) {
+    // (compact: Home keeps this player in the status bar - the stand-in stays inside that band, Sprint 528)
     Row(
-        Modifier.width(240.dp).clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surface.copy(alpha = 0.85f)).padding(12.dp),
+        Modifier.width(240.dp).clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surface.copy(alpha = 0.85f))
+            .padding(horizontal = 12.dp, vertical = if (compact) 2.dp else 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Filled.MusicNote, null, tint = ShelfTheme.accent, modifier = Modifier.size(28.dp))
+        Icon(Icons.Filled.MusicNote, null, tint = ShelfTheme.accent, modifier = Modifier.size(if (compact) 20.dp else 28.dp))
         Spacer(Modifier.width(10.dp))
         Text("Music player", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
@@ -1119,8 +1137,14 @@ internal object LayoutParts {
         !HomeEditState.active && HomeWidgets.hidden(id(layout, name))
 
     /** How far [id] is moved (dp); reads state. */
-    fun shift(id: String): Pair<Float, Float>? =
-        if (HomeEditState.active) HomeEditState.liveShift[id] else parse(Features.partShifts.state.value)[id]
+    fun shift(id: String): Pair<Float, Float>? {
+        val s = if (HomeEditState.active) HomeEditState.liveShift[id] else parse(Features.partShifts.state.value)[id]
+        // Sprint 527 (owner: "one consistent section-ordering and positioning system, without arbitrary offsets"): a Tile home
+        // row's height on the screen comes from the row order only. An up / down shift saved by an older Edit Home is kept in
+        // the settings (Reset part clears it) but no longer moves the row; left / right still does. While a finger drags the
+        // row it follows the finger, and the drop puts it into the order (TileRowEdit.dropRow).
+        return if (s != null && s.second != 0f && TileRowEdit.rowOf(id) != null && TileRowEdit.dragging != id) s.first to 0f else s
+    }
 }
 
 /** Makes a layout's own part movable / removable in Edit Home (see [LayoutParts]). */
@@ -1266,8 +1290,9 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                     // Update 202: moved by the finger's place on the screen (a part made bigger or smaller used to move
                     // slower or faster than the finger), snapping back to its own place and to the safe zone's edges and
                     // middle (a guide line through it), and kept inside the safe zone (SnapPart below).
-                    var raw = HomeEditState.liveShift[id] ?: (0f to 0f)
+                    var raw = (HomeEditState.liveShift[id] ?: (0f to 0f)).let { if (TileRowEdit.rowOf(id) != null) it.first to 0f else it }
                     var last = coords[0]?.takeIf { it.isAttached }?.localToRoot(first.position)
+                    val rowDrag = TileRowEdit.rowOf(id) != null
                     // (Update 212: one step of Undo, taken when it really starts moving — a tap only selects.)
                     var pushed = false
                     while (true) {
@@ -1282,11 +1307,14 @@ internal fun Modifier.editablePart(id: String, label: String): Modifier {
                         val here = lc?.localToRoot(ch.position)
                         val d = if (here != null && last != null) here - last!! else ch.position - ch.previousPosition
                         if (here != null) last = here
-                        if (!pushed && (d.x != 0f || d.y != 0f)) { HomeEditSession.push("drag:$id", force = true); pushed = true }
+                        if (!pushed && (d.x != 0f || d.y != 0f)) { HomeEditSession.push("drag:$id", force = true); pushed = true; if (rowDrag) TileRowEdit.dragging = id }
                         raw = (raw.first + d.x / density) to (raw.second + d.y / density)
                         HomeEditState.liveShift[id] = SnapPart.shift(id, raw, lc, zoneNow.value, density)
+                        // (Sprint 527: a Tile home row dragged up / down shows where it would land - the insertion line.)
+                        if (rowDrag) HomeEditState.bounds[id]?.let { b -> TileRowEdit.rowDropLine = TileRowEdit.lineFor(TileRowEdit.rowOf(id)!!, b.center.y) }
                     }
                     HomeEditState.guideX = null; HomeEditState.guideY = null
+                    if (rowDrag && TileRowEdit.dragging == id) TileRowEdit.dropRow(id)
                 }
             }
         }

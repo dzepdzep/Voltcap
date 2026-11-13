@@ -211,7 +211,7 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
                         val wDp = hDp * aspect * 1.25f // room for the turn
                         val on = isOn
                         Box(
-                            Modifier.size(wDp, hDp).zIndex(zOf())
+                            Modifier.size(wDp, hDp).zIndex(zOf()).qaLit(on)
                                 .graphicsLayer {
                                     val r = rOf()
                                     val a = abs(r)
