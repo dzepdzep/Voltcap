@@ -5735,7 +5735,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             val prepared = preparedCheck?.takeIf { it.first == game.stableKey && it.second.isActive }?.second
             preparedCheck = null
             val job = prepared ?: com.shelf.launcher.data.CloudSync.syncForGameInBackground(app, game)
-            var outcome = if (job == null) null else kotlinx.coroutines.withTimeoutOrNull(com.shelf.launcher.data.PrelaunchCheck.TIMEOUT_MS) { job.await() }
+            // (A check that fails outright is not a pass either: it asks, like one that didn't answer.)
+            var outcome = if (job == null) null else kotlinx.coroutines.withTimeoutOrNull(com.shelf.launcher.data.PrelaunchCheck.TIMEOUT_MS) {
+                // (The check itself stopped - not this wait: that is an unfinished check, never a pass. This wait running out of
+                // time or being replaced is passed on as it is.)
+                try { job.await() } catch (e: kotlinx.coroutines.CancellationException) {
+                    if (!kotlinx.coroutines.currentCoroutineContext().isActive) throw e
+                    com.shelf.launcher.data.SyncOutcome(false, "The Google Drive check stopped before it finished — this device's save may not be the newest.")
+                } catch (e: Exception) {
+                    com.shelf.launcher.data.SyncOutcome(false, "Google Drive couldn't be checked (${e.message ?: e.javaClass.simpleName}) — this device's save may not be the newest.")
+                }
+            }
             if (outcome == null && job != null) {
                 com.shelf.launcher.data.CloudSync.stop()
                 // (The file being written finishes; nothing new starts. Its result - whatever it is - is not a pass.)

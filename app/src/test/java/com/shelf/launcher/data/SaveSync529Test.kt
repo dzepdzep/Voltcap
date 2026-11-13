@@ -194,6 +194,17 @@ class SaveSync529Test {
         assertEquals(PrelaunchCheck.Next.PLAY, PrelaunchCheck.next(SyncOutcome(true, "ok", downloaded = 1)))
     }
 
+    @Test fun aCheckThatFailsOrStopsAsksInsteadOfStartingOrHanging() {
+        val vm = File("src/main/java/com/shelf/launcher/LauncherViewModel.kt").takeIf { it.isFile }?.readText()
+            ?: File("app/src/main/java/com/shelf/launcher/LauncherViewModel.kt").readText()
+        val f = vm.substring(vm.indexOf("private fun checkDriveThenLaunch"), vm.indexOf("private var syncNoticeJob"))
+        // A failed check becomes a not-ok outcome (asks), a stopped check too; only this wait's own timeout is passed on.
+        assertTrue(f.contains("catch (e: Exception) {") && f.contains("SyncOutcome(false, \"Google Drive couldn't be checked"))
+        assertTrue(f.contains("if (!kotlinx.coroutines.currentCoroutineContext().isActive) throw e"))
+        // The game starts only on PLAY.
+        assertEquals(1, Regex("launchNow\\(game\\)").findAll(f).count())
+    }
+
     // ---- Duplicate files on Drive ----
 
     @Test fun twinsArePickedTheSameWayOnEveryDevice() {
