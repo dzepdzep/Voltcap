@@ -75,7 +75,16 @@ android {
         // key events; they need the app's resources. Test-only: nothing of this reaches an APK.)
         unitTests.isIncludeAndroidResources = true
         // (Robolectric loads the whole app's classes; the default test heap ran out.)
-        unitTests.all { it.maxHeapSize = "2g" }
+        unitTests.all {
+            it.maxHeapSize = "2g"
+            // (529j: a failing test's own message and stack in the log - CI's job log showed only "AssertionError at
+            // ShelfTextRoboTest.kt:136", and its result files need a signed-in download.)
+            it.testLogging {
+                events("failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                showStackTraces = false
+            }
+        }
     }
     namespace = "com.shelf.launcher"
     compileSdk = 36
