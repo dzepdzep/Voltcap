@@ -86,6 +86,8 @@ internal object ChipGlide {
             " x=" + xs.joinToString(",") { it.toInt().toString() })
     }
     fun lerp(a: Float, b: Float, k: Float): Float = a + (b - a) * k
+    /** A new glide starts where the strip is drawn now ([k] of the way from [from] to [to]) - mid-glide too. Pure. */
+    fun restart(from: Float, to: Float, k: Float): Float = lerp(from, to, k)
     /** Where each chip starts on the strip (chip 0 at 0). */
     fun starts(widths: IntArray, gap: Int): IntArray {
         val out = IntArray(widths.size); var x = 0
@@ -248,11 +250,11 @@ internal fun WholeChipRow(
             glide.floatValue = 1f
         } else if (tShift != win.toShift || tL != win.toL || tR != win.toR || tHl != win.toHl || tHr != win.toHr) {
             // From where it is drawn now (mid-glide too: a fast run of presses never jumps back) to the new window.
-            win.fromShift = ChipGlide.lerp(win.fromShift, win.toShift, k0); win.toShift = tShift
-            win.fromL = ChipGlide.lerp(win.fromL, win.toL, k0); win.toL = tL
-            win.fromR = ChipGlide.lerp(win.fromR, win.toR, k0); win.toR = tR
-            win.fromHl = ChipGlide.lerp(win.fromHl, win.toHl, k0); win.toHl = tHl
-            win.fromHr = ChipGlide.lerp(win.fromHr, win.toHr, k0); win.toHr = tHr
+            win.fromShift = ChipGlide.restart(win.fromShift, win.toShift, k0); win.toShift = tShift
+            win.fromL = ChipGlide.restart(win.fromL, win.toL, k0); win.toL = tL
+            win.fromR = ChipGlide.restart(win.fromR, win.toR, k0); win.toR = tR
+            win.fromHl = ChipGlide.restart(win.fromHl, win.toHl, k0); win.toHl = tHl
+            win.fromHr = ChipGlide.restart(win.fromHr, win.toHr, k0); win.toHr = tHr
             win.job?.cancel()
             glide.floatValue = 0f
             win.job = scope.launch {
