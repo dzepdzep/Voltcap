@@ -98,3 +98,28 @@ Changed: `data/CloudSync.kt`, `data/SaveWatchWorker.kt`, `data/SaveObserver.kt`,
 Branch copies on the PC:
 - `Claude outputs\backups\fix-save-sync.bundle` (prerequisite `558cb1f7`);
 - patches in `Claude outputs\voltcap_529\save_sync\`.
+
+
+## 7. Mid-game uploads (priority hotfix, 13 Nov)
+
+**What was found (no guesses):**
+
+| Question | Answer | Evidence |
+|---|---|---|
+| A. Does the emulator write the save mid-game? | **On the GT78, yes.** RetroArch 1.22.2 has `autosave_interval = "10"` (global `retroarch.cfg`, no core / game override), so SaveRAM is flushed to disk every 10 s when it changed. | `/sdcard/Android/data/com.retroarch.aarch64/files/retroarch.cfg`, read-only |
+| B. Did Voltcap miss saves that were already on disk? | **Yes, whenever Android ended Voltcap's process during the game.** The watcher that sends saves within seconds (`SaveObserver`) lives in Voltcap's process. On the GT78 that process was ended while in the background (log: `Process com.shelf.launcher (pid 32106) has died: prcl BFGS`, 12 Nov 22:15). The only thing left was the session chain (`SaveWatchWorker`): first look 3 min in, then 10, 20, 40, 60 min, and a 90 s "untouched" rule that RetroArch's 10 s autosave can keep resetting. So in practice: uploaded after the game. | GT78 logcat, read-only; `SaveWatchWorker.kt` (v0.6.71) `STEPS_MIN = 3, 10, 20, 40, 60`, `STABLE_MS = 90_000` |
+| Other mid-game gaps | A save read while the emulator was writing it was uploaded anyway (`push` only dropped the cached hash). A save from another handheld that arrived on Drive mid-game was silently ignored until the game ended. Every confirmed mid-game upload posted a sounding notification. | `CloudSync.push`, `syncFolder` (upload-only path), `SyncNotifier.afterBackgroundSync` |
+| KONKR | Not connected - its RetroArch setting is unknown. Check it as described below. | - |
+
+**What changed (branch `fix/save-sync`):**
+- **The watcher comes back after the process is ended.** The session chain now runs every minute while the screen is on (10 min when off). Each run starts `SaveObserver` again if it is gone (`SaveObserver.resume`). WorkManager has just started the process to run it. Worst case for a save written while the process was dead: about 1 min + 4 s settle + upload, instead of 3 to 60 min or the game's end. Network is no longer required just to look.
+- **No torn uploads.** The bytes sent must equal the bytes the decision was made on, read twice. Otherwise nothing is sent (`StillWriting`) and the watcher sends it once it has settled. Memory cards included.
+- **Drive news during a game.** Every 3 min (screen on, nothing of ours pending) a quiet upload-only look at Drive. A newer save from another handheld is HELD: never applied while the game runs. The game's status says so ("Newer save on Google Drive from X — applied after you close the game"), with one silent notification. After the game, the normal sync brings it in with a verified backup, or shows a conflict if both changed. Play's pre-launch check (section 1, finding 5) keeps the next session from starting on a stale save.
+- **Quiet during play.** A confirmed mid-game upload posts no notification; the status shows it. A save caught mid-write is not reported as a problem. Problems still notify, once.
+- **Status steps:** "No new save written to disk since the game started", "New save found — waiting for the file to settle", "New save — waiting to upload", "Uploading…", "Last save uploaded and confirmed on Google Drive" (only after Drive's checksum matched), "Newer save on Google Drive…", "Save being written — sent once it settles", and offline / error / conflict as before.
+- **Timing trace:** `adb logcat -s VoltcapSync` shows each step (`detected`, `settled`, `upload-start`, `verified`) with the time since the emulator's own write.
+- **Tests:** `SaveSyncSim529Test` +4 two-device mid-game scenarios: several saves during one game all uploaded; a save being written is not sent; another handheld's newer save is never applied while the game runs, and a mid-game save of ours then becomes a conflict; after the game the Drive save comes in with a backup. `SaveSync529Test` +3 source checks.
+
+**Not proven on hardware:** the upload to Drive and its verification. The isolated QA app never syncs, and a real Drive test needs your Google sign-in on it. The KONKR is not connected. RetroArch was not started on any handheld: that is your real app with your real configuration, and the Flip 2 has no emulators.
+
+**RetroArch setting (KONKR or any handheld), safe and reversible:** In RetroArch go to *Settings → Saving → SaveRAM Autosave Interval*. Set 10 s (the GT78 already uses this). Then *Main Menu → Configuration File → Save Current Configuration*. It is the line `autosave_interval = "10"` in `retroarch.cfg`, and `"0"` turns it back off. With it off, RetroArch keeps SaveRAM in memory until you close the content: no app can upload a save that is not on disk yet. Save states are a different thing and are never synced.
