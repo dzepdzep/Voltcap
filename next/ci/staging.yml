@@ -1,0 +1,104 @@
+name: Android build and unit tests (main)
+
+# Update 474 added this job for the 0.6.68 staging patch (main + next/0.6.68/staging.patch). Update 499 moved that patch
+# off main (next/0.6.68/staging.patch is now a comment stub), so every run since failed at "git apply" (exit 128) and the
+# compile / unit-test steps never ran. Update 529 (v0.6.71): the job now builds and unit-tests main itself. An optional
+# patch is still applied when STAGING_PATCH points at a real patch file (none on main today). It prints main's commit and
+# the source tree hash (tools/qa/tools/srchash.py) — the same hash tools/qa/builds.json records for an APK built from it.
+# Discord SDK stubbed (-PvoltcapCiWithoutDiscord): a compile + unit-test check, never a user build; no APK is uploaded.
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'tools/qa/**', 'gradle/**', '*.gradle.kts', '.github/workflows/staging.yml']
+  pull_request:
+    paths: ['app/**', 'tools/qa/**', 'gradle/**', '*.gradle.kts', '.github/workflows/staging.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android compiles, JVM unit tests, QA self-tests, strict static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      STAGING_PATCH: ""
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Source revision before the patch
+        id: before
+        run: |
+          echo "main_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "main_tree=$(python tools/qa/tools/srchash.py . | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Optional staging patch (none on main)
+        id: patch
+        run: |
+          if [ -n "$STAGING_PATCH" ] && [ -s "$STAGING_PATCH" ] && grep -q '^diff --git' "$STAGING_PATCH"; then
+            git apply --check --ignore-whitespace "$STAGING_PATCH"
+            git apply --ignore-whitespace "$STAGING_PATCH"
+            echo "patch_sha256=$(sha256sum "$STAGING_PATCH" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          else
+            echo "patch_sha256=none (main as committed)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tree=$(python tools/qa/tools/srchash.py . | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Configure JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 36 and native tools
+        run: |
+          SDKM=$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -1)
+          test -n "$SDKM"
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+      - name: Compile + JVM unit tests
+        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
+      - name: QA self-tests and strict static checks
+        if: ${{ !cancelled() }}
+        run: |
+          set -o pipefail
+          sudo apt-get install -y -qq ffmpeg > /dev/null || echo "::warning title=QA self-test::ffmpeg not installed: the video tests are skipped"
+          python -m pip install --quiet numpy pillow
+          # (Update 477: what failed is put in the run's annotations — public — not only in the sign-in-only log.)
+          st=0; ss=0
+          python tools/qa/selftest/test_qa.py 2>&1 | tee selftest.log || st=1
+          if [ $st != 0 ]; then grep -E "^(FAIL|ERROR):|^[A-Za-z.]*(Error|Exception):" selftest.log | head -20 | while IFS= read -r l; do echo "::error title=QA self-test::$l"; done || true; fi
+          python tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher --strict --min-files 100 2>&1 | tee static.log || ss=1
+          if [ $ss != 0 ]; then grep -E "^HIGH|FAIL|INFRA" static.log | head -20 | while IFS= read -r l; do echo "::error title=Static check::$l"; done || true; st=1; fi
+          exit $st
+      - name: Job summary (what was tested)
+        if: ${{ always() }}
+        run: |
+          {
+            echo "## Android build and unit tests"
+            echo "| | |"
+            echo "|---|---|"
+            echo "| main commit | \`${{ steps.before.outputs.main_commit }}\` |"
+            echo "| main tree hash | \`${{ steps.before.outputs.main_tree }}\` |"
+            echo "| staging patch | \`${{ steps.patch.outputs.patch_sha256 }}\` |"
+            echo "| tested source tree hash | \`${{ steps.patch.outputs.tree }}\` |"
+            echo
+            echo "Discord SDK stubbed: a compile / unit-test check, not a user build. Hardware QA is not run here."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "TESTED main=${{ steps.before.outputs.main_commit }} patch=${{ steps.patch.outputs.patch_sha256 }} tree=${{ steps.patch.outputs.tree }}"
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-test-results
+          path: |
+            app/build/reports/tests
+            app/build/test-results
+          if-no-files-found: ignore
