@@ -123,14 +123,14 @@ class SaveSync529Test {
         val start = 1_800_000_000_000
         // 14 backups, one per day: the newest 10 stay, of the 4 older only those under 30 days old stay.
         repeat(14) { i ->
-            val f = SaveBackups.backup(base, "F", "x.srm", { byteArrayOf(i.toByte()) }, 0, "d", "t", now = start + i * day)
+            val f = SaveBackups.backup(base, "F", "x.srm", { byteArrayOf(i.toByte()).inputStream() }, 0, "d", "t", now = start + i * day)
             f.setLastModified(start + i * day)
         }
         val dir = File(File(base, "F"), "")
         val left = SaveBackups.revisions(dir, "x.srm")
         assertEquals(14, left.size) // all younger than 30 days at the time each prune ran
         // A much later backup prunes the old extras (older than 30 days), never the newest 10.
-        val f = SaveBackups.backup(base, "F", "x.srm", { byteArrayOf(99) }, 0, "d", "t", now = start + 60 * day)
+        val f = SaveBackups.backup(base, "F", "x.srm", { byteArrayOf(99).inputStream() }, 0, "d", "t", now = start + 60 * day)
         f.setLastModified(start + 60 * day)
         SaveBackups.prune(dir, "x.srm", start + 60 * day)
         assertEquals(SaveBackups.KEEP_NEWEST, SaveBackups.revisions(dir, "x.srm").size)
@@ -148,7 +148,16 @@ class SaveSync529Test {
         // pull backs up BEFORE tree.write, and the conflict choice "use Drive's" backs up and checks Drive's checksum too.
         val pull = s.substring(s.indexOf("private fun pull("), s.indexOf("private class RemoteMoved"))
         assertTrue(pull.indexOf("backupBeforeOverwrite") in 1 until pull.indexOf("tree.write(rel, tmp, modified)"))
-        assertTrue(s.contains("pull(context, drive, tree, rel, c.remoteId, c.remoteModified, want, state, c.remoteDevice, backupFolder = folderName)"))
+        // Multi-file saves and the conflict choices go through pullUnit: SaveUnitTransaction with a verified SaveBackups backup.
+        val unit = s.substring(s.indexOf("private fun pullUnit("), s.indexOf("internal fun pickTwin"))
+        assertTrue(unit.contains("SaveUnitTransaction.run(") && unit.contains("SaveBackups.backup("))
+        val resolve = s.substring(s.indexOf("suspend fun resolveConflicts"), s.indexOf("// ---- Per-game status ----"))
+        assertTrue(resolve.contains("pullUnit(context, drive, tree, files, state, folderName, null)"))
+        assertTrue("Drive's checksum is required", resolve.contains("if (f.md5 == null) error("))
+        // Keeping this device's version: Drive's copy is parked checked, and replaced only if it is still that version.
+        assertTrue(resolve.contains("expectRemoteMd5 = now?.md5"))
+        // The sync loop sends every multi-file download through pullUnit.
+        assertTrue(s.contains("SyncDecision.Action.DOWNLOAD -> (card ?: unit)?.let { unitDownloads.getOrPut(it)"))
     }
 
     // ---- Upload verification ----
