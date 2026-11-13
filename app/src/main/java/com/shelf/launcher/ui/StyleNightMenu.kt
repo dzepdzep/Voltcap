@@ -237,7 +237,8 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
         cat.animateTo(1f, tween(NightMotion.CAT_MS, easing = androidx.compose.animation.core.LinearEasing))
     }
     val catDir = CategorySlide.dir.toFloat()
-    fun catProgress(): Float = if (catOn && CategorySlide.tick != catSeen) 0f else cat.value
+    // (cat is read first, whatever the branch: the layer always observes it - static LAYER-BRANCH.)
+    fun catProgress(): Float { val v = cat.value; return if (catOn && CategorySlide.tick != catSeen) 0f else v }
     // Update 529: the game you're on changed by a step (not by a category change): the framed cover takes the step - a short
     // dip and tilt the way the list went, settling back.
     val kick = remember { Animatable(0f) }
@@ -246,7 +247,8 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
         val step = (target - lastTarget[0]).coerceIn(-1, 1)
         lastTarget[0] = target
         if (step == 0 || !animate || CategorySlide.justChanged()) { kick.snapTo(0f); return@LaunchedEffect }
-        kick.snapTo(step.toFloat())
+        // (From where it is - no jump in the first frame: a quick dip the way the list went, then a soft settle.)
+        kick.animateTo(step.toFloat(), tween(if (lite) 50 else 80, easing = androidx.compose.animation.core.LinearOutSlowInEasing))
         kick.animateTo(0f, spring(dampingRatio = 1f, stiffness = if (lite) 900f else 420f))
     }
     val caption = CategoryTitle.captionOn(c.state.appearance)
