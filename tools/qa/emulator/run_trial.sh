@@ -7,8 +7,10 @@ OUT=${1:-qa-emulator-out}; mkdir -p "$OUT/raw"
 S="$OUT/summary.md"; P=com.shelf.launcher.qa
 note() { echo "$*" | tee -a "$S"; }
 A() { adb shell am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
-waitdone() { # dir tag seconds
-  for _ in $(seq 1 $(( $3 / 5 ))); do adb shell "grep -q DONE $1/log.txt 2>/dev/null" && return 0; sleep 5; done; return 1; }
+waitdone() { # dir tag seconds - stops at once when the emulator is gone (run 43520733405 waited out the job timeout)
+  for _ in $(seq 1 $(( $3 / 5 ))); do
+    [ "$(adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE while waiting for $2 - remaining checks NOT TESTED"; return 2; }
+    adb shell "grep -q DONE $1/log.txt 2>/dev/null" && return 0; sleep 5; done; return 1; }
 echo "# Emulator QA trial (EMULATOR evidence - not real-handheld)" > "$S"
 note "commit: ${GITHUB_SHA:-local}  run: ${GITHUB_SERVER_URL:-}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
 adb wait-for-device
@@ -36,6 +38,15 @@ note "INSTALL: OK; primaryCpuAbi=$(adb shell dumpsys package $P | sed -n 's/.*pr
 # (The handhelds' QA app has all-files access from its first setup; a fresh emulator install does not - the QA fixture
 # library lives under shared storage. Granted to the isolated QA app on this throwaway emulator only.)
 adb shell appops set $P MANAGE_EXTERNAL_STORAGE allow > /dev/null 2>&1
+# (Run 43520733405: "no game matches 'Shadow of the Colossus'" - the handhelds' QA library holds empty stand-in ROM files
+# a QA script put there; a fresh emulator has none. The same synthetic stand-ins: empty files with game-like names.)
+QF=/sdcard/Android/data/$P/files/roms
+adb shell "mkdir -p $QF/ps2 $QF/snes $QF/gba $QF/n64 $QF/psx" > /dev/null 2>&1
+for f in "ps2/Shadow of the Colossus (USA).iso" "ps2/Okami (USA).iso" "snes/Super Metroid (USA).sfc" "snes/Chrono Trigger (USA).sfc" \
+         "gba/Golden Sun (USA).gba" "n64/Mario Kart 64 (USA).z64" "psx/Vagrant Story (USA).bin" "snes/EarthBound (USA).sfc"; do
+  adb shell "touch '$QF/$f'" > /dev/null 2>&1
+done
+note "synthetic library: $(adb shell "ls -R $QF | grep -c '\\.'" | tr -d '\r') empty stand-in files"
 adb logcat -c
 A; sleep 12
 adb exec-out screencap -p > "$OUT/launch.png"
@@ -55,7 +66,9 @@ run_pop() { # tag scale layouts
   { echo '```'; echo "$1 log:"; adb shell cat /sdcard/pc/$1/log.txt /sdcard/pc/${1}_w/log.txt 2>&1 | tail -40; echo "files: $(adb shell ls /sdcard/pc/$1 2>&1 | tr '\n' ' ' | cut -c1-600)"; echo '```'; } | tee -a "$S"
 }
 run_pop e529a "font=1.3,density=1.15" "COVERDETAILS SHELF"
+[ "$(adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE - stopping"; python3 tools/qa/emulator/grade_trial.py "$OUT" "$APK" | tee -a "$S"; exit 0; }
 run_pop e529b off "COVERDETAILS SHELF"
+[ "$(adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE - stopping"; python3 tools/qa/emulator/grade_trial.py "$OUT" "$APK" | tee -a "$S"; exit 0; }
 adb shell "cd /data/local/tmp && TOUCH=1 setsid sh shelfpages529.sh run e529c 'font=1.3,density=1.15' 'COVERDETAILS SHELF' > /dev/null 2>&1 < /dev/null &"
 if waitdone /sdcard/pc/e529c e529c 600; then note "page walk e529c (x1.3, touch, Motion Off): run finished"; else note "page walk e529c: DID NOT FINISH (NOT TESTED)"; fi
 adb shell "cd /data/local/tmp && sh shelfpages529.sh restore e529c"
