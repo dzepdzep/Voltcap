@@ -825,6 +825,17 @@
    "apk_sha256": "315842e7ae321a383db1d92a2fb254af910cda582a77df993e6e87636220b7de",
    "base_commit": "c4ba1760",
    "note": "Update 529i: Airy facts fix (KONKR q0672k2). assembleQa in worktree int 13 Nov 17:20Z (BUILD SUCCESSFUL 1m 19s, verifyQaIsolation); testDebugUnitTest 2570 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests ff043d51 (worktree int)",
+   "id": "qa-0.6.72-repair-ff043d51",
+   "apk_sha256": "b43b192dcaa718eb4feb3f944af9e44c9a235da35112efb95f8f42ff01316ed8",
+   "base_commit": "ff043d51",
+   "note": "Update 529i: QA update-prompt crash fix + Airy facts as two lines (KONKR q0672k3). assembleQa in worktree int 13 Nov 17:37Z (BUILD SUCCESSFUL 1m 36s, verifyQaIsolation); testDebugUnitTest 2572 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
   }
  ]
 }
