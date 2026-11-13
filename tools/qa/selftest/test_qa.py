@@ -966,6 +966,23 @@ class TestPopupGate(unittest.TestCase):
         self.assertEqual(g["geometry"][0], "PASS")
         self.assertNotEqual(g["buttons"][0], "PASS")   # no More / Details steps recorded: never a pass
 
+    def test_hierarchy_play_first_and_not_smaller(self):
+        # Update 529 (Phase 3): Play first and at least Details' size passes; a small Play or a Details before it fails.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_stadium2_after.json"), encoding="utf-8"))
+        self.assertEqual(popclip.hierarchy(d, None)[0], "PASS")
+        small = json.loads(json.dumps(d))
+        for n in small["windows"][0]["nodes"]:
+            if n["label"] == "Play": n["shown"] = [434, 512, 60, 40]
+        st, why = popclip.hierarchy(small, None)
+        self.assertEqual(st, "FAIL"); self.assertIn("smaller than Details", why)
+        late = json.loads(json.dumps(d))
+        for n in late["windows"][0]["nodes"]:
+            if n["label"] == "Play": n["shown"] = [900, 516, 124, 62]
+        self.assertEqual(popclip.hierarchy(late, None)[0], "FAIL")
+        none = {"windows": [{"focus": True, "nodes": [n for n in d["windows"][0]["nodes"] if n["label"] != "Play"]}]}
+        self.assertEqual(popclip.hierarchy(none, None)[0], "FAIL")
+
     def test_play_for_another_game_fails(self):
         # Update 469: the blocked launch must be the run's own game.
         import popclip
