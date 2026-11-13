@@ -11,6 +11,9 @@ layout x popup style in SEPARATE categories — a popup is PASS only when every 
             <n>_play.txt); no Details action and no Play tap = NOT TESTED
   hierarchy (update 529) the main step's own actions: Play / Continue is the first action (reading order) and not smaller than
             Details (FAIL otherwise); notes say whether More is a round key and whether Back is a hint off the action row
+  shoulders (POP_EXTRA runs) R1 on the open window walks to another page where the layout has its own pages (Tiles, Grid,
+            Storage, Night, Blades: FAIL if nothing changed); elsewhere a note (no L1 / R1 pages by design). NOT TESTED without the step
+  rapid     (POP_EXTRA runs) A B A B at 250 ms started no game and left the home as it was (no window action after)
   settle    the steps were captured after their animation settled and the closed step left no popup action behind
             (frame-by-frame animation is NOT covered here — reported as such)
 
@@ -28,10 +31,11 @@ import geomcheck
 import readcheck
 import glyphcheck
 
-STEPS = ("home", "main", "more", "page", "closed")
+STEPS = ("home", "main", "more", "page", "closed", "r1", "l1", "after")
+NATIVE_LAYOUTS = ("TILES", "GRID", "STORAGE", "NIGHT", "BLADES")
 NOSHOTS = "--steps-without-shots" in sys.argv
 ROW = ("ROW_OPENS", "ROW_REVEAL", "SHARED")
-CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability", "glyphs", "hierarchy")
+CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability", "glyphs", "hierarchy", "shoulders", "rapid")
 ACT = geomcheck.PLAY_RE  # the window's Play / Continue in every layout's own word
 
 
@@ -248,6 +252,26 @@ def grade(run, n):
     # (The home screen's game can stay focused under a popup drawn in the same window; the popup's own focus is what counts.)
     act = [x for x in foc if ACT.match(x)]
     out["hierarchy"] = hierarchy(d["main"], d["home"])
+    lay = n.rsplit("_", 1)[0] if n.rsplit("_", 1)[-1] in ("OWN", "BANNER", "CLASSIC") else next((n[:-len(s_) - 1] for s_ in ROW if n.endswith("_" + s_)), n)
+    sty = n[len(lay) + 1:]
+    if d["r1"] is None:
+        out["shoulders"] = (qalib.NOT_TESTED, "no R1 step (run without POP_EXTRA)")
+    else:
+        w = lambda dd: sorted(geomcheck._label(x) for ww in (dd or {}).get("windows") or [] for x in ww.get("nodes") or [])
+        moved = w(d["r1"]) != w(d["main"])
+        if lay in NATIVE_LAYOUTS and sty == "OWN":
+            out["shoulders"] = (qalib.PASS, "R1 walks to another page") if moved else (qalib.FAIL, "R1 changed nothing on a window with its own pages")
+        else:
+            out["shoulders"] = (qalib.PASS, "R1 walks to another page" if moved else "no L1 / R1 pages here (shared pages: by design)")
+    rp = os.path.join(run, f"{n}_rapid.txt")
+    if not os.path.exists(rp) or d["after"] is None:
+        out["rapid"] = (qalib.NOT_TESTED, "no rapid A B A B step (run without POP_EXTRA)")
+    else:
+        m = re.search(r"rapid_launch=(\d+)", open(rp, encoding="utf-8").read())
+        left = f"{n} rapid A B A B left a window open" in loglines
+        bad = (["started " + m.group(1) + " launch(es)"] if m and int(m.group(1)) > 0 else []) + (["a window stayed open"] if left else []) + \
+              (["a window action left on the home"] if len(acts(d["after"])) > len(home_act) else [])
+        out["rapid"] = (qalib.FAIL, "; ".join(bad)) if bad else (qalib.PASS, "A B A B at 250 ms: no launch, home as before")
     out["focus"] = (qalib.PASS, f"focus on {act[0]}") if act else \
         (qalib.FAIL, f"no window action has the controller focus (focused: {', '.join(foc) or 'nothing'})")
     more_l = labels(d["more"]) if d["more"] else None
@@ -336,7 +360,7 @@ def main():
         rows.append((n, overall, g))
         results.append(qalib.Result(n, overall, "; ".join(f"{k}={v[0]}" for k, v in g.items() if v[0] != qalib.PASS) or "all categories PASS"))
     if "--md" in sys.argv:
-        cats = ("open", "geometry", "visual", "focus", "buttons", "settle", "glyphs", "readability", "hierarchy")
+        cats = ("open", "geometry", "visual", "focus", "buttons", "settle", "glyphs", "readability", "hierarchy", "shoulders", "rapid")
         with open(sys.argv[sys.argv.index("--md") + 1], "w", encoding="utf-8") as fh:
             fh.write("| layout_style | overall | " + " | ".join(cats) + " |\n|" + "---|" * (len(cats) + 2) + "\n")
             for n, ov, g in rows:

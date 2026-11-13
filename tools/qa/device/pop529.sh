@@ -19,7 +19,7 @@ run)
   A --es voltcap_test_fixture "names=real,art=covers,meta=none"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
   log "setup done scale=$SC game=$GAME layouts=$(echo $LAYS | wc -w) styles=$STYLES"
-  QA_CONTENT="real-covers scale=$SC" setsid sh $D/popclip.sh "$TAG" "$LAYS" "$STYLES" "$GAME" > /dev/null 2>&1 < /dev/null &
+  POP_EXTRA=1 QA_CONTENT="real-covers scale=$SC" setsid sh $D/popclip.sh "$TAG" "$LAYS" "$STYLES" "$GAME" > /dev/null 2>&1 < /dev/null &
   log "popclip started" ;;
 restore)
   A --es voltcap_test_scale off --es voltcap_test_fixture off; sleep 1.5

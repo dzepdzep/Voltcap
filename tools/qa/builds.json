@@ -770,6 +770,17 @@
    "apk_sha256": "c3a458177b55a32b8f5d1d46216d989b4d4f144f9f9f6df24472859329c59f57",
    "base_commit": "c827ff9",
    "note": "v0.6.71 integration candidate RC4 (integration/0.6.71 = RC3 b018aca + popup-native 07520c9; 3D Shelf off). Built 12 Nov 15:04 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). testDebugUnitTest EXECUTED in int 14:55 (BUILD SUCCESSFUL; EndlessFillLitRoboTest 460/460, EndlessOnceRoboTest 279/279, WinFocusRoboTest 448 (51 skipped by design), ShelfTextRoboTest 144 (24 skipped by design)). sha256 = installed base.apk on the Flip 2 (55,375,174 bytes). App code = RC3 + a QA-trace-only rename (OldSpineTrace.Track); hardware runs were on RC3, RC4 smoke on the Flip 2 (starts, Shelf composes, 0 crashes)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "main 558cb1f (app code = v0.6.71 827632f)",
+   "id": "qa-0.6.71-558cb1f",
+   "apk_sha256": "fd6075ba4dc3cb6dc5875ae7caa4a017c43ce58b5aa9e72a1954c85de171e683",
+   "base_commit": "827632f",
+   "note": "Update 529: QA app built from the released v0.6.71 source (main tree, assembleDebug 13 Nov 06:46 CET: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). Used for the master-sprint popup regression (pop529.sh / popclip.sh)."
   }
  ]
 }
