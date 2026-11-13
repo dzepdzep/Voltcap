@@ -157,7 +157,10 @@ No crashes. File dates on the Flip 2's shared storage come in whole seconds (`mt
 
 ### The one action needed from you (real Google Drive test)
 
-The fixes are proven against a model of Drive, not against Google's servers. To test for real without touching your saves:
-1. On the **Flip 2's isolated QA app** (Voltcap QA, `com.shelf.launcher.qa`) open Settings › Sync and **sign in with a Google account** - ideally a spare one. That consent is yours to give; I can't. The QA app keeps its own Drive folder and data, separate from your real Voltcap.
-2. Tell me it's done. I then lift the QA app's sync pause for synthetic saves only (QA folder, never your emulators' folders) and run the two-device cases on hardware: Flip 2 + GT78 QA apps, or Flip 2 + KONKR when it's connected. The cases are hand-over, simultaneous uploads, a half-sent multi-file save, a restore, and a restart mid-game.
+The fixes are proven against a model of Drive, not against Google's servers. A real test must not touch your saves or your Drive data, so it runs in the **isolated QA app** with synthetic saves. The QA app syncs only under `QaDriveTest` (529c): its own files folder, saves only, never Voltcap's own data, and only while the test's flag file exists. Two things only you can do:
+
+1. **Register the QA app with Google once.** In Voltcap's Google Cloud project (APIs & Services › Credentials), add an *Android* OAuth client for package `com.shelf.launcher.qa` with the SHA-1 of the PC's debug key (`keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android`). Without it, Google refuses the QA app ("error 10 - not registered").
+2. **Sign the QA app in** (Settings › Sync) on the Flip 2 - ideally with a **spare Google account**, so the test's "Voltcap Sync" folder can never meet your real one.
+
+After that, the test needs no further input. On the Flip 2 + GT78 QA apps (or the KONKR when connected) it runs hand-over, simultaneous uploads, a half-sent multi-file save, a restore, and a restart mid-game.
 Until then this stays on `fix/save-sync` and is not released.

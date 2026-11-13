@@ -270,6 +270,9 @@ object CloudSync {
      * changes; without the hooks file every sync runs as before.
      */
     fun qaPaused(context: Context): Boolean =
+        // (Update 529c: except the owner-authorised real-Drive test - [QaDriveTest]: the isolated QA app, its own synthetic save folders
+        // only, saves only, never Voltcap's own data, and only while its flag file is present.)
+        !(QaVariant.isolated(context) && QaDriveTest.allowed(context, run { load(context); _state.value.settings })) &&
         // (Update 500: the isolated QA app never syncs, hooks file or not.)
         (QaVariant.isolated(context) || runCatching { com.shelf.launcher.ui.TestHooks.enabled(context.applicationContext) }.getOrDefault(false)).also {
             if (it) android.util.Log.e("VoltcapQA", "sync paused (QA session)")

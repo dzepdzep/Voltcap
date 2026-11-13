@@ -182,4 +182,18 @@ class SyncGuards529Test {
         assertEquals(PrelaunchCheck.Next.ASK, PrelaunchCheck.next(SyncOutcome(true, "x", unitsHeld = 1)))
         assertEquals(PrelaunchCheck.Next.PLAY, PrelaunchCheck.next(SyncOutcome(true, "x")))
     }
+
+    /** The real-Drive test may only ever sync the QA app's own synthetic folders - one real folder in the list stops it. */
+    @Test fun theQaDriveTestStaysInsideTheQaAppsFolder() {
+        val root = "/storage/emulated/0/Android/data/com.shelf.launcher.qa/files"
+        fun s(vararg paths: String, data: Boolean = false, tree: String? = null) =
+            CloudSyncSettings(syncSaves = true, syncLauncherData = data, folders = paths.map { SyncFolder("F", it, treeUri = tree) })
+        assertTrue(QaDriveTest.confined(s("$root/qa_drive_saves/A"), root))
+        assertFalse(QaDriveTest.confined(s("$root/qa_drive_saves/A", "/storage/emulated/0/RetroArch/saves"), root))
+        assertFalse(QaDriveTest.confined(s("$root/../../com.retroarch/files"), root))
+        assertFalse(QaDriveTest.confined(s("$root-evil/x"), root))
+        assertFalse("never Voltcap's own data", QaDriveTest.confined(s("$root/qa_drive_saves/A", data = true), root))
+        assertFalse(QaDriveTest.confined(s("$root/x", tree = "content://dolphin"), root))
+        assertFalse(QaDriveTest.confined(s(), root))
+    }
 }
