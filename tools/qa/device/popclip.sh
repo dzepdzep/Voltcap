@@ -106,10 +106,11 @@ for lay in $LAYS; do
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
-    if grep -qiE '"label":"[^"]*(More|⋯)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
+    # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
+    if grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
-      if tapat "(More|⋯)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
+      if tapat "(More|⋯|•••)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.

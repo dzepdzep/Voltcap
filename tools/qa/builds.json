@@ -781,6 +781,17 @@
    "apk_sha256": "fd6075ba4dc3cb6dc5875ae7caa4a017c43ce58b5aa9e72a1954c85de171e683",
    "base_commit": "827632f",
    "note": "Update 529: QA app built from the released v0.6.71 source (main tree, assembleDebug 13 Nov 06:46 CET: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). Used for the master-sprint popup regression (pop529.sh / popclip.sh)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "feature/popup-native 5821da85 (worktree pnat)",
+   "id": "qa-0.6.71-pnat-5821da85",
+   "apk_sha256": "086176440ccb6016a4a0abce6eef104f4ed481fc597ee5e9fe489d30cb8a2e20",
+   "base_commit": "5821da85",
+   "note": "Update 529b: More last + Night motion + achievements compact (Flip 2 findings fixed). assembleQa in worktree pnat 13 Nov 11:35Z; testDebugUnitTest BUILD SUCCESSFUL 11:33Z. sha256 = installed base.apk on the Flip 2 (evidence.sh manifest of mlast529); installed 12:42 device time."
   }
  ]
 }
