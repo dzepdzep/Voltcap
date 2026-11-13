@@ -966,6 +966,16 @@ class TestPopupGate(unittest.TestCase):
         self.assertEqual(g["geometry"][0], "PASS")
         self.assertNotEqual(g["buttons"][0], "PASS")   # no More / Details steps recorded: never a pass
 
+    def test_hierarchy_nothing_beside_more_after_it(self):
+        # Owner, 13 Nov: the round ••• is the last key of a popup's row - a key to its right on the same row fails; Back
+        # (a hint) and keys on another row don't count.
+        import popclip
+        play = ("Play", [10, 100, 120, 60]); det = ("Details", [140, 100, 120, 60]); more = ("More", [280, 100, 60, 60])
+        self.assertIsNone(popclip.after_more([play, det, more], more, 30))
+        self.assertEqual(popclip.after_more([play, det, more, ("Inspect", [360, 100, 120, 60])], more, 30)[0], "Inspect")
+        self.assertIsNone(popclip.after_more([play, det, more, ("Back", [360, 100, 120, 60])], more, 30))
+        self.assertIsNone(popclip.after_more([play, det, more, ("Inspect", [10, 200, 120, 60])], more, 30))
+
     def test_hierarchy_play_first_and_not_smaller(self):
         # Update 529 (Phase 3): Play first and at least Details' size passes; a small Play or a Details before it fails.
         import popclip

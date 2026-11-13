@@ -14,12 +14,27 @@ class Hierarchy529Test {
         val body = s.substring(s.indexOf("private fun WiiChannelPreviewBody("), s.indexOf("private fun WiiMorePage("))
         // The full-width More bar only where Back is still a key; otherwise round ••• beside a filled Start.
         assertTrue(body.contains("if (small.isNotEmpty() && back != null) {"))
-        assertTrue(body.contains("else if (small.isNotEmpty()) WiiRoundMore("))
+        // (Owner, 13 Nov: the round ••• is the last key - after Start.)
+        assertTrue(body.indexOf("if (back == null && small.isNotEmpty()) WiiRoundMore(") > body.indexOf("if (play != null) WiiBigKey(play"))
         assertTrue(body.contains("primary = back == null)"))
         assertTrue(s.contains("private fun WiiRoundMore("))
     }
 
     @Test fun resumesDiscoverCardHasMore() {
         assertTrue(WinScene.DISCOVER_CARD in MORE_SCENES)
+    }
+
+    /** Owner, 13 Nov: "on every pop-up, the last thing that's shown from the options should be the 3 dots, not anything else beside it." */
+    @Test fun moreIsTheLastKeyOfEveryWindowWithMore() {
+        val s = src("GameWindow.kt")
+        val body = s.substring(s.indexOf("private fun SceneBody("), s.indexOf("internal val MORE_SCENES"))
+        // Not in the Play / Details row any more (it sat there, before Inspect)...
+        assertTrue(!body.contains("if (labActions) moreKey?.let { add(it) }"))
+        // ...but closing the tools, after Inspect (closed) or after everything More shows (open).
+        assertTrue(body.contains("else allTools.filter { it.label == \"Inspect\" }) + moreKey!!"))
+        assertTrue(body.contains("else -> allTools.filter { it.label == \"Inspect\" } + moreKey!!"))
+        // Storage's one-line row: Play, Details, Inspect, then •••.
+        val w = src("WinScenes.kt")
+        assertTrue(w.contains("ctx.tools.filter(PopupLab::isMore) else emptyList()"))
     }
 }

@@ -177,8 +177,9 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
             // (Update 507: the key named the console maker's own menu; "Channels" says where B goes.)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Channels", pal, Modifier.weight(1f), compact)
-                else if (small.isNotEmpty()) WiiRoundMore(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, compact)
                 if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact, primary = back == null)
+                // (Owner, 13 Nov: the round ••• is the last key of every popup - after Start, never before it.)
+                if (back == null && small.isNotEmpty()) WiiRoundMore(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, compact)
             }
         } else {
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

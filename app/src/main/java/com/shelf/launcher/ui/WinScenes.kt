@@ -1008,8 +1008,12 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = if (labStorage) 10.dp else 6.dp, vertical = if (labStorage) 8.dp else 6.dp),
                         verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
                         val primary = ctx.buttons.filter { !it.back && it.primary }
-                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } else emptyList()
-                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools + ctx.buttons.filter { it.back }
+                        // (Owner, 13 Nov: the round ••• is the last key of the row - Play, Details, Inspect, •••; what More opens
+                        // comes in the grid under it.)
+                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } +
+                            ctx.tools.filter { it.label == "Inspect" }.takeIf { ctx.tools.any(PopupLab::isMore) }.orEmpty() +
+                            ctx.tools.filter(PopupLab::isMore) else emptyList()
+                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools.filter { it !in inLine } + ctx.buttons.filter { it.back }
                         // (Batch 523, GT78 lab shots: "ACHIEVEMENT S" - three cells a row in the menu's column (two thirds of the
                         // window) left a long word narrower than its smallest readable size, so it broke inside the word. The cells
                         // are counted from the menu's own width now: two a row unless the column is wide.)

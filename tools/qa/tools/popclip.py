@@ -103,6 +103,19 @@ DET_RE = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in geomcheck.DETAILS
 BACK_RE = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in geomcheck.BACK_WORDS) + r")$")
 
 
+MORE_RE = re.compile(r"(?i)(^more$|^less$|\u22ef|\u2022\u2022\u2022)")
+
+
+def after_more(ctl, more, tol):
+    """A control drawn beside More after it - on its row (centres within [tol]) and to its right - or None. Back is left out (a
+    hint off the row). Pure."""
+    mb = more[1]
+    mc = mb[1] + mb[3] / 2
+    right = [(l, b) for l, b in ctl if (l, b) != more and not BACK_RE.match(l) and abs((b[1] + b[3] / 2) - mc) <= tol
+             and b[0] >= mb[0] + mb[2] - 2]
+    return min(right, key=lambda lb: lb[1][0]) if right else None
+
+
 def hierarchy(main, home):
     """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
     home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
@@ -129,10 +142,14 @@ def hierarchy(main, home):
         da, pa = db[2] * db[3], pb[2] * pb[3]
         if pb[3] < 0.9 * db[3] or pa < 0.6 * da: probs.append(f"{pl} ({pb[2]}x{pb[3]}) smaller than {det[0][0]} ({db[2]}x{db[3]})")
         else: notes.append(f"{pl} {pb[2]}x{pb[3]} >= {det[0][0]} {det[0][1][2]}x{det[0][1][3]}")
-    more = [(l, b) for l, b in ctl if re.search(r"(?i)(^more$|^less$|\u22ef|\u2022\u2022\u2022)", l)]
+    more = [(l, b) for l, b in ctl if MORE_RE.search(l)]
     if more:
         r = more[0][1][2] / max(1, more[0][1][3])
         notes.append("More round" if 0.7 <= r <= 1.45 else f"More not round ({more[0][1][2]}x{more[0][1][3]})")
+        # (Owner, 13 Nov: "on every pop-up, the last thing that's shown from the options should be the 3 dots, not anything else
+        # beside it." Reading order of the actions, Back left out - it is a hint off the row.)
+        last = after_more(ctl, more[0], tol)
+        if last: probs.append(f"'{last[0]}' comes after More")
     back = [(l, b) for l, b in ctl if BACK_RE.match(l)]
     if back:
         bb = back[0][1]

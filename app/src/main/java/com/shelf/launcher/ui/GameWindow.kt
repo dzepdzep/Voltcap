@@ -2295,8 +2295,9 @@ private fun SceneBody(
             WinPage.MAIN -> {
                 if (perf && showAll && !labActions) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
-                if (labActions) moreKey?.let { add(it) }
-                else add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+                // (Owner, 13 Nov: "on every pop-up, the last thing that's shown from the options should be the 3 dots, not anything
+                // else beside it" - so More / Less is no longer in this row beside Details: it closes the tools below, after Inspect.)
+                if (!labActions) add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
             WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
             WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
@@ -2319,8 +2320,8 @@ private fun SceneBody(
     }
     val tools = when {
         !compactMore -> allTools + (if (labActions && perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
-        labActions -> if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
-            else allTools.filter { it.label == "Inspect" }
+        labActions -> (if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+            else allTools.filter { it.label == "Inspect" }) + moreKey!!
         moreOpen -> allTools + moreKey!!
         else -> allTools.filter { it.label == "Inspect" } + moreKey!!
     }
