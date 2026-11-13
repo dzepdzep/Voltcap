@@ -1,3 +1,12 @@
+# v0.6.71 published (13 Nov 2026, update 529)
+- GitHub release v0.6.71 (Latest) at `827632f` = `feature/popup-native` 002e6c9e merged onto main (`44ea53f`) + version 0.6.71 / 78
+  + bump-proof version test. Assets: Voltcap-0.6.71.apk 4ec2ed40…4962, -compat 63b8dc5f…2606 (GitHub digests = local build);
+  signer 88ce4b67…, debuggable=False; secrets clean; lint 49 E (baseline) / 968 W (+2 UseKtx) / 109 H.
+- CI: QA tooling checks green on 44ea53f / 827632f. Staging build red since update 499 (patch stub, exit 128 before compiling) -
+  fixed workflow waits in `next/ci/` for the owner (`.github` is protected from the remote tools).
+- RP Flip 2 production upgraded in place 77 → 78 (compat), data kept, 0 crashes. KONKR asleep: not upgraded (0.6.69).
+- Record: `docs/RELEASE_0.6.71.md`. Backup bundle `voltcap_rel0671_incr_20261113.bundle` (restore-tested).
+
 # Sprint 528 — overnight QA and polish: overlaps, Connected Ignition with photos, real covers, category looks (12 Nov 2026, `feature/popup-native`)
 
 - **Profile pictures vs the first pill** (`ui/LauncherScreen.kt`): the Switch-style pictures' measured bottom is a floor for every row
