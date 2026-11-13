@@ -1,3 +1,25 @@
+# Update 529b — More last, Moonlight motion, achievements compact hotfix (13 Nov 2026, `feature/popup-native`, not released)
+
+- **More last** (c819139a): the round ••• is the last key of every window that has it (after Inspect; after Start on the Channel grid;
+  last on Storage's line). `Hierarchy529Test`; `popclip.py` fails a key placed after More (selftest). The save / performance status
+  line still sits under the keys (a status line, not an option) - reported to the owner as a choice.
+- **Moonlight (Night menu) motion** (15d47abf, 93b5bbb2, 23f63dcb): `NightMotion` - entrance wave + layered stagger (520 ms Full,
+  300 ms Lite), game-to-game white sweep + bend + cover step, category change moves the games only (rule 14) along the slant, the
+  window's panels arrive along the slant and leave the same way. Nothing loops at rest. `NightMotion529Test`. Flip 2 frame times
+  equal or better than before (Full busy p90 18 -> 17 ms, Lite p90 17 -> 14 ms). KONKR not tested. `tools/qa/device/moon529.sh`.
+- **Achievements compact** (a7be137b, 2b689b5d, 3ea66a36, 5821da85): one control bar (Show / Order / View / Stats / Last session),
+  each a folded panel (180 ms); no rest-to-open; A opens one achievement, B closes comments, then the details, then the list (the
+  handlers sit inside the dialog - before, B closed the whole list: Flip 2 ach_after3); comments fetched only when opened (list,
+  inline detail, detail window, window page); Power cells' stat tiles in the Stats panel; the window page shows whole names,
+  descriptions and comments (rule 11) and says when Full list has more. `AchCompact529Test` (8). QA fixture sets 1 / 10 / 120 /
+  none with long texts, missables and synthetic comments (none / few / many / offline); hook `voltcap_test_achlist`;
+  `tools/qa/device/ach529.sh`. Flip 2 ach_after4: 1 / 10 / 120 / none, x1.3, page and list, fast moves - PASS by review. KONKR not
+  tested (not connected). Before shots of the old list could not be captured (the old window's keys moved between runs).
+- Files: ui/GameWindow.kt, WinScenes.kt, WinScenesWii.kt, StyleNightMenu.kt, AchievementListDialog.kt, AchievementDetailDialog.kt,
+  AchievementViews.kt, SteamAchievementsUi.kt, SettingsDialog.kt, SettingsIndex.kt, TestHooks.kt, LauncherScreen.kt,
+  LauncherViewModel.kt; tests Hierarchy529Test, NightMotion529Test, AchCompact529Test; tools/qa (popclip.py, selftest, moon529.sh,
+  ach529.sh). Checked: testDebugUnitTest + assembleQa green on 5821da85 (PC).
+
 # v0.6.71 published (13 Nov 2026, update 529)
 - GitHub release v0.6.71 (Latest) at `827632f` = `feature/popup-native` 002e6c9e merged onto main (`44ea53f`) + version 0.6.71 / 78
   + bump-proof version test. Assets: Voltcap-0.6.71.apk 4ec2ed40…4962, -compat 63b8dc5f…2606 (GitHub digests = local build);
