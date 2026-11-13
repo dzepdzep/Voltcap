@@ -792,6 +792,17 @@
    "apk_sha256": "086176440ccb6016a4a0abce6eef104f4ed481fc597ee5e9fe489d30cb8a2e20",
    "base_commit": "5821da85",
    "note": "Update 529b: More last + Night motion + achievements compact (Flip 2 findings fixed). assembleQa in worktree pnat 13 Nov 11:35Z; testDebugUnitTest BUILD SUCCESSFUL 11:33Z. sha256 = installed base.apk on the Flip 2 (evidence.sh manifest of mlast529); installed 12:42 device time."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "feature/popup-native fd7bcc52 (worktree pnat)",
+   "id": "qa-0.6.71-pnat-fd7bcc52",
+   "apk_sha256": "c4f1be8761518575a42ac0b1b383272e92ff27196a88e85e01355081fedf1031",
+   "base_commit": "fd7bcc52",
+   "note": "Update 529b: ••• after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
   }
  ]
 }

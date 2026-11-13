@@ -1,8 +1,11 @@
 # Update 529b — More last, Moonlight motion, achievements compact hotfix (13 Nov 2026, `feature/popup-native`, not released)
 
 - **More last** (c819139a): the round ••• is the last key of every window that has it (after Inspect; after Start on the Channel grid;
-  last on Storage's line). `Hierarchy529Test`; `popclip.py` fails a key placed after More (selftest). The save / performance status
-  line still sits under the keys (a status line, not an option) - reported to the owner as a choice.
+  last on Storage's line); fd7bcc52: after the save line too, in every window that builds its keys with `sceneKeys` (Game shelf had
+  put "Saves: …" beside ••• after it). `Hierarchy529Test`; `popclip.py` fails a key placed after More (selftest); popclip.sh taps the
+  round "•••". Flip 2: mlast529 (10 layouts), mlast529b (6, More step), mlast529c (fd7bcc52: Shelf, Classic, Storage, Night) - •••
+  last everywhere. Open gate notes, not from this change: Storage hierarchy "INFO before PLAY" (its page tabs; the check is newer
+  than Storage's 12 Nov PASS), Spotlight home "SELECT" glyph graded off centre (centred in the screenshot).
 - **Moonlight (Night menu) motion** (15d47abf, 93b5bbb2, 23f63dcb): `NightMotion` - entrance wave + layered stagger (520 ms Full,
   300 ms Lite), game-to-game white sweep + bend + cover step, category change moves the games only (rule 14) along the slant, the
   window's panels arrive along the slant and leave the same way. Nothing loops at rest. `NightMotion529Test`. Flip 2 frame times
