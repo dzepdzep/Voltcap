@@ -68,7 +68,7 @@ os.makedirs(os.path.join(out, "frames"), exist_ok=True)
 for v in vids:
     B = bursts(v); name = os.path.basename(v)[:-4]
     print(f"- {name}: " + (", ".join(f"t={b[0][0]:.0f} ms {b[-1][0] - b[0][0]:.0f} ms / {len(b)} frames" for b in B) or "no motion found (NOT TESTED)"))
-    if B: strip(v, B[0][0] - 30, B[0][0] + 380, os.path.join(out, "frames", name + "_first_change.jpg"), f"{name} first R1 (Info -> Details)")
+    if B: strip(v, B[0][0][0] - 30, B[0][0][0] + 380, os.path.join(out, "frames", name + "_first_change.jpg"), f"{name} first R1 (Info -> Details)")
 
 print("\n## Contact sheets")
 def sheet(cells, dst, cols=3, w=420):

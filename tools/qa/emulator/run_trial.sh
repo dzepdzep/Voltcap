@@ -48,6 +48,8 @@ run_pop() { # tag scale layouts
   if waitdone /sdcard/pc/$1 $1 420; then note "popup gate $1 ($2: $3): run finished"; else note "popup gate $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
   adb shell "cd /data/local/tmp && sh pop529.sh restore $1"
   adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1; adb pull -a /sdcard/pc/${1}_w "$OUT/raw/" > /dev/null 2>&1
+  # (First run 43517899154: the gate found no main screenshot - the run's own logs go into the summary now.)
+  { echo '```'; echo "$1 log:"; adb shell cat /sdcard/pc/$1/log.txt /sdcard/pc/${1}_w/log.txt 2>&1 | tail -40; echo "files: $(adb shell ls /sdcard/pc/$1 2>&1 | tr '\n' ' ' | cut -c1-600)"; echo '```'; } | tee -a "$S"
 }
 run_pop e529a "font=1.3,density=1.15" "COVERDETAILS SHELF"
 run_pop e529b off "COVERDETAILS SHELF"
@@ -56,6 +58,7 @@ if waitdone /sdcard/pc/e529c e529c 600; then note "page walk e529c (x1.3, touch,
 adb shell "cd /data/local/tmp && sh shelfpages529.sh restore e529c"
 adb shell "cp /sdcard/Android/data/$P/files/qa_clip/e529c_* /sdcard/pc/e529c/ 2>/dev/null"
 adb pull -a /sdcard/pc/e529c "$OUT/raw/" > /dev/null 2>&1
+{ echo '```'; echo "e529c log:"; adb shell cat /sdcard/pc/e529c/log.txt 2>&1 | tail -40; echo '```'; } | tee -a "$S"
 adb logcat -d -b crash > "$OUT/crash_log_end.txt" 2>&1
 note "crash buffer at the end: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log_end.txt") FATAL"
 python3 tools/qa/emulator/grade_trial.py "$OUT" "$APK" | tee -a "$S"
