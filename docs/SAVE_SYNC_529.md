@@ -77,13 +77,14 @@ Not run on this branch. The remote tools push only `main` and the branches `feat
 - full `testDebugUnitTest`: green;
 - `assembleQa` with R8: green, secrets check clean.
 
-## 4. Not proven / remaining risks
+## 4. Not proven / remaining risks (updated 13 Nov, 529c)
 
-1. **Real Drive, two real handhelds.** The isolated QA app never syncs (`qaPaused`). Testing it against Drive needs a Google sign-in, an OAuth consent that is yours to give, ideally with a test account or test folder. The KONKR is not connected. So the fix is proven on the JVM against a model of Drive, not against Google's servers.
-2. **Upload race inside the last moment** (Drive v3 has no conditional update). If another handheld uploads in the second between the "still that version?" check and Drive accepting our bytes, the other version is replaced on Drive. The random runs show it is never lost: it stays in Drive's revision history, and on that handheld it is backed up before being replaced. But it is not announced. A fix would read Drive's revision list after each upload.
-3. **"Keep this device's" for a multi-file save** pushes file by file. A failure halfway leaves Drive mixed until the next sync, which sends the rest. A device that downloads in between gets that mix as one unit, still all or none locally.
-4. **"Newest"** in the conflict choice uses file dates (clocks can differ). "Use Drive's" and "Keep this device's" are exact.
-5. **No in-app restore of a backup yet.** Rollback today is manual: `Voltcap/Sync backups/<folder>/<path>.<yyyyMMdd-HHmmss>`, now with a sidecar `.json`, plus `Voltcap/Sync conflicts/`. An "Earlier versions" list in Save options is the next step.
+1. **Real Drive, two real handhelds - still open, needs you.** The isolated QA app never syncs (`qaPaused`). See "The one action needed from you" in section 8.
+2. ~~Upload race inside the last moment~~ **Fixed in 529c** (section 8): the revision list is read after each replace; a version another handheld sent in that moment is kept and announced.
+3. ~~Multi-file save mixed on Drive~~ **Fixed in 529c**: manifest written last; a half-sent save is held, never applied as a mix.
+4. ~~"Newest" trusted two clocks~~ **Fixed in 529c**: dates corrected to Google's clock; too close = no guess.
+5. ~~No in-app restore~~ **Fixed in 529c**: Save sync → Earlier versions → Restore (confirmed, current save backed up first).
+6. **New, 529c:** none of the 529c code has been compiled for Android yet (the PC link was down when it was written). The pure rules ran on the JVM: `SyncGuards529Test` 16 tests + `SaveSyncSim529Test` 18 (two new scenarios), all green; mutation check: removing the race keeping or the manifest gate each fails its scenario. A PC `testDebugUnitTest` + `assembleQa` is the next step before anything else.
 
 ## 5. Recovery opportunities (nothing was restored)
 
@@ -141,3 +142,22 @@ Re-run (12:02, same build plus `32711b96`): 1 save **8.2 s**; 3 saves **8.2 s af
 Build check before the re-run: the PC's `SaveObserver.kt` had not received `32711b96` (Gradle reported the QA compile up to date). All 22 changed source and test files were then copied from the branch to the PC again; after that only `SaveObserver.kt` recompiled, so the rest already matched. `testDebugUnitTest` on exactly the branch content: BUILD SUCCESSFUL (10:56, 13 Nov).
 
 No crashes. File dates on the Flip 2's shared storage come in whole seconds (`mtime=…442000`), the coarse dates the content check (finding 4) is there for. Afterwards the files were removed and the dry run switched off. The script had put a read-only Settings info screen in front, which one Back closed.
+
+
+## 8. 529c - the remaining risks closed (13 Nov, afternoon)
+
+| Risk | What was wrong | Now | Evidence |
+|---|---|---|---|
+| Simultaneous uploads (last moment) | Drive v3 has no conditional replace. Another handheld's upload between our check and our bytes ended up as an unannounced revision under ours. | After each replace, `DriveClient.revisions` → `UploadRace.replacedUnseen`. Every revision between the version we meant to replace and ours is downloaded (md5 checked) into `Voltcap/Sync conflicts/<folder>/<file>.drive-same-moment-<stamp>`, pinned on Drive (`keepForever`), logged and named in the sync summary. | `SyncGuards529Test` (5 race cases); `SaveSyncSim529Test.anUploadInTheLastMomentIsKeptAndAnnounced` (three handhelds; fails without the fix) |
+| Multi-file saves on Drive | Files go up one by one. A device downloading meanwhile, or after the sender broke off, could apply new file 1 + old file 2 as one save. | The sender writes a manifest (`.voltcap-unit~<save>`: every file's md5) last, only when every file of the save went up. A downloader applies a save only when Drive's files match it. A mismatch from a manifest-aware sender means HOLD ("still being sent", status + Play asks first). Mismatches only from older Voltcaps keep the old behaviour, so nothing waits forever. A hold longer than 24 h (this device's own clock) becomes a conflict for the player. A device whose whole save equals Drive refreshes a missing or stale manifest (md5 compare, no download). | `SyncGuards529Test` (manifest rules); `SaveSyncSim529Test.aMultiFileSaveHalfSentIsNeverAppliedAsAMix` (fails without the gate); the 25 random three-handheld runs stay green with manifests on |
+| Timestamps in conflicts | "Newest" compared file dates from two clocks. | Each upload records the device's clock error against Google's (from Drive's `Date` header, `appProperties.skew`). "Newest" compares both dates corrected to Google's clock and decides only when they are more than 2 min apart (15 min when a skew is unknown). A future date never counts. Otherwise it leaves that save open, says so in the dialog, and "(newer)" labels only appear when sure. "Use Drive's" / "Keep this device's" need no clock. | `SyncGuards529Test.newestCorrectsBothClocks…` (the old rule picks wrong there), `…NeverGuesses…` |
+| Restoring earlier versions | Manual only (`Voltcap/Sync backups`). | Save sync → **Earlier versions**: the verified backups of the game's save files, with the device and why each was kept. **Restore** asks first. It refuses while the game or its emulator may run. Order: the version's own md5 is checked, the live save is backed up (verified), the bytes are written and read back. If any step fails, the save it had is put back. The next sync sends the restored save to Drive. | `SyncGuards529Test` (4 restore cases incl. damaged copy and failed read-back) |
+| Pending uploads after process death / restart | WorkManager kept the queued uploads, but a play session left "open" by a restart held downloads back for 8 h, and the watch chain kept watching a game that wasn't running. | A session that started before this boot (this device's own clocks: wall time minus time since boot) is not running. The chain hands the game to its after-game sync (per-game queue, retried until it succeeds, offline included) and stops. | `SyncGuards529Test.aSessionFromBeforeTheRestartIsNotRunning` |
+| Mid-game verified upload | (529, section 7) | unchanged | Flip 2 dry run: 8.2 s, 30.5 s after the process was ended |
+
+### The one action needed from you (real Google Drive test)
+
+The fixes are proven against a model of Drive, not against Google's servers. To test for real without touching your saves:
+1. On the **Flip 2's isolated QA app** (Voltcap QA, `com.shelf.launcher.qa`) open Settings › Sync and **sign in with a Google account** - ideally a spare one. That consent is yours to give; I can't. The QA app keeps its own Drive folder and data, separate from your real Voltcap.
+2. Tell me it's done. I then lift the QA app's sync pause for synthetic saves only (QA folder, never your emulators' folders) and run the two-device cases on hardware: Flip 2 + GT78 QA apps, or Flip 2 + KONKR when it's connected. The cases are hand-over, simultaneous uploads, a half-sent multi-file save, a restore, and a restart mid-game.
+Until then this stays on `fix/save-sync` and is not released.
