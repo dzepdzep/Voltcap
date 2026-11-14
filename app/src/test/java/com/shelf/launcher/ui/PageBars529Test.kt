@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import androidx.compose.ui.unit.dp
 
 /** 529o (owner #15 6866376184): the shelf family's page keys are full-width bars in as few even rows as keep every word whole. */
 class PageBars529Test {
@@ -39,6 +40,14 @@ class PageBars529Test {
         val h2 = java.io.File("src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt").readText()
         val card = h2.substring(h2.indexOf("internal fun DiscoverCard("), h2.indexOf("internal fun ChipSheet("))
         assertTrue(card.contains("PageBars(sceneKeys(ctx), 6.dp)") && card.contains("wide = true"))
+    }
+
+    // 529t: Cover details' panel never runs over the home's title (Flip 2 ×1.3), never under 40 % of the window
+    @Test fun coverPanelKeepsClearOfTheTitle() {
+        assertEquals(300f, coverPanelWidth(600.dp, 0.6f, 300.dp).value, 0.01f)
+        assertEquals(360f, coverPanelWidth(600.dp, 0.6f, 900.dp).value, 0.01f)
+        assertEquals(240f, coverPanelWidth(600.dp, 0.6f, 100.dp).value, 0.01f)
+        assertEquals(560f, coverPanelWidth(1200.dp, 0.5f, 2000.dp).value, 0.01f)
     }
 
     @Test fun neverMoreThanThreeToARow() = assertTrue(pageBarRows(listOf(10, 10, 10, 10, 10), 900, 6).all { it.size <= 3 })

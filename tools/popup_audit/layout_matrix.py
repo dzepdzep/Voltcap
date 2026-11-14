@@ -65,6 +65,11 @@ pk = gw[gw.index('internal val PICKUP_CARD_LAYOUTS'):]; pk = pk[:pk.index('\n')]
 pickup = {l: 'card / case flight (window out of the picked piece, piece hidden in the home)' for l in re.findall(r'HomeLayout\.([A-Z_]+)', pk)}
 for l in ('SHELF', 'STACKS'): pickup[l] = 'case flight (the case itself flies out and back; home copy hidden)'
 pickup['ORBIT'] = 'disc flight (the disc flies to the terminal and back)'
+# 529s: Storage boxes' sprite / Cube menu's picture fly into the window (PickupOverlay), the TV room's case goes into the set (TvCaseFlyer).
+sf = gw[gw.index('val spriteFlight ='):]; sf = sf[:sf.index('\n')]
+if 'STORAGE_RECORD' in sf: pickup['STORAGE'] = 'sprite flight (the sprite leaves its slot for the record\'s stand and hops back; home copy hidden)'
+if 'CUBE_FACE' in sf: pickup['CUBE'] = 'picture flight (the picked picture travels into the turning face and back; home copy hidden)'
+if 'val tvFlight =' in gw: pickup['TV'] = 'case into the set (the case goes into the switch-on line, comes back out to its place; home copy hidden)'
 # Scenes that open out of the picture itself (a physical piece only when Inspect asks for it) - GameWindow's sceneOwnsOpen.
 so = gw[gw.index('val sceneOwnsOpen = '):]; so = so[:so.index('&& !askedInspect')]
 owns_open = set(re.findall(r'WinScene\.([A-Z_]+)', so))

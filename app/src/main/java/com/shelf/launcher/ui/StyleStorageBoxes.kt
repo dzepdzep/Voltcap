@@ -304,7 +304,10 @@ private fun StorageGrid(c: StyleCtx, page: Int, box: Features.StSize, focus: Int
             val on = i == focus
             key(g.stableKey) {
             val lift by animateFloatAsState(if (on) 1f else 0f, if (animate) spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMediumLow) else tween(0), label = "stLift")
-            val pick by animateFloatAsState(if (on && windowOn) 1f else 0f, if (animate) spring(dampingRatio = 0.7f) else tween(0), label = "stPick")
+            // (529s: while its sprite is out on the record's stand (GameWindow's spriteFlight) it doesn't rise here - its slot
+            // stays empty and level, and it lands back exactly where it was.)
+            val away = MediaInspect.key == g.stableKey
+            val pick by animateFloatAsState(if (on && windowOn && !away) 1f else 0f, if (animate) spring(dampingRatio = 0.7f) else tween(0), label = "stPick")
             Box(
                 Modifier.size(cellW, cellH).graphicsLayer {
                     translationX = col * cellW.toPx(); translationY = r * cellH.toPx()
@@ -316,7 +319,7 @@ private fun StorageGrid(c: StyleCtx, page: Int, box: Features.StSize, focus: Int
                 Box(Modifier.size(icon * 1.08f).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = if (on) 0.34f else 0.18f))
                     .border(1.5.dp, Color.White.copy(alpha = 0.32f), RoundedCornerShape(10.dp)))
                 // The sprite's shadow on the floor of its slot.
-                Box(Modifier.size(icon * 0.62f, icon * 0.13f).graphicsLayer { translationY = icon.toPx() * 0.42f; alpha = 0.32f - 0.14f * lift - 0.1f * pick; val k = 1f - 0.25f * pick; scaleX = k }
+                Box(Modifier.size(icon * 0.62f, icon * 0.13f).graphicsLayer { translationY = icon.toPx() * 0.42f; alpha = if (away && MediaInspect.amount.floatValue > 0.001f) 0f else 0.32f - 0.14f * lift - 0.1f * pick; val k = 1f - 0.25f * pick; scaleX = k }
                     .clip(RoundedCornerShape(50)).background(Color.Black))
                 Box(
                     Modifier.size(icon * 0.86f).graphicsLayer {

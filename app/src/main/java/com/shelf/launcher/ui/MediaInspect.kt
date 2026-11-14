@@ -21,6 +21,11 @@ internal object MediaInspect {
      */
     val hold = mutableStateOf(false)
 
+    /** 529s: the trip of a picked object (PickupOverlay / TvCaseFlyer) - its reveal, read by the home's copy while drawing, so
+     *  the copy goes on the very frame the flying one first moves (KONKR pk529s14 Cube: one frame of both, with [hold] set
+     *  from the animation). Null when no such trip. */
+    var pickupReveal by mutableStateOf<androidx.compose.runtime.State<Float>?>(null)
+
     /** The alpha of the card the piece comes out of: hidden while [hold], else it returns as the piece ([amount]) goes home. */
     fun cardAlpha(amount: Float, hold: Boolean): Float = if (hold) 0f else (1f - amount).coerceIn(0f, 1f)
 

@@ -946,6 +946,17 @@
    "apk_sha256": "8745509f8703d56eed3887868b91369e3eca07e17059e98230edf26f3399c46c",
    "base_commit": "1450b569",
    "note": "529s: native pages' scroll cue is a slim bar on the list's right edge (the bottom chevron lay over the last whole row's text, Console stack x1.3). assembleQa 14 Nov 14:37 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 922e23ec + 529s pickups working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529s-pickups",
+   "apk_sha256": "379d99915387c01af5cc0bf68c232f4065d91f532faa5039a77bcd137d3c15c4",
+   "base_commit": "922e23ec",
+   "note": "529s: physical pickups for Storage boxes / Cube menu / TV room (PickupOverlay, TvCaseFlyer), Coverflow panel keeps clear of the title (CoverFlight.headRight), Cube x1.3 pills. assembleQa 14 Nov 16:22 (verifyNoEmbeddedSecrets). KONKR runs pk529s16."
   }
  ]
 }

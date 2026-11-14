@@ -4204,7 +4204,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         } else if (tvLayout) {
             // TV room (TvRoomHome.kt): the game on an old TV, the games beside it, its story under it.
             if (visibleGames.isEmpty()) Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
-            else TvRoomHome(
+            // (529s: the case you pick flies into the set - TvCaseFlyer flies the picture the room drew.)
+            else androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { TvRoomHome(
                 games = visibleGames, focus = state.focusedIndex, art = displayArt, overrides = state.artOverrides,
                 screenshots = state.screenshots, videoUrls = state.videoUrls, metadata = state.metadata,
                 playtime = state.playtime, lastPlayed = state.lastPlayedAt, nowPlaying = state.nowPlaying,
@@ -4230,7 +4231,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         .sortedWith(compareBy<com.shelf.launcher.data.RaAchievementDetail> { !it.isUnlocked }.then(com.shelf.launcher.data.RA_DISPLAY_ORDER))
                         .mapNotNull { a -> com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { it to a.isUnlocked } }
                 }
-            )
+            ) }
             // The game you're on: its achievement list for the wall, once it stays a moment.
             val tvFocused = visibleGames.getOrNull(state.focusedIndex)
             LaunchedEffect(tvFocused?.stableKey) {

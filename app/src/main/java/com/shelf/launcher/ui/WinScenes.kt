@@ -790,8 +790,21 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     // Achievements and Options still open the full list / the game's menu when there is no page for them.)
     fun openTab(t: WinPage) { if (t != ctx.page) ctx.open(t) }
     val anim = rememberAnimationsEnabled()
+    // 529s (owner P3): with a pickup the sprite flies out of its slot onto the stand (WinSceneStorageFlight.kt) and the record
+    // switches on round it; without one (Instant, Inspect, the other screen) the record opens as before.
+    val origin = LocalSceneOrigin.current
+    val flight = remember { StorageFlightSlot() }
+    var rootAt by remember { mutableStateOf<Offset?>(null) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides (if (origin != null) flight else null)) {
+    Box(Modifier.storageFlightRoot { if (rootAt != it) rootAt = it }) {
     Column(
-        Modifier.size(w, h).pixelFrame(RecPanel, 10.dp)
+        Modifier.size(w, h)
+            .then(if (origin != null) Modifier.graphicsLayer {
+                val a = ((ctx.reveal() - 0.04f) / 0.46f).coerceIn(0f, 1f)
+                alpha = a
+                scaleY = 0.9f + 0.1f * a
+            }.onGloballyPositioned { flight.panel = it } else Modifier)
+            .pixelFrame(RecPanel, 10.dp)
             // L1 / R1 turn the tabs.
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -825,6 +838,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                 else StorageRecordPage(ctx, p, red, live)
             }
         }
+    }
+    if (origin != null) PickupTarget(flight, rootAt, uniform = true) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
+    }
     }
 }
 
@@ -937,13 +953,16 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     Canvas(Modifier.fillMaxWidth(0.62f).height(16.dp).align(Alignment.BottomCenter).padding(bottom = 6.dp)) {
                         drawOval(Color.Black.copy(alpha = 0.22f), Offset.Zero, Size(size.width, size.height))
                     }
+                    val flying = LocalStorageFlight.current != null
                     Box(
-                        Modifier.fillMaxSize(0.66f).graphicsLayer {
+                        Modifier.fillMaxSize(0.66f).storageFlightSlot(live, restLift = 6.dp).graphicsLayer {
+                            // (529s: picked up, this copy waits hidden until the flying sprite lands on it - one sprite.)
+                            val k = ctx.reveal().coerceIn(0f, 1f)
+                            if (storageSlotHidden(flying, k)) { alpha = 0f; return@graphicsLayer }
                             // The sprite's idle hop: two steps, as sprites do.
                             val step = ((clock.floatValue * 2.2f).toInt() % 2)
                             translationY = -step * 4.dp.toPx() - 6.dp.toPx()
-                            val k = ctx.reveal().coerceIn(0f, 1f)
-                            val s = 0.6f + 0.4f * k
+                            val s = if (flying) 1f else 0.6f + 0.4f * k
                             scaleX = s; scaleY = s
                         }
                     ) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
@@ -1092,7 +1111,10 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(if (big) 30.dp else 34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
-                StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize(0.8f))
+                val flying = LocalStorageFlight.current != null
+                Box(Modifier.fillMaxSize(0.8f).storageFlightSlot(live).graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }) {
+                    StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize())
+                }
             }
             Spacer(Modifier.width(10.dp))
             val tag: @Composable () -> Unit = {
@@ -1401,6 +1423,8 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
  * scene that flies its own piece out of it (Orbit deck's disc); null otherwise.
  */
 internal val LocalSceneOrigin = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.geometry.Rect?> { null }
+/** 529s: the picture [LocalSceneOrigin] was, as drawn on the home (GameOrigin.layer) - PickupOverlay starts as it. */
+internal val LocalSceneOriginLayer = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.graphics.layer.GraphicsLayer?> { null }
 
 /** Corners cut off top left and bottom right (Orbit deck's console panels). */
 private fun odChamfer(cut: Float) = androidx.compose.foundation.shape.GenericShape { sz, _ ->

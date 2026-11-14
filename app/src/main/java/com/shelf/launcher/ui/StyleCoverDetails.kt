@@ -43,6 +43,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.animation.core.Animatable
@@ -295,9 +296,19 @@ internal fun coverHeadIn(p: Float): Float { val t = ((p - 0.35f) / 0.5f).coerceI
 private fun CoverHeadText(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val year = c.state.metadata[g.stableKey]?.releaseYear
-    Column(modifier) {
+    // (529t: where the name's words really end on screen - the game window's panel opens right of them, never over the name.)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 2)
+    val nameSize = if (compact) 22.sp else 28.sp
+    Column(modifier.onGloballyPositioned { lc ->
+        val r = lc.boundsInWindow(); val w = lc.size.width
+        if (w > 0) {
+            val t = measurer.measure(titles.display(g.name), TextStyle(fontSize = nameSize, fontWeight = FontWeight.Bold),
+                constraints = androidx.compose.ui.unit.Constraints(maxWidth = w), maxLines = 2)
+            CoverFlight.headRight = r.left + (0 until t.lineCount).maxOfOrNull { t.getLineRight(it) }.let { it ?: 0f }
+        }
+    }) {
         FullText(
-            titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
+            titles.display(g.name), color = Color.White, fontSize = nameSize, fontWeight = FontWeight.Bold,
             maxLines = 2, modifier = Modifier.fillMaxWidth(), reserve = false
         )
         Spacer(Modifier.height(2.dp))
@@ -545,6 +556,8 @@ internal object CoverFlight {
     val spines = HashMap<String, Rect>()
     /** The big case's stage (window bounds). */
     var stage: Rect? = null
+    /** 529t: where the home's title words end (window x, px) - the game window's panel starts right of it. */
+    var headRight: Float? = null
     var shelf: Rect? = null
     /** Game key -> its flight (0 = in its slot, 1 = out in the big place); present only while it moves. */
     val flights = androidx.compose.runtime.mutableStateMapOf<String, androidx.compose.runtime.State<Float>>()

@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -566,7 +567,15 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
     val a = lerp(tint, Color.White, 0.25f)
     val faceTop = lerp(tint, Color.Black, 0.38f); val faceBottom = lerp(tint, Color.Black, 0.74f)
     val depth = 22.dp
-    Box(Modifier.size(side + depth, side + depth)) {
+    // 529s (owner P3, physical pickups): the game's picture leaves its place in the row and travels into the face's inset as
+    // the face turns in, and back out into its place as it turns away - one picture (WinSceneStorageFlight.kt PickupTarget / PickupOverlay).
+    val origin = LocalSceneOrigin.current
+    val flight = remember { StorageFlightSlot() }
+    flight.panelAt = with(LocalDensity.current) { Offset(0f, depth.toPx()) }
+    var rootAt by remember { mutableStateOf<Offset?>(null) }
+    val flying = origin != null
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides (if (flying) flight else null)) {
+    Box(Modifier.size(side + depth, side + depth).storageFlightRoot { if (rootAt != it) rootAt = it }) {
         // The cube's top and right faces (its depth), drawn behind the face: it reads as a solid cube, not a card.
         Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = sceneStage(ctx.reveal(), 0.2f, 0.7f) }) {
             val d = depth.toPx(); val s = side.toPx()
@@ -596,14 +605,14 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
             alpha = if (ctx.reveal() < 0.02f) 0f else 1f
             shape = RoundedCornerShape(6.dp); clip = true
             flatTextFor3d()
-        }.background(Brush.linearGradient(listOf(faceTop, faceBottom)))
+        }.then(if (flying) Modifier.onGloballyPositioned { flight.panel = it } else Modifier).background(Brush.linearGradient(listOf(faceTop, faceBottom)))
             // (Update 508: the same light on the front — a soft sheen from its top-left corner.)
             .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent), start = Offset.Zero, end = Offset(260f, 260f)))
             .border(2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.5f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(6.dp)).padding(14.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 // The game on the face as a square inset, whole.
-                Box(Modifier.size(minOf(side * 0.3f, 120.dp)).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
-                    SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), faceBottom)
+                Box(Modifier.size(minOf(side * 0.3f, 120.dp)).storageFlightSlot(true).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
+                    SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }, faceBottom)
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -618,6 +627,10 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, inkOn(a), Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
             }
         }
+        if (origin != null) PickupTarget(flight, rootAt, uniform = false) {
+            SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)), faceBottom)
+        }
+    }
     }
 }
 

@@ -1387,14 +1387,15 @@ internal fun StyleHome(
         // Update 202: Pocket Quest (StylePocketQuest.kt).
         HomeLayout.POCKET -> StylePocketQuest(c, modifier)
         // (Update 239, #93: Cube menu, StyleCube.kt.)
-        HomeLayout.CUBE -> StyleCube(c, modifier)
+        // (529s: these two fly the picked picture itself into their window - LocalPickupSnapshot.)
+        HomeLayout.CUBE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCube(c, modifier) }
         // Update 330: Memory card (StyleMemoryCard.kt).
         HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
         // Update 330: Case flow (StyleCaseFlow.kt).
         HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
         // Update 330, phase 2 (StyleCardboardBox.kt, StyleStorageBoxes.kt, StyleFileSelect.kt).
         HomeLayout.BOX -> StyleCardboardBox(c, modifier)
-        HomeLayout.STORAGE -> StyleStorageBoxes(c, modifier)
+        HomeLayout.STORAGE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleStorageBoxes(c, modifier) }
         HomeLayout.FILESELECT -> StyleFileSelect(c, modifier)
         // Update 330, phase 3 (StyleOrbitDeck.kt, StyleAiryHome.kt, StyleNightMenu.kt).
         HomeLayout.ORBIT -> StyleOrbitDeck(c, modifier)

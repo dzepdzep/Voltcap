@@ -9,11 +9,14 @@ note() { echo "$*" | tee -a "$S"; }
 A() { adb shell am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 waitdone() { # dir tag seconds - stops at once when the emulator is gone (run 43520733405 waited out the job timeout)
   for _ in $(seq 1 $(( $3 / 5 ))); do
-    [ "$(adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE while waiting for $2 - remaining checks NOT TESTED"; return 2; }
-    adb shell "grep -q DONE $1/log.txt 2>/dev/null" && return 0; sleep 5; done; return 1; }
+    [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE while waiting for $2 - remaining checks NOT TESTED"; return 2; }
+    timeout 15 adb shell "grep -q DONE $1/log.txt 2>/dev/null" && return 0
+    # (529t: a copy of the crash buffer every ~30 s, so an emulator that drops off still leaves its last crashes behind)
+    [ $(( $(date +%s) % 30 )) -lt 5 ] && timeout 15 adb logcat -d -b crash > "$OUT/crash_log_live.txt" 2>/dev/null
+    sleep 5; done; return 1; }
 echo "# Emulator QA trial (EMULATOR evidence - not real-handheld)" > "$S"
 note "commit: ${GITHUB_SHA:-local}  run: ${GITHUB_SERVER_URL:-}/${GITHUB_REPOSITORY:-}/actions/runs/${GITHUB_RUN_ID:-}"
-adb wait-for-device
+timeout 300 adb wait-for-device || { note "EMULATOR never came up (5 min) - every check NOT TESTED"; exit 0; }
 for _ in $(seq 1 60); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ] && break; sleep 3; done
 # A throwaway emulator with no lock credential: dismiss its swipe screen; the compact profile the KONKR has (960x640, 240 dpi).
 adb shell settings put secure lockscreen.disabled 1 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
@@ -33,7 +36,7 @@ note "apk: $(basename "$APK") sha256=$(sha256sum "$APK" | cut -c1-64)"
 note "apk native libs: $(unzip -l "$APK" | awk '{print $4}' | grep '^lib/' | cut -d/ -f2 | sort -u | tr '\n' ' ')"
 aapt=$(ls "$ANDROID_HOME"/build-tools/*/aapt 2>/dev/null | tail -1)
 [ -n "$aapt" ] && note "apk package: $("$aapt" dump badging "$APK" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
-if ! adb install -r -g "$APK" > "$OUT/install.txt" 2>&1; then note "INSTALL: FAILED ($(tail -1 "$OUT/install.txt")) - every check BLOCKED"; exit 0; fi
+if ! timeout 300 adb install -r -g "$APK" > "$OUT/install.txt" 2>&1; then note "INSTALL: FAILED ($(tail -1 "$OUT/install.txt")) - every check BLOCKED"; exit 0; fi
 note "INSTALL: OK; primaryCpuAbi=$(adb shell dumpsys package $P | sed -n 's/.*primaryCpuAbi=//p' | head -1 | tr -d '\r')"
 # (The handhelds' QA app has all-files access from its first setup; a fresh emulator install does not - the QA fixture
 # library lives under shared storage. Granted to the isolated QA app on this throwaway emulator only.)
@@ -56,8 +59,8 @@ adb shell am force-stop $P; sleep 1
 A; sleep 12
 adb exec-out screencap -p > "$OUT/launch.png"
 PID=$(adb shell pidof $P | tr -d '\r')
-adb logcat -d -b crash > "$OUT/crash_log.txt" 2>&1
-adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | tail -200 > "$OUT/launch_log.txt"
+timeout 30 adb logcat -d -b crash > "$OUT/crash_log.txt" 2>&1
+timeout 30 adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | tail -200 > "$OUT/launch_log.txt"
 if [ -z "$PID" ]; then note "LAUNCH: FAILED (no process; see crash_log.txt / launch_log.txt) - every check BLOCKED"; exit 0; fi
 note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt") (FATAL: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log.txt"); processes: $(grep -o 'Process: [^,]*' "$OUT/crash_log.txt" | sort -u | tr '\n' ' '))"
 adb shell mkdir -p /data/local/tmp

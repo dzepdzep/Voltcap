@@ -87,7 +87,7 @@ class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boole
             if (firstRow().isEmpty()) {
                 var found = compose.onAllNodes(ach).fetchSemanticsNodes()
                 if (found.isEmpty()) {
-                    val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) && words(n).trim().let { it == "•••" || it == "more" } }
+                    val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) && words(n).trim().let { w -> w == "•••" || w.split(Regex("[^a-z•]+")).filter { it.isNotEmpty() }.let { ws -> ws.isNotEmpty() && ws.all { it == "more" } } } }
                     val ms = compose.onAllNodes(more).fetchSemanticsNodes()
                     if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(20) }
                     found = compose.onAllNodes(ach).fetchSemanticsNodes()
@@ -103,6 +103,9 @@ class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boole
             }
             val rows = firstRow()
             // (Opened in the layout's own full list instead of a page - Steam / a layout without the page - is not this check.)
+            // (529t: what was there instead, for AIRY / CASEFLOW - the steps the test took and the controls it could see)
+            if (rows.isEmpty()) println("ACHFIRST $layout: no page - clickable now: " + compose.onAllNodes(SemanticsMatcher("clickable") {
+                it.config.contains(SemanticsActions.OnClick) }).fetchSemanticsNodes().map { words(it).trim().take(30) }.filter { it.isNotBlank() })
             org.junit.Assume.assumeTrue("$layout: no Achievements page with rows reached", rows.isNotEmpty())
             val r = rows.last()
             val full = r.size.height.toFloat(); val shown = r.boundsInRoot.height

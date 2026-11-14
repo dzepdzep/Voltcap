@@ -672,7 +672,10 @@ private fun CubeBrowser(c: StyleCtx, chip: Boolean, chipOn: Boolean, homeOn: Boo
         val bh = maxHeight
         val compact = bh < 300.dp
         val headerH = 30.dp
-        val infoH = if (compact) 84.dp else 112.dp
+        // (529s, KONKR x1.3 (pk529s14_13): the title, the info line and the Play / Details / Cube pills grow with the text
+        // size - at a fixed 84 dp the pills were cut by the screen's bottom edge. The room for them grows with it; the row of
+        // games gives way.)
+        val infoH = (if (compact) 84.dp else 112.dp) * maxOf(1f, androidx.compose.ui.platform.LocalDensity.current.fontScale)
         val aspect = styleAspect(c.type).coerceIn(0.5f, 1.8f)
         val sizeK = GameSize.scale(HomeLayout.CUBE)
         // As big as the room under the header and above the title allows (the size % never pushes the buttons off).

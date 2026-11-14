@@ -43,7 +43,7 @@ class Batch507Test {
         // The case flies out of the home and back.
         val g = src("ui/GameWindow.kt")
         assertTrue(g.contains("val caseFlight = scene == WinScene.INDEX_CARD && piece == null && (layout == HomeLayout.SHELF || layout == HomeLayout.STACKS)"))
-        assertTrue(g.contains("LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)"))
+        assertTrue(g.contains("LocalSceneOrigin provides (if (discFlight || caseFlight || spriteFlight) origin else null)"))
     }
 
     @Test fun theHomeCaseStaysHiddenUntilItsCaseHasLanded() {
@@ -52,7 +52,7 @@ class Batch507Test {
         assertEquals(0f, caseHomeHidden(0f), 0f)
         // (Shelf flash work, 12 Nov: still hidden for the whole flight, no cross-fade - from the frame the flying copy is drawn,
         // CaseFlightGate; before that the home's copy is the one on screen. ShelfCaseHandOverTest covers the hand-over.)
-        assertTrue(src("ui/GameWindow.kt").contains("if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)"))
+        assertTrue(src("ui/GameWindow.kt").contains("MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else if ((spriteFlight || tvFlight) && originLayer != null) return@collect"))
         assertEquals(1f, caseHomeHiddenGated(0.01f, ready = true), 0f)
     }
 

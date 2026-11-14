@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
@@ -79,6 +81,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -159,7 +163,13 @@ internal object GameOrigin {
     var displayId: Int = -1
     /** Update 294: when [rect] was last marked (uptime ms). */
     var markedAt = 0L
+    /** 529s: the marked picture as last drawn (layouts that fly their object - [LocalPickupSnapshot]), else null. */
+    var layer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null
 }
+
+/** 529s: the home's picture of the game you're on keeps a copy of itself as drawn ([GameOrigin.layer]) - on in the
+ *  layouts whose window flies that very picture (Storage boxes, Cube menu: PickupFlyer), off elsewhere. */
+internal val LocalPickupSnapshot = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /**
  * Update 113: the big logo for [g] (Edit Home's logo part, Hero carousel, Spotlight, the second screen's showcase):
@@ -185,6 +195,7 @@ internal val SELF_MOVING_SCENES = setOf(WinScene.CROSS_OPTIONS, WinScene.SIDE_DR
 /** Update 507: how much the home's own case is hidden while its case flies (all of it until it has landed back). Pure. */
 internal fun caseHomeHidden(grow: Float): Float = if (grow > 0.001f) 1f else 0f
 
+
 internal val PICKUP_CARD_LAYOUTS =setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
 
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
@@ -199,12 +210,15 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // on) stays.
     if (!on || LocalArtMirror.current) return this
     val view = LocalView.current
+    val snap = if (LocalPickupSnapshot.current) androidx.compose.ui.graphics.rememberGraphicsLayer() else null
     // (Update 325, Toni: "the Game Boy cartridges still have that ghost layer above and a bit on the left" — screenshots
     // of the game window's Inspect / Wobble: it was the game's own card on the home screen behind the window, still drawn
     // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
     // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
     // (Update 400: the focused-card marker (FocusedCard) fades out too: it is the card the piece / window comes out of.)
-    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = MediaInspect.cardAlpha(MediaInspect.amount.floatValue, MediaInspect.hold.value) }.onGloballyPositioned { c ->
+    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = MediaInspect.pickupReveal.let { pr -> if (pr != null && pr.value > 0.001f) 0f else MediaInspect.cardAlpha(MediaInspect.amount.floatValue, MediaInspect.hold.value) }
+        // (529s QA: what the home's copy drew while a trip ran - lined up with the flying copy's own lines, pickupfly.)
+        if (QaTrace.on && MediaInspect.pickupReveal != null) QaTrace.event("pickuphome", "a=$alpha r=${MediaInspect.pickupReveal?.value}") }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
@@ -217,7 +231,12 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
         GameOrigin.rect = r
         GameOrigin.markedAt = now
         GameOrigin.displayId = runCatching { view.display?.displayId }.getOrNull() ?: -1
-    }
+        GameOrigin.layer = snap
+    }.then(if (snap == null) Modifier else Modifier.drawWithContent {
+        // (529s: drawn through its copy, so the copy is always the picture as you saw it - PickupFlyer flies it.)
+        snap.record { this@drawWithContent.drawContent() }
+        drawLayer(snap)
+    })
 }
 
 /** Update 119: what the game window can show where it has room (Home › Layout options › Game window). */
@@ -1064,6 +1083,8 @@ internal fun GameWindow(
     // Where it grows from: the game's picture on the main screen, else (picked on the second screen) up from the
     // bottom edge, else the middle.
     val view = LocalView.current
+    // (529s: the picture as it was drawn on the home, for PickupFlyer - same game / focused card as [origin].)
+    val originLayer = remember(g.stableKey) { if (GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) GameOrigin.layer else null }
     val origin = remember(g.stableKey) {
         val here = runCatching { view.display?.displayId }.getOrNull() ?: -1
         if ((GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) && GameOrigin.rect != null) {
@@ -1142,6 +1163,21 @@ internal fun GameWindow(
     // times its return too.)
     val caseFlight = scene == WinScene.INDEX_CARD && piece == null && (layout == HomeLayout.SHELF || layout == HomeLayout.STACKS) &&
         origin != null && origin.top != Float.MAX_VALUE && (layoutMotion || cardFlight)
+    // 529s (owner P3, physical pickups): Storage boxes' sprite leaves its slot and hops onto the record's stand, the record
+    // switching on round it, and hops back into the same slot (WinSceneStorageFlight.kt). The window isn't scaled out of the
+    // icon any more; the box's copy is hidden for the whole trip.
+    // (Cube menu, same direction: the game's picture travels into the turning face's inset and back - CubeTurnFace.)
+    val spriteFlight = (scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion
+    // (TV room, same direction: the case you picked leaves the games and goes into the set - it slips into the switch-on line
+    // as the picture opens out of it; closing, the picture shrinks back into the line and the case comes out and goes home.
+    // Only with the case's own picture from the home (originLayer); otherwise the set switches on as before.)
+    // (529s: the home's copy is gone from the window's first frame - the flying copy is drawn there from that frame on, at the
+    // home's place, as the home's own picture - until the window has gone again; PickupOverlay, TvCaseFlyer.)
+    var pickupRootAt by remember { mutableStateOf(Offset.Zero) }
+    val tvFlight = tvRect != null && piece == null && origin != null && origin.top != Float.MAX_VALUE && originLayer != null && sysAnims && MotionPrefs.popup()
+    val closedHandOver = remember { booleanArrayOf(false) }
+    if (QaTrace.on) LaunchedEffect(Unit) { android.util.Log.e("VoltcapQA", "pickup layout=$layout scene=$scene sprite=$spriteFlight tv=$tvFlight case=$caseFlight origin=${origin != null} layer=${originLayer != null} anim=$layoutMotion") }
+    if (spriteFlight || tvFlight) DisposableEffect(Unit) { PickupStage.clear(); onDispose { PickupStage.clear(); if (originLayer != null) pickupHandBack() } }
     val close: () -> Unit = {
         // v0.6.66 popup audit (GT78, Case stacks, A B A B at 250 ms): the A while it flew back asked for it to open again
         // (D108), but the B after it fell on the closing window and was lost, so it opened again and stayed open — the next
@@ -1149,11 +1185,15 @@ internal fun GameWindow(
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win close again=${closingFlag[0]}")
         if (closingFlag[0]) GamePopup.reopenRequested = false
         closingFlag[0] = true
-        if (piece == null && (scene != null || cardFlight) && (cardFlight || layoutMotion) && grow.value > 0.05f) {
+        if (piece == null && (((scene != null || cardFlight) && (cardFlight || layoutMotion)) || tvFlight) && grow.value > 0.05f) {
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, tween(caseFlightMs(sceneCloseMs(scene), caseFlight, open = false), easing = FastOutSlowInEasing))
+                    grow.animateTo(0f, if (tvFlight) tween(TV_FLIGHT_CLOSE_MS, easing = LinearEasing) else tween(pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false), easing = FastOutSlowInEasing)) { if ((spriteFlight || tvFlight) && originLayer != null) pickupFrame(maxOf(value, 0.01f)) }
+                    // (529s, KONKR frames pk529s10: the box's sprite was missing for one frame as the window went - the home
+                    // copy follows grow a frame late (snapshotFlow) and the flying copy left with the window. The landed
+                    // sprite is handed over first: the home copy is drawn for one frame under the flying one, same place.)
+                    if (spriteFlight || tvFlight) { closedHandOver[0] = true; pickupHandBack(); androidx.compose.runtime.withFrameNanos { } }
                     closeNow()
                 }
             }
@@ -1372,7 +1412,7 @@ internal fun GameWindow(
             LaunchedEffect(Unit) { androidx.compose.runtime.snapshotFlow { grow.value }.collect { TwinScreens.popupReveal.floatValue = it.coerceIn(0f, 1f) } }
             DisposableEffect(Unit) { onDispose { TwinScreens.popupReveal.floatValue = 0f } }
         }
-        if (discFlight || cardFlight || caseFlight) {
+        if (discFlight || cardFlight || caseFlight || spriteFlight || tvFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
                 // (Update 507: the flying case IS the home's case — its copy at home is gone and back only once the case has
@@ -1383,8 +1423,10 @@ internal fun GameWindow(
                     CaseFlightGate.hold(winToken)
                     launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken) }
                 }
-                androidx.compose.runtime.snapshotFlow { grow.value to CaseFlightGate.ready.value }.collect { (gv, ready) ->
-                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)
+                // (529s: the flying copy is hidden at home only once the window has drawn it - the window can take a few
+                // frames to show (KONKR pk529s12: the case was gone for 4 frames before its flying copy appeared).)
+                androidx.compose.runtime.snapshotFlow { Triple(grow.value, CaseFlightGate.ready.value, PickupStage.drawn) }.collect { (gv, ready, drawn) ->
+                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else if ((spriteFlight || tvFlight) && originLayer != null) return@collect /* (set on the trip's own frames: pickupFrame) */ else if (spriteFlight || tvFlight) caseHomeHidden(gv) else gv.coerceIn(0f, 1f)
                 }
             }
             DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.release(winToken); if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
@@ -1394,8 +1436,10 @@ internal fun GameWindow(
             // (Shelf flash work: a case flight opens once the flying case is drawn - CaseFlightGate, at most its MAX_WAIT_MS -
             // so its first frame is the case where it was, not a jump along its way.)
             if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else caseFlightMs(sceneOpenMs(scene), caseFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
-                else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing))
+            // (529s: the trip starts from the frame the flying copy is drawn at home, at most PICKUP_WAIT_MS.)
+            if (spriteFlight && originLayer != null) { pickupSettle(); MediaInspect.pickupReveal = grow.asState() }
+            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else pickupFlightMs(sceneOpenMs(scene), caseFlight, spriteFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
+                else if (caseFlight || spriteFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing)) { if (spriteFlight && originLayer != null) pickupFrame(value) }
         }
         // Update 506 (motion polish, device finding: Cross menu's second movement after closing; Case Flow still fading with
         // Motion = Off): the dialog's own platform window dimmed what's behind it and faded in / out on the system's clock,
@@ -1442,9 +1486,13 @@ internal fun GameWindow(
         })
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
-            LaunchedEffect(Unit) { if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
+            LaunchedEffect(Unit) { if (!anim && !tvFlight) grow.snapTo(1f) else if (tvFlight) { pickupSettle(); MediaInspect.pickupReveal = grow.asState(); grow.animateTo(1f, tween(TV_FLIGHT_OPEN_MS, easing = LinearEasing)) { pickupFrame(value) } } else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
             val d = androidx.compose.ui.platform.LocalDensity.current
-            BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).pointerInput(Unit) { detectTapGestures { onClose() } }) {
+            // (529s: with the case going in, B / a tap outside run the trip back first - [close].)
+            val onClose: () -> Unit = if (tvFlight) close else onClose
+            // (The set switching on: all of the reveal, or - with the case going in - its second half, once the case is in.)
+            val tvOn: () -> Float = if (tvFlight) ({ tvSetOn(grow.value) }) else ({ grow.value })
+            BoxWithConstraints(Modifier.fillMaxSize().then(if (tvFlight) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = 0.35f * grow.value.coerceIn(0f, 1f))) } else Modifier.background(Color.Black.copy(alpha = 0.35f))).pointerInput(Unit) { detectTapGestures { onClose() } }) {
                 with(d) {
                     // Update 125: the name and the buttons go under the set when there's room, so nothing covers the
                     // game's picture (they sat over its lower half, over the faces); over its foot only when there isn't.
@@ -1452,7 +1500,7 @@ internal fun GameWindow(
                     val outside = below >= 74.dp
                     Box(
                         Modifier.offset(tvRect.left.toDp(), tvRect.top.toDp()).size(tvRect.width.toDp(), tvRect.height.toDp())
-                            .graphicsLayer { val k = grow.value; scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = (k * 3f).coerceAtMost(1f) }
+                            .graphicsLayer { val k = tvOn(); scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = (k * 3f).coerceAtMost(1f) }
                             .clip(RoundedCornerShape(10.dp)).background(Color.Black)
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
@@ -1461,7 +1509,7 @@ internal fun GameWindow(
                     }
                     if (outside) Box(
                         Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
-                            .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
+                            .graphicsLayer { alpha = tvOn().coerceIn(0f, 1f) }
                             .clip(RoundedCornerShape(12.dp)).background(Color(0xFF15161A).copy(alpha = 0.94f))
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
                             .pointerInput(Unit) { detectTapGestures { } }
@@ -1470,6 +1518,8 @@ internal fun GameWindow(
                     ) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
                     }
+                    // (529s: the case on its way into the set and back.)
+                    if (tvFlight && originLayer != null && origin != null) TvCaseFlyer(origin, tvRect, originLayer) { grow.value }
                 }
             }
         } else Box(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
@@ -1493,9 +1543,10 @@ internal fun GameWindow(
                 // (up to 450 ms), so the screen dimmed for ~8 frames before anything moved.
                 // (Update 507: with the case flying back the window's content isn't faded — the case stays solid all the way to
                 // its place; only the veil follows the reveal. The card beside it has its own staged fade.)
-                .graphicsLayer { alpha = if (caseFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
+                .then(if (spriteFlight) Modifier.onGloballyPositioned { val p = it.positionInWindow(); if (p != pickupRootAt) pickupRootAt = p } else Modifier)
+                .graphicsLayer { alpha = if (caseFlight || spriteFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
                 .then((scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else if (it == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS) coverDetailsVeil else sceneVeilFor(it) /* (505: Shop / Bubbles in your wall's colours) */ } ?: look.veil).let { veil ->
-                    if (caseFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
+                    if (caseFlight || spriteFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
                 })
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
@@ -1523,7 +1574,7 @@ internal fun GameWindow(
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            if (discFlight || caseFlight || scene in SELF_MOVING_SCENES) {
+                            if (discFlight || caseFlight || spriteFlight || scene in SELF_MOVING_SCENES) {
                                 // (Its scene flies the disc and opens the rest round it. Update 422: the screen-edge scenes —
                                 // Cross options, Side drawer, Dock flyout — slide in from their own edge, not out of the card.)
                             } else if (from == null || !anim) {
@@ -1557,12 +1608,14 @@ internal fun GameWindow(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
+                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight || spriteFlight) origin else null), LocalSceneOriginLayer provides (if (spriteFlight) originLayer else null)) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { shrinking }) { grow.value } }
                     }
                     else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                 }
             }
+            // (529s: the picked object's trip, drawn here from the window's first frame - PickupOverlay.)
+            if (spriteFlight && origin != null && originLayer != null) Box(Modifier.matchParentSize()) { PickupOverlay(origin, originLayer, { pickupRootAt }) { grow.value } }
           }
             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
             // (Update 471, owner review: "Tap the case to open it" sat under the case while its window was already open beside
@@ -1606,6 +1659,10 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
  * [PLAY_GUARD_MS] as before, and B closes at once from any point). Other windows keep their own times. Pure.
  */
 internal fun caseFlightMs(base: Int, caseFlight: Boolean, open: Boolean): Int = if (!caseFlight) base else if (open) 470 else 380
+
+/** 529s: Storage boxes' sprite trip (box → stand 520 ms, back 420 ms) - long enough to follow, as the cases' ([caseFlightMs]). Pure. */
+internal fun pickupFlightMs(base: Int, caseFlight: Boolean, spriteFlight: Boolean, open: Boolean): Int =
+    if (spriteFlight) (if (open) 520 else 420) else caseFlightMs(base, caseFlight, open)
 
 internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.FILE_CARD -> 340

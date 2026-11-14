@@ -27,12 +27,12 @@ class Batch508Test {
         assertEquals(1f, caseFlightCurve(1f), 0f)
         assertEquals(0f, caseFlightCurve(-1f), 0f)
         val g = src("ui/GameWindow.kt")
-        assertTrue(g.contains("caseFlightMs(sceneOpenMs(scene), caseFlight, open = true)"))
-        assertTrue(g.contains("caseFlightMs(sceneCloseMs(scene), caseFlight, open = false)"))
+        assertTrue(g.contains("pickupFlightMs(sceneOpenMs(scene), caseFlight, spriteFlight, open = true)") && pickupFlightMs(320, true, false, open = true) == 470 /* 529s: the case trip through pickupFlightMs */)
+        assertTrue(g.contains("pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false)") && pickupFlightMs(260, true, false, open = false) == 380)
         assertTrue(src("ui/WinSceneFamilies.kt").contains("val k = caseFlightCurve(sceneStage(ctx.reveal(), 0f, until))"))
         // It comes toward you on the way, and starts moving at once.
         assertTrue(CASE_FORWARD >= 0.15f && CASE_FORWARD <= 0.25f)
-        assertTrue(g.contains("else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing"))
+        assertTrue(g.contains("else if (caseFlight || spriteFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing"))
         // No wait before the reveal starts (measured: it only added ~100 ms to every window on the GT78).
         assertFalse(g.contains("awaitWindowDrawn"))
     }
