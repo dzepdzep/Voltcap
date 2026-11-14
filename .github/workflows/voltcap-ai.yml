@@ -104,6 +104,7 @@ jobs:
             exit 1
           fi
       - name: Claude edits candidate only (no GitHub write credential)
+        id: claude
         uses: anthropics/claude-code-action@4d75e5f390ee76b2e09c1980ecc99ff3a2e088c8 # v1 resolved commit
         with:
           github_token: ${{ github.token }}
@@ -127,6 +128,61 @@ jobs:
             --max-turns 25 --max-budget-usd 5
             --tools Read,Glob,Grep,Edit,Write
             --allowedTools Read,Glob,Grep,Edit,Write
+      - name: Classify Claude failure without exposing raw output
+        if: failure() && steps.claude.outcome == 'failure'
+        shell: bash
+        run: |
+          python3 -I - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          
+          # Print fixed classifications only. Never print provider text, prompts or transcripts.
+          CATEGORIES = (
+              ("credential_rejected", ("authentication_error", "invalid x-api-key", "invalid api key", "invalid bearer token", "unauthorized")),
+              ("billing_or_credit", ("credit balance", "insufficient credits", "billing", "payment required")),
+              ("model_access", ("model_not_found", "model not found", "does not have access to model", "model is not available", "model is unavailable", "not_found_error")),
+              ("rate_or_usage_limit", ("rate_limit_error", "rate limit", "usage limit", "quota exceeded")),
+              ("provider_overloaded", ("overloaded_error", "overloaded", "service unavailable")),
+              ("permission_rejected", ("permission_error", "forbidden", "permission denied")),
+              ("request_rejected", ("invalid_request_error", "bad request", "invalid request")),
+              ("network_or_connection", ("connection error", "connection refused", "timed out", "timeout", "network error")),
+          )
+          
+          def classify(messages):
+              evidence = []
+              for item in messages if isinstance(messages, list) else []:
+                  if not isinstance(item, dict):
+                      continue
+                  if item.get("type") == "result" and item.get("is_error") is True:
+                      evidence.extend([item.get("result", ""), item.get("errors", [])])
+                  elif item.get("type") == "assistant" and item.get("isApiErrorMessage") is True:
+                      evidence.extend([item.get("error", ""), item.get("message", {})])
+              text = json.dumps(evidence, ensure_ascii=True).lower()
+              for category, patterns in CATEGORIES:
+                  if any(pattern in text for pattern in patterns):
+                      return category
+              return "unclassified_failure"
+          
+          def main():
+              try:
+                  path = Path(os.environ["RUNNER_TEMP"]) / "claude-execution-output.json"
+                  if path.is_symlink() or path.stat().st_size > 20_000_000:
+                      category = "diagnostic_file_rejected"
+                  else:
+                      category = classify(json.loads(path.read_text(encoding="utf-8")))
+              except (OSError, ValueError, KeyError):
+                  category = "diagnostic_file_unavailable"
+              line = "Claude startup diagnostic: " + category + ". Raw output withheld."
+              print(line)
+              summary = os.environ.get("GITHUB_STEP_SUMMARY")
+              if summary:
+                  with open(summary, "a", encoding="utf-8") as out:
+                      out.write(line + "\n")
+          
+          if __name__ == "__main__":
+              main()
+          PY
       - name: Fresh trusted control checkout (after the agent; anything it wrote there is replaced)
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
