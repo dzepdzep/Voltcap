@@ -5389,13 +5389,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             viewModel = viewModel,
             displayVersion = state.screenLayoutsVersion,
             hasCustomArt = state.artOverrides[game.stableKey]?.isEmpty() == false,
-            onOpenScreens = { profileForGame = null; screensForGame = game },
+            onOpenScreens = { profileForGame = null; GamePopup.game = null; screensForGame = game },
             onOpenArtwork = {
                 profileForGame = null
+                GamePopup.game = null // (529o: a full screen - not under the game window that may still be open below the sheet)
                 editingArtworkForGame = game
                 viewModel.loadArtCandidates(game)
             },
-            onOpenEmulator = { profileForGame = null; configuringPlatform = game.platform },
+            onOpenEmulator = { profileForGame = null; GamePopup.game = null; configuringPlatform = game.platform },
             onDismiss = { profileForGame = null }
         )
     }
@@ -7624,7 +7625,10 @@ private fun gameWindowOptions(
     fun go(f: () -> Unit): () -> Unit = { close(); f() }
     return buildList {
         add(WinOption(if (fav) "Remove from favorites" else "Add to favorites") { viewModel.toggleFavorite(g) })
-        add(WinOption("Game settings", "Sync, second screen, artwork, look — for this ${if (isApp) "app" else "game"}", onClick = go(onGameSettings)))
+        // (529o, #15 queue 2: Game settings opens over the window, like Performance › Advanced - one B closes the sheet and you
+        // are back on the window's options; it used to close the window first, so that B left you on the home screen, where
+        // the next L1 opened Shortcuts. Screens, Artwork and Emulator inside it still close the window - they are full screens.)
+        add(WinOption("Game settings", "Sync, second screen, artwork, look — for this ${if (isApp) "app" else "game"}", onClick = onGameSettings))
         add(WinOption("Music", "Music of its own while you're on it", onClick = go(onGameMusic)))
         if (!isApp) add(WinOption("Guide", "Walkthrough that follows where you are", onClick = go(onGuide)))
         if (hasManual) add(WinOption("Manual", "The game's booklet, page by page (downloaded the first time)") {

@@ -1184,6 +1184,8 @@ internal fun GameWindow(
             if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null }
         }
     }
+    // (529o: whether a control inside the window has the focus - read by the controller re-home below, no recomposition.)
+    val focusSeen = remember(g.stableKey) { booleanArrayOf(false) }
     androidx.compose.ui.window.Dialog(
         onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
@@ -1216,7 +1218,7 @@ internal fun GameWindow(
                 else if (e.key == androidx.compose.ui.input.key.Key.ButtonL2 || e.key == androidx.compose.ui.input.key.Key.ButtonR2) return@onPreviewKeyEvent true
             }
             false
-        }) {
+        }.onFocusChanged { focusSeen[0] = it.hasFocus }) {
         val playFocus = remember { FocusRequester() }
         // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
         // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
@@ -1271,6 +1273,34 @@ internal fun GameWindow(
         // Update 213: back from the Performance page, the D-pad goes back onto its button.
         val perfFocus = remember { FocusRequester() }
         var fromPerf by remember { mutableStateOf(false) }
+        // (529o, #15 queue 1 - KONKR tf529a with the QA trace: after a tap on an Achievements row nothing in the window had the
+        // focus - Compose drops it on a touch - so R1 / L1 / A went nowhere ("winkey" 0) until a D-pad press, which Android eats
+        // to leave touch mode. A controller button that finds nothing lit now leaves touch mode, puts the focus where a page
+        // change puts it (Play on the first page, the first row on the others) and R1 / L1 / R2 / L2 are then delivered there,
+        // so the page turns at once. A, Start, X, Y and the D-pad only light that control: a press that finds nothing lit never
+        // clicks Play. B and touch are unchanged.)
+        val pageNow by androidx.compose.runtime.rememberUpdatedState(page)
+        val winFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
+        androidx.compose.runtime.DisposableEffect(keyView) {
+            val again = booleanArrayOf(false)
+            val rehome = androidx.core.view.ViewCompat.OnUnhandledKeyEventListenerCompat { v, ev ->
+                val code = ev.keyCode
+                if (again[0] || focusSeen[0] || closingFlag[0] || ev.action != android.view.KeyEvent.ACTION_DOWN || ev.repeatCount > 0 ||
+                    code !in WIN_REHOME_LIGHT && code !in WIN_REHOME_DELIVER) return@OnUnhandledKeyEventListenerCompat false
+                KeyInput.lastWasKey = true
+                if (v.isInTouchMode) runCatching { v.requestFocusFromTouch() }
+                val first = if (pageNow == WinPage.MAIN) playFocus else listFocus
+                val lit = runCatching { first.requestFocus() }.getOrNull() == true ||
+                    runCatching { playFocus.requestFocus() }.getOrNull() == true ||
+                    runCatching { winFocusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) }.getOrNull() == true
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "win refocus $code lit=$lit")
+                if (!lit) return@OnUnhandledKeyEventListenerCompat false
+                if (code in WIN_REHOME_DELIVER) { again[0] = true; try { v.dispatchKeyEvent(ev) } finally { again[0] = false } }
+                true
+            }
+            androidx.core.view.ViewCompat.addOnUnhandledKeyEventListener(keyView, rehome)
+            onDispose { androidx.core.view.ViewCompat.removeOnUnhandledKeyEventListener(keyView, rehome) }
+        }
         val winStatus = WinStatus(
             perfState, syncView, hasFan, onSync, onSyncSetUp,
             onPerf = { fromPerf = true; page = WinPage.PERF }, onPerfAdvanced = onPerfAdvanced, perfFocus = perfFocus
@@ -3007,3 +3037,17 @@ internal fun detailsCoverFit(w: Float, h: Float): Float? {
         else -> null
     }
 }
+
+/** (529o) Controller buttons that, finding nothing lit in the game window after a touch, only put the focus back. */
+internal val WIN_REHOME_LIGHT = setOf(
+    android.view.KeyEvent.KEYCODE_BUTTON_A, android.view.KeyEvent.KEYCODE_BUTTON_X, android.view.KeyEvent.KEYCODE_BUTTON_Y,
+    android.view.KeyEvent.KEYCODE_BUTTON_START, android.view.KeyEvent.KEYCODE_ENTER, android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+    android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+    android.view.KeyEvent.KEYCODE_DPAD_RIGHT
+)
+
+/** (529o) …and the page keys, which are then delivered to it, so the first press after a touch turns the page. */
+internal val WIN_REHOME_DELIVER = setOf(
+    android.view.KeyEvent.KEYCODE_BUTTON_R1, android.view.KeyEvent.KEYCODE_BUTTON_L1,
+    android.view.KeyEvent.KEYCODE_BUTTON_R2, android.view.KeyEvent.KEYCODE_BUTTON_L2
+)

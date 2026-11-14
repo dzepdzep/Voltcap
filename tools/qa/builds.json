@@ -891,6 +891,17 @@
    "apk_sha256": "ef935a157f7082bc55f9b4304fd95831ddc25b79ddca248dfb4f8b06178280da",
    "base_commit": "b14d4021",
    "note": "529m: Cover details actions as full-width bars + save status line (owner #15), home title block room at large text, leaving page copy draws its own page / keys, Back hint kept on native pages, window keeps focus through a touch. assembleQa 13 Nov 22:04 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets). apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair abf3c2b5 + 529o working tree (#15 queue 1-2) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529o",
+   "apk_sha256": "10d3d7645cbe6fa9ebb4107dc52f33b0bbc68331eff4a78f736873bba811596a",
+   "base_commit": "abf3c2b5",
+   "note": "529o: controller re-home after a touch in the game window (R1/L1/R2/L2 delivered, A/Start/X/Y/D-pad light only); Game settings opens over the window so one B returns to its Options. assembleQa 14 Nov 11:02 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }
