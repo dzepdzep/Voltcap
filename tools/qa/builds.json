@@ -902,6 +902,17 @@
    "apk_sha256": "10d3d7645cbe6fa9ebb4107dc52f33b0bbc68331eff4a78f736873bba811596a",
    "base_commit": "abf3c2b5",
    "note": "529o: controller re-home after a touch in the game window (R1/L1/R2/L2 delivered, A/Start/X/Y/D-pad light only); Game settings opens over the window so one B returns to its Options. assembleQa 14 Nov 11:02 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 26949935 + 529p working tree (#15 6866376184 compact pages) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529p",
+   "apk_sha256": "4116b9c83983fd411757798ec2fcec7dcc4cb89d72f0544e67ed24e7115a9933",
+   "base_commit": "26949935",
+   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round ••• kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }

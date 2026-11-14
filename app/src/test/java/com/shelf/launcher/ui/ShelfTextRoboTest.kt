@@ -139,17 +139,24 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                 val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) &&
                     (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).trim().let { it == "•••" || it.equals("more", true) } }
                 val ms = compose.onAllNodes(more).fetchSemanticsNodes()
+                val before = state(); val c0 = WinClickProbe.clicks
                 if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
-                trail += "${page[0]}: not in view, More controls=${ms.size}, after More: " + state()
+                val probe = if (ms.isNotEmpty()) applyProbe(before, ::state) else ""
+                trail += "${page[0]}: not in view, More controls=${ms.size}, callback ran=${WinClickProbe.clicks - c0}, after More: " + state() + probe
+                if ("RECOMPOSED" in probe) problems += "More click: state changed without recomposition\n  steps: " + trail.joinToString("\n  steps: ")
                 found = compose.onAllNodes(m).fetchSemanticsNodes()
             }
             if (found.isEmpty()) {
                 problems += "no ${page[0]} control\n  steps: " + trail.joinToString("\n  steps: ") + "\n  clickable now: " + clickable()
                 continue
             }
+            val before = state(); val c0 = WinClickProbe.clicks
             compose.onAllNodes(m)[found.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(40)
-            trail += "${page[0]}: ${found.size} control(s) '${name(found.last()).take(20)}', after click: " + state()
+            val probe = applyProbe(before, ::state)
+            trail += "${page[0]}: ${found.size} control(s) '${name(found.last()).take(20)}', callback ran=${WinClickProbe.clicks - c0}, after click: " + state() + probe
+            // (a click whose state change only shows after hand-sent apply notifications stays a failure, with its cause)
+            if ("RECOMPOSED" in probe) problems += "${page[0]} click: state changed without recomposition\n  steps: " + trail.joinToString("\n  steps: ")
             problems += check("${page[0]} page")
             // back to the main page for the next one
             compose.onAllNodes(isRoot()).fetchSemanticsNodes()
@@ -158,6 +165,24 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
             trail += "${page[0]}: after Back: " + state()
         }
         assertTrue("$layout ×$scale ach=$ach '${title.take(20)}' pages: ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
+    }
+
+    /**
+     * 529p (#16, 96 "no options control" failures, CI runs 43528126325 / 43537441045: every click left the window as it was,
+     * while the same code passed in other runs). Diagnostics only - the checks are unchanged: when a click changed nothing, the
+     * global snapshot's apply notifications are sent by hand (what the app's GlobalSnapshotManager does on the UI dispatcher)
+     * and the window is looked at again. "recomposed after apply" = the callback changed state that nothing recomposed;
+     * "still unchanged" = the callback did not change state (inert, or not reached - see "callback ran").
+     */
+    private fun applyProbe(before: String, state: () -> String): String {
+        if (state() != before) return ""
+        frames(12)                                         // (not just slow: more frames first, without any help)
+        if (state() != before) return " | changed late"
+        val pending = androidx.compose.runtime.snapshots.Snapshot.current.let { it.hasPendingChanges() }
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+        frames(12)
+        val after = state()
+        return " | unchanged; pending=$pending; after sendApplyNotifications: " + (if (after != before) "RECOMPOSED ($after)" else "still unchanged")
     }
 
     private fun ShadowDialogBack() {

@@ -355,6 +355,10 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
     }
 }
 
+/** 529p (#16 96-failure investigation): how many scene controls ran their click - lets a test tell a click that never reached
+ *  its callback (inert / disabled) from one whose state change was never recomposed. A counter only; nothing reads it in the app. */
+internal object WinClickProbe { @Volatile var clicks: Int = 0 }
+
 /**
  * A control of a scene: focusable (its requester attached), clickable, with the window's move / select sounds; [content]
  * draws it lit or not.
@@ -371,7 +375,7 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
             .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
-            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
+            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { WinClickProbe.clicks++; sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
 }
