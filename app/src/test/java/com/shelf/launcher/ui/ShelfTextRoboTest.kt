@@ -115,6 +115,21 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
             options = listOf(WinOption("Probe option") {}, WinOption("Another probe option with a longer name") {})) }
         frames(180)
         val problems = mutableListOf<String>()
+        // (#16 6867938626: CI run 43528126325 failed "no options control" for every layout whose Options sits behind More,
+        // while the same commit's code passed on CI and locally, in the same class order. The steps are recorded so a
+        // failure says which one went wrong - Details not opening, Back not returning, More missing or not opening - and
+        // how many windows / dialogs the test saw. Diagnostics only: the checks themselves are unchanged.)
+        val trail = mutableListOf<String>()
+        fun hasText(t: String) = compose.onAllNodes(SemanticsMatcher("text $t") { n ->
+            n.config.getOrNull(SemanticsProperties.Text)?.any { it.text == t } == true }, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        fun state(): String {
+            val d = org.robolectric.shadows.ShadowDialog.getLatestDialog()
+            return "roots=${compose.onAllNodes(isRoot()).fetchSemanticsNodes().size} dialog=${d?.let { Integer.toHexString(System.identityHashCode(it)) + (if (it.isShowing) "" else "(gone)") }} " +
+                "fullDetails=${hasText("Full details")} more=${hasText("•••") || hasText("More")} options=${hasText("Options")}"
+        }
+        fun clickable() = compose.onAllNodes(SemanticsMatcher("clickable") { it.config.contains(SemanticsActions.OnClick) }).fetchSemanticsNodes()
+            .map { name(it).take(24) }.filter { it.isNotBlank() }.take(16)
+        trail += "open: " + state()
         // (529k: Game shelf's Details key is "Turn over" - the index card turns.)
         for (page in listOf(listOf("details", "summary", "info", "turn", "over"), listOf("options", "config"))) {
             val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
@@ -125,16 +140,22 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                     (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).trim().let { it == "•••" || it.equals("more", true) } }
                 val ms = compose.onAllNodes(more).fetchSemanticsNodes()
                 if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
+                trail += "${page[0]}: not in view, More controls=${ms.size}, after More: " + state()
                 found = compose.onAllNodes(m).fetchSemanticsNodes()
             }
-            if (found.isEmpty()) { problems += "no ${page[0]} control"; continue }
+            if (found.isEmpty()) {
+                problems += "no ${page[0]} control\n  steps: " + trail.joinToString("\n  steps: ") + "\n  clickable now: " + clickable()
+                continue
+            }
             compose.onAllNodes(m)[found.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(40)
+            trail += "${page[0]}: ${found.size} control(s) '${name(found.last()).take(20)}', after click: " + state()
             problems += check("${page[0]} page")
             // back to the main page for the next one
             compose.onAllNodes(isRoot()).fetchSemanticsNodes()
             ShadowDialogBack()
             frames(40)
+            trail += "${page[0]}: after Back: " + state()
         }
         assertTrue("$layout ×$scale ach=$ach '${title.take(20)}' pages: ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
     }
