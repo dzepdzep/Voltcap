@@ -153,7 +153,7 @@ internal fun PickupOverlay(origin: Rect, snap: androidx.compose.ui.graphics.laye
             val sw = snap.size.width.toFloat(); val sh = snap.size.height.toFloat()
             if (sw > 0f && sh > 0f) scale(size.width / sw, size.height / sh, pivot = Offset.Zero) { drawLayer(snap) }
         })
-        if (content != null && to != null && !PickupStage.flip) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (snap == null || snap.isReleased) 1f else pickupMorph(reveal()) }) { content() }
+        if (content != null && to != null && !PickupStage.flip) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (snap == null || snap.isReleased) 1f else maxOf(pickupMorph(reveal()), PREWARM_ALPHA) }) { content() }
     }
 }
 
@@ -173,8 +173,27 @@ internal const val PICKUP_WAIT_MS = 250L
  */
 internal suspend fun pickupSettle() {
     kotlinx.coroutines.withTimeoutOrNull(PICKUP_WAIT_MS) { androidx.compose.runtime.snapshotFlow { PickupStage.drawn }.first { it } }
-    androidx.compose.runtime.withFrameNanos { }; androidx.compose.runtime.withFrameNanos { }
+    // (529t: then until two frames in a row come in time - the window's first drawings are over - at most SETTLE_MAX_FRAMES.)
+    // (Measured by the clock, not the frames' vsync times: a frame that stalls on the GPU still carries the next vsync's time -
+    // KONKR pk529t5: 100 / 206 / 129 ms frames whose vsync times were 16 ms apart.)
+    var last = androidx.compose.runtime.withFrameNanos { System.nanoTime() }
+    var calm = 0
+    for (i in 0 until SETTLE_MAX_FRAMES) {
+        val now = androidx.compose.runtime.withFrameNanos { System.nanoTime() }
+        calm = if (settledFrame(now - last)) calm + 1 else 0
+        last = now
+        if (calm >= 2) break
+    }
 }
+
+/** 529t: a frame that came in time (under 24 ms after the one before it). Pure. */
+internal fun settledFrame(deltaNanos: Long): Boolean = deltaNanos in 1 until 24_000_000L
+
+/** 529t: the most frames a trip waits for the window to settle (~200 ms at 60 Hz) before it starts anyway. */
+internal const val SETTLE_MAX_FRAMES = 12
+
+/** 529t: a window drawn but not yet shown, so its first drawing is done before a pickup trip (invisible: under 1 / 255). */
+internal const val PREWARM_ALPHA = 0.008f // (above the renderer's "nothing to draw" cut-off, 0.003 was skipped; ~2 / 255)
 
 /** 529s: on each frame of the trip (the animation's own frame, before that frame is drawn) the home's copy is hidden while the
  *  object is away ([reveal] above 0), in the same frame the flying copy moves - never one without the other. */

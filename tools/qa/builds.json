@@ -979,6 +979,17 @@
    "apk_sha256": "7a2963a6e0971010359d0208acfb57b952127a6906d9560e9659c78c0fed9c8a",
    "base_commit": "9d6287f8",
    "note": "529t: Card binder's whole card comes out of its pocket and turns over (sleeveFlip incl. CARD_BACK). assembleQa 14 Nov 17:06; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t1 (CARDS, CRATE x1.0 / x1.3)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9607696f + 529t consoles / box / smooth trips working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-consoles",
+   "apk_sha256": "e17bade62a40030af5bef8314fb08fc524c5f5b023337645f7226845391da3b8",
+   "base_commit": "9607696f",
+   "note": "529t: Console stack card into the bay, Cardboard box resting copy hidden with its piece, trips prewarmed + flat unfold. assembleQa 14 Nov 18:37; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t5-t7."
   }
  ]
 }

@@ -92,4 +92,19 @@ class StorageFlight529Test {
         assertEquals(400f, r.height, 0.01f); assertEquals(280f, r.width, 0.01f); assertEquals(400f, r.center.x, 0.01f); assertEquals(250f, r.center.y, 0.01f)
         val sq = fitShape(Rect(0f, 0f, 300f, 300f), Rect(0f, 0f, 50f, 50f)); assertEquals(300f, sq.width, 0.01f)
     }
+
+    @Test fun aTripWaitsForCalmFramesAndPrewarmIsInvisible() {
+        assertTrue(settledFrame(16_600_000L)); assertFalse(settledFrame(115_000_000L)); assertFalse(settledFrame(0L))
+        assertTrue(PREWARM_ALPHA > 0.004f && PREWARM_ALPHA * 255f < 2.5f)
+        assertTrue(SETTLE_MAX_FRAMES in 6..20)
+    }
+
+    @Test fun theBoxsRestingCaseGoesWithItsPiece() {
+        // KONKR pk529t3: the resting copy stayed in the box while the case flew out as the window's piece.
+        assertEquals(0f, boxRestingAlpha(true, 0.3f, hold = true), 0f)
+        assertEquals(1f, boxRestingAlpha(false, 0.3f, hold = true), 0f)
+        assertEquals(1f, boxRestingAlpha(true, 0f, hold = false), 0f)
+        // asked for but not moved yet: still in the slot (no empty frame)
+        assertEquals(1f, boxRestingAlpha(true, 0f, hold = true), 0f)
+    }
 }

@@ -1363,7 +1363,7 @@ internal fun StyleHome(
         HomeLayout.STACKS -> vcTrace("VC:CaseStacks") { StyleCaseStacks(c, modifier) }
         HomeLayout.TIMELINE -> StyleTimeline(c, modifier)
         HomeLayout.ARCADE -> StyleArcade(c, modifier)
-        HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)
+        HomeLayout.CONSOLES -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleConsoleStack(c, modifier) }
         // Update 147.
         HomeLayout.DISCS -> StyleDiscStation(c, modifier)
         // Update 158.

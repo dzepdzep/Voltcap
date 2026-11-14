@@ -801,8 +801,10 @@ private fun StorageRecord(ctx: WinSceneCtx) {
         Modifier.size(w, h)
             .then(if (origin != null) Modifier.graphicsLayer {
                 val a = ((ctx.reveal() - 0.04f) / 0.46f).coerceIn(0f, 1f)
-                alpha = a
+                alpha = maxOf(a, PREWARM_ALPHA) // (529t: drawn before the trip, so its first drawing doesn't stall it)
                 scaleY = 0.9f + 0.1f * a
+                // (529t: squashed text is drawn afresh at every scale - drawn flat into a buffer while it settles, see sceneEnter.)
+                if (a < 0.999f) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
             }.onGloballyPositioned { flight.panel = it } else Modifier)
             .pixelFrame(RecPanel, 10.dp)
             // L1 / R1 turn the tabs.

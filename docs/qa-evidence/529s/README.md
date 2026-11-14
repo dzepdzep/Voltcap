@@ -56,3 +56,14 @@ drawn edge-on from the start. Owner visual: not yet. KONKR: NOT TESTED (cooldown
 edge-on), and its stats side (the window) turns in; B reverses it into the pocket. `cards_flip2_x10_firstbuild_picture_only_*`:
 the first build took only the picture out of the card and left the card's frame in the binder - the home marked the
 picture as the game's place; it now marks the whole card. Owner visual: not yet.
+
+## Console stack, Cardboard box, smoother trips (529t) — KONKR pk529t3 / t5 / t6 / t7
+
+- Console stack: the card leaves the hand and goes into the module's bay as the module unfolds; B returns it. First build:
+  the trip stalled (99 / 201 / 124 ms frames) - the module's text redrawn at every squash scale. Now drawn flat into its own
+  buffer while it unfolds (and the Storage record while it settles): one ~84 ms frame at the window's start, then even
+  16 ms frames (`consoles_konkr_x10_open_frames.jpg` vs `..._before_flat_unfold_...`).
+- Cardboard box: pulling a case out left its resting copy in the box (two cases, `box_konkr_x10_BEFORE_two_cases.png`); the
+  resting copy and its lit edge now go with the piece, from the frame it moves (`box_konkr_x10_after_one_case.png`).
+- Trips wait for the window's first drawings (drawn at ~2/255 alpha beforehand) and for calm frames by the clock.
+- Tools: tools/qa/device/pickup529.sh / pickboth529.sh (the recording runs used here; restore skips a run that saved nothing).

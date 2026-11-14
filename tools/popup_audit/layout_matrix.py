@@ -71,6 +71,9 @@ if 'STORAGE_RECORD' in sf: pickup['STORAGE'] = 'sprite flight (the sprite leaves
 if 'CUBE_FACE' in sf: pickup['CUBE'] = 'picture flight (the picked picture travels into the turning face and back; home copy hidden)'
 if 'val sleeveFlip =' in gw: pickup['CRATE'] = 'sleeve flight (the sleeve rises out of the crate, turns over into the window and back; home copy hidden)'
 if 'layout == HomeLayout.CARDS)' in gw[gw.index('val sleeveFlip ='):gw.index('val sleeveFlip =') + 400]: pickup['CARDS'] = 'card flight (the card comes out of its pocket, turns over into the window and back; home copy hidden)'
+if 'val consoleFlight =' in gw: pickup['CONSOLES'] = 'card into the bay (the card leaves the hand for the module\'s bay and goes back; home copy hidden)'
+# (Cardboard box pulls the case itself out for every look - MediaInspect.force in StyleCardboardBox.)
+if 'MediaInspect.forceSeq++; MediaInspect.force = k' in read(os.path.join(ui, 'StyleCardboardBox.kt')): pickup['BOX'] = 'case pulled out (the case itself rises out of the box and turns to its cover in the window; its resting copy goes with it)'
 if 'val tvFlight =' in gw: pickup['TV'] = 'case into the set (the case goes into the switch-on line, comes back out to its place; home copy hidden)'
 # Scenes that open out of the picture itself (a physical piece only when Inspect asks for it) - GameWindow's sceneOwnsOpen.
 so = gw[gw.index('val sceneOwnsOpen = '):]; so = so[:so.index('&& !askedInspect')]

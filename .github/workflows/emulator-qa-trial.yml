@@ -83,7 +83,10 @@ jobs:
           arch: x86_64
           ram-size: 4096M
           disk-size: 6G
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot
+          # (529t: runs f91cdaa7 / 9607696f went offline at the end of the first sequence both times, right after host-side
+          # gfxstream errors "Failed to find ColorBuffer" with swiftshader_indirect. One change to test that: the guest renders
+          # in software itself (-gpu guest), no host gfxstream. Slower; timing is not handheld timing either way.)
+          emulator-options: -no-window -gpu guest -noaudio -no-boot-anim -camera-back none -no-snapshot
           disable-animations: false
           script: bash tools/qa/emulator/run_trial.sh qa-emulator-out
       - name: Upload sanitized QA evidence

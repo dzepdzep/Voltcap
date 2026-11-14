@@ -1006,7 +1006,9 @@ private fun BoxCase(
     ) {
         val restA = if (spineBmp == null) 0f else (1f - rise.value * 14f).coerceIn(0f, 1f)
         // The resting case, through the box's camera.
-        if (restA > 0.001f) Canvas(Modifier.matchParentSize().graphicsLayer { alpha = restA }) {
+        // (529t, KONKR pk529t3 frames: pulled out for its window, the case flew out as the window's piece while this resting
+        // copy stayed in the slot - two cases. It goes with the lifted one: hidden while its piece is out (MediaInspect).)
+        if (restA > 0.001f) Canvas(Modifier.matchParentSize().graphicsLayer { alpha = restA * boxRestingAlpha(k == MediaInspect.key, MediaInspect.amount.floatValue, MediaInspect.hold.value) }) {
             drawIntoCanvas { cv ->
                 BoxCaseDraw.draw(cv.nativeCanvas, cam, sl, left, top, spineBmp!!, sideCover, toneArgb, g.platform, towardRight, sideX)
             }
@@ -1037,7 +1039,9 @@ private fun BoxCase(
         // Update 417 / 424: the case you are on: a fine neutral lit edge round its top (no warm sheen over its art, no fill), visible
         // on black and on white spines alike. Follows the case outline (slot while resting, its width as it turns out).
         val edge by animateFloatAsState(if (on) 1f else 0f, if (animate) tween((180 / speed).toInt()) else tween(0), label = "boxEdge")
-        if (edge > 0.01f) Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)) {
+        if (edge > 0.01f) Canvas(Modifier.requiredSize(with(density) { caseW.toDp() }, hDp)
+            // (529t: the lit edge goes with the case - it stayed round the empty slot while the piece was out.)
+            .graphicsLayer { alpha = boxRestingAlpha(k == MediaInspect.key, MediaInspect.amount.floatValue, MediaInspect.hold.value) }) {
             val w = (right - left) + (caseW * q - (right - left)) * smoothTurn(rise.value)
             val a = edge * (1f - 0.35f * smoothUp(rise.value))
             val px = 1.dp.toPx()
@@ -1203,3 +1207,9 @@ internal object BoxCaseDraw {
         fill.color = android.graphics.Color.argb(60, 0, 0, 0); c.drawLine(rect.right - 0.5f, rect.top, rect.right - 0.5f, rect.bottom, fill)
     }
 }
+
+/** 529t: the resting case's share while its game's piece is out (hidden as the piece's own card is - MediaInspect.cardAlpha). Pure. */
+internal fun boxRestingAlpha(isInspected: Boolean, amount: Float, hold: Boolean): Float =
+    // (Hidden from the frame the piece has moved (amount), not from the moment it was asked for (hold) - KONKR pk529t5: one
+    // empty-slot frame before the piece showed; shown again only when the piece is back over it (hold off, amount 0).)
+    if (!isInspected) 1f else if (amount > 0.001f || (hold && amount > 0f)) 0f else 1f

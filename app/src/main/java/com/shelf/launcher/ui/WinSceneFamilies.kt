@@ -605,7 +605,7 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
             rotationY = (1f - e) * -90f
             transformOrigin = TransformOrigin(0f, 0.5f)
             cameraDistance = 10f * density
-            alpha = if (ctx.reveal() < 0.02f) 0f else 1f
+            alpha = if (ctx.reveal() < 0.02f) (if (flying) PREWARM_ALPHA else 0f) else 1f
             shape = RoundedCornerShape(6.dp); clip = true
             flatTextFor3d()
         }.then(if (flying) Modifier.onGloballyPositioned { flight.panel = it } else Modifier).background(Brush.linearGradient(listOf(faceTop, faceBottom)))

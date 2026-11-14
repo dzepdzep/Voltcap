@@ -44,13 +44,17 @@
   "_about": "529p+: motion evidence per layout (frames from KONKR recordings unless noted). Sampled frames do not prove continuous motion or GPU pacing.",
   "SHELF": "Info -> Details card rise ~280-300 ms, 15-18 frames (529m frames_shelf_info_to_details_x13); Motion Off <= 2 frames",
   "STACKS": "Info -> Details card rise (529m page walk, frames)",
-  "CONSOLES": "Info -> Details card rise (529m page walk, frames)",
-  "COVERDETAILS": "Info -> Details (529m frames_cover_info_to_details_x13)",
+  "CONSOLES": "529t pickup (KONKR pk529t7 x1.0): the card leaves the hand for the module bay as it unfolds; even 16 ms frames after one 84 ms window-start frame (flat unfold). x1.3 NOT TESTED. Owner visual: not yet.",
+  "COVERDETAILS": "By design the big case stays where it is and the panel opens beside it (approved earlier). Owner to confirm.",
   "SETTINGS_STRIP": "category strip legacy POP -> glide (cs529p chipglide.py), chip clipped at the span edge (cs529q); RP Classic NOT TESTED",
   "STORAGE": "529s pickup (KONKR pk529s15, x1.0 + x1.3): the sprite leaves its slot (slot left empty, shadow gone), flies on an arc onto the record stand as the record switches on, and hops back into the same slot on B; one sprite in every frame examined (frame sheets docs/qa-evidence/529s/storage_*). Owner visual: not yet.",
   "CUBE": "529s pickup (KONKR pk529s16, Hub x1.0 / Classic x1.3): the picked card leaves the row as drawn (frame + badge), becomes the cover on the way into the turning face's inset, and goes back the same way on B; no double in the frames examined after the same-frame hide (pk529s14/15 showed one frame of two copies - fixed). ~80 ms stalls on the face's first frames remain (start waits them out). Owner visual: not yet.",
   "TV": "529s pickup (KONKR pk529s15, x1.0 + x1.3): the case leaves the games, travels to the set, flattens into the switch-on line and the picture opens out of it; B: picture back into the line, case out of it and home to its slot. Owner visual: not yet.",
   "CRATE": "529t pickup (Flip 2 pkf529v, x1.0 + x1.3): the sleeve rises out of the crate as drawn, comes forward, turns edge-on at its place and its back (the window) turns in; B reverses it into the crate. Before/after frames docs/qa-evidence/529s/crate_flip2_*. KONKR pk529t1 x1.0 + x1.3 run. Owner visual: not yet.",
-  "CARDS": "529t pickup (KONKR pk529t1, x1.0 + x1.3): the whole card lifts out of its pocket, turns edge-on at its place and its stats side (the window) turns in; B reverses. A first build flew only the picture and left the card frame behind (Flip 2 pkf529w) - fixed (the origin is the whole card). Owner visual: not yet."
+  "CARDS": "529t pickup (KONKR pk529t1, x1.0 + x1.3): the whole card lifts out of its pocket, turns edge-on at its place and its stats side (the window) turns in; B reverses. A first build flew only the picture and left the card frame behind (Flip 2 pkf529w) - fixed (the origin is the whole card). Owner visual: not yet.",
+  "BOX": "Case pulled out of the box (existing); 529t: its resting copy no longer stays in the slot (KONKR pk529t5/t6). Owner visual: not yet.",
+  "DISCS": "By design the disc stays in the deck and the panel opens beside it (KONKR pk529t3 screenshot). Owner to confirm.",
+  "CASEFLOW": "OPEN: the window grows out of the case; the case itself does not travel yet (KONKR pk529t3).",
+  "SHOP": "OPEN: the tag comes up over the shelf; the case stays on the shelf (KONKR pk529t3). Design decision pending."
  }
 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
@@ -81,10 +83,17 @@ internal fun ShelfFamilyPopup(ctx: WinSceneCtx) = when (LocalSceneLayout.current
 private fun onColour(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else Color.White
 
 /** A power-on / rise entrance shared by these windows (each passes its own motion). */
-private fun Modifier.sceneEnter(ctx: WinSceneCtx, rise: Float = 0.18f, squash: Boolean = false): Modifier = graphicsLayer {
+private fun Modifier.sceneEnter(ctx: WinSceneCtx, rise: Float = 0.18f, squash: Boolean = false, prewarm: Boolean = false): Modifier = graphicsLayer {
     val e = sceneEase(ctx.reveal())
     if (squash) { scaleY = 0.04f + 0.96f * e; scaleX = 0.94f + 0.06f * e } else translationY = (1f - e) * size.height * rise
-    alpha = (ctx.reveal() * 2.5f).coerceIn(0f, 1f)
+    // (529t, KONKR pk529t2: with a pickup the window's first drawing (its art, its text) came mid-trip - two ~115 ms frames, the
+    // card jumped to the bay. [prewarm]: drawn from the first frame at an alpha no one sees, so that work is done before the
+    // trip starts - pickupSettle waits it out.)
+    alpha = maxOf((ctx.reveal() * 2.5f).coerceIn(0f, 1f), if (prewarm) PREWARM_ALPHA else 0f)
+    // (529t, KONKR pk529t6 frame log: 99 / 201 / 124 ms frames while the module unfolded - its text squashed to a new height
+    // every frame is drawn afresh at each scale. While it unfolds it is drawn once, flat, into its own buffer, and only that
+    // picture is squashed - as flatTextFor3d does for turned layers.)
+    if (squash && ctx.reveal() < 0.999f) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
 }
 
 /** The game's picture whole in a framed well (never stretched). */
@@ -229,7 +238,15 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
     val a = ctx.accent; val ink = Color(0xFFE9EBEF); val muted = Color(0xFF9CA2AD)
     val w = minOf(ctx.maxW, 600.dp)
     val shape = RoundedCornerShape(10.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, squash = true).clip(shape)
+    // (529t, owner P3: the card you picked from the hand goes into the module's bay as the module opens, and back into the
+    // hand on B - PickupOverlay; the bay's own case waits hidden until it has arrived.)
+    val origin = LocalSceneOrigin.current
+    val flight = androidx.compose.runtime.remember { StorageFlightSlot() }
+    val rootAt = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Offset?>(null) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides (if (origin != null) flight else null)) {
+    Box(Modifier.storageFlightRoot { if (rootAt.value != it) rootAt.value = it }) {
+    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, squash = true, prewarm = origin != null)
+        .then(if (origin != null) Modifier.onGloballyPositioned { flight.panel = it } else Modifier).clip(shape)
         .background(Brush.verticalGradient(listOf(Color(0xFF41454D), Color(0xFF2A2D33), Color(0xFF202227))))
         .border(2.dp, Brush.horizontalGradient(listOf(a, a.copy(alpha = 0.35f))), shape).padding(12.dp)) {
         // The module's front: its bay slot, the LED and the vents, as on the console blocks.
@@ -247,7 +264,8 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
             // The game sitting in the bay — (update 507) its own case as the home draws it, not an empty well when it has no cover.
             val aspect = sceneCaseAspect(ctx.g.platform)
             val cw = minOf(w * 0.25f, 130.dp)
-            SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
+            SceneCase(ctx, Modifier.width(cw).height(cw / aspect).storageFlightSlot(true)
+                .graphicsLayer { if (storageSlotHidden(origin != null, ctx.reveal())) alpha = 0f })
             Spacer(Modifier.width(12.dp))
             // (529k: Details / Achievements / Options show on the module's own screen beside the bay - ShelfFamilyPages.)
             val moduleKey: @Composable (WinAction) -> Unit = { k ->
@@ -268,6 +286,9 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
                 KeyRow(keys, 6.dp) { k -> moduleKey(k) }
             }
         }
+    }
+    if (origin != null) PickupTarget(flight, rootAt.value, uniform = false) { SceneCase(ctx, Modifier.fillMaxSize()) }
+    }
     }
 }
 

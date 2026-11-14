@@ -77,7 +77,7 @@ for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh; do
 # the run: its sequence and every later one are NOT TESTED, with a screenshot of what was in front.
 qawins() { adb shell dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Window #.*$P" | grep -c "isVisible=true"; }
 precheck() { # name
-  [ "$(adb get-state 2>/dev/null)" = device ] || { note "PRECONDITION $1: EMULATOR OFFLINE - this and later sequences NOT TESTED"; return 2; }
+  [ "$(adb get-state 2>/dev/null)" = device ] || { note "PRECONDITION $1: EMULATOR OFFLINE - this and later sequences NOT TESTED"; offline_why; return 2; }
   A; sleep 3
   # (529s, run 43600821842: the "Who's playing?" picker comes up after the start-up intro - a B sent before it was up did
   # nothing and the picker was still there. It is answered as the handheld scripts do - B - once it is shown, up to 4 times
@@ -113,7 +113,7 @@ finish() {
 run_pop() { # tag scale layouts
   timeout 300 adb shell "cd /data/local/tmp && sh pop529.sh run $1 '$2' '$3' OWN"
   if waitdone /sdcard/pc/$1 $1 420; then note "popup gate $1 ($2: $3): run finished"; else note "popup gate $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
-  [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after $1 - nothing pulled"; return; }
+  [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after $1 - nothing pulled"; offline_why; return; }
   timeout 60 adb shell "cd /data/local/tmp && sh pop529.sh restore $1"
   timeout 120 adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1; timeout 120 adb pull -a /sdcard/pc/${1}_w "$OUT/raw/" > /dev/null 2>&1
   # (First run 43517899154: the gate found no main screenshot - the run's own logs go into the summary now.)
@@ -126,7 +126,7 @@ run_pop e529b off "COVERDETAILS SHELF"
 precheck e529c || finish
 adb shell "cd /data/local/tmp && TOUCH=1 setsid sh shelfpages529.sh run e529c 'font=1.3,density=1.15' 'COVERDETAILS SHELF' > /dev/null 2>&1 < /dev/null &"
 if waitdone /sdcard/pc/e529c e529c 600; then note "page walk e529c (x1.3, touch, Motion Off): run finished"; else note "page walk e529c: DID NOT FINISH (NOT TESTED)"; fi
-[ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after e529c - nothing pulled"; finish; }
+[ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after e529c - nothing pulled"; offline_why; finish; }
 timeout 60 adb shell "cd /data/local/tmp && sh shelfpages529.sh restore e529c"
 timeout 30 adb shell "cp /sdcard/Android/data/$P/files/qa_clip/e529c_* /sdcard/pc/e529c/ 2>/dev/null"
 timeout 180 adb pull -a /sdcard/pc/e529c "$OUT/raw/" > /dev/null 2>&1
