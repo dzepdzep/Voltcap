@@ -990,6 +990,17 @@
    "apk_sha256": "e17bade62a40030af5bef8314fb08fc524c5f5b023337645f7226845391da3b8",
    "base_commit": "9607696f",
    "note": "529t: Console stack card into the bay, Cardboard box resting copy hidden with its piece, trips prewarmed + flat unfold. assembleQa 14 Nov 18:37; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t5-t7."
+  },
+  {
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 8de089c5 (v0.6.72 candidate, Save Sync excluded)",
+   "id": "qa-0.6.72-rc-8de089c5",
+   "apk_sha256": "5e4c1be2012a6c8db86a1b092d5962d58baedf0799540b33f33289f5cc23c33a",
+   "base_commit": "8de089c5",
+   "note": "v0.6.72 RC QA build: assembleQa 14 Nov 19:29 UTC; testDebugUnitTest BUILD SUCCESSFUL. Popup gate k672a (KONKR x1.0) / f672b (Flip 2 x1.3)."
   }
  ]
 }

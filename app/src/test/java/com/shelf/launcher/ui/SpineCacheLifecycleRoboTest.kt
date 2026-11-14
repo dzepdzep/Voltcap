@@ -40,7 +40,7 @@ class SpineCacheLifecycleRoboTest {
 
     private fun frames(n: Int) = repeat(n) {
         Thread.sleep(3)   // (the derive runs on Dispatchers.Default, a real thread)
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 

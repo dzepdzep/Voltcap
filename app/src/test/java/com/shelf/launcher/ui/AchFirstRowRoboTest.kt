@@ -57,7 +57,7 @@ class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boole
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
 
     private fun frames(n: Int) = repeat(n) {
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 

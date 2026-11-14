@@ -58,8 +58,14 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
     private val compose = createComposeRule()
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
 
+    // (v0.6.72 RC, CI 43632198774: 90 nativePages failures on Linux only, all "changed late" / "RECOMPOSED after
+    // sendApplyNotifications". Robolectric resets the main looper between test classes; when a class ends with the UI
+    // dispatcher's trampoline message queued, the reset drops it and the app-wide GlobalSnapshotManager never sends apply
+    // notifications again in that JVM - so whether it bites depends on class order, which is alphabetical on Windows (NTFS)
+    // and directory order on Linux CI (it changed when the Save Sync tests left). Each frame now sends them first, as the
+    // device's GlobalSnapshotManager does every frame; a state the callback never wrote still shows as "still unchanged".)
     private fun frames(n: Int) = repeat(n) {
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 
