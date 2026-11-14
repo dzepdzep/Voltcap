@@ -287,7 +287,17 @@ internal fun WholeChipRow(
             // (Placed in update 294's order - the shown chips left to right, then the hidden ones before them nearest first,
             // then the ones after - so drawing, accessibility and "the last one drawn" stay as they were.)
             for (i in ps.indices) {
-                if (al[i] > 0.001f) { val p = ps[i]; p.placeWithLayer(kotlin.math.round(xs[i]).toInt(), (height - p.height) / 2) { alpha = al[i] } }
+                // (529p, KONKR cs529p frames 1385-1450 ms: a chip gliding in was drawn whole past the span's edge, its word over the
+                // "+11 ›" hint for ~120 ms. A chip partly in the span is cut at the span's edge now - it slides in from behind it;
+                // at rest every shown chip is whole, so nothing changes there.)
+                if (al[i] > 0.001f) {
+                    val p = ps[i]; val px = kotlin.math.round(xs[i]).toInt()
+                    val cutL = (l - px).coerceAtLeast(0f); val cutR = (px + p.width - r).coerceAtLeast(0f)
+                    p.placeWithLayer(px, (height - p.height) / 2) {
+                        alpha = al[i]
+                        if (cutL > 0.5f || cutR > 0.5f) { clip = true; shape = ChipSpanCut(cutL, cutR) }
+                    }
+                }
             }
             var lx = -gap
             for (i in ps.indices.reversed()) {
@@ -322,6 +332,15 @@ private class ChipBringElement(val onBring: () -> Unit) : androidx.compose.ui.no
     override fun update(node: ChipBringNode) { node.onBring = onBring }
     override fun equals(other: Any?) = other is ChipBringElement && other.onBring === onBring
     override fun hashCode() = onBring.hashCode()
+}
+
+/** 529p: a chip's layer cut to the part inside the strip's span ([left] / [right] px cut off its sides). */
+private class ChipSpanCut(val left: Float, val right: Float) : androidx.compose.ui.graphics.Shape {
+    override fun createOutline(size: androidx.compose.ui.geometry.Size, layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+        density: androidx.compose.ui.unit.Density) = androidx.compose.ui.graphics.Outline.Rectangle(
+        androidx.compose.ui.geometry.Rect(left.coerceAtMost(size.width), 0f, (size.width - right).coerceAtLeast(left.coerceAtMost(size.width)), size.height))
+    override fun equals(other: Any?) = other is ChipSpanCut && other.left == left && other.right == right
+    override fun hashCode() = left.hashCode() * 31 + right.hashCode()
 }
 
 @Composable

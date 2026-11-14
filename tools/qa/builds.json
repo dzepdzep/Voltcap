@@ -913,6 +913,17 @@
    "apk_sha256": "4116b9c83983fd411757798ec2fcec7dcc4cb89d72f0544e67ed24e7115a9933",
    "base_commit": "26949935",
    "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round ••• kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 760753f8 + 529q working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529q",
+   "apk_sha256": "52bef443e52a54a8ef1dc1be6617d9f4e866ba380009e3a8f80d00d9245a880e",
+   "base_commit": "760753f8",
+   "note": "529q: category strip - a chip gliding in is cut at the span's edge (no word over the +N hint); QA hook voltcap_test_firstrun_done for the emulator trial's first-run state. assembleQa 14 Nov 12:56 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }
