@@ -1,6 +1,6 @@
 {
   "application_branch": "claude/qa-0672-repair",
-  "application_sha": "1cece8669d0f10d491b7c2be3427b061b7bc8b1f",
+  "application_sha": "abf3c2b5eba2c61b4a1764a701ab324ca04bf7e0",
   "pr_base": "claude/qa-0672-repair",
   "writer": "desktop",
   "note": "Reviewed application baseline for AI tasks. Change only by a reviewed PR to main. writer=desktop keeps /voltcap implement closed (single writer: the desktop session); the owner sets cloud at the agreed handoff."
