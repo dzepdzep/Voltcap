@@ -263,7 +263,20 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
     // theme's, the game's or this layout's own colours, as its turntable and rings), made readable on the paper; was a fixed red.)
     val red = sceneLit(com.shelf.launcher.data.HomeLayout.CRATE, com.shelf.launcher.ui.theme.ShelfTheme.accent, paper)
     val side = minOf(ctx.maxW, ctx.maxH, 460.dp)
-    Box(Modifier.size(side).graphicsLayer {
+    // (529t, owner P3: with a pickup the sleeve itself comes out of the crate as it stands there (PickupOverlay, the home's own
+    // picture), comes forward and turns over: this, its back, turns in from edge-on once it is here; closing, the other way.)
+    val flip = LocalSceneOrigin.current != null
+    Box(Modifier.size(side).pickupFlipTarget(flip).graphicsLayer {
+        if (flip) {
+            val k = ctx.reveal()
+            // (Edge-on until the front has turned away - drawn, not hidden: its first drawing (art, text) is done before it
+            // shows, so the turn doesn't stall there - Flip 2 pkf529u: ~90 ms at the turn.)
+            rotationY = -90f * flipBackTurn(k)
+            cameraDistance = 14f * density
+            flatTextFor3d()
+            shadowElevation = 18.dp.toPx() * (1f - flipBackTurn(k))
+            return@graphicsLayer
+        }
         // The sleeve slides out of the crate sideways, the way a record is pulled from its neighbours.
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.15f

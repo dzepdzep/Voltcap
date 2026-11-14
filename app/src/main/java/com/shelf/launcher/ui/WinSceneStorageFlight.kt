@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -91,9 +92,11 @@ internal object PickupStage {
     var target by mutableStateOf<Rect?>(null)
     var content by mutableStateOf<(@Composable () -> Unit)?>(null)
     var uniform = true
+    /** 529t: the object turns over on its way (Record crate's sleeve: its front leaves the crate, its back is the window). */
+    var flip = false
     /** The window has laid out the flying copy (at home's place): the home's copy can go now. */
     var drawn by mutableStateOf(false)
-    fun clear() { target = null; content = null; uniform = true; drawn = false }
+    fun clear() { target = null; content = null; uniform = true; flip = false; drawn = false }
 }
 
 /** Registers the scene's place for the object (its sheet's slot, from [holder], in window coordinates) and its look there. */
@@ -128,9 +131,12 @@ internal fun PickupOverlay(origin: Rect, snap: androidx.compose.ui.graphics.laye
             .graphicsLayer {
                 val k = if (to == null) 0f else reveal()
                 if (QaTrace.on) QaTrace.event("pickupfly", "k=$k to=${to != null}")
-                if (!storageSlotHidden(true, k)) { alpha = 0f; return@graphicsLayer }
+                val flip = PickupStage.flip
+                if (if (flip) k >= FLIP_EDGE else !storageSlotHidden(true, k)) { alpha = 0f; return@graphicsLayer }
                 if (to == null) return@graphicsLayer
-                val (dx, dy, s) = storageSpriteFlight(origin, to, k)
+                // (Turning over: it is at its place, edge-on, at FLIP_EDGE - the window's side turns in from there.)
+                if (flip) { rotationY = 90f * flipTurn(k); cameraDistance = 14f * density; flatTextFor3d() }
+                val (dx, dy, s) = storageSpriteFlight(origin, to, if (flip) (k / FLIP_EDGE).coerceIn(0f, 1f) else k)
                 translationX = dx; translationY = dy
                 if (PickupStage.uniform) { scaleX = s; scaleY = s }
                 else {
@@ -140,12 +146,12 @@ internal fun PickupOverlay(origin: Rect, snap: androidx.compose.ui.graphics.laye
                 }
             }
     ) {
-        if (snap != null && !snap.isReleased) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - (if (to == null) 0f else pickupMorph(reveal())) }.drawBehind {
+        if (snap != null && !snap.isReleased) Box(Modifier.fillMaxSize().graphicsLayer { alpha = 1f - (if (to == null || PickupStage.flip) 0f else pickupMorph(reveal())) }.drawBehind {
             if (snap.isReleased) return@drawBehind
             val sw = snap.size.width.toFloat(); val sh = snap.size.height.toFloat()
             if (sw > 0f && sh > 0f) scale(size.width / sw, size.height / sh, pivot = Offset.Zero) { drawLayer(snap) }
         })
-        if (content != null && to != null) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (snap == null || snap.isReleased) 1f else pickupMorph(reveal()) }) { content() }
+        if (content != null && to != null && !PickupStage.flip) Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (snap == null || snap.isReleased) 1f else pickupMorph(reveal()) }) { content() }
     }
 }
 
@@ -179,3 +185,25 @@ internal fun pickupFrame(reveal: Float) {
 
 /** 529s: the object has landed back at home - its home copy shows again (the flying one is still over it this frame). */
 internal fun pickupHandBack() { MediaInspect.pickupReveal = null; MediaInspect.hold.value = false; MediaInspect.amount.floatValue = 0f }
+
+/** 529t: where a turning-over trip has its object at its place and edge-on (the window's side turns in after it). */
+internal const val FLIP_EDGE = 0.6f
+
+/** 529t: Record crate's sleeve - out of the crate, forward and over (an even curve), and back. */
+internal const val SLEEVE_FLIP_OPEN_MS = 720
+internal const val SLEEVE_FLIP_CLOSE_MS = 560
+
+/** 529t: the turn of the object's front away from you (0 = facing you, 1 = edge-on) at reveal [k]: it starts turning once well
+ *  on its way and is edge-on as it arrives. Pure. */
+internal fun flipTurn(k: Float): Float { val t = ((k - 0.3f) / (FLIP_EDGE - 0.3f)).coerceIn(0f, 1f); return t * t * (3f - 2f * t) }
+
+/** 529t: the window's side turning in after [FLIP_EDGE] (1 = still edge-on, 0 = facing you). Pure. */
+internal fun flipBackTurn(k: Float): Float { val t = ((k - FLIP_EDGE) / (1f - FLIP_EDGE)).coerceIn(0f, 1f); return 1f - (1f - (1f - t) * (1f - t) * (1f - t)) }
+
+/** 529t: registers a turning-over trip's place in the window (window coordinates, as laid out - before the place's own turn). */
+@Composable
+internal fun Modifier.pickupFlipTarget(on: Boolean): Modifier = if (!on) this else this.onGloballyPositioned { c ->
+    val r = c.boundsInWindow()
+    PickupStage.flip = true
+    if (PickupStage.target != r) PickupStage.target = r
+}

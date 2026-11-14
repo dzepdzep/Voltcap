@@ -1374,7 +1374,7 @@ internal fun StyleHome(
         // Update 307 (TwinShowcase.kt).
         HomeLayout.TWIN_SHOWCASE -> StyleTwinShowcase(c, modifier)
         // Update 158: Record crate (StyleRecordCrate.kt).
-        HomeLayout.CRATE -> StyleRecordCrate(c, modifier)
+        HomeLayout.CRATE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleRecordCrate(c, modifier) }
         // Update 158: Card binder (StyleCardBinder.kt).
         HomeLayout.CARDS -> StyleCardBinder(c, modifier)
         // Update 176: a layout made by anyone (StyleCustom.kt).

@@ -957,6 +957,17 @@
    "apk_sha256": "379d99915387c01af5cc0bf68c232f4065d91f532faa5039a77bcd137d3c15c4",
    "base_commit": "922e23ec",
    "note": "529s: physical pickups for Storage boxes / Cube menu / TV room (PickupOverlay, TvCaseFlyer), Coverflow panel keeps clear of the title (CoverFlight.headRight), Cube x1.3 pills. assembleQa 14 Nov 16:22 (verifyNoEmbeddedSecrets). KONKR runs pk529s16."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair f91cdaa7 + 529t record crate working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-crate",
+   "apk_sha256": "3c63faf4fd069627bdc307cefa341d8f7a002e0ba0c10b5ddcd0710652d622e1",
+   "base_commit": "f91cdaa7",
+   "note": "529t: Record crate's sleeve comes out of the crate and turns over into the window (sleeveFlip). assembleQa 14 Nov 16:52; testDebugUnitTest BUILD SUCCESSFUL. Flip 2 runs pkf529v."
   }
  ]
 }

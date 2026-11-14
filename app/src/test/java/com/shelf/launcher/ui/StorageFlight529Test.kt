@@ -76,4 +76,14 @@ class StorageFlight529Test {
         assertTrue(g.contains("{ if (spriteFlight && originLayer != null) pickupFrame(value) }"))
         assertTrue(g.contains("grow.animateTo(1f, tween(TV_FLIGHT_OPEN_MS, easing = LinearEasing)) { pickupFrame(value) }"))
     }
+
+    @Test fun theSleeveTurnsOverAtItsPlaceNeverShowingTwoSides() {
+        // Front facing you as it leaves, edge-on exactly when the back starts to turn in, back facing you at the end.
+        assertEquals(0f, flipTurn(0f), 0f); assertEquals(0f, flipTurn(0.3f), 0f); assertEquals(1f, flipTurn(FLIP_EDGE), 0f)
+        assertEquals(1f, flipBackTurn(FLIP_EDGE), 0f); assertEquals(0f, flipBackTurn(1f), 0f)
+        for (i in 1..100) {
+            val a = i / 100f; val b = (i - 1) / 100f
+            assertTrue(kotlin.math.abs(flipTurn(a) - flipTurn(b)) < 0.06f && kotlin.math.abs(flipBackTurn(a) - flipBackTurn(b)) < 0.08f)
+        }
+    }
 }

@@ -40,3 +40,12 @@ screen changes. **Sampled frames: they do not prove continuous motion or GPU pac
   to its first characters) — OPEN.
 
 **Not tested:** Flip 2 / RP Classic for these three; owner approval of any of them.
+
+## Record crate (529t) — Retroid Pocket Flip 2 (1920×1080, 120 Hz), runs pkf529t (before) / pkf529v (after)
+
+`crate_flip2_*`: every 2nd frame written, status bar masked. Before (`_before_`): the window grew out of the sleeve while the
+sleeve faded (two things on screen). After: the sleeve itself rises out of the crate as drawn, comes forward, turns edge-on
+at its place in the window and its back (the window) turns in; B runs it back and it drops into the crate. One object in
+the frames examined, ×1.0 and ×1.3. A first after-build (pkf529u) put the trip and the turn in the first ~130 ms
+(LinearOutSlowIn) and stalled ~90 ms at the turn (the back's first drawing) — now an even 720 / 560 ms curve, the back is
+drawn edge-on from the start. Owner visual: not yet. KONKR: NOT TESTED (cooldown).

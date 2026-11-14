@@ -1156,7 +1156,9 @@ internal fun GameWindow(
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
-    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup()
+    // (529t: Record crate's sleeve itself comes out and turns over - sleeveFlip, a spriteFlight - instead of a window grown out of it.)
+    val sleeveFlip = scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup() && !sleeveFlip
     // Update 507 (owner, P1: "the selected physical case should naturally come forward and return to its original position"):
     // Game shelf and Case stacks fly the case itself out of the home into the window's room and back (SceneFlyingCase); the
     // window is not scaled out of the card, its card slides out beside the case. (Update 508: declared here — the close path
@@ -1167,7 +1169,7 @@ internal fun GameWindow(
     // switching on round it, and hops back into the same slot (WinSceneStorageFlight.kt). The window isn't scaled out of the
     // icon any more; the box's copy is hidden for the whole trip.
     // (Cube menu, same direction: the game's picture travels into the turning face's inset and back - CubeTurnFace.)
-    val spriteFlight = (scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion
+    val spriteFlight = ((scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion) || sleeveFlip
     // (TV room, same direction: the case you picked leaves the games and goes into the set - it slips into the switch-on line
     // as the picture opens out of it; closing, the picture shrinks back into the line and the case comes out and goes home.
     // Only with the case's own picture from the home (originLayer); otherwise the set switches on as before.)
@@ -1189,7 +1191,7 @@ internal fun GameWindow(
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, if (tvFlight) tween(TV_FLIGHT_CLOSE_MS, easing = LinearEasing) else tween(pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false), easing = FastOutSlowInEasing)) { if ((spriteFlight || tvFlight) && originLayer != null) pickupFrame(maxOf(value, 0.01f)) }
+                    grow.animateTo(0f, if (tvFlight) tween(TV_FLIGHT_CLOSE_MS, easing = LinearEasing) else if (sleeveFlip) tween(SLEEVE_FLIP_CLOSE_MS, easing = FastOutSlowInEasing) else tween(pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false), easing = FastOutSlowInEasing)) { if ((spriteFlight || tvFlight) && originLayer != null) pickupFrame(maxOf(value, 0.01f)) }
                     // (529s, KONKR frames pk529s10: the box's sprite was missing for one frame as the window went - the home
                     // copy follows grow a frame late (snapshotFlow) and the flying copy left with the window. The landed
                     // sprite is handed over first: the home copy is drawn for one frame under the flying one, same place.)
@@ -1438,7 +1440,9 @@ internal fun GameWindow(
             if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }
             // (529s: the trip starts from the frame the flying copy is drawn at home, at most PICKUP_WAIT_MS.)
             if (spriteFlight && originLayer != null) { pickupSettle(); MediaInspect.pickupReveal = grow.asState() }
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else pickupFlightMs(sceneOpenMs(scene), caseFlight, spriteFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
+            // (529t: the sleeve's trip and turn over an even curve - LinearOutSlowIn put the whole trip and turn in its first ~130 ms
+            // (Flip 2 frames pkf529u: the front jumped to edge-on in one frame).)
+            if (!anim) grow.snapTo(1f) else if (sleeveFlip) grow.animateTo(1f, tween(SLEEVE_FLIP_OPEN_MS, easing = FastOutSlowInEasing)) { pickupFrame(value) } else grow.animateTo(1f, tween(if (discFlight) 620 else pickupFlightMs(sceneOpenMs(scene), caseFlight, spriteFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
                 else if (caseFlight || spriteFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing)) { if (spriteFlight && originLayer != null) pickupFrame(value) }
         }
         // Update 506 (motion polish, device finding: Cross menu's second movement after closing; Case Flow still fading with
