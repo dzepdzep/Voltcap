@@ -1,3 +1,13 @@
+# v0.6.72 release candidate (14 Nov 2026) - branch repair/0.6.72-windows-tests, NOT released
+- Owner instruction 14 Nov: ship v0.6.72 as a safe incremental release; the new Save Sync stays out until real Google Drive
+  cross-device tests prove it. This commit takes it out cleanly: every Save Sync 529 / 529c change (fix/save-sync 29011eff..2992f7eb,
+  plus 63c0268e and 33aa0241) is reversed, so CloudSync, DriveClient, DriveOnlySaves, PlaySession, SaveObserver, SaveWatchWorker,
+  SyncNotifier, SyncStatusStore, SaveExplorer, SaveSyncUi and SyncPrompts are byte-identical to v0.6.71; the files it added
+  (PrelaunchCheck, QaDriveTest, QaSaveDryRun, SaveBackups, SaveChangeDetect, SaveSyncTrace, SaveUnitTransaction, SyncDecision,
+  SyncGuards, their tests, docs/SAVE_SYNC_529.md, midsave529.sh) are gone from this line. The blur hotfix (5ab8b4bc, a03ae8d2) stays.
+- Save Sync is kept whole on fix/save-sync; to bring it back after the Drive tests: revert this commit's Save Sync part.
+- Version 0.6.72 / versionCode 79 (0.6.N = code N+7).
+
 # Save sync 529c (13 Nov 2026) - branch `fix/save-sync`, NOT merged into a release, NOT compiled for Android yet
 - Last-moment upload race (`UploadRace`, Drive revisions kept + parked + pinned), multi-file saves sent whole (`UnitManifest`,
   held while Drive is mid-upload, a conflict after 24 h), "Newest" corrected to Google's clock (`ConflictClock`, never guesses

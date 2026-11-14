@@ -61,10 +61,8 @@ fun SyncConflictDialog(
     onLater: () -> Unit
 ) {
     val thisDevice = android.os.Build.MODEL
-    // (Update 529c: "newer" only when the dates, corrected to Google's clock, are clearly apart - [ConflictClock]; never a guess.)
     val allNewerHere = conflicts.all { it.localNewer }
-    val allNewerThere = conflicts.all { it.remoteNewer }
-    val unsure = conflicts.count { it.newer == com.shelf.launcher.data.ConflictClock.Pick.UNSURE }
+    val allNewerThere = conflicts.none { it.localNewer }
     ShelfDialog(
         icon = Icons.Filled.SyncProblem,
         title = if (conflicts.size == 1) "This save changed on two devices" else "${conflicts.size} saves changed on two devices",
@@ -91,13 +89,6 @@ fun SyncConflictDialog(
                     "and both devices already had saves. The version you don't keep is saved in " +
                     "Voltcap/Sync conflicts — nothing gets lost."
             )
-            if (unsure > 0) {
-                Spacer(Modifier.height(6.dp))
-                MutedNote(
-                    (if (unsure == conflicts.size) "These dates are" else "$unsure of these dates are") + " too close to tell which save is newer " +
-                        "(two handhelds' clocks can differ). \"Newest of each\" leaves those for you to choose."
-                )
-            }
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 conflicts.take(6).forEach { c ->
@@ -110,8 +101,7 @@ fun SyncConflictDialog(
                             "${c.folderName} · here: ${whenText(c.localModified)}" +
                                 (if (c.localNewer) " (newer)" else "") +
                                 " · Drive${c.remoteDevice?.let { " (from $it)" } ?: ""}: ${whenText(c.remoteModified)}" +
-                                (if (c.remoteNewer) " (newer)" else "") +
-                                (if (c.newer == com.shelf.launcher.data.ConflictClock.Pick.UNSURE) " · too close to tell which is newer" else ""),
+                                (if (!c.localNewer) " (newer)" else ""),
                             color = ShelfTheme.textMuted, fontSize = 12.sp
                         )
                     }
@@ -253,13 +243,17 @@ fun SyncCornerNotice(
                     title,
                     color = androidx.compose.ui.graphics.Color.White,
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 if (detail != null) {
                     Text(
                         detail,
                         color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp)
+                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                        maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
             }
@@ -363,7 +357,8 @@ fun SyncStatusDialog(
                 Column(Modifier.weight(1f)) {
                     Text("Google Drive", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                     Text(
-                        line, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp)
+                        line, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                 }
                 CloseButton({ sounds?.play(UiSound.BACK); onDismiss() }, size = 28.dp)
@@ -387,7 +382,8 @@ fun SyncStatusDialog(
                     SaveSyncBadge(status = all[gameKey], connected = true, onClick = onOpenGameSync)
                     Spacer(Modifier.width(8.dp))
                     Text(
-                        gameName, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), modifier = Modifier.weight(1f)
+                        gameName, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -403,9 +399,10 @@ fun SyncStatusDialog(
                             if (opens) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).shelfClickable(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)) { showMoved = true }
                             else Modifier
                         ) {
-                            Text(syncAgo(e.at), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), modifier = Modifier.width(72.dp))
+                            Text(syncAgo(e.at), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), modifier = Modifier.width(72.dp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                             Text(
-                                e.text + if (opens) "  ›" else "", color = if (opens) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp)
+                                e.text + if (opens) "  ›" else "", color = if (opens) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -499,7 +496,8 @@ private fun SyncMovedDialog(
                 Spacer(Modifier.width(10.dp))
                 Text(
                     byKey[key]?.name?.let { gameDisplayName(it) } ?: key.substringAfterLast('/'),
-                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f)
+                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
                 )
                 Text(
                     (if (isDown) "↓ " else "↑ ") + "$n file${if (n == 1) "" else "s"}",
