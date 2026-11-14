@@ -72,8 +72,8 @@ print('\n## Overhaul status per layout - the seven checks (529j)\n')
 print('A layout is COMPLETE only when every column is done: own window, native pages, opening and return motion right for what')
 print('the home shows (a real pickup where it shows physical games), controller rules, small screen (KONKR) incl. x1.3,')
 print('hardware on both handhelds, and your visual approval. Facts in `tools/popup_audit/overhaul.json`.\n')
-print('| # | Layout | Game window | Native Details / Stats / Options | Opening | Closing / return | Controller | Small screen (KONKR) | Hardware | Your visual approval | Complete |')
-print('|---|---|---|---|---|---|---|---|---|---|---|')
+print('| # | Layout | Game window | Native Details / Stats / Options | Opening | Closing / return | Controller | Small screen (KONKR) | First achievement x1.3 (JVM) | Motion evidence | Hardware | Your visual approval | Complete |')
+print('|---|---|---|---|---|---|---|---|---|---|---|---|---|')
 done = {k3: 0 for k3 in ('window', 'pages', 'open', 'small', 'hw', 'visual', 'complete', 'pickup_needed', 'pickup_done')}
 for n, (l, lab) in enumerate(layouts, 1):
     sc = scene.get(l, other)
@@ -97,6 +97,8 @@ for n, (l, lab) in enumerate(layouts, 1):
     done['window'] += bool(sc); done['pages'] += sc in native; done['small'] += kk.startswith('PASS'); done['hw'] += hw != 'none'
     done['visual'] += vis.startswith('approved'); done['complete'] += complete
     done['pickup_needed'] += bool(phys); done['pickup_done'] += bool(phys) and l in pickup
-    print('| %d | `%s` %s | %s | %s | %s | %s | PC TESTED | %s | %s | %s | %s |' % (n, l, lab, win, pg, op, cl, kk, hw, vis, 'YES' if complete else 'no'))
+    af = ov.get('ach_first_row', {}); ach = af.get(l, af.get('_all', 'not covered'))
+    mo = ov.get('motion', {}).get(l, 'NOT RECORDED')
+    print('| %d | `%s` %s | %s | %s | %s | %s | PC TESTED | %s | %s | %s | %s | %s | %s |' % (n, l, lab, win, pg, op, cl, kk, ach, mo, hw, vis, 'YES' if complete else 'no'))
 print('\nCounts: own window %(window)d / 53; native pages %(pages)d / 53; physical homes with a real pickup %(pickup_done)d / %(pickup_needed)d; '
       'KONKR small-screen pass %(small)d / 53; hardware (Flip 2) %(hw)d / 53; your visual approval %(visual)d / 53; COMPLETE %(complete)d / 53.' % done)

@@ -1,14 +1,51 @@
 {
  "_about": "529j: hand-kept facts for the overhaul table (layout_matrix.py). physical = what the home shows as a physical game object (needs a real pickup / return); konkr = KONKR GT78 (960x640, 240 dpi) popup evidence; owner_visual = the owner's visual approval (none yet).",
- "physical": {"SHELF": "cases on a shelf", "STACKS": "case stacks", "CONSOLES": "cases in console bays", "DISCS": "discs in a disc station",
-  "CRATE": "record sleeves", "CARDS": "cards in a binder", "CASEFLOW": "cases", "BOX": "cases in a cardboard box", "STORAGE": "game boxes",
-  "COVERDETAILS": "cases", "ORBIT": "discs on an orbit", "SHOP": "rental cases", "CUBE": "cartridges / discs", "TV": "cases beside the TV"},
- "konkr": {"CLASSIC": "PASS x1.0 (q0672k2, 13 Nov)", "SPOT": "PASS x1.0 (q0672k2)", "SHELF": "PASS x1.0 (q0672k2; native pages k529k1); PASS x1.3 (k529k2)", "TILES": "PASS x1.0 (q0672k2)",
-  "CHAN": "PASS x1.0 (q0672k2)", "STORAGE": "PASS x1.0 (q0672k2)", "NIGHT": "PASS x1.0 (q0672k2); Night Full motion p90 28 ms (q0672km)",
-  "DASH": "PASS x1.0 (q0672k2)", "RESUME": "PASS x1.0 (q0672k2)",
+ "physical": {
+  "SHELF": "cases on a shelf",
+  "STACKS": "case stacks",
+  "CONSOLES": "cases in console bays",
+  "DISCS": "discs in a disc station",
+  "CRATE": "record sleeves",
+  "CARDS": "cards in a binder",
+  "CASEFLOW": "cases",
+  "BOX": "cases in a cardboard box",
+  "STORAGE": "game boxes",
+  "COVERDETAILS": "cases",
+  "ORBIT": "discs on an orbit",
+  "SHOP": "rental cases",
+  "CUBE": "cartridges / discs",
+  "TV": "cases beside the TV"
+ },
+ "konkr": {
+  "CLASSIC": "PASS x1.0 (q0672k2, 13 Nov)",
+  "SPOT": "PASS x1.0 (q0672k2)",
+  "SHELF": "PASS x1.0 (q0672k2; native pages k529k1); PASS x1.3 (k529k2); 529r x1.3 pages: first achievement whole (sp529s13)",
+  "TILES": "PASS x1.0 (q0672k2); 529r x1.3 pages: first achievement whole (sp529t13) - x1.3 popup gate NOT RUN",
+  "CHAN": "PASS x1.0 (q0672k2)",
+  "STORAGE": "PASS x1.0 (q0672k2); 529r x1.3 pages: first achievement whole, keys on the name line (sp529t13) - x1.3 popup gate NOT RUN",
+  "NIGHT": "PASS x1.0 (q0672k2); Night Full motion p90 28 ms (q0672km)",
+  "DASH": "PASS x1.0 (q0672k2)",
+  "RESUME": "PASS x1.0 (q0672k2)",
   "AIRY": "FAIL readability x1.0 (q0672k2, q0672k3) - fixed in code ff043d51, rerun pending",
-  "STACKS": "PASS x1.0 (k529k1); PASS x1.3 (k529k2)",
-  "CONSOLES": "PASS x1.0 (k529k1); x1.3 FAIL More open (k529k2) - fixed c1bde53c, PASS x1.3 (k529k3)",
-  "COVERDETAILS": "529m full-width action bars (owner #15): PASS x1.3 (k529m1), PASS x1.0 (k529m2); before: x1.3 FAIL (k529k3). Open: touch then L1 / R1, pages at x1.3 (docs/qa-evidence/529m)"},
- "owner_visual": {}
+  "STACKS": "PASS x1.0 (k529k1); PASS x1.3 (k529k2); 529r x1.3 pages: first achievement whole (sp529s13)",
+  "CONSOLES": "PASS x1.0 (k529k1); x1.3 FAIL More open (k529k2) - fixed c1bde53c, PASS x1.3 (k529k3); 529r x1.3 pages: first achievement whole (sp529s13 / sp529t13)",
+  "COVERDETAILS": "PASS x1.3 + x1.0 pages (529r/529s, sp529s13 / sp529r10 / sp529t10: first achievement whole, bars, scroll bar), touch -> R1 / no launch / single B (tf529d); action panel 529m (k529m1 / k529m2). Owner review of 529p evidence pending",
+  "TWIN_DESK": "PARTIAL: x1.3 pages first achievement whole + bars (sp529t13), x1.0 / x1.3 pages (sp529q4 / sp529q4b) - popup gate NOT RUN, single-screen KONKR only"
+ },
+ "owner_visual": {},
+ "ach_first_row": {
+  "_about": "529r owner P0: AchFirstRowRoboTest (Robolectric, app theme, 640x427 dp = KONKR, x1.0 + real x1.3 font=1.3,density=1.15; 1 / 12 / 40 achievements) at 1450b569 / c8c3c18f - the first achievement row whole when the Achievements page opens. JVM rendering, not hardware.",
+  "_all": "PASS x1.3 (n=12); native-page layouts also n=1 / 40 at x1.0 + x1.3",
+  "AIRY": "NOT TESTED - the test did not reach an Achievements page (Assume skip)",
+  "CASEFLOW": "NOT TESTED - the test did not reach an Achievements page (Assume skip)",
+  "CROSS": "n/a - achievements are the Cross menu's own column"
+ },
+ "motion": {
+  "_about": "529p+: motion evidence per layout (frames from KONKR recordings unless noted). Sampled frames do not prove continuous motion or GPU pacing.",
+  "SHELF": "Info -> Details card rise ~280-300 ms, 15-18 frames (529m frames_shelf_info_to_details_x13); Motion Off <= 2 frames",
+  "STACKS": "Info -> Details card rise (529m page walk, frames)",
+  "CONSOLES": "Info -> Details card rise (529m page walk, frames)",
+  "COVERDETAILS": "Info -> Details (529m frames_cover_info_to_details_x13)",
+  "SETTINGS_STRIP": "category strip legacy POP -> glide (cs529p chipglide.py), chip clipped at the span edge (cs529q); RP Classic NOT TESTED"
+ }
 }

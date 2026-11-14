@@ -69,9 +69,18 @@ qawins() { adb shell dumpsys window windows | grep -E "Window #|isVisible=" | gr
 precheck() { # name
   [ "$(adb get-state 2>/dev/null)" = device ] || { note "PRECONDITION $1: EMULATOR OFFLINE - this and later sequences NOT TESTED"; return 2; }
   A; sleep 3
-  local mark; mark=$(adb shell cat /sdcard/Android/data/$P/files/voltcap_qa_screen 2>/dev/null | cut -d' ' -f1 | tr -d '\r')
-  if [ "$mark" = PICKER ]; then adb shell input keyevent KEYCODE_BUTTON_B; sleep 2
-    mark=$(adb shell cat /sdcard/Android/data/$P/files/voltcap_qa_screen 2>/dev/null | cut -d' ' -f1 | tr -d '\r'); fi
+  # (529s, run 43600821842: the "Who's playing?" picker comes up after the start-up intro - a B sent before it was up did
+  # nothing and the picker was still there. It is answered as the handheld scripts do - B - once it is shown, up to 4 times
+  # over ~16 s; anything else in front stays a failed precondition.)
+  local mark tries=0 homes=0
+  while :; do
+    mark=$(adb shell cat /sdcard/Android/data/$P/files/voltcap_qa_screen 2>/dev/null | cut -d' ' -f1 | tr -d '\r')
+    # (HOME twice, 4 s apart: the mark is HOME from the activity's start until the picker is shown after the intro)
+    if [ "$mark" = HOME ]; then homes=$((homes + 1)); [ $homes -ge 2 ] && break; else homes=0; fi
+    [ $tries -ge 5 ] && break
+    [ "$mark" = PICKER ] && { adb shell input keyevent KEYCODE_BUTTON_B; note "precondition $1: picker shown - B"; }
+    sleep 4; tries=$((tries + 1))
+  done
   local foc; foc=$(adb shell dumpsys window | grep -m1 mCurrentFocus | tr -d '\r' | sed 's/.*u0 //;s/}.*//')
   local n; n=$(qawins | tr -d '\r')
   note "precondition $1: focus=$foc screen=$mark qa_windows=$n"
