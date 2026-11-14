@@ -59,7 +59,7 @@ PID=$(adb shell pidof $P | tr -d '\r')
 adb logcat -d -b crash > "$OUT/crash_log.txt" 2>&1
 adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | tail -200 > "$OUT/launch_log.txt"
 if [ -z "$PID" ]; then note "LAUNCH: FAILED (no process; see crash_log.txt / launch_log.txt) - every check BLOCKED"; exit 0; fi
-note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt")"
+note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt") (FATAL: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log.txt"); processes: $(grep -o 'Process: [^,]*' "$OUT/crash_log.txt" | sort -u | tr '\n' ' '))"
 adb shell mkdir -p /data/local/tmp
 for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
 # 529p: preconditions before each sequence - emulator there, the QA app in front with nothing over its home (one visible
@@ -91,16 +91,23 @@ precheck() { # name
   fi
   return 0
 }
-finish() { adb logcat -d -b crash > "$OUT/crash_log_end.txt" 2>&1
-  note "crash buffer at the end: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log_end.txt") FATAL"
+# (529s, run 43601933855: the emulator went offline during e529a; finish's `adb logcat` then waited for a device that never
+# came back and the job ran into its 55-minute limit before the evidence upload. Every adb call here is bounded now, and
+# nothing is asked of an emulator that is gone.)
+finish() {
+  if [ "$(timeout 10 adb get-state 2>/dev/null)" = device ]; then
+    timeout 30 adb logcat -d -b crash > "$OUT/crash_log_end.txt" 2>&1
+    note "crash buffer at the end: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log_end.txt") FATAL"
+  else note "crash buffer at the end: NOT READ (emulator offline)"; fi
   python3 tools/qa/emulator/grade_trial.py "$OUT" "$APK" | tee -a "$S"; exit 0; }
 run_pop() { # tag scale layouts
-  adb shell "cd /data/local/tmp && sh pop529.sh run $1 '$2' '$3' OWN"
+  timeout 300 adb shell "cd /data/local/tmp && sh pop529.sh run $1 '$2' '$3' OWN"
   if waitdone /sdcard/pc/$1 $1 420; then note "popup gate $1 ($2: $3): run finished"; else note "popup gate $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
-  adb shell "cd /data/local/tmp && sh pop529.sh restore $1"
-  adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1; adb pull -a /sdcard/pc/${1}_w "$OUT/raw/" > /dev/null 2>&1
+  [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after $1 - nothing pulled"; return; }
+  timeout 60 adb shell "cd /data/local/tmp && sh pop529.sh restore $1"
+  timeout 120 adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1; timeout 120 adb pull -a /sdcard/pc/${1}_w "$OUT/raw/" > /dev/null 2>&1
   # (First run 43517899154: the gate found no main screenshot - the run's own logs go into the summary now.)
-  { echo '```'; echo "$1 log:"; adb shell cat /sdcard/pc/$1/log.txt /sdcard/pc/${1}_w/log.txt 2>&1 | tail -40; echo "files: $(adb shell ls /sdcard/pc/$1 2>&1 | tr '\n' ' ' | cut -c1-600)"; echo '```'; } | tee -a "$S"
+  { echo '```'; echo "$1 log:"; timeout 30 adb shell cat /sdcard/pc/$1/log.txt /sdcard/pc/${1}_w/log.txt 2>&1 | tail -40; echo "files: $(adb shell ls /sdcard/pc/$1 2>&1 | tr '\n' ' ' | cut -c1-600)"; echo '```'; } | tee -a "$S"
 }
 precheck e529a || finish
 run_pop e529a "font=1.3,density=1.15" "COVERDETAILS SHELF"
@@ -109,8 +116,9 @@ run_pop e529b off "COVERDETAILS SHELF"
 precheck e529c || finish
 adb shell "cd /data/local/tmp && TOUCH=1 setsid sh shelfpages529.sh run e529c 'font=1.3,density=1.15' 'COVERDETAILS SHELF' > /dev/null 2>&1 < /dev/null &"
 if waitdone /sdcard/pc/e529c e529c 600; then note "page walk e529c (x1.3, touch, Motion Off): run finished"; else note "page walk e529c: DID NOT FINISH (NOT TESTED)"; fi
-adb shell "cd /data/local/tmp && sh shelfpages529.sh restore e529c"
-adb shell "cp /sdcard/Android/data/$P/files/qa_clip/e529c_* /sdcard/pc/e529c/ 2>/dev/null"
-adb pull -a /sdcard/pc/e529c "$OUT/raw/" > /dev/null 2>&1
-{ echo '```'; echo "e529c log:"; adb shell cat /sdcard/pc/e529c/log.txt 2>&1 | tail -40; echo '```'; } | tee -a "$S"
+[ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after e529c - nothing pulled"; finish; }
+timeout 60 adb shell "cd /data/local/tmp && sh shelfpages529.sh restore e529c"
+timeout 30 adb shell "cp /sdcard/Android/data/$P/files/qa_clip/e529c_* /sdcard/pc/e529c/ 2>/dev/null"
+timeout 180 adb pull -a /sdcard/pc/e529c "$OUT/raw/" > /dev/null 2>&1
+{ echo '```'; echo "e529c log:"; timeout 30 adb shell cat /sdcard/pc/e529c/log.txt 2>&1 | tail -40; echo '```'; } | tee -a "$S"
 finish
