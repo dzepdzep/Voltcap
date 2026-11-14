@@ -781,7 +781,8 @@ internal fun Modifier.pixelFrame(fill: Color, cut: Dp = 6.dp): Modifier = this
 @OptIn(ExperimentalLayoutApi::class)
 private fun StorageRecord(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.94f, 900.dp)
-    val h = minOf(ctx.maxH * 0.94f, 520.dp)
+    // (529r, owner P0 - ×1.3: with large text the record takes the window's height but a hair, for its sheets' lists.)
+    val h = minOf(if (bigPageText()) ctx.maxH else ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
     val labStorage = PopupLab.active.storage // (523t: approved - everyone)
     val tabs = STORAGE_TABS
@@ -1070,22 +1071,70 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Color, live: Boolean) {
-    Column(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
+    val big = bigPageText()
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 2)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    Column(Modifier.fillMaxWidth().weight(1f).padding(if (big) 9.dp else 12.dp)) {
+        // (529r: with large text the keys go on the name line - the console tag under the name - only when the name keeps two
+        // lines in the room left; a long name keeps the whole line and the keys stay under the sheet: never a name squeezed to a
+        // column of words.)
+        val inline = big && run {
+            // the room the name keeps beside the sprite, the console tag and the keys (their words measured as they are drawn)
+            fun w(t: String, sp: androidx.compose.ui.unit.TextUnit, mono: Boolean = false) = measurer.measure(t, androidx.compose.ui.text.TextStyle(fontSize = sp,
+                fontWeight = FontWeight.Black, fontFamily = if (mono) FontFamily.Monospace else null)).size.width
+            val keysPx = ctx.buttons.sumOf { w("▶ ", 13.sp) + w(it.label.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
+                with(dens) { (8.dp * (ctx.buttons.size - 1).coerceAtLeast(0)).roundToPx() }
+            val tagPx = w(ctx.console.uppercase(), 10.sp) + with(dens) { 20.dp.roundToPx() }
+            val rowPx = with(dens) { (ctx.maxW * 0.94f - 24.dp - 20.dp).roundToPx() }
+            val room = rowPx - keysPx - with(dens) { (30.dp + 10.dp + 10.dp).roundToPx() }
+            room >= with(dens) { 140.dp.roundToPx() } && measurer.measure(ctx.name, androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Black),
+                constraints = androidx.compose.ui.unit.Constraints(maxWidth = room)).lineCount <= 2
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(if (big) 30.dp else 34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
                 StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize(0.8f))
             }
             Spacer(Modifier.width(10.dp))
-            WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 10.dp, vertical = 3.dp)) {
-                WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+            val tag: @Composable () -> Unit = {
+                Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 10.dp, vertical = 3.dp)) {
+                    WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                }
+            }
+            if (inline) {
+                // (529r, owner P0 - ×1.3: the sheet's keys at the end of its name line, the console tag under the name; the sheet's
+                // frame gets the row the keys had under it.)
+                Column(Modifier.weight(1f)) {
+                    WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(2.dp)); tag()
+                }
+                Spacer(Modifier.width(10.dp)); StoragePageKeys(ctx, red, live)
+            } else {
+                WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp)); tag()
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
-        Spacer(Modifier.height(8.dp))
-        // (The page's keys: Play first, the page's own, Back last - one row; whole words, never cut.)
+        Spacer(Modifier.height(if (big) 6.dp else 8.dp))
+        // (529r: with large text the sheet's page draws as a native page of the record - its tab names it, the name line is above -
+        // so it spends no room on a second title or margin.)
+        Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) {
+            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = false, showsCover = true, showsName = true)) {
+                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        }
+        if (!inline) {
+            Spacer(Modifier.height(8.dp))
+            StoragePageKeys(ctx, red, live)
+        }
+
+        // (529r, owner P0 - Storage ×1.3: the save line repeated under every sheet's keys left the Achievements sheet no room for
+        // its list (0 px). It is on the Info sheet, where it belongs; the pages keep their room.)
+    }
+}
+
+/** Storage's sheet keys: Play first, the page's own (Back is the hint under the window) - whole words, never cut. */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ctx.buttons.forEach { a0 ->
                 val a = a0.live(live)
@@ -1100,24 +1149,6 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
                 }
             }
         }
-        if (ctx.chips.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ctx.chips.forEach { a ->
-                    SceneControl(a.live(live), Modifier) { on ->
-                        // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
-                        Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
-                            Spacer(Modifier.width(4.dp))
-                            // (Batch 523 gate, p523all: "Saves: Save sync isn't set up" was cut at one line - whole now.)
-                            WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */

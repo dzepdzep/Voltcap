@@ -197,9 +197,11 @@ private fun inkOn(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else 
 // ───────────────────────────── Game shelf: the case comes off the shelf ─────────────────────────────
 
 /** Update 507: Game shelf / Case stacks lay the window out round the case: (case width dp, window width dp). Pure. */
-internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float): Pair<Float, Float> {
+internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float, bigText: Boolean = false): Pair<Float, Float> {
     val compact = maxH < 380f || maxW < 560f
-    val caseH = minOf(maxH * (if (compact) 0.6f else 0.7f), 340f)
+    // (529r, owner P0 - ×1.3: with large text on a compact window the case stands a little smaller (52 % of the height, the
+    // same on every page - it never jumps), so the card beside it has the width its words need.)
+    val caseH = minOf(maxH * (if (compact && bigText) 0.52f else if (compact) 0.6f else 0.7f), 340f)
     val caseW = minOf(caseH * aspect, maxW * 0.3f).coerceAtLeast(64f)
     return caseW to minOf(maxW, 900f)
 }
@@ -208,7 +210,7 @@ internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float): Pair<F
 internal fun GameShelfWindow(ctx: WinSceneCtx) {
     val a = ctx.accent; val cream = Color(0xFFF1E6D3); val label = Color(0xFFC9A57A)
     val aspect = sceneCaseAspect(ctx.g.platform)
-    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect)
+    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect, bigPageText())
     val caseW = caseWv.dp
     Row(Modifier.width(totalWv.dp).heightIn(max = ctx.maxH), verticalAlignment = Alignment.CenterVertically) {
         // The case, taken off the shelf, standing on a ledge of the same wood. (Beside an inspected piece — Inspect — the piece
@@ -246,11 +248,13 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
             val shelfKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
             }
-            ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp), Color(0xFFE6C891), cream,
+            ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = if (bigPageText()) 8.dp else 10.dp, bottom = if (bigPageText()) 10.dp else 14.dp), Color(0xFFE6C891), cream,
                 Color.Black.copy(alpha = 0.22f), { k ->
                     // (529o: the pages' keys as full-width bars of the shelf's own wood - PageBars.)
                     SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp, lineHeight = 15.sp, wide = true)
-                }) { live, keys ->
+                },
+                // (529r, owner P0: with large text the pages take the shelf's whole height - lip 6 + padding 10 / 14 - not 86 % of it.)
+                pageHeight = if (bigPageText()) (ctx.maxH - 24.dp).coerceAtLeast(200.dp) else shelfPageHeight(ctx.maxH)) { live, keys ->
                 // The console on the shelf's brass label holder.
                 Text(ctx.console.uppercase(), color = Color(0xFF2A1E12), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.clip(RoundedCornerShape(2.dp)).background(Brush.verticalGradient(listOf(Color(0xFFE6C891), Color(0xFFB08A50))))
@@ -272,7 +276,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
 internal fun CaseStackWindow(ctx: WinSceneCtx) {
     val a = ctx.accent; val ink = Color(0xFFEDEAF3); val muted = Color(0xFFA9A2B8)
     val aspect = sceneCaseAspect(ctx.g.platform)
-    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect)
+    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect, bigPageText())
     val caseW = caseWv.dp
     val stackShape = RoundedCornerShape(16.dp)
     Row(Modifier.width(totalWv.dp).heightIn(max = ctx.maxH), verticalAlignment = Alignment.CenterVertically) {
@@ -290,14 +294,14 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
         }.background(Brush.verticalGradient(listOf(Color(0xFF2C2438), Color(0xFF1A1522))))
             // The case's spine down the card's edge, in the stack's lit colour.
             .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.25f))), size = androidx.compose.ui.geometry.Size(5.dp.toPx(), size.height)) }
-            .border(1.dp, Color.White.copy(alpha = 0.08f), stackShape).padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
+            .border(1.dp, Color.White.copy(alpha = 0.08f), stackShape).padding(start = 20.dp, end = 16.dp, top = if (bigPageText()) 10.dp else 14.dp, bottom = if (bigPageText()) 10.dp else 14.dp)) {
             // (529k: Details / Achievements / Options are further cards of the stack - ShelfFamilyPages.)
             val stackKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
             }
             ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp, lineHeight = 15.sp, wide = true)
-            }) { live, keys ->
+            }, pageHeight = if (bigPageText()) (ctx.maxH - 20.dp).coerceAtLeast(200.dp) else shelfPageHeight(ctx.maxH)) { live, keys -> // (529r: the card's whole height)
                 Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(2.dp))
                 StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
@@ -417,7 +421,9 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
                             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
                         }
-                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact, (ctx.maxH * 0.86f - lift).coerceAtLeast(tileH), tileKeys(p, live))
+                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact,
+                        // (529r, owner P0: with large text the page side takes more of the window - 92 % - for its list)
+                        (ctx.maxH * (if (bigPageText()) 0.98f else 0.86f) - lift).coerceAtLeast(tileH), tileKeys(p, live))
                     }
                 }
             }
@@ -447,16 +453,24 @@ internal val TILE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES,
 private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp,
     keys: List<WinAction> = sceneKeys(ctx).map { if (live) it else it.inert() }) {
     Column(Modifier.height(height)) {
-        Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
-        StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(8.dp)) {
-            ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        // (529r, owner P0 - ×1.3: with large text the page's name and the game's share one heading, as on the shelf cards.)
+        val big = bigPageText()
+        if (big) PageHeading(winPageTitle(p), ctx.name, a, ink, pageSize = (13f * type).sp, nameSize = (17f * type).sp, caps = false)
+        else {
+            Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
+            StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(if (big) 4.dp else 8.dp))
+        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(if (big) 6.dp else 8.dp)) {
+            // (529r: with large text the page draws as the card's own native page - the heading names it, no second margin.)
+            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
+                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        }
+        Spacer(Modifier.height(if (big) 8.dp else 10.dp))
         KeyRow(keys, 6.dp) { k ->
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
-                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
+                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = if (big) 32.dp else 36.dp)
         }
     }
 }

@@ -924,6 +924,17 @@
    "apk_sha256": "52bef443e52a54a8ef1dc1be6617d9f4e866ba380009e3a8f80d00d9245a880e",
    "base_commit": "760753f8",
    "note": "529q: category strip - a chip gliding in is cut at the span's edge (no word over the +N hint); QA hook voltcap_test_firstrun_done for the emulator trial's first-run state. assembleQa 14 Nov 12:56 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9311e4da + 529r working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529r",
+   "apk_sha256": "22f0c95845f00c59116a321010303c458a4f57746dae08b14a10c7eabbe9f617",
+   "base_commit": "9311e4da",
+   "note": "529r: owner P0 - first achievement whole at x1.3 on every layout (AchFirstRowRoboTest): achievement texts' own line heights, order control on the count's line on short pages, page Back is the hint on native-page layouts (hint goes back a page), Coverflow panel 60 % at large text, case 52 % / card full height on Shelf / Stacks, one-line page heading at large text (shelf cards, Tiles), Tiles / Storage native page host and taller sheets, Storage keys on the name line when the name keeps two lines, no save line on Storage sheets. assembleQa 14 Nov 14:24 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }

@@ -96,6 +96,8 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.data.HomeLayout
 import kotlinx.coroutines.launch
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 /*
  * Update 113: the game window on every layout (it was the Channel grid's only). A or a tap on the game you're on opens
@@ -2329,6 +2331,7 @@ private fun SceneBody(
     // (Batch 523, QA design lab only - PopupLab "actions": Play, Details, a round ••• More beside it; Back leaves the row for a
     // corner hint. Everyone else: exactly as before.)
     val labActions = PopupLab.active.actions // (523t: approved - everyone)
+    val pageBackIsHint = labActions && nativePages(scene)
     val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
         else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {
@@ -2341,9 +2344,13 @@ private fun SceneBody(
                 // else beside it" - so More / Less is no longer in this row beside Details: it closes the tools below, after Inspect.)
                 if (!labActions) add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
-            WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
-            WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
-            WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
+            // (529r, owner P0 - KONKR ×1.3: a layout that draws its own pages shows the "Ⓑ Back" hint under the window on every
+            // page (its tap goes back a page there too), so a Back bar on the page was the same action twice and cost the page a
+            // whole row - the first achievement got a sliver. As on the first page since 523t: Back is the hint. Shared pages,
+            // which have no hint, keep their Back key.)
+            WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.OPTIONS, WinPage.PERF -> if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true))
         }
     }
     val allTools = buildList {
@@ -2440,7 +2447,8 @@ private fun SceneBody(
         Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
         // (529m, frame review k529l2: on a page the hint's room went to the scene, so the case and card jumped at the first
         // frame of Info -> Details. A layout with its own pages keeps the hint - and its room - on every page.)
-        LabBackHint(onClose, Modifier.padding(top = 4.dp))
+        // (529r: on a page the hint goes back to the first page, as B does there; on the first page it closes the window.)
+        LabBackHint({ if (page != WinPage.MAIN) setPage(WinPage.MAIN) else onClose() }, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)
 }
@@ -2640,7 +2648,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
 
 /** Update 125: one row of the window's own lists (options, achievements), in its colours and button shape. */
 @Composable
-private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit) {
+private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> Unit, minHeight: Dp = 44.dp, content: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -2654,7 +2662,7 @@ private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> 
         Btn.TAB -> RoundedCornerShape(topStart = 4.dp, topEnd = 12.dp, bottomEnd = 4.dp, bottomStart = 4.dp)
     }
     Row(
-        modifier.fillMaxWidth().heightIn(min = 44.dp)
+        modifier.fillMaxWidth().heightIn(min = minHeight)
             .clip(shape)
             .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.Transparent) else look.btnFill)
             .then(if (look.btnBorder != null) Modifier.border(if (focused) 2.dp else 1.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
@@ -2684,12 +2692,12 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                     // ShelfTextRoboTest). Whole now: two lines, then a readable smaller size, then it slides.)
                     WinFullText(
                         if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 18.sp
                     )
                     // (529l, KONKR k529s1: Coverflow details' narrower page showed "Sync, second screen, artwork, look — for" - the
                     // line slid with its end out of view. A line that doesn't fit takes a second line before it slides.)
                     opt.sub?.let {
-                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null)
+                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 14.sp)
                     }
                 }
             }
@@ -2719,36 +2727,55 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
     // (529o, ×1.3 KONKR: on a native page the card's label already says Achievements - the counter is the count alone, one
     // line, and the card's well is the margin; "Achievements / 8 / 10" took two lines and no achievement row was left in view.)
     val native = LocalNativePageHost.current != null
-    Column(modifier.background(paper).padding(if (native) 4.dp else 10.dp)) {
+    // The order: A steps to the next one.
+    val orderRow: @Composable (Modifier, Boolean) -> Unit = { m, compact ->
+        WinRow(look, m.focusRequester(listFocus), onClick = {
+            val all = Features.TrophyOrder.values()
+            Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
+        }, minHeight = if (compact) 38.dp else 44.dp) { on ->
+            val rowInk = if (on) look.btnOnInk else look.btnInk
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            androidx.compose.material3.Text(
+                // (529p, ×1.3 KONKR Coverflow details: one line cut it to "Order: Set" beside the hint - it wraps whole now.)
+                // (529r: on the count's line - compact - its swap icon says "order"; the order's own name is whole.)
+                (if (compact) (if (look.caps) order.label.uppercase() else order.label) else if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label),
+                color = rowInk, fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 16.sp, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+            )
+            // (529r: on a native page - a narrow card - the hint is the controller's A in its ring, as the window's "Ⓑ Back"
+            // is drawn, so "Order: Set order" keeps one line; the words stay on the wider shared page.)
+            if (native || compact) Box(Modifier.size(18.dp).border(1.dp, rowInk.copy(alpha = 0.55f), androidx.compose.foundation.shape.CircleShape)
+                .semantics { contentDescription = "A: next order" }, contentAlignment = Alignment.Center) { InkGlyph("A", rowInk.copy(alpha = 0.7f), 11.dp) }
+            else androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp)
+        }
+    }
+    val progress: @Composable (Modifier) -> Unit = { m ->
+        Box(m.clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
+            Box(Modifier.fillMaxWidth(if (list.isEmpty()) 0f else earned.toFloat() / list.size).fillMaxHeight().background(look.accent))
+        }
+    }
+    // (529r, owner P0 "the first achievement must be fully visible": on a short page - a native card, or a shared page under
+    // trophiesTightBelow - the order control sits on the count's line and the progress bar becomes a thin line under it, so
+    // the list starts with the achievements; nothing is dropped. Taller pages keep the order as the list's first row.)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(paper).padding(if (native) 4.dp else 10.dp)) {
+    val tight = native || maxHeight < TROPHIES_TIGHT_BELOW.dp
+    Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             androidx.compose.material3.Text(
-                (if (native) "" else if (look.caps) "ACHIEVEMENTS  " else "Achievements  ") + "$earned / ${list.size}", color = ink, fontSize = 15.sp,
+                // (on a short page the page's own title says Achievements; the line keeps the count and the order control)
+                (if (native || tight) "" else if (look.caps) "ACHIEVEMENTS  " else "Achievements  ") + "$earned / ${list.size}", color = ink, fontSize = 15.sp,
                 fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null, maxLines = 1, lineHeight = 19.sp
             )
             Spacer(Modifier.width(10.dp))
-            Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
-                Box(Modifier.fillMaxWidth(if (list.isEmpty()) 0f else earned.toFloat() / list.size).fillMaxHeight().background(look.accent))
-            }
+            if (tight) orderRow(Modifier.weight(1f), true) else progress(Modifier.weight(1f).height(5.dp))
         }
-        Spacer(Modifier.height(8.dp))
+        if (tight) { Spacer(Modifier.height(4.dp)); progress(Modifier.fillMaxWidth().height(3.dp)) }
+        Spacer(Modifier.height(if (native) 6.dp else 8.dp))
         Column(Modifier.fillMaxWidth().weight(1f).pageScroll(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            // The order: A steps to the next one.
-            WinRow(look, Modifier.focusRequester(listFocus), onClick = {
-                val all = Features.TrophyOrder.values()
-                Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
-            }) { on ->
-                val rowInk = if (on) look.btnOnInk else look.btnInk
-                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(10.dp))
-                androidx.compose.material3.Text(
-                    // (529p, ×1.3 KONKR Coverflow details: one line cut it to "Order: Set" beside the hint - it wraps whole now.)
-                    (if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label), color = rowInk, fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 16.sp, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
-                )
-                androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
-            }
+            if (!tight) orderRow(Modifier, false)
             list.forEach { a ->
                 androidx.compose.runtime.key(a.id) {
                     val opened = openId == a.id
@@ -2765,19 +2792,21 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                         Column(Modifier.weight(1f)) {
                             // (Rule 11, achievements hotfix 529: no "…" - the name wraps whole; the description is whole once the row is
                             // open (A), and while it's closed it fits two lines by shrinking readably, then slides.)
+                            // (529r, owner P0 - Coverflow ×1.3 showed a sliver of the first row: these texts took the theme's 24 sp line,
+                            // so a 13 sp name in two lines was ~62 dp at ×1.3. Their own line heights now - same size, nothing hidden.)
                             androidx.compose.material3.Text(
                                 a.title ?: "Achievement", color = rowInk.copy(alpha = if (a.isUnlocked) 1f else 0.62f), fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold, fontFamily = if (look.mono) FontFamily.Monospace else null
+                                fontWeight = FontWeight.SemiBold, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 17.sp
                             )
                             a.description?.let {
                                 if (opened) androidx.compose.material3.Text(
-                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp
-                                ) else WinFullText(it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = 2)
+                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, lineHeight = 14.sp
+                                ) else WinFullText(it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp)
                             }
                         }
                         a.points?.let {
                             Spacer(Modifier.width(8.dp))
-                            androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp)
                         }
                     }
                     AchDetailReveal(opened) { TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading) { onLoadComments(a.id) } }
@@ -2785,6 +2814,7 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
             }
         }
     }
+}
 }
 
 /** Update 132: the achievements page's order ([Features.TrophyOrder]); ties keep the set's own order. */
@@ -2816,7 +2846,7 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
             a.unlockPercent?.let { add("%.1f %% of players have it".format(it)) }
             if (a.isMissable) add("Missable")
         }
-        if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 15.sp)
         WinRow(look, onClick = { commentsOpen = !commentsOpen; if (commentsOpen && comments == null && !loading) onLoad() }) { on ->
             val rowInk = if (on) look.btnOnInk else look.btnInk
             androidx.compose.material3.Text(
@@ -3024,6 +3054,9 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     }
     }
 }
+
+/** 529r: a shared Achievements page shorter than this (dp) puts its order control on the count's line. */
+internal const val TROPHIES_TIGHT_BELOW = 330f
 
 internal const val DETAILS_MIN_TEXT = 200f   // dp the details text column keeps, at least (≈ 28 characters of 13 sp)
 internal const val DETAILS_GAP = 14f

@@ -33,6 +33,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -103,16 +104,25 @@ internal fun ShelfFamilyPages(
         androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
         if (p == WinPage.MAIN) Column { main(live, keysOf(p, live)) }
         else Column(Modifier.height(pageHeight)) {
-            Text(winPageTitle(p).uppercase(), color = label, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-            if (nameOnCard) StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
-            Spacer(Modifier.height(if (nameOnCard) 8.dp else 6.dp))
-            Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(well).padding(6.dp)) {
+            // (529r, owner P0 - KONKR ×1.3: the page's name and the game's name on two lines of their own left the Achievements card
+            // no room for its first row. With large text they share one heading - the page's name in the label's caps, the game's
+            // name after it in whole words - nothing dropped, nothing smaller than asked.)
+            if (nameOnCard && bigPageText()) {
+                PageHeading(winPageTitle(p), ctx.name, label, ink)
+                Spacer(Modifier.height(4.dp))
+            } else {
+                Text(winPageTitle(p).uppercase(), color = label, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                if (nameOnCard) StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+                Spacer(Modifier.height(if (nameOnCard) 8.dp else 6.dp))
+            }
+            val big = bigPageText()
+            Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(well).padding(if (big) 5.dp else 6.dp)) {
                 // (The page draws on this card's well, without the case and name the card already shows.)
                 androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
                     ctx.pageFor(p, Modifier.fillMaxSize(), live)
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(if (big) 6.dp else 8.dp))
             // (529o, owner #15 6866376184: the page's keys as full-width bars like the Info card's, not short mixed-width keys with
             // Back alone on a second row; their room is reserved under the well, which gets the rest.)
             PageBars(keysOf(p, live), 6.dp) { key(it) }
@@ -254,4 +264,25 @@ internal fun pageBarWidths(need: List<Int>, width: Int, gap: Int, fixed: List<Bo
     val last = grow.last()
     ws[last] = inner - ws.indices.filter { it != last }.sumOf { ws[it] }
     return ws
+}
+
+/** 529r: the text is drawn larger than standard (×1.15 or more) - a page's chrome then gives its room to the page. */
+@Composable
+internal fun bigPageText(): Boolean = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
+
+/**
+ * 529r: a page's heading on one line with large text - "ACHIEVEMENTS  Shadow of the Colossus": the page's name in [label]'s
+ * caps, the game's name after it in [ink], wrapping in whole words (never cut, never smaller than asked).
+ */
+@Composable
+internal fun PageHeading(page: String, name: String, label: Color, ink: Color, pageSize: androidx.compose.ui.unit.TextUnit = 11.sp,
+    nameSize: androidx.compose.ui.unit.TextUnit = 17.sp, caps: Boolean = true) {
+    val t = androidx.compose.ui.text.buildAnnotatedString {
+        withStyle(androidx.compose.ui.text.SpanStyle(color = label, fontSize = pageSize, fontWeight = FontWeight.Black, letterSpacing = if (caps) 1.5.sp else 0.sp)) {
+            append(if (caps) page.uppercase() else page)
+        }
+        append("  ")
+        withStyle(androidx.compose.ui.text.SpanStyle(color = ink, fontSize = nameSize, fontWeight = FontWeight.Bold)) { append(name) }
+    }
+    Text(t, lineHeight = nameSize * 1.3f)
 }

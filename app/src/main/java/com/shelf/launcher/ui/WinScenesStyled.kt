@@ -279,7 +279,11 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
     val a = ctx.accent; val ink = Color.White; val muted = Color.White.copy(alpha = 0.62f)
     val shortPanel = ctx.maxH < 420.dp
     val moreOpen = ctx.tools.any { it.label == "Less" }
-    val panelW = minOf(ctx.maxW * 0.5f, 560.dp)
+    // (529r, owner P0 - KONKR ×1.3: half of a 556 dp wide window left the pages a 200 dp column, where an achievement's
+    // name took four lines and the first row never fit. With large text on a compact screen the panel takes 60 % - it still
+    // starts right of the big case (which ends at ~38 % of the width) and the home's name beside it stays in view.)
+    val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.05f
+    val panelW = minOf(ctx.maxW * coverPanelShare(ctx.maxW.value, big), 560.dp)
     Box(Modifier.width(ctx.maxW), contentAlignment = Alignment.CenterEnd) {
         Column(Modifier.width(panelW).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.08f).clip(RoundedCornerShape(12.dp))
             // (Update 471: fully opaque — at 97 % the home screen's big title still showed through faintly behind the name.)
@@ -450,3 +454,6 @@ internal fun coverInfoLine(console: String, year: String?, developer: String?, g
 internal fun coverPlayedLine(ctx: WinSceneCtx): String = coverPlayedLine(ctx.played, ctx.last, ctx.earned, ctx.total)
 internal fun coverPlayedLine(played: String, last: String?, earned: Int, total: Int): String =
     listOfNotNull(if (played.startsWith("Never")) played else "Played $played", last?.let { "last $it" }, if (total > 0) "$earned / $total trophies" else null).joinToString("  ·  ")
+
+/** 529r: Cover details' panel share of the window's width - 60 % with large text on a compact window (< 720 dp), else half. */
+internal fun coverPanelShare(maxWdp: Float, bigText: Boolean): Float = if (bigText && maxWdp < 720f) 0.6f else 0.5f
