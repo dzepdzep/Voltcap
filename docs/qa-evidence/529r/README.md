@@ -26,3 +26,8 @@ last whole row and was replaced. No clipped first row, no overlap seen in these 
 
 **Not covered here:** NIGHT, BLADES and the shared-page layouts on hardware (JVM only); AIRY / CASEFLOW (not reached by
 the JVM test); Flip 2 (USB dialog on screen); RP Classic.
+
+**Physical device, Retroid Pocket Flip 2 (1920×1080, 360 dpi), ×1.3, commit `c8c3c18f` build `8745509f8703`, run fp529t13
+14 Nov 14:56 (`flip2_x13_*`, half-size full viewports, status bar masked):** first achievement whole - two to three whole
+rows - on Coverflow details, Game shelf, Storage boxes and Tile home. Seen there, not changed in this round: on Coverflow
+details the home's big title runs under the panel ("Shadow Of The Colossu…" cut by the panel's edge) - open.
