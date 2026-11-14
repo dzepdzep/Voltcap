@@ -1,5 +1,29 @@
 # VoltCap issue-driven development workflow
 
+> **Revision 529m (14 Nov 2026) — control revision and application baseline are separate.** The first version expected
+> `ai/development` to equal `main`. The development work actually lives on `claude/qa-0672-repair`, far ahead of `main`;
+> coding on `main` would start from stale code, and merging unfinished work into `main` to satisfy the check is not allowed.
+> Now:
+> - **Control revision** = the reviewed `main` commit the `issue_comment` event runs from (`github.sha`). The workflow,
+>   `tools/ai/bridge.py` and `tools/ai/baseline.json` are always read from it (checked out into `.voltcap-control`, freshly
+>   again after the agent), never from the application checkout.
+> - **Application baseline** = `tools/ai/baseline.json` in that control revision: branch `claude/qa-0672-repair` pinned to a
+>   full commit id. Claude edits that commit; the candidate's parent is that commit; the draft PR goes into that branch.
+>   The run stops if `main` moved, if the branch head is not the pinned commit, if the task issue changed or lost its
+>   approval / gained `ai:hold` / has no `Scope` section, if an AI candidate PR (`claude/issue-*`) is still open, or — for
+>   `/voltcap implement` — if `writer` is not `cloud` (single-writer handoff). Updating the baseline is a reviewed PR to `main`.
+> - `ai/development` is no longer used.
+> - Environments `voltcap-ai` / `voltcap-ai-publish` with deployment branch **main only** are compatible: an `issue_comment`
+>   workflow runs with `GITHUB_REF=refs/heads/main`. Do not widen the deployment branches.
+> - One task at a time across the repository (`concurrency: voltcap-ai`).
+> - **Fresh checks after each approval wait (review #16 6867804224).** The `generate` job starts only after the
+>   `voltcap-ai` approval; its first steps run `bridge.py recheck` before the Claude call. `publish` starts only after the
+>   `voltcap-ai-publish` approval and runs the same recheck before its first write. The recheck reads now: issue open,
+>   `ai:approved`, no `ai:hold`, `Scope` section, unchanged snapshot; `main` and the pinned baseline unmoved; no open
+>   `claude/issue-*` PR on **any** page of open PRs (more than 5,000 open PRs fails closed); `writer: cloud`;
+>   `VOLTCAP_AI_ENABLED` is `true` as the step sees it, and the workflow is still enabled. To stop a waiting run: add
+>   `ai:hold`, remove `ai:approved`, disable the workflow, or reject the pending approval.
+
 Status: prepared integration, disabled by default. No Anthropic credential has been created, read or verified.
 This is Claude Code in GitHub Actions, not a connection to an existing Cowork session.
 
@@ -19,13 +43,15 @@ This is Claude Code in GitHub Actions, not a connection to an existing Cowork se
 4. After the dry-run succeeds, post exactly `/voltcap implement`. With activation enabled, approve the `voltcap-ai` environment
    deployment for the pinned issue snapshot. Claude edits source with a read-only GitHub token. A new secretless runner validates
    allowed files and compiles/tests them. Review the run/artifact before approving `voltcap-ai-publish`.
-5. The trusted publisher rechecks issue authorization, its snapshot and branch bases. It creates only a unique
-   `claude/issue-N-run-R-A` branch and a **draft PR into `ai/development`**, then comments with source/test evidence on the issue.
+5. The trusted publisher rechecks issue authorization, its snapshot, the control revision and the pinned baseline. It creates
+   only a unique `claude/issue-N-run-R-A` branch and a **draft PR into the pinned development branch**
+   (`baseline.json` → `pr_base`), then comments with source/test evidence on the issue.
    A moved base, changed task, removed approval label, failed validation, no changes, protected paths or excessive changes stops it.
    Reruns get unique branches; they never overwrite another branch or local work.
 6. Review code, run the applicable existing checks and hardware/visual gates. Only a human merges/promotes development changes
-   toward main. Never enable automatic merge/release. Reconcile `ai/development` with reviewed main before the next task; the
-   minimal bridge intentionally processes one independently reviewed batch at a time, with no automatic rebasing or promotion.
+   toward main. Never enable automatic merge/release. After a candidate is merged into the development branch (or closed),
+   review the new head and update `application_sha` in `baseline.json` by a PR to `main`; the bridge processes one
+   independently reviewed batch at a time, with no automatic rebasing or promotion.
 
 The connected GitHub integration can read/update Issues, add labels/comments, inspect PRs/diffs and read workflow jobs/results using the existing connector.
 It can prepare branches and draft PRs when requested. It cannot forward arbitrary chat attachments automatically, authorize
@@ -34,13 +60,14 @@ Read the issue/PR results through the connected integration for the next refinem
 
 ## One-time owner setup (do this after reviewing and merging the setup PR)
 
-1. GitHub Settings → Rules / Branches: protect `main` and `ai/development`. Require PRs, at least one human approval,
+1. GitHub Settings → Rules / Branches: protect `main` and `claude/qa-0672-repair`. Require PRs into main, at least one human approval,
    dismiss stale approvals, resolved conversations and appropriate required checks; block force pushes/deletion and apply rules
    to administrators where possible. Do not grant the AI a bypass. Keep production environment/signing secrets inaccessible.
    On 13 Nov 2026 GitHub listed all existing branches as unprotected and rulesets as empty; detailed protection reads returned
    403 through the connector. Existing branch/release policies were not changed. Verify settings as the owner.
-2. Create `ai/development` from the reviewed current `main` commit using GitHub's branch selector. The two heads must match
-   when beginning a task. Do not reset an existing branch with pending work to make this check pass.
+2. Review `tools/ai/baseline.json` (branch `claude/qa-0672-repair`, pinned commit, `writer: desktop`). Protect that branch
+   too (no force pushes / deletion). Keep `writer: desktop` until the desktop session hands over; then change it to `cloud`
+   in a reviewed PR to `main` (single writer). Do not reset an existing branch with pending work to make a check pass.
 3. Create the label `ai:approved`. Restrict who has repository write/triage access; the final trigger is owner-only regardless.
 4. Settings → Environments: create **voltcap-ai** and **voltcap-ai-publish**, both with required human reviewers and deployment
    branches restricted to `main` (issue-comment workflows run from main). Reviewers must inspect the issue scope; the publication
