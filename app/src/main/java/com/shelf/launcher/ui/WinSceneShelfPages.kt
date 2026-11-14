@@ -216,8 +216,8 @@ internal fun pageBarRows(need: List<Int>, width: Int, gap: Int): List<List<Int>>
 
 /**
  * 529o (owner #15 6866376184: "a deliberate usable content area plus clear scrolling affordances"): a page's list scrolls as
- * before; on a native page (a layout's own Details / Achievements / Options card) its edge fades where rows run on and a small
- * chevron in the card's ink says there is more below (or above). Elsewhere it is the plain verticalScroll it replaces.
+ * before; on a native page (a layout's own Details / Achievements / Options card) its edge fades where rows run on and a slim
+ * bar along its right edge shows how much more there is and where the view is. Elsewhere it is the plain verticalScroll.
  */
 @Composable
 internal fun Modifier.pageScroll(): Modifier {
@@ -226,25 +226,26 @@ internal fun Modifier.pageScroll(): Modifier {
     return this.pageScrollCue(state, if (host.dark) Color.White else Color(0xFF2E3640)).verticalScroll(state)
 }
 
-/** 529o: [pageScroll]'s cue - drawn over the faded edge, never faded itself; it reads the scroll while drawing. */
+/**
+ * 529o / 529r: [pageScroll]'s cue - a slim scroll bar along the list's right edge (where the rows have their margin), its
+ * length the share of the list in view, its place where the view is; drawn over the faded edge, never faded itself; it reads
+ * the scroll while drawing. (529r, KONKR ×1.3 sp529s13: the round chevron at the bottom centre lay over the last whole row's
+ * description - Console stack - so it is a bar at the edge now, never over a word.)
+ */
 internal fun Modifier.pageScrollCue(state: androidx.compose.foundation.ScrollState, ink: Color): Modifier =
     this.drawWithContent {
         drawContent()
-        val r = 9.dp.toPx(); val arm = 4.dp.toPx(); val sw = 1.8.dp.toPx()
-        fun cue(down: Boolean) {
-            val cx = size.width / 2f
-            val cy = if (down) size.height - r - 2.dp.toPx() else r + 2.dp.toPx()
-            drawCircle(Color.Black.copy(alpha = 0.55f), r, androidx.compose.ui.geometry.Offset(cx, cy))
-            drawCircle(ink.copy(alpha = 0.35f), r, androidx.compose.ui.geometry.Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(1.dp.toPx()))
-            val d = if (down) 1f else -1f
-            val p = androidx.compose.ui.graphics.Path().apply {
-                moveTo(cx - arm, cy - d * arm / 2f); lineTo(cx, cy + d * arm / 2f); lineTo(cx + arm, cy - d * arm / 2f)
-            }
-            drawPath(p, Color.White.copy(alpha = 0.9f), style = androidx.compose.ui.graphics.drawscope.Stroke(sw, cap = androidx.compose.ui.graphics.StrokeCap.Round,
-                join = androidx.compose.ui.graphics.StrokeJoin.Round))
-        }
-        if (state.canScrollForward) cue(down = true)
-        if (state.canScrollBackward) cue(down = false)
+        val max = state.maxValue
+        if (max <= 0 || max == Int.MAX_VALUE) return@drawWithContent
+        val vh = size.height
+        val w = 3.dp.toPx(); val inset = 1.dp.toPx()
+        val thumb = (vh * vh / (vh + max)).coerceAtLeast(18.dp.toPx()).coerceAtMost(vh)
+        val y = (vh - thumb) * (state.value.toFloat() / max)
+        val x = size.width - w - inset
+        drawRoundRect(ink.copy(alpha = 0.16f), androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Size(w, vh),
+            androidx.compose.ui.geometry.CornerRadius(w / 2f))
+        drawRoundRect(ink.copy(alpha = 0.7f), androidx.compose.ui.geometry.Offset(x, y), androidx.compose.ui.geometry.Size(w, thumb),
+            androidx.compose.ui.geometry.CornerRadius(w / 2f))
     }.sceneFadeEdges(state, 22.dp)
 
 /** 529o: the widths of one row of bars - each its word's width plus an equal part of the room left, the row exactly [width]. */

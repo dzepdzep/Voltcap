@@ -935,6 +935,17 @@
    "apk_sha256": "22f0c95845f00c59116a321010303c458a4f57746dae08b14a10c7eabbe9f617",
    "base_commit": "9311e4da",
    "note": "529r: owner P0 - first achievement whole at x1.3 on every layout (AchFirstRowRoboTest): achievement texts' own line heights, order control on the count's line on short pages, page Back is the hint on native-page layouts (hint goes back a page), Coverflow panel 60 % at large text, case 52 % / card full height on Shelf / Stacks, one-line page heading at large text (shelf cards, Tiles), Tiles / Storage native page host and taller sheets, Storage keys on the name line when the name keeps two lines, no save line on Storage sheets. assembleQa 14 Nov 14:24 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 1450b569 + 529s working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529s",
+   "apk_sha256": "8745509f8703d56eed3887868b91369e3eca07e17059e98230edf26f3399c46c",
+   "base_commit": "1450b569",
+   "note": "529s: native pages' scroll cue is a slim bar on the list's right edge (the bottom chevron lay over the last whole row's text, Console stack x1.3). assembleQa 14 Nov 14:37 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }

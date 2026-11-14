@@ -18,3 +18,9 @@ OEM behaviour, physical controls, two-screen devices).
   reopen), then the ×1.3 page walk (Details / Achievements / Options, recordings, Motion Off, touch then controller).
 - Artifact: `summary.md`, `profile.txt`, launch screenshot and logs, popup-gate reports, contact sheets, timestamped frame
   strips, raw screenshots and layout dumps. A step that did not finish or a missing capture is NOT TESTED.
+- 529p / 529r preconditions (#16 6868819840): a fresh install's first-start setup is answered once with the QA-only hook
+  `voltcap_test_firstrun_done` and the app restarted; before each sequence `precheck` wants the emulator online, the QA app
+  focused, its screen mark HOME (the profile picker closed with B) and exactly one visible QA window (an in-app dialog is a
+  second window). A failed precondition stops the run there - that sequence and the later ones are NOT TESTED, with a
+  `precondition_<seq>.png` of what was in front. `shelfpages529.sh` also wants one QA window on the home and two once A opened
+  the game window before it labels a layout's captures.
