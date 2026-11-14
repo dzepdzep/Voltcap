@@ -538,6 +538,17 @@ internal object TestHooks {
             if (pv) it.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             else it.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
+        // 529p (emulator harness, deterministic first run): `--ez voltcap_test_firstrun_done true` — a fresh QA install's
+        // first-start questions answered as "done / no extra art / battery note seen", so a throwaway emulator starts on the bare
+        // home screen like the handhelds' QA app. QA app / hooks only; the harness restarts the app after it (the first-start
+        // flags are read at start). Never sent to a handheld's QA app, whose own answers stay as they are.
+        if (intent?.getBooleanExtra("voltcap_test_firstrun_done", false) == true && enabled(context)) {
+            val app = context.applicationContext
+            com.shelf.launcher.data.FirstRun.markDone(app)
+            com.shelf.launcher.data.BatterySaver.introSeen(app)
+            if (com.shelf.launcher.data.Packs.choice(app) == null) com.shelf.launcher.data.Packs.setChoice(app, com.shelf.launcher.data.Packs.Choice.NONE)
+            android.util.Log.e("VoltcapQA", "firstrun done (QA hook)")
+        }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1
         if (su >= 0 && enabled(context)) {

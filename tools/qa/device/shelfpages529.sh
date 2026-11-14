@@ -17,6 +17,7 @@ gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
 k() { gate; input keyevent KEYCODE_$1; sleep ${2:-0.8}; }
 shot() { screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
+qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Window #.*$P" | grep -c "isVisible=true"; }
 . /data/local/tmp/rec.sh 2>/dev/null
 walk() { # name: R1 x3 recorded with a shot per page, then L1 x3
   REC_SEG=9 rec_start $O/$1_r1 9; sleep 0.6
@@ -56,7 +57,11 @@ run)
   for lay in $LAYS; do
     A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout $lay; sleep 3.5; gate
     n=${lay}; logcat -c
-    shot ${n}_home; k BUTTON_A 1.9; shot ${n}_main
+    # (529p: a capture is labelled only when its state is there - one QA window on the home, two once the game window is open.)
+    [ "$(qawins)" = 1 ] || { log "$lay: PRECONDITION FAILED - $(qawins) QA windows on the home (a dialog over it?) - layout NOT TESTED"; screencap -p $O/${n}_precondition.png; continue; }
+    shot ${n}_home; k BUTTON_A 1.9
+    [ "$(qawins)" = 2 ] || { log "$lay: the game window did not open ($(qawins) QA windows) - layout NOT TESTED"; screencap -p $O/${n}_precondition.png; k BUTTON_B 1.2; continue; }
+    shot ${n}_main
     walk ${n}
     [ "$TOUCH" = 1 ] && touchp ${n}
     k BUTTON_B 1.4; shot ${n}_closed
