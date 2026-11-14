@@ -86,4 +86,10 @@ class StorageFlight529Test {
             assertTrue(kotlin.math.abs(flipTurn(a) - flipTurn(b)) < 0.06f && kotlin.math.abs(flipBackTurn(a) - flipBackTurn(b)) < 0.08f)
         }
     }
+
+    @Test fun anUprightCardArrivesAsItselfCentredOnAWidePlace() {
+        val r = fitShape(Rect(100f, 50f, 700f, 450f), Rect(0f, 0f, 70f, 100f))
+        assertEquals(400f, r.height, 0.01f); assertEquals(280f, r.width, 0.01f); assertEquals(400f, r.center.x, 0.01f); assertEquals(250f, r.center.y, 0.01f)
+        val sq = fitShape(Rect(0f, 0f, 300f, 300f), Rect(0f, 0f, 50f, 50f)); assertEquals(300f, sq.width, 0.01f)
+    }
 }

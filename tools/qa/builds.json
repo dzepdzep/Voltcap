@@ -968,6 +968,17 @@
    "apk_sha256": "3c63faf4fd069627bdc307cefa341d8f7a002e0ba0c10b5ddcd0710652d622e1",
    "base_commit": "f91cdaa7",
    "note": "529t: Record crate's sleeve comes out of the crate and turns over into the window (sleeveFlip). assembleQa 14 Nov 16:52; testDebugUnitTest BUILD SUCCESSFUL. Flip 2 runs pkf529v."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9d6287f8 + 529t card binder working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-cards",
+   "apk_sha256": "7a2963a6e0971010359d0208acfb57b952127a6906d9560e9659c78c0fed9c8a",
+   "base_commit": "9d6287f8",
+   "note": "529t: Card binder's whole card comes out of its pocket and turns over (sleeveFlip incl. CARD_BACK). assembleQa 14 Nov 17:06; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t1 (CARDS, CRATE x1.0 / x1.3)."
   }
  ]
 }

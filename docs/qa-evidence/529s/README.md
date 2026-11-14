@@ -49,3 +49,10 @@ at its place in the window and its back (the window) turns in; B runs it back an
 the frames examined, ×1.0 and ×1.3. A first after-build (pkf529u) put the trip and the turn in the first ~130 ms
 (LinearOutSlowIn) and stalled ~90 ms at the turn (the back's first drawing) — now an even 720 / 560 ms curve, the back is
 drawn edge-on from the start. Owner visual: not yet. KONKR: NOT TESTED (cooldown).
+
+## Card binder (529t) — KONKR pk529t1 (x1.0, x1.3); Flip 2 pkf529w (first build)
+
+`cards_konkr_*`: the whole card lifts out of its pocket, is edge-on at its place (one frame shows only its edge - a card seen
+edge-on), and its stats side (the window) turns in; B reverses it into the pocket. `cards_flip2_x10_firstbuild_picture_only_*`:
+the first build took only the picture out of the card and left the card's frame in the binder - the home marked the
+picture as the game's place; it now marks the whole card. Owner visual: not yet.

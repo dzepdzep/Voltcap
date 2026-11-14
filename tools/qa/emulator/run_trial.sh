@@ -6,10 +6,17 @@ set -u
 OUT=${1:-qa-emulator-out}; mkdir -p "$OUT/raw"
 S="$OUT/summary.md"; P=com.shelf.launcher.qa
 note() { echo "$*" | tee -a "$S"; }
+# (529t: run f91cdaa7 went offline right after e529a for the second time, with gfxstream "Failed to find ColorBuffer" errors
+# just before. When the emulator is gone, say whether its process is still there and what crash data it left, so the next
+# trial can tell an emulator crash from adb losing it.)
+offline_why() {
+  if pgrep -f qemu-system > /dev/null 2>&1; then note "  emulator process: still running (adb lost it)"; else note "  emulator process: GONE (emulator exited/crashed)"; fi
+  ls -la /tmp/android-runner/ 2>/dev/null | grep -i crash | head -5 | sed 's/^/  crash data: /' | tee -a "$S" > /dev/null
+  timeout 5 adb devices 2>/dev/null | sed 's/^/  adb devices: /' | tee -a "$S" > /dev/null; }
 A() { adb shell am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 waitdone() { # dir tag seconds - stops at once when the emulator is gone (run 43520733405 waited out the job timeout)
   for _ in $(seq 1 $(( $3 / 5 ))); do
-    [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE while waiting for $2 - remaining checks NOT TESTED"; return 2; }
+    [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE while waiting for $2 - remaining checks NOT TESTED"; offline_why; return 2; }
     timeout 15 adb shell "grep -q DONE $1/log.txt 2>/dev/null" && return 0
     # (529t: a copy of the crash buffer every ~30 s, so an emulator that drops off still leaves its last crashes behind)
     [ $(( $(date +%s) % 30 )) -lt 5 ] && timeout 15 adb logcat -d -b crash > "$OUT/crash_log_live.txt" 2>/dev/null

@@ -1157,7 +1157,8 @@ internal fun GameWindow(
     var shrinking by remember { mutableStateOf(false) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
     // (529t: Record crate's sleeve itself comes out and turns over - sleeveFlip, a spriteFlight - instead of a window grown out of it.)
-    val sleeveFlip = scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    // (529t: Card binder's card the same way - out of its pocket, over to its stats side.)
+    val sleeveFlip = ((scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE) || (scene == WinScene.CARD_BACK && layout == HomeLayout.CARDS)) && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
     val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup() && !sleeveFlip
     // Update 507 (owner, P1: "the selected physical case should naturally come forward and return to its original position"):
     // Game shelf and Case stacks fly the case itself out of the home into the window's room and back (SceneFlyingCase); the

@@ -489,9 +489,12 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
     val pal = rememberCardPalette(ctx.cover, if (ctx.total > 0) ctx.earned to ctx.total else null, ctx.g)
     val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
     val cardShape = RoundedCornerShape(14.dp)
-    Box(Modifier.width(w).heightIn(max = h), contentAlignment = Alignment.Center) {
+    // (529t, owner P3: with a pickup the binder's own card comes out of its pocket and turns (PickupOverlay); this front isn't
+    // drawn then, and the back turns in from edge-on once the card is here - flipBackTurn.)
+    val pickedUp = LocalSceneOrigin.current != null
+    Box(Modifier.width(w).heightIn(max = h).pickupFlipTarget(pickedUp), contentAlignment = Alignment.Center) {
         // The front, as it sits in the binder, turning away (first half of the turn)…
-        Box(Modifier.matchParentSize().graphicsLayer {
+        if (!pickedUp) Box(Modifier.matchParentSize().graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.5f)
             rotationY = k * 90f
             cameraDistance = 14f * density
@@ -518,10 +521,10 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
         }
         // …and its back, turning in (second half): the stats side of the card.
         Column(Modifier.fillMaxWidth().heightIn(max = h).graphicsLayer {
-            val k = sceneStage(ctx.reveal(), 0.5f, 1f)
-            rotationY = (1f - sceneEase(k)) * -90f
+            val k = if (pickedUp) 1f - flipBackTurn(ctx.reveal()) else sceneStage(ctx.reveal(), 0.5f, 1f)
+            rotationY = if (pickedUp) -90f * flipBackTurn(ctx.reveal()) else (1f - sceneEase(k)) * -90f
             cameraDistance = 14f * density
-            alpha = if (k <= 0.001f) 0f else 1f
+            alpha = if (pickedUp) 1f else if (k <= 0.001f) 0f else 1f
             shape = cardShape; clip = true
             shadowElevation = 16.dp.toPx() * k
             flatTextFor3d()

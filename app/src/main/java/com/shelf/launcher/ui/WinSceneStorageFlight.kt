@@ -121,7 +121,9 @@ internal fun PickupTarget(holder: StorageFlightSlot, rootInWindow: Offset?, unif
 @Composable
 internal fun PickupOverlay(origin: Rect, snap: androidx.compose.ui.graphics.layer.GraphicsLayer?, rootInWindow: () -> Offset, reveal: () -> Float) {
     val dens = LocalDensity.current
-    val to = PickupStage.target
+    // (529t: an object that turns over keeps its own shape on the way - a binder card is upright, the window it turns into
+    // is wide: it arrives as itself, centred on that place, and the window's side turns in from edge-on.)
+    val to = PickupStage.target?.let { if (PickupStage.flip) fitShape(it, origin) else it }
     val box = to ?: origin
     val content = PickupStage.content
     Box(
@@ -206,4 +208,12 @@ internal fun Modifier.pickupFlipTarget(on: Boolean): Modifier = if (!on) this el
     val r = c.boundsInWindow()
     PickupStage.flip = true
     if (PickupStage.target != r) PickupStage.target = r
+}
+
+/** 529t: the largest rect of [shape]'s proportions centred in [place]. Pure. */
+internal fun fitShape(place: Rect, shape: Rect): Rect {
+    if (shape.width <= 0f || shape.height <= 0f || place.width <= 0f || place.height <= 0f) return place
+    val a = shape.width / shape.height
+    val w = minOf(place.width, place.height * a); val h = w / a
+    return Rect(place.center.x - w / 2f, place.center.y - h / 2f, place.center.x + w / 2f, place.center.y + h / 2f)
 }

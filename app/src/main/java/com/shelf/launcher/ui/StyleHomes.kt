@@ -1376,7 +1376,7 @@ internal fun StyleHome(
         // Update 158: Record crate (StyleRecordCrate.kt).
         HomeLayout.CRATE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleRecordCrate(c, modifier) }
         // Update 158: Card binder (StyleCardBinder.kt).
-        HomeLayout.CARDS -> StyleCardBinder(c, modifier)
+        HomeLayout.CARDS -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCardBinder(c, modifier) }
         // Update 176: a layout made by anyone (StyleCustom.kt).
         HomeLayout.CUSTOM -> StyleCustom(c, modifier)
         // Update 181: the Pocket layouts (PocketClassic.kt, PocketRibbon.kt).
