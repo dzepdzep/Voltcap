@@ -20,6 +20,7 @@ tapj() { r=$(ctl "$1" $F/qa_clip/${TAG}_$2.json | grep -vE '"shown":\[[0-9-]*,[0
   [ -n "$r" ] || { log "tap: no shown control '$1' in $2"; return 1; }
   gate; set -- $(echo $r | tr ',' ' '); x=$(( $1 + $3 / 2 )); y=$(( $2 + $4 / 2 )); input tap $x $y; log "tap at $x,$y"; }
 winkeys() { logcat -d -s VoltcapQA | grep -c "winkey"; }
+launches() { logcat -d -s VoltcapQA | grep -c "LAUNCH blocked"; }
 case $MODE in
 run)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep"
@@ -38,6 +39,12 @@ run)
   logcat -c; k BUTTON_R1 1.2; k BUTTON_L1 1.2; log "control keys before the tap reached the window: $(winkeys) (want 4: R1, L1 down/up)"; shot before_tap
   tapj "[^\"]*achievement 1[^\"]*" before_tap && { sleep 1.3; shot after_tap; focus "after tap"; }
   logcat -c; k BUTTON_R1 1.2; log "R1 after the tap reached the window: $(winkeys) key event(s)"; shot after_r1; focus "after R1"
+  # 529p: A / Start after a tap only light a control - never a launch (qa_nolaunch logs a blocked launch).
+  k BUTTON_L1 1.2; shot back_trophies; tapj "[^\"]*achievement 1[^\"]*" back_trophies && sleep 1.3
+  logcat -c; k BUTTON_A 1.2; log "A after a tap: launches=$(launches) winkeys=$(winkeys)"; shot after_tap_a
+  tapj "[^\"]*achievement 1[^\"]*" after_tap_a && sleep 1.3
+  logcat -c; k BUTTON_START 1.2; log "Start after a tap: launches=$(launches) winkeys=$(winkeys)"; shot after_tap_start
+  k BUTTON_R1 1.2
   logcat -c; k DPAD_DOWN 1.0; log "D-pad after the tap reached the window: $(winkeys)"; focus "after D-pad"
   logcat -c; k BUTTON_R1 1.2; log "R1 after the D-pad reached the window: $(winkeys)"; shot after_r1_2
   # 529o single B (#15 queue 2): Options page -> "Game settings" with A -> one B. The window must still be there: the next R1
@@ -48,7 +55,11 @@ run)
   k BUTTON_B 1.6; shot after_b; focus "after one B"
   logcat -c; k BUTTON_L1 1.3; log "L1 after the sheet's B reached the window: $(winkeys) (0 = the window was gone)"; shot after_b_l1
   log "screen mark: $(cut -c1-40 $F/voltcap_qa_screen 2>/dev/null)"
-  k BUTTON_B 1.2; k BUTTON_B 1.4; shot closed
+  # 529p: Game settings' Artwork button (a full screen) still closes the window under the sheet and opens the artwork screen.
+  k BUTTON_R1 1.2; shot options2; k DPAD_DOWN 0.8; k BUTTON_A 1.8; shot sheet2
+  tapj "Artwork[^\"]*" sheet2 && { sleep 2.2; shot artwork; focus "artwork screen"; log "screen mark after Artwork: $(cut -c1-40 $F/voltcap_qa_screen 2>/dev/null)"; }
+  k BUTTON_B 1.6; shot after_artwork_b
+  shot closed
   log "run done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"; echo DONE >> $L ;;
 restore)
   A --es voltcap_test_pref "motion_level=NORMAL" --es voltcap_test_scale off --es voltcap_test_fixture off; sleep 1.5

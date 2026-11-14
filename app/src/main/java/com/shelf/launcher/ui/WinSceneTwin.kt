@@ -164,15 +164,17 @@ internal fun TwinHinge(ctx: WinSceneCtx) {
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             val twinKey: @Composable (WinAction) -> Unit = { k ->
-                if (desk) SceneKey(k, Color.White, a.copy(alpha = 0.18f), DeskInk, DeskInk, DeskEdge, a, RoundedCornerShape(50), height = 30.dp)
+                // (529p, owner #15 pattern: the keys are bars that span the touch screen in whole-word rows - PageBars - in Twin's own
+                // pill (desk) / rounded (icons, showcase) make.)
+                if (desk) SceneKey(k, Color.White, a.copy(alpha = 0.18f), DeskInk, DeskInk, DeskEdge, a, RoundedCornerShape(50), height = 30.dp, lineHeight = 15.sp, wide = true)
                 else SceneKey(k, Color.White.copy(alpha = 0.08f), a, Color.White, if (a.red + a.green + a.blue > 1.8f) Color.Black else Color.White,
-                    Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp)
+                    Color.White.copy(alpha = 0.18f), Color.White, RoundedCornerShape(12.dp), height = 30.dp, lineHeight = 15.sp, wide = true)
             }
             TwinTouchPages(ctx, desk, Modifier.weight(1f, fill = false), twinKey) { live, keys ->
                 // (The keys are measured first — not weighted — so their wrapped lines are always whole; the facts get the rest.)
                 Column(Modifier.heightIn(min = 130.dp), verticalArrangement = Arrangement.SpaceBetween) {
                     Box(Modifier.weight(1f, fill = false).fillMaxWidth().padding(bottom = 8.dp)) { HingeFacts(ctx, muted, ink) }
-                    KeyRow(keys) { k -> twinKey(k) }
+                    PageBars(keys, 6.dp) { k -> twinKey(k) }
                 }
             }
         }
@@ -228,7 +230,7 @@ internal fun TwinTouchPages(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            KeyRow(keysOf(p, live)) { k -> key(k) }
+            PageBars(keysOf(p, live), 6.dp) { k -> key(k) }
         }
         }
     }

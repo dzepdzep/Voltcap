@@ -253,7 +253,9 @@ private fun ConsoleModule(ctx: WinSceneCtx) {
             val moduleKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp)
             }
-            ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), moduleKey) { live, keys ->
+            ShelfFamilyPages(ctx, Modifier.weight(1f), a, ink, Color(0xFF121317), { k ->
+                SceneKey(k, Color(0xFF2E3137), a, ink, onColour(a), Color.Black.copy(alpha = 0.5f), a, RoundedCornerShape(6.dp), size = 12.sp, lineHeight = 15.sp, wide = true)
+            }) { live, keys ->
                 // (529k, KONKR x1.3 k529k2: the name kept room for three lines and the facts took their full height - with More open
                 // the keys ran out of the module and the Saves line and ••• got no room. The name keeps only what it needs; the facts
                 // give way to the keys, as in the other shelf-family cards.)
@@ -290,10 +292,13 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             // (The pages' own keys - Play, Full list, Back - stay a row under the page.)
             val pageKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
-                    size = 12.sp, pad = 10.dp, height = 30.dp, lineHeight = 15.sp)
+                    size = 12.sp, pad = 10.dp, height = 30.dp, lineHeight = 15.sp, wide = true)
             }
             // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
-            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), pageKey) { _, keys ->
+            // (529o: the pages' card shows no second name - the home's big title beside the case already shows it in full.)
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), pageKey, nameOnCard = false,
+                // (529o: the pages take the panel's whole height - it was 86 % of it, the rest unused under the panel.)
+                pageHeight = (ctx.maxH - 32.dp).coerceAtLeast(200.dp)) { _, keys ->
                 CoverMainBody(ctx, keys, a, ink, muted, shortPanel, moreOpen)
             }
         }

@@ -247,7 +247,10 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
                 SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
             }
             ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp), Color(0xFFE6C891), cream,
-                Color.Black.copy(alpha = 0.22f), shelfKey) { live, keys ->
+                Color.Black.copy(alpha = 0.22f), { k ->
+                    // (529o: the pages' keys as full-width bars of the shelf's own wood - PageBars.)
+                    SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp, lineHeight = 15.sp, wide = true)
+                }) { live, keys ->
                 // The console on the shelf's brass label holder.
                 Text(ctx.console.uppercase(), color = Color(0xFF2A1E12), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.clip(RoundedCornerShape(2.dp)).background(Brush.verticalGradient(listOf(Color(0xFFE6C891), Color(0xFFB08A50))))
@@ -292,7 +295,9 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
             val stackKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
             }
-            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), stackKey) { live, keys ->
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), { k ->
+                SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp, lineHeight = 15.sp, wide = true)
+            }) { live, keys ->
                 Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(2.dp))
                 StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)

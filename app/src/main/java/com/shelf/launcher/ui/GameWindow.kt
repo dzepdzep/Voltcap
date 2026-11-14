@@ -2606,7 +2606,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
     val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     Column(
-        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        modifier.background(paper).pageScroll().padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // (If / else, never an early return out of the Column — see update 144.)
@@ -2669,7 +2669,7 @@ private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> 
 private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: FocusRequester, modifier: Modifier) {
     val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
     Column(
-        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        modifier.background(paper).pageScroll().padding(if (LocalNativePageHost.current != null) 4.dp else 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         options.forEachIndexed { i, opt ->
@@ -2716,13 +2716,16 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
     val list = remember(details, order) { trophyOrder(details.orEmpty(), order) }
     val earned = list.count { it.isUnlocked }
     var openId by remember(g.stableKey) { mutableStateOf<Int?>(null) }
-    Column(modifier.background(paper).padding(10.dp)) {
+    // (529o, ×1.3 KONKR: on a native page the card's label already says Achievements - the counter is the count alone, one
+    // line, and the card's well is the margin; "Achievements / 8 / 10" took two lines and no achievement row was left in view.)
+    val native = LocalNativePageHost.current != null
+    Column(modifier.background(paper).padding(if (native) 4.dp else 10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             androidx.compose.material3.Text(
-                (if (look.caps) "ACHIEVEMENTS" else "Achievements") + "  $earned / ${list.size}", color = ink, fontSize = 15.sp,
-                fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null
+                (if (native) "" else if (look.caps) "ACHIEVEMENTS  " else "Achievements  ") + "$earned / ${list.size}", color = ink, fontSize = 15.sp,
+                fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null, maxLines = 1, lineHeight = 19.sp
             )
             Spacer(Modifier.width(10.dp))
             Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
@@ -2730,7 +2733,7 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
             }
         }
         Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Column(Modifier.fillMaxWidth().weight(1f).pageScroll(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             // The order: A steps to the next one.
             WinRow(look, Modifier.focusRequester(listFocus), onClick = {
                 val all = Features.TrophyOrder.values()
@@ -2740,8 +2743,9 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                 androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(10.dp))
                 androidx.compose.material3.Text(
+                    // (529p, ×1.3 KONKR Coverflow details: one line cut it to "Order: Set" beside the hint - it wraps whole now.)
                     (if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label), color = rowInk, fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+                    fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 16.sp, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
                 )
                 androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
             }
@@ -2967,7 +2971,8 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     // the full-height cover took all but 61 dp and the text broke mid-word over 114 lines. The text keeps at least
     // DETAILS_MIN_TEXT; the cover shrinks first (top-aligned, its shape kept), and when even a small cover doesn't fit beside
     // the text it goes above it. Nothing is hidden: every fact and the whole story stay on the page.)
-    BoxWithConstraints(modifier.background(paper).padding(16.dp)) {
+    // (529o, ×1.3 KONKR: on a native page the card's well already has its margin - 16 dp more left three lines of text.)
+    BoxWithConstraints(modifier.background(paper).padding(if (LocalNativePageHost.current != null) 6.dp else 16.dp)) {
     val host = LocalNativePageHost.current
     // (529k: on a native page the card shows the case beside it already - no second cover.)
     val fit = if (host?.showsCover == true) null else detailsCoverFit(maxWidth.value, maxHeight.value)
@@ -2984,7 +2989,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
             Spacer(Modifier.width(DETAILS_GAP.dp))
         }
-        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxHeight().pageScroll()) {
             if (stacked) {
                 coverBox(Modifier.height(stackedCoverH).aspectRatio(0.72f))
                 Spacer(Modifier.height(10.dp))
@@ -2998,7 +3003,8 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                 meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
             ).joinToString("  ·  ")
-            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp)
+            // (529o: the theme's 24 sp line made each wrapped fact line twice as tall as its words at ×1.3.)
+            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp, lineHeight = 16.sp)
             Spacer(Modifier.height(8.dp))
             val list = state.raAchievementDetails[g.stableKey].orEmpty()
             val p = state.raProgress[g.stableKey]
@@ -3010,7 +3016,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
                 if (total > 0) "Achievements $earned / $total" else null
             )
             if (played.isNotEmpty()) {
-                androidx.compose.material3.Text(played.joinToString("  ·  "), color = if (light) ShelfTheme.accent else look.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.Text(played.joinToString("  ·  "), color = if (light) ShelfTheme.accent else look.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp)
                 Spacer(Modifier.height(8.dp))
             }
             androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
