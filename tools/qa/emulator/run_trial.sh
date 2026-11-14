@@ -51,12 +51,21 @@ adb shell appops set $P MANAGE_EXTERNAL_STORAGE allow > /dev/null 2>&1
 # (Run 43520733405: "no game matches 'Shadow of the Colossus'" - the handhelds' QA library holds empty stand-in ROM files
 # a QA script put there; a fresh emulator has none. The same synthetic stand-ins: empty files with game-like names.)
 QF=/sdcard/Android/data/$P/files/roms
-adb shell "mkdir -p $QF/ps2 $QF/snes $QF/gba $QF/n64 $QF/psx" > /dev/null 2>&1
-for f in "ps2/Shadow of the Colossus (USA).iso" "ps2/Okami (USA).iso" "snes/Super Metroid (USA).sfc" "snes/Chrono Trigger (USA).sfc" \
-         "gba/Golden Sun (USA).gba" "n64/Mario Kart 64 (USA).z64" "psx/Vagrant Story (USA).bin" "snes/EarthBound (USA).sfc"; do
-  adb shell "touch '$QF/$f'" > /dev/null 2>&1
-done
-note "synthetic library: $(adb shell "ls -R $QF | grep -c '\\.'" | tr -d '\r') empty stand-in files"
+# (529t, run d6991514: "ls .../files/roms: Permission denied", 0 stand-ins - and 14 in other runs. The shell may not make the
+# app's own Android/data folder before the app has made it (Android 11+); which came first was a race. The app is started
+# once first (it makes its files folder), and the stand-ins are made as the app itself (run-as: a debuggable QA build) when
+# the shell is refused.)
+A; sleep 6
+stand_ins() { # $1: "" or "run-as $P"
+  adb shell "$1 mkdir -p $QF/ps2 $QF/snes $QF/gba $QF/n64 $QF/psx" > /dev/null 2>&1
+  for f in "ps2/Shadow of the Colossus (USA).iso" "ps2/Okami (USA).iso" "snes/Super Metroid (USA).sfc" "snes/Chrono Trigger (USA).sfc" \
+           "gba/Golden Sun (USA).gba" "n64/Mario Kart 64 (USA).z64" "psx/Vagrant Story (USA).bin" "snes/EarthBound (USA).sfc"; do
+    adb shell "$1 touch '$QF/$f'" > /dev/null 2>&1
+  done; }
+count_ins() { adb shell "$1 ls -R $QF 2>/dev/null | grep -c '\\.'" | tr -d '\r'; }
+stand_ins ""; n=$(count_ins "")
+if [ "${n:-0}" = 0 ]; then stand_ins "run-as $P"; n=$(count_ins "run-as $P"); note "stand-ins made as the app (shell refused)"; fi
+note "synthetic library: ${n:-0} empty stand-in files"
 adb logcat -c
 # 529p (#16 6868819840, deterministic first-run state): a fresh install opens on the first-start setup and its questions -
 # answered once with the QA hook (done / no extra art / battery note seen), then the app is started again so it reads them.
