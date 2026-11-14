@@ -6678,6 +6678,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     if (event.type == KeyEventType.KeyDown) GamePopup.reopenGame = null
                     return@onKeyEvent true
                 }
+                // (v0.6.72 RC gate k672c, KONKR Box, A B A B at 250 ms: the A while the window flew back reopened it the box's
+                // way - the case is pulled again (BoxNav.pull) and the window opens a frame or more later. A B in that gap had
+                // neither window nor pending reopen to take it: the box went back to its console list and the window opened
+                // over it and stayed. A B now takes the pull on its way back, as it takes a pending reopen above.)
+                if (homeBTakesBoxPull(GamePopup.game != null, BoxNav.pull) && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} cancels box pull")
+                    if (event.type == KeyEventType.KeyDown) BoxNav.pull = null
+                    return@onKeyEvent true
+                }
                 if (event.key == Key.ButtonB || event.key == Key.Back) {
                     if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                     else if (event.type == KeyEventType.KeyUp) {
@@ -7689,6 +7698,9 @@ private fun ProvideNameColors(cat: com.shelf.launcher.ui.theme.ShelfColors?, con
 internal object TileRowSpan { @JvmStatic var top = 0f; @JvmStatic var bottom = 0f }
 
 /** v0.6.66 popup audit: whether the home screen saw the press of the B whose release it gets (an orphan release is ignored). */
+/** v0.6.72: a B on the home screen while the Cardboard box pulls a case out for a window that isn't up yet takes the pull back. */
+internal fun homeBTakesBoxPull(windowUp: Boolean, pull: String?): Boolean = !windowUp && pull != null
+
 internal object HomeKeyGuard {
     @Volatile var bDown = false
     /**
