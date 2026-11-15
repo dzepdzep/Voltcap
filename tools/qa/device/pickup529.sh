@@ -3,6 +3,8 @@
 # (back into the same place). Isolated QA app ONLY (com.shelf.launcher.qa), fixture library, launches blocked, preview on,
 # owner snapshot saved / restored. Never wakes the device (an asleep display stops the run), keys only while the QA app has
 # the focus.   sh pickup529.sh run TAG SCALE "LAYOUTS" [GAME]  |  sh pickup529.sh restore TAG
+# (673b: THEN="inspect" - after the window has opened, its Inspect is pressed (voltcap_test_wininspect, as its key does) and the
+# piece's trip out and back is recorded too; THEN may also list key codes, pressed in turn.)
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; L=$O/log.txt
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 log() { echo "$(date +%T) $*" >> $L; }
@@ -33,8 +35,15 @@ run)
     if [ $LY = CUBE ]; then logcat -c; k KEYCODE_BUTTON_A; sleep 1.8
       if logcat -d -s VoltcapQA | grep -q 'pickup layout'; then k KEYCODE_BUTTON_B; sleep 1.8; log "CUBE pre-A opened a window (closed with B)"; else log "CUBE pre-A entered the games"; fi; fi
     screencap -p $O/${LY}_home.png; logcat -c
-    screenrecord --bit-rate 12000000 --time-limit 7 $O/${LY}.mp4 & R=$!
+    TL=7; [ -n "$THEN" ] && TL=13
+    screenrecord --bit-rate 12000000 --time-limit $TL $O/${LY}.mp4 & R=$!
     sleep 0.9; echo "$(date +%s.%N | cut -c1-14) A" > $O/${LY}_keys.txt; k KEYCODE_BUTTON_A; sleep 2.6
+    if [ -n "$THEN" ]; then
+      screencap -p $O/${LY}_window.png
+      for t in $THEN; do echo "$(date +%s.%N | cut -c1-14) $t" >> $O/${LY}_keys.txt
+        if [ "$t" = inspect ]; then A --es voltcap_test_wininspect on; else k $t; fi; sleep 0.6; done
+      sleep 4.4
+    fi
     screencap -p $O/${LY}_open.png
     echo "$(date +%s.%N | cut -c1-14) B" >> $O/${LY}_keys.txt; k KEYCODE_BUTTON_B; sleep 2.2
     wait $R; screencap -p $O/${LY}_closed.png; logcat -d -s VoltcapQA > $O/${LY}_qa.txt

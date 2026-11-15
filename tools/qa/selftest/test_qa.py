@@ -1654,5 +1654,19 @@ class GlyphCheck521(unittest.TestCase):
         self.assertEqual(glyphcheck.check(img, (59, 59, 12, 14), True)["verdict"], "NO-SHAPE")
 
 
+
+class TestCiProgress673(unittest.TestCase):
+    """673b: tools/ci/test_progress.py names a unit test that never ended (CI's Verify job hung twice, its log private)."""
+    def test_unfinished_failed_and_slow_tests_are_named(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import test_progress
+        lines = ["START a.B.t1 100", "END a.B.t1 SUCCESS 25000", "START a.B.t2 200", "START a.C.t3 300", "END a.C.t3 FAILURE 10", "junk"]
+        open_, timed, failed = test_progress.parse(lines)
+        self.assertEqual(open_, [("a.B.t2", 200)])
+        self.assertEqual(failed, ["a.C.t3"])
+        self.assertEqual(timed[0], ("a.B.t1", 25000))
+        self.assertEqual(test_progress.esc("a%b\nc"), "a%25b%0Ac")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

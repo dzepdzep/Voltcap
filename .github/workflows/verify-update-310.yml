@@ -45,7 +45,12 @@ jobs:
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
       - name: Build and run JVM unit tests
+        # (673b: bounded below the job's 60 min - a hung test (7f7a74d2, 9c9f41ac) now ends the step and the next one names it.)
+        timeout-minutes: 40
         run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
+      - name: Name unfinished, failed and slow unit tests (public annotations)
+        if: always()
+        run: python3 tools/ci/test_progress.py app/build/test-progress.log
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v4

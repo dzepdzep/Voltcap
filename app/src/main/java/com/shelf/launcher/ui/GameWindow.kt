@@ -1105,13 +1105,23 @@ internal fun GameWindow(
         scene == WinScene.BLADE_GUIDE || scene == WinScene.BUBBLE_CARD || scene == WinScene.CAMERA_MENU || scene == WinScene.PANEL_DETAIL ||
         scene == WinScene.MAG_PAGE || scene == WinScene.TERM_RUN || scene == WinScene.ARCADE_MENU || scene == WinScene.WII_PREVIEW ||
         // (Update 421: these grow out of the picture / face itself; a physical piece only when Inspect asks for it.)
-        scene == WinScene.CORE_PANEL || scene == WinScene.CUBE_FACE || scene == WinScene.GALLERY_PLACARD) && !askedInspect && MediaInspect.force != g.stableKey
+        scene == WinScene.CORE_PANEL || scene == WinScene.CUBE_FACE || scene == WinScene.GALLERY_PLACARD ||
+        // (673b, owner 14 Nov: "Disc Station: the disc stays seated for ordinary info panels; the real disc lifts and returns
+        // for Inspect / Zoom." The deck's panel opens beside the player with its disc still turning in the tray; Inspect lifts
+        // that disc out (forcedPieceOf: the disc itself there, not a case) and B puts it back in the tray.)
+        scene == WinScene.DISC_PANEL) && !askedInspect && MediaInspect.force != g.stableKey
     val pieceNow = if (tvRect == null && !sceneOwnsOpen) inspectPieceFor(g, state) else null
     val inspect = remember(g.stableKey, askedInspect) { pieceNow != null }
     // (Decided once as it opens; its details follow the game's scans as they come in.)
     val lastPiece = remember(g.stableKey) { arrayOfNulls<InspectPiece>(1) }
     if (pieceNow != null) lastPiece[0] = pieceNow
     val piece = if (inspect) pieceNow ?: lastPiece[0] else null
+    // (673b: Disc station's disc and Coverflow details' case are lifted where they stand when Inspect is pressed in their open
+    // window - the panel stays where it is (Flip 2 pkf673h: the window's parts went to InspectLayout's side and faded in again
+    // from nothing, the tray empty for 5 frames). The piece rises a little toward you from its place and turns there; B puts it
+    // back and the window goes.)
+    val pieceAtOpen = remember(g.stableKey) { piece != null }
+    val inPlace = piece != null && !pieceAtOpen && inspectsInPlace(scene, layout) && origin != null && origin.top != Float.MAX_VALUE
     val motion = remember(g.stableKey) { InspectMotion().also { it.from = origin } }
     // (Update 162: a piece turns all the way round. Update 200: the drawn shells of the 3D cartridges looks too — the
     // pre-rendered 3D models and their InspectModel are retired.)
@@ -1119,6 +1129,17 @@ internal fun GameWindow(
     // (Update 330: the Cardboard box's case comes out of the box spine first — it turns to face you as it comes forward.)
     motion.fromSpine = scene == WinScene.BOX_SHEET && piece?.kind == InspectKind.BOX && origin != null
     motion.spineYaw = BoxNav.startYaw // (Update 402: where the case really stands when A pulls it — spine-on, or as turned with Y.)
+    // (673b, owner 14 Nov: "Coverflow: the case stays anchored for the side info panel; the actual case is pulled and rotated
+    // for Inspect, then restored." Coverflow details' big case is the origin (StyleCoverDetails marks it): the piece starts as
+    // that case stands - turned, tilted, its size on the stage - and eases to facing you on its way; back the same way.)
+    val coverPull = scene == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS && piece?.kind == InspectKind.BOX && origin != null
+    val spineDepthNow = com.shelf.launcher.data.Features.spineDepth.state.value
+    motion.fromYaw = if (!coverPull) 0f else if (PickedFacing.faces) bigCaseYaw(spineDepthNow) else PickedFacing.TURN
+    motion.fromPitch = if (coverPull) bigCasePitch(spineDepthNow) - CASE_PITCH else 0f
+    motion.fromFill = if (coverPull) bigCaseFill(spineDepthNow) / INSPECT_CASE_FILL else PULL_FILL
+    // (673b: Disc station's disc leaves its turning tray at the tray's angle and lands at the tray's angle then.)
+    motion.rollHome = scene == WinScene.DISC_PANEL && piece?.kind == InspectKind.DISC
+    if (motion.rollHome && !motion.started) motion.fromRoll = DiscTray.angleOf(g.stableKey) ?: 0f
     // (Update 274: Settings › Game look › In the game window: Wobble — it only sways, no turning by hand.)
     motion.handsOff = com.shelf.launcher.data.Features.inspectMode.state.value == com.shelf.launcher.data.Features.InspectMode.WOBBLE
     val inspectScope = rememberCoroutineScope()
@@ -1377,6 +1398,16 @@ internal fun GameWindow(
                 askedInspect = true
             }) else null
         )
+        // (673b, QA only: `--es voltcap_test_wininspect on` presses this window's Inspect as its own key does - the Inspect trips'
+        // recordings, pickup529.sh THEN=inspect.)
+        val qaInspect = TestHooks.winInspect.value
+        LaunchedEffect(qaInspect) {
+            if (qaInspect == true) {
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "win inspect asked available=${extras.onInspect != null} scene=$scene")
+                extras.onInspect?.invoke()
+            }
+            if (qaInspect != null) TestHooks.winInspect.value = null
+        }
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
         var turned by remember { mutableStateOf(false) }
@@ -1476,6 +1507,13 @@ internal fun GameWindow(
         // Update 162: the piece's place beside the window's parts (window px), known after the first layout; it comes
         // out once that's known, and the right stick turns it.
         var slot by remember { mutableStateOf<Rect?>(null) }
+        // (673b: lifted where it stands - its place a little bigger round its home place, room for the case's hint under it.)
+        val hintPx = with(androidx.compose.ui.platform.LocalDensity.current) { 40.dp.toPx() }
+        if (inPlace) LaunchedEffect(Unit) {
+            val o = origin ?: return@LaunchedEffect
+            slot = inPlaceSlot(o, if (piece?.kind == InspectKind.DISC) IN_PLACE_DISC_GROW else IN_PLACE_CASE_GROW,
+                if (piece?.kind == InspectKind.BOX && piece.content != null) hintPx else 0f, keepRight = scene == WinScene.DISC_PANEL)
+        }
         if (piece != null) {
             InspectStick(motion)
             // (Update 162 (review): keyed on the motion too — another game shown in the open window gets its own.)
@@ -1487,14 +1525,14 @@ internal fun GameWindow(
                     while (!motion.artReady && android.os.SystemClock.uptimeMillis() - t0 < 450L) kotlinx.coroutines.delay(16)
                 }
                 MediaInspect.key = g.stableKey
-                motion.open(inspectScope, fullInspect, spin = inspectTurn) // (Update 164: the turn too on Lite, with Full animations on Lite)
+                motion.open(inspectScope, fullInspect, spin = inspectTurn, awaitDrawn = inPlace) // (Update 164: the turn too on Lite, with Full animations on Lite; 673b: in place - its home copy goes once it is drawn)
             }
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalWinStatus provides winStatus) {
         // (Update 506: the platform dim, now the window's own — it comes and goes with the reveal; read while drawing. Disc station's
         // window opens beside the player, which stays in view: its own veil is the whole dim there.)
         if (sysDim > 0f && scene != WinScene.DISC_PANEL && !(scene == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS)) Box(Modifier.fillMaxSize().drawBehind {
-            val k = grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f)
+            val k = grow.value.coerceIn(0f, 1f) * (if (piece != null && !inPlace) flightVeil(motion.lift.floatValue) else 1f)
             drawRect(Color.Black.copy(alpha = sysDim * k))
         })
         if (tvRect != null) {
@@ -1557,7 +1595,7 @@ internal fun GameWindow(
                 // (Update 507: with the case flying back the window's content isn't faded — the case stays solid all the way to
                 // its place; only the veil follows the reveal. The card beside it has its own staged fade.)
                 .then(if (spriteFlight) Modifier.onGloballyPositioned { val p = it.positionInWindow(); if (p != pickupRootAt) pickupRootAt = p } else Modifier)
-                .graphicsLayer { alpha = if (caseFlight || spriteFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
+                .graphicsLayer { alpha = if (caseFlight || spriteFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null && !inPlace) flightVeil(motion.lift.floatValue) else 1f) }
                 .then((scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else if (it == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS) coverDetailsVeil else sceneVeilFor(it) /* (505: Shop / Bubbles in your wall's colours) */ } ?: look.veil).let { veil ->
                     if (caseFlight || spriteFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
                 })
@@ -1567,7 +1605,7 @@ internal fun GameWindow(
             BoxWithConstraints(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 14.dp), contentAlignment = Alignment.Center) {
                 val maxW = maxWidth
                 val maxH = maxHeight
-                if (piece != null) {
+                if (piece != null && !inPlace) {
                     // Update 162: the piece's side, and the window's parts beside it (InspectLayout).
                     InspectLayout(
                         maxW, maxH, motion,
@@ -1583,7 +1621,9 @@ internal fun GameWindow(
                         .onGloballyPositioned { if (target == null) target = it.boundsInWindow() }
                         .graphicsLayer {
                             val to = target
-                            val from = origin
+                            // (673b: Coverflow details' side panel keeps its own entrance - its big case marks itself as the
+                            // origin only for Inspect's pull, the panel never grows out of it.)
+                            val from = if (scene == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS) null else origin
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)

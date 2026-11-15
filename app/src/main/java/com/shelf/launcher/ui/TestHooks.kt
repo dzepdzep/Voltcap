@@ -271,6 +271,9 @@ internal object TestHooks {
     @Volatile var appProbe: ((String) -> String)? = null
     /** Update 452: `--es voltcap_test_winmore on` — the open game window's More opened (as its button does), for the More QA. */
     val winMore = mutableStateOf<Boolean?>(null)
+    /** 673b: `--es voltcap_test_wininspect on` — the open game window's Inspect pressed (as its key does), QA only. (A request file
+     *  written by adb's shell user could not be read by the app on the KONKR's Android 12 - pkk673j: never seen.) */
+    val winInspect = mutableStateOf<Boolean?>(null)
 
     /**
      * Update 451: the home screen's own state for QA snapshots — selected category (console or special list), the focused
@@ -302,6 +305,7 @@ internal object TestHooks {
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
+        intent?.getStringExtra("voltcap_test_wininspect")?.let { v -> if (enabled(context)) winInspect.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }

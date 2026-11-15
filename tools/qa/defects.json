@@ -3823,6 +3823,38 @@
    "severity": "low",
    "status": "open (measured, shared by every pickup since 0.6.71 - not a 672 regression); candidate: compose the window's first frame lighter / place the flight's target the frame the window appears",
    "found": "2026-11-15 pkk673d_10 / _13 frame-difference timing + VoltcapQA trace (pickupfly to=false -> to=true)"
+  },
+  {
+   "id": "D323",
+   "title": "Inspect pressed in an open own window: the window's parts went to InspectLayout's side and faded in again from nothing (the panel blinked out and re-entered), and the object's home place stood empty for frames (Flip 2 pkf673h, Disc station)",
+   "rule": "SHARED-PICKUP",
+   "severity": "medium",
+   "status": "fixed in 673b for Disc station and Coverflow details (inspectsInPlace: the panel stays, the piece is lifted where it stands); OPEN for the other windows whose piece comes only with Inspect (File select, Storage boxes, Memory card, Orbit deck, Airy, Night, Blades, Bubbles, Camera, Panels, Magazine, Terminal, Arcade, Channel grid, Green Core, Cube menu, Artwork library) - not yet checked on hardware",
+   "found": "2026-11-15 pkf673h"
+  },
+  {
+   "id": "D324",
+   "title": "Disc station Inspect: the tray stood empty ~80 ms as the disc lifted - the home screen's frame without the disc reached the screen before the game window's first frame with it (two surfaces); the piece also waited for the lift's first tick (its 'started' was not observed)",
+   "rule": "SHARED-PICKUP",
+   "severity": "medium",
+   "status": "fixed in 673b (InspectMotion.started observed; open(awaitDrawn): the home copy goes once the piece has been drawn, then two frames), verified pkf673k (Flip 2 x1.0) / pkk673k (KONKR x1.3): no frame with neither copy (tray brightness per frame)",
+   "found": "2026-11-15 pkf673i / pkf673j"
+  },
+  {
+   "id": "D325",
+   "title": "CI Verify job hung twice in the unit-test step (7f7a74d2: runner lost after 53 min; 9c9f41ac: still running after 40 min; usual 12.5 min). Its log needs a signed-in download, so the hanging test is unknown; Windows runs pass (2794 tests, slowest 4.9 s)",
+   "rule": "QA-TOOL",
+   "severity": "high",
+   "status": "diagnostics in 673b: every test's start / end to app/build/test-progress.log, annotations (public) for tests that never ended / failed / slow, test step bounded at 40 min. Cause OPEN until the next CI run names it",
+   "found": "2026-11-15 CI runs 43692222586 / 43698117456"
+  },
+  {
+   "id": "D326",
+   "title": "Disc station Inspect: the lifted disc is drawn without the station's light sheen, so its colours change as it leaves and lands the tray",
+   "rule": "VISUAL",
+   "severity": "low",
+   "status": "open - for the owner's review of the 673b lift (could draw the sheen on the lifted disc)",
+   "found": "2026-11-15 pkf673k"
   }
  ]
 }

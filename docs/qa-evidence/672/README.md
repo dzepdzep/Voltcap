@@ -43,3 +43,22 @@ the open (pkf673b_10, the window's first frame) — the KONKR recordings of the 
   at x1.3 — a design decision for the owner.
 
 **Not covered here:** Odin 2 Portal, RP Classic, Thor (not used: two handhelds at a time); the emulator; the owner's eyes.
+
+## 673b — Disc station and Coverflow details: Inspect lifts the real object (owner design 14 Nov)
+
+| Files | Run | Build |
+|---|---|---|
+| `discs_flip2_x10_inspect_*`, `coverdetails_flip2_x10_inspect_*` | pkf673k_10 (Flip 2 x1.0) | qa-0.6.73-673b iteration before the KONKR fix |
+| `discs_konkr_x13_inspect_*`, `coverdetails_konkr_x13_inspect_*` | pkk673m_13 (KONKR x1.3) | qa-0.6.73-673b |
+
+Each 4-picture sheet: the home screen; the window after A (the object stays where it is); 4.4 s after Inspect (pressed with
+`--es voltcap_test_wininspect on`, as its key does); after B. Frame sheets: Inspect's lift and B's return.
+
+**Physical device, motion (delegated review only — owner visual approval: not yet):**
+- Disc station: A opens the deck's panel with the disc still turning in its tray. Inspect lifts that disc out of the tray — from
+  the angle the tray had turned it to, upright as it rises, a little toward you — and B puts it back into the tray. No frame with
+  neither the tray's disc nor the lifted one (brightness of the tray per frame, both devices). Its colours change as it leaves and
+  lands: the tray's disc has the station's light sheen, the lifted disc doesn't (D326, for review).
+- Coverflow details: A opens the side panel with the case standing where it was. Inspect pulls that case forward from the angle,
+  tilt and size it stood at and turns it; B puts it back as it stood.
+- With Inspect pressed, the Inspect key leaves the panel, which re-centres by half a row.

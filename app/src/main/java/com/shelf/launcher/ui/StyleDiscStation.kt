@@ -279,6 +279,14 @@ private fun DiscPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modifier
     }
 }
 
+/** 673b: the angle (degrees) the tray has turned the loaded disc to, by game - Inspect lifts the disc from there and lands it there. */
+internal object DiscTray {
+    @Volatile private var key: String? = null
+    @Volatile private var angle = 0f
+    fun set(k: String, a: Float) { key = k; angle = a }
+    fun angleOf(k: String): Float? = if (key == k) angle else null
+}
+
 /** The game's disc, [d] across, turning slowly while it sits in the tray (Disc station › Spin the loaded disc). */
 @Composable
 private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
@@ -310,6 +318,7 @@ private fun LoadedDisc(c: StyleCtx, g: Game, d: Dp) {
     Box(
         Modifier.size(d).graphicsLayer {
             rotationZ = angle?.value ?: 0f
+            DiscTray.set(g.stableKey, rotationZ) // (673b: where Inspect's lifted disc starts and lands)
             if (round) {
                 clip = true
                 shape = circle

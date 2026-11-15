@@ -1,3 +1,31 @@
+# Update 673b (15 Nov 2026) - same branch, NOT released
+- Disc station (owner design 14 Nov: "the disc stays seated for ordinary info panels; the real disc lifts and returns for Inspect /
+  Zoom"): A opens the deck's panel beside the player with the disc still turning in its tray - before, every A lifted a copy of the
+  disc and turned it over. Inspect (a key on the panel now) lifts the tray's own disc where it stands: from the angle the tray had
+  turned it to, upright as it rises, a little toward you; B puts it back into the tray at the tray's angle then and the window goes.
+  The piece asked for there is the disc itself (`forcedPieceOf`), not a case round it.
+- Coverflow details (owner design: "the case stays anchored for the side info panel; the actual case is pulled and rotated for
+  Inspect, then restored"): the big case is the game window's origin now (it was none: Inspect grew a second case out of nothing
+  beside the case still standing there). Inspect pulls that case forward - starting turned, tilted and sized as it stood (Spine
+  depth) - and turns it; B puts it back as it stood. The side panel keeps its own entrance and never grows out of the case.
+- Both (`inspectsInPlace`): the panel stays where it is while the piece is lifted. Before, Inspect pressed in an open window sent
+  the window's parts to InspectLayout's side, where they faded in again from nothing (D323). The object's home copy goes only once
+  the lifted piece has been drawn in the game window - its own surface (Flip 2: the tray stood empty ~80 ms, D324). Disc station's
+  disc rises toward the deck's open side, its right edge where the tray's was (KONKR x1.3: the panel overlaps the deck's edge on
+  that narrow screen and its edge was drawn over the lifted disc).
+- QA: `--es voltcap_test_wininspect on` presses the open window's Inspect as its key does; pickup529.sh THEN=inspect records the
+  piece's trip out and back. A request file written by adb's shell user could not be read by the app on the KONKR (Android 12).
+- CI: the Verify job hung twice in the unit tests (7f7a74d2: runner lost after 53 min; 9c9f41ac: still running after 40) and its log
+  needs a signed-in download (D325). Every test's start and end now goes to app/build/test-progress.log; the workflow names any test
+  that never ended, failed ones and the slowest as public annotations (tools/ci/test_progress.py) and bounds the test step at 40 min.
+  A Linux reproduction in the cloud workspace stopped at Maven Central (HTTP 429 / 404 through the proxy).
+- Tests: Inspect673Test (8), testDebugUnitTest 2794 / 0 failures (Windows; progress log 2794 started = 2794 ended); QA self-test +1.
+- Hardware (673b QA builds, isolated QA app, fixture library, launches blocked, restored diff=0 after each run): Flip 2 x1.0
+  pkf673k and KONKR x1.3 pkk673k - Disc station and Coverflow details: A leaves the object in place, Inspect lifts it and B returns
+  it, no frame with neither copy (tray brightness per frame). Known for the owner's review: the tray's disc has the station's light
+  sheen and the lifted disc is drawn without it, so its colours change as it leaves and lands; with Inspect pressed the Inspect key
+  leaves the panel, which re-centres by half a row.
+
 # Update 673a (15 Nov 2026) - same branch (repair/0.6.72-windows-tests, pushed as claude/qa-0672-repair), NOT released
 - Rental shop at x1.3: the tag's punched keys cut their words - KONKR "CATALOGU" / "ACHIEVEME", Flip 2 "CATALOGUE" (D320). Beside
   the held case (672b) the tag is narrower and kept three equal keys across. Each key's word is now measured at its own size

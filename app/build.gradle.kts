@@ -84,6 +84,21 @@ android {
                 exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
                 showStackTraces = false
             }
+            // (673b: CI's Verify job hung twice in this task - 7f7a74d2 lost its runner after 53 min, 9c9f41ac ran past 35 - and
+            // its log needs a signed-in download. Every test's start and end goes to build/test-progress.log; the workflow turns it
+            // into public annotations (tools/ci/test_progress.py), so a test that never ends is named.)
+            val progress = it.project.layout.buildDirectory.file("test-progress.log").get().asFile
+            it.doFirst { progress.parentFile.mkdirs(); progress.writeText("") }
+            it.addTestListener(object : org.gradle.api.tasks.testing.TestListener {
+                override fun beforeSuite(suite: org.gradle.api.tasks.testing.TestDescriptor) {}
+                override fun afterSuite(suite: org.gradle.api.tasks.testing.TestDescriptor, result: org.gradle.api.tasks.testing.TestResult) {}
+                override fun beforeTest(d: org.gradle.api.tasks.testing.TestDescriptor) {
+                    progress.appendText("START ${d.className}.${d.name.replace(' ', '_')} ${System.currentTimeMillis()}\n")
+                }
+                override fun afterTest(d: org.gradle.api.tasks.testing.TestDescriptor, r: org.gradle.api.tasks.testing.TestResult) {
+                    progress.appendText("END ${d.className}.${d.name.replace(' ', '_')} ${r.resultType} ${r.endTime - r.startTime}\n")
+                }
+            })
         }
     }
     namespace = "com.shelf.launcher"

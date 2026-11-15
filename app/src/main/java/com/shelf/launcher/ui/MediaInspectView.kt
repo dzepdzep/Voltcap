@@ -186,6 +186,39 @@ internal const val CASE_ASIDE_SHRINK = 0.48f
 
 /** (Update 238, #116/#117: the case's own slight tilt (Case3D's default pitch), and how far a case may be tilted on top of it.) */
 internal const val CASE_PITCH = 4f
+
+/** 673b: how much of its place a piece flying from it is drawn at (its card's own margin - as before). */
+internal const val PULL_FILL = 0.94f
+
+/** 673b: how much of its box an inspected case is drawn at (InspectCase's Case3D fill). */
+internal const val INSPECT_CASE_FILL = 0.97f
+
+/** 673b: how much bigger than its home place a piece lifted where it stands gets (a disc out of its tray, Coverflow's case). */
+internal const val IN_PLACE_DISC_GROW = 1.29f
+internal const val IN_PLACE_CASE_GROW = 1.08f
+
+/** 673b: the windows whose piece, asked for with Inspect, is lifted where it stands beside their panel (GameWindow). */
+internal fun inspectsInPlace(scene: WinScene?, layout: com.shelf.launcher.data.HomeLayout): Boolean =
+    scene == WinScene.DISC_PANEL || (scene == WinScene.INDEX_CARD && layout == com.shelf.launcher.data.HomeLayout.COVERDETAILS)
+
+/**
+ * 673b (pure, Inspect673Test): the place of a piece lifted where it stands - its home place [o] (window px) grown by [grow]
+ * round its middle (or toward its left, [keepRight]), and [hintPx] more under it for "Tap the case…" (MediaInspectPiece keeps
+ * that room under the piece, so the piece itself stays centred on its home place's height).
+ */
+internal fun inPlaceSlot(o: Rect, grow: Float, hintPx: Float, keepRight: Boolean = false): Rect {
+    val w = o.width * grow; val h = o.height * grow
+    // (673b, KONKR x1.3 pkk673k / pkk673l: Disc station's panel overlaps the deck's edge on a narrow screen and its edge was drawn
+    // over the lifted disc. There the disc rises toward the deck's open side: its right edge stays where the tray's was.)
+    val left = if (keepRight) o.right - w else o.center.x - w / 2f
+    return Rect(left, o.center.y - h / 2f, left + w, o.center.y + h / 2f + hintPx)
+}
+
+/** 673b (pure, Inspect673Test): [a] degrees as the shorter turn, in (-180, 180]. */
+internal fun shortTurn(a: Float): Float { var x = a % 360f; if (x > 180f) x -= 360f; if (x <= -180f) x += 360f; return x }
+
+/** 673b (pure, Inspect673Test): how much of the home pose is left at lift [k] - all at 0, none at 1, eased at both ends. */
+internal fun pullEase(k: Float): Float { val e = (1f - k).coerceIn(0f, 1f); return e * e * (3f - 2f * e) }
 /**
  * (Update 238, #117: 0° … 176° all told — never past upside down, where its missing bottom face would show.)
  * (Update 240, #117: Case3D draws its bottom now, so a case tilts all the way round like the other pieces, over its top
@@ -506,6 +539,9 @@ private fun forcedPieceOf(g: Game, state: LauncherUiState): InspectPiece? {
         val gx = MediaInspect.testTitle?.let { g.copy(name = it) } ?: g
         return InspectPiece(gx, InspectKind.SLAB, sh.aspect, sh.depth.coerceIn(0.02f, 0.4f), pick, scan ?: cv, scan != null, null, cv, null, null, physical, null, shellTone(ms), false)
     }
+    // (673b, owner 14 Nov: "Disc Station: the real disc lifts and returns for Inspect / Zoom." There the piece asked for is the
+    // disc in the player's tray - the one that leaves it - not a case round it.)
+    if (state.appearance.homeLayout == HomeLayout.DISCS && mediaKind(g.platform) == "disc") inspectPieceOf(g, state)?.let { return it }
     val small = Features.bigGcDiscs.state.value.not()
     val mixed = mixedConsoles(state.visibleGames)
     // (Update 291, Toni: "inspect media should show the case as well": the case first — it opens (a stick click) to the
@@ -792,9 +828,25 @@ internal class InspectMotion {
     var fromSpine = false
     /** Update 330: how far it's turned from facing you when it starts out from a spine (90: spine-on). */
     var spineYaw = 90f
+    /**
+     * 673b: it starts as it stood at home - turned [fromYaw]°, tilted [fromPitch]° more than a piece is, drawn at [fromFill] of
+     * its place's height - and eases to facing you as it comes forward; back the same way (Coverflow details' big case).
+     */
+    var fromYaw = 0f
+    var fromPitch = 0f
+    var fromFill = PULL_FILL
+    /** 673b: a disc from Disc station's turning tray - it starts at the angle the tray had turned it to ([fromRoll]) and lands
+     *  at the tray's angle then ([DiscTray]), turning upright on its way out. */
+    var rollHome = false
+    var fromRoll = 0f
+    /** 673b: the piece has been drawn since it [started] (MediaInspectPiece) - open(awaitDrawn) waits for it. */
+    val drawnOnce = mutableStateOf(false)
     /** Update 400: the case's front picture is drawn-ready (set by its Case3D). */
     @Volatile var artReady = false
-    var started = false
+    // (673b: observed - the piece's layer reads it, so the frame that hides its home copy (MediaInspect.hold) is the frame that
+    // draws it; a plain field left the piece at alpha 0 until the lift's first tick - Flip 2 pkf673i: Disc station's tray empty
+    // for a frame as Inspect lifted its disc.)
+    var started by mutableStateOf(false)
     var closing = false
     /** A 3D model: it turns only as far as its pictures go (±60°). */
     var limited = false
@@ -1077,7 +1129,8 @@ internal class InspectMotion {
             // (Update 330: from its spine (90°) to its front, eased.)
             val e = (1f - k).coerceIn(0f, 1f)
             spineYaw * e * e * (3f - 2f * e)
-        } else if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
+        } else if (fromYaw != 0f) fromYaw * pullEase(k) // (673b: from the angle it stood at home)
+        else if (k > 0f && k < 1f) -14f * sin(PI.toFloat() * k) else 0f
         val y = turn.floatValue + manual.floatValue + fly + sway.floatValue
         return if (limited) y.coerceIn(-60f, 60f) else y
     }
@@ -1199,11 +1252,21 @@ internal class InspectMotion {
      * Out it comes: [full] the flight (else a short fade, the carousel stepping back at once); [spin] then turns it once
      * round to show it from every side.
      */
-    fun open(scope: CoroutineScope, full: Boolean, spin: Boolean) {
+    fun open(scope: CoroutineScope, full: Boolean, spin: Boolean, awaitDrawn: Boolean = false) {
         if (started) return
         started = true
-        MediaInspect.hold.value = true // (Update 401, D86: its card stays hidden while it flies)
+        if (!awaitDrawn) MediaInspect.hold.value = true // (Update 401, D86: its card stays hidden while it flies)
         openJob = scope.launch {
+            if (awaitDrawn) {
+                // (673b: a piece lifted where it stands is drawn at its home place first - in the game window, its own surface -
+                // and only then does its home copy go. Flip 2 pkf673j, Disc station: the home screen's frame without the disc
+                // reached the screen ~80 ms before the window's first frame with it, the tray empty in between. At most 400 ms,
+                // then two more frames for the window's frame to be shown; the two coincide meanwhile.)
+                val t0 = android.os.SystemClock.uptimeMillis()
+                while (!drawnOnce.value && android.os.SystemClock.uptimeMillis() - t0 < 400L) withFrameNanos { }
+                withFrameNanos { }; withFrameNanos { }
+                MediaInspect.hold.value = true
+            }
             if (!full) {
                 lift.floatValue = 1f
                 MediaInspect.amount.floatValue = 1f
@@ -1482,13 +1545,14 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                                 // Its size on the card (fitted in its slot as the card draws it), growing to its size here,
                                 // a little bigger mid-way as it comes forward, lifted a little on its way.
                                 // (Update 330: from a spine — the case turned side-on — at the spine's height.)
-                                val sw = if (motion.fromSpine) f.height * aspect else minOf(f.width * 0.94f, f.height * 0.94f * aspect)
+                                val sw = if (motion.fromSpine) f.height * aspect else minOf(f.width * motion.fromFill, f.height * motion.fromFill * aspect)
                                 val s0 = (sw / w).coerceIn(0.05f, 4f)
                                 val pop = sin(PI.toFloat() * k)
                                 val s = (s0 + (1f - s0) * k) * (1f + 0.06f * pop)
                                 scaleX = s; scaleY = s
                                 translationX = (f.center.x - (left + w / 2f)) * (1f - k)
                                 translationY = (f.center.y - (top + h / 2f)) * (1f - k) - (if (motion.fromSpine) 0f else h * 0.07f * pop)
+                                if (motion.rollHome) rotationZ = shortTurn(if (motion.closing) DiscTray.angleOf(key) ?: motion.fromRoll else motion.fromRoll) * pullEase(k)
                             } else {
                                 // No card to come from: it grows in where it stands.
                                 val s = 0.6f + 0.4f * k
@@ -1497,6 +1561,8 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                             }
                         }
                     }
+                    // (673b: drawn once since it started - InspectMotion.open(awaitDrawn) hides its home copy only after this.)
+                    .drawWithContent { drawContent(); if (motion.started && !motion.drawnOnce.value) motion.drawnOnce.value = true }
                     // Update 189: an opened case moves aside (and shrinks) while what's in it comes out.
                     .graphicsLayer {
                         val o = motion.out.floatValue
@@ -1606,7 +1672,9 @@ private fun InspectCase(
     piece: InspectPiece, aspect: Float, motion: InspectMotion, yawOf: () -> Float, openOf: () -> Float,
     caseItem: CaseItem?, itemInCase: () -> Boolean
 ) {
-    val tilt = motion.pitch.floatValue.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX)
+    val tilt = motion.pitch.floatValue.coerceIn(BOX_PITCH_MIN, BOX_PITCH_MAX) +
+        // (673b: tilted as it stood at home while it comes forward - read only for such a pull, so no other case recomposes.)
+        (if (motion.fromPitch != 0f) motion.fromPitch * pullEase(motion.lift.floatValue) else 0f)
     // Update 311: InspectPiece.front has already selected the actual Box scan when
     // Original cases is on. Tell Case3D that it is a real, fully printed front,
     // just as the shelf's ScanCase does. Otherwise Case3D sees realFront=false
@@ -1621,7 +1689,7 @@ private fun InspectCase(
         pitch = CASE_PITCH + tilt,
         realFront = realScan,
         // (Update 162: Case3D's back face and its angle read while drawing.)
-        back = piece.back, yawOf = yawOf, fill = 0.97f,
+        back = piece.back, yawOf = yawOf, fill = INSPECT_CASE_FILL,
         // (Update 189: it opens.)
         openOf = openOf, inside = caseItem, showItemOf = itemInCase,
         onFront = { motion.artReady = true }

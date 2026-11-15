@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
+Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a-b: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -13,7 +13,7 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. v0.6.72 released; updates 672a-d and 673a (15 Nov 2026) - newest
+## 0. v0.6.72 released; updates 672a-d, 673a-b (15 Nov 2026) - newest
 
 **Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
 equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
@@ -32,13 +32,15 @@ production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 4
 | Cardboard box rapid A B A B (owner: keep the RC2 fix) | KEPT; one intermittent "left open" in gate k673c (D319, suspect) | not reproduced: r673c 16/16, r673d 40/40 closed (trace-recording rounds) - watch |
 | Cube menu Classic x1.3: achievement chip cut (D318) | DONE (672c) | KONKR x1.3 pkk673d_13: "80%" whole on the card |
 | Cube menu Classic x1.3: small game card | OPEN (design) | the docked cube's band + the info area at x1.3 leave the row ~60 dp on a 556 dp-wide screen; options: a left dock below 600 dp at large text, or a slimmer band - owner's pick |
-| **Physical pickups** | **12 / 14 move the real object** | + Case flow and Rental shop (672b, owner design 14 Nov; frames Flip 2 pkf673b_10 / _13, KONKR pkk673d_10 / _13 - one object out and back, x1.0 and x1.3). Left: Disc station and Coverflow Inspect (lift the real disc / case for Inspect only) |
+| **Physical pickups** | **14 / 14 move the real object (implemented; owner review pending)** | Case flow, Rental shop (672b); Disc station and Coverflow details Inspect lift (673b: A leaves the object in place, Inspect lifts it where it stands, B returns it - Flip 2 pkf673k, KONKR pkk673m). For review: D326 (the lifted disc lacks the tray's sheen) |
 | **Native popup pages** | **12 / 53 layouts** (6 scenes: Storage, Night, Tiles + Grid, Blades, shelf family x4, Twin x3) | 41 layouts still open Details / Achievements / Options on the shared page (recounted from NATIVE_PAGE_SCENES, 15 Nov) |
 | Emulator trial workflow did not run on the RC commits | FIXED (672a) | the paths filter skipped app-only commits; "[emulator-qa]" in the head commit message is enough now |
 | Production pins for 0.6.72 | DONE on the dev branch (91d3bf86 + LF 7f7a74d2) | reach main with the next PR |
 | Rental shop tag at x1.3: keys cut "CATALOGU" / "ACHIEVEME" (D320; narrower beside the held case since 672b) | DONE (673a) | k673e KONKR x1.3 PASS, f673e Flip 2 x1.3 PASS (stricter checker); KONKR: three key rows, the last under the scroll fade |
 | QA checker passed D320 (two lines in a one-line box only a warning) (D321) | FIXED (673a) | geomcheck: a whole line out of its box = FAIL; self-test on the real dumps; 0 other reports in 793 dumps |
 | Pickup windows: ~0.10-0.14 s from A to first motion on the KONKR (D322) | OPEN (P2 perf, measured) | shared by every pickup since 0.6.71; the window's first frame ~63 ms + the flight's target one more frame |
+| Inspect pressed in an open own window: parts faded in again, home place empty for frames (D323, D324) | DONE for Disc station / Coverflow details (673b); OPEN for the other Inspect-only windows | the in-place lift; the others still re-lay out (InspectLayout) - check on hardware |
+| CI Verify hung twice in the unit tests (D325) | DIAGNOSTICS IN (673b) | the next CI run names the test that never ends (public annotations); Windows: 2794 / 0, slowest 4.9 s |
 
 Gates on this line (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after each):
 k673e KONKR x1.3 SHOP PASS · f673e Flip 2 x1.3 SHOP PASS (673a) · f673a Flip 2 x1.3 10/10 · f673b Flip 2 x1.0 11/11 · f673c Flip 2 x1.3 10/11 (Box overlap -> 672d) · f673d Flip 2 x1.3 3/3 ·

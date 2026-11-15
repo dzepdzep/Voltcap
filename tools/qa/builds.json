@@ -1074,10 +1074,21 @@
    "version_name": "0.6.72-qa",
    "version_code": 79,
    "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
-   "base_commit": "45286cd6",
+   "base_commit": "9c9f41ac",
    "patch_sha256": null,
-   "tree_hash": "repair/0.6.72-windows-tests 45286cd6 + the 673a working tree (Rental shop tag keys: tagKeyNeeds / tagKeyGrid), committed next",
+   "tree_hash": "repair/0.6.72-windows-tests 9c9f41ac (the tree committed)",
    "note": "673a QA build: assembleQa 15 Nov 09:05 UTC. Gates k673e (KONKR x1.3 SHOP), f673e (Flip 2 x1.3 SHOP)."
+  },
+  {
+   "id": "qa-0.6.73-673b",
+   "apk_sha256": "b9253777d4903505598adaa27bc6844b5d3c32b211ea16dda28a36d3abbb0195",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "9c9f41ac",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 9c9f41ac + the 673b working tree (Disc station / Coverflow details Inspect lifted in place), committed next",
+   "note": "673b QA build: assembleQa 15 Nov 10:04 UTC (the committed tree). Inspect recordings pkk673m_13 (KONKR x1.3); earlier 673b iterations pkf673h-l / pkk673j-l on builds of the same line before the last fixes."
   }
  ]
 }
