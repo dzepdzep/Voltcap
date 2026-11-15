@@ -1155,7 +1155,9 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
                     WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(2.dp)); tag()
                 }
-                Spacer(Modifier.width(10.dp)); StoragePageKeys(ctx, red, live)
+                // (674b: the uniform key row fills the width it is given - beside the name it gets half the line (it scrolls a
+                // whole key at a time when that is short), never the whole line from the name and the sheet.)
+                Spacer(Modifier.width(10.dp)); Box(Modifier.weight(1f)) { StoragePageKeys(ctx, red, live, twoLine = false) }
             } else {
                 WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(8.dp)); tag()
@@ -1182,12 +1184,11 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
 /** Storage's sheet keys: Play first, the page's own (Back is the hint under the window) - whole words, never cut. */
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            ctx.buttons.forEach { a0 ->
-                val a = a0.live(live)
+private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean, twoLine: Boolean = true) {
+        // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow) - was a wrapping FlowRow of keys of every width.)
+        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine) { a ->
                 SceneControl(a, Modifier) { on ->
-                    Box(Modifier.heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
+                    Box(Modifier.uniformFill().heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
                         contentAlignment = Alignment.CenterStart) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(if (on) "▶ " else "  ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black)
@@ -1195,8 +1196,14 @@ private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
                         }
                     }
                 }
-            }
         }
+}
+
+/** 674c: [first] then [second] - beside each other ([row]; [first] takes the width left) or one under the other. */
+@Composable
+private fun StackOrRow(row: Boolean, modifier: Modifier, gap: Dp, first: @Composable (Modifier) -> Unit, second: @Composable () -> Unit) {
+    if (row) Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) { first(Modifier.weight(1f)); second() }
+    else Column(modifier, verticalArrangement = Arrangement.spacedBy(gap)) { first(Modifier); second() }
 }
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
@@ -1384,13 +1391,17 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(12.dp))
         // Glossy pills, each with its reflection on the stage's floor.
-        FlowRow(Modifier.graphicsLayer {
+        // (673g, owner brief 15 Nov: the pills one row of identical pills (UniformKeyRow) - Play shown by its accent gloss, not its
+        // size; the round tools a group of their own under them.)
+        // (674c, KONKR x1.3 k674a: under the pills the tools' line left the title box part of one line - on a short window
+        // they stand beside the pill row, which shares the rest of the width.)
+        StackOrRow(ctx.page == WinPage.MAIN && ctx.maxH < 440.dp && ctx.tools.isNotEmpty(), Modifier.graphicsLayer {
             // (Update 505: they rise onto the stage after the picture; whole and in place from 0.75 of the reveal on.)
             val e = sceneEase(((ctx.reveal() - 0.3f) / 0.45f).coerceIn(0f, 1f))
             alpha = 0.25f + 0.75f * e
             translationY = (1f - e) * 14.dp.toPx()
-        }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            ctx.buttons.forEach { a ->
+        }, 10.dp, { m -> Box(m) {
+            UniformKeyRow(ctx.buttons, 8.dp) { a ->
                 SceneControl(a, Modifier) { on ->
                     // Update 487 (E7, owner-approved): Play is the glossy accent pill even while another key is lit (it looked
                     // like the glass keys), and the word on a lit pill is checked against its lighter top (white on lilac
@@ -1400,9 +1411,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                     val inkLit = com.shelf.launcher.ui.theme.textOn(top, onAccent).let { c ->
                         if (com.shelf.launcher.ui.theme.contrastRatio(c, accent) >= 4.5f) c else com.shelf.launcher.ui.theme.textOn(accent, onAccent)
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.uniformFill(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
-                            Modifier.height(if (a.primary) 46.dp else 40.dp).clip(RoundedCornerShape(50))
+                            Modifier.then(if (LocalUniformKey.current) Modifier.fillMaxWidth() else Modifier).height(46.dp).clip(RoundedCornerShape(50))
                                 .background(if (lit) Brush.verticalGradient(listOf(top, if (on) accent else mixS(accent, Color.Black, 0.12f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f))))
                                 .border(if (on && a.primary) 2.5.dp else 1.dp, if (on) Color.White.copy(alpha = if (a.primary) 0.95f else 0.6f) else if (lit) accent.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
                                 .padding(horizontal = if (a.primary) 24.dp else 16.dp),
@@ -1416,7 +1427,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                     }
                 }
             }
-            if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            } }) {
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+              ctx.tools.forEach { a ->
                 // Update 487 (E7 tiny controls, owner-approved): the round tool keys keep their 40 dp look in a 48 dp touch
                 // box, and their word is written under them (where the pills' reflection is) — they were icon-only.
                 SceneControl(a, Modifier.widthIn(min = 48.dp)) { on ->
@@ -1432,6 +1445,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                             fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
                     }
                 }
+              }
             }
         }
         if (ctx.chips.isNotEmpty()) {
@@ -1579,9 +1593,9 @@ private fun OrbitTerminalNarrow(ctx: WinSceneCtx, acts: List<WinAction>, glow: C
             OdFlyingDisc(ctx, origin, clock, Modifier.size(discD))
             Box(Modifier.weight(1f).fillMaxHeight().graphicsLayer { val t = ((ctx.reveal() - 0.28f) / 0.54f).coerceIn(0f, 1f); alpha = t }) { OdConsole(ctx, glow, clock) }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
-            acts.forEach { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
+        // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow), never wrapped.)
+        Box(Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
+            UniformKeyRow(acts, 8.dp) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
         }
     }
 }
@@ -1823,13 +1837,10 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         // (Update 477, D266: the round keys always shown along the bottom; with More open the others in one compact row of
         // rounded pills under them — word beside the icon, so the row is short and the facts above keep their room (477a put
         // them in the panel's well: squeezed to 14 px on the KONKR; 477b as small round keys in the same row: it wrapped).)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            (ctx.buttons + primaryTools).forEach { a -> AiryKey(a, accent) }
-        }
-        if (secondary.isNotEmpty()) FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            secondary.forEach { a -> AiryPill(a, accent) }
-        }
+        // (674b, owner brief 15 Nov: Airy keeps its round shortcuts, each in an identical cell of one row (UniformKeyRow) that
+        // scrolls a whole key at a time; the pills under them likewise - both were wrapping FlowRows.)
+        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent) }
+        if (secondary.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) } }
         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             ctx.chips.forEach { a ->
                 SceneControl(a, Modifier) { on ->

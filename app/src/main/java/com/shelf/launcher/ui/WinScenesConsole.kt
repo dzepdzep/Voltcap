@@ -183,15 +183,17 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 // bottom and Back was cut in half; shorter rows there keep the whole list on the blade.)
                                 // (Update 469, display size larger — KONKR at 280 dpi, a 366 dp screen: Back cut by 14 px again;
                                 // one more step there, rows still >= 24 dp.)
-                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 380.dp) 32.dp else if (h < 440.dp) 38.dp else 44.dp) else if (h < 380.dp) 25.dp else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
+                                // (674b, owner brief 15 Nov - vertical menus: every command the same height; Play is told by its
+                                // bigger word and icon, no longer by a taller row. The heights keep the whole list on the KONKR's blade.)
+                                Modifier.fillMaxWidth().height(if (h < 380.dp) 27.dp else if (h < 440.dp) 31.dp else 38.dp).clip(RoundedCornerShape(3.dp))
                                     .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                     .padding(horizontal = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(a.icon, null, tint = if (on) p.ink else Color.White, modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
+                                Icon(a.icon, null, tint = if (on) p.ink else Color.White, modifier = Modifier.size(if (a.primary) 20.dp else 18.dp))
                                 Spacer(Modifier.width(10.dp))
                                 Text(a.label, color = if (on) p.ink else if (a.urgent) Color(0xFFFFC46B) else Color.White,
-                                    fontSize = if (a.primary) 18.sp else 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = if (a.primary) 17.sp else 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal,
                                     maxLines = 2)
                             }
                         }
@@ -374,13 +376,12 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
                 ctx.pageFor(pg, Modifier.fillMaxSize(), live)
             }
             Spacer(Modifier.height(8.dp))
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ctx.buttons.forEach { a0 ->
-                    val a = if (live) a0 else a0.inert()
+            // (674b, owner brief 15 Nov: the page blade's keys one row of identical keys (UniformKeyRow) - was a wrapping FlowRow.)
+            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgKey")
                         Row(
-                            Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(3.dp))
+                            Modifier.uniformFill().heightIn(min = 32.dp).clip(RoundedCornerShape(3.dp))
                                 .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                 .border(1.dp, Color.White.copy(alpha = 0.35f * (1f - k)), RoundedCornerShape(3.dp))
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -391,7 +392,6 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
                             Text(a.label, color = if (on) p.ink else Color.White, fontSize = 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
-                }
             }
         }
     }
@@ -468,7 +468,9 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     rows.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(
-                                Modifier.height(if (a.primary) 50.dp else 34.dp).width(if (a.primary) 200.dp else 180.dp)
+                                // (674b, owner brief 15 Nov: every key of the list the same size - the white Start plate keeps its
+                                // squarer corners and centred word, no longer a bigger key.)
+                                Modifier.height(40.dp).width(190.dp)
                                     .clip(RoundedCornerShape(if (a.primary) 10.dp else 50.dp))
                                     .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFDDE5EE))))
                                     .border(if (on) 3.dp else 1.dp, if (on) blue else Color.White.copy(alpha = 0.6f), RoundedCornerShape(if (a.primary) 10.dp else 50.dp))
@@ -699,21 +701,25 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 // only scrolls when even that doesn't fit.)
                 androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.45f).fillMaxHeight()) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
-                val primaryH = if (short) 38.dp else 44.dp
-                val nPrimary = rows.count { it.primary }
-                val restH = fitRowHeight(maxHeight - primaryH * nPrimary - 2.dp * nPrimary, (rows.size - nPrimary).coerceAtLeast(1), 2.dp, if (short) 30.dp else 36.dp, 26.dp)
+                // (674b, owner brief 15 Nov - vertical menus: one height for every row, Play included (it was taller); shorter
+                // (down to 26 dp) when the column is short, scrolling only when even that doesn't fit.)
+                val restH = fitRowHeight(maxHeight, rows.size.coerceAtLeast(1), 2.dp, if (short) 32.dp else 38.dp, 26.dp)
+                val primaryH = restH ?: if (short) 32.dp else 38.dp
                 Column(Modifier.fillMaxSize().then(if (restH == null) fadeScroll() else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
                             Row(
                                 // (Update 467, popup gate: Back's last 3 dp were cut on the KONKR — short rows a little shorter.)
-                                Modifier.fillMaxWidth().height(if (a.primary) primaryH else restH ?: if (short) 30.dp else 36.dp)
+                                Modifier.fillMaxWidth().height(primaryH)
                                     .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(a.icon, null, tint = if (on) Color.White else ink.copy(alpha = 0.75f), modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = if (a.primary) 18.sp else if (short) 14.sp else 15.sp,
+                                // (674c, Flip 2 x1.3 f674b: one fitted height for every row (83 px there) - the theme's 24 sp line at
+                                // 1.3x was taller than the row and every word was cut; the words get their own line height.)
+                                val fs = if (a.primary) 18.sp else if (short) 14.sp else 15.sp
+                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = fs, lineHeight = fs * 1.2f,
                                     fontWeight = if (a.primary || on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 2)
                             }
                         }

@@ -37,7 +37,8 @@ class Airy477Test {
     @Test fun moreKeysAreAPillRowNotTheWellOrASecondRowOfRoundKeys() {
         val s = src("WinScenes.kt")
         val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
-        assertTrue(airy.contains("secondary.forEach { a -> AiryPill(a, accent) }"))
+        // (674b: the pill row is one UniformKeyRow - the owner's button brief of 15 Nov)
+        assertTrue(airy.contains("UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) }"))
         assertTrue(!airy.contains("small = true"))
     }
 

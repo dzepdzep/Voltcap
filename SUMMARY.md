@@ -1,3 +1,40 @@
+# Update 674 (15 Nov 2026) - same branch, NOT released - IN PROGRESS
+- 673h (finishing 673g's local edits): Case flow's pills, Memory card's choices and Cinema's round keys are uniform groups;
+  Cinema's Play is as tall as the round keys. Cinema's edit compiles (missing `heightIn` import). Batch478Test's Cinema check now
+  asks for the owner's one uniform row (it asked for 478's wrapping), Airy477Test for the uniform pill row.
+- 673g4 gates graded (evidence bound to qa-0.6.73-673g4): Flip 2 x1.0 f673l 11 / 16 PASS, 1 FAIL (Side: the "Save sync is not
+  set up" line 38 px tall, under the 24 dp touch size), 4 NOT TESTED; KONKR x1.3 k673k 7 / 16 PASS, 4 FAIL (Crate / Pocket: Details
+  scrolled out of the row so never tapped; Cube: first A opened nothing + contrast / L2-R2 facts 0 px; File select: D332 squeeze),
+  5 NOT TESTED ("Play tap not recorded": the walk to MORE left the row scrolled to its end).
+  (Grading note: extract run tars outside the PC mount - the Cowork VM mount drops mtimes and the evidence check then calls
+  every file stale.)
+- 674a: the status lines under the vertical menus (ListKey's status form, SceneStatusLine) are 24 dp at least - they open
+  Save sync's setup when tapped. popclip.sh: `seek` walks the D-pad to a key the scrolling row keeps out of view - Details
+  (right) and Play (left, after the walk to MORE), logged "reached with N D-pad presses".
+- 674b, owner button brief (D331), next groups: Blades' page-blade keys (were a wrapping FlowRow) and its main command list
+  (one height for every command, Play by its bigger word); Storage's sheet keys (FlowRow -> UniformKeyRow; beside the name at
+  x1.3 they take half the line - AchFirstRowRoboTest caught the full-width row starving the sheet); Wii channel's keys (were a
+  free sideways scroll); Orbit's narrow key row; Airy's round shortcuts and its More pills (each in identical cells, one row);
+  Bubble's list (the Start plate as large as the other keys); Panels' list (one fitted height, Play no longer taller).
+- Not yet: Rental shop tag (its D320 grid keeps the longest words whole on a narrow tag at x1.3 - goes with the narrow x1.3
+  arrangement review), Night, Magazine callouts, Terminal, Camera, Card turn-over checks, the BANNER / CLASSIC / SHARED / ROW_*
+  popup styles.
+- 674a / 674b hardware (qa-0.6.73-674b, x1.3, 15 layouts): KONKR k674a 6 / 15 PASS, Flip 2 f674b 7 / 15 PASS. Regressions found
+  and fixed in 674c: Panels' words cut in its new one-height rows (own line height), Case flow's tools line squeezing the title
+  box (beside the pills on a short window), Cinema's Play squeezed to 35 px on the KONKR (on a window under 440 dp Play is the
+  first key of the round keys' row, its white plate filling the same cell - also D333's "Play smaller than Details"), Crate /
+  Pocket Details never tapped (the seek now uses the layout's own Details word - Sleeve notes, Status). Known items still open:
+  D332 Airy More squeeze, File select squeeze, Blades' standing name running off the top of the screen under a page blade
+  (screenshot f674b BLADES page), Orbit / Blades facts value cut at KONKR x1.3; Cube first-A / contrast (k674a).
+- 674c, item 4 (narrow x1.3 - one key at a time): UniformKeyRow takes two-line keys where the one-line row would scroll and the
+  two-line row shows more keys at once (uniformRowPick; a key's width = its longest word or ~62 % of its one-line width). Only
+  where every key really grows a second line at that width (a single-line drawing keeps the group at the one-line width - no
+  word is ever cut); `twoLine = false` for Storage's keys on its name line (AchFirstRowRoboTest). TwoLineKeys674Test.
+  Needs the owner's visual review.
+- Checked: compileDebugKotlin, testDebugUnitTest PASS (674c: all, incl. TwoLineKeys674Test), static_checks PASS, QA selftest 151 / 155 (the 4 FramesPy /
+  screen-script failures are this VM's ffmpeg, unrelated). QA build qa-0.6.73-674b on Flip 2 and KONKR (isolated QA app; real
+  Voltcap unchanged). Hardware gates k674a / f674a (x1.3, 15 layouts) - see the next entry.
+
 # Update 673g (15 Nov 2026) - same branch, NOT released - IN PROGRESS
 - Owner brief 15 Nov "FINAL GLOBAL BUTTON & MENU DESIGN SYSTEM" (D331): one shared, layout-aware system for the popups' key groups.
   - Every key of a group the same width (the widest word's) and height (the tallest key's), its icon and word centred, drawn in

@@ -54,11 +54,14 @@ class Batch478Test {
     }
 
     // R26 (o477T3A): Cinema's round keys sat in a sideways-scrolling row — one half under the edge, 18 px wide.
-    @Test fun cinemaKeysWrapInsteadOfScrolling() {
+    // (674a: the owner's button brief of 15 Nov replaces 478's wrapping: one UniformKeyRow - identical cells, whole keys at a
+    // time between its arrows, never a free half-hidden scroll, never wrapped.)
+    @Test fun cinemaKeysAreOneUniformRowNeverAFreeScroll() {
         val s = src("WinScenesHomes.kt")
-        val c = s.substring(s.indexOf("internal fun CinemaPremiere"), s.indexOf("internal fun CinemaPremiere") + 9800) // (506: the premiere mark added ~400 characters)
+        val c = s.substring(s.indexOf("internal fun CinemaPremiere"), s.indexOf("internal fun CinemaPremiere") + 12500) // (506: the premiere mark added ~400 characters; 674a: the uniform row's notes ~700)
         assertFalse(c.contains("Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp))"))
-        assertTrue(c.contains("FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp))"))
+        assertFalse(c.contains("FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp))"))
+        assertTrue(c.contains("UniformKeyRow(first + rest + back, 8.dp)"))  // (674c: Play first in the row on a short window)
     }
 
     // o478D: a long name's 2nd line pushed the Blades guide's Back under the blade; Cinema's empty story was a 18 px stop.

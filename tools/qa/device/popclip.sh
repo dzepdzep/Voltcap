@@ -38,6 +38,11 @@ tapat() {
   [ -n "$r" ] || return 1
   fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
+# seek LABEL_RE DIR: walk the D-pad DIR (DPAD_RIGHT / DPAD_LEFT) until a key matching LABEL_RE shows in the probe, then tap it;
+# sk = the presses it took. (674a: a uniform row that scrolls (673g) keeps Details / More / Play out of view until the D-pad
+# brings them in - k673k Crate / Pocket "Details shown but its tapped page is missing", f673l / k673k "Play tap not recorded"
+# after the walk to More had scrolled the row to its end.)
+seek() { sk=0; while :; do tapat "$1" probe && return 0; [ $sk -ge 7 ] && return 1; k $2 0.45; sk=$((sk + 1)); up; done; }
 shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
 # (Owner, 12 Nov: never wake a device - an asleep display stops the run instead.)
 dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep - not woken" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 3; }
@@ -104,6 +109,9 @@ for lay in $LAYS; do
     # (Update 469: "Details" itself first — Storage's tabs are INFO / DETAILS / …, and the list's "Info" matched INFO, the tab
     # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
+    # (674c: the layout's own word for Details too - Record crate's "Sleeve notes", Pocket's "Status" (k674a).)
+    elif grep -qiE '"label":"([^"]*[^A-Za-z])?'"$DETW"'","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null && up && seek "$DETW" DPAD_RIGHT; then
+      echo "$n Details reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
@@ -127,7 +135,7 @@ for lay in $LAYS; do
     if qa_guard 2>> $OUT/log.txt; then
       up || { k BUTTON_A 1.9; up; }
       logcat -c
-      if tapat "$PLAYW" probe; then sleep 1.3
+      if tapat "$PLAYW" probe || { seek "$PLAYW" DPAD_LEFT && echo "$n Play reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; }; then sleep 1.3
         echo "blocked=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" > $OUT/${n}_play.txt
         # (Update 469: which game it asked for — the key after "LAUNCH blocked <where>"; popclip.py checks it is the run's game.)
         logcat -d -s VoltcapQA | grep 'LAUNCH blocked' | sed 's/.*LAUNCH blocked [^ ]* \(.*\) popup=.*/key=\1/;s/https[^ ]*//g' >> $OUT/${n}_play.txt

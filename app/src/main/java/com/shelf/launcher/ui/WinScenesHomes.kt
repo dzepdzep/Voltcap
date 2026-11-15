@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -109,6 +110,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
             }
             // Update 487 (E7 Cinema actions, owner-approved): the round keys run under both columns (the page's whole width)
             // instead of under the facts only — there, 5 of the 8 fitted and Manual / Inspect / Back wrapped below the window.
+            // (674c, KONKR x1.3 k674a: on a short window the round keys' row left Play 35 px of a 58 dp key - its word cut, and
+            // smaller than the keys (the gate's Play-first rule, D333). There Play is the first key of that row, its white plate
+            // filling the same cell as every other key; on a taller window it stays the big key over them.)
+            val playInRow = ctx.maxH < 440.dp
             Column(Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 10.dp)) {
             Row(Modifier.weight(1f).fillMaxWidth()) {
                 Column(Modifier.weight(1.25f).fillMaxHeight()) {
@@ -119,13 +124,15 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         FullText(listOfNotNull(ctx.year, ctx.console, ctx.genres?.substringBefore(",")).joinToString("   "), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                     }
                     Spacer(Modifier.height(10.dp))
-                    if (ctx.page == WinPage.MAIN) {
+                    if (ctx.page == WinPage.MAIN && !playInRow) {
                         val play = ctx.buttons.filter { it.primary }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             play.forEach { a ->
                                 SceneControl(a, Modifier) { on ->
+                                    // (673g: as tall as the round keys with their names (the popup gate's Play-first rule) - the
+                                    // streaming app's big white Play.)
                                     Row(
-                                        Modifier.clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = if (on) 1f else 0.9f))
+                                        Modifier.heightIn(min = if (compact) 58.dp else 66.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = if (on) 1f else 0.9f))
                                             .then(if (on) Modifier.border(3.dp, accent, RoundedCornerShape(6.dp)) else Modifier)
                                             .padding(horizontal = 22.dp, vertical = 9.dp),
                                         verticalAlignment = Alignment.CenterVertically
@@ -184,10 +191,24 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                 // each key is as wide as its name, which stays whole on one line.
                 // (Update 478, R26: they wrap to a second line instead of scrolling sideways — a key half under the
                 // window's edge measured 18 px wide on the Odin (T3 o477T3A), and actions never sit in a scrolling row.)
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    (rest + back).forEach { a ->
+                // (673g, owner brief 15 Nov: the round keys stay round - a streaming app's own controls - but as ONE group of
+                // identical cells (the widest name's), one row that scrolls a whole key at a time, never wrapped.)
+                val first = if (playInRow) ctx.buttons.filter { it.primary } else emptyList()
+                UniformKeyRow(first + rest + back, 8.dp) { a ->
+                        if (a.primary) SceneControl(a, Modifier) { on ->
+                            Row(
+                                Modifier.uniformFill().heightIn(min = 36.dp).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = if (on) 1f else 0.9f))
+                                    .then(if (on) Modifier.border(3.dp, accent, RoundedCornerShape(6.dp)) else Modifier)
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(a.icon, null, tint = Color.Black, modifier = Modifier.size(22.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(a.label, color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                            }
+                        } else
                         SceneControl(a, Modifier.widthIn(min = if (compact) 58.dp else 66.dp)) { on ->
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Column(Modifier.uniformFill(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                 Box(
                                     Modifier.size(if (compact) 38.dp else 44.dp).clip(CircleShape)
                                         .background(if (on) Color.White else Color(0xFF2A2A2A))
@@ -201,7 +222,6 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             }
                         }
-                    }
                 }
             }
             }

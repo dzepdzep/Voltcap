@@ -1188,6 +1188,28 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 3bda855f + 673f + 673g (673g3 + the row's scroll semantics, Box / File select / Coverflow details groups), working tree - the 673g commit",
    "note": "673g4 QA build: assembleQa 15 Nov 12:13 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674b",
+   "apk_sha256": "f8656e289ff43cec63061a6ae630ea217dfa73d097bc9e2e2a34199f1c7ea201",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "5c6905c1",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 5c6905c1 + working tree: Case flow / Memory card / Cinema uniform groups (673g, Cinema heightIn import), 674a status lines 24 dp + popclip D-pad seek, 674b Blades / Storage / Wii channel / Orbit narrow / Airy / Bubble / Panels uniform groups",
+   "note": "674b QA build: assembleQa 15 Nov 14:50 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674c",
+   "apk_sha256": "f1c84401714c5ca53aa3daf8231c281d1e6b16af43403fb908ba58fe1a882231",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "5c6905c1",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 5c6905c1 + 673h + 674a + 674b + 674c (two-line uniform keys, Cinema Play in the row on short windows, Case flow tools beside the pills, Panels line height) - the 674 commit",
+   "note": "674c QA build: assembleQa 15 Nov 15:23 UTC."
   }
  ]
 }

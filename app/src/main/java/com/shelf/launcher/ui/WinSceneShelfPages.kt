@@ -161,7 +161,7 @@ internal fun PageBars(keys: List<WinAction>, gap: Dp, key: @Composable (WinActio
     // (673g, owner brief 15 Nov - "Horizontal = one scrollable row", identical buttons: the page's bars are one row of equal
     // bars spanning the card where they fit, scrolling a whole bar at a time where they don't (UniformKeyRow) - no longer as few
     // rows as kept every word whole with the bars sharing out the width by their words (529o).)
-    UniformKeyRow(keys.filterNot { it.status }, gap, key)
+    UniformKeyRow(keys.filterNot { it.status }, gap, key = key)
 }
 
 /**

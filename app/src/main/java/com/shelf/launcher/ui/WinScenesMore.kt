@@ -126,7 +126,7 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (Win
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
-        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key)
+        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -155,6 +155,22 @@ internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int
     return UniformRowGeom(w, k, true, w + gap, (n - k) * (w + gap), ((width - view) / 2).coerceAtLeast(0), view)
 }
 
+/**
+ * 674c (pure, item 4 of the 15 Nov directive - narrow windows at x1.3 showed one key at a time): [need] is the widest key's
+ * one-line width, [need2] the width at which every key's word takes two lines at most (0: a key can't take a second line).
+ * The two-line keys are used only where the one-line row would scroll and the two-line one shows more keys at once.
+ */
+internal fun uniformRowPick(n: Int, need: Int, need2: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
+    val one = uniformRowGeom(n, need, width, gap, gutter)
+    if (!one.scrolls || need2 <= 0 || need2 >= need) return one
+    val two = uniformRowGeom(n, need2, width, gap, gutter)
+    return if (!two.scrolls || two.visible > one.visible) two else one
+}
+
+/** 674c: a two-line key's width - its longest word, or about 62 % of its one-line width (a balanced two-line split of two or
+ *  three words plus the icon and padding), whichever is wider. */
+internal fun twoLineKeyWidth(minW: Int, maxW: Int): Int = maxOf(minW, kotlin.math.ceil(maxW * 0.62f).toInt()).coerceAtMost(maxW)
+
 /** 673g (pure): the scroll that shows key [i] whole, from [current], moving by whole keys and as little as possible. */
 internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
     if (!g.scrolls || i < 0) return 0
@@ -173,7 +189,7 @@ internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
  * clipped away (not drawn, not counted as shown). Each key is drawn by [key] - the layout's own look - at the group's size.
  */
 @Composable
-internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
     val gutterPx = with(density) { KEY_ROW_GUTTER.roundToPx() }
@@ -232,7 +248,10 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, key: @Composable (Win
         val need = runCatching { box.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse {
             if (c.hasBoundedWidth) ((c.maxWidth - (n - 1).coerceAtLeast(0) * gapPx) / n.coerceAtLeast(1)) else 0 }
         val width = if (c.hasBoundedWidth) c.maxWidth else n * need + (n - 1).coerceAtLeast(0) * gapPx
-        val g = uniformRowGeom(n, need, width, gapPx, gutterPx)
+        // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
+        // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
+        val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
+        val g = uniformRowPick(n, need, need2, width, gapPx, gutterPx)
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
             .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
         keyW[0] = g.keyW
@@ -286,8 +305,17 @@ private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = o
     }
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
         measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
-    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
-        measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
+    // (674c: the width at which every key's word fits on two lines - UniformKeyRow's narrow fallback. A key that doesn't grow
+    // a line when narrowed (its word is single-line, or its drawing isn't text) keeps the group at the one-line width: no
+    // word is ever cut to make room.)
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int): Int {
+        val maxW = measurables.map { it.maxIntrinsicWidth(height) }
+        val one = maxW.maxOrNull() ?: 0
+        val need2 = measurables.mapIndexed { i, m -> twoLineKeyWidth(m.minIntrinsicWidth(height), maxW[i]) }.maxOrNull() ?: 0
+        if (need2 >= one) return one
+        val ok = measurables.withIndex().all { (i, m) -> maxW[i] <= need2 || m.maxIntrinsicHeight(need2) > m.maxIntrinsicHeight(maxW[i]) }
+        return if (ok) need2 else one
+    }
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicHeight(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, width: Int) =
         measurables.maxOfOrNull { it.maxIntrinsicHeight(width) } ?: 0
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicHeight(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, width: Int) =
@@ -372,7 +400,8 @@ internal fun SceneKey(
 private fun SceneStatusLine(a: WinAction, k: SceneKeyColors, font: FontFamily?, size: TextUnit) {
     SceneControl(a, Modifier.fillMaxWidth()) { on ->
         val c = if (a.urgent) Color(0xFFFF8A3D) else k.ink.copy(alpha = k.ink.alpha * 0.82f)
-        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp))
+        // (674a: tappable - 24 dp at least, as WinStatusChip.)
+        Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).clip(RoundedCornerShape(4.dp))
             .border(if (on) 1.5.dp else 0.dp, if (on) k.onEdge else Color.Transparent, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Icon(a.icon, null, tint = c, modifier = Modifier.size(13.dp))

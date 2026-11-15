@@ -182,9 +182,9 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
                 if (back == null && small.isNotEmpty()) WiiRoundMore(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, compact)
             }
         } else {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ctx.buttons.forEach { a -> WiiBigKey(a, a.label, pal, Modifier.widthIn(min = 140.dp), compact) }
-            }
+            // (674b, owner brief 15 Nov: identical keys in one row that scrolls a whole key at a time (UniformKeyRow) - was a free
+            // sideways scroll that could leave a key half under the edge.)
+            UniformKeyRow(ctx.buttons, 12.dp) { a -> WiiBigKey(a, a.label, pal, Modifier.uniformFill().widthIn(min = 140.dp), compact) }
         }
     }
 }

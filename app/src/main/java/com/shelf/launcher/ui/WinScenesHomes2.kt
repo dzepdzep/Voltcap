@@ -80,7 +80,8 @@ private fun ListKey(a: WinAction, ink: Color, lit: Color, litInk: Color, height:
     if (LocalKeyAsStatus.current) {
         SceneControl(a, Modifier.fillMaxWidth()) { on ->
             val c = if (a.urgent) Color(0xFFFF8A3D) else ink.copy(alpha = ink.alpha * 0.8f)
-            Row(Modifier.fillMaxWidth().background(if (on) lit.copy(alpha = 0.35f) else Color.Transparent).padding(horizontal = 12.dp, vertical = 3.dp),
+            // (674a: a status line can be tapped (Save sync not set up opens its setup) - 24 dp at least, the touch gate's minimum; f673l Side.)
+            Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).background(if (on) lit.copy(alpha = 0.35f) else Color.Transparent).padding(horizontal = 12.dp, vertical = 3.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 Icon(a.icon, null, tint = c, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(8.dp))
                 Text(sceneLabel(a.label), color = c, fontSize = 12.sp, fontFamily = font, maxLines = 3)
