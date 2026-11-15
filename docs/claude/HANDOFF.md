@@ -17,8 +17,14 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 - CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-1. Emulator trial: read the 674o matrix run; keep the renderer that stays up; then widen (more layouts per job, x1.0 + x1.3,
-   Flip 2-like 1920x1080 @ 360 and RP Classic-like profiles, split across bounded jobs; artifacts; failures -> backlog).
+1. Emulator trial (run 43762702001 on ee24d976, KONKR-like 960x640, x86_64 APK installs and launches): swangle_indirect
+   STAYED UP through both popup gates (first time since 14 Nov) -> now the default renderer; swiftshader_indirect went offline
+   after e529a; guest failed the e529a precondition. Gate results on swangle (EMULATOR): e529a x1.3 COVERDETAILS "did not open
+   (no Play / Continue)", SHELF "More shown but its step is missing"; e529b x1.0 COVERDETAILS "Details tapped page missing",
+   SHELF same More step; e529c precondition failed (not HOME). Next: read the artifact (screenshots / logs) - most likely the
+   software-rendered emulator is slower than popclip's waits; make the waits condition-based (QaClip screen marks), never
+   shorter checks or skipped assertions. Then widen: more layouts per bounded job, x1.0 + x1.3, Flip 2-like 1920x1080 @ 360,
+   RP Classic-like profile, 17 category styles, failures -> backlog.
 2. D-674o-1 glyphcheck: Spot START pill over a backdrop shape of nearly the pill's colour - the walk ran past the pill's edge
    (dy +3 px). Make the pill's edge measurable (e.g. GlyphPill's own known size from the dump) - never loosen the threshold.
 3. Native popup pages for the remaining layouts; physical pickup / return animations (Disc Station etc.); D323 / D324 in-place

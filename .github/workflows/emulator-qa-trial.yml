@@ -22,7 +22,7 @@ on:
     inputs:
       renderers:
         description: 'Renderer modes to try (comma list of swiftshader_indirect, swangle_indirect, guest)'
-        default: 'swiftshader_indirect,swangle_indirect,guest'
+        default: 'swangle_indirect'
         required: false
   push:
     branches: [claude/qa-0672-repair]
@@ -82,7 +82,9 @@ jobs:
       - name: Renderer matrix
         id: matrix
         env:
-          WANT: ${{ github.event.inputs.renderers || 'swiftshader_indirect,swangle_indirect,guest' }}
+          # (674o run 43762702001: swangle_indirect stayed up through both popup gates; swiftshader_indirect went offline after
+          # the first, guest never reached a clean home. swangle is the default; the others stay selectable by hand.)
+          WANT: ${{ github.event.inputs.renderers || 'swangle_indirect' }}
         run: |
           python3 -c "import json,os; r=[x.strip() for x in os.environ['WANT'].split(',') if x.strip() in ('swiftshader_indirect','swangle_indirect','guest')]; print('renderers=' + json.dumps(r or ['swiftshader_indirect']))" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

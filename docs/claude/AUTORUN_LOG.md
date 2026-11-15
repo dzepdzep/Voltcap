@@ -5,4 +5,7 @@
   the cloud (2 cores: slow, CI is the gate). Emulator trial reworked (674o) and started with "[emulator-qa]".
 - Hardware (PC): HW-1 gates graded - Flip 2 x1.0 f674o 52/53, KONKR x1.3 k674n 51/53; both devices restored (snapshot diff=0,
   fatal=0). Fixes for the three FAILs in 674o.
+- Cloud verified: compile of app + tests (~7 min) and targeted unit tests (13/13) in the cloud container; pushes from the cloud.
+- Emulator 674o matrix: swangle_indirect stays up (gates ran, emulator FAILs = timing to investigate); default now swangle.
+- Cloud scheduled task "VoltCap Cloud Autonomous Development" hourly at :17; first run 22:17 UTC (unverified until it logs here).
 - PC hourly task: still held off by the PC lock file (Claude outputs\AUTORUN_LOCK.txt) until the cloud task is verified.

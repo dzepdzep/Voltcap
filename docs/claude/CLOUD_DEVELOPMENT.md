@@ -20,7 +20,9 @@ Windows PC is used for physical handheld QA and occasional local work only. Noth
 ```
 bash tools/cloud/setup_android.sh          # Android SDK (platform 36, build-tools 36, NDK 28, CMake) ~1 min, idempotent
 export ANDROID_HOME=$HOME/android-sdk VOLTCAP_CLOUD=1
-./gradlew --no-daemon --max-workers=2 -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest
+G="--no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx5g -Pkotlin.compiler.execution.strategy=in-process -PvoltcapCiWithoutDiscord=true"
+./gradlew $G :app:compileDebugUnitTestKotlin                      # app + tests compile: ~7 min cold on 2 cores (verified 15 Nov)
+./gradlew $G :app:testDebugUnitTest --tests 'com.shelf.launcher.ui.Batch674oTest'   # targeted tests: seconds once compiled
 ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug     # isolated QA app, Discord stub
 python3 tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher
 python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
@@ -30,6 +32,8 @@ python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
 - No signing keys, `keystore.properties`, `screenscraper.properties`, `igdb.properties` or `voltcap_api.properties` exist in the
   cloud and none are needed for debug / QA builds and tests. Never add them.
 - Maven Central can answer 429 through the cloud proxy: rerun with `--max-workers=2`; one retry, not a loop.
+- Memory: the container has ~8 GB. A 3 GB heap or a separate Kotlin daemon runs out ("Not enough memory to run compilation");
+  use the flags above. The full unit-test suite (1,900+ Robolectric tests) belongs to CI, not the cloud container.
 - No KVM in cloud sessions: no Android emulator there. Emulator QA runs in GitHub Actions (below).
 
 ## CI
