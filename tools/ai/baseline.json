@@ -1,0 +1,7 @@
+{
+  "application_branch": "claude/qa-0672-repair",
+  "application_sha": "abf3c2b5eba2c61b4a1764a701ab324ca04bf7e0",
+  "pr_base": "claude/qa-0672-repair",
+  "writer": "cloud",
+  "note": "Owner-authorized cloud handoff, 14 Nov 2026. Keep the desktop coding session paused while cloud is the single writer. Application baseline has known CI failures; this handoff does not accept or resolve them. Further baseline changes require a reviewed PR to main."
+}
