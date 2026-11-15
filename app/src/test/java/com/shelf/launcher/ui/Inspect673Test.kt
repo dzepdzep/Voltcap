@@ -113,6 +113,14 @@ class Inspect673Test {
         assertTrue(src("GameWindow.kt").contains("motion.open(inspectScope, fullInspect, spin = inspectTurn, awaitDrawn = inPlace)"))
     }
 
+    // (D327) Disc station's deck panel at 1.3x with More open: the keys take at most 45 % and scroll, the LCD keeps the rest.
+    @Test fun discPanelKeysScrollRatherThanSqueezeTheLcd() {
+        val s = src("WinScenesMore.kt")
+        val i = s.indexOf("internal fun DiscPlayerPanel(")
+        val body = s.substring(i, s.indexOf("internal fun discPanelGeometry", i).takeIf { it > 0 } ?: (i + 6000))
+        assertTrue(body.contains("Box(Modifier.heightIn(max = ctx.maxH * 0.45f).sceneFadeEdges(keyScroll).verticalScroll(keyScroll))"))
+    }
+
     @Test fun qaCanPressInspectLikeItsKey() {
         assertTrue(src("TestHooks.kt").contains("val winInspect = mutableStateOf<Boolean?>(null)"))
         assertTrue(src("TestHooks.kt").contains("intent?.getStringExtra(\"voltcap_test_wininspect\")"))

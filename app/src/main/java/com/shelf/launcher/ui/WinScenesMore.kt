@@ -445,9 +445,15 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.height(10.dp))
             // The transport keys.
-            KeyRow(sceneKeys(ctx), 8.dp) { a ->
-                SceneKey(a, Color(0xFF263044), Color(0xFF121826), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
-                    font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
+            // (673d, D327, KONKR x1.3 gate k673f: with More open the keys wrapped to rows that took the whole deck, the LCD's title
+            // squeezed to nothing and its DISC / PLAYED readouts cut. The keys take at most 45 % of the panel's height and scroll
+            // past it (the D-pad brings the key it is on into view); the LCD keeps the rest. Where they fit, nothing changes.)
+            val keyScroll = rememberScrollState()
+            Box(Modifier.heightIn(max = ctx.maxH * 0.45f).sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
+                KeyRow(sceneKeys(ctx), 8.dp) { a ->
+                    SceneKey(a, Color(0xFF263044), Color(0xFF121826), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
+                        font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
+                }
             }
         }
     }

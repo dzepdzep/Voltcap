@@ -1100,6 +1100,17 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 6308b2a4 + the 673c working tree (Disc station's lifted disc keeps the sheen, D326), committed next",
    "note": "673c QA build: assembleQa 15 Nov 10:13 UTC. Flip 2 x1.0 Inspect recording pkf673o_10 (Disc station)."
+  },
+  {
+   "id": "qa-0.6.73-673d",
+   "apk_sha256": "2bf6af4dd466a0dd3a3723fef50ef024f72d2ad651847d2e6d5c0ce4badbe71a",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3666ca5b",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3666ca5b + the 673d working tree (Disc station panel keys scroll, D327), committed next",
+   "note": "673d QA build: assembleQa 15 Nov 10:29 UTC. Gates k673g (KONKR x1.3 Disc station), f673g (Flip 2)."
   }
  ]
 }

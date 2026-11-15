@@ -3855,6 +3855,14 @@
    "severity": "low",
    "status": "fixed in 673c (InspectDisc(sheen = motion.rollHome): the station's discSheen over the lifted disc's label, turning and squeezing with it), verified pkf673o_10 (Flip 2 x1.0): the same sheen before, during and after the lift and the landing",
    "found": "2026-11-15 pkf673k"
+  },
+  {
+   "id": "D327",
+   "title": "Disc station at x1.3 on the KONKR with More open: the keys wrapped to rows that took the deck panel, the LCD's title squeezed to 0 px and its DISC / PLAYED readouts cut (box 18 of 54 px)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 673d (the keys take at most 45 % of the panel's height and scroll past it, the LCD keeps the rest), verified k673g (KONKR x1.3 Disc station PASS, was FAIL in k673f)",
+   "found": "2026-11-15 k673f (first KONKR x1.3 gate of Disc station on this line)"
   }
  ]
 }

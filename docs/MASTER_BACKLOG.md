@@ -13,7 +13,7 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. v0.6.72 released; updates 672a-d, 673a-c (15 Nov 2026) - newest
+## 0. v0.6.72 released; updates 672a-d, 673a-d (15 Nov 2026) - newest
 
 **Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
 equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
@@ -40,10 +40,11 @@ production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 4
 | QA checker passed D320 (two lines in a one-line box only a warning) (D321) | FIXED (673a) | geomcheck: a whole line out of its box = FAIL; self-test on the real dumps; 0 other reports in 793 dumps |
 | Pickup windows: ~0.10-0.14 s from A to first motion on the KONKR (D322) | OPEN (P2 perf, measured) | shared by every pickup since 0.6.71; the window's first frame ~63 ms + the flight's target one more frame |
 | Inspect pressed in an open own window: parts faded in again, home place empty for frames (D323, D324) | DONE for Disc station / Coverflow details (673b); OPEN for the other Inspect-only windows | the in-place lift; the others still re-lay out (InspectLayout) - check on hardware |
+| Disc station with More open at x1.3 on the KONKR: keys took the deck, LCD title squeezed (D327) | DONE (673d) | k673g KONKR x1.3 PASS (k673f FAIL); keys at most 45 % of the panel, scrolling past it |
 | CI Verify hung twice in the unit tests (D325) | DIAGNOSTICS IN (673b) | the next CI run names the test that never ends (public annotations); Windows: 2794 / 0, slowest 4.9 s |
 
 Gates on this line (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after each):
-k673e KONKR x1.3 SHOP PASS · f673e Flip 2 x1.3 SHOP PASS (673a) · f673a Flip 2 x1.3 10/10 · f673b Flip 2 x1.0 11/11 · f673c Flip 2 x1.3 10/11 (Box overlap -> 672d) · f673d Flip 2 x1.3 3/3 ·
+k673g KONKR x1.3 DISCS PASS (673d) · f673g Flip 2 x1.3 COVERDETAILS PASS, DISCS FAIL (D328) · k673e KONKR x1.3 SHOP PASS · f673e Flip 2 x1.3 SHOP PASS (673a) · f673a Flip 2 x1.3 10/10 · f673b Flip 2 x1.0 11/11 · f673c Flip 2 x1.3 10/11 (Box overlap -> 672d) · f673d Flip 2 x1.3 3/3 ·
 k673a KONKR x1.3 7/10 · k673b 9/11 · k673c 10/11 (Box rapid once). Unit tests (Windows) 2786 / 0 failures (673a); static checks strict PASS.
 Not run on this line yet: KONKR x1.0 full gate, RP Classic / Thor / Odin (not connected or not used: max two handhelds), emulator.
 

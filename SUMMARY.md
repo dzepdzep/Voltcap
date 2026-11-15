@@ -1,3 +1,11 @@
+# Update 673d (15 Nov 2026) - same branch, NOT released
+- Disc station at x1.3 on the KONKR with More open (D327, found by the first KONKR x1.3 gate of Disc station, k673f): the keys
+  wrapped to rows that took the deck panel - the LCD's title squeezed to nothing, its readouts cut. The keys take at most 45 % of
+  the panel and scroll past it (the D-pad brings the key it is on into view); where they fit nothing changes.
+- Gates: 673d build - KONKR x1.3 k673g Disc station PASS (was FAIL on 673c, k673f); Flip 2 x1.3 f673g Coverflow details PASS,
+  Disc station FAIL (D328, the LCD's story cue squeezed with More open - 673e). 673c build - Flip 2 x1.0 f673f Disc station +
+  Coverflow details PASS, KONKR x1.3 k673f Coverflow details PASS. testDebugUnitTest 2795 / 0 failures.
+
 # Update 673c (15 Nov 2026) - same branch, NOT released
 - Disc station's lifted disc keeps the station's light sheen (D326): it lost it as it left the tray and got it back as it landed, so
   its colours changed at both ends. The sheen is drawn over the lifted disc's label, turning and squeezing with it. Flip 2 x1.0
