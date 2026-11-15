@@ -3829,7 +3829,7 @@
    "title": "Inspect pressed in an open own window: the window's parts went to InspectLayout's side and faded in again from nothing (the panel blinked out and re-entered), and the object's home place stood empty for frames (Flip 2 pkf673h, Disc station)",
    "rule": "SHARED-PICKUP",
    "severity": "medium",
-   "status": "fixed in 673b for Disc station and Coverflow details (inspectsInPlace: the panel stays, the piece is lifted where it stands); OPEN for the other windows whose piece comes only with Inspect (File select, Storage boxes, Memory card, Orbit deck, Airy, Night, Blades, Bubbles, Camera, Panels, Magazine, Terminal, Arcade, Channel grid, Green Core, Cube menu, Artwork library) - not yet checked on hardware",
+   "status": "fixed in 673b for Disc station and Coverflow details (inspectsInPlace: the panel stays, the piece is lifted where it stands); OPEN for the other windows whose piece comes only with Inspect (File select, Storage boxes, Memory card, Orbit deck, Airy, Night, Blades, Bubbles, Camera, Panels, Magazine, Terminal, Arcade, Channel grid, Green Core, Cube menu, Artwork library) - not yet checked on hardware; Storage boxes / File select checked on Flip 2 x1.0 (pkf673n): Inspect re-lays the window out beside the piece (update 330's design) - whether its parts fade in again there needs a frame check",
    "found": "2026-11-15 pkf673h"
   },
   {
@@ -3853,7 +3853,7 @@
    "title": "Disc station Inspect: the lifted disc is drawn without the station's light sheen, so its colours change as it leaves and lands the tray",
    "rule": "VISUAL",
    "severity": "low",
-   "status": "open - for the owner's review of the 673b lift (could draw the sheen on the lifted disc)",
+   "status": "fixed in 673c (InspectDisc(sheen = motion.rollHome): the station's discSheen over the lifted disc's label, turning and squeezing with it), verified pkf673o_10 (Flip 2 x1.0): the same sheen before, during and after the lift and the landing",
    "found": "2026-11-15 pkf673k"
   }
  ]

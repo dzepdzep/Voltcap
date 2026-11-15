@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a-b: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
+Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a-c: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -13,7 +13,7 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. v0.6.72 released; updates 672a-d, 673a-b (15 Nov 2026) - newest
+## 0. v0.6.72 released; updates 672a-d, 673a-c (15 Nov 2026) - newest
 
 **Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
 equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
@@ -32,7 +32,7 @@ production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 4
 | Cardboard box rapid A B A B (owner: keep the RC2 fix) | KEPT; one intermittent "left open" in gate k673c (D319, suspect) | not reproduced: r673c 16/16, r673d 40/40 closed (trace-recording rounds) - watch |
 | Cube menu Classic x1.3: achievement chip cut (D318) | DONE (672c) | KONKR x1.3 pkk673d_13: "80%" whole on the card |
 | Cube menu Classic x1.3: small game card | OPEN (design) | the docked cube's band + the info area at x1.3 leave the row ~60 dp on a 556 dp-wide screen; options: a left dock below 600 dp at large text, or a slimmer band - owner's pick |
-| **Physical pickups** | **14 / 14 move the real object (implemented; owner review pending)** | Case flow, Rental shop (672b); Disc station and Coverflow details Inspect lift (673b: A leaves the object in place, Inspect lifts it where it stands, B returns it - Flip 2 pkf673k, KONKR pkk673m). For review: D326 (the lifted disc lacks the tray's sheen) |
+| **Physical pickups** | **14 / 14 move the real object (implemented; owner review pending)** | Case flow, Rental shop (672b); Disc station and Coverflow details Inspect lift (673b: A leaves the object in place, Inspect lifts it where it stands, B returns it - Flip 2 pkf673k, KONKR pkk673m). D326 (the lifted disc lacked the tray's sheen) fixed in 673c |
 | **Native popup pages** | **12 / 53 layouts** (6 scenes: Storage, Night, Tiles + Grid, Blades, shelf family x4, Twin x3) | 41 layouts still open Details / Achievements / Options on the shared page (recounted from NATIVE_PAGE_SCENES, 15 Nov) |
 | Emulator trial workflow did not run on the RC commits | FIXED (672a) | the paths filter skipped app-only commits; "[emulator-qa]" in the head commit message is enough now |
 | Production pins for 0.6.72 | DONE on the dev branch (91d3bf86 + LF 7f7a74d2) | reach main with the next PR |

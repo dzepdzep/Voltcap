@@ -58,7 +58,8 @@ Each 4-picture sheet: the home screen; the window after A (the object stays wher
 - Disc station: A opens the deck's panel with the disc still turning in its tray. Inspect lifts that disc out of the tray — from
   the angle the tray had turned it to, upright as it rises, a little toward you — and B puts it back into the tray. No frame with
   neither the tray's disc nor the lifted one (brightness of the tray per frame, both devices). Its colours change as it leaves and
-  lands: the tray's disc has the station's light sheen, the lifted disc doesn't (D326, for review).
+  lands: the tray's disc has the station's light sheen, the lifted disc didn't (D326) - fixed in 673c (pkf673o_10: the same sheen
+  before, during and after the lift and the landing).
 - Coverflow details: A opens the side panel with the case standing where it was. Inspect pulls that case forward from the angle,
   tilt and size it stood at and turns it; B puts it back as it stood.
 - With Inspect pressed, the Inspect key leaves the panel, which re-centres by half a row.

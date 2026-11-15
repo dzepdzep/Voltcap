@@ -1621,7 +1621,7 @@ internal fun MediaInspectPiece(piece: InspectPiece, motion: InspectMotion, slot:
                 when (piece.kind) {
                     InspectKind.BOX -> InspectCase(piece, aspect, motion, yawOf, openOf, caseItem, itemInCase)
                     InspectKind.SLAB -> InspectSlab(piece, yawOf, pitchOf)
-                    InspectKind.DISC -> InspectDisc(piece, yawOf, pitchOf)
+                    InspectKind.DISC -> InspectDisc(piece, yawOf, pitchOf, sheen = motion.rollHome)
                     // (Update 200: no MODEL any more — InspectModel's pre-rendered pictures are retired.)
                 }
             }
@@ -2432,7 +2432,7 @@ private object SlabLight {
 
 /** A disc turning: its label, a thin edge, its data side. */
 @Composable
-private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Float = { 0f }) {
+private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Float = { 0f }, sheen: Boolean = false) {
     // (Update 162 (review): both sides stay composed and the one facing you is picked while drawing — swapping them in
     // composition dropped the label's picture each time it turned over, and recomposed mid-turn.)
     // (Update 189: a mini disc at its real 8 cm against 12 cm.)
@@ -2490,6 +2490,9 @@ private fun InspectDisc(p: InspectPiece, yawOf: () -> Float, pitchOf: () -> Floa
             contentAlignment = Alignment.Center
         ) {
             PieceFace(p, Modifier.fillMaxSize().graphicsLayer { alpha = if (PiecePose(yawOf(), pitchOf()).facing >= 0f) 1f else 0f }
+                // (673b, D326: Disc station's lifted disc keeps the station's light sheen - it lost it as it left the tray and got
+                // it back as it landed. Over the label only, turning and squeezing with it; not in the edge's slices.)
+                .then(if (sheen) Modifier.discSheen(if (p.smallDisc) 80f / 120f else 1f) else Modifier)
                 // (Update 288: recorded, unturned, for the edge's slices behind it.)
                 .drawWithCache {
                     val l = obtainGraphicsLayer()

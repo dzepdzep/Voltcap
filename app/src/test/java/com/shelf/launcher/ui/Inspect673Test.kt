@@ -97,6 +97,9 @@ class Inspect673Test {
         assertEquals(-170f, shortTurn(190f), 1e-4f); assertEquals(180f, shortTurn(180f), 1e-4f)
         assertEquals(-90f, shortTurn(-450f), 1e-4f); assertEquals(10f, shortTurn(730f), 1e-4f)
         assertTrue(src("StyleDiscStation.kt").contains("DiscTray.set(g.stableKey, rotationZ)"))
+        // (D326) The lifted disc keeps the station's sheen.
+        assertTrue(src("MediaInspectView.kt").contains("InspectKind.DISC -> InspectDisc(piece, yawOf, pitchOf, sheen = motion.rollHome)"))
+        assertTrue(src("MediaInspectView.kt").contains(".then(if (sheen) Modifier.discSheen(if (p.smallDisc) 80f / 120f else 1f) else Modifier)"))
         assertTrue(src("MediaInspectView.kt").contains("if (motion.rollHome) rotationZ = shortTurn(if (motion.closing) DiscTray.angleOf(key) ?: motion.fromRoll else motion.fromRoll) * pullEase(k)"))
     }
 

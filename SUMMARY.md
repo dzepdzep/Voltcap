@@ -1,3 +1,10 @@
+# Update 673c (15 Nov 2026) - same branch, NOT released
+- Disc station's lifted disc keeps the station's light sheen (D326): it lost it as it left the tray and got it back as it landed, so
+  its colours changed at both ends. The sheen is drawn over the lifted disc's label, turning and squeezing with it. Flip 2 x1.0
+  pkf673o: the same look before, during and after the lift and the landing.
+- Storage boxes and File select checked with Inspect pressed in their open window (Flip 2 x1.0 pkf673n): the window re-lays out
+  beside the piece, by update 330's design - D323 stays open for those windows until their frames are checked.
+
 # Update 673b (15 Nov 2026) - same branch, NOT released
 - Disc station (owner design 14 Nov: "the disc stays seated for ordinary info panels; the real disc lifts and returns for Inspect /
   Zoom"): A opens the deck's panel beside the player with the disc still turning in its tray - before, every A lifted a copy of the

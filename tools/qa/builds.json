@@ -1085,10 +1085,21 @@
    "version_name": "0.6.72-qa",
    "version_code": 79,
    "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
-   "base_commit": "9c9f41ac",
+   "base_commit": "6308b2a4",
    "patch_sha256": null,
-   "tree_hash": "repair/0.6.72-windows-tests 9c9f41ac + the 673b working tree (Disc station / Coverflow details Inspect lifted in place), committed next",
+   "tree_hash": "repair/0.6.72-windows-tests 6308b2a4 (the tree committed)",
    "note": "673b QA build: assembleQa 15 Nov 10:04 UTC (the committed tree). Inspect recordings pkk673m_13 (KONKR x1.3); earlier 673b iterations pkf673h-l / pkk673j-l on builds of the same line before the last fixes."
+  },
+  {
+   "id": "qa-0.6.73-673c",
+   "apk_sha256": "c3ff99c07b5740e40b67518ffc004223cc012b597ff6e0b51de677b2708bc8f3",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "6308b2a4",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 6308b2a4 + the 673c working tree (Disc station's lifted disc keeps the sheen, D326), committed next",
+   "note": "673c QA build: assembleQa 15 Nov 10:13 UTC. Flip 2 x1.0 Inspect recording pkf673o_10 (Disc station)."
   }
  ]
 }
