@@ -47,7 +47,8 @@ restore)
   [ -d $O/snapbak ] || { log "restore: nothing to restore (the run saved no snapshot)"; exit 0; }
   A --es voltcap_test_scale off --es voltcap_test_fixture off --es voltcap_test_artfix off; sleep 1.5
   A --ez voltcap_test_preview false; sleep 1; A --es voltcap_test_snapshot restore; sleep 3
-  [ -f $O/nolaunch_was_there ] || rm -f $F/qa_nolaunch
+  # (v0.6.72 PR gate, test_no_device_script_lifts_the_block: the launch block stays - only the final clean-up with the
+  # release build back removes qa_nolaunch, never a QA script.)
   log "restore verify: $(cut -c1-60 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)"
   if [ -d $O/snapbak ]; then cp $O/snapbak/* $F/; n=0; for f in $O/snapbak/*; do cmp -s $f $F/$(basename $f) || n=1; done; log "owner snapshot files back: diff=$n"; fi ;;
 esac
