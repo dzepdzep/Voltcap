@@ -1,3 +1,15 @@
+# Update 674n (15 Nov 2026, evening) - same branch, NOT released
+- Full gates on 674k graded (new checker, 0 NOT TESTED): Flip 2 x1.0 f674k 52 / 53 PASS (was 46; FAIL: Bar home '◀' 5.5 px off
+  centre); KONKR x1.0 k674m 51 / 53 PASS (was 40; FAIL: Arcade pointer glyph - fixed in 674m, not yet on hardware; Side menu
+  "Save sync" cut 13 px at the drawer's bottom). Note: f674k ran at x1.0 (manifest font 1.0), not x1.3 - x1.3 gates still due.
+- Side menu: the fit counted the status line as a 30 dp row and the gaps as 2 dp, but KeyColumn draws 4 dp gaps and the status
+  line under the keys - 1 dp short, so the list scrolled and its "whole rows" were whole by the wrong sums. The sums now match
+  (actions only, 4 dp gaps, 24 dp per status line) and the picture gives up height down to 44 dp (was 64) before any key scrolls.
+- Bar home: the category tab's ◀ ▶ are drawn triangles centred in their own square (the font's triangle has uneven side bearings),
+  "Previous / Next category" for TalkBack, tap steps as before.
+- Tests: Batch674nTest (new), Batch488Test follows the new fit. testDebugUnitTest PASS, static checks PASS. Not yet on hardware.
+- Files: ui/WinScenesHomes2.kt, ui/StyleIconBar.kt, test Batch674nTest.kt, Batch488Test.kt.
+
 # Update 674m (15 Nov 2026, evening) - same branch, NOT released
 - Glyph centring (glyph gate f674j): Arcade's menu pointer drawn alone in its box with a gap after it ("▶ " carried its own space -
   the arrow 16 % left of the box's middle; unlit lines keep an unseen arrow, cleared from semantics so line names are just the

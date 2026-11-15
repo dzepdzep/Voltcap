@@ -54,7 +54,7 @@ class Batch488Test {
 
     @Test fun d284ScenesUseFittedRows() {
         assertTrue(src("WinScenesConsole.kt").contains("val restH = fitRowHeight("))
-        assertTrue(src("WinScenesHomes2.kt").contains("val rowH = fitRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp)"))
+        assertTrue(src("WinScenesHomes2.kt").contains("val rowH = fitRowHeight(rowRoom, nAct, SIDE_KEY_GAP, 40.dp, 30.dp)"))
         assertTrue(src("WinScenesHomes.kt").contains("val rowH = fitRowHeight(maxHeight, acts.size"))
     }
 

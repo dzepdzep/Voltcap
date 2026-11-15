@@ -35,6 +35,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -127,7 +129,7 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
             .then(if (on) Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.14f)).border(1.5.dp, Color.White, CircleShape).padding(horizontal = 12.dp, vertical = 3.dp) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp), verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("◀", color = Color.White.copy(alpha = if (on) 0.9f else 0.45f), fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.pointerInput(Unit) { detectTapGestures { step(-1) } })
+        BarStepArrow(left = true, Color.White.copy(alpha = if (on) 0.9f else 0.45f), if (compact) 12.dp else 14.dp) { step(-1) }
         // (Update 212: the layout's own category title, CategoryTitle.kt.)
         CategoryTitle.Native()
         FullText(
@@ -137,7 +139,27 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
             modifier = Modifier.weight(1f, fill = false).pointerInput(Unit) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, 0); step(1) } }
         )
         Text(c.games.size.toString(), color = ShelfTheme.accent, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.SemiBold)
-        Text("▶", color = Color.White.copy(alpha = if (on) 0.9f else 0.45f), fontSize = if (compact) 12.sp else 14.sp, modifier = Modifier.pointerInput(Unit) { detectTapGestures { step(1) } })
+        BarStepArrow(left = false, Color.White.copy(alpha = if (on) 0.9f else 0.45f), if (compact) 12.dp else 14.dp) { step(1) }
+    }
+}
+
+/** (674n, Flip 2 x1.0 f674k: the tab's '◀' sat 5.5 px left of its own box - the font's triangle has uneven side bearings.) The
+ *  category step arrows are drawn triangles, centred in their own square by construction; tap steps the category as before. */
+@Composable
+private fun BarStepArrow(left: Boolean, color: Color, size: androidx.compose.ui.unit.Dp, onTap: () -> Unit) {
+    androidx.compose.foundation.Canvas(
+        Modifier.size(size).pointerInput(Unit) { detectTapGestures { onTap() } }
+            .semantics { contentDescription = if (left) "Previous category" else "Next category" }
+    ) {
+        val w = this.size.width * 0.72f; val h = this.size.height * 0.82f
+        val cx = this.size.width / 2f; val cy = this.size.height / 2f
+        // Centre the triangle's own box (not its centroid), the way a glyph check and the eye read it.
+        val p = androidx.compose.ui.graphics.Path().apply {
+            if (left) { moveTo(cx + w / 2f, cy - h / 2f); lineTo(cx - w / 2f, cy); lineTo(cx + w / 2f, cy + h / 2f) }
+            else { moveTo(cx - w / 2f, cy - h / 2f); lineTo(cx + w / 2f, cy); lineTo(cx - w / 2f, cy + h / 2f) }
+            close()
+        }
+        drawPath(p, color)
     }
 }
 
