@@ -81,7 +81,9 @@ android {
             it.maxHeapSize = "2g"
             // (674e, D325: CI 60fd7c4e - the test worker grew to 9.6 GB (native memory of the Compose / Robolectric UI tests, outside
             // the 2 GB heap) and the watchdog stopped the 16 GB runner. A fresh worker every 400 tests gives that memory back.)
-            it.forkEvery = 400L
+            // (674o: CI c7ad53a7 - 9.6 GB again within ~320 tests of one worker (EndlessFillLitRoboTest's parameter rows) and
+            // the watchdog stopped the runner; it passes or fails by chance at 400. 150 keeps every worker well under it.)
+            it.forkEvery = 150L
             // (529j: a failing test's own message and stack in the log - CI's job log showed only "AssertionError at
             // ShelfTextRoboTest.kt:136", and its result files need a signed-in download.)
             it.testLogging {
