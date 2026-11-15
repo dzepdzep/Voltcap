@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-15 ~22:30 Berlin, update 674o (cloud migration session).
+Updated: 2026-11-15 ~23:50 UTC, update 675a (first cloud scheduled run).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -17,11 +17,14 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 - CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-0. CI RED (Verify Android update 310 on c7ad53a7 and c0760eb): the watchdog stops the tests at ~1,120 of them - the test
-   worker reaches 9.4-9.6 GB while com.shelf.launcher.ui.EndlessFillLitRoboTest runs its parameter rows (ORBIT / RESUME ...).
-   Gradle's forkEvery counts test CLASSES, so forkEvery 150 (674o) cannot help inside one class. Find what that class keeps
-   alive per row (composition / bitmaps / Robolectric native graphics not released) and fix it, or split the class into smaller
-   classes so forks recycle it; keep every assertion. Green on several pushes in a row before G11 is DONE.
+0. CI memory (G11, 675a): heavy Robolectric classes now run in :app:testDebugHeavyRoboUnitTest (fresh JVM per class;
+   EndlessFillLitRoboTest split into 6 shards). Check "Verify Android update 310" on the 675a push and the next pushes: both
+   runners green, the heavy task's results present (app/build/test-results/testDebugHeavyRoboUnitTest), watchdog's lowest
+   memory well above 1.5 GB. If it is still red, first item again; if another class grows the worker, add it to
+   heavyRoboTests (app/build.gradle.kts). G11 DONE only after several green pushes in a row.
+   Side finding: lazily made global Compose states crash a fresh JVM's first frame ("Reading a state that was created after
+   the snapshot was taken") - LookStyles fixed at start (Features.warmUiStores); look for other objects with lazily made
+   states read by Case3D / warm-ahead threads (CustomSpines -> Packs is safe in the app: MainActivity inits Packs).
 1. Emulator trial (run 43762702001 on ee24d976, KONKR-like 960x640, x86_64 APK installs and launches): swangle_indirect
    STAYED UP through both popup gates (first time since 14 Nov) -> now the default renderer; swiftshader_indirect went offline
    after e529a; guest failed the e529a precondition. Gate results on swangle (EMULATOR): e529a x1.3 COVERDETAILS "did not open
@@ -38,6 +41,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 5. Later: +N category counters.
 
 ## Needs the owner
+- The cloud task's prompt says -Xmx5g; the cloud shell's memory cgroup is ~5.8 GB, so CLOUD_DEVELOPMENT.md now says -Xmx4g
+  (the doc is the source of the flags). Updating the stored prompt's text is the owner's call.
 - Retire the PC hourly task "VoltCap hourly backlog run" once the cloud task's first run is verified (Claude does it then).
 - Flip 2 charge-loop fix test (HW-3): production limit off, or a production update - owner's call.
 - Local-only branches `review/ai-setup-0672` (2 commits) and `feature/dual-welcome` (7 commits) are on the PC only (bundle in

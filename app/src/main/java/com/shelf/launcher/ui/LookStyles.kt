@@ -31,6 +31,9 @@ internal object LookStyles {
     private val caseLive = androidx.compose.runtime.mutableStateOf(true)
     private val spineLive = androidx.compose.runtime.mutableStateOf(true)
 
+    /** 675a: makes the states above now (Features.warmUiStores, at start) - never first inside a screen's snapshot. */
+    fun warmUp() { discLive.value; caseLive.value; spineLive.value }
+
     /** Update 326: whether each pick applies with [a] (the home screen's settings) — the R1 tiles' own rule. */
     fun liveFor(a: com.shelf.launcher.data.AppearanceSettings): Triple<Boolean, Boolean, Boolean> {
         val x = R1Ctx(a, secondDisplay = false, bluetooth = false, lights = false, romm = false, raAccounts = 0,

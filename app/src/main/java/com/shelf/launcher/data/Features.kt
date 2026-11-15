@@ -110,6 +110,21 @@ object Features {
         all.forEach { pref -> @Suppress("UNCHECKED_CAST") (pref as Pref<Any?>).state.value = pref.read(p) }
     }
 
+    /**
+     * The look stores whose Compose states must exist before any screen draws (Features.init calls it at start). A state
+     * made the first time a game is drawn - in the middle of a composition or measuring, or while a background
+     * thread's snapshot is open - crashes a reader in another snapshot ("Reading a state that was created after the
+     * snapshot was taken or in a snapshot that has not yet been applied").
+     */
+    fun warmUiStores() {
+        // Update 200: the cartridge shell choices, made now — before any screen draws (see CartShellStore).
+        runCatching { com.shelf.launcher.ui.CartShellStore.warmUp() }
+        runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
+        // (675a: LookStyles' disc / case / spine "live" states were made by the first Case flow case drawn - the heavy test
+        // JVM's first Case flow row crashed in LookStyles.spinePick with that error.)
+        runCatching { com.shelf.launcher.ui.LookStyles.warmUp() }
+    }
+
     fun init(context: Context) {
         if (prefs != null) return
         val p = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -121,9 +136,7 @@ object Features {
             saveVaultStyle.value = SaveVaultStyle.CAPSULE
         }
         migrate42(p)
-        // Update 200: the cartridge shell choices, made now — before any screen draws (see CartShellStore).
-        runCatching { com.shelf.launcher.ui.CartShellStore.warmUp() }
-        runCatching { com.shelf.launcher.ui.DsCases.warmUp() }
+        warmUiStores()
         migrate158(p) // Update 158
         migrate166(p) // Update 166
         migrate467(p, FirstRun.isDone(context.applicationContext)) // Update 467 (replaces 466's)

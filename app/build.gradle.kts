@@ -69,6 +69,48 @@ if (qaVariantProps.getProperty("debugIsQa")?.trim() == "false" && !debugIsProduc
     logger.warn("Voltcap: qa_variant.properties debugIsQa=false is ignored (Batch 521) - the debug build stays the isolated QA app.")
 if (debugIsProduction) logger.warn("Voltcap: qa_variant.properties debugIsProduction - the debug build is com.shelf.launcher with the release key (installs over the real Voltcap).")
 
+// Unit-test JVM settings shared by AGP's unit-test tasks and testDebugHeavyRoboUnitTest (675a).
+fun voltcapTestJvm(t: Test, firstOfBuild: Boolean) {
+    t.maxHeapSize = "2g"
+    // (674e, D325: CI 60fd7c4e - the test worker grew to 9.6 GB (native memory of the Compose / Robolectric UI tests, outside
+    // the 2 GB heap) and the watchdog stopped the 16 GB runner. A fresh worker every 400 tests gives that memory back.)
+    // (674o: CI c7ad53a7 - 9.6 GB again within ~320 tests of one worker (EndlessFillLitRoboTest's parameter rows) and
+    // the watchdog stopped the runner; it passes or fails by chance at 400. 150 keeps every worker well under it.)
+    // (675a: forkEvery counts CLASSES - it could not help inside that one class of ~500 rows; the heavy classes have their own
+    // task now, heavyRoboTests.)
+    t.forkEvery = 150L
+    // (529j: a failing test's own message and stack in the log - CI's job log showed only "AssertionError at
+    // ShelfTextRoboTest.kt:136", and its result files need a signed-in download.)
+    t.testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStackTraces = false
+    }
+    // (673b: CI's Verify job hung twice in this task - 7f7a74d2 lost its runner after 53 min, 9c9f41ac ran past 35 - and
+    // its log needs a signed-in download. Every test's start and end goes to build/test-progress.log; the workflow turns it
+    // into public annotations (tools/ci/test_progress.py), so a test that never ends is named.)
+    // (675a: the heavy task appends to the same file - only the first test task of a build starts it afresh.)
+    val progress = t.project.layout.buildDirectory.file("test-progress.log").get().asFile
+    t.doFirst { progress.parentFile.mkdirs(); if (firstOfBuild || !progress.exists()) progress.writeText("") }
+    t.addTestListener(object : org.gradle.api.tasks.testing.TestListener {
+        override fun beforeSuite(suite: org.gradle.api.tasks.testing.TestDescriptor) {}
+        override fun afterSuite(suite: org.gradle.api.tasks.testing.TestDescriptor, result: org.gradle.api.tasks.testing.TestResult) {}
+        override fun beforeTest(d: org.gradle.api.tasks.testing.TestDescriptor) {
+            progress.appendText("START ${d.className}.${d.name.replace(' ', '_')} ${System.currentTimeMillis()}\n")
+        }
+        override fun afterTest(d: org.gradle.api.tasks.testing.TestDescriptor, r: org.gradle.api.tasks.testing.TestResult) {
+            progress.appendText("END ${d.className}.${d.name.replace(' ', '_')} ${r.resultType} ${r.endTime - r.startTime}\n")
+        }
+    })
+}
+
+// 675a (CI memory, G11): Robolectric classes whose rows keep the test JVM's native memory growing (native graphics memory no GC
+// returns: CI's worker passed 9 GB inside EndlessFillLitRoboTest). They are excluded from AGP's unit-test tasks and run in
+// testDebugHeavyRoboUnitTest with a fresh JVM for every class (EndlessFillLitRoboTest is split into shard classes for that).
+// testDebugUnitTest is finalized by it, so CI's ":app:testDebugUnitTest" still runs every test. With --tests on the command
+// line it is skipped (run it by name: ":app:testDebugHeavyRoboUnitTest --tests ...").
+val heavyRoboTests = listOf("com/shelf/launcher/ui/EndlessFillLitRoboTest*", "com/shelf/launcher/ui/EndlessOnceRoboTest*")
+
 android {
     // Update 245 (#79): android.* calls in unit tests return defaults instead of throwing ("Method ... not mocked").
     testOptions {
@@ -78,34 +120,9 @@ android {
         unitTests.isIncludeAndroidResources = true
         // (Robolectric loads the whole app's classes; the default test heap ran out.)
         unitTests.all {
-            it.maxHeapSize = "2g"
-            // (674e, D325: CI 60fd7c4e - the test worker grew to 9.6 GB (native memory of the Compose / Robolectric UI tests, outside
-            // the 2 GB heap) and the watchdog stopped the 16 GB runner. A fresh worker every 400 tests gives that memory back.)
-            // (674o: CI c7ad53a7 - 9.6 GB again within ~320 tests of one worker (EndlessFillLitRoboTest's parameter rows) and
-            // the watchdog stopped the runner; it passes or fails by chance at 400. 150 keeps every worker well under it.)
-            it.forkEvery = 150L
-            // (529j: a failing test's own message and stack in the log - CI's job log showed only "AssertionError at
-            // ShelfTextRoboTest.kt:136", and its result files need a signed-in download.)
-            it.testLogging {
-                events("failed")
-                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-                showStackTraces = false
-            }
-            // (673b: CI's Verify job hung twice in this task - 7f7a74d2 lost its runner after 53 min, 9c9f41ac ran past 35 - and
-            // its log needs a signed-in download. Every test's start and end goes to build/test-progress.log; the workflow turns it
-            // into public annotations (tools/ci/test_progress.py), so a test that never ends is named.)
-            val progress = it.project.layout.buildDirectory.file("test-progress.log").get().asFile
-            it.doFirst { progress.parentFile.mkdirs(); progress.writeText("") }
-            it.addTestListener(object : org.gradle.api.tasks.testing.TestListener {
-                override fun beforeSuite(suite: org.gradle.api.tasks.testing.TestDescriptor) {}
-                override fun afterSuite(suite: org.gradle.api.tasks.testing.TestDescriptor, result: org.gradle.api.tasks.testing.TestResult) {}
-                override fun beforeTest(d: org.gradle.api.tasks.testing.TestDescriptor) {
-                    progress.appendText("START ${d.className}.${d.name.replace(' ', '_')} ${System.currentTimeMillis()}\n")
-                }
-                override fun afterTest(d: org.gradle.api.tasks.testing.TestDescriptor, r: org.gradle.api.tasks.testing.TestResult) {
-                    progress.appendText("END ${d.className}.${d.name.replace(' ', '_')} ${r.resultType} ${r.endTime - r.startTime}\n")
-                }
-            })
+            voltcapTestJvm(it, firstOfBuild = true)
+            // (675a: the heavy Robolectric classes run in testDebugHeavyRoboUnitTest, a fresh JVM per class - below.)
+            it.exclude(heavyRoboTests)
         }
     }
     namespace = "com.shelf.launcher"
@@ -414,3 +431,23 @@ val verifyQaIsolation by tasks.registering {
     }
 }
 tasks.matching { it.name == "assembleQa" || (debugIsQa && it.name == "assembleDebug") }.configureEach { finalizedBy(verifyQaIsolation) }
+
+// 675a: the heavy Robolectric classes (heavyRoboTests, above), a fresh test JVM for each class.
+val heavyRoboTask = tasks.register<Test>("testDebugHeavyRoboUnitTest") {
+    group = "verification"
+    description = "Runs the heavy Robolectric unit tests of the debug build, one JVM per class (675a)."
+    val base = tasks.named<Test>("testDebugUnitTest").get()
+    testClassesDirs = base.testClassesDirs
+    classpath = base.classpath
+    javaLauncher.set(base.javaLauncher)
+    systemProperties(base.systemProperties)
+    jvmArgs(base.jvmArgs ?: emptyList<String>())
+    include(heavyRoboTests.map { "$it.class" })
+    voltcapTestJvm(this, firstOfBuild = false)
+    forkEvery = 1L
+    onlyIf("no --tests filter given for the other unit-test tasks") {
+        gradle.startParameter.taskRequests.flatMap { r -> r.args }.none { a -> a == "--tests" } ||
+            gradle.startParameter.taskRequests.flatMap { r -> r.args }.any { a -> a.contains("HeavyRobo") }
+    }
+}
+tasks.matching { it.name == "testDebugUnitTest" }.configureEach { finalizedBy(heavyRoboTask) }

@@ -1,3 +1,28 @@
+# Update 675a (15 Nov 2026, night, cloud run) - same branch, NOT released - CI memory (G11)
+- CI red on c0760eb (and c7ad53a7): the watchdog stopped the unit tests at ~1,120 with the test worker at 9.4 GB inside
+  EndlessFillLitRoboTest. Measured in the cloud: the growth is NATIVE memory (NMT: the JVM itself ~0.5 GB, heap ~100 MB after a
+  full GC, while the worker's RSS passed 2.7 GB on the 10 Case flow rows alone, +~250 MB a row; System.gc / reflections off /
+  warm-ahead off / MALLOC_ARENA_MAX did not give it back). No GC returns it, and Gradle's forkEvery counts classes, so it could
+  not recycle the worker inside that one class of ~500 rows.
+- Fix: EndlessFillLitRoboTest's rows split into 6 shard classes (EndlessFillLitRoboTestShard0..5, whole layouts round robin -
+  same rows, frames and assertion; EndlessFillLitShardsTest checks every row runs exactly once). New task
+  :app:testDebugHeavyRoboUnitTest runs the heavy classes (the shards + EndlessOnceRoboTest) with a fresh JVM per class;
+  testDebugUnitTest excludes them and is finalized by it (skipped with --tests). Shared JVM settings in voltcapTestJvm();
+  the progress log is appended by the heavy task. Watchdog thresholds unchanged.
+- Found by the fresh JVM: CASEFLOW n=1 crashed in LookStyles.spinePick ("Reading a state that was created after the snapshot was
+  taken") - LookStyles' disc / case / spine states were made by the first Case flow case drawn, inside a snapshot. They are made
+  at start now (Features.warmUiStores, called by Features.init, the Update 200 pattern); the shard test's @Before runs the app's
+  start steps (warmUiStores + Packs, which MainActivity already inits at start) - Packs.version was the next one, made by the
+  warm-ahead thread mid-frame.
+  App behaviour unchanged otherwise. Not checked on hardware (a cold-start race; nothing to look at).
+- Cloud: shell commands run in a ~5.8 GB memory cgroup (a -Xmx5g compile was OOM-killed at 5.9 GB) - CLOUD_DEVELOPMENT.md
+  now says -Xmx4g (compile 4m35s warm).
+- Checks (cloud): static checks PASS; EndlessFillLitShardsTest PASS; heavy task: shards 0-2, 4, 5 PASS (70-80 rows each),
+  EndlessOnceRoboTest 279/279 PASS, shard 3 80/80 PASS three runs in a row after the Packs warm-up; per-JVM peak RSS 0.7-3.3 GB
+  (one JVM used to carry all of them). Full suite + both runners: CI on push.
+- Files: app/build.gradle.kts, data/Features.kt, ui/LookStyles.kt, test EndlessFillLitRoboTest.kt, EndlessFillLitShardsTest.kt
+  (new), docs/claude/CLOUD_DEVELOPMENT.md, HANDOFF.md, AUTORUN_LOG.md, docs/REQUIREMENTS_MATRIX.md.
+
 # Update 674o (15 Nov 2026, late evening) - same branch, NOT released - cloud migration
 - Owner request 15 Nov: VoltCap development moves to Claude Code cloud sessions + a cloud scheduled task; the PC is for handheld QA.
   New: docs/claude/CLOUD_DEVELOPMENT.md (how to work, lock, never-list), docs/claude/HANDOFF.md (read first / update last),

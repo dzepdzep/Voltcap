@@ -36,23 +36,38 @@ import java.time.Duration
  * of the game you're on look unselected. A layout whose highlight isn't one of those marks shows 0 and is listed as
  * "LIT-UNMARKED" (covered by the code audit and the hardware check, not by this test).
  */
+// (675a, CI memory: one class of ~500 rows kept its test JVM's NATIVE memory growing - Robolectric's native graphics memory
+// that no GC gives back (NMT: the JVM itself ~0.5 GB while the worker passed 9 GB on CI; locally the 10 Case flow rows alone
+// +2.3 GB) - and Gradle's forkEvery counts classes, so it could not recycle the worker inside it. The rows are split into
+// [SHARDS] classes (EndlessFillLitRoboTestShard0..5, every row exactly once - EndlessFillLitShardsTest) and these heavy
+// classes run in the test task testDebugHeavyRoboUnitTest, a fresh JVM per class (app/build.gradle.kts). Same rows, same
+// frames, same assertion.)
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w640dp-h480dp-land-mdpi")
-class EndlessFillLitRoboTest(private val layout: HomeLayout, private val n: Int, private val fill: Boolean) {
+abstract class EndlessFillLitRoboTest(private val layout: HomeLayout, private val n: Int, private val fill: Boolean) {
     companion object {
-        @JvmStatic
-        @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}")
+        const val SHARDS = 6
+        /** Every row: each style home that goes round, and Tiles, x 1 / 2 / 3 / 5 / 12 games x Fill on / off. */
         fun cases(): List<Array<Any>> {
             val out = mutableListOf<Array<Any>>()
-            val layouts = HomeLayout.entries.filter { it.styleHome && endlessApplies(it) } + HomeLayout.TILES
-            for (l in layouts) for (k in listOf(1, 2, 3, 5, 12)) for (f in listOf(true, false)) out += arrayOf<Any>(l, k, f)
+            for ((l, _) in layouts()) for (k in listOf(1, 2, 3, 5, 12)) for (f in listOf(true, false)) out += arrayOf<Any>(l, k, f)
             return out
+        }
+        private fun layouts() = (HomeLayout.entries.filter { it.styleHome && endlessApplies(it) } + HomeLayout.TILES).mapIndexed { i, l -> l to i }
+        /** Shard [k]'s rows: whole layouts, round robin (the heavy case layouts land in different shards). */
+        fun shard(k: Int): List<Array<Any>> {
+            val mine = layouts().filter { it.second % SHARDS == k }.map { it.first }.toSet()
+            return cases().filter { it[0] in mine }
         }
     }
 
     private val compose = createComposeRule()
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
+    // (675a: the app's start steps - Features.init (warmUiStores) and MainActivity's Packs.init make these stores' states before
+    // any screen draws. In a fresh JVM per shard the first Case flow row otherwise made them mid-frame - LookStyles' in the
+    // composition, Packs.version on the warm-ahead thread - and the composition's snapshot crashed reading them.)
+    @org.junit.Before fun warm() { Features.warmUiStores(); com.shelf.launcher.data.Packs.version.intValue }
     @After fun reset() { Features.endlessFill.value = false; QaClip.litMarks = false }
 
     private fun frames(k: Int) = repeat(k) {
@@ -117,4 +132,24 @@ class EndlessFillLitRoboTest(private val layout: HomeLayout, private val n: Int,
         if (maxLit == 0) println("LIT-UNMARKED $layout n=$n fill=$fill")
         assertTrue("$layout n=$n fill=$fill: ${problems.size} problem(s)\n" + problems.take(12).joinToString("\n"), problems.isEmpty())
     }
+}
+
+// (675a: the shards - see EndlessFillLitRoboTest. Each is its own class, so the heavy test task gives each a fresh JVM.)
+class EndlessFillLitRoboTestShard0(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(0) }
+}
+class EndlessFillLitRoboTestShard1(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(1) }
+}
+class EndlessFillLitRoboTestShard2(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(2) }
+}
+class EndlessFillLitRoboTestShard3(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(3) }
+}
+class EndlessFillLitRoboTestShard4(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(4) }
+}
+class EndlessFillLitRoboTestShard5(l: HomeLayout, n: Int, f: Boolean) : EndlessFillLitRoboTest(l, n, f) {
+    companion object { @JvmStatic @ParameterizedRobolectricTestRunner.Parameters(name = "{0} n={1} fill={2}") fun rows() = shard(5) }
 }
