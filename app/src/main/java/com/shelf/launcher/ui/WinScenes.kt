@@ -1845,7 +1845,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         // them in the panel's well: squeezed to 14 px on the KONKR; 477b as small round keys in the same row: it wrapped).)
         // (674b, owner brief 15 Nov: Airy keeps its round shortcuts, each in an identical cell of one row (UniformKeyRow) that
         // scrolls a whole key at a time; the pills under them likewise - both were wrapping FlowRows.)
-        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent) }
+        // (674g, KONKR x1.3 k674f with More open: still ~20 dp short for the facts' second line - the round keys take their small
+        // size there, Play's circle with them.)
+        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent, small = tight && secondary.isNotEmpty()) }
         if (secondary.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) } }
         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             ctx.chips.forEach { a ->
@@ -1896,7 +1898,7 @@ private fun AiryKey(a: WinAction, accent: Color, small: Boolean = false) {
         val lift by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.6f), label = "ahBtn")
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer { translationY = -lift * 4.dp.toPx() }) {
             Box(
-                Modifier.size(if (a.primary) 58.dp else if (small) 40.dp else 50.dp)
+                Modifier.size(if (a.primary) (if (small) 46.dp else 58.dp) else if (small) 40.dp else 50.dp)
                     .drawBehind { drawCircle(Color(0xFF1C3150).copy(alpha = 0.12f + 0.1f * lift), size.minDimension / 2f, Offset(size.width / 2f, size.height / 2f + 4f)) }
                     .clip(CircleShape).background(if (a.primary) accent else Color.White)
                     .border(if (on) 3.dp else 1.dp, if (on) accent.copy(alpha = if (a.primary) 0.5f else 1f) else Color(0xFFDDE5EF), CircleShape),

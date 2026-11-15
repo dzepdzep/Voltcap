@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -469,7 +470,9 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             if (ctx.page == WinPage.MAIN) {
                 // Pins: the facts numbered like a chip's pinout.
-                Column(Modifier.heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
+                // (674g, x1.3 f674f / k674f with More open: the pinout took up to 45 % of the window first and the status line under
+                // the keys was cut (Flip 2) or 0 px (KONKR). The pinout gives way - it scrolls - and the keys and that line keep theirs.)
+                Column(Modifier.weight(1f, fill = false).heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
                     sceneFacts(ctx).forEachIndexed { i, (l, v) ->
                         Row(Modifier.padding(vertical = 1.dp)) {
                             Text("P%02d".format(i + 1), color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(36.dp))
@@ -532,7 +535,8 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
                 if (ctx.total > 0) Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(track)) {
                     Box(Modifier.fillMaxWidth(ctx.earned.toFloat() / ctx.total).fillMaxHeight().background(if (done) com.shelf.launcher.ui.theme.Ds.gold else green))
                 }
-                ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.padding(top = 8.dp)) }
+                // (674g, KONKR x1.3 k674f with More open: no room left for the story - it gives way by design (Details has it whole).)
+                ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.semantics { this[QaClip.GivesWay] = true }.padding(top = 8.dp)) }
             } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
         }
     }

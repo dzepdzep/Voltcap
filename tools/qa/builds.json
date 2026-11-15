@@ -1243,6 +1243,17 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests afa71561 + 674e + 674f (Crate whole keys, Magazine callouts own size, Airy More tight, Blades cover step, Terminal trophy line) - the 674e/f commit",
    "note": "674f QA build: assembleQa 15 Nov 16:34 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674g",
+   "apk_sha256": "d5ae6e24b5ea5eaa2a15c2658fcdc12421e033f971e63e810dd3a6ab2ada7ec8",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "9c11c496",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 9c11c496 + 674g (Crate stack without fade, whole fact rows; Circuit pinout gives way; Library story gives way; Airy small keys with More on a tight panel) - the 674g commit",
+   "note": "674g QA build: assembleQa 15 Nov 17:27 UTC."
   }
  ]
 }

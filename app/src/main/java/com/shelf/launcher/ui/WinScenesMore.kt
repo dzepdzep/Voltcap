@@ -614,7 +614,12 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 Column(Modifier.weight(1f).layout { m, c ->
                     val minRow = if (rowH > 0) rowH else guess
                     if (c.hasBoundedHeight && c.maxHeight < minRow) layout(c.minWidth, c.minHeight) {}
-                    else { val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) } }
+                    else {
+                        // (674g, f674f / k674f: the list showed one row and part of the next. Its view now ends on a whole row; the
+                        // rest scroll.)
+                        val hh = if (c.hasBoundedHeight) (c.maxHeight / minRow) * minRow else c.maxHeight
+                        val pl = m.measure(c.copy(minHeight = minOf(c.minHeight, hh), maxHeight = hh)); layout(pl.width, pl.height) { pl.place(0, 0) }
+                    }
                 }.verticalScroll(rememberScrollState())) {
                     facts.forEachIndexed { i, (l, v) ->
                         Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).then(if (i == 0) Modifier.onSizeChanged { rowH = it.height } else Modifier)) {
@@ -646,7 +651,9 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)) {
                 val keyH = 34.dp
                 val shown = crateVisibleKeys(regionH, keyH, 6.dp, if (ctx.page == WinPage.MAIN) 46.dp else 0.dp, actions.size)
-                Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0)).sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
+                // (674g, owner review prep f674f / k674f: the fade at the stack's foot hid the last key's lower edge - it read as cut.
+                // The view holds whole keys exactly, so no fade; a hair of room for the keys' borders.)
+                Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp).verticalScroll(keyScroll)) {
                     UniformKeyColumn(actions, 6.dp, fill = true) { a ->
                         SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red,
                             RoundedCornerShape(3.dp), upper = true, size = 11.sp, height = keyH, lineHeight = 14.sp)

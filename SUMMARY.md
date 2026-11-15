@@ -1,3 +1,14 @@
+# Update 674g (15 Nov 2026, evening) - same branch, NOT released
+- Full x1.3 gates on 674f (53 layouts, OWN style): Flip 2 f674f 42 / 53 PASS, 4 FAIL (Bar home glyph, Circuit More status line,
+  Dashboard More squeeze, File select squeeze), 7 NOT TESTED (visual "no window action buttons to compare" - the pixel compare
+  doesn't recognise the uniform rows yet); KONKR k674f 32 / 53 PASS, 8 FAIL (Airy More, Circuit More, Cube first A + L2/R2 fact,
+  Dashboard, File select, Library More story + R2 glyph, Spot START glyph, TV rapid once), 13 NOT TESTED (same visual compare).
+  Record crate PASS on both.
+- 674g: Record crate's vertical menu without the scroll fade (it hid the last key's lower edge - read as cut) and the track list's
+  view ends on a whole row; Circuit's pinout gives way before the keys and the status line under them; Library's story marked as
+  giving way by design; Airy with More open on a tight panel uses its small round keys. popclip.sh walks DOWN to a MORE kept under
+  a vertical menu's visible keys (Crate: "More not on screen").
+
 # Update 674e / 674f (15 Nov 2026, evening) - same branch, NOT released - IN PROGRESS
 - CI: afa71561 green (both runners). 60fd7c4e failed on ubuntu-24.04 only: the test worker grew to 9.6 GB (native memory outside
   the 2 GB heap) and the watchdog stopped it; ubuntu-latest ran 2,813 / 0 failures. app/build.gradle.kts: forkEvery 400 - a fresh
