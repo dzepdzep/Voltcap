@@ -1,7 +1,8 @@
 # Update 674n (15 Nov 2026, evening) - same branch, NOT released
-- Full gates on 674k graded (new checker, 0 NOT TESTED): Flip 2 x1.0 f674k 52 / 53 PASS (was 46; FAIL: Bar home '◀' 5.5 px off
-  centre); KONKR x1.0 k674m 51 / 53 PASS (was 40; FAIL: Arcade pointer glyph - fixed in 674m, not yet on hardware; Side menu
-  "Save sync" cut 13 px at the drawer's bottom). Note: f674k ran at x1.0 (manifest font 1.0), not x1.3 - x1.3 gates still due.
+- Full gates on 674k graded (new checker, 0 NOT TESTED): Flip 2 x1.3 f674k 52 / 53 PASS (was 42 at f674f; FAIL: Bar home '◀'
+  5.5 px off centre); KONKR x1.0 k674m 51 / 53 PASS (was 40; FAIL: Arcade pointer glyph - fixed in 674m, not yet on hardware;
+  Side menu "Save sync" cut 13 px at the drawer's bottom). (x1.3 is the app's own test scale; the manifest's font_scale is the
+  system's and reads 1.0 either way.) Next: Flip 2 x1.0 f674o and KONKR x1.3 k674n on 674n.
 - Side menu: the fit counted the status line as a 30 dp row and the gaps as 2 dp, but KeyColumn draws 4 dp gaps and the status
   line under the keys - 1 dp short, so the list scrolled and its "whole rows" were whole by the wrong sums. The sums now match
   (actions only, 4 dp gaps, 24 dp per status line) and the picture gives up height down to 44 dp (was 64) before any key scrolls.
