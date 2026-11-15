@@ -1001,6 +1001,17 @@
    "apk_sha256": "5e4c1be2012a6c8db86a1b092d5962d58baedf0799540b33f33289f5cc23c33a",
    "base_commit": "8de089c5",
    "note": "v0.6.72 RC QA build: assembleQa 14 Nov 19:29 UTC; testDebugUnitTest BUILD SUCCESSFUL. Popup gate k672a (KONKR x1.0) / f672b (Flip 2 x1.3)."
+  },
+  {
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3ba6a039 (v0.6.72 candidate 2: Save Sync excluded + Box rapid B fix)",
+   "id": "qa-0.6.72-rc2-3ba6a039",
+   "apk_sha256": "1837ca7f75bbec1432ff32ef2f840d7de52a01dfc2c039c5bdd13bb81e4f7a08",
+   "base_commit": "3ba6a039",
+   "note": "v0.6.72 RC2 QA build: assembleQa 14 Nov 21:03 UTC; testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }
