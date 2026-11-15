@@ -586,7 +586,9 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 }
             }
             if (ctx.chips.isNotEmpty()) {
-                Spacer(Modifier.height(if (tight) 4.dp else 8.dp))
+                // (672d, Flip 2 x1.3 f673c: at 4 dp the tilted sheet's round Save sync sticker crossed the Saves line by 3 px - this
+                // gap stays whole; the margins above give the room.)
+                Spacer(Modifier.height(8.dp))
                 // (Update 470: a gap between the status lines — the sheet lies tilted, and two lines touching edge to edge
                 // crossed each other's box by up to 19 px on the Odin at font 1.3; 12 dp clears it.)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
