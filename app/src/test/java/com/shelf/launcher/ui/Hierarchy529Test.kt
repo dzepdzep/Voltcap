@@ -9,15 +9,16 @@ class Hierarchy529Test {
     private fun src(name: String) = listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
         .map(::File).first { it.exists() }.readText()
 
-    @Test fun channelGridKeepsAWiiPairWithStartFilledAndRoundMore() {
+    // (674l: the owner's button brief of 15 Nov replaces 529's round ••• beside a filled Start: one row of identical Wii keys -
+    // Channels, Start (never stretched), then a worded MORE / LESS last, never three dots.)
+    @Test fun channelGridIsOneUniformRowWithAWordedMoreLast() {
         val s = src("WinScenesWii.kt")
         val body = s.substring(s.indexOf("private fun WiiChannelPreviewBody("), s.indexOf("private fun WiiMorePage("))
-        // The full-width More bar only where Back is still a key; otherwise round ••• beside a filled Start.
-        assertTrue(body.contains("if (small.isNotEmpty() && back != null) {"))
-        // (Owner, 13 Nov: the round ••• is the last key - after Start.)
-        assertTrue(body.indexOf("if (back == null && small.isNotEmpty()) WiiRoundMore(") > body.indexOf("if (play != null) WiiBigKey(play"))
-        assertTrue(body.contains("primary = back == null)"))
-        assertTrue(s.contains("private fun WiiRoundMore("))
+        assertTrue(body.contains("UniformKeyRow(row.map { it.first }, 12.dp)"))
+        assertTrue(body.contains("moreAct?.let { it to it.label })"))           // MORE the last of the row
+        assertTrue(!body.contains("WiiRoundMore("))
+        assertTrue(!body.contains("I.MoreHoriz"))                                // no three dots
+        assertTrue(!body.contains("Modifier.weight(1f), compact, primary"))      // Start not stretched
     }
 
     @Test fun resumesDiscoverCardHasMore() {

@@ -165,6 +165,19 @@ def _label(n):
     return stripped or lab or "?"
 
 
+# (674l: the keys a popup's key group shows besides Play / Details / Back / More - with More open a scrolling uniform row shows
+# these, and the pixel compare found "no window action buttons" on 7-14 layouts per full gate (NOT TESTED). Status lines are
+# never keys (STATUS_WORDS).)
+POPUP_KEY_WORDS = re.compile(r"(?i)^(options|game options|achievements|inspect|save sync|sync( now)?|sleeve notes|track list|"
+                             r"catalogue card|manual|performance|perf|favou?rite|unfavou?rite|hide|share|zoom|edit|art|artwork|"
+                             r"rename|categories|category|profile|stats|statistics)$")
+
+
+def _is_popup_key(n):
+    lab = _label(n).strip()
+    return bool(POPUP_KEY_WORDS.match(lab)) and not STATUS_WORDS.search(lab)
+
+
 def _is_action(n):
     lab = _label(n)
     # ("Play" / "Continue" with more words after them — "Play on TV"; never "Played", a fact.)
@@ -483,7 +496,7 @@ def pixel_check(dump, png, home=frozenset()):
     for w in dump.get("windows") or []:
         wx, wy = (w.get("at") or [0, 0])[:2]
         for n in w.get("nodes") or []:
-            if n.get("kind") != "control" or not _is_action(n) or _key(n) in home: continue
+            if n.get("kind") != "control" or not (_is_action(n) or _is_popup_key(n)) or _key(n) in home: continue
             f, sh_ = n.get("full"), n.get("shown")
             if not f or f[3] < 12 or f[2] < 12: continue
             if sh_ and (sh_[2] <= 0 or sh_[3] <= 0): continue  # wholly scrolled away: nothing drawn to read (clip judges it)

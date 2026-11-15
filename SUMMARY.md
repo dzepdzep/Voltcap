@@ -1,3 +1,20 @@
+# Update 674l (15 Nov 2026, evening) - same branch, NOT released
+- Owner decisions 15 Nov: Record crate x1.3 vertical menu VISUALLY APPROVED (keep it; finish its verification checklist); Flip 2
+  charge-loop fix may be tested with the QA app only - BLOCKED: production Voltcap's own limit is on and toggles input_suspend
+  every 1-2 s at 79-80 % (recorded 20:20, 24.5 C, steady); the QA app would fight it over the same switch, a clean test needs
+  production's limit off (the owner keeps production settings). Nothing changed on the Flip 2's charging.
+- QA checker: the pixel compare now reads the popup's other keys too (POPUP_KEY_WORDS: Options, Achievements, Inspect, Save sync,
+  ...) - with More open a uniform row shows those and the compare reported "no window action buttons" (NOT TESTED) on 4-14 layouts
+  per full gate. Re-grade: f674j 4 -> 0 NOT TESTED, k674j 14 -> 0; it found a real defect at once (Wii channel More page).
+- Wii channel (CHAN): the bottom keys are one row of identical Wii keys - Channels, Start (no longer stretched), then a worded MORE /
+  LESS with the stack icon (the round ••• is gone); the More page one row of identical keys instead of a wrapping grid that broke
+  "Achievemen / ts" and cut its second row. Hierarchy529Test follows the 15 Nov brief.
+- docs/REQUIREMENTS_MATRIX.md: the living requirements matrix (programme rows P1-P15, this session G1-G12, 529 rows carried).
+- Scheduled task "VoltCap hourly backlog run" created (owner's request): hourly on the PC, lock file Claude outputs\AUTORUN_LOCK.txt,
+  log in the Project doc claude/AUTORUN_LOG.md.
+- Checks: testDebugUnitTest PASS, QA selftest 151 / 155 (4 = VM ffmpeg). Full gates on 674k (f674k Flip 2 x1.3, k674m KONKR x1.0)
+  running; Wii change not yet on hardware.
+
 # Update 674k (15 Nov 2026, evening) - same branch, NOT released
 - Full gates: Flip 2 x1.0 f674j (674i) 46 / 53 PASS (FAIL: Arcade main glyph, Pocket ribbon home START glyph, Side status line
   38 px); KONKR x1.3 k674j (674i) 33 / 53 PASS (FAIL Airy / Dash / File select - fixed in 674j, Cards rapid once, Library R2 and
