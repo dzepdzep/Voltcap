@@ -17,6 +17,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 - CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+0. CI RED (Verify Android update 310 on c7ad53a7 and c0760eb): the watchdog stops the tests at ~1,120 of them - the test
+   worker reaches 9.4-9.6 GB while com.shelf.launcher.ui.EndlessFillLitRoboTest runs its parameter rows (ORBIT / RESUME ...).
+   Gradle's forkEvery counts test CLASSES, so forkEvery 150 (674o) cannot help inside one class. Find what that class keeps
+   alive per row (composition / bitmaps / Robolectric native graphics not released) and fix it, or split the class into smaller
+   classes so forks recycle it; keep every assertion. Green on several pushes in a row before G11 is DONE.
 1. Emulator trial (run 43762702001 on ee24d976, KONKR-like 960x640, x86_64 APK installs and launches): swangle_indirect
    STAYED UP through both popup gates (first time since 14 Nov) -> now the default renderer; swiftshader_indirect went offline
    after e529a; guest failed the e529a precondition. Gate results on swangle (EMULATOR): e529a x1.3 COVERDETAILS "did not open
