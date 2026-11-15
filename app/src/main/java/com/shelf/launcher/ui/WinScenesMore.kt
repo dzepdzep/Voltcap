@@ -1,6 +1,17 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.semantics.horizontalScrollAxisRange
+import androidx.compose.ui.semantics.semantics
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -90,15 +101,213 @@ internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
         all.filterNot(PopupLab::isMore) + all.filter(PopupLab::isMore)
     }
 
-/** A row of keys that wraps onto more lines when it doesn't fit (never squeezed, never cut). */
+/** 673g: inside a uniform key group - the key takes exactly the size the group gives every key (KeyRow / UniformKeyRow). */
+internal val LocalUniformKey = androidx.compose.runtime.compositionLocalOf { false }
+
+/** 673g: drawn as a status line under a key group, not as a key (WinAction.status). */
+internal val LocalKeyAsStatus = androidx.compose.runtime.compositionLocalOf { false }
+
+/** 673g: a key's own drawing fills the size its uniform group gives every key (nothing outside a group). */
 @Composable
-@OptIn(ExperimentalLayoutApi::class)
+internal fun Modifier.uniformFill(): Modifier = if (LocalUniformKey.current) this.fillMaxSize() else this
+
+/** 673g: the room each side of a key row that scrolls - its ‹ › show there are more keys that way. */
+internal val KEY_ROW_GUTTER = 16.dp
+
+/**
+ * 673g (owner brief 15 Nov, "Perfectly uniform console-game menus"): a window's keys as ONE row of identical keys - each as
+ * wide as the widest word needs, all as tall as the tallest - sharing the row's whole width where they fit; where they don't,
+ * the row scrolls sideways a whole key at a time (UniformKeyRow). Status lines - Save sync not set up, the performance
+ * summary (WinAction.status) - are not keys: they stand under the row. More stays the last key (sceneKeys).
+ * (Was update 423's wrapping FlowRow: keys of every width on as many lines as they needed.)
+ */
+@Composable
 internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
-    // Update 423: the keys wrap onto a second line instead of running off the window's edge (the 53-layout visual pass found
-    // "Achievem" / "Opti" / a lone half key cut by the edge in 20 windows). D-pad ▼ reaches the second line (2D focus).
-    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(gap),
-        itemVerticalAlignment = Alignment.CenterVertically) {
-        keys.forEach { key(it) }
+    val actions = keys.filterNot { it.status }
+    val status = keys.filter { it.status }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
+        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key)
+        if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
+    }
+}
+
+/**
+ * 673g (pure): a uniform key row's geometry - [n] keys that each need [need] px, in [width] px, [gap] px apart, [gutter] px of
+ * room each side when it scrolls. Where all fit, every key gets an equal share of the whole width. Where not, as many whole keys
+ * as fit show at once (each widened to fill that view exactly, never narrower than [need]) and the row scrolls by whole keys.
+ */
+internal data class UniformRowGeom(val keyW: Int, val visible: Int, val scrolls: Boolean, val pitch: Int, val maxOffset: Int, val viewStart: Int, val viewW: Int)
+
+internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
+    if (n <= 0) return UniformRowGeom(need, 0, false, need + gap, 0, 0, 0)
+    // (owner brief: "Never stretch a single Play button to occupy an entire empty row" - one key keeps its own width, centred)
+    if (n == 1) return UniformRowGeom(need, 1, false, need + gap, 0, ((width - need) / 2).coerceAtLeast(0), need)
+    val natural = n * need + (n - 1) * gap
+    if (width >= natural) {
+        val w = (width - (n - 1) * gap) / n
+        return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
+    }
+    val room = (width - 2 * gutter).coerceAtLeast(1)
+    val k = ((room + gap) / (need + gap)).coerceIn(1, n)
+    // (one key at a time - a narrow window at large text: the key keeps its own width between the arrows, not stretched)
+    val w = if (k == 1) need else maxOf(need, (room - (k - 1) * gap) / k)
+    val view = k * w + (k - 1) * gap
+    return UniformRowGeom(w, k, true, w + gap, (n - k) * (w + gap), ((width - view) / 2).coerceAtLeast(0), view)
+}
+
+/** 673g (pure): the scroll that shows key [i] whole, from [current], moving by whole keys and as little as possible. */
+internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
+    if (!g.scrolls || i < 0) return 0
+    val left = i * g.pitch
+    val to = when {
+        left < current -> left
+        left + g.keyW > current + g.viewW -> left + g.keyW - g.viewW
+        else -> current
+    }
+    return to.coerceIn(0, g.maxOffset)
+}
+
+/**
+ * 673g: [keys] in one row of identical keys (uniformRowGeom). Scrolling, the row shows whole keys between its ‹ › and moves a
+ * whole key at a time to the key the D-pad is on (or follows a finger and settles on whole keys); the keys outside the view are
+ * clipped away (not drawn, not counted as shown). Each key is drawn by [key] - the layout's own look - at the group's size.
+ */
+@Composable
+internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, key: @Composable (WinAction) -> Unit) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val gapPx = with(density) { gap.roundToPx() }
+    val gutterPx = with(density) { KEY_ROW_GUTTER.roundToPx() }
+    var geom by remember { mutableStateOf<UniformRowGeom?>(null) }
+    var focused by remember { androidx.compose.runtime.mutableIntStateOf(-1) }
+    val offset = remember { androidx.compose.animation.core.Animatable(0f) }
+    val anim = rememberAnimationsEnabled()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.runtime.LaunchedEffect(focused, geom) {
+        val g = geom ?: return@LaunchedEffect
+        val to = uniformRowScrollFor(focused, offset.targetValue.toInt().coerceIn(0, g.maxOffset), g).toFloat()
+        if (to != offset.targetValue) { if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to) }
+    }
+    val drag = androidx.compose.foundation.gestures.rememberDraggableState { d ->
+        val g = geom
+        if (g != null && g.scrolls) scope.launch { offset.snapTo((offset.value - d).coerceIn(0f, g.maxOffset.toFloat())) }
+    }
+    val keyW = remember { IntArray(1) }
+    val inner = remember(gapPx) { uniformKeysPolicy(gapPx, keyW) { offset.value } }
+    androidx.compose.ui.layout.Layout(
+        content = {
+            // (The row says it scrolls, as a scrolling list does - accessibility, and the popup gate, which counts a key scrolled
+            // out of its row as reachable, not cut.)
+            Box(Modifier.clipToBounds().semantics {
+                horizontalScrollAxisRange = androidx.compose.ui.semantics.ScrollAxisRange(
+                    value = { offset.value }, maxValue = { (geom?.maxOffset ?: 0).toFloat() })
+            }) {
+                androidx.compose.ui.layout.Layout(content = {
+                    keys.forEachIndexed { i, a ->
+                        Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i }, propagateMinConstraints = true) {
+                            androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) }
+                        }
+                    }
+                }, measurePolicy = inner)
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+            .draggable(drag, androidx.compose.foundation.gestures.Orientation.Horizontal, enabled = geom?.scrolls == true,
+                onDragStopped = { _ ->
+                    val g = geom
+                    if (g != null && g.scrolls) {
+                        val to = (kotlin.math.round(offset.value / g.pitch) * g.pitch).coerceIn(0f, g.maxOffset.toFloat())
+                        if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to)
+                    }
+                })
+            .drawWithContent {
+                drawContent()
+                val g = geom ?: return@drawWithContent
+                if (g.scrolls) drawKeyRowChevrons(g, offset.value)
+            }
+    ) { ms, c ->
+        val box = ms.first()
+        val n = keys.size
+        // (A key whose drawing can't be asked for its size - one built on a SubcomposeLayout - would throw here; the row then
+        // shares its width out equally, as a row that fits does, and keeps the keys' own height.)
+        val need = runCatching { box.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse {
+            if (c.hasBoundedWidth) ((c.maxWidth - (n - 1).coerceAtLeast(0) * gapPx) / n.coerceAtLeast(1)) else 0 }
+        val width = if (c.hasBoundedWidth) c.maxWidth else n * need + (n - 1).coerceAtLeast(0) * gapPx
+        val g = uniformRowGeom(n, need, width, gapPx, gutterPx)
+        val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
+            .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
+        keyW[0] = g.keyW
+        val p = box.measure(androidx.compose.ui.unit.Constraints.fixed(g.viewW.coerceAtLeast(0), h))
+        if (g != geom) geom = g
+        layout(width, h) { p.place(g.viewStart, 0) }
+    }
+}
+
+/**
+ * 673g (owner brief 15 Nov - vertical menus): [keys] one under another, every key the column's whole width and the tallest
+ * key's height, [gap] apart - edges in line, nothing resizing as the D-pad moves. Each key is drawn by [key] at that size.
+ */
+@Composable
+internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = false, key: @Composable (WinAction) -> Unit) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val gapPx = with(density) { gap.roundToPx() }
+    androidx.compose.ui.layout.Layout(content = {
+        keys.forEach { a ->
+            Box(propagateMinConstraints = true) { androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) } }
+        }
+    }) { ms, c ->
+        // (the widest key's width - or, [fill], the column's whole width - for every key)
+        val need = runCatching { ms.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0 }.getOrElse { if (c.hasBoundedWidth) c.maxWidth else 0 }
+        val w = if (fill && c.hasBoundedWidth) c.maxWidth else need.coerceIn(c.minWidth, if (c.hasBoundedWidth) c.maxWidth else Int.MAX_VALUE)
+        val h = runCatching { ms.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
+        val ps = ms.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
+        val total = if (ps.isEmpty()) 0 else ps.size * h + (ps.size - 1) * gapPx
+        layout(w, total) { ps.forEachIndexed { i, p -> p.place(0, i * (h + gapPx)) } }
+    }
+}
+
+/**
+ * 673g: the keys' own layout inside the row's view - every key at the same size, a pitch apart, shifted by the scroll
+ * ([offset], read while placing only). Its intrinsic width is the widest key's, its intrinsic height the tallest key's at
+ * the width asked (what UniformKeyRow sizes the group by).
+ */
+private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = object : androidx.compose.ui.layout.MeasurePolicy {
+    override fun androidx.compose.ui.layout.MeasureScope.measure(
+        measurables: List<androidx.compose.ui.layout.Measurable>, constraints: androidx.compose.ui.unit.Constraints
+    ): androidx.compose.ui.layout.MeasureResult {
+        val viewW = constraints.maxWidth
+        // (the key width UniformKeyRow worked out in the same pass - the view holds whole keys exactly)
+        val w = keyW[0].takeIf { it > 0 } ?: (measurables.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0)
+        val h = constraints.maxHeight
+        val ps = measurables.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
+        return layout(viewW, h) {
+            val ox = offset().toInt()
+            ps.forEachIndexed { i, p -> p.place(i * (w + gap) - ox, 0) }
+        }
+    }
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
+        measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
+        measurables.maxOfOrNull { it.maxIntrinsicWidth(height) } ?: 0
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicHeight(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, width: Int) =
+        measurables.maxOfOrNull { it.maxIntrinsicHeight(width) } ?: 0
+    override fun androidx.compose.ui.layout.IntrinsicMeasureScope.minIntrinsicHeight(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, width: Int) =
+        measurables.maxOfOrNull { it.maxIntrinsicHeight(width) } ?: 0
+}
+
+/** 673g: ‹ › in the gutters of a scrolling key row - a small dark disc with a light chevron, readable on any window; dim where the row can't go. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawKeyRowChevrons(g: UniformRowGeom, offset: Float) {
+    val r = 8.dp.toPx(); val cy = size.height / 2f
+    listOf(true, false).forEach { left ->
+        val more = if (left) offset > 0.5f else offset < g.maxOffset - 0.5f
+        val cx = if (left) g.viewStart / 2f else g.viewStart + g.viewW + (size.width - g.viewStart - g.viewW) / 2f
+        val a = if (more) 0.92f else 0.28f
+        drawCircle(Color.Black.copy(alpha = 0.45f * a), r, Offset(cx, cy))
+        val d = r * 0.42f; val tip = if (left) -d * 0.55f else d * 0.55f
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(cx - tip, cy - d); lineTo(cx + tip, cy); lineTo(cx - tip, cy + d)
+        }
+        drawPath(path, Color.White.copy(alpha = a), style = Stroke(width = 2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round,
+            join = androidx.compose.ui.graphics.StrokeJoin.Round))
     }
 }
 
@@ -123,27 +332,23 @@ internal fun SceneKey(
     // always readable on it (≥ 4.5 : 1: Tiles wrote white on lilac at 2.9 : 1), and a lit Play keeps a ring that shows.
     val k = sceneKeyColors(a.primary, primaryStyled, fill, onFill, ink, onInk, edge, onEdge)
     val lab = PopupLab.active.actions // (523t: approved - everyone)
-    if (lab && PopupLab.isMore(a)) {
-        // (Batch 523 design lab: More as a small round "•••" key beside Details; open (Less) it stays lit-edged.)
-        SceneControl(a, Modifier) { on ->
-            androidx.compose.foundation.layout.Box(
-                Modifier.size(height).clip(androidx.compose.foundation.shape.CircleShape).background(if (on) k.onFill else k.fill.copy(alpha = k.fill.alpha * 0.6f))
-                    .border(if (on || a.label == "Less") 2.dp else 1.dp, if (on) k.onEdge else if (a.label == "Less") onFill.copy(alpha = 1f) else k.edge,
-                        androidx.compose.foundation.shape.CircleShape),
-                contentAlignment = Alignment.Center
-            ) { Text("•••", color = if (on) k.onInk else k.ink, fontSize = size, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false) }
-        }
-        return
-    }
+    // (673g, owner brief 15 Nov: a status line is not a key - under the key row, in the window's ink, still a D-pad stop.)
+    if (LocalKeyAsStatus.current) { SceneStatusLine(a, k, font, size); return }
+    // (673g, owner brief 15 Nov: "One MORE button, never MORE plus three dots" - batch 523's round ••• key is gone: More /
+    // Less is a key like the others, its word and its icon, the last of the row, open (Less) with a lit edge.)
+    val less = PopupLab.isMore(a) && a.label == "Less"
+    val uniform = LocalUniformKey.current
     // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
     // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
     // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
     SceneControl(a, if (wide) Modifier.fillMaxWidth() else Modifier) { on ->
         Row(
-            Modifier.then(if (wide) Modifier.fillMaxWidth() else Modifier).then(if (minWidth.isSpecified && !wide) Modifier.widthIn(min = minWidth) else Modifier)
+            // (673g: in a uniform group the key fills the size the group gives every key, its icon and word centred.)
+            Modifier.then(if (uniform) Modifier.fillMaxSize() else if (wide) Modifier.fillMaxWidth() else Modifier)
+                .then(if (minWidth.isSpecified && !wide && !uniform) Modifier.widthIn(min = minWidth) else Modifier)
                 .heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
-                .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
-            horizontalArrangement = if (minWidth.isSpecified && !wide) Arrangement.Center else Arrangement.Start,
+                .border(if (on || less) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else if (less) onFill.copy(alpha = 1f) else k.edge, shape).padding(horizontal = pad),
+            horizontalArrangement = if ((minWidth.isSpecified || uniform) && !wide) Arrangement.Center else Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (wide) Box(Modifier.width(18.dp), contentAlignment = Alignment.Center) {
@@ -154,6 +359,25 @@ internal fun SceneKey(
                 fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2,
                 modifier = if (wide) Modifier.weight(1f) else Modifier,
                 lineHeight = if (lineHeight == TextUnit.Unspecified) TextUnit.Unspecified else if (a.primary) lineHeight * 1.15f else lineHeight)
+        }
+    }
+}
+
+/**
+ * 673g (owner brief 15 Nov - status messages in their own place, not among the keys): a status line under a key row - its icon
+ * and words in the window's key ink (a problem in orange), the whole width, wrapping in words; the D-pad stops on it (a thin ring)
+ * and A opens what it is about, as its chip did.
+ */
+@Composable
+private fun SceneStatusLine(a: WinAction, k: SceneKeyColors, font: FontFamily?, size: TextUnit) {
+    SceneControl(a, Modifier.fillMaxWidth()) { on ->
+        val c = if (a.urgent) Color(0xFFFF8A3D) else k.ink.copy(alpha = k.ink.alpha * 0.82f)
+        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp))
+            .border(if (on) 1.5.dp else 0.dp, if (on) k.onEdge else Color.Transparent, RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Icon(a.icon, null, tint = c, modifier = Modifier.size(13.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(sceneLabel(a.label), color = c, fontSize = size, fontFamily = font, fontWeight = FontWeight.SemiBold, maxLines = 3)
         }
     }
 }
@@ -420,7 +644,18 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
     val left = geo.first.dp; val w = geo.second.dp
     val gap = 12.dp
     val rim = androidx.compose.ui.graphics.lerp(Color.White.copy(alpha = 0.10f), accent, 0.35f)
-    Box(Modifier.width(ctx.maxW).height(ctx.maxH)) {
+    // (673f, native pages - owner directive 14 Nov: "replace the remaining generic popup pages with layout-aware designs". The
+    // deck's pages are its tracks: Info is track 01, Details 02, Achievements 03, Options 04 - each plays on the LCD, the panel,
+    // its tray and keys stay. L1 / R1 skip a track back / on, as the deck's own skip keys would.)
+    val tracks = DISC_TRACKS.filter { it in ctx.pages }
+    val anim = rememberAnimationsEnabled()
+    Box(Modifier.width(ctx.maxW).height(ctx.maxH).onPreviewKeyEvent { e ->
+        if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+        val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
+        val to = pageStep(tracks, ctx.page, step)
+        if (to != ctx.page) ctx.open(to)
+        true
+    }) {
         // The tray: the panel's link to the deck, out of the deck's edge first and back in last.
         Box(Modifier.align(Alignment.CenterStart).padding(start = (left - gap).coerceAtLeast(0.dp)).width(gap + 10.dp).height(14.dp).graphicsLayer {
             val e = sceneEase((ctx.reveal() / 0.45f).coerceIn(0f, 1f))
@@ -449,16 +684,53 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             // the name kept three lines' height for a two-line name - its facts had no room even with the keys folded, and with
             // More open its story cue was laid out 0 px high. The readouts get their own line heights, the name the lines it
             // needs (a window's own text, rule 478); the room goes to the facts.)
-            Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
-                .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)).padding(10.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
-                    Spacer(Modifier.weight(1f))
-                    Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+            // (673f: a page change is a track change on the display - the old track scrolls off, the next one comes up from
+            // the other edge, forward upward and back downward; the LCD grows to the page's list and back with it.)
+            androidx.compose.animation.AnimatedContent(
+                targetState = ctx.page,
+                transitionSpec = {
+                    if (!anim) (androidx.compose.animation.EnterTransition.None togetherWith androidx.compose.animation.ExitTransition.None)
+                        .using(androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.snap() })
+                    else {
+                        val dir = pageDirection(DISC_TRACKS, initialState, targetState)
+                        (androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { h -> h * dir / 3 } +
+                            androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(NATIVE_PAGE_MS / 2, delayMillis = NATIVE_PAGE_MS / 4))) togetherWith
+                            (androidx.compose.animation.slideOutVertically(androidx.compose.animation.core.tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { h -> -h * dir / 5 } +
+                                androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(NATIVE_PAGE_MS / 3))) using
+                            androidx.compose.animation.SizeTransform(clip = true) { _, _ -> androidx.compose.animation.core.tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing) }
+                    }
+                },
+                contentKey = { it },
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
+                    .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)),
+                label = "discTrack"
+            ) { p ->
+                val live = p == ctx.page
+                androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
+                Column(Modifier.fillMaxWidth().then(if (p == WinPage.MAIN) Modifier else Modifier.fillMaxHeight()).padding(10.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (p == WinPage.MAIN) labels.second else discTrackLabel(p, tracks), color = lcd.copy(alpha = 0.7f), fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+                        Spacer(Modifier.weight(1f))
+                        Text(if (p == WinPage.MAIN) ctx.played.uppercase() else winPageTitle(p).uppercase(), color = lcd, fontSize = 10.sp,
+                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp, fontWeight = if (p == WinPage.MAIN) null else FontWeight.Bold)
+                    }
+                    if (p == WinPage.MAIN) {
+                        StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, reserve = false)
+                        Spacer(Modifier.height(4.dp))
+                        SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)
+                    } else {
+                        // The track itself: the page's list on the display (its paper is the LCD; the disc in the deck is the
+                        // cover, the name stays the page's own heading).
+                        Spacer(Modifier.height(6.dp))
+                        Box(Modifier.weight(1f).fillMaxWidth()) {
+                            androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = false)) {
+                                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+                            }
+                        }
+                    }
                 }
-                StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, reserve = false)
-                Spacer(Modifier.height(4.dp))
-                SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)
+                }
             }
             Spacer(Modifier.height(10.dp))
             // The transport keys.
@@ -489,6 +761,18 @@ internal fun discPanelGeometry(maxW: Float, maxH: Float): Pair<Float, Float> {
     val minW = minOf(300f, maxW)
     val left = (deckRight + 12f).coerceIn(0f, maxW - minW)
     return left to (maxW - left).coerceAtMost(620f)
+}
+
+/** 673f: Disc station's pages as the deck's tracks, in order (L1 / R1 walk them). */
+internal val DISC_TRACKS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS)
+
+/**
+ * 673f (pure): the LCD's track line for page [p] - "DISC 1 · TRACK 02" for the second of the game's [tracks] (the pages it has;
+ * a game without achievements plays Options as track 03). A page not in [tracks] counts after them.
+ */
+internal fun discTrackLabel(p: WinPage, tracks: List<WinPage>): String {
+    val i = tracks.indexOf(p).let { if (it < 0) tracks.size else it }
+    return "DISC 1 · TRACK " + (i + 1).toString().padStart(2, '0')
 }
 
 // ───────────────────────────── Green Core: a glowing system console ─────────────────────────────

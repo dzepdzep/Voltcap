@@ -35,7 +35,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (529k: the shelf family - Game shelf, Case stacks, Console stack, Coverflow details - ShelfFamilyPages.)
     WinScene.INDEX_CARD,
     // (529l: the Twin family - Twin desk, Twin icons, Twin showcase - pages on the touch screen, TwinTouchPages.)
-    WinScene.TWIN_HINGE)
+    WinScene.TWIN_HINGE,
+    // (673f: Disc station - the pages are the deck's tracks, played on its LCD; DiscPlayerPanel.)
+    WinScene.DISC_PANEL)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
@@ -66,7 +68,7 @@ internal suspend fun focusWhenAttached(f: FocusRequester, frames: Int = 8): Bool
 }
 
 /** A copy of [a] with no focus requester: the leaving page of a native page change can't hold or take the focus. */
-internal fun WinAction.inert(): WinAction = WinAction(label, icon, onClick, focus = null, primary = primary, back = back, urgent = urgent, inert = true)
+internal fun WinAction.inert(): WinAction = WinAction(label, icon, onClick, focus = null, primary = primary, back = back, urgent = urgent, inert = true, status = status)
 
 /** What opens for a game (popup infrastructure, 12 Nov): one decision for every opener, read by [GameWindow]. */
 internal enum class WinPresentation {

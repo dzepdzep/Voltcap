@@ -55,17 +55,45 @@ import coil.compose.AsyncImage
 
 private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else Color.White
 
-/** A column of keys (menus that run down the screen: Cross menu, Side menu); scrolls when it doesn't fit. */
+/**
+ * A column of keys (menus that run down the screen: Cross menu, Side menu); scrolls when it doesn't fit.
+ * (673g, owner brief 15 Nov - "Vertical menus, WWE SvR 2011 style": every item its own key of the same width and the same height
+ * - the tallest item's - edges in line, the gaps even; status lines (Save sync not set up) under the keys, not among them.)
+ */
 @Composable
 private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true, key: @Composable (WinAction) -> Unit) {
-    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) { keys.forEach { key(it) } }
+    val actions = keys.filterNot { it.status }
+    val status = keys.filter { it.status }
+    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        UniformKeyColumn(actions, 4.dp, fill = true, key = key)
+        if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
+    }
 }
 
-/** A full-width list row key (icon + word), lit as a band. */
+/**
+ * A full-width list row key (icon + word), lit as a band.
+ * (673g, owner brief 15 Nov: each item of a vertical menu is its own rectangular key - a faint fill and edge at rest, the band
+ * when lit - at the size its column gives every item; a status line (WinAction.status) is words only.)
+ */
 @Composable
 private fun ListKey(a: WinAction, ink: Color, lit: Color, litInk: Color, height: androidx.compose.ui.unit.Dp = 38.dp, font: FontFamily? = null) {
+    if (LocalKeyAsStatus.current) {
+        SceneControl(a, Modifier.fillMaxWidth()) { on ->
+            val c = if (a.urgent) Color(0xFFFF8A3D) else ink.copy(alpha = ink.alpha * 0.8f)
+            Row(Modifier.fillMaxWidth().background(if (on) lit.copy(alpha = 0.35f) else Color.Transparent).padding(horizontal = 12.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(a.icon, null, tint = c, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(8.dp))
+                Text(sceneLabel(a.label), color = c, fontSize = 12.sp, fontFamily = font, maxLines = 3)
+            }
+        }
+        return
+    }
+    val uniform = LocalUniformKey.current
+    val box = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
     SceneControl(a, Modifier.fillMaxWidth()) { on ->
-        Row(Modifier.fillMaxWidth().heightIn(min = height).background(if (on) lit else Color.Transparent).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().then(if (uniform) Modifier.fillMaxHeight() else Modifier).heightIn(min = height).clip(box)
+            .background(if (on) lit else ink.copy(alpha = 0.06f)).border(1.dp, if (on) lit else ink.copy(alpha = 0.16f), box)
+            .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(a.icon, null, tint = if (on) litInk else ink, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(12.dp))
             Text(sceneLabel(a.label), color = if (on) litInk else if (a.urgent) Color(0xFFFF8A3D) else ink, fontSize = if (a.primary) 16.sp else 14.sp,

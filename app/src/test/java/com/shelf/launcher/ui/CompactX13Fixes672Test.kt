@@ -40,8 +40,8 @@ class CompactX13Fixes672Test {
     @Test fun theTvStripUsesTheWordWidths() {
         val s = src("GameWindow.kt")
         val body = s.substring(s.indexOf("private fun TvControls("), s.indexOf("private fun TvControls(") + 4000)
-        assertTrue(body.contains("val rows = tvKeyRows(need, constraints.maxWidth, gapPx)"))
-        assertTrue(body.contains("Modifier.weight(wt)"))
+        // (673g, owner brief 15 Nov: the strip is one row of identical keys - UniformKeyRow - no longer rows by word.)
+        assertTrue(body.contains("UniformKeyRow(tvItems.indices.map"))
         assertTrue(!body.contains("Modifier.weight(1f).then(if (isPlay)"))
     }
 

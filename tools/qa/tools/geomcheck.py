@@ -175,6 +175,62 @@ def _key(n):
     return (_label(n), tuple(n.get("full") or ()))
 
 
+# (673g, owner brief 15 Nov - "Perfectly uniform console-game menus": every key in a group the same width and height, one MORE
+# (never MORE plus three dots) and last, status lines not drawn as keys.)
+STATUS_WORDS = re.compile(r"(not set up|^saves\b|synced|sync is|last sync|\bfps\b|\bwatts?\b)", re.I)
+
+
+def uniform_audit(wins, home=frozenset(), drawn=lambda n: True, tol=3):
+    """Key groups in the window's own controls that break the uniform-button rules: keys side by side (one row: the same
+    centre line) or stacked (each alone in its row, the same left edge) of different widths or heights; three dots as a key;
+    MORE more than once or not the last of its row; a status line drawn as a key in a row of keys. A list of findings."""
+    out = []
+    for w in wins:
+        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "control"
+               and len(n.get("full") or []) == 4 and n["full"][2] > 0 and n["full"][3] > 0 and (n.get("shown") or [0, 0, 0, 0])[2] >= 0]
+        if any(re.fullmatch(r"\s*(•••|\.\.\.|⋯)\s*", _label(n)) for n in ctl):
+            out.append("three dots as a key")
+        word = lambda n: re.sub(r"[^A-Za-z]", "", _label(n)).lower()
+        mores = [n for n in ctl if word(n) in ("more", "less")]
+        if len(mores) > 1:
+            out.append(f"MORE / LESS {len(mores)} times")
+        rows = []
+        for n in sorted(ctl, key=lambda n: n["full"][1] + n["full"][3] / 2):
+            cy = n["full"][1] + n["full"][3] / 2
+            for r in rows:
+                if abs(r[0] - cy) <= tol:
+                    r[1].append(n); break
+            else:
+                rows.append([cy, [n]])
+        alone = []
+        for _, grp in rows:
+            if len(grp) < 2:
+                alone += grp; continue
+            grp.sort(key=lambda n: n["full"][0])
+            ws = [n["full"][2] for n in grp]; hs = [n["full"][3] for n in grp]
+            if max(ws) - min(ws) > tol or max(hs) - min(hs) > tol:
+                out.append("keys side by side of different sizes: " + ", ".join(f"{_label(n)[:12]} {n['full'][2]}x{n['full'][3]}" for n in grp[:6]))
+            if any(m in grp for m in mores) and word(grp[-1]) not in ("more", "less"):
+                out.append(f"MORE not the last of its row ({_label(grp[-1])[:14]} after it)")
+            st = [n for n in grp if STATUS_WORDS.search(_label(n))]
+            if st:
+                out.append("a status line drawn as a key: " + _label(st[0])[:30])
+        cols = []
+        for n in sorted((n for n in alone if not STATUS_WORDS.search(_label(n))), key=lambda n: n["full"][0]):
+            for c in cols:
+                if abs(c[0] - n["full"][0]) <= tol:
+                    c[1].append(n); break
+            else:
+                cols.append([n["full"][0], [n]])
+        for _, grp in cols:
+            if len(grp) < 2:
+                continue
+            ws = [n["full"][2] for n in grp]; hs = [n["full"][3] for n in grp]
+            if max(ws) - min(ws) > tol or max(hs) - min(hs) > tol:
+                out.append("stacked keys of different sizes: " + ", ".join(f"{_label(n)[:12]} {n['full'][2]}x{n['full'][3]}" for n in grp[:6]))
+    return out
+
+
 def clip_evaluate(dump, limits=None, png=None, baseline=None):
     """Results of the clipping gate for a QaClip dump (dict). INFRA without evidence.
     baseline: a dump of the same screen with no popup (popclip's closed step): its nodes — the home screen behind a popup
@@ -389,6 +445,10 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         out.append(qalib.Result("warn-text-unconfirmed", qalib.PASS, f"WARN: {len(tunc)} text overflow report(s) not confirmed by the layout (auto-sized text reports its unshrunk size; check the screenshot): " + "; ".join(tunc[:4])))
     if gave or tgave:
         out.append(qalib.Result("warn-gives-way", qalib.PASS, f"{len(gave) + len(tgave)} item(s) in a part that gives way by design: " + "; ".join((gave + tgave)[:4])))
+    # (673g: the uniform-button audit - a warning while the system rolls out across the 53 layouts.)
+    uni = uniform_audit(wins, home, drawn, lim["clip_px"] if lim.get("clip_px", 0) >= 2 else 3)
+    if uni:
+        out.append(qalib.Result("warn-uniform", qalib.PASS, "WARN: " + "; ".join(uni[:5]) + (f" (+{len(uni) - 5} more)" if len(uni) > 5 else "")))
     res("screen", off, "every control inside the screen")
     res("overlap", ovl, "no overlapping controls")
     # (Text boxes crossing a button: noted, not failed — a text box can be taller than its drawn lines, e.g. a clipped last

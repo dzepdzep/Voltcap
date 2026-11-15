@@ -3888,6 +3888,30 @@
    "severity": "low",
    "status": "suspect (flaky test environment: a frame performed inside another's measure / layout - likely a frame callback left by an earlier test in the same JVM). Watch: CI or a Windows run failing on it again -> isolate the class (forkEvery) or reset the main clock between tests",
    "found": "2026-11-15 Windows testDebugUnitTest 11:05 (gradle_int_testDebugUnitTest_2026-11-15T11-05-31-586Z.log)"
+  },
+  {
+   "id": "D331",
+   "title": "Owner brief 15 Nov ('FINAL GLOBAL BUTTON & MENU DESIGN SYSTEM'): popup key groups were of every width (each key its own word's width), wrapped onto several rows, More was a round ••• key, and status lines ('Save sync is not set up', the performance summary) were drawn as keys among the actions. Audit before the change: 49 / 53 layouts on the Flip 2 x1.3 (f673j), 45 / 53 on the KONKR x1.0 (k673i) had at least one such group",
+   "rule": "UNIFORM",
+   "severity": "high",
+   "status": "673g in progress: one shared system - KeyRow / PageBars / the TV strip / the plain window / the shared page are uniform rows (every key the widest word's width, the tallest key's height; sharing the row where they fit, scrolling a whole key at a time between ‹ › where they don't, the D-pad bringing the key it is on into view); Cross / Side menus and the plain window's vertical keys are uniform columns; MORE is a worded key (stack icon), last; status lines stand under the keys. geomcheck 'warn-uniform' audits every key group; popclip walks the D-pad to an off-screen MORE. Specialised scenes (Storage tabs, Box, Cards, Case flow, Memory card, Magazine, Night, Panels, Shop, Blades, Cinema, Twin pages, popup styles other than OWN) still to convert",
+   "found": "2026-11-15 owner brief + audit of k673i / f673j"
+  },
+  {
+   "id": "D332",
+   "title": "Flip 2 x1.3 full popup gate f673j (673e2, first full Flip 2 x1.3 gate on this line): 45 / 53 PASS. FAIL: Airy More 'Never played · ★' 0 px; Dashboard More facts 0 px; File select More story 0 px; Pocket ribbon More's ••• not placed (keys wrapping into the room of other parts with More open); Circuit More DETAILS / SAVE SYNC overlap; Blades page name cut; Cinema Play smaller than its round Details (also KONKR x1.0); Icon bar home glyph 5.5 px off centre",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "open - the More-state ones are expected to go with the uniform key rows (one row instead of wrapped rows); re-gate after 673g",
+   "found": "2026-11-15 f673j"
+  },
+  {
+   "id": "D333",
+   "title": "KONKR x1.0 full popup gate k673i (673e2, the backlog's 'KONKR x1.0 full gate'): 51 / 53 PASS. FAIL: Cinema Play smaller than its round Details (hierarchy); TV room rapid A B A B left the window open once",
+   "rule": "R26",
+   "severity": "low",
+   "status": "open: Cinema with D332; TV rapid - re-run to see if it is the intermittent D319 kind",
+   "found": "2026-11-15 k673i"
   }
  ]
 }

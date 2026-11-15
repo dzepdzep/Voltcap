@@ -158,31 +158,10 @@ internal fun rememberPageKeys(ctx: WinSceneCtx): (WinPage, Boolean) -> List<WinA
  */
 @Composable
 internal fun PageBars(keys: List<WinAction>, gap: Dp, key: @Composable (WinAction) -> Unit) {
-    androidx.compose.ui.layout.SubcomposeLayout(Modifier.fillMaxWidth()) { c ->
-        val w = c.maxWidth
-        val g = gap.roundToPx()
-        val parts = keys.mapIndexed { i, k -> subcompose(i) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { key(k) } }.firstOrNull() }
-        // (the round ••• keeps its size - it is not a bar - and stays last; the bars share the rest of its row)
-        val round = keys.map { PopupLab.active.actions && PopupLab.isMore(it) }
-        val need = parts.map { it?.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) ?: 0 }
-        val rows = pageBarRows(need, w, g)
-        var y = 0
-        val placed = ArrayList<Triple<androidx.compose.ui.layout.Placeable, Int, Int>>()
-        rows.forEachIndexed { r, row ->
-            // (Every row spans the card: each bar gets its word's width and an equal part of what is left.)
-            val widths = pageBarWidths(row.map { need[it] }, w, g, row.map { round[it] })
-            val rowH = row.indices.maxOf { c -> parts[row[c]]?.minIntrinsicHeight(widths[c]) ?: 0 }
-            var x = 0
-            row.forEachIndexed { col, i ->
-                val bw = widths[col]
-                val pl = parts[i]?.measure(androidx.compose.ui.unit.Constraints(minWidth = bw, maxWidth = bw, minHeight = rowH, maxHeight = rowH))
-                if (pl != null) placed += Triple(pl, x, y)
-                x += bw + g
-            }
-            y += rowH + if (r < rows.lastIndex) g else 0
-        }
-        layout(w, y) { placed.forEach { (pl, x, yy) -> pl.place(x, yy) } }
-    }
+    // (673g, owner brief 15 Nov - "Horizontal = one scrollable row", identical buttons: the page's bars are one row of equal
+    // bars spanning the card where they fit, scrolling a whole bar at a time where they don't (UniformKeyRow) - no longer as few
+    // rows as kept every word whole with the bars sharing out the width by their words (529o).)
+    UniformKeyRow(keys.filterNot { it.status }, gap, key)
 }
 
 /**

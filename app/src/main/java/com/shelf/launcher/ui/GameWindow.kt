@@ -4,6 +4,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.drawLayer
 import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -2042,26 +2043,20 @@ private fun TvControls(
             // smallest size the keys shrink to. Each key now asks for its word's width at the keys' own size: equal keys while
             // every word fits its third (as before), else widths by word, else Play | Back over a whole-width Full details -
             // never a cut word, never smaller than asked.)
-            BoxWithConstraints(Modifier.weight(1f)) {
+            // (673g, owner brief 15 Nov - one row of identical keys, scrolling a whole key at a time where they don't fit: the
+            // strip's keys are a uniform group now - no longer 672a's widths by word or Play | Back over Full details.)
+            Box(Modifier.weight(1f)) {
                 val labels = tvItems.map { if (look.caps) it.first.uppercase() else it.first }
-                val need = tvKeyNeeds(look, labels)
-                val gapPx = with(androidx.compose.ui.platform.LocalDensity.current) { 6.dp.roundToPx() }
-                val rows = tvKeyRows(need, constraints.maxWidth, gapPx)
                 ButtonRow(tvItems.map { it.first }) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        rows.forEach { row ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                row.forEach { (i, wt) ->
-                                    val (l, f, isPlay) = tvItems[i]
-                                    WinButton(
-                                        look, labels[i],
-                                        Modifier.weight(wt).then(if (isPlay) Modifier.focusRequester(playFocus)
-                                            else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier),
-                                        wideButton = false, stretch = true, compact = true, onClick = f
-                                    )
-                                }
-                            }
-                        }
+                    UniformKeyRow(tvItems.indices.map { i -> WinAction(labels[i], androidx.compose.material.icons.Icons.Filled.PlayArrow, tvItems[i].second, primary = tvItems[i].third) }, 6.dp) { a ->
+                        val i = labels.indexOf(a.label)
+                        val (l, f, isPlay) = tvItems[i]
+                        WinButton(
+                            look, labels[i],
+                            if (isPlay) Modifier.focusRequester(playFocus)
+                                else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier,
+                            wideButton = false, stretch = true, compact = true, onClick = f
+                        )
                     }
                 }
             }
@@ -2159,7 +2154,13 @@ private fun WindowBody(
             if (isPlay) Modifier.focusRequester(playFocus) else if (l == PERF_LABEL && status != null) Modifier.focusRequester(status.perfFocus)
             else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier
         if (vertical) Column(verticalArrangement = Arrangement.spacedBy(if (look.btn == Btn.TEXT) 4.dp else 10.dp)) {
-            ButtonRow(all.map { it.first }) { all.forEach { (l, f, isPlay) -> WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = true, onClick = f) } }
+            // (673g, owner brief 15 Nov: a vertical menu's keys all the same width and height, edges in line.)
+            ButtonRow(all.map { it.first }) {
+                UniformKeyColumn(all.map { (l, f, isPlay) -> WinAction(l, androidx.compose.material.icons.Icons.Filled.PlayArrow, f, primary = isPlay) },
+                    if (look.btn == Btn.TEXT) 4.dp else 10.dp) { a ->
+                    WinButton(look, if (look.caps) a.label.uppercase() else a.label, btnMod(a.label, a.primary), wideButton = true, onClick = a.onClick)
+                }
+            }
             // (Update 119: the game's options, achievements and save sync under them.)
             if (!details) WinIcons(look, extras)
             WinStatusLine(look)
@@ -2175,13 +2176,12 @@ private fun WindowBody(
           Column(if (share) Modifier.fillMaxWidth() else Modifier, horizontalAlignment = Alignment.CenterHorizontally) {
             if (share) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 // [share]: the buttons share the width (a narrow column).
-                ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
-                    WinButton(
-                        look, if (look.caps) l.uppercase() else l,
-                        Modifier.weight(1f).then(btnMod(l, isPlay)),
-                        wideButton = false, stretch = true, onClick = f
-                    )
-                } }
+                // (673g: one row of identical keys - UniformKeyRow - scrolling where it doesn't fit.)
+                ButtonRow(items.map { it.first }) {
+                    UniformKeyRow(items.map { (l, f, isPlay) -> WinAction(l, androidx.compose.material.icons.Icons.Filled.PlayArrow, f, primary = isPlay) }, 8.dp) { a ->
+                        WinButton(look, if (look.caps) a.label.uppercase() else a.label, btnMod(a.label, a.primary), wideButton = false, stretch = true, onClick = a.onClick)
+                    }
+                }
             } else {
                 // (Update 291, Toni: "the icon isn't reachable": the Inspect icon was the fifth round icon, and on the Cube
                 // layout's window (Mario Party, Animal Crossing) it ran past the window's right edge — the estimate above is
@@ -2190,9 +2190,14 @@ private fun WindowBody(
                     horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp),
                     itemVerticalAlignment = Alignment.CenterVertically
                 ) {
-                    ButtonRow(items.map { it.first }) { items.forEach { (l, f, isPlay) ->
-                        WinButton(look, if (look.caps) l.uppercase() else l, btnMod(l, isPlay), wideButton = false, stretch = false, onClick = f)
-                    } }
+                    // (673g: the window's keys one uniform group; its round icons stay their own group beside / under them.)
+                    ButtonRow(items.map { it.first }) {
+                        Box {
+                            UniformKeyRow(items.map { (l, f, isPlay) -> WinAction(l, androidx.compose.material.icons.Icons.Filled.PlayArrow, f, primary = isPlay) }, 12.dp) { a ->
+                                WinButton(look, if (look.caps) a.label.uppercase() else a.label, btnMod(a.label, a.primary), wideButton = false, stretch = false, onClick = a.onClick)
+                            }
+                        }
+                    }
                     if (!details && !iconsBelow) WinIcons(look, extras, 44.dp)
                 }
             }
@@ -2462,7 +2467,8 @@ private fun SceneBody(
     val labActions = PopupLab.active.actions // (523t: approved - everyone)
     val pageBackIsHint = labActions && nativePages(scene)
     val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
-        else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
+        // (673g, owner brief 15 Nov: "One MORE button, never MORE plus three dots" - its word and a stack icon, no dots.)
+        else WinAction("More", I.Layers, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {
         add(WinAction(look.play.lowercase().replaceFirstChar { it.uppercase() }, I.PlayArrow, onPlay, focus = playFocus, primary = true))
         when (page) {
@@ -2492,8 +2498,9 @@ private fun SceneBody(
     val allChips = buildList {
         status?.let { st ->
             val sv = st.sync
-            add(WinAction(savesLabel(sv.text), sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent))
-            st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf)) }
+            // (673g: status lines, not keys - KeyRow puts them under the window's keys.)
+            add(WinAction(savesLabel(sv.text), sv.icon, if (sv.inert) ({}) else if (sv.setUp) st.onSyncSetUp else st.onSync, urgent = sv.urgent, status = true))
+            st.perf?.let { p -> add(WinAction(p.perf.summary, I.Speed, st.onPerf, status = true)) }
         }
     }
     val tools = when {
@@ -2627,9 +2634,12 @@ private fun SceneExpandedPage(look: WinLook, ctx: WinSceneCtx, page: WinPage, ma
             Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
             verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically
         ) {
-            ButtonRow(ctx.buttons.map { it.label }) { ctx.buttons.forEach { a ->
-                WinButton(look, if (look.caps) a.label.uppercase() else a.label, if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier, wideButton = false, compact = compact, onClick = a.onClick)
-            } }
+            // (673g: the page's keys one row of identical keys.)
+            ButtonRow(ctx.buttons.map { it.label }) {
+                UniformKeyRow(ctx.buttons.filterNot { it.status }, 12.dp) { a ->
+                    WinButton(look, if (look.caps) a.label.uppercase() else a.label, if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier, wideButton = false, compact = compact, onClick = a.onClick)
+                }
+            }
         }
     }
 }
@@ -3040,12 +3050,15 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
         else -> 140.dp
     }
     val h = if (compact) 32.dp else when (look.btn) { Btn.TEXT -> 34.dp; Btn.LCD -> 36.dp; else -> 44.dp }
+    val uniformKey = LocalUniformKey.current
     Box(
         modifier
             // (Update 129: at least this wide, wider when its word needs it — "Achievements" used to end in "…".)
             .then(if (w != null) Modifier.widthIn(min = w) else Modifier)
             .height(h)
-            .graphicsLayer { if (look.btn != Btn.TEXT) { val k = if (focused) 1.05f else 1f; scaleX = k; scaleY = k } }
+            // (673g, owner brief 15 Nov: "Button sizes must not change when an action becomes focused" - in a uniform group the
+            // lit key keeps its size; its fill and edge show it.)
+            .graphicsLayer { if (look.btn != Btn.TEXT && !uniformKey) { val k = if (focused) 1.05f else 1f; scaleX = k; scaleY = k } }
             .clip(shape)
             .background(if (focused) look.btnOnFill else look.btnFill)
             .then(if (look.btnBorder != null) Modifier.border(if (focused && look.btn != Btn.SQUARE) 2.5.dp else 1.5.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
@@ -3059,6 +3072,13 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
                 label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = if (focused) 19.sp else 16.sp,
                 fontWeight = if (focused) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1,
                 style = if (focused) androidx.compose.ui.text.TextStyle(shadow = androidx.compose.ui.graphics.Shadow(Color.White.copy(alpha = 0.9f), blurRadius = 14f)) else androidx.compose.ui.text.TextStyle.Default
+            )
+        } else if (uniformKey) {
+            // (673g: in a uniform group every key is as wide as the widest word needs at the full size - nothing shrinks, and
+            // the group measures this text's own width (a BoxWithConstraints can't be asked for it).)
+            androidx.compose.material3.Text(
+                label, color = if (focused) look.btnOnInk else look.btnInk, fontSize = (if (compact) 12f else if (look.btn == Btn.LCD) 13f else 15f).sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, fontFamily = if (look.mono) FontFamily.Monospace else null   // qa-ok: TRUNCATE-CLIP (its group is as wide as its word)
             )
         } else androidx.compose.foundation.layout.BoxWithConstraints(contentAlignment = Alignment.Center) {
             // (Update 476, D259: in a row where one word had to shrink — "Full details" on the TV's Details page — its

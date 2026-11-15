@@ -13,7 +13,7 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. v0.6.72 released; updates 672a-d, 673a-e (15 Nov 2026) - newest
+## 0. v0.6.72 released; updates 672a-d, 673a-g (15 Nov 2026) - newest
 
 **Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
 equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
@@ -45,6 +45,9 @@ production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 4
 | Popup checker graded rows that were never placed (D329) | FIXED (673e) | geomcheck leaves out unplaced nodes; self-test on the f673g dump (the 0 px cue still FAILs) |
 | CI Verify lost its runner 3x in the unit tests (D325) | WATCHDOG + 24.04 / latest side by side (673e) | 673b's progress annotations died with the runner (6308b2a4, 15 Nov 11:01). tools/ci/watchdog.py stops the tests before the machine starves and names why; Windows: 2798 / 0 |
 | Unit test EndlessOnceRoboTest[BOX n=12 x1] failed once at its first frame (D330) | SUSPECT (flaky test clock) | re-run 2798 / 0; watch CI |
+| **Uniform button & menu system (owner brief 15 Nov, D331)** | **IN PROGRESS (673g)** | one system: equal keys, one scrolling row or a straight column, MORE as a word last, status lines under the keys - KeyRow (27 windows), page bars, TV strip, plain window, shared page, Cross / Side, Box sheet, File select, Coverflow details. Before: 49 / 53 (Flip 2 x1.3) and 45 / 53 (KONKR x1.0) layouts had a non-uniform group. Next: Storage tabs, Cards, Case flow, Memory card, Magazine, Night, Panels, Rental shop tag, Blades, Cinema, Twin pages, the other popup styles (BANNER / CLASSIC / SHARED / ROW_*); then promote warn-uniform to FAIL |
+| Native pages: Disc station (673f) | DONE (code + unit tests; owner review pending) | the deck's tracks on its LCD (Info 01, Details 02, Achievements 03, Options 04), L1 / R1 skip; KONKR k673j / Flip 2 f673k screenshots. 13 / 53 layouts now draw their own pages |
+| Full popup gates on 673e2: KONKR x1.0 k673i 51 / 53 (D333), Flip 2 x1.3 f673j 45 / 53 (D332) | DONE (graded) | the More-state failures are re-checked after the uniform rows |
 | Save Sync (owner's own test, 15 Nov) | OWNER REPORTS IT WORKED | the owner tested Save Sync during this session and answered "worked" (which build / flow not stated); the Real Drive E2E line in 0b stays as written until the build is known |
 
 Gates on this line (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after each):

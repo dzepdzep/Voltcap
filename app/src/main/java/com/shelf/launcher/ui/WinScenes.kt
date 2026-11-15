@@ -252,7 +252,13 @@ internal class WinAction(
      * Popup motion work: drawn only - a page on its way out, the game blade under a page blade. Not focusable, not clickable:
      * the D-pad can't wander onto something covered or leaving.
      */
-    val inert: Boolean = false
+    val inert: Boolean = false,
+    /**
+     * 673g (owner brief 15 Nov: "Informational messages ... must NOT be included among action buttons"): a status line - Save
+     * sync not set up, the performance summary. KeyRow draws it under the keys as a line of its own (still a D-pad stop that
+     * opens what it is about), never as a key.
+     */
+    val status: Boolean = false
 )
 
 /** Update 330: everything a layout's own window gets from GameWindow (see SceneBody there). */
@@ -553,13 +559,14 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.height(if (tight) 6.dp else 12.dp))
             // The actions, stamped.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                ctx.buttons.forEach { a ->
+            // (673g, owner brief 15 Nov: the stamps one row of identical stamps (UniformKeyRow) - Play shown by its icon and ink, not its
+            // size; a lit stamp still tilts, never grows; the round stickers after them as a group of their own.)
+            UniformKeyRow(ctx.buttons, 10.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         val tilt by animateFloatAsState(if (on) -2.5f else 0f, spring(dampingRatio = 0.5f), label = "stampTilt")
                         Box(
-                            Modifier.graphicsLayer { rotationZ = tilt; val s = if (on) 1.06f else 1f; scaleX = s; scaleY = s }
-                                .heightIn(min = if (a.primary) 44.dp else 38.dp)
+                            Modifier.uniformFill().graphicsLayer { rotationZ = tilt }
+                                .heightIn(min = 44.dp)
                                 .background(if (on) accent else Color.Transparent)
                                 .border(if (on) 3.dp else 2.dp, if (on) accent else SheetInk)
                                 .padding(horizontal = if (a.primary) 18.dp else 12.dp, vertical = 6.dp),
@@ -572,9 +579,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             }
                         }
                     }
-                }
-                // The small tools: round stickers, after the stamps.
-                if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            }
+            // The small tools: round stickers, a group of their own under the stamps.
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                ctx.tools.forEach { a ->
                     SceneControl(a, Modifier.size(38.dp)) { on ->
                         Box(
                             Modifier.fillMaxSize().graphicsLayer { val s = if (on) 1.12f else 1f; scaleX = s; scaleY = s }
@@ -707,13 +715,13 @@ private fun FileCardBack(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.height(12.dp))
             // The fat buttons, then the round tools (on as many lines as they need).
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                ctx.buttons.forEach { a ->
+            // (673g, owner brief 15 Nov: the fat buttons one row of identical buttons; a lit one keeps its size (its colour shows
+            // it); the round tools a group of their own under them.)
+            UniformKeyRow(ctx.buttons, 10.dp) { a ->
                     SceneControl(a, Modifier) { on ->
-                        val pop by animateFloatAsState(if (on) 1.1f else 1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMedium), label = "fsBtn")
                         Box(
-                            Modifier.graphicsLayer { scaleX = pop; scaleY = pop }
-                                .height(if (a.primary) 50.dp else 44.dp)
+                            Modifier.uniformFill()
+                                .height(50.dp)
                                 .clip(RoundedCornerShape(50)).background(if (on) yellow else mixS(base, Color.Black, 0.38f))
                                 .border(3.dp, if (on) Color.White else mixS(base, Color.White, 0.4f), RoundedCornerShape(50))
                                 .padding(horizontal = if (a.primary) 22.dp else 16.dp),
@@ -723,8 +731,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                                 fontWeight = FontWeight.Black, maxLines = 1, style = if (on) TextStyle() else FsOutline)
                         }
                     }
-                }
-                if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            }
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                ctx.tools.forEach { a ->
                     SceneControl(a, Modifier.size(42.dp)) { on ->
                         val pop by animateFloatAsState(if (on) 1.15f else 1f, spring(dampingRatio = 0.35f), label = "fsTool")
                         Box(

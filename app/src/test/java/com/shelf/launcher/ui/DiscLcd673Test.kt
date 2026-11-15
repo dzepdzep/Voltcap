@@ -29,8 +29,9 @@ class DiscLcd673Test {
         // NOW LOADED / the disc kind, DISC 1 - TRACK 01 / the played line: none left on the theme's 24 sp line.
         assertTrue(Regex("Text\\(\"NOW LOADED\"[^\\n]*lineHeight = 12\\.sp\\)").containsMatchIn(body))
         assertTrue(Regex("Text\\(labels\\.first[^\\n]*lineHeight = 12\\.sp\\)").containsMatchIn(body))
-        assertTrue(Regex("Text\\(labels\\.second[^\\n]*lineHeight = 13\\.sp\\)").containsMatchIn(body))
-        assertTrue(Regex("Text\\(ctx\\.played\\.uppercase\\(\\)[^\\n]*lineHeight = 13\\.sp\\)").containsMatchIn(body))
+        // (673f: the same lines name the track and the page on a page)
+        assertTrue(Regex("labels\\.second[\\s\\S]{0,200}?lineHeight = 13\\.sp").containsMatchIn(body))
+        assertTrue(Regex("ctx\\.played\\.uppercase\\(\\)[\\s\\S]{0,200}?lineHeight = 13\\.sp").containsMatchIn(body))
         assertTrue(body.contains("SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)"))
     }
 

@@ -1133,6 +1133,61 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests c6353c34 + the 673e working tree as committed (673e build + the story cue at the window's end whether the facts show or not)",
    "note": "673e2 QA build: assembleQa 15 Nov 10:56 UTC (the 673e commit's tree). Gates f673i (Flip 2 x1.3), the second handheld x1.3."
+  },
+  {
+   "id": "qa-0.6.73-673f",
+   "apk_sha256": "48139d1b1432ea5e89d82dd92946e2381c9d1bb98fdb66c5cb3061ba0feba49d",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3bda855f",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3bda855f + the 673f working tree (Disc station native pages: the deck's tracks on its LCD), committed next",
+   "note": "673f QA build: assembleQa 15 Nov 11:25 UTC. Gates: Disc station pages on the Flip 2 and the KONKR (x1.0 / x1.3)."
+  },
+  {
+   "id": "qa-0.6.73-673g1",
+   "apk_sha256": "8c03fddaf14c5bd2e8859d974069e3f556532f0cec29f145b47fa25560bd3892",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3bda855f",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3bda855f + 673f (Disc station tracks) + 673g first pass (uniform key groups: KeyRow / PageBars / TV strip / plain window / shared page / vertical menus, MORE as a word, status lines under the keys), working tree",
+   "note": "673g1 QA build: assembleQa 15 Nov 11:46 UTC. First hardware look at the uniform button system (owner brief 15 Nov)."
+  },
+  {
+   "id": "qa-0.6.73-673g2",
+   "apk_sha256": "cf261eae739327075fd859e1e89ed73a7df47927d18a6127dbb90afab19e2f00",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3bda855f",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3bda855f + 673f + 673g (uniform key groups; WinButton full-size words in a group; intrinsic-safe groups), working tree",
+   "note": "673g2 QA build: assembleQa 15 Nov 11:55 UTC (unit tests 2807 / 0). After-evidence for the uniform button system."
+  },
+  {
+   "id": "qa-0.6.73-673g3",
+   "apk_sha256": "c3421474b9e5c6bb8ee25022463a264672f6a5ea84146eb6c03f14cfc10b9167",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3bda855f",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3bda855f + 673f + 673g (673g2 + one key never stretched, 16 dp arrow room), working tree",
+   "note": "673g3 QA build: assembleQa 15 Nov 12:06 UTC."
+  },
+  {
+   "id": "qa-0.6.73-673g4",
+   "apk_sha256": "6e226d25af093544c185f7f8bb4d3512b42f70c589c9e728985fe5b2a1086247",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "3bda855f",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3bda855f + 673f + 673g (673g3 + the row's scroll semantics, Box / File select / Coverflow details groups), working tree - the 673g commit",
+   "note": "673g4 QA build: assembleQa 15 Nov 12:13 UTC."
   }
  ]
 }

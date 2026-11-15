@@ -110,7 +110,16 @@ for lay in $LAYS; do
     if grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
-      if tapat "(More|⋯|•••)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
+      # (673g, owner brief 15 Nov: a key row that doesn't fit scrolls a whole key at a time and MORE is its last key - off
+      # screen at first on a narrow window. The D-pad walks right until the row brings it into view, as a player would.)
+      mr=0; found=0
+      while :; do
+        if tapat "(More|⋯|•••)" probe; then found=1; break; fi
+        [ $mr -ge 7 ] && break
+        k DPAD_RIGHT 0.45; mr=$((mr + 1)); up
+      done
+      if [ $found = 1 ]; then [ $mr -gt 0 ] && echo "$n More reached with $mr D-pad presses (the row scrolled)" >> $OUT/log.txt
+        sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.

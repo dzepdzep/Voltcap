@@ -1,3 +1,29 @@
+# Update 673g (15 Nov 2026) - same branch, NOT released - IN PROGRESS
+- Owner brief 15 Nov "FINAL GLOBAL BUTTON & MENU DESIGN SYSTEM" (D331): one shared, layout-aware system for the popups' key groups.
+  - Every key of a group the same width (the widest word's) and height (the tallest key's), its icon and word centred, drawn in
+    the layout's own look (SceneKey / WinButton / the vertical menus' list keys); a lit key keeps its size.
+  - Horizontal groups are ONE row: sharing the row's width where they fit; where not, whole keys between ‹ › that scroll a key
+    at a time to the key the D-pad is on (or follow a finger and settle on whole keys) - never wrapped, never cut, never smaller
+    than the text asks; one key is never stretched across a row. Vertical menus (Cross, Side, the plain window's column) are
+    stacks of identical keys.
+  - MORE is a worded key (stack icon), never three dots, always last; status lines (Save sync is not set up, the performance
+    summary) stand under the keys as lines of their own, still a D-pad stop that opens what they are about.
+  - Applied through KeyRow (27 scene windows), PageBars (the shelf / Twin / tile families' pages), the TV room's strip, the
+    plain window and the shared expanded page. Specialised scenes (Storage tabs, Box, Cards, Case flow, Memory card, Magazine,
+    Night, Panels, Shop, Blades, Cinema, the other popup styles) are next, guided by the new audit.
+  - QA: geomcheck 'warn-uniform' audits every key group (sizes side by side / stacked, three dots, MORE twice / not last, a
+    status line drawn as a key); popclip walks the D-pad to an off-screen MORE. Before: 49 / 53 layouts (Flip 2 x1.3) and
+    45 / 53 (KONKR x1.0) had such a group.
+- Full gates on the 673e2 build (before the button system): KONKR x1.0 k673i 51 / 53 (D333: Cinema hierarchy, TV rapid once);
+  Flip 2 x1.3 f673j 45 / 53 (D332: More-state squeezes in Airy / Dashboard / File select / Pocket ribbon, Circuit overlap,
+  Blades page name, Cinema hierarchy, Icon bar home glyph).
+
+# Update 673f (15 Nov 2026) - same branch, NOT released
+- Native pages for Disc station (owner directive 14 Nov: layout-aware pages instead of the generic ones): the deck's pages are
+  its tracks on the LCD - Info 01, Details 02, Achievements 03, Options 04 ("DISC 1 · TRACK 02 ... DETAILS"); the panel, tray and
+  keys stay, the track scrolls on the display (forward up, back down) and the LCD grows to the page's list; L1 / R1 skip a track.
+  Unit tests (DiscTracks673Test, the bumper walk of WinFocusRoboTest) pass; KONKR x1.0 k673j shows track 02 with the details.
+
 # Update 673e (15 Nov 2026) - same branch, NOT released
 - Disc station's LCD at x1.3 (D328, Flip 2 gate f673g): its lines kept the theme's 24 sp line height round 9-10 sp readouts and
   the name kept three lines' height for a two-line name, so the facts never had room (an empty line in their place) and with

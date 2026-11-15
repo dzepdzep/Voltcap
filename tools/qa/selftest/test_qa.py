@@ -1721,5 +1721,28 @@ class TestCiWatchdog673(unittest.TestCase):
                             sys.executable, "-c", "import sys; sys.exit(3)"], capture_output=True, text=True, timeout=40)
         self.assertEqual(r.returncode, 3); self.assertNotIn("::error", r.stdout)
 
+
+class TestUniformAudit673(unittest.TestCase):
+    """673g (owner brief 15 Nov): the uniform-button audit finds uneven key groups, three dots, a status line drawn as a key."""
+    def test_the_disc_station_keys_before_the_uniform_system(self):
+        import geomcheck
+        with open(os.path.join(FIX, "uniform_discs_more_before_673.json"), encoding="utf-8") as fh: d = json.load(fh)
+        r = " | ".join(geomcheck.uniform_audit(d["windows"]))
+        self.assertIn("three dots as a key", r); self.assertIn("of different sizes", r); self.assertIn("a status line drawn as a key", r)
+
+    def test_a_uniform_row_and_column_pass(self):
+        import geomcheck
+        key = lambda l, x, y, w=120, h=40: {"label": l, "kind": "control", "full": [x, y, w, h], "shown": [x, y, w, h]}
+        row = [key("Play", 10, 300), key("Details", 140, 300), key("Options", 270, 300), key("More", 400, 300)]
+        col = [key("Play", 10, 10, 200), key("Details", 10, 56, 200), key("Options", 10, 102, 200)]
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": row}]), [])
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": col}]), [])
+        bad = [key("Play", 10, 300, 90), key("More", 110, 300), key("Details", 240, 300)]
+        r = " | ".join(geomcheck.uniform_audit([{"nodes": bad}]))
+        self.assertIn("different sizes", r); self.assertIn("MORE not the last", r)
+        # the action "Save sync" is a key, its status line "Save sync is not set up" is not
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": [key("Save sync", 10, 300), key("Play", 140, 300)]}]), [])
+        self.assertIn("status line", " ".join(geomcheck.uniform_audit([{"nodes": [key("Save sync is not set up", 10, 300), key("Play", 140, 300)]}])))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
