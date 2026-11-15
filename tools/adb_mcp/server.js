@@ -52,7 +52,8 @@ const WORKTREES = {
   // Shelf 3D experiment (owner-approved 12 Nov, applied by Claude; active after the next desktop restart): its own isolated worktree, QA app only.
   s3d: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 's3d'), branch: 'exp/shelf-3d-flip' },
   // v0.6.71 release candidate (owner-approved 12 Nov: "build the exact integration candidate"): its own worktree, builds and
-  // QA app only - never pushed by git_push_branch, never main, never tagged or published from here.
+  // QA app only - never main, never tagged or published from here. (Owner, 13 Nov 2026, Update 529g option 1: git_push_branch may
+  // push ONLY branch repair/0.6.72-windows-tests from here, and ONLY as claude/qa-0672-repair, to run the GitHub CI.)
   int: { dir: path.join(ROOT, 'Claude outputs', 'worktrees', 'int'), branch: 'integration/0.6.71' }
 };
 // Git-ignored files a build needs, copied from the main tree into a worktree (no signing keys: QA builds use the debug key).
@@ -229,8 +230,8 @@ const TOOLS = [
     inputSchema: { type: 'object', properties: { version: { type: 'string', description: 'e.g. 0.6.9' }, notes: { type: 'string', description: 'Release notes (plain text)' } }, required: ['version', 'notes'] } },
   // (Owner, 12 Nov 2026: "push the following existing development branches ... feature/popup-native, exp/shelf-3d-flip,
   // feature/connected-ignition ... Do not force-push, rewrite history ... Do not merge into main, publish a release".)
-  { name: 'git_push_branch', description: 'Push ONE owner-approved development branch (pnat = feature/popup-native, s3d = exp/shelf-3d-flip, ci = feature/connected-ignition) from its worktree to origin under its own name. Never force (a push that is not a fast-forward is refused by git), never main, never tags. The worktree must be clean and its HEAD must be [expect]; the tree is checked against secret_denylist.txt (values never printed) first. Afterwards the remote tip is read back and compared.',
-    inputSchema: { type: 'object', properties: { worktree: { type: 'string', enum: ['pnat', 's3d', 'ci'] }, expect: { type: 'string', description: 'The commit the branch must be at (7-40 hex)' } }, required: ['worktree', 'expect'] } },
+  { name: 'git_push_branch', description: 'Push ONE owner-approved development branch (pnat = feature/popup-native, s3d = exp/shelf-3d-flip, ci = feature/connected-ignition) from its worktree to origin under its own name - or (int) branch repair/0.6.72-windows-tests, pushed ONLY as claude/qa-0672-repair to run the GitHub CI. Never force (a push that is not a fast-forward is refused by git), never main, never tags. The worktree must be clean and its HEAD must be [expect]; the tree is checked against secret_denylist.txt (values never printed) first. Afterwards the remote tip is read back and compared.',
+    inputSchema: { type: 'object', properties: { worktree: { type: 'string', enum: ['pnat', 's3d', 'ci', 'int'] }, expect: { type: 'string', description: 'The commit the branch must be at (7-40 hex)' } }, required: ['worktree', 'expect'] } },
   { name: 'git_commit_push', description: 'Commit everything (git add -A) with the given message and push to origin main. Only on branch main, never force; refuses while Gradle runs or when nothing changed.',
     inputSchema: { type: 'object', properties: { message: { type: 'string', description: 'Commit title, e.g. "Update 217: ..."' }, body: { type: 'string', description: 'Optional second paragraph (e.g. Co-Authored-By lines)' } }, required: ['message'] } }
 ];
@@ -509,11 +510,16 @@ async function call2(name, a) {
     }
     case 'git_push_branch': {
       if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');
-      const PUSHABLE = { pnat: 'feature/popup-native', s3d: 'exp/shelf-3d-flip', ci: 'feature/connected-ignition' };
+      const PUSHABLE = { pnat: 'feature/popup-native', s3d: 'exp/shelf-3d-flip', ci: 'feature/connected-ignition', int: 'repair/0.6.72-windows-tests' };
+      // (Owner, 13 Nov 2026, Update 529g option 1.) The only push under another name: the int worktree's repair branch goes ONLY
+      // to claude/qa-0672-repair (a claude/** push runs verify-update-310.yml). Every other entry pushes under its own name.
+      const PUSH_AS = { int: 'claude/qa-0672-repair' };
       const branch = PUSHABLE[a.worktree];
-      if (!branch) throw new Error('Only pnat, s3d and ci may be pushed.');
+      if (!branch) throw new Error('Only pnat, s3d, ci and int (repair branch, as claude/qa-0672-repair) may be pushed.');
+      const dest = PUSH_AS[a.worktree] || branch;
+      if (!/^(feature|exp|claude)\//.test(dest) || /^(main|master)$/.test(dest)) throw new Error('Refused destination ' + dest + ' - nothing pushed.');
       const wt = worktreeOf(a.worktree);
-      if (!wt || wt.branch !== branch || !fs.existsSync(wt.dir)) throw new Error('Worktree ' + a.worktree + ' is not prepared.');
+      if (!wt || (!PUSH_AS[a.worktree] && wt.branch !== branch) || !fs.existsSync(wt.dir)) throw new Error('Worktree ' + a.worktree + ' is not prepared.');
       const expect = String(a.expect || '').trim().toLowerCase();
       if (!/^[0-9a-f]{7,40}$/.test(expect)) throw new Error('expect must be a commit id (7-40 hex).');
       const out = [];
@@ -561,10 +567,10 @@ async function call2(name, a) {
       }
       out.push('secret check: ' + deny.length + ' values (' + [...new Set(deny.map((e) => e.from.split(' ')[0]))].join(', ') + ') in ' + revs.length + ' commit(s), no hit; no secret files');
       // Never forced: no +, no --force; git refuses a non-fast-forward. No tags.
-      const p = await g(['push', '--no-follow-tags', 'origin', head + ':refs/heads/' + branch]);
+      const p = await g(['push', '--no-follow-tags', 'origin', head + ':refs/heads/' + dest]);
       if (p.code !== 0) throw new Error('Push refused / failed - see:\n' + out.join('\n'));
-      const ls = (await g(['ls-remote', 'origin', 'refs/heads/' + branch])).out.trim().split(/\s+/)[0] || '';
-      return text(`${branch}: local ${head}\nremote ${ls}\n${ls === head ? 'MATCH' : 'MISMATCH'}\n\n` + out.join('\n'));
+      const ls = (await g(['ls-remote', 'origin', 'refs/heads/' + dest])).out.trim().split(/\s+/)[0] || '';
+      return text(`${branch} -> ${dest}: local ${head}\nremote ${ls}\n${ls === head ? 'MATCH' : 'MISMATCH'}\n\n` + out.join('\n'));
     }
     case 'git_commit_push': {
       if (job && job.code === null) throw new Error('Gradle is running - wait for it first.');

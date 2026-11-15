@@ -5,3 +5,15 @@
 # That file is LOST: later builds of the same name overwrote app/build/outputs/apk/release/Voltcap-0.6.66-release.apk.
 # The entry below is a REBUILD of the unchanged frozen source, NOT byte-identical to the original RC.
 1a014b2da1d0d4a15879edf58c08af5ac83cf73b7ccdf87f304232b9e8703f5a  0.6.66/Voltcap-0.6.66-rebuild1-release-1a014b2d.apk  # 2026-11-02 18:41 versionCode 73 REBUILD of the frozen 0.6.66 source (update 455), not the original RC
+62a8210c12c1cd425cc572c87015be7b8ed86de061c981d6ffd135513096054b  0.6.72/Voltcap-0.6.72-rc1-release-62a8210c.apk  # 2026-11-14 20:28 versionCode 79 
+0e2711b709336c39d142f30e64de6935153982e5bdac716764be0970038d7100  0.6.72/Voltcap-0.6.72-rc1-release-62a8210c-api28.dm  # 2026-11-14 20:28 versionCode 79 
+a6856aa2959fe6e192c705abf9cade688d5c5a758a9efde8dfd1db273a8bfdee  0.6.72/Voltcap-0.6.72-rc1-release-62a8210c-api31.dm  # 2026-11-14 20:28 versionCode 79 
+33752cfacadf01522fc0f99ed2c8f34274d962c2704ddb51c2c76d35c4d19348  0.6.72/Voltcap-0.6.72-rc1-compat-33752cfa.apk  # 2026-11-14 20:28 versionCode 79 
+a720410f7bee91b5ee17c3388d40f16e9eb9f75b5d3a4c3906444c021ad37191  0.6.72/Voltcap-0.6.72-rc1-compat-33752cfa-api28.dm  # 2026-11-14 20:28 versionCode 79 
+ff246a5137569c4292fcf7a2a61138d2fee7a49d714b95cf7c67715552d54c68  0.6.72/Voltcap-0.6.72-rc1-compat-33752cfa-api31.dm  # 2026-11-14 20:28 versionCode 79 
+3a6624e3febab8a70dd75ba1607e2fc84d744055f4bf59e51f477cc966c46d7e  0.6.72/Voltcap-0.6.72-rc2-release-3a6624e3.apk  # 2026-11-14 21:35 versionCode 79 
+53562d609f3b9acf1c7363804dc7dc51786571bc9b332b432fdccc262455cbce  0.6.72/Voltcap-0.6.72-rc2-release-3a6624e3-api28.dm  # 2026-11-14 21:35 versionCode 79 
+e4c17267bf01d0f69915898954408b91d7e7d476365bec6af814766514b68696  0.6.72/Voltcap-0.6.72-rc2-release-3a6624e3-api31.dm  # 2026-11-14 21:35 versionCode 79 
+de3c2b941f0a11578ff36bbab9e7b15d4f37311e95a6f0c9838ae6d87514f9b5  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94.apk  # 2026-11-14 21:35 versionCode 79 
+6a1049ba770dbefdcfc4f2674a974063eeaed96451b641adc071bad63252b73c  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94-api28.dm  # 2026-11-14 21:35 versionCode 79 
+37e61d9fb0a792a33eb81321dc6cdc8e6d335692376b22dc407f0842648e048c  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94-api31.dm  # 2026-11-14 21:35 versionCode 79 
