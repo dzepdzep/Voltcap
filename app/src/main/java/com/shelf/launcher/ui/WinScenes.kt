@@ -355,6 +355,10 @@ internal fun DrawWinScene(scene: WinScene, ctx: WinSceneCtx) {
     }
 }
 
+/** 529p (#16 96-failure investigation): how many scene controls ran their click - lets a test tell a click that never reached
+ *  its callback (inert / disabled) from one whose state change was never recomposed. A counter only; nothing reads it in the app. */
+internal object WinClickProbe { @Volatile var clicks: Int = 0 }
+
 /**
  * A control of a scene: focusable (its requester attached), clickable, with the window's move / select sounds; [content]
  * draws it lit or not.
@@ -371,7 +375,7 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
             .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
-            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
+            .clickable(enabled = !a.inert, interactionSource = source, indication = null) { WinClickProbe.clicks++; sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
 }
@@ -777,7 +781,8 @@ internal fun Modifier.pixelFrame(fill: Color, cut: Dp = 6.dp): Modifier = this
 @OptIn(ExperimentalLayoutApi::class)
 private fun StorageRecord(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.94f, 900.dp)
-    val h = minOf(ctx.maxH * 0.94f, 520.dp)
+    // (529r, owner P0 - ×1.3: with large text the record takes the window's height but a hair, for its sheets' lists.)
+    val h = minOf(if (bigPageText()) ctx.maxH else ctx.maxH * 0.94f, 520.dp)
     val red = if (ctx.accent.luminance() > 0.7f) RecRed else ctx.accent
     val labStorage = PopupLab.active.storage // (523t: approved - everyone)
     val tabs = STORAGE_TABS
@@ -785,8 +790,23 @@ private fun StorageRecord(ctx: WinSceneCtx) {
     // Achievements and Options still open the full list / the game's menu when there is no page for them.)
     fun openTab(t: WinPage) { if (t != ctx.page) ctx.open(t) }
     val anim = rememberAnimationsEnabled()
+    // 529s (owner P3): with a pickup the sprite flies out of its slot onto the stand (WinSceneStorageFlight.kt) and the record
+    // switches on round it; without one (Instant, Inspect, the other screen) the record opens as before.
+    val origin = LocalSceneOrigin.current
+    val flight = remember { StorageFlightSlot() }
+    var rootAt by remember { mutableStateOf<Offset?>(null) }
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides (if (origin != null) flight else null)) {
+    Box(Modifier.storageFlightRoot { if (rootAt != it) rootAt = it }) {
     Column(
-        Modifier.size(w, h).pixelFrame(RecPanel, 10.dp)
+        Modifier.size(w, h)
+            .then(if (origin != null) Modifier.graphicsLayer {
+                val a = ((ctx.reveal() - 0.04f) / 0.46f).coerceIn(0f, 1f)
+                alpha = maxOf(a, PREWARM_ALPHA) // (529t: drawn before the trip, so its first drawing doesn't stall it)
+                scaleY = 0.9f + 0.1f * a
+                // (529t: squashed text is drawn afresh at every scale - drawn flat into a buffer while it settles, see sceneEnter.)
+                if (a < 0.999f) compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+            }.onGloballyPositioned { flight.panel = it } else Modifier)
+            .pixelFrame(RecPanel, 10.dp)
             // L1 / R1 turn the tabs.
             .onPreviewKeyEvent { e ->
                 if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -820,6 +840,9 @@ private fun StorageRecord(ctx: WinSceneCtx) {
                 else StorageRecordPage(ctx, p, red, live)
             }
         }
+    }
+    if (origin != null) PickupTarget(flight, rootAt, uniform = true) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
+    }
     }
 }
 
@@ -932,13 +955,16 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     Canvas(Modifier.fillMaxWidth(0.62f).height(16.dp).align(Alignment.BottomCenter).padding(bottom = 6.dp)) {
                         drawOval(Color.Black.copy(alpha = 0.22f), Offset.Zero, Size(size.width, size.height))
                     }
+                    val flying = LocalStorageFlight.current != null
                     Box(
-                        Modifier.fillMaxSize(0.66f).graphicsLayer {
+                        Modifier.fillMaxSize(0.66f).storageFlightSlot(live, restLift = 6.dp).graphicsLayer {
+                            // (529s: picked up, this copy waits hidden until the flying sprite lands on it - one sprite.)
+                            val k = ctx.reveal().coerceIn(0f, 1f)
+                            if (storageSlotHidden(flying, k)) { alpha = 0f; return@graphicsLayer }
                             // The sprite's idle hop: two steps, as sprites do.
                             val step = ((clock.floatValue * 2.2f).toInt() % 2)
                             translationY = -step * 4.dp.toPx() - 6.dp.toPx()
-                            val k = ctx.reveal().coerceIn(0f, 1f)
-                            val s = 0.6f + 0.4f * k
+                            val s = if (flying) 1f else 0.6f + 0.4f * k
                             scaleX = s; scaleY = s
                         }
                     ) { StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize()) }
@@ -1008,8 +1034,12 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     Column(Modifier.fillMaxWidth().pixelFrame(Color.White, 6.dp).padding(horizontal = if (labStorage) 10.dp else 6.dp, vertical = if (labStorage) 8.dp else 6.dp),
                         verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
                         val primary = ctx.buttons.filter { !it.back && it.primary }
-                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } else emptyList()
-                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools + ctx.buttons.filter { it.back }
+                        // (Owner, 13 Nov: the round ••• is the last key of the row - Play, Details, Inspect, •••; what More opens
+                        // comes in the grid under it.)
+                        val inLine = if (labStorage) ctx.buttons.filter { !it.back && !it.primary } +
+                            ctx.tools.filter { it.label == "Inspect" }.takeIf { ctx.tools.any(PopupLab::isMore) }.orEmpty() +
+                            ctx.tools.filter(PopupLab::isMore) else emptyList()
+                        val rest = ctx.buttons.filter { !it.back && !it.primary && it !in inLine } + ctx.tools.filter { it !in inLine } + ctx.buttons.filter { it.back }
                         // (Batch 523, GT78 lab shots: "ACHIEVEMENT S" - three cells a row in the menu's column (two thirds of the
                         // window) left a long word narrower than its smallest readable size, so it broke inside the word. The cells
                         // are counted from the menu's own width now: two a row unless the column is wide.)
@@ -1062,22 +1092,73 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Color, live: Boolean) {
-    Column(Modifier.fillMaxWidth().weight(1f).padding(12.dp)) {
+    val big = bigPageText()
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 2)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    Column(Modifier.fillMaxWidth().weight(1f).padding(if (big) 9.dp else 12.dp)) {
+        // (529r: with large text the keys go on the name line - the console tag under the name - only when the name keeps two
+        // lines in the room left; a long name keeps the whole line and the keys stay under the sheet: never a name squeezed to a
+        // column of words.)
+        val inline = big && run {
+            // the room the name keeps beside the sprite, the console tag and the keys (their words measured as they are drawn)
+            fun w(t: String, sp: androidx.compose.ui.unit.TextUnit, mono: Boolean = false) = measurer.measure(t, androidx.compose.ui.text.TextStyle(fontSize = sp,
+                fontWeight = FontWeight.Black, fontFamily = if (mono) FontFamily.Monospace else null)).size.width
+            val keysPx = ctx.buttons.sumOf { w("▶ ", 13.sp) + w(it.label.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
+                with(dens) { (8.dp * (ctx.buttons.size - 1).coerceAtLeast(0)).roundToPx() }
+            val tagPx = w(ctx.console.uppercase(), 10.sp) + with(dens) { 20.dp.roundToPx() }
+            val rowPx = with(dens) { (ctx.maxW * 0.94f - 24.dp - 20.dp).roundToPx() }
+            val room = rowPx - keysPx - with(dens) { (30.dp + 10.dp + 10.dp).roundToPx() }
+            room >= with(dens) { 140.dp.roundToPx() } && measurer.measure(ctx.name, androidx.compose.ui.text.TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Black),
+                constraints = androidx.compose.ui.unit.Constraints(maxWidth = room)).lineCount <= 2
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
-                StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize(0.8f))
+            Box(Modifier.size(if (big) 30.dp else 34.dp).pixelFrame(Color(0xFFCFE6FA), 4.dp), contentAlignment = Alignment.Center) {
+                val flying = LocalStorageFlight.current != null
+                Box(Modifier.fillMaxSize(0.8f).storageFlightSlot(live).graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }) {
+                    StorageSprite(ctx.g, ctx.state, ctx.cover, Modifier.fillMaxSize())
+                }
             }
             Spacer(Modifier.width(10.dp))
-            WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(8.dp))
-            Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 10.dp, vertical = 3.dp)) {
-                WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+            val tag: @Composable () -> Unit = {
+                Box(Modifier.clip(RoundedCornerShape(50)).background(red).padding(horizontal = 10.dp, vertical = 3.dp)) {
+                    WinFullText(ctx.console.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, maxLines = 1)
+                }
+            }
+            if (inline) {
+                // (529r, owner P0 - ×1.3: the sheet's keys at the end of its name line, the console tag under the name; the sheet's
+                // frame gets the row the keys had under it.)
+                Column(Modifier.weight(1f)) {
+                    WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth())
+                    Spacer(Modifier.height(2.dp)); tag()
+                }
+                Spacer(Modifier.width(10.dp)); StoragePageKeys(ctx, red, live)
+            } else {
+                WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
+                Spacer(Modifier.width(8.dp)); tag()
             }
         }
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
-        Spacer(Modifier.height(8.dp))
-        // (The page's keys: Play first, the page's own, Back last - one row; whole words, never cut.)
+        Spacer(Modifier.height(if (big) 6.dp else 8.dp))
+        // (529r: with large text the sheet's page draws as a native page of the record - its tab names it, the name line is above -
+        // so it spends no room on a second title or margin.)
+        Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) {
+            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = false, showsCover = true, showsName = true)) {
+                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        }
+        if (!inline) {
+            Spacer(Modifier.height(8.dp))
+            StoragePageKeys(ctx, red, live)
+        }
+
+        // (529r, owner P0 - Storage ×1.3: the save line repeated under every sheet's keys left the Achievements sheet no room for
+        // its list (0 px). It is on the Info sheet, where it belongs; the pages keep their room.)
+    }
+}
+
+/** Storage's sheet keys: Play first, the page's own (Back is the hint under the window) - whole words, never cut. */
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             ctx.buttons.forEach { a0 ->
                 val a = a0.live(live)
@@ -1092,24 +1173,6 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
                 }
             }
         }
-        if (ctx.chips.isNotEmpty()) {
-            Spacer(Modifier.height(6.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                ctx.chips.forEach { a ->
-                    SceneControl(a.live(live), Modifier) { on ->
-                        // (523x, Flip 2 fp523u: the line was a 40 px target at 360 dpi - under 24 dp. At least 24 dp tall now.)
-                        Row(Modifier.heightIn(min = 24.dp).background(if (on) Color(0xFFE6EEF8) else Color.Transparent).padding(horizontal = 4.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Icon(a.icon, null, tint = if (a.urgent) RecRed else RecMuted, modifier = Modifier.size(13.dp))
-                            Spacer(Modifier.width(4.dp))
-                            // (Batch 523 gate, p523all: "Saves: Save sync isn't set up" was cut at one line - whole now.)
-                            WinFullText(a.label, color = if (a.urgent) RecRed else RecMuted, fontSize = 11.sp, maxLines = 2)
-                        }
-                    }
-                }
-            }
-        }
-    }
 }
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
@@ -1362,6 +1425,8 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
  * scene that flies its own piece out of it (Orbit deck's disc); null otherwise.
  */
 internal val LocalSceneOrigin = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.geometry.Rect?> { null }
+/** 529s: the picture [LocalSceneOrigin] was, as drawn on the home (GameOrigin.layer) - PickupOverlay starts as it. */
+internal val LocalSceneOriginLayer = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.ui.graphics.layer.GraphicsLayer?> { null }
 
 /** Corners cut off top left and bottom right (Orbit deck's console panels). */
 private fun odChamfer(cut: Float) = androidx.compose.foundation.shape.GenericShape { sz, _ ->
@@ -1699,12 +1764,14 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         AiryLcd(ctx.cover, if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
                     }
                     Spacer(Modifier.height(10.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        listOfNotNull(ctx.year, ctx.developer, ctx.genres, "Played " + ctx.played, if (ctx.total > 0) "★ ${ctx.earned} / ${ctx.total}" else null).forEach {
-                            Box(Modifier.clip(RoundedCornerShape(50)).background(Color(0xFFE9EFF6)).padding(horizontal = 12.dp, vertical = 4.dp)) {
-                                Text(it, color = Color(0xFF55606F), fontSize = 12.sp, maxLines = 1)
-                            }
-                        }
+                    // (Update 529i, KONKR q0672k2: a long maker and genre took the chips to a third row, which the FlowRow never
+                    // placed - "★ 8 / 10" was gone, and with More open "Played" too. Played and ★ now share one chip, and with
+                    // More open the facts are two plain lines (as Cover details' window), so every fact stays in view.
+                    // 529i rerun (KONKR q0672k3): with a two-line name the chips still reached a third row and the joined
+                    // Played / ★ chip was dropped, so the facts are the same two plain lines with More closed too.)
+                    val facts = airyFacts(ctx.year, ctx.developer, ctx.genres, ctx.played, ctx.earned, ctx.total)
+                    Column(verticalArrangement = Arrangement.spacedBy(if (secondary.isEmpty()) 4.dp else 2.dp)) {
+                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty()) 13.sp else 12.sp, maxLines = 1, reserve = false) }
                     }
                     // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
                     // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)
@@ -1735,6 +1802,14 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         }
     }
 }
+
+/** Update 529i: Airy's facts - year, maker, genre, then what you've played with the trophies in the same fact. */
+internal fun airyFacts(year: String?, developer: String?, genres: String?, played: String, earned: Int, total: Int): List<String> =
+    listOfNotNull(year, developer, genres, (if (played.startsWith("Never")) played else "Played $played") + (if (total > 0) " · ★ $earned / $total" else ""))
+
+/** Update 529i: with More open, the facts as two plain lines - everything but the last joined, then the last (played, ★). */
+internal fun airyFactLines(facts: List<String>): List<String> =
+    if (facts.size <= 1) facts else listOf(facts.dropLast(1).joinToString(" · "), facts.last())
 
 /** Update 477 (D266): Airy's bottom-row tools (Inspect, More / Less) and the ones More shows (the pill row). */
 internal fun airySplit(tools: List<WinAction>): Pair<List<WinAction>, List<WinAction>> {
@@ -1794,12 +1869,23 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val w = ctx.maxW; val h = ctx.maxH
     val anim = rememberAnimationsEnabled()
     val tabs = NIGHT_TABS
+    // Update 529 (owner: Persona 3 Reload-like motion): the panels come in along the menu's slant, layer after layer (banner,
+    // cover, stats, commands - 70 ms apart), each easing out with a small turn that settles; closing runs the same way back,
+    // the last in leaving first. A light edge crosses the window as it opens and closes, over slanted ribbons of the night at
+    // three depths (Full only). All of it is read from the window's own reveal: nothing runs once it is open.
+    val lite = LocalLiteEffects.current && !com.shelf.launcher.data.Features.motionOnLite.state.value
     fun slide(order: Int): Modifier = Modifier.graphicsLayer {
-        val k = ((ctx.reveal() - order * 0.12f) / 0.6f).coerceIn(0f, 1f)
-        val e = 1f - (1f - k) * (1f - k) * (1f - k)
-        translationX = (1f - e) * size.width * (if (order % 2 == 0) -0.6f else 0.6f)
+        val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), order.toFloat(), 0.1f, 0.58f))
+        val side = if (order % 2 == 0) -1f else 1f
+        val dx = (1f - e) * size.width * 0.45f * side
+        translationX = dx
+        translationY = -dx * 0.12f
+        rotationZ = (1f - e) * 3f * side
         alpha = e
     }
+    // The list on the home screen steps back while this is open (StyleNightMenu: NightMotion.window).
+    LaunchedEffect(Unit) { androidx.compose.runtime.snapshotFlow { ctx.reveal() }.collect { NightMotion.window.floatValue = it.coerceIn(0f, 1f) } }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { NightMotion.window.floatValue = 0f } }
     Box(
         Modifier.size(w, h)
             // (Popup motion work: L1 / R1 walk Status, Details, Achievements, Options - as their commands open them.)
@@ -1815,6 +1901,27 @@ private fun NightStatus(ctx: WinSceneCtx) {
         // A page change sweeps the old panels out along the slant the way the D-pad went and the new ones in after them, solid,
         // over them; back runs the other way. The commands stay on the right.
         val slant = 0.105f
+        if (!lite) androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+            val r = ctx.reveal().coerceIn(0f, 1f)
+            // Three slanted ribbons of the night, the farther ones arriving later and from farther off (depth).
+            for (i in 0 until 3) {
+                val e = NightMotion.ease(NightMotion.layer(r, i.toFloat(), 0.12f, 0.6f))
+                if (e <= 0f) continue
+                val y0 = size.height * (0.18f + i * 0.27f)
+                val bandH = size.height * (0.16f - i * 0.03f)
+                val shift = (1f - e) * size.width * (0.35f + i * 0.2f) * (if (i % 2 == 0) -1f else 1f)
+                val lean = size.width * 0.18f
+                val p = Path().apply { moveTo(shift, y0 + lean * 0.3f); lineTo(size.width + shift, y0 - lean * 0.3f); lineTo(size.width + shift, y0 - lean * 0.3f + bandH); lineTo(shift, y0 + lean * 0.3f + bandH); close() }
+                drawPath(p, hi.copy(alpha = 0.06f * e * (1f - i * 0.25f)))
+            }
+            // The light edge crossing the window once while it opens or closes.
+            if (r in 0.01f..0.99f) {
+                val x = -size.width * 0.2f + size.width * 1.4f * NightMotion.ease(r)
+                val lean = size.height * 0.3f
+                drawLine(Color.White.copy(alpha = 0.55f * (1f - r)), Offset(x + lean, 0f), Offset(x, size.height), 3f)
+                drawLine(hi.copy(alpha = 0.35f * (1f - r)), Offset(x + lean - 14f, 0f), Offset(x - 14f, size.height), 8f)
+            }
+        }
         androidx.compose.animation.AnimatedContent(
             targetState = ctx.page,
             transitionSpec = {
@@ -1850,11 +1957,17 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
                     Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                        val statIdx = intArrayOf(0)
                         @Composable
                         fun stat(label: String, value: String?) {
                             // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
                             // column is at most 40 % of the panel now and the value keeps whole words, stepping its size down if it must.)
-                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            // (Update 529: the lines come in one after another, a short slide along the slant.)
+                            val idx = statIdx[0]++
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().graphicsLayer {
+                                val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 5.7f + idx, 0.035f, 0.4f))
+                                translationX = (1f - e) * 36.dp.toPx(); alpha = e
+                            }) {
                             val labelW = minOf(96.dp, maxWidth * 0.4f)
                             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
@@ -1908,17 +2021,28 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEach { a ->
+            (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEachIndexed { ci, a ->
                 SceneControl(a, Modifier.fillMaxWidth()) { on ->
-                    val pull by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.7f, stiffness = 600f), label = "nmCmd")
-                    Row(Modifier.fillMaxWidth().graphicsLayer { translationX = -pull * 24.dp.toPx() }, verticalAlignment = Alignment.CenterVertically) {
+                    // (Update 529: no bounce - the pointer and the white sweep in and settle; each command arrives just after the one above.)
+                    val pull by animateFloatAsState(if (on) 1f else 0f, if (anim) spring(dampingRatio = 0.86f, stiffness = 700f) else tween(0), label = "nmCmd")
+                    Row(Modifier.fillMaxWidth().graphicsLayer {
+                        val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 2.8f + minOf(ci, 10) * 0.3f, 0.1f, 0.4f))
+                        translationX = -pull * 24.dp.toPx() + (1f - e) * 70.dp.toPx(); alpha = e
+                    }, verticalAlignment = Alignment.CenterVertically) {
                         Canvas(Modifier.size(14.dp).graphicsLayer { alpha = pull }) {
                             drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, size.height / 2f); lineTo(0f, size.height); close() }, hi)
                         }
                         Spacer(Modifier.width(4.dp))
                         Box(
                             Modifier.weight(1f).height(if (a.primary) 32.dp else 26.dp).clip(slantShape(0.5f))
-                                .background(if (on) Color.White else Color(col.top).copy(alpha = 0.85f))
+                                .background(Color(col.top).copy(alpha = 0.85f))
+                                .drawBehind {
+                                    if (pull > 0.001f) {
+                                        val sl = size.height * 0.5f
+                                        val r = -sl + (size.width + sl) * pull
+                                        drawPath(Path().apply { moveTo(0f, 0f); lineTo(r + sl, 0f); lineTo(r, size.height); lineTo(0f, size.height); close() }, Color.White)
+                                    }
+                                }
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
                                 .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
                         ) {

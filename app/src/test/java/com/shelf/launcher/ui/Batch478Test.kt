@@ -9,7 +9,7 @@ import java.io.File
 class Batch478Test {
     private fun src(name: String): String =
         listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
-            .map(::File).first { it.exists() }.readText()
+            .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // D271 (T3 k477T3A): a very long name stopped at maxLines in a dozen window scenes. Names go through StableFullText
     // (shrink, one more line, then slide) or a marked marquee.
@@ -94,7 +94,7 @@ class Batch478Test {
 
     private fun data(name: String): String = listOf(
         File("../src_copy/data/$name"), File("src/main/java/com/shelf/launcher/data/$name"), File("app/src/main/java/com/shelf/launcher/data/$name"),
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // B3: status bar Follow layout / Always / Minimal / Hidden; existing installs keep the full bar, new ones follow.
     @Test fun statusBarModes() {

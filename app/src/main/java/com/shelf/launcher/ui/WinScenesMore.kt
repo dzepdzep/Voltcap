@@ -81,9 +81,13 @@ internal fun sceneFacts(ctx: WinSceneCtx): List<Pair<String, String>> = listOfNo
 internal fun shownFacts(ctx: WinSceneCtx, omit: Set<String>): List<Pair<String, String>> = shownFacts(sceneFacts(ctx), omit)
 internal fun shownFacts(facts: List<Pair<String, String>>, omit: Set<String>): List<Pair<String, String>> = facts.filter { it.first !in omit }
 
-/** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips. */
+/** Every control of the page: the page's buttons first (Play is the very first), then — on the first page — tools and chips.
+ *  (Update 529b, owner: "the last thing that's shown from the options should be the 3 dots, not anything else beside it" - the
+ *  round ••• More / Less goes after the chips too: Game shelf's flowing row put "Saves: …" beside it, Flip 2 mlast529b.) */
 internal fun sceneKeys(ctx: WinSceneCtx): List<WinAction> =
-    ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())
+    (ctx.buttons + (if (ctx.page == WinPage.MAIN) ctx.tools + ctx.chips else emptyList())).let { all ->
+        all.filterNot(PopupLab::isMore) + all.filter(PopupLab::isMore)
+    }
 
 /** A row of keys that wraps onto more lines when it doesn't fit (never squeezed, never cut). */
 @Composable
@@ -103,7 +107,13 @@ internal fun SceneKey(
     a: WinAction, fill: Color, onFill: Color, ink: Color, onInk: Color, edge: Color, onEdge: Color, shape: Shape,
     font: FontFamily? = null, size: TextUnit = 12.sp, pad: Dp = 10.dp, height: Dp = 30.dp, upper: Boolean = false,
     /** The caller already draws the primary key (Play) its own way; else Play gets the lit colour as a tint (update 487). */
-    primaryStyled: Boolean = false
+    primaryStyled: Boolean = false,
+    /** 529l: the word's line height (a tight window at large text: the theme's 24 sp line made each key 54 px tall on the
+     *  KONKR at x1.3); unspecified = the theme's, as before. */
+    lineHeight: TextUnit = TextUnit.Unspecified,
+    /** 529m (owner, #15 6865249152): a full-width bar - the window's width, its icon in a fixed column, the word after it,
+     *  growing only when the whole word needs a second line. */
+    wide: Boolean = false
 ) {
     // Update 487 (E7 popup hierarchy, owner-approved): Play is the clear first action in every window. A window that drew
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
@@ -125,16 +135,20 @@ internal fun SceneKey(
     // (Update 487, E7 tiny controls: no taller layout box — a 48 dp box grew the key rows and cut the keys of the tight Cover
     // details window on the KONKR (popclip k487). Compose already widens a small clickable's touch area to 48 dp
     // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
-    SceneControl(a, Modifier) { on ->
+    SceneControl(a, if (wide) Modifier.fillMaxWidth() else Modifier) { on ->
         Row(
-            Modifier.heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
+            Modifier.then(if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
                 .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
-            Spacer(Modifier.width(5.dp))
+            if (wide) Box(Modifier.width(18.dp), contentAlignment = Alignment.Center) {
+                Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 14.dp))
+            } else Icon(a.icon, null, tint = if (on) k.onInk else k.ink, modifier = Modifier.size(if (a.primary) 16.dp else 13.dp))
+            Spacer(Modifier.width(if (wide) 10.dp else 5.dp))
             Text(if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label), color = if (on) k.onInk else if (a.urgent) Color(0xFFFF8A3D) else k.ink,
-                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2)
+                fontSize = if (a.primary) size * 1.15f else size, fontWeight = FontWeight.Bold, fontFamily = font, maxLines = 2,
+                modifier = if (wide) Modifier.weight(1f) else Modifier,
+                lineHeight = if (lineHeight == TextUnit.Unspecified) TextUnit.Unspecified else if (a.primary) lineHeight * 1.15f else lineHeight)
         }
     }
 }
@@ -177,7 +191,8 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
     omit: Set<String> = emptySet(), inline: Boolean = false,
     /** Update 508: a larger type for a window that has room to spare on a small screen (Tile home on the GT78); 1 = as before. */
     scale: Float = 1f) {
-    if (ctx.page == WinPage.MAIN) {
+    // (529m: the copy of a page change draws its own page - LocalShownPage.)
+    if ((LocalShownPage.current ?: ctx.page) == WinPage.MAIN) {
         // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
         val sc = rememberScrollState()
         // (Update 467, popup gate: with large text the keys can leave the facts a sliver that shows the tops of one row
@@ -196,8 +211,10 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         androidx.compose.runtime.LaunchedEffect(viewH, factsH, asLines) { if (!asLines && viewH > 0 && factsH > viewH) tight = true }
         // (Update 476, D260: a story cut by the room faded out mid-sentence with nothing saying there was more. While the box
         // can scroll further, a small cue at its bottom edge says where the whole story is.)
-        Box(Modifier.weight(1f, fill = false)) {
-        Column(Modifier.layout { m, c ->
+        // (529m, owner #15: the cue lay over the facts it cut - "Full story on Details ›" across "Action" and "PLAYED" on the
+        // KONKR at x1.3. It has its own line under the box now; the box gives it the room.)
+        Column(Modifier.weight(1f, fill = false)) {
+        Column(Modifier.weight(1f, fill = false).layout { m, c ->
             if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
         }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
             val facts = shownFacts(ctx, omit)
@@ -226,7 +243,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         }
         if (ctx.summary != null && viewH > 0 && sc.canScrollForward) FullText(STORY_CUE, color = label, fontSize = 9.sp,
             fontWeight = FontWeight.Bold, fontFamily = font,
-            modifier = Modifier.align(Alignment.BottomEnd).background(sceneCueBack(value)).padding(horizontal = 4.dp))
+            modifier = Modifier.align(Alignment.End).padding(top = 2.dp).background(sceneCueBack(value)).padding(horizontal = 4.dp))
         }
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 }
@@ -246,7 +263,20 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
     // theme's, the game's or this layout's own colours, as its turntable and rings), made readable on the paper; was a fixed red.)
     val red = sceneLit(com.shelf.launcher.data.HomeLayout.CRATE, com.shelf.launcher.ui.theme.ShelfTheme.accent, paper)
     val side = minOf(ctx.maxW, ctx.maxH, 460.dp)
-    Box(Modifier.size(side).graphicsLayer {
+    // (529t, owner P3: with a pickup the sleeve itself comes out of the crate as it stands there (PickupOverlay, the home's own
+    // picture), comes forward and turns over: this, its back, turns in from edge-on once it is here; closing, the other way.)
+    val flip = LocalSceneOrigin.current != null
+    Box(Modifier.size(side).pickupFlipTarget(flip).graphicsLayer {
+        if (flip) {
+            val k = ctx.reveal()
+            // (Edge-on until the front has turned away - drawn, not hidden: its first drawing (art, text) is done before it
+            // shows, so the turn doesn't stall there - Flip 2 pkf529u: ~90 ms at the turn.)
+            rotationY = -90f * flipBackTurn(k)
+            cameraDistance = 14f * density
+            flatTextFor3d()
+            shadowElevation = 18.dp.toPx() * (1f - flipBackTurn(k))
+            return@graphicsLayer
+        }
         // The sleeve slides out of the crate sideways, the way a record is pulled from its neighbours.
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.15f

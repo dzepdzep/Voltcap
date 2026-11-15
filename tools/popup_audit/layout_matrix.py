@@ -19,7 +19,7 @@ for line in f.split('\n')[1:]:
     if m.group(1).strip() == 'else': other = rhs
     for l in re.findall(r'HomeLayout\.([A-Z_0-9]+)', m.group(1)): scene[l] = rhs
 pf = read(os.path.join(ui, 'WinPageFlow.kt'))
-native = set(re.findall(r'WinScene\.([A-Z_]+)', pf[pf.index('NATIVE_PAGE_SCENES'):pf.index('\n', pf.index('NATIVE_PAGE_SCENES'))]))
+_np = pf.index('internal val NATIVE_PAGE_SCENES'); native = set(re.findall(r'WinScene\.([A-Z_]+)', pf[_np:pf.index('\n\n', _np)]))  # (529k: the set spans lines)
 gw = read(os.path.join(ui, 'GameWindow.kt'))
 k = gw.index('internal val MORE_SCENES = setOf('); more = set(re.findall(r'WinScene\.([A-Z_]+)', gw[k:gw.index('\n)\n', k)]))
 st = json.load(open(os.path.join(root, 'tools/popup_audit/status.json'), encoding='utf-8'))
@@ -57,3 +57,61 @@ for l, lab in layouts:
     cov[l] = dict(name=lab, scene=sc, pages=('native' if sc in native else 'shared'), status=e['status'], tests=tests, hardware=e.get('hardware', 'none'))
 json.dump(cov, open(os.path.join(root, 'tools/popup_audit/coverage.json'), 'w'), indent=1, ensure_ascii=False)
 print('\nLatest status per layout: ' + ', '.join('%s %d' % (k2, v) for k2, v in sorted(counts.items(), key=lambda kv: LABELS.index(kv[0]))))
+
+# 529j (owner, 13 Nov: "all 53 layouts ... separate statuses for game window, native pages, opening, closing / return,
+# controller, small screen, hardware - do not mark a layout complete just because a shared popup works"): the overhaul table.
+ov = json.load(open(os.path.join(root, 'tools/popup_audit/overhaul.json'), encoding='utf-8'))
+pk = gw[gw.index('internal val PICKUP_CARD_LAYOUTS'):]; pk = pk[:pk.index('\n')]
+pickup = {l: 'card / case flight (window out of the picked piece, piece hidden in the home)' for l in re.findall(r'HomeLayout\.([A-Z_]+)', pk)}
+for l in ('SHELF', 'STACKS'): pickup[l] = 'case flight (the case itself flies out and back; home copy hidden)'
+pickup['ORBIT'] = 'disc flight (the disc flies to the terminal and back)'
+# 529s: Storage boxes' sprite / Cube menu's picture fly into the window (PickupOverlay), the TV room's case goes into the set (TvCaseFlyer).
+sf = gw[gw.index('val spriteFlight ='):]; sf = sf[:sf.index('\n')]
+if 'STORAGE_RECORD' in sf: pickup['STORAGE'] = 'sprite flight (the sprite leaves its slot for the record\'s stand and hops back; home copy hidden)'
+if 'CUBE_FACE' in sf: pickup['CUBE'] = 'picture flight (the picked picture travels into the turning face and back; home copy hidden)'
+if 'val sleeveFlip =' in gw: pickup['CRATE'] = 'sleeve flight (the sleeve rises out of the crate, turns over into the window and back; home copy hidden)'
+if 'layout == HomeLayout.CARDS)' in gw[gw.index('val sleeveFlip ='):gw.index('val sleeveFlip =') + 400]: pickup['CARDS'] = 'card flight (the card comes out of its pocket, turns over into the window and back; home copy hidden)'
+if 'val consoleFlight =' in gw: pickup['CONSOLES'] = 'card into the bay (the card leaves the hand for the module\'s bay and goes back; home copy hidden)'
+# (Cardboard box pulls the case itself out for every look - MediaInspect.force in StyleCardboardBox.)
+if 'MediaInspect.forceSeq++; MediaInspect.force = k' in read(os.path.join(ui, 'StyleCardboardBox.kt')): pickup['BOX'] = 'case pulled out (the case itself rises out of the box and turns to its cover in the window; its resting copy goes with it)'
+if 'val tvFlight =' in gw: pickup['TV'] = 'case into the set (the case goes into the switch-on line, comes back out to its place; home copy hidden)'
+# Scenes that open out of the picture itself (a physical piece only when Inspect asks for it) - GameWindow's sceneOwnsOpen.
+so = gw[gw.index('val sceneOwnsOpen = '):]; so = so[:so.index('&& !askedInspect')]
+owns_open = set(re.findall(r'WinScene\.([A-Z_]+)', so))
+print('\n## Overhaul status per layout - the seven checks (529j)\n')
+print('A layout is COMPLETE only when every column is done: own window, native pages, opening and return motion right for what')
+print('the home shows (a real pickup where it shows physical games), controller rules, small screen (KONKR) incl. x1.3,')
+print('hardware on both handhelds, and your visual approval. Facts in `tools/popup_audit/overhaul.json`.\n')
+print('| # | Layout | Game window | Native Details / Stats / Options | Opening | Closing / return | Controller | Small screen (KONKR) | First achievement x1.3 (JVM) | Motion evidence | Hardware | Your visual approval | Complete |')
+print('|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+done = {k3: 0 for k3 in ('window', 'pages', 'open', 'small', 'hw', 'visual', 'complete', 'pickup_needed', 'pickup_done', 'pickup_object')}
+for n, (l, lab) in enumerate(layouts, 1):
+    sc = scene.get(l, other)
+    if sc in (None, 'null'): sc = None
+    win = ('own (`%s`)' % sc) if sc else 'PLAIN (TV window)'
+    pg = 'NATIVE' if sc in native else ('PARTIAL (own Options list)' if sc == 'CROSS_OPTIONS' else 'SHARED page')
+    phys = ov['physical'].get(l)
+    if l in pickup: op = 'PICKUP: ' + pickup[l]; cl = 'RETURN to its slot'
+    elif phys and sc and sc not in owns_open:
+        # (GameWindow: the game's own piece - case / disc / cartridge, per the game look - flies out of the home and back.)
+        op = 'PICKUP: piece flight (the %s piece, when the game look shows one)' % phys; cl = 'RETURN (piece flies back)'
+        pickup[l] = 'piece'
+    elif phys: op = 'MISSING pickup (%s; %s)' % (phys, 'opens out of the picture' if sc in owns_open else 'TV window'); cl = 'MISSING return'
+    elif sc: op = 'scene motion'; cl = 'scene reverse'
+    else: op = 'system'; cl = 'system'
+    e = st.get(l, st['_default'])
+    hw = 'Flip 2 functional' if 'HARDWARE VERIFIED' in e['status'] else 'none'
+    kk = ov['konkr'].get(l, 'NOT CHECKED')
+    vis = ov['owner_visual'].get(l, 'pending')
+    complete = bool(sc) and sc in native and (l in pickup or not phys) and kk.startswith('PASS') and 'x1.3' in kk and hw != 'none' and vis.startswith('approved')
+    done['window'] += bool(sc); done['pages'] += sc in native; done['small'] += kk.startswith('PASS'); done['hw'] += hw != 'none'
+    done['visual'] += vis.startswith('approved'); done['complete'] += complete
+    done['pickup_needed'] += bool(phys); done['pickup_done'] += bool(phys) and l in pickup
+    # (529s: only where the object itself travels and its home place stays empty - not a window grown out of the card, nor a
+    # piece that only flies when the game look draws one.)
+    done['pickup_object'] += bool(phys) and l in pickup and not pickup[l].startswith('card / case flight') and pickup[l] != 'piece'
+    af = ov.get('ach_first_row', {}); ach = af.get(l, af.get('_all', 'not covered'))
+    mo = ov.get('motion', {}).get(l, 'NOT RECORDED')
+    print('| %d | `%s` %s | %s | %s | %s | %s | PC TESTED | %s | %s | %s | %s | %s | %s |' % (n, l, lab, win, pg, op, cl, kk, ach, mo, hw, vis, 'YES' if complete else 'no'))
+print('\nCounts: own window %(window)d / 53; native pages %(pages)d / 53; physical homes with a pickup %(pickup_done)d / %(pickup_needed)d (the object itself travels: %(pickup_object)d / %(pickup_needed)d); '
+      'KONKR small-screen pass %(small)d / 53; hardware (Flip 2) %(hw)d / 53; your visual approval %(visual)d / 53; COMPLETE %(complete)d / 53.' % done)

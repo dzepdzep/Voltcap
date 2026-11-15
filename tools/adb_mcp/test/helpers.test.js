@@ -32,7 +32,11 @@ assert(/'core.autocrlf=false', '-c', 'core.eol=lf', 'worktree', 'add'/.test(src)
 // Sprint 525: the branch push checks every value the APK check knows, in every pushed commit; only pnat / s3d / ci are pushable.
 assert(/require\('\.\/push_guard'\)/.test(src) && /'rev-list', head, '--not', '--remotes=origin'/.test(src) && /pg\.secretFiles\(/.test(src), 'push secret check: push_guard, every new commit, secret files');
 const pushable = src.match(/const PUSHABLE = (\{[^}]+\})/)[1];
-assert(/pnat/.test(pushable) && /s3d/.test(pushable) && /ci:/.test(pushable) && !/int|main|fw1/.test(pushable), 'only the three development branches are pushable');
+// Update 529g (owner, option 1): int may push ONLY its repair branch, and ONLY as claude/qa-0672-repair.
+assert(/pnat/.test(pushable) && /s3d/.test(pushable) && /ci:/.test(pushable) && !/main|fw1/.test(pushable), 'only the development branches are pushable');
+assert(/int: 'repair\/0\.6\.72-windows-tests' \}$/.test(pushable), 'int pushes only the repair branch');
+assert(src.match(/const PUSH_AS = (\{[^}]+\})/)[1] === "{ int: 'claude/qa-0672-repair' }", 'the only renamed push is int -> claude/qa-0672-repair');
 { const body = src.slice(src.indexOf("case 'git_push_branch'"), src.indexOf("case 'git_commit_push'"));
-  assert(/\['push', '--no-follow-tags', 'origin', head \+ ':refs\/heads\/' \+ branch\]/.test(body) && !/'--force'|'--tags'/.test(body), 'never forced, no tags'); }
+  assert(/\['push', '--no-follow-tags', 'origin', head \+ ':refs\/heads\/' \+ dest\]/.test(body) && !/'--force'|'--tags'/.test(body), 'never forced, no tags');
+  assert(/\(main\|master\)/.test(body), 'main / master refused as a destination'); }
 console.log('adb_mcp helpers: OK');

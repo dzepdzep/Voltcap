@@ -46,6 +46,7 @@ def check(img, box, is_ink_box, text=''):
         return {'verdict': 'SKIP', 'why': 'no fill'}
     fill = median_colour(ring)
     T = 60
+    STEP = 40
     # ink box: for a plain Text the layout box is not the ink - find the ink pixels inside it
     if is_ink_box:
         ix0, iy0, ix1, iy1 = x + 1, y + 1, x + w - 2, y + h - 2
@@ -88,11 +89,25 @@ def check(img, box, is_ink_box, text=''):
         # from just outside the ink, along the fill, to the first 2 px that are not the fill
         n, miss = 0, 0
         xx, yy = sx, sy
+        prev = None
         while n < lim:
             xx += dx; yy += dy; n += 1
             if not (0 <= xx < W and 0 <= yy < H):
                 return None
-            if diff(p[xx, yy][:3], fill) > T:
+            cur = p[xx, yy][:3]
+            # (Update 529c: a see-through pill over a dark picture - Spotlight's SELECT key, mlast529 - differs from the background
+            # behind it by less than T, so the walk ran through its edge and measured the glyph 40 px "off centre" in a pill it sits
+            # in the middle of. A sharp step between two neighbouring pixels into a region that stays steady is an edge too. Arrows
+            # keep the label-aware rule below: the fill coming back right after it means a letter, not an edge.)
+            if prev is not None and diff(cur, prev) > STEP and diff(cur, fill) > STEP // 2:
+                steady = all(0 <= xx + dx * k < W and 0 <= yy + dy * k < H and diff(p[xx + dx * k, yy + dy * k][:3], cur) <= 18
+                             for k in range(1, 4))
+                back = label_aware and any(0 <= xx + dx * k < W and 0 <= yy + dy * k < H and diff(p[xx + dx * k, yy + dy * k][:3], fill) <= 12
+                                           for k in range(1, 25))
+                if steady and not back:
+                    return n - 1
+            prev = cur
+            if diff(cur, fill) > T:
                 miss += 1
                 if miss == 2 and label_aware:
                     # (Batch 522: an edge only when the fill does not come back right after it - a letter of a label beside

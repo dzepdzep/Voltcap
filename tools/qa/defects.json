@@ -3628,8 +3628,9 @@
    "title": "Airy: a game without art shows its fallback title white on the white card (invisible)",
    "rule": "READABILITY",
    "severity": "low",
-   "status": "open",
-   "found": "2026-11-11 Flip 2 fe523p (endless523b, AIRY_*_ffalse)"
+   "status": "fixed-unverified",
+   "found": "2026-11-11 Flip 2 fe523p (endless523b, AIRY_*_ffalse)",
+   "fix": "529c: StyleNamePlate takes a colour; Airy passes its dark ink 0xFF1C3150 (the mount is white). Not built (PC offline), not seen on hardware."
   },
   {
    "id": "D299",

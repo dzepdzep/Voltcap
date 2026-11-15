@@ -173,29 +173,162 @@ internal fun StyleLiveTiles(c: StyleCtx, modifier: Modifier) {
 private fun LiveTabs(c: StyleCtx, ink: Color, compact: Boolean) {
     val move by rememberUpdatedState(c.actions.category)
     val tabs = liveTabs(c)
-    // (Update 294, Toni: "never show a partly hidden chip": the category words that fit whole, "+N ›" for the rest, the
-    // lit one always whole — WholeChipRow. The next words used to run off the right edge, cut.)
     val lit = if (StyleNav.zone == StyleNav.Zone.TOP) StyleNav.index else tabs.indexOfFirst { it.first == 0 }
+    // 529j (owner video VID20261113180355, compact screens: categories "suddenly spawn at the edge"): the words are a window
+    // around the category you're in (one before, the next three), rebuilt at each L2 / R2 - every word changed in place and
+    // the next one appeared whole at the right edge in one frame. Now the words lie on one strip that glides a word along
+    // (LivePivot); at rest it is exactly the window it was.
+    if (c.stop < 0 || c.stops.size <= 1 || LivePivot.legacy) LiveTabsWindow(c, ink, compact, tabs, lit) { move(it) }
+    else LiveTabsPivot(c, ink, compact, tabs) { move(it) }
+}
+
+/** The category words as before 529j (one word, or the QA A/B's legacy): the window of whole words. */
+@Composable
+private fun LiveTabsWindow(c: StyleCtx, ink: Color, compact: Boolean, tabs: List<Pair<Int, String>>, lit: Int, move: (Int) -> Unit) {
     WholeChipRow(
         tabs.size, lit, Modifier.fillMaxWidth().editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.LIVE, "tabs"), "Category tabs"),
         spacing = 0.dp, hintColor = ink.copy(alpha = 0.38f), hintSize = if (compact) 16.sp else 22.sp
-    ) { i ->
-            val (d, label) = tabs[i]
-            val on = StyleNav.on(StyleNav.Zone.TOP, i)
-            // (Update 481, A5: a category word longer than the row — the kept-whole lit one — shrinks to the readable minimum,
-            // then slides, instead of running off the right edge: StableFullText, one line, nothing reserved.)
-            StableFullText(
-                // (Update 136: as written — no all-lower-case labels.)
-                label,
-                color = if (d == 0 || on) ink else ink.copy(alpha = 0.38f),
-                fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1,
-                style = androidx.compose.material3.LocalTextStyle.current.copy(textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null),
-                reserve = false,
-                modifier = Modifier
-                    .padding(end = if (compact) 16.dp else 26.dp)
-                    .pointerInput(d) { detectTapGestures { if (d != 0) move(d) } }
-            )
+    ) { i -> LiveWord(tabs[i].first, tabs[i].second, StyleNav.on(StyleNav.Zone.TOP, i), ink, compact, move) }
+}
+
+/** One category word (update 136: as written; 481: shrinks, then slides, never off the edge). */
+@Composable
+private fun LiveWord(d: Int, label: String, on: Boolean, ink: Color, compact: Boolean, move: (Int) -> Unit) {
+    val tap by rememberUpdatedState(move)
+    StableFullText(
+        // (Update 136: as written — no all-lower-case labels.)
+        label,
+        color = if (d == 0 || on) ink else ink.copy(alpha = 0.38f),
+        fontSize = if (compact) 22.sp else 34.sp, fontWeight = if (on) FontWeight.Normal else FontWeight.Light, maxLines = 1,
+        style = androidx.compose.material3.LocalTextStyle.current.copy(textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null),
+        reserve = false,
+        modifier = Modifier
+            .padding(end = if (compact) 16.dp else 26.dp)
+            .pointerInput(d) { detectTapGestures { if (d != 0) tap(d) } }
+    )
+}
+
+/**
+ * 529j: the category words on one strip. Word [j] on the strip is the category [j] - [LivePivot.Track.virt] steps from the
+ * one you're in; the strip's place glides from the old category to the new one, so the words travel together - the one
+ * leaving fades out past the left as it goes, the next comes in from the right as it enters (ChipGlide.inside over the
+ * span of whole words, update 294's rule at rest).
+ */
+@Composable
+private fun LiveTabsPivot(c: StyleCtx, ink: Color, compact: Boolean, tabs: List<Pair<Int, String>>, move: (Int) -> Unit) {
+    val n = c.stops.size
+    val ds = tabs.map { it.first }
+    val dMin = ds.minOrNull() ?: 0
+    val dMax = ds.maxOrNull() ?: 0
+    val track = androidx.compose.runtime.remember { LivePivot.Track(c.stop) }
+    val target = track.follow(c.stop, n)
+    val anim = rememberAnimationsEnabled()
+    val pv = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(target.toFloat()) }
+    androidx.compose.runtime.LaunchedEffect(target) {
+        if (!anim || kotlin.math.abs(pv.value - target) > 3f) pv.snapTo(target.toFloat())
+        else pv.animateTo(target.toFloat(), tween(LivePivot.MS, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+        track.settle(target)
     }
+    val js = (track.lo + dMin..track.hi + dMax).toList()
+    val hidden = androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val hintSize = if (compact) 16.sp else 22.sp
+    androidx.compose.ui.layout.Layout(
+        content = {
+            js.forEach { j ->
+                androidx.compose.runtime.key(j) {
+                    val d = j - target
+                    val i = ds.indexOf(d)
+                    LiveWord(d, if (d == 0) c.categoryLabel else c.stopAt(d)?.label.orEmpty(), i >= 0 && StyleNav.on(StyleNav.Zone.TOP, i), ink, compact, move)
+                }
+            }
+            Text("+${hidden.intValue} ›", color = ink.copy(alpha = 0.38f), fontSize = hintSize, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+        },
+        modifier = Modifier.fillMaxWidth().clipToBounds()
+            .editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.LIVE, "tabs"), "Category tabs")
+    ) { ms, cs ->
+        val hint = ms.last().measure(androidx.compose.ui.unit.Constraints())
+        val width = if (cs.hasBoundedWidth) cs.maxWidth else 4000
+        val gap = 4.dp.roundToPx()
+        val room = (width - hint.width - gap).coerceAtLeast(0)
+        val ps = ms.dropLast(1).map { it.measure(androidx.compose.ui.unit.Constraints(0, room, 0, cs.maxHeight)) }
+        val ws = IntArray(ps.size) { ps[it].width }
+        val first = js.firstOrNull() ?: 0
+        val atRest = LivePivot.restAll(ws, first, track.lo, track.hi, ds, width, hint.width + gap)
+        hidden.intValue = atRest[target]?.hidden ?: 0
+        val height = (ps.maxOfOrNull { it.height } ?: 0).coerceIn(cs.minHeight, cs.maxHeight)
+        layout(width, height) {
+            val p = pv.value.coerceIn(track.lo.toFloat(), track.hi.toFloat())
+            val base = kotlin.math.floor(p).toInt().coerceAtMost(track.hi)
+            val frac = p - base
+            val a = atRest[base]; val b = atRest[(base + 1).coerceAtMost(track.hi)] ?: a
+            if (a == null || b == null) return@layout
+            val l = ChipGlide.lerp(a.left, b.left, frac); val r = ChipGlide.lerp(a.right, b.right, frac)
+            for (k in ps.indices) {
+                val x = ChipGlide.lerp(a.xs[k], b.xs[k], frac)
+                val al = ChipGlide.inside(x, ws[k].toFloat(), l, r)
+                val y = (height - ps[k].height) / 2
+                if (al > 0.001f) ps[k].placeWithLayer(kotlin.math.round(x).toInt(), y) { alpha = al } else ps[k].place(width * 2, y)
+            }
+            if (QaTrace.on && (pv.isRunning || p != target.toFloat())) ChipGlide.qa("live",
+                if (track.hi > track.lo) (p - track.lo) / (track.hi - track.lo) else 1f,
+                FloatArray(ps.size) { ChipGlide.lerp(a.xs[it], b.xs[it], frac) },
+                FloatArray(ps.size) { ChipGlide.inside(ChipGlide.lerp(a.xs[it], b.xs[it], frac), ws[it].toFloat(), l, r) })
+            val ha = ChipGlide.lerp(if (a.hidden > 0) 1f else 0f, if (b.hidden > 0) 1f else 0f, frac)
+            if (ha > 0.001f) hint.placeWithLayer(width - hint.width, (height - hint.height) / 2) { alpha = ha } else hint.place(width * 2, 0)
+        }
+    }
+}
+
+/** 529j: the category words' strip (pure parts, LivePivot529Test). */
+internal object LivePivot {
+    const val MS = 300
+    /** QA A/B only (voltcap_test_chipglide legacy): the old window rebuilt at each step. */
+    @Volatile var legacy = false
+
+    /** Where the strip is: [virt] counts every step (the category list goes round), [lo]..[hi] the places a glide covers. */
+    class Track(start: Int) {
+        var last = start; var virt = 0; var lo = 0; var hi = 0
+        /** The strip's place for the category [stop] of [n]: one step on (or back) the shorter way round. */
+        fun follow(stop: Int, n: Int): Int {
+            if (stop != last && n > 0) {
+                var d = (stop - last).mod(n)
+                if (d > n / 2) d -= n
+                virt += d; last = stop
+                lo = minOf(lo, virt); hi = maxOf(hi, virt)
+            }
+            return virt
+        }
+        /** The glide reached [v]: only its words are needed now. */
+        fun settle(v: Int) { if (v == virt) { lo = v; hi = v } }
+    }
+
+    /** The words at rest with the strip at one place: each word's x, the span of whole words, how many are past the end. */
+    class Rest(val xs: FloatArray, val left: Float, val right: Float, val hidden: Int)
+
+    /**
+     * The strip at rest at place [v]: word j (index j - [first] in [ws]) at its place, the word before the category you're in
+     * (d = -1, when it is shown) at the left edge; the shown words are the ones with d in [ds] that fit whole in [width] -
+     * less [hintRoom] when some don't (update 294's "+N ›"). The category you're in always counts as shown.
+     */
+    fun rest(ws: IntArray, first: Int, v: Int, ds: List<Int>, width: Int, hintRoom: Int): Rest {
+        val xs = FloatArray(ws.size)
+        val vi = v - first
+        val anchor = if (-1 in ds && vi - 1 in ws.indices) ws[vi - 1] else 0
+        var x = anchor.toFloat() - (0 until vi.coerceIn(0, ws.size)).sumOf { ws[it] }.toFloat()
+        for (k in ws.indices) { xs[k] = x; x += ws[k] }
+        val shown = ds.sorted().map { v + it - first }.filter { it in ws.indices }
+        fun whole(limit: Int): List<Int> = shown.filter { k -> xs[k] >= -0.5f && xs[k] + ws[k] <= limit + 0.5f || k == vi }
+        var fit = whole(width)
+        val missing = shown.size - fit.size
+        if (missing > 0) fit = whole(width - hintRoom)
+        val l = fit.minOfOrNull { xs[it] } ?: 0f
+        val r = fit.maxOfOrNull { xs[it] + ws[it] } ?: 0f
+        return Rest(xs, l, r, shown.size - fit.size)
+    }
+
+    fun restAll(ws: IntArray, first: Int, lo: Int, hi: Int, ds: List<Int>, width: Int, hintRoom: Int): Map<Int, Rest> =
+        (lo..hi).associateWith { rest(ws, first, it, ds, width, hintRoom) }
 }
 
 /** The category words: the one you're in (0), the one before it and the next three (each once, however few there are). */

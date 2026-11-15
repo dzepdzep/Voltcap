@@ -66,6 +66,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -324,9 +325,20 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
     val lit = if (inTop && PqNav.index < tabs) PqNav.index else current
     val places = remember { mutableStateMapOf<Int, Pair<Int, Int>>() }
     val live by rememberUpdatedState(c)
-    val here = places[current]
-    val ix = animateFloatAsState((here?.first ?: 0).toFloat(), tween(pqMs(260), easing = FastOutSlowInEasing), label = "pqTabX")
-    val iw = animateFloatAsState((here?.second ?: 0).toFloat(), tween(pqMs(260), easing = FastOutSlowInEasing), label = "pqTabW")
+    // (529j: the tabs now glide when the row moves to keep the one you're in whole - WholeChipRow - so the plate rides on its
+    // tab, read where the tab is drawn this frame; only a change of category slides it from the old tab to the new one. It
+    // used to chase a target that jumped, and the plate trailed behind the tabs.)
+    val plateFrom = remember { intArrayOf(current) }
+    val plateTo = remember { intArrayOf(current) }
+    val plateK = remember { Animatable(1f) }
+    LaunchedEffect(current) {
+        if (current == plateTo[0]) return@LaunchedEffect
+        // (From where it is drawn now: mid-slide, the old tab is wherever the plate was heading.)
+        plateFrom[0] = if (plateK.value >= 0.5f) plateTo[0] else plateFrom[0]
+        plateTo[0] = current
+        plateK.snapTo(0f)
+        plateK.animateTo(1f, tween(pqMs(260), easing = FastOutSlowInEasing))
+    }
     val plate = remember(pal) { Brush.verticalGradient(listOf(pal.accentLight, pal.accent, pal.accentDeep)) }
     CategoryTitle.Native() // (Update 212: the layout's own category title.)
     // (Update 294, Toni: "never show a partly hidden chip": whole tabs only, "+N ›" for the rest, the lit one always
@@ -341,12 +353,15 @@ private fun PqTabs(c: StyleCtx, pal: PqPalette, compact: Boolean, tabs: Int, sin
         Modifier.fillMaxSize().onPlaced { rowX[0] = it.positionInRoot().x }
             .drawBehind {
                 // The plate under the tab you're in (read while drawing: the glide redraws, never recomposes).
-                val w = iw.value
-                // (Never under a tab that's hidden past the row's ends.)
-                if (w > 0f && ix.value >= -1f && ix.value + w <= size.width + 1f) {
+                val k = plateK.value
+                val a = places[plateFrom[0]] ?: places[plateTo[0]]
+                val bP = places[plateTo[0]] ?: a
+                val x = if (a == null || bP == null) 0f else a.first + (bP.first - a.first) * k
+                val w = if (a == null || bP == null) 0f else a.second + (bP.second - a.second) * k
+                // (Never under a tab that's hidden past the row's ends; while the row glides it comes in with its tab.)
+                if (w > 0f && x + w > 0f && x < size.width) clipRect(0f, -1f, size.width, size.height + 1f) {
                     val inset = 5.dp.toPx()
                     val notch = 2.dp.toPx()
-                    val x = ix.value
                     drawRect(pal.edgeDark, Offset(x - 1f, inset - 1f), Size(w + 2f, size.height - 2 * inset + 2f))
                     drawRect(plate, Offset(x, inset), Size(w, size.height - 2 * inset))
                     drawRect(Color.White.copy(alpha = 0.5f), Offset(x + notch, inset + 1f), Size(w - 2 * notch, 1.dp.toPx()))

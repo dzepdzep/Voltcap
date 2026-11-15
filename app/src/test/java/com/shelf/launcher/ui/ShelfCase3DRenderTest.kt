@@ -61,7 +61,7 @@ class ShelfCase3DRenderTest {
                 }
             }
         }
-        repeat(90) { compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
+        repeat(90) { androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
         val root = compose.activity.window.decorView
         val full = android.graphics.Bitmap.createBitmap(root.width, root.height, android.graphics.Bitmap.Config.ARGB_8888)
         root.draw(android.graphics.Canvas(full))

@@ -576,14 +576,15 @@ private fun CardFront(f: CardFrontData, g: Game, game: Int, d: CardDims, centre:
     val played = f.played
     val placeholder = remember(g.hue) { placeholderBrush(g.hue) }
     val url = f.cover ?: f.wide
-    Box(modifier.clip(RoundedCornerShape(d.corner)).background(p.frame).cardShine(sheen)) {
+    // (529t, owner P3: the whole card is the game you're on - it comes out of its pocket and turns over into the window
+    // (PickupOverlay); it was only the picture in its window, which flew off and left the card's frame behind (Flip 2 pkf529w).)
+    Box(modifier.gameOrigin(g.stableKey, centre && focused).clip(RoundedCornerShape(d.corner)).background(p.frame).cardShine(sheen)) {
         Column(Modifier.fillMaxSize().padding(d.pad)) {
             CardTitle(titles.display(g.name), g, p, d)
             Spacer(Modifier.height(d.gap))
-            // The picture in its framed window. (The game window grows out of it on the card you're on.)
+            // The picture in its framed window.
             Box(
                 Modifier.fillMaxWidth().weight(1f)
-                    .gameOrigin(g.stableKey, centre && focused)
                     .border(d.rim, p.rim, RoundedCornerShape(d.corner * 0.45f))
                     .padding(d.rim)
                     .clip(RoundedCornerShape(d.corner * 0.35f))

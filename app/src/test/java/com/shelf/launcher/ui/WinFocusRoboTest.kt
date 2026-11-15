@@ -102,7 +102,7 @@ class WinFocusRoboTest(private val layout: HomeLayout, private val plain: Boolea
 
     /** One 16 ms frame: Compose's clock and the main looper (SystemClock, Handler posts) together. */
     private fun frames(n: Int, each: () -> Unit = {}) = repeat(n) {
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
         each()
     }

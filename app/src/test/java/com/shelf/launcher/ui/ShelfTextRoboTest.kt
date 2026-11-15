@@ -45,7 +45,9 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} {2} ach={3} {1}")
         fun cases(): List<Array<Any?>> {
-            val layouts = listOf(HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES)
+            val layouts = listOf(HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.STORAGE, HomeLayout.NIGHT, HomeLayout.TILES, HomeLayout.BLADES,
+                HomeLayout.CONSOLES, HomeLayout.COVERDETAILS, // (529k: the rest of the shelf family has native pages now)
+                HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE) // (529l: the Twin family's touch-screen pages)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)
@@ -56,8 +58,14 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
     private val compose = createComposeRule()
     @get:Rule val rules: RuleChain = RuleChain.outerRule(RegisterComposeTestActivity()).around(compose)
 
+    // (v0.6.72 RC, CI 43632198774: 90 nativePages failures on Linux only, all "changed late" / "RECOMPOSED after
+    // sendApplyNotifications". Robolectric resets the main looper between test classes; when a class ends with the UI
+    // dispatcher's trampoline message queued, the reset drops it and the app-wide GlobalSnapshotManager never sends apply
+    // notifications again in that JVM - so whether it bites depends on class order, which is alphabetical on Windows (NTFS)
+    // and directory order on Linux CI (it changed when the Save Sync tests left). Each frame now sends them first, as the
+    // device's GlobalSnapshotManager does every frame; a state the callback never wrote still shows as "still unchanged".)
     private fun frames(n: Int) = repeat(n) {
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 
@@ -113,7 +121,23 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
             options = listOf(WinOption("Probe option") {}, WinOption("Another probe option with a longer name") {})) }
         frames(180)
         val problems = mutableListOf<String>()
-        for (page in listOf(listOf("details", "summary", "info"), listOf("options", "config"))) {
+        // (#16 6867938626: CI run 43528126325 failed "no options control" for every layout whose Options sits behind More,
+        // while the same commit's code passed on CI and locally, in the same class order. The steps are recorded so a
+        // failure says which one went wrong - Details not opening, Back not returning, More missing or not opening - and
+        // how many windows / dialogs the test saw. Diagnostics only: the checks themselves are unchanged.)
+        val trail = mutableListOf<String>()
+        fun hasText(t: String) = compose.onAllNodes(SemanticsMatcher("text $t") { n ->
+            n.config.getOrNull(SemanticsProperties.Text)?.any { it.text == t } == true }, useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        fun state(): String {
+            val d = org.robolectric.shadows.ShadowDialog.getLatestDialog()
+            return "roots=${compose.onAllNodes(isRoot()).fetchSemanticsNodes().size} dialog=${d?.let { Integer.toHexString(System.identityHashCode(it)) + (if (it.isShowing) "" else "(gone)") }} " +
+                "fullDetails=${hasText("Full details")} more=${hasText("•••") || hasText("More")} options=${hasText("Options")}"
+        }
+        fun clickable() = compose.onAllNodes(SemanticsMatcher("clickable") { it.config.contains(SemanticsActions.OnClick) }).fetchSemanticsNodes()
+            .map { name(it).take(24) }.filter { it.isNotBlank() }.take(16)
+        trail += "open: " + state()
+        // (529k: Game shelf's Details key is "Turn over" - the index card turns.)
+        for (page in listOf(listOf("details", "summary", "info", "turn", "over"), listOf("options", "config"))) {
             val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
                 (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
             var found = compose.onAllNodes(m).fetchSemanticsNodes()
@@ -121,19 +145,50 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                 val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) &&
                     (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).trim().let { it == "•••" || it.equals("more", true) } }
                 val ms = compose.onAllNodes(more).fetchSemanticsNodes()
+                val before = state(); val c0 = WinClickProbe.clicks
                 if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
+                val probe = if (ms.isNotEmpty()) applyProbe(before, ::state) else ""
+                trail += "${page[0]}: not in view, More controls=${ms.size}, callback ran=${WinClickProbe.clicks - c0}, after More: " + state() + probe
+                if ("RECOMPOSED" in probe) problems += "More click: state changed without recomposition\n  steps: " + trail.joinToString("\n  steps: ")
                 found = compose.onAllNodes(m).fetchSemanticsNodes()
             }
-            if (found.isEmpty()) { problems += "no ${page[0]} control"; continue }
+            if (found.isEmpty()) {
+                problems += "no ${page[0]} control\n  steps: " + trail.joinToString("\n  steps: ") + "\n  clickable now: " + clickable()
+                continue
+            }
+            val before = state(); val c0 = WinClickProbe.clicks
             compose.onAllNodes(m)[found.size - 1].performSemanticsAction(SemanticsActions.OnClick)
             frames(40)
+            val probe = applyProbe(before, ::state)
+            trail += "${page[0]}: ${found.size} control(s) '${name(found.last()).take(20)}', callback ran=${WinClickProbe.clicks - c0}, after click: " + state() + probe
+            // (a click whose state change only shows after hand-sent apply notifications stays a failure, with its cause)
+            if ("RECOMPOSED" in probe) problems += "${page[0]} click: state changed without recomposition\n  steps: " + trail.joinToString("\n  steps: ")
             problems += check("${page[0]} page")
             // back to the main page for the next one
             compose.onAllNodes(isRoot()).fetchSemanticsNodes()
             ShadowDialogBack()
             frames(40)
+            trail += "${page[0]}: after Back: " + state()
         }
         assertTrue("$layout ×$scale ach=$ach '${title.take(20)}' pages: ${problems.size} problem(s)\n" + problems.joinToString("\n"), problems.isEmpty())
+    }
+
+    /**
+     * 529p (#16, 96 "no options control" failures, CI runs 43528126325 / 43537441045: every click left the window as it was,
+     * while the same code passed in other runs). Diagnostics only - the checks are unchanged: when a click changed nothing, the
+     * global snapshot's apply notifications are sent by hand (what the app's GlobalSnapshotManager does on the UI dispatcher)
+     * and the window is looked at again. "recomposed after apply" = the callback changed state that nothing recomposed;
+     * "still unchanged" = the callback did not change state (inert, or not reached - see "callback ran").
+     */
+    private fun applyProbe(before: String, state: () -> String): String {
+        if (state() != before) return ""
+        frames(12)                                         // (not just slow: more frames first, without any help)
+        if (state() != before) return " | changed late"
+        val pending = androidx.compose.runtime.snapshots.Snapshot.current.let { it.hasPendingChanges() }
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications()
+        frames(12)
+        val after = state()
+        return " | unchanged; pending=$pending; after sendApplyNotifications: " + (if (after != before) "RECOMPOSED ($after)" else "still unchanged")
     }
 
     private fun ShadowDialogBack() {

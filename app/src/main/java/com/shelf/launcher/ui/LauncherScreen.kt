@@ -1126,6 +1126,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             if (PopupStyle.opensClassic(state.appearance.homeLayout.name)) openDetails() else GamePopup.game = g
         }
     }
+    // (Update 529, achievements compact hotfix QA: the list of the game you're on, as its window's Full list opens it.)
+    if (TestHooks.achList.value) LaunchedEffect(Unit) {
+        TestHooks.achList.value = false
+        focusedGame?.let { g -> if (g.raGameId != null) { closeAllDialogs(); viewingAchievementsForGame = g } }
+    }
     // (0.6.15: a category for a test run — "ALL" = All games, else a console's name.)
     // Update 459: the facts a generated cartridge label may print (real header product codes, fan-made / homebrew), read
     // once per library in the background — LabelIds.
@@ -4199,7 +4204,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         } else if (tvLayout) {
             // TV room (TvRoomHome.kt): the game on an old TV, the games beside it, its story under it.
             if (visibleGames.isEmpty()) Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
-            else TvRoomHome(
+            // (529s: the case you pick flies into the set - TvCaseFlyer flies the picture the room drew.)
+            else androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { TvRoomHome(
                 games = visibleGames, focus = state.focusedIndex, art = displayArt, overrides = state.artOverrides,
                 screenshots = state.screenshots, videoUrls = state.videoUrls, metadata = state.metadata,
                 playtime = state.playtime, lastPlayed = state.lastPlayedAt, nowPlaying = state.nowPlaying,
@@ -4225,7 +4231,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         .sortedWith(compareBy<com.shelf.launcher.data.RaAchievementDetail> { !it.isUnlocked }.then(com.shelf.launcher.data.RA_DISPLAY_ORDER))
                         .mapNotNull { a -> com.shelf.launcher.data.RaBadges.url(a.badgeName)?.let { it to a.isUnlocked } }
                 }
-            )
+            ) }
             // The game you're on: its achievement list for the wall, once it stays a moment.
             val tvFocused = visibleGames.getOrNull(state.focusedIndex)
             LaunchedEffect(tvFocused?.stableKey) {
@@ -5384,13 +5390,14 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             viewModel = viewModel,
             displayVersion = state.screenLayoutsVersion,
             hasCustomArt = state.artOverrides[game.stableKey]?.isEmpty() == false,
-            onOpenScreens = { profileForGame = null; screensForGame = game },
+            onOpenScreens = { profileForGame = null; GamePopup.game = null; screensForGame = game },
             onOpenArtwork = {
                 profileForGame = null
+                GamePopup.game = null // (529o: a full screen - not under the game window that may still be open below the sheet)
                 editingArtworkForGame = game
                 viewModel.loadArtCandidates(game)
             },
-            onOpenEmulator = { profileForGame = null; configuringPlatform = game.platform },
+            onOpenEmulator = { profileForGame = null; GamePopup.game = null; configuringPlatform = game.platform },
             onDismiss = { profileForGame = null }
         )
     }
@@ -6671,6 +6678,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     if (event.type == KeyEventType.KeyDown) GamePopup.reopenGame = null
                     return@onKeyEvent true
                 }
+                // (v0.6.72 RC gate k672c, KONKR Box, A B A B at 250 ms: the A while the window flew back reopened it the box's
+                // way - the case is pulled again (BoxNav.pull) and the window opens a frame or more later. A B in that gap had
+                // neither window nor pending reopen to take it: the box went back to its console list and the window opened
+                // over it and stayed. A B now takes the pull on its way back, as it takes a pending reopen above.)
+                if (homeBTakesBoxPull(GamePopup.game != null, BoxNav.pull) && (event.key == Key.ButtonB || event.key == Key.Back)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "home B ${event.type} cancels box pull")
+                    if (event.type == KeyEventType.KeyDown) BoxNav.pull = null
+                    return@onKeyEvent true
+                }
                 if (event.key == Key.ButtonB || event.key == Key.Back) {
                     if (event.type == KeyEventType.KeyDown) HomeKeyGuard.bDown = true
                     else if (event.type == KeyEventType.KeyUp) {
@@ -7618,7 +7634,10 @@ private fun gameWindowOptions(
     fun go(f: () -> Unit): () -> Unit = { close(); f() }
     return buildList {
         add(WinOption(if (fav) "Remove from favorites" else "Add to favorites") { viewModel.toggleFavorite(g) })
-        add(WinOption("Game settings", "Sync, second screen, artwork, look — for this ${if (isApp) "app" else "game"}", onClick = go(onGameSettings)))
+        // (529o, #15 queue 2: Game settings opens over the window, like Performance › Advanced - one B closes the sheet and you
+        // are back on the window's options; it used to close the window first, so that B left you on the home screen, where
+        // the next L1 opened Shortcuts. Screens, Artwork and Emulator inside it still close the window - they are full screens.)
+        add(WinOption("Game settings", "Sync, second screen, artwork, look — for this ${if (isApp) "app" else "game"}", onClick = onGameSettings))
         add(WinOption("Music", "Music of its own while you're on it", onClick = go(onGameMusic)))
         if (!isApp) add(WinOption("Guide", "Walkthrough that follows where you are", onClick = go(onGuide)))
         if (hasManual) add(WinOption("Manual", "The game's booklet, page by page (downloaded the first time)") {
@@ -7679,6 +7698,9 @@ private fun ProvideNameColors(cat: com.shelf.launcher.ui.theme.ShelfColors?, con
 internal object TileRowSpan { @JvmStatic var top = 0f; @JvmStatic var bottom = 0f }
 
 /** v0.6.66 popup audit: whether the home screen saw the press of the B whose release it gets (an orphan release is ignored). */
+/** v0.6.72: a B on the home screen while the Cardboard box pulls a case out for a window that isn't up yet takes the pull back. */
+internal fun homeBTakesBoxPull(windowUp: Boolean, pull: String?): Boolean = !windowUp && pull != null
+
 internal object HomeKeyGuard {
     @Volatile var bDown = false
     /**

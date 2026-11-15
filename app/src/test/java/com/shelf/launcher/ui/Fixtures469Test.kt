@@ -28,7 +28,10 @@ class Fixtures469Test {
     }
 
     @Test fun savesLineSaysSavesOnce() {
-        assertEquals("Saves: up to date · 2 min ago", savesLabel("Saves up to date · 2 min ago"))
+        // (529m, owner #15: a status that names the saves / the sync stands as it is - no "Saves:" in front of it.)
+        assertEquals("Saves up to date · 2 min ago", savesLabel("Saves up to date · 2 min ago"))
+        assertEquals("Save sync is not set up", savesLabel("Save sync is not set up"))
+        assertEquals("Uploading saves…", savesLabel("Uploading saves…"))
         assertEquals("Saves: Not checked yet", savesLabel("Not checked yet"))
     }
 }

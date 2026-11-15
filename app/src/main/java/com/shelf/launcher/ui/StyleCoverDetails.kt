@@ -43,6 +43,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.animation.core.Animatable
@@ -221,7 +222,15 @@ private fun CoverDetailsBody(c: StyleCtx, g: Game, modifier: Modifier) {
         // (523t, owner: the big case a little higher - the title block is tighter and the case's room starts right under it.)
         // (523t, KONKR with real-length names: the title's room is one line + the console line; a name that needs a second line
         // runs over the top of the case's room - its empty margin - so the big case keeps one size and place for every game.)
-        val headH = if (compact) 46.dp else 54.dp
+        // (529m, owner #15 6865249152: at large text the console · year line under a two-line name ran over the big case's own
+        // header - "PlayStation 2 · 2003" across the case's PlayStation 2 band on the KONKR at x1.3. With text larger than
+        // normal the title block keeps the room it really takes - two lines of the name and the console line - so the case
+        // starts under it; one size and place for every game still (it follows the text size, not the name). At normal text
+        // the design is unchanged.)
+        val large = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.05f
+        val headNeed = reservedLinesHeight(if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold, lines = 2) + 2.dp +
+            reservedLinesHeight(if (compact) 12.sp else 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp)
+        val headH = if (large) maxOf(if (compact) 46.dp else 54.dp, headNeed) else if (compact) 46.dp else 54.dp
         Column(Modifier.zIndex(2f).padding(start = pad, top = pad * 0.8f, bottom = pad * 0.2f).width(leftW).fillMaxHeight()) {
             Spacer(Modifier.height(headH + 2.dp))
             BoxWithConstraints(
@@ -287,9 +296,19 @@ internal fun coverHeadIn(p: Float): Float { val t = ((p - 0.35f) / 0.5f).coerceI
 private fun CoverHeadText(c: StyleCtx, g: Game, compact: Boolean, accent: Color, modifier: Modifier) {
     val titles = LocalTitleOptions.current
     val year = c.state.metadata[g.stableKey]?.releaseYear
-    Column(modifier) {
+    // (529t: where the name's words really end on screen - the game window's panel opens right of them, never over the name.)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 2)
+    val nameSize = if (compact) 22.sp else 28.sp
+    Column(modifier.onGloballyPositioned { lc ->
+        val r = lc.boundsInWindow(); val w = lc.size.width
+        if (w > 0) {
+            val t = measurer.measure(titles.display(g.name), TextStyle(fontSize = nameSize, fontWeight = FontWeight.Bold),
+                constraints = androidx.compose.ui.unit.Constraints(maxWidth = w), maxLines = 2)
+            CoverFlight.headRight = r.left + (0 until t.lineCount).maxOfOrNull { t.getLineRight(it) }.let { it ?: 0f }
+        }
+    }) {
         FullText(
-            titles.display(g.name), color = Color.White, fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Bold,
+            titles.display(g.name), color = Color.White, fontSize = nameSize, fontWeight = FontWeight.Bold,
             maxLines = 2, modifier = Modifier.fillMaxWidth(), reserve = false
         )
         Spacer(Modifier.height(2.dp))
@@ -537,6 +556,8 @@ internal object CoverFlight {
     val spines = HashMap<String, Rect>()
     /** The big case's stage (window bounds). */
     var stage: Rect? = null
+    /** 529t: where the home's title words end (window x, px) - the game window's panel starts right of it. */
+    var headRight: Float? = null
     var shelf: Rect? = null
     /** Game key -> its flight (0 = in its slot, 1 = out in the big place); present only while it moves. */
     val flights = androidx.compose.runtime.mutableStateMapOf<String, androidx.compose.runtime.State<Float>>()

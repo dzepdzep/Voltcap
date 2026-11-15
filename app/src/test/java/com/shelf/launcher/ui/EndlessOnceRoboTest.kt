@@ -64,7 +64,7 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
     @After fun reset() { Features.endlessFill.value = false }
 
     private fun frames(k: Int) = repeat(k) {
-        compose.mainClock.advanceTimeByFrame()
+        androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame()
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16))
     }
 

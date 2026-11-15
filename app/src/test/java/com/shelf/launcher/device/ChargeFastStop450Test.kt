@@ -46,7 +46,7 @@ class ChargeFastStop450Test {
     /** The limit, the resume point and the AYN path are untouched; everything new is gated to the Retroid. */
     @Test fun limitHysteresisAndAynPathUnchanged() {
         val src = listOf("src/main/java/com/shelf/launcher/device/ChargeLimiter.kt", "app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt")
-            .map(::File).first { it.exists() }.readText()
+            .map(::File).first { it.exists() }.readText().replace("\r\n", "\n")
         assertTrue(src.contains("const val STOP_AT = 80"))
         assertTrue(src.contains("private const val RESUME_BELOW = 77"))
         assertTrue(src.contains("private const val RISE_TOLERANCE = 2"))

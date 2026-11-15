@@ -1200,10 +1200,10 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
-internal fun StyleNamePlate(name: String) {
+internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f)) {
     Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
         FullText(
-            name, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+            name, color = color, fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
             textAlign = TextAlign.Center, maxLines = 4
         )
     }
@@ -1363,7 +1363,7 @@ internal fun StyleHome(
         HomeLayout.STACKS -> vcTrace("VC:CaseStacks") { StyleCaseStacks(c, modifier) }
         HomeLayout.TIMELINE -> StyleTimeline(c, modifier)
         HomeLayout.ARCADE -> StyleArcade(c, modifier)
-        HomeLayout.CONSOLES -> StyleConsoleStack(c, modifier)
+        HomeLayout.CONSOLES -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleConsoleStack(c, modifier) }
         // Update 147.
         HomeLayout.DISCS -> StyleDiscStation(c, modifier)
         // Update 158.
@@ -1374,9 +1374,9 @@ internal fun StyleHome(
         // Update 307 (TwinShowcase.kt).
         HomeLayout.TWIN_SHOWCASE -> StyleTwinShowcase(c, modifier)
         // Update 158: Record crate (StyleRecordCrate.kt).
-        HomeLayout.CRATE -> StyleRecordCrate(c, modifier)
+        HomeLayout.CRATE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleRecordCrate(c, modifier) }
         // Update 158: Card binder (StyleCardBinder.kt).
-        HomeLayout.CARDS -> StyleCardBinder(c, modifier)
+        HomeLayout.CARDS -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCardBinder(c, modifier) }
         // Update 176: a layout made by anyone (StyleCustom.kt).
         HomeLayout.CUSTOM -> StyleCustom(c, modifier)
         // Update 181: the Pocket layouts (PocketClassic.kt, PocketRibbon.kt).
@@ -1387,14 +1387,15 @@ internal fun StyleHome(
         // Update 202: Pocket Quest (StylePocketQuest.kt).
         HomeLayout.POCKET -> StylePocketQuest(c, modifier)
         // (Update 239, #93: Cube menu, StyleCube.kt.)
-        HomeLayout.CUBE -> StyleCube(c, modifier)
+        // (529s: these two fly the picked picture itself into their window - LocalPickupSnapshot.)
+        HomeLayout.CUBE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCube(c, modifier) }
         // Update 330: Memory card (StyleMemoryCard.kt).
         HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
         // Update 330: Case flow (StyleCaseFlow.kt).
         HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
         // Update 330, phase 2 (StyleCardboardBox.kt, StyleStorageBoxes.kt, StyleFileSelect.kt).
         HomeLayout.BOX -> StyleCardboardBox(c, modifier)
-        HomeLayout.STORAGE -> StyleStorageBoxes(c, modifier)
+        HomeLayout.STORAGE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleStorageBoxes(c, modifier) }
         HomeLayout.FILESELECT -> StyleFileSelect(c, modifier)
         // Update 330, phase 3 (StyleOrbitDeck.kt, StyleAiryHome.kt, StyleNightMenu.kt).
         HomeLayout.ORBIT -> StyleOrbitDeck(c, modifier)

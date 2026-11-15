@@ -36,11 +36,20 @@ internal object BakedBlur {
     private const val SIDE = 96
 
     /**
-     * Update 130: how big the small copy is for a [blur] over a screen whose long side is [screenDp]: one small pixel is
-     * at most about a third of the blur, so the stretched copy never shows blocks (a light blur was a few pixels
-     * blurred by one, stretched 15–20 times: visibly blocky). Between 96 and 480 px on its long side.
+     * Update 130: how big the small copy is for a [blur] over a screen whose long side is [screenDp].
+     * Update 529 (blur hotfix, owner: "pixelated / blocky blur"): measured on the RP Flip 2, a copy 1/8 – 1/20 of the screen
+     * stretched back up leaves a grid of creases every 8 – 20 px (bilinear between far-apart pixels), seen on dark, smooth
+     * gradients as blocks. The copy is now about half the screen's pixels on its long side ([screenPx] / 2, 240 – 960 px), so
+     * the stretch is at most about 2x, where no grid shows; [radiusAt] scales the blur with it, so its strength is unchanged.
+     * (The blur itself is three box passes, linear in the pixels whatever the radius: ~2 MB and a few tens of ms, once.)
      */
-    fun sideFor(blur: Dp, screenDp: Float): Int = (screenDp / (blur.value / 3f).coerceAtLeast(1f)).roundToInt().coerceIn(SIDE, 480)
+    fun sideFor(blur: Dp, screenDp: Float, screenPx: Int = 0): Int =
+        if (screenPx > 0) (screenPx / 2).coerceIn(SIDE_MIN, SIDE_MAX)
+        else (screenDp / (blur.value / 3f).coerceAtLeast(1f)).roundToInt().coerceIn(SIDE, 480)
+
+    /** Update 529: the half-resolution copy's bounds (long side, px). */
+    const val SIDE_MIN = 240
+    const val SIDE_MAX = 960
 
     /** The radius at that size: the blur's own strength in small pixels, at least 3 (a smooth, round blur). */
     fun radiusAt(blur: Dp, side: Int, screenDp: Float): Int =
@@ -61,7 +70,7 @@ internal object BakedBlur {
 internal fun rememberBakedBlur(src: Bitmap?, blur: Dp, keepLast: Boolean = true): ImageBitmap? {
     // (Update 130: sized by the blur and the screen, so it's never blocky — see BakedBlur.sideFor.)
     val screenDp = screenLongDp()
-    val side = BakedBlur.sideFor(blur, screenDp)
+    val side = BakedBlur.sideFor(blur, screenDp, screenLongPx())
     val r = BakedBlur.radiusAt(blur, side, screenDp)
     // Update 151: the blurred copy is kept with the picture it was made from, so a slot moving on to another picture never
     // shows the previous one's blur for a moment (produceState keeps its last value across key changes).
@@ -73,6 +82,10 @@ internal fun rememberBakedBlur(src: Bitmap?, blur: Dp, keepLast: Boolean = true)
     // never leaves an empty, dark gap behind; a small icon's glow passes keepLast = false.)
     return if (st.first === src || (keepLast && src != null)) st.second else null
 }
+
+/** Update 529: the screen's long side in pixels (the blurred copies are made at about half of it). */
+@Composable
+private fun screenLongPx(): Int = (screenLongDp() * androidx.compose.ui.platform.LocalDensity.current.density).roundToInt()
 
 /** The screen's long side in dp (for the blurred copies' size). */
 @Composable
@@ -94,7 +107,7 @@ internal fun BakedBlurImage(model: Any?, blur: Dp, modifier: Modifier, alpha: Fl
     val ctx = LocalContext.current
     // Update 130: decoded as big as the blur needs (it was always 64 px, and a light blur showed the blocks).
     val screenDp = screenLongDp()
-    val side = BakedBlur.sideFor(blur, screenDp)
+    val side = BakedBlur.sideFor(blur, screenDp, screenLongPx())
     val r = BakedBlur.radiusAt(blur, side, screenDp)
     // The short side of a screen-shaped copy: Fill makes the picture cover side × that.
     val short = (side * 9 / 16).coerceAtLeast(48)

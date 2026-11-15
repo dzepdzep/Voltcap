@@ -361,8 +361,10 @@ object AppUpdates {
     }
 
     /** Whether Android lets Voltcap install apps (Android 8+ asks once, in its own settings screen). */
+    // 529i: the QA app has no install permission (qa manifest removes it), and Android throws here without it — the
+    // update question crashed the QA app on KONKR (dropbox 2026-11-11/12). No permission simply means "can't install".
     fun canInstall(c: Context): Boolean =
-        android.os.Build.VERSION.SDK_INT < 26 || c.packageManager.canRequestPackageInstalls()
+        android.os.Build.VERSION.SDK_INT < 26 || runCatching { c.packageManager.canRequestPackageInstalls() }.getOrDefault(false)
 
     /** Android's screen to allow installs from Voltcap. */
     fun allowInstalls(c: Context) {

@@ -9,6 +9,11 @@ layout x popup style in SEPARATE categories — a popup is PASS only when every 
   buttons   a TAP on More (where there is one) changed the controls, a TAP (touch) on the
             Details action changed the page (a different set of controls), and a TAP on Play asked for the launch (blocked,
             <n>_play.txt); no Details action and no Play tap = NOT TESTED
+  hierarchy (update 529) the main step's own actions: Play / Continue is the first action (reading order) and not smaller than
+            Details (FAIL otherwise); notes say whether More is a round key and whether Back is a hint off the action row
+  shoulders (POP_EXTRA runs) R1 on the open window walks to another page where the layout has its own pages (Tiles, Grid,
+            Storage, Night, Blades: FAIL if nothing changed); elsewhere a note (no L1 / R1 pages by design). NOT TESTED without the step
+  rapid     (POP_EXTRA runs) A B A B at 250 ms started no game and left the home as it was (no window action after)
   settle    the steps were captured after their animation settled and the closed step left no popup action behind
             (frame-by-frame animation is NOT covered here — reported as such)
 
@@ -26,10 +31,11 @@ import geomcheck
 import readcheck
 import glyphcheck
 
-STEPS = ("home", "main", "more", "page", "closed")
+STEPS = ("home", "main", "more", "page", "closed", "r1", "l1", "after")
+NATIVE_LAYOUTS = ("TILES", "GRID", "STORAGE", "NIGHT", "BLADES")
 NOSHOTS = "--steps-without-shots" in sys.argv
 ROW = ("ROW_OPENS", "ROW_REVEAL", "SHARED")
-CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability", "glyphs")
+CATS = ("open", "geometry", "visual", "focus", "buttons", "settle", "readability", "glyphs", "hierarchy", "shoulders", "rapid")
 ACT = geomcheck.PLAY_RE  # the window's Play / Continue in every layout's own word
 
 
@@ -91,6 +97,78 @@ def _play_on_second_screen(dd):
         if any(x.get("kind") == "control" and re.search(r"(^|[^A-Za-z])(Play|Continue)$", x.get("label") or "") for x in w.get("nodes") or []):
             return True
     return False
+
+
+DET_RE = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in geomcheck.DETAILS_WORDS) + r")$")
+BACK_RE = re.compile(r"(?i)^(" + "|".join(re.escape(w) for w in geomcheck.BACK_WORDS) + r")$")
+
+
+MORE_RE = re.compile(r"(?i)(^more$|^less$|\u22ef|\u2022\u2022\u2022)")
+
+
+def after_more(ctl, more, tol):
+    """A control drawn beside More after it - on its row (centres within [tol]) and to its right - or None. Back is left out (a
+    hint off the row). Pure."""
+    mb = more[1]
+    mc = mb[1] + mb[3] / 2
+    right = [(l, b) for l, b in ctl if (l, b) != more and not BACK_RE.match(l) and abs((b[1] + b[3] / 2) - mc) <= tol
+             and b[0] >= mb[0] + mb[2] - 2]
+    return min(right, key=lambda lb: lb[1][0]) if right else None
+
+
+def page_tabs(acts, pb, tol):
+    """Controls (any, not only action words) wholly above Play's line that form one row of at least three (a page-tab strip),
+    else []. Pure."""
+    above = [(l, b) for l, b in acts if b[1] + b[3] <= pb[1] + 2]
+    rows = {}
+    for l, b in above: rows.setdefault((b[1] + b[3] // 2) // max(1, tol), []).append((l, b))
+    strip = max(rows.values(), key=len) if rows else []
+    return strip if len(strip) >= 3 else []
+
+
+def hierarchy(main, home):
+    """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
+    home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
+    Back off the action row (a hint). Returns (status, reason)."""
+    hk = {geomcheck._key(x) for w in (home or {}).get("windows") or [] for x in w.get("nodes") or []}
+    wins = (main or {}).get("windows") or []
+    if any(w.get("focus") for w in wins): wins = [w for w in wins if w.get("focus")]
+    ctl = [(re.sub(r"^[ABXY]\s+", "", geomcheck._label(x)), x.get("shown") or x.get("full") or [])
+           for w in wins for x in w.get("nodes") or [] if x.get("kind") == "control" and geomcheck._key(x) not in hk]
+    ctl = [(l, b) for l, b in ctl if len(b) == 4 and b[2] > 0 and b[3] > 0]
+    play = [(l, b) for l, b in ctl if ACT.match(l)]
+    if not play: return (qalib.FAIL, "no Play / Continue among the window's own controls")
+    pl, pb = play[0]
+    acts = [(l, b) for l, b in ctl if geomcheck._is_action({"label": l})]
+    tol = max(8, pb[3] // 2)
+    probs, notes = [], []
+    # (Update 529c: a strip of page tabs above the actions - Storage boxes' approved record layout: INFO / DETAILS / ACHIEVEMENTS /
+    # OPTIONS over the PLAY line - is navigation between pages, not an action placed before Play (mlast529 / 529c false FAIL).)
+    tabs = page_tabs(ctl, pb, tol)
+    if tabs: notes.append("page tabs above the actions (" + ", ".join(l for l, _ in tabs) + ")")
+    first = min([a for a in acts if a not in tabs] or acts, key=lambda lb: (lb[1][1] // tol, lb[1][0]))
+    if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
+    det = [(l, b) for l, b in ctl if DET_RE.match(l)]
+    if det:
+        # (A key's width follows its word - "Turn over" is wider than "Play" on the Game shelf (f529a): only a Play drawn
+        # lower than Details, or at most 60 % of its area, is a demoted Play.)
+        db = det[0][1]
+        da, pa = db[2] * db[3], pb[2] * pb[3]
+        if pb[3] < 0.9 * db[3] or pa < 0.6 * da: probs.append(f"{pl} ({pb[2]}x{pb[3]}) smaller than {det[0][0]} ({db[2]}x{db[3]})")
+        else: notes.append(f"{pl} {pb[2]}x{pb[3]} >= {det[0][0]} {det[0][1][2]}x{det[0][1][3]}")
+    more = [(l, b) for l, b in ctl if MORE_RE.search(l)]
+    if more:
+        r = more[0][1][2] / max(1, more[0][1][3])
+        notes.append("More round" if 0.7 <= r <= 1.45 else f"More not round ({more[0][1][2]}x{more[0][1][3]})")
+        # (Owner, 13 Nov: "on every pop-up, the last thing that's shown from the options should be the 3 dots, not anything else
+        # beside it." Reading order of the actions, Back left out - it is a hint off the row.)
+        last = after_more(ctl, more[0], tol)
+        if last: probs.append(f"'{last[0]}' comes after More")
+    back = [(l, b) for l, b in ctl if BACK_RE.match(l)]
+    if back:
+        bb = back[0][1]
+        notes.append("Back is a hint off the action row" if abs((bb[1] + bb[3] / 2) - (pb[1] + pb[3] / 2)) > pb[3] or bb[3] < 0.75 * pb[3] else "Back sits in the action row")
+    return (qalib.FAIL, "; ".join(probs + notes)[:400]) if probs else (qalib.PASS, "; ".join(notes) or "Play first")
 
 
 def grade(run, n):
@@ -207,6 +285,27 @@ def grade(run, n):
     foc = [geomcheck._label(x) for w in d["main"].get("windows") or [] for x in w.get("nodes") or [] if x.get("focused")]
     # (The home screen's game can stay focused under a popup drawn in the same window; the popup's own focus is what counts.)
     act = [x for x in foc if ACT.match(x)]
+    out["hierarchy"] = hierarchy(d["main"], d["home"])
+    lay = n.rsplit("_", 1)[0] if n.rsplit("_", 1)[-1] in ("OWN", "BANNER", "CLASSIC") else next((n[:-len(s_) - 1] for s_ in ROW if n.endswith("_" + s_)), n)
+    sty = n[len(lay) + 1:]
+    if d["r1"] is None:
+        out["shoulders"] = (qalib.NOT_TESTED, "no R1 step (run without POP_EXTRA)")
+    else:
+        w = lambda dd: sorted(geomcheck._label(x) for ww in (dd or {}).get("windows") or [] for x in ww.get("nodes") or [])
+        moved = w(d["r1"]) != w(d["main"])
+        if lay in NATIVE_LAYOUTS and sty == "OWN":
+            out["shoulders"] = (qalib.PASS, "R1 walks to another page") if moved else (qalib.FAIL, "R1 changed nothing on a window with its own pages")
+        else:
+            out["shoulders"] = (qalib.PASS, "R1 walks to another page" if moved else "no L1 / R1 pages here (shared pages: by design)")
+    rp = os.path.join(run, f"{n}_rapid.txt")
+    if not os.path.exists(rp) or d["after"] is None:
+        out["rapid"] = (qalib.NOT_TESTED, "no rapid A B A B step (run without POP_EXTRA)")
+    else:
+        m = re.search(r"rapid_launch=(\d+)", open(rp, encoding="utf-8").read())
+        left = f"{n} rapid A B A B left a window open" in loglines
+        bad = (["started " + m.group(1) + " launch(es)"] if m and int(m.group(1)) > 0 else []) + (["a window stayed open"] if left else []) + \
+              (["a window action left on the home"] if len(acts(d["after"])) > len(home_act) else [])
+        out["rapid"] = (qalib.FAIL, "; ".join(bad)) if bad else (qalib.PASS, "A B A B at 250 ms: no launch, home as before")
     out["focus"] = (qalib.PASS, f"focus on {act[0]}") if act else \
         (qalib.FAIL, f"no window action has the controller focus (focused: {', '.join(foc) or 'nothing'})")
     more_l = labels(d["more"]) if d["more"] else None
@@ -295,7 +394,7 @@ def main():
         rows.append((n, overall, g))
         results.append(qalib.Result(n, overall, "; ".join(f"{k}={v[0]}" for k, v in g.items() if v[0] != qalib.PASS) or "all categories PASS"))
     if "--md" in sys.argv:
-        cats = ("open", "geometry", "visual", "focus", "buttons", "settle", "glyphs")
+        cats = ("open", "geometry", "visual", "focus", "buttons", "settle", "glyphs", "readability", "hierarchy", "shoulders", "rapid")
         with open(sys.argv[sys.argv.index("--md") + 1], "w", encoding="utf-8") as fh:
             fh.write("| layout_style | overall | " + " | ".join(cats) + " |\n|" + "---|" * (len(cats) + 2) + "\n")
             for n, ov, g in rows:

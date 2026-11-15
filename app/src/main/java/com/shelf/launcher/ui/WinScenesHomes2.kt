@@ -400,9 +400,10 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
             Spacer(Modifier.height(8.dp))
             SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
             Spacer(Modifier.weight(0.01f))
-            KeyRow(sceneKeys(ctx)) { k ->
-                SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
-                    Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp)
+            // (529p, owner #15 pattern: the keys as pills that span the card in whole-word rows - PageBars - Play still the filled one.)
+            PageBars(sceneKeys(ctx), 6.dp) { k ->
+                SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
+                    Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp, primaryStyled = true, lineHeight = 15.sp, wide = true)
             }
         }
     }

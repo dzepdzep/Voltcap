@@ -1,0 +1,60 @@
+{
+ "_about": "529j: hand-kept facts for the overhaul table (layout_matrix.py). physical = what the home shows as a physical game object (needs a real pickup / return); konkr = KONKR GT78 (960x640, 240 dpi) popup evidence; owner_visual = the owner's visual approval (none yet).",
+ "physical": {
+  "SHELF": "cases on a shelf",
+  "STACKS": "case stacks",
+  "CONSOLES": "cases in console bays",
+  "DISCS": "discs in a disc station",
+  "CRATE": "record sleeves",
+  "CARDS": "cards in a binder",
+  "CASEFLOW": "cases",
+  "BOX": "cases in a cardboard box",
+  "STORAGE": "game boxes",
+  "COVERDETAILS": "cases",
+  "ORBIT": "discs on an orbit",
+  "SHOP": "rental cases",
+  "CUBE": "cartridges / discs",
+  "TV": "cases beside the TV"
+ },
+ "konkr": {
+  "CLASSIC": "PASS x1.0 (q0672k2, 13 Nov)",
+  "SPOT": "PASS x1.0 (q0672k2)",
+  "SHELF": "PASS x1.0 (q0672k2; native pages k529k1); PASS x1.3 (k529k2); 529r x1.3 pages: first achievement whole (sp529s13)",
+  "TILES": "PASS x1.0 (q0672k2); 529r x1.3 pages: first achievement whole (sp529t13) - x1.3 popup gate NOT RUN",
+  "CHAN": "PASS x1.0 (q0672k2)",
+  "STORAGE": "PASS x1.0 (q0672k2); 529r x1.3 pages: first achievement whole, keys on the name line (sp529t13) - x1.3 popup gate NOT RUN",
+  "NIGHT": "PASS x1.0 (q0672k2); Night Full motion p90 28 ms (q0672km)",
+  "DASH": "PASS x1.0 (q0672k2)",
+  "RESUME": "PASS x1.0 (q0672k2)",
+  "AIRY": "FAIL readability x1.0 (q0672k2, q0672k3) - fixed in code ff043d51, rerun pending",
+  "STACKS": "PASS x1.0 (k529k1); PASS x1.3 (k529k2); 529r x1.3 pages: first achievement whole (sp529s13)",
+  "CONSOLES": "PASS x1.0 (k529k1); x1.3 FAIL More open (k529k2) - fixed c1bde53c, PASS x1.3 (k529k3); 529r x1.3 pages: first achievement whole (sp529s13 / sp529t13)",
+  "COVERDETAILS": "PASS x1.3 + x1.0 pages (529r/529s, sp529s13 / sp529r10 / sp529t10: first achievement whole, bars, scroll bar), touch -> R1 / no launch / single B (tf529d); action panel 529m (k529m1 / k529m2). Owner review of 529p evidence pending",
+  "TWIN_DESK": "PARTIAL: x1.3 pages first achievement whole + bars (sp529t13), x1.0 / x1.3 pages (sp529q4 / sp529q4b) - popup gate NOT RUN, single-screen KONKR only"
+ },
+ "owner_visual": {},
+ "ach_first_row": {
+  "_about": "529r owner P0: AchFirstRowRoboTest (Robolectric, app theme, 640x427 dp = KONKR, x1.0 + real x1.3 font=1.3,density=1.15; 1 / 12 / 40 achievements) at 1450b569 / c8c3c18f - the first achievement row whole when the Achievements page opens. JVM rendering, not hardware.",
+  "_all": "PASS x1.3 (n=12); native-page layouts also n=1 / 40 at x1.0 + x1.3",
+  "AIRY": "NOT TESTED - the test did not reach an Achievements page (Assume skip)",
+  "CASEFLOW": "NOT TESTED - the test did not reach an Achievements page (Assume skip)",
+  "CROSS": "n/a - achievements are the Cross menu's own column"
+ },
+ "motion": {
+  "_about": "529p+: motion evidence per layout (frames from KONKR recordings unless noted). Sampled frames do not prove continuous motion or GPU pacing.",
+  "SHELF": "Info -> Details card rise ~280-300 ms, 15-18 frames (529m frames_shelf_info_to_details_x13); Motion Off <= 2 frames",
+  "STACKS": "Info -> Details card rise (529m page walk, frames)",
+  "CONSOLES": "529t pickup (KONKR pk529t7 x1.0): the card leaves the hand for the module bay as it unfolds; even 16 ms frames after one 84 ms window-start frame (flat unfold). x1.3 NOT TESTED. Owner visual: not yet.",
+  "COVERDETAILS": "By design the big case stays where it is and the panel opens beside it (approved earlier). Owner to confirm.",
+  "SETTINGS_STRIP": "category strip legacy POP -> glide (cs529p chipglide.py), chip clipped at the span edge (cs529q); RP Classic NOT TESTED",
+  "STORAGE": "529s pickup (KONKR pk529s15, x1.0 + x1.3): the sprite leaves its slot (slot left empty, shadow gone), flies on an arc onto the record stand as the record switches on, and hops back into the same slot on B; one sprite in every frame examined (frame sheets docs/qa-evidence/529s/storage_*). Owner visual: not yet.",
+  "CUBE": "529s pickup (KONKR pk529s16, Hub x1.0 / Classic x1.3): the picked card leaves the row as drawn (frame + badge), becomes the cover on the way into the turning face's inset, and goes back the same way on B; no double in the frames examined after the same-frame hide (pk529s14/15 showed one frame of two copies - fixed). ~80 ms stalls on the face's first frames remain (start waits them out). Owner visual: not yet.",
+  "TV": "529s pickup (KONKR pk529s15, x1.0 + x1.3): the case leaves the games, travels to the set, flattens into the switch-on line and the picture opens out of it; B: picture back into the line, case out of it and home to its slot. Owner visual: not yet.",
+  "CRATE": "529t pickup (Flip 2 pkf529v, x1.0 + x1.3): the sleeve rises out of the crate as drawn, comes forward, turns edge-on at its place and its back (the window) turns in; B reverses it into the crate. Before/after frames docs/qa-evidence/529s/crate_flip2_*. KONKR pk529t1 x1.0 + x1.3 run. Owner visual: not yet.",
+  "CARDS": "529t pickup (KONKR pk529t1, x1.0 + x1.3): the whole card lifts out of its pocket, turns edge-on at its place and its stats side (the window) turns in; B reverses. A first build flew only the picture and left the card frame behind (Flip 2 pkf529w) - fixed (the origin is the whole card). Owner visual: not yet.",
+  "BOX": "Case pulled out of the box (existing); 529t: its resting copy no longer stays in the slot (KONKR pk529t5/t6). Owner visual: not yet.",
+  "DISCS": "By design the disc stays in the deck and the panel opens beside it (KONKR pk529t3 screenshot). Owner to confirm.",
+  "CASEFLOW": "OPEN: the window grows out of the case; the case itself does not travel yet (KONKR pk529t3).",
+  "SHOP": "OPEN: the tag comes up over the shelf; the case stays on the shelf (KONKR pk529t3). Design decision pending."
+ }
+}

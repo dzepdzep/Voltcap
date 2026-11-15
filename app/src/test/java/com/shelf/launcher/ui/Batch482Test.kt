@@ -16,7 +16,7 @@ import java.io.File
 class Batch482Test {
     private fun src(name: String): String = listOf(
         File("../src_copy/ui/$name"), File("src/main/java/com/shelf/launcher/ui/$name"), File("app/src/main/java/com/shelf/launcher/ui/$name"),
-    ).first { it.exists() }.readText()
+    ).first { it.exists() }.readText().replace("\r\n", "\n")
 
     // C1: the bright red / amber were ~2:1 on Plain light or Mint; a light surface gets the deeper tone.
     @Test fun statusTonesFollowTheSurface() {

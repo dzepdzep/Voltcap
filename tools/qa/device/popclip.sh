@@ -106,10 +106,11 @@ for lay in $LAYS; do
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
-    if grep -qiE '"label":"[^"]*(More|⋯)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
+    # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
+    if grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
-      if tapat "(More|⋯)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
+      if tapat "(More|⋯|•••)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.
@@ -126,6 +127,19 @@ for lay in $LAYS; do
     # Controller: B closes the popup.
     up && k BUTTON_B 1.4; up && { k BUTTON_B 1.4; echo "$n needed a second B to close" >> $OUT/log.txt; }
     shot ${n}_closed
+    # (Update 529, master sprint Phase 4, POP_EXTRA=1: the shoulder buttons and rapid presses on every combination.
+    # L1 / R1 on the open window walk its pages where it has them (r1 / l1 steps); then A B A B at 250 ms must start nothing and
+    # leave the home as it was (rapid.txt, after step). Launches stay blocked; B is pressed only while a window is up.)
+    if [ -n "$POP_EXTRA" ]; then
+      k BUTTON_A 1.6
+      if up; then k BUTTON_R1 1.1; shot ${n}_r1; k BUTTON_L1 1.1; shot ${n}_l1; k BUTTON_B 1.0; up && k BUTTON_B 1.2; up && k BUTTON_B 1.2
+      else echo "$n extra: A opened nothing" >> $OUT/log.txt; fi
+      logcat -c
+      for i in 1 2; do fg; input keyevent KEYCODE_BUTTON_A; sleep 0.25; fg; input keyevent KEYCODE_BUTTON_B; sleep 0.25; done; sleep 1.6
+      echo "rapid_launch=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" > $OUT/${n}_rapid.txt
+      up && { echo "$n rapid A B A B left a window open" >> $OUT/log.txt; k BUTTON_B 1.2; }
+      shot ${n}_after
+    fi
     echo "$n done" >> $OUT/log.txt
   done
   # (Once per layout — dumpsys is slow on the Odin: a game must never have started.)

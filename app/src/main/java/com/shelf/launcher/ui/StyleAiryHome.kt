@@ -239,7 +239,8 @@ private fun AiryTile(c: StyleCtx, g: Game, on: Boolean, lit: Float, accent: Colo
     ) {
         if (cover != null) AsyncImage(rememberStyleArtRequest(cover, trim = true), g.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
-        else StyleNamePlate(LocalTitleOptions.current.display(g.name))
+        // (D298, update 529c: the name of a game without art is drawn in Airy's own dark ink - white on the white mount was invisible.)
+        else StyleNamePlate(LocalTitleOptions.current.display(g.name), color = Color(0xFF1C3150))
         // A soft gloss.
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.22f), Color.Transparent, Color.Transparent))))
     }

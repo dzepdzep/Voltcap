@@ -241,7 +241,8 @@ class Batch523xFlipTest {
     private fun src(f: String) = java.io.File("src/main/java/com/shelf/launcher/ui/$f").readText()
     @Test fun backHintStandsUnderTheScene() {
         val g = src("GameWindow.kt")
-        assertTrue(g.contains("maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH"))
+        // (529m: a layout with its own pages keeps the hint and its room on every page - no jump at Info -> Details.)
+        assertTrue(g.contains("maxH = if (labActions && (page == WinPage.MAIN || nativePages(scene))) maxH - BACK_HINT_ROOM else maxH"))
         assertTrue(!g.contains("LabBackHint(onClose, Modifier.align(Alignment.BottomEnd)"))
     }
     @Test fun bannerFactsComeBeforeTheStory() {

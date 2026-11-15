@@ -53,6 +53,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -197,9 +198,11 @@ private fun inkOn(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else 
 // ───────────────────────────── Game shelf: the case comes off the shelf ─────────────────────────────
 
 /** Update 507: Game shelf / Case stacks lay the window out round the case: (case width dp, window width dp). Pure. */
-internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float): Pair<Float, Float> {
+internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float, bigText: Boolean = false): Pair<Float, Float> {
     val compact = maxH < 380f || maxW < 560f
-    val caseH = minOf(maxH * (if (compact) 0.6f else 0.7f), 340f)
+    // (529r, owner P0 - ×1.3: with large text on a compact window the case stands a little smaller (52 % of the height, the
+    // same on every page - it never jumps), so the card beside it has the width its words need.)
+    val caseH = minOf(maxH * (if (compact && bigText) 0.52f else if (compact) 0.6f else 0.7f), 340f)
     val caseW = minOf(caseH * aspect, maxW * 0.3f).coerceAtLeast(64f)
     return caseW to minOf(maxW, 900f)
 }
@@ -208,7 +211,7 @@ internal fun caseWindowGeometry(maxW: Float, maxH: Float, aspect: Float): Pair<F
 internal fun GameShelfWindow(ctx: WinSceneCtx) {
     val a = ctx.accent; val cream = Color(0xFFF1E6D3); val label = Color(0xFFC9A57A)
     val aspect = sceneCaseAspect(ctx.g.platform)
-    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect)
+    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect, bigPageText())
     val caseW = caseWv.dp
     Row(Modifier.width(totalWv.dp).heightIn(max = ctx.maxH), verticalAlignment = Alignment.CenterVertically) {
         // The case, taken off the shelf, standing on a ledge of the same wood. (Beside an inspected piece — Inspect — the piece
@@ -242,7 +245,17 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
         }.border(1.dp, Color(0xFF6B5039).copy(alpha = 0.7f), RoundedCornerShape(6.dp))) {
             // The shelf's lip.
             Box(Modifier.fillMaxWidth().height(6.dp).background(Brush.verticalGradient(listOf(Color(0xFF7A5A3E), Color(0xFF3E2E21)))))
-            Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp)) {
+            // (529k: Details / Achievements / Options are further cards of this shelf - ShelfFamilyPages.)
+            val shelfKey: @Composable (WinAction) -> Unit = { k ->
+                SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
+            }
+            ShelfFamilyPages(ctx, Modifier.padding(start = 14.dp, end = 14.dp, top = if (bigPageText()) 8.dp else 10.dp, bottom = if (bigPageText()) 10.dp else 14.dp), Color(0xFFE6C891), cream,
+                Color.Black.copy(alpha = 0.22f), { k ->
+                    // (529o: the pages' keys as full-width bars of the shelf's own wood - PageBars.)
+                    SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp, lineHeight = 15.sp, wide = true)
+                },
+                // (529r, owner P0: with large text the pages take the shelf's whole height - lip 6 + padding 10 / 14 - not 86 % of it.)
+                pageHeight = if (bigPageText()) (ctx.maxH - 24.dp).coerceAtLeast(200.dp) else shelfPageHeight(ctx.maxH)) { live, keys ->
                 // The console on the shelf's brass label holder.
                 Text(ctx.console.uppercase(), color = Color(0xFF2A1E12), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                     modifier = Modifier.clip(RoundedCornerShape(2.dp)).background(Brush.verticalGradient(listOf(Color(0xFFE6C891), Color(0xFFB08A50))))
@@ -252,9 +265,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(8.dp))
                 Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, label, cream, null, omit = setOf("Console")) }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx), 6.dp) { k ->
-                    SceneKey(k, Color(0xFF3A2D21), a, cream, inkOn(a), Color(0xFF5A4532), a, RoundedCornerShape(4.dp), size = 12.sp)
-                }
+                KeyRow(keys, 6.dp) { k -> shelfKey(k) }
             }
         }
     }
@@ -266,7 +277,7 @@ internal fun GameShelfWindow(ctx: WinSceneCtx) {
 internal fun CaseStackWindow(ctx: WinSceneCtx) {
     val a = ctx.accent; val ink = Color(0xFFEDEAF3); val muted = Color(0xFFA9A2B8)
     val aspect = sceneCaseAspect(ctx.g.platform)
-    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect)
+    val (caseWv, totalWv) = caseWindowGeometry(ctx.maxW.value, ctx.maxH.value, aspect, bigPageText())
     val caseW = caseWv.dp
     val stackShape = RoundedCornerShape(16.dp)
     Row(Modifier.width(totalWv.dp).heightIn(max = ctx.maxH), verticalAlignment = Alignment.CenterVertically) {
@@ -284,15 +295,21 @@ internal fun CaseStackWindow(ctx: WinSceneCtx) {
         }.background(Brush.verticalGradient(listOf(Color(0xFF2C2438), Color(0xFF1A1522))))
             // The case's spine down the card's edge, in the stack's lit colour.
             .drawBehind { drawRect(Brush.verticalGradient(listOf(a, a.copy(alpha = 0.25f))), size = androidx.compose.ui.geometry.Size(5.dp.toPx(), size.height)) }
-            .border(1.dp, Color.White.copy(alpha = 0.08f), stackShape).padding(start = 20.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)) {
-            Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-            Spacer(Modifier.height(2.dp))
-            StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console", "Year")) }
-            Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx), 6.dp) { k ->
+            .border(1.dp, Color.White.copy(alpha = 0.08f), stackShape).padding(start = 20.dp, end = 16.dp, top = if (bigPageText()) 10.dp else 14.dp, bottom = if (bigPageText()) 10.dp else 14.dp)) {
+            // (529k: Details / Achievements / Options are further cards of the stack - ShelfFamilyPages.)
+            val stackKey: @Composable (WinAction) -> Unit = { k ->
                 SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp)
+            }
+            ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), { k ->
+                SceneKey(k, Color.White.copy(alpha = 0.06f), a, ink, inkOn(a), Color.White.copy(alpha = 0.14f), a, RoundedCornerShape(50), size = 12.sp, lineHeight = 15.sp, wide = true)
+            }, pageHeight = if (bigPageText()) (ctx.maxH - 20.dp).coerceAtLeast(200.dp) else shelfPageHeight(ctx.maxH)) { live, keys -> // (529r: the card's whole height)
+                Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                Spacer(Modifier.height(2.dp))
+                StableFullText(ctx.name, color = ink, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
+                Spacer(Modifier.height(8.dp))
+                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, null, omit = setOf("Console", "Year")) }
+                Spacer(Modifier.height(8.dp))
+                KeyRow(keys, 6.dp) { k -> stackKey(k) }
             }
         }
     }
@@ -365,6 +382,7 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
             // Popup motion work (Tiles, owner-approved direction): the card's writing turns over like a tile for each page - the
             // old side turns away, the new one turns in, right to left going forward, left to right going back - while the lifted
             // tile and the card stay. Details / Achievements / Options are the card's own pages (no other design).
+            val tileKeys = rememberPageKeys(ctx)
             androidx.compose.animation.AnimatedContent(
                 targetState = ctx.page,
                 transitionSpec = {
@@ -392,17 +410,22 @@ internal fun TileLiftCard(ctx: WinSceneCtx) {
                     alpha = if (kotlin.math.abs(turn) >= 89.5f) 0f else 1f
                     flatTextFor3d()
                 }) {
+                    // (529m: the side that is turning away draws its own page and keys - LocalShownPage, rememberPageKeys.)
+                    androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
                     if (p == WinPage.MAIN) {
                         StableFullText(ctx.name, color = ink, fontSize = (20f * type).sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                         Text(ctx.console, color = a, fontSize = (12f * type).sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(8.dp))
                         Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, muted, ink, upperLabels = false, omit = setOf("Console"), scale = type) }
                         Spacer(Modifier.height(10.dp))
-                        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+                        KeyRow(tileKeys(p, live), 6.dp) { k ->
                             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
                         }
-                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact, (ctx.maxH * 0.86f - lift).coerceAtLeast(tileH))
+                    } else TileLiftPage(ctx, p, live, ink, muted, a, type, compact,
+                        // (529r, owner P0: with large text the page side takes more of the window - 92 % - for its list)
+                        (ctx.maxH * (if (bigPageText()) 0.98f else 0.86f) - lift).coerceAtLeast(tileH), tileKeys(p, live))
+                    }
                 }
             }
         }
@@ -428,18 +451,27 @@ internal val TILE_TABS = listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.TROPHIES,
  * in a soft tile of the card's ground, the page's keys as the card's round keys. Taller than Info so the page has room.
  */
 @Composable
-private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp) {
+private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color, muted: Color, a: Color, type: Float, compact: Boolean, height: Dp,
+    keys: List<WinAction> = sceneKeys(ctx).map { if (live) it else it.inert() }) {
     Column(Modifier.height(height)) {
-        Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
-        StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(8.dp)) {
-            ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        // (529r, owner P0 - ×1.3: with large text the page's name and the game's share one heading, as on the shelf cards.)
+        val big = bigPageText()
+        if (big) PageHeading(winPageTitle(p), ctx.name, a, ink, pageSize = (13f * type).sp, nameSize = (17f * type).sp, caps = false)
+        else {
+            Text(winPageTitle(p), color = a, fontSize = (13f * type).sp, fontWeight = FontWeight.Bold)
+            StableFullText(ctx.name, color = ink, fontSize = (17f * type).sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
         }
-        Spacer(Modifier.height(10.dp))
-        KeyRow(sceneKeys(ctx).map { if (live) it else it.inert() }, 6.dp) { k ->
+        Spacer(Modifier.height(if (big) 4.dp else 8.dp))
+        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(if (big) 6.dp else 8.dp)) {
+            // (529r: with large text the page draws as the card's own native page - the heading names it, no second margin.)
+            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
+                ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+        }
+        Spacer(Modifier.height(if (big) 8.dp else 10.dp))
+        KeyRow(keys, 6.dp) { k ->
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
-                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = 36.dp)
+                ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = if (big) 32.dp else 36.dp)
         }
     }
 }
@@ -457,9 +489,12 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
     val pal = rememberCardPalette(ctx.cover, if (ctx.total > 0) ctx.earned to ctx.total else null, ctx.g)
     val face = Color(0xFFF7F3EA); val ink = Color(0xFF1E1A14)
     val cardShape = RoundedCornerShape(14.dp)
-    Box(Modifier.width(w).heightIn(max = h), contentAlignment = Alignment.Center) {
+    // (529t, owner P3: with a pickup the binder's own card comes out of its pocket and turns (PickupOverlay); this front isn't
+    // drawn then, and the back turns in from edge-on once the card is here - flipBackTurn.)
+    val pickedUp = LocalSceneOrigin.current != null
+    Box(Modifier.width(w).heightIn(max = h).pickupFlipTarget(pickedUp), contentAlignment = Alignment.Center) {
         // The front, as it sits in the binder, turning away (first half of the turn)…
-        Box(Modifier.matchParentSize().graphicsLayer {
+        if (!pickedUp) Box(Modifier.matchParentSize().graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.5f)
             rotationY = k * 90f
             cameraDistance = 14f * density
@@ -486,10 +521,10 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
         }
         // …and its back, turning in (second half): the stats side of the card.
         Column(Modifier.fillMaxWidth().heightIn(max = h).graphicsLayer {
-            val k = sceneStage(ctx.reveal(), 0.5f, 1f)
-            rotationY = (1f - sceneEase(k)) * -90f
+            val k = if (pickedUp) 1f - flipBackTurn(ctx.reveal()) else sceneStage(ctx.reveal(), 0.5f, 1f)
+            rotationY = if (pickedUp) -90f * flipBackTurn(ctx.reveal()) else (1f - sceneEase(k)) * -90f
             cameraDistance = 14f * density
-            alpha = if (k <= 0.001f) 0f else 1f
+            alpha = if (pickedUp) 1f else if (k <= 0.001f) 0f else 1f
             shape = cardShape; clip = true
             shadowElevation = 16.dp.toPx() * k
             flatTextFor3d()
@@ -535,7 +570,15 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
     val a = lerp(tint, Color.White, 0.25f)
     val faceTop = lerp(tint, Color.Black, 0.38f); val faceBottom = lerp(tint, Color.Black, 0.74f)
     val depth = 22.dp
-    Box(Modifier.size(side + depth, side + depth)) {
+    // 529s (owner P3, physical pickups): the game's picture leaves its place in the row and travels into the face's inset as
+    // the face turns in, and back out into its place as it turns away - one picture (WinSceneStorageFlight.kt PickupTarget / PickupOverlay).
+    val origin = LocalSceneOrigin.current
+    val flight = remember { StorageFlightSlot() }
+    flight.panelAt = with(LocalDensity.current) { Offset(0f, depth.toPx()) }
+    var rootAt by remember { mutableStateOf<Offset?>(null) }
+    val flying = origin != null
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides (if (flying) flight else null)) {
+    Box(Modifier.size(side + depth, side + depth).storageFlightRoot { if (rootAt != it) rootAt = it }) {
         // The cube's top and right faces (its depth), drawn behind the face: it reads as a solid cube, not a card.
         Canvas(Modifier.fillMaxSize().graphicsLayer { alpha = sceneStage(ctx.reveal(), 0.2f, 0.7f) }) {
             val d = depth.toPx(); val s = side.toPx()
@@ -562,17 +605,17 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
             rotationY = (1f - e) * -90f
             transformOrigin = TransformOrigin(0f, 0.5f)
             cameraDistance = 10f * density
-            alpha = if (ctx.reveal() < 0.02f) 0f else 1f
+            alpha = if (ctx.reveal() < 0.02f) (if (flying) PREWARM_ALPHA else 0f) else 1f
             shape = RoundedCornerShape(6.dp); clip = true
             flatTextFor3d()
-        }.background(Brush.linearGradient(listOf(faceTop, faceBottom)))
+        }.then(if (flying) Modifier.onGloballyPositioned { flight.panel = it } else Modifier).background(Brush.linearGradient(listOf(faceTop, faceBottom)))
             // (Update 508: the same light on the front — a soft sheen from its top-left corner.)
             .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent), start = Offset.Zero, end = Offset(260f, 260f)))
             .border(2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.5f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(6.dp)).padding(14.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 // The game on the face as a square inset, whole.
-                Box(Modifier.size(minOf(side * 0.3f, 120.dp)).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
-                    SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), faceBottom)
+                Box(Modifier.size(minOf(side * 0.3f, 120.dp)).storageFlightSlot(true).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
+                    SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }, faceBottom)
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
@@ -587,6 +630,10 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, inkOn(a), Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
             }
         }
+        if (origin != null) PickupTarget(flight, rootAt, uniform = false) {
+            SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)), faceBottom)
+        }
+    }
     }
 }
 

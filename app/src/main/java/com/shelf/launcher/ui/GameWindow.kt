@@ -1,5 +1,7 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.layer.drawLayer
 import kotlinx.coroutines.flow.first
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.animation.AnimatedContent
@@ -79,6 +81,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
@@ -96,6 +100,8 @@ import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.GameArt
 import com.shelf.launcher.data.HomeLayout
 import kotlinx.coroutines.launch
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 /*
  * Update 113: the game window on every layout (it was the Channel grid's only). A or a tap on the game you're on opens
@@ -157,7 +163,13 @@ internal object GameOrigin {
     var displayId: Int = -1
     /** Update 294: when [rect] was last marked (uptime ms). */
     var markedAt = 0L
+    /** 529s: the marked picture as last drawn (layouts that fly their object - [LocalPickupSnapshot]), else null. */
+    var layer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null
 }
+
+/** 529s: the home's picture of the game you're on keeps a copy of itself as drawn ([GameOrigin.layer]) - on in the
+ *  layouts whose window flies that very picture (Storage boxes, Cube menu: PickupFlyer), off elsewhere. */
+internal val LocalPickupSnapshot = androidx.compose.runtime.staticCompositionLocalOf { false }
 
 /**
  * Update 113: the big logo for [g] (Edit Home's logo part, Hero carousel, Spotlight, the second screen's showcase):
@@ -183,6 +195,7 @@ internal val SELF_MOVING_SCENES = setOf(WinScene.CROSS_OPTIONS, WinScene.SIDE_DR
 /** Update 507: how much the home's own case is hidden while its case flies (all of it until it has landed back). Pure. */
 internal fun caseHomeHidden(grow: Float): Float = if (grow > 0.001f) 1f else 0f
 
+
 internal val PICKUP_CARD_LAYOUTS =setOf(HomeLayout.SHELF, HomeLayout.CONSOLES, HomeLayout.CARDS, HomeLayout.CRATE)
 
 /** Marks [key]'s picture as the game you're on ([on]), so the game window can grow out of it. */
@@ -197,12 +210,15 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
     // on) stays.
     if (!on || LocalArtMirror.current) return this
     val view = LocalView.current
+    val snap = if (LocalPickupSnapshot.current) androidx.compose.ui.graphics.rememberGraphicsLayer() else null
     // (Update 325, Toni: "the Game Boy cartridges still have that ghost layer above and a bit on the left" — screenshots
     // of the game window's Inspect / Wobble: it was the game's own card on the home screen behind the window, still drawn
     // where the piece had come out of it, its edges showing past the piece. Only the 3D carousel hid it (MediaInspect);
     // every layout's card for the game you're on fades out now as its piece comes out, and back as it goes in.)
     // (Update 400: the focused-card marker (FocusedCard) fades out too: it is the card the piece / window comes out of.)
-    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = MediaInspect.cardAlpha(MediaInspect.amount.floatValue, MediaInspect.hold.value) }.onGloballyPositioned { c ->
+    return this.graphicsLayer { if (MediaInspect.key == key || (key == GameOrigin.FOCUSED && MediaInspect.key != null)) alpha = MediaInspect.pickupReveal.let { pr -> if (pr != null && pr.value > 0.001f) 0f else MediaInspect.cardAlpha(MediaInspect.amount.floatValue, MediaInspect.hold.value) }
+        // (529s QA: what the home's copy drew while a trip ran - lined up with the flying copy's own lines, pickupfly.)
+        if (QaTrace.on && MediaInspect.pickupReveal != null) QaTrace.event("pickuphome", "a=$alpha r=${MediaInspect.pickupReveal?.value}") }.onGloballyPositioned { c ->
         val r = c.boundsInWindow()
         if (r.width < 4f || r.height < 4f) return@onGloballyPositioned
         val win = c.findRootCoordinates().size
@@ -215,7 +231,12 @@ internal fun Modifier.gameOrigin(key: String, on: Boolean): Modifier {
         GameOrigin.rect = r
         GameOrigin.markedAt = now
         GameOrigin.displayId = runCatching { view.display?.displayId }.getOrNull() ?: -1
-    }
+        GameOrigin.layer = snap
+    }.then(if (snap == null) Modifier else Modifier.drawWithContent {
+        // (529s: drawn through its copy, so the copy is always the picture as you saw it - PickupFlyer flies it.)
+        snap.record { this@drawWithContent.drawContent() }
+        drawLayer(snap)
+    })
 }
 
 /** Update 119: what the game window can show where it has room (Home › Layout options › Game window). */
@@ -1062,6 +1083,8 @@ internal fun GameWindow(
     // Where it grows from: the game's picture on the main screen, else (picked on the second screen) up from the
     // bottom edge, else the middle.
     val view = LocalView.current
+    // (529s: the picture as it was drawn on the home, for PickupFlyer - same game / focused card as [origin].)
+    val originLayer = remember(g.stableKey) { if (GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) GameOrigin.layer else null }
     val origin = remember(g.stableKey) {
         val here = runCatching { view.display?.displayId }.getOrNull() ?: -1
         if ((GameOrigin.key == g.stableKey || GameOrigin.key == GameOrigin.FOCUSED) && GameOrigin.rect != null) {
@@ -1133,13 +1156,33 @@ internal fun GameWindow(
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
-    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup()
+    // (529t: Record crate's sleeve itself comes out and turns over - sleeveFlip, a spriteFlight - instead of a window grown out of it.)
+    // (529t: Card binder's card the same way - out of its pocket, over to its stats side.)
+    val sleeveFlip = ((scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE) || (scene == WinScene.CARD_BACK && layout == HomeLayout.CARDS)) && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    // (529t: Console stack's card goes into the module's bay - consoleFlight, a spriteFlight.)
+    val consoleFlight = scene == WinScene.INDEX_CARD && layout == HomeLayout.CONSOLES && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup() && !sleeveFlip && !consoleFlight
     // Update 507 (owner, P1: "the selected physical case should naturally come forward and return to its original position"):
     // Game shelf and Case stacks fly the case itself out of the home into the window's room and back (SceneFlyingCase); the
     // window is not scaled out of the card, its card slides out beside the case. (Update 508: declared here — the close path
     // times its return too.)
     val caseFlight = scene == WinScene.INDEX_CARD && piece == null && (layout == HomeLayout.SHELF || layout == HomeLayout.STACKS) &&
         origin != null && origin.top != Float.MAX_VALUE && (layoutMotion || cardFlight)
+    // 529s (owner P3, physical pickups): Storage boxes' sprite leaves its slot and hops onto the record's stand, the record
+    // switching on round it, and hops back into the same slot (WinSceneStorageFlight.kt). The window isn't scaled out of the
+    // icon any more; the box's copy is hidden for the whole trip.
+    // (Cube menu, same direction: the game's picture travels into the turning face's inset and back - CubeTurnFace.)
+    val spriteFlight = ((scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion) || sleeveFlip || consoleFlight
+    // (TV room, same direction: the case you picked leaves the games and goes into the set - it slips into the switch-on line
+    // as the picture opens out of it; closing, the picture shrinks back into the line and the case comes out and goes home.
+    // Only with the case's own picture from the home (originLayer); otherwise the set switches on as before.)
+    // (529s: the home's copy is gone from the window's first frame - the flying copy is drawn there from that frame on, at the
+    // home's place, as the home's own picture - until the window has gone again; PickupOverlay, TvCaseFlyer.)
+    var pickupRootAt by remember { mutableStateOf(Offset.Zero) }
+    val tvFlight = tvRect != null && piece == null && origin != null && origin.top != Float.MAX_VALUE && originLayer != null && sysAnims && MotionPrefs.popup()
+    val closedHandOver = remember { booleanArrayOf(false) }
+    if (QaTrace.on) LaunchedEffect(Unit) { android.util.Log.e("VoltcapQA", "pickup layout=$layout scene=$scene sprite=$spriteFlight tv=$tvFlight case=$caseFlight origin=${origin != null} layer=${originLayer != null} anim=$layoutMotion") }
+    if (spriteFlight || tvFlight) DisposableEffect(Unit) { PickupStage.clear(); onDispose { PickupStage.clear(); if (originLayer != null) pickupHandBack() } }
     val close: () -> Unit = {
         // v0.6.66 popup audit (GT78, Case stacks, A B A B at 250 ms): the A while it flew back asked for it to open again
         // (D108), but the B after it fell on the closing window and was lost, so it opened again and stayed open — the next
@@ -1147,11 +1190,15 @@ internal fun GameWindow(
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win close again=${closingFlag[0]}")
         if (closingFlag[0]) GamePopup.reopenRequested = false
         closingFlag[0] = true
-        if (piece == null && (scene != null || cardFlight) && (cardFlight || layoutMotion) && grow.value > 0.05f) {
+        if (piece == null && (((scene != null || cardFlight) && (cardFlight || layoutMotion)) || tvFlight) && grow.value > 0.05f) {
             if (!shrinking) {
                 shrinking = true
                 inspectScope.launch {
-                    grow.animateTo(0f, tween(caseFlightMs(sceneCloseMs(scene), caseFlight, open = false), easing = FastOutSlowInEasing))
+                    grow.animateTo(0f, if (tvFlight) tween(TV_FLIGHT_CLOSE_MS, easing = LinearEasing) else if (sleeveFlip) tween(SLEEVE_FLIP_CLOSE_MS, easing = FastOutSlowInEasing) else tween(pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false), easing = FastOutSlowInEasing)) { if ((spriteFlight || tvFlight) && originLayer != null) pickupFrame(maxOf(value, 0.01f)) }
+                    // (529s, KONKR frames pk529s10: the box's sprite was missing for one frame as the window went - the home
+                    // copy follows grow a frame late (snapshotFlow) and the flying copy left with the window. The landed
+                    // sprite is handed over first: the home copy is drawn for one frame under the flying one, same place.)
+                    if (spriteFlight || tvFlight) { closedHandOver[0] = true; pickupHandBack(); androidx.compose.runtime.withFrameNanos { } }
                     closeNow()
                 }
             }
@@ -1184,6 +1231,8 @@ internal fun GameWindow(
             if (MediaInspect.force == k && MediaInspect.forceSeq == mySeq) { MediaInspect.force = null; MediaInspect.testShell = null; MediaInspect.testPose = null; MediaInspect.testArt = null; MediaInspect.testTitle = null }
         }
     }
+    // (529o: whether a control inside the window has the focus - read by the controller re-home below, no recomposition.)
+    val focusSeen = remember(g.stableKey) { booleanArrayOf(false) }
     androidx.compose.ui.window.Dialog(
         onDismissRequest = close,
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
@@ -1216,12 +1265,21 @@ internal fun GameWindow(
                 else if (e.key == androidx.compose.ui.input.key.Key.ButtonL2 || e.key == androidx.compose.ui.input.key.Key.ButtonR2) return@onPreviewKeyEvent true
             }
             false
-        }) {
+        }.onFocusChanged { focusSeen[0] = it.hasFocus }) {
         val playFocus = remember { FocusRequester() }
         // (Update 233, #120: opened with a button after a touch — leave Android's touch mode first, so Play is lit at once
         // and the first ◀ / ▶ moves; it only lit Play, and A, ▶, A started the game.)
         val keyView = androidx.compose.ui.platform.LocalView.current
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(20); KeyInput.leaveTouchMode(keyView) }
+        // (529m, KONKR k529l3 with the QA trace: after a tap on an Achievements row, R1 / L1 / A reached nothing - no "winkey"
+        // at all - until B closed the window. Android's touch mode took the focus from the window's view, which is not focusable
+        // in touch mode, so the controller's buttons had nowhere to go. The window's view keeps its focus through a touch now;
+        // touch itself is unchanged.)
+        androidx.compose.runtime.DisposableEffect(keyView) {
+            val was = keyView.isFocusableInTouchMode
+            keyView.isFocusableInTouchMode = true
+            onDispose { keyView.isFocusableInTouchMode = was }
+        }
         // Update 122: always opens on Play / Continue. The window can take a moment to get the focus
         // (from a touch, or picked on the second screen): ask again until something in it has the focus.
         var focusInside by remember { mutableStateOf(false) }
@@ -1262,6 +1320,34 @@ internal fun GameWindow(
         // Update 213: back from the Performance page, the D-pad goes back onto its button.
         val perfFocus = remember { FocusRequester() }
         var fromPerf by remember { mutableStateOf(false) }
+        // (529o, #15 queue 1 - KONKR tf529a with the QA trace: after a tap on an Achievements row nothing in the window had the
+        // focus - Compose drops it on a touch - so R1 / L1 / A went nowhere ("winkey" 0) until a D-pad press, which Android eats
+        // to leave touch mode. A controller button that finds nothing lit now leaves touch mode, puts the focus where a page
+        // change puts it (Play on the first page, the first row on the others) and R1 / L1 / R2 / L2 are then delivered there,
+        // so the page turns at once. A, Start, X, Y and the D-pad only light that control: a press that finds nothing lit never
+        // clicks Play. B and touch are unchanged.)
+        val pageNow by androidx.compose.runtime.rememberUpdatedState(page)
+        val winFocusManager = androidx.compose.ui.platform.LocalFocusManager.current
+        androidx.compose.runtime.DisposableEffect(keyView) {
+            val again = booleanArrayOf(false)
+            val rehome = androidx.core.view.ViewCompat.OnUnhandledKeyEventListenerCompat { v, ev ->
+                val code = ev.keyCode
+                if (again[0] || focusSeen[0] || closingFlag[0] || ev.action != android.view.KeyEvent.ACTION_DOWN || ev.repeatCount > 0 ||
+                    code !in WIN_REHOME_LIGHT && code !in WIN_REHOME_DELIVER) return@OnUnhandledKeyEventListenerCompat false
+                KeyInput.lastWasKey = true
+                if (v.isInTouchMode) runCatching { v.requestFocusFromTouch() }
+                val first = if (pageNow == WinPage.MAIN) playFocus else listFocus
+                val lit = runCatching { first.requestFocus() }.getOrNull() == true ||
+                    runCatching { playFocus.requestFocus() }.getOrNull() == true ||
+                    runCatching { winFocusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) }.getOrNull() == true
+                if (QaTrace.on) android.util.Log.e("VoltcapQA", "win refocus $code lit=$lit")
+                if (!lit) return@OnUnhandledKeyEventListenerCompat false
+                if (code in WIN_REHOME_DELIVER) { again[0] = true; try { v.dispatchKeyEvent(ev) } finally { again[0] = false } }
+                true
+            }
+            androidx.core.view.ViewCompat.addOnUnhandledKeyEventListener(keyView, rehome)
+            onDispose { androidx.core.view.ViewCompat.removeOnUnhandledKeyEventListener(keyView, rehome) }
+        }
         val winStatus = WinStatus(
             perfState, syncView, hasFan, onSync, onSyncSetUp,
             onPerf = { fromPerf = true; page = WinPage.PERF }, onPerfAdvanced = onPerfAdvanced, perfFocus = perfFocus
@@ -1331,7 +1417,7 @@ internal fun GameWindow(
             LaunchedEffect(Unit) { androidx.compose.runtime.snapshotFlow { grow.value }.collect { TwinScreens.popupReveal.floatValue = it.coerceIn(0f, 1f) } }
             DisposableEffect(Unit) { onDispose { TwinScreens.popupReveal.floatValue = 0f } }
         }
-        if (discFlight || cardFlight || caseFlight) {
+        if (discFlight || cardFlight || caseFlight || spriteFlight || tvFlight) {
             LaunchedEffect(Unit) {
                 MediaInspect.key = g.stableKey
                 // (Update 507: the flying case IS the home's case — its copy at home is gone and back only once the case has
@@ -1342,8 +1428,10 @@ internal fun GameWindow(
                     CaseFlightGate.hold(winToken)
                     launch { kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken) }
                 }
-                androidx.compose.runtime.snapshotFlow { grow.value to CaseFlightGate.ready.value }.collect { (gv, ready) ->
-                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else gv.coerceIn(0f, 1f)
+                // (529s: the flying copy is hidden at home only once the window has drawn it - the window can take a few
+                // frames to show (KONKR pk529s12: the case was gone for 4 frames before its flying copy appeared).)
+                androidx.compose.runtime.snapshotFlow { Triple(grow.value, CaseFlightGate.ready.value, PickupStage.drawn) }.collect { (gv, ready, drawn) ->
+                    MediaInspect.amount.floatValue = if (caseFlight) caseHomeHiddenGated(gv, ready) else if ((spriteFlight || tvFlight) && originLayer != null) return@collect /* (set on the trip's own frames: pickupFrame) */ else if (spriteFlight || tvFlight) caseHomeHidden(gv) else gv.coerceIn(0f, 1f)
                 }
             }
             DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.release(winToken); if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
@@ -1353,8 +1441,12 @@ internal fun GameWindow(
             // (Shelf flash work: a case flight opens once the flying case is drawn - CaseFlightGate, at most its MAX_WAIT_MS -
             // so its first frame is the case where it was, not a jump along its way.)
             if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }
-            if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(if (discFlight) 620 else caseFlightMs(sceneOpenMs(scene), caseFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
-                else if (caseFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing))
+            // (529s: the trip starts from the frame the flying copy is drawn at home, at most PICKUP_WAIT_MS.)
+            if (spriteFlight && originLayer != null) { pickupSettle(); MediaInspect.pickupReveal = grow.asState() }
+            // (529t: the sleeve's trip and turn over an even curve - LinearOutSlowIn put the whole trip and turn in its first ~130 ms
+            // (Flip 2 frames pkf529u: the front jumped to edge-on in one frame).)
+            if (!anim) grow.snapTo(1f) else if (sleeveFlip) grow.animateTo(1f, tween(SLEEVE_FLIP_OPEN_MS, easing = FastOutSlowInEasing)) { pickupFrame(value) } else grow.animateTo(1f, tween(if (discFlight) 620 else pickupFlightMs(sceneOpenMs(scene), caseFlight, spriteFlight, open = true), easing = if (scene == WinScene.TERM_RUN || scene == WinScene.CAMERA_MENU || scene == WinScene.ARCADE_MENU) LinearEasing
+                else if (caseFlight || spriteFlight) androidx.compose.animation.core.LinearOutSlowInEasing else FastOutSlowInEasing)) { if (spriteFlight && originLayer != null) pickupFrame(value) }
         }
         // Update 506 (motion polish, device finding: Cross menu's second movement after closing; Case Flow still fading with
         // Motion = Off): the dialog's own platform window dimmed what's behind it and faded in / out on the system's clock,
@@ -1401,9 +1493,13 @@ internal fun GameWindow(
         })
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
-            LaunchedEffect(Unit) { if (!anim) grow.snapTo(1f) else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
+            LaunchedEffect(Unit) { if (!anim && !tvFlight) grow.snapTo(1f) else if (tvFlight) { pickupSettle(); MediaInspect.pickupReveal = grow.asState(); grow.animateTo(1f, tween(TV_FLIGHT_OPEN_MS, easing = LinearEasing)) { pickupFrame(value) } } else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
             val d = androidx.compose.ui.platform.LocalDensity.current
-            BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)).pointerInput(Unit) { detectTapGestures { onClose() } }) {
+            // (529s: with the case going in, B / a tap outside run the trip back first - [close].)
+            val onClose: () -> Unit = if (tvFlight) close else onClose
+            // (The set switching on: all of the reveal, or - with the case going in - its second half, once the case is in.)
+            val tvOn: () -> Float = if (tvFlight) ({ tvSetOn(grow.value) }) else ({ grow.value })
+            BoxWithConstraints(Modifier.fillMaxSize().then(if (tvFlight) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = 0.35f * grow.value.coerceIn(0f, 1f))) } else Modifier.background(Color.Black.copy(alpha = 0.35f))).pointerInput(Unit) { detectTapGestures { onClose() } }) {
                 with(d) {
                     // Update 125: the name and the buttons go under the set when there's room, so nothing covers the
                     // game's picture (they sat over its lower half, over the faces); over its foot only when there isn't.
@@ -1411,7 +1507,7 @@ internal fun GameWindow(
                     val outside = below >= 74.dp
                     Box(
                         Modifier.offset(tvRect.left.toDp(), tvRect.top.toDp()).size(tvRect.width.toDp(), tvRect.height.toDp())
-                            .graphicsLayer { val k = grow.value; scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = (k * 3f).coerceAtMost(1f) }
+                            .graphicsLayer { val k = tvOn(); scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = maxOf((k * 3f).coerceAtMost(1f), if (tvFlight) PREWARM_ALPHA else 0f) }
                             .clip(RoundedCornerShape(10.dp)).background(Color.Black)
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
@@ -1420,7 +1516,7 @@ internal fun GameWindow(
                     }
                     if (outside) Box(
                         Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
-                            .graphicsLayer { alpha = grow.value.coerceIn(0f, 1f) }
+                            .graphicsLayer { alpha = tvOn().coerceIn(0f, 1f) }
                             .clip(RoundedCornerShape(12.dp)).background(Color(0xFF15161A).copy(alpha = 0.94f))
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
                             .pointerInput(Unit) { detectTapGestures { } }
@@ -1429,6 +1525,8 @@ internal fun GameWindow(
                     ) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
                     }
+                    // (529s: the case on its way into the set and back.)
+                    if (tvFlight && originLayer != null && origin != null) TvCaseFlyer(origin, tvRect, originLayer) { grow.value }
                 }
             }
         } else Box(Modifier.fillMaxSize().onPreviewKeyEvent { e ->
@@ -1452,9 +1550,10 @@ internal fun GameWindow(
                 // (up to 450 ms), so the screen dimmed for ~8 frames before anything moved.
                 // (Update 507: with the case flying back the window's content isn't faded — the case stays solid all the way to
                 // its place; only the veil follows the reveal. The card beside it has its own staged fade.)
-                .graphicsLayer { alpha = if (caseFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
+                .then(if (spriteFlight) Modifier.onGloballyPositioned { val p = it.positionInWindow(); if (p != pickupRootAt) pickupRootAt = p } else Modifier)
+                .graphicsLayer { alpha = if (caseFlight || spriteFlight) 1f else grow.value.coerceIn(0f, 1f) * (if (piece != null) flightVeil(motion.lift.floatValue) else 1f) }
                 .then((scene?.let { if (it == WinScene.TWIN_HINGE && layout == HomeLayout.TWIN_DESK) twinDeskVeil else if (it == WinScene.INDEX_CARD && layout == HomeLayout.COVERDETAILS) coverDetailsVeil else sceneVeilFor(it) /* (505: Shop / Bubbles in your wall's colours) */ } ?: look.veil).let { veil ->
-                    if (caseFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
+                    if (caseFlight || spriteFlight) Modifier.drawBehind { drawRect(veil, alpha = grow.value.coerceIn(0f, 1f)) } else Modifier.background(veil)
                 })
                 .pointerInput(Unit) { detectTapGestures { close() } },
             contentAlignment = Alignment.Center
@@ -1482,7 +1581,7 @@ internal fun GameWindow(
                             val k = grow.value
                             if (to == null) { alpha = 0f; return@graphicsLayer }
                             transformOrigin = TransformOrigin(0.5f, 0.5f)
-                            if (discFlight || caseFlight || scene in SELF_MOVING_SCENES) {
+                            if (discFlight || caseFlight || spriteFlight || scene in SELF_MOVING_SCENES) {
                                 // (Its scene flies the disc and opens the rest round it. Update 422: the screen-edge scenes —
                                 // Cross options, Side drawer, Dock flyout — slide in from their own edge, not out of the card.)
                             } else if (from == null || !anim) {
@@ -1516,12 +1615,14 @@ internal fun GameWindow(
                         .pointerInput(Unit) { detectTapGestures { } }
                         .onFocusChanged { if (it.hasFocus) focusInside = true }
                 ) {
-                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight) origin else null)) {
+                    if (scene != null) androidx.compose.runtime.CompositionLocalProvider(LocalSceneOrigin provides (if (discFlight || caseFlight || spriteFlight) origin else null), LocalSceneOriginLayer provides (if (spriteFlight) originLayer else null)) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalSceneLayout provides layout) { SceneBody(scene, look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options, pageOpener, closing = { shrinking }) { grow.value } }
                     }
                     else androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { WindowBody(look, g, state, cover, wide, backdrop, page, { page = it }, maxW, maxH, playFocus, listFocus, close, onPlay, onFullDetails, extras, options) }
                 }
             }
+            // (529s: the picked object's trip, drawn here from the window's first frame - PickupOverlay.)
+            if (spriteFlight && origin != null && originLayer != null) Box(Modifier.matchParentSize()) { PickupOverlay(origin, originLayer, { pickupRootAt }) { grow.value } }
           }
             // Update 162: the piece itself, over the window (it flies from its card to its side and back).
             // (Update 471, owner review: "Tap the case to open it" sat under the case while its window was already open beside
@@ -1553,6 +1654,8 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
     WinScene.CAMERA_MENU -> 420
     WinScene.MAG_PAGE, WinScene.BUBBLE_CARD, WinScene.CARD_BACK, WinScene.CUBE_FACE -> 400
     WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 380
+    // (Update 529: Night menu's panels come in layer after layer - the last command settles at the end of the reveal.)
+    WinScene.NIGHT_STATUS -> 400
     else -> 320
 }
 
@@ -1564,6 +1667,10 @@ internal fun sceneOpenMs(scene: WinScene?): Int = when (scene) {
  */
 internal fun caseFlightMs(base: Int, caseFlight: Boolean, open: Boolean): Int = if (!caseFlight) base else if (open) 470 else 380
 
+/** 529s: Storage boxes' sprite trip (box → stand 520 ms, back 420 ms) - long enough to follow, as the cases' ([caseFlightMs]). Pure. */
+internal fun pickupFlightMs(base: Int, caseFlight: Boolean, spriteFlight: Boolean, open: Boolean): Int =
+    if (spriteFlight) (if (open) 520 else 420) else caseFlightMs(base, caseFlight, open)
+
 internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.FILE_CARD -> 340
     WinScene.ORBIT_TERMINAL -> 480
@@ -1571,6 +1678,7 @@ internal fun sceneCloseMs(scene: WinScene?): Int = when (scene) {
     WinScene.ARCADE_MENU -> 340
     WinScene.CAMERA_MENU, WinScene.BUBBLE_CARD -> 340
     WinScene.MAG_PAGE, WinScene.PANEL_DETAIL, WinScene.BLADE_GUIDE -> 300
+    WinScene.NIGHT_STATUS -> 320
     else -> 260
 }
 
@@ -2287,6 +2395,7 @@ private fun SceneBody(
     // (Batch 523, QA design lab only - PopupLab "actions": Play, Details, a round ••• More beside it; Back leaves the row for a
     // corner hint. Everyone else: exactly as before.)
     val labActions = PopupLab.active.actions // (523t: approved - everyone)
+    val pageBackIsHint = labActions && nativePages(scene)
     val moreKey = if (!compactMore) null else if (moreOpen) WinAction("Less", I.ExpandLess, { moreOpen = false; moreRefocus(moreF) }, focus = moreF)
         else WinAction("More", I.MoreHoriz, { moreOpen = true; moreRefocus(optionsF) }, focus = moreF)
     val buttons = buildList {
@@ -2295,12 +2404,17 @@ private fun SceneBody(
             WinPage.MAIN -> {
                 if (perf && showAll && !labActions) add(WinAction(PERF_LABEL, I.Speed, status!!.onPerf, focus = status.perfFocus))
                 add(WinAction(look.details.lowercase().replaceFirstChar { it.uppercase() }, I.Info, opener(detailsF) { setPage(WinPage.DETAILS) }, focus = detailsF))
-                if (labActions) moreKey?.let { add(it) }
-                else add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
+                // (Owner, 13 Nov: "on every pop-up, the last thing that's shown from the options should be the 3 dots, not anything
+                // else beside it" - so More / Less is no longer in this row beside Details: it closes the tools below, after Inspect.)
+                if (!labActions) add(WinAction(look.back.lowercase().replaceFirstChar { it.uppercase() }, I.Close, onClose, back = true))
             }
-            WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); add(WinAction("Back", I.Close, toMain, back = true)) }
-            WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); add(WinAction("Back", I.Close, toMain, back = true)) }
-            WinPage.OPTIONS, WinPage.PERF -> add(WinAction("Back", I.Close, toMain, back = true))
+            // (529r, owner P0 - KONKR ×1.3: a layout that draws its own pages shows the "Ⓑ Back" hint under the window on every
+            // page (its tap goes back a page there too), so a Back bar on the page was the same action twice and cost the page a
+            // whole row - the first achievement got a sliver. As on the first page since 523t: Back is the hint. Shared pages,
+            // which have no hint, keep their Back key.)
+            WinPage.DETAILS -> { add(WinAction("Full details", I.Description, onFullDetails)); if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.TROPHIES -> { add(WinAction("Full list", I.FormatListBulleted, extras.onFullAchievements)); if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true)) }
+            WinPage.OPTIONS, WinPage.PERF -> if (!pageBackIsHint) add(WinAction("Back", I.Close, toMain, back = true))
         }
     }
     val allTools = buildList {
@@ -2319,8 +2433,8 @@ private fun SceneBody(
     }
     val tools = when {
         !compactMore -> allTools + (if (labActions && perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
-        labActions -> if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
-            else allTools.filter { it.label == "Inspect" }
+        labActions -> (if (moreOpen) allTools + (if (perf && status != null) listOf(WinAction(PERF_LABEL, I.Speed, status.onPerf, focus = status.perfFocus)) else emptyList())
+            else allTools.filter { it.label == "Inspect" }) + moreKey!!
         moreOpen -> allTools + moreKey!!
         else -> allTools.filter { it.label == "Inspect" } + moreKey!!
     }
@@ -2342,7 +2456,7 @@ private fun SceneBody(
         earned = earned, total = total,
         page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
         buttons = buttons, tools = tools, chips = chips, close = onClose,
-        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && page == WinPage.MAIN) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
+        inspecting = LocalWinInspect.current, accent = look.accent, maxW = maxW, maxH = if (labActions && (page == WinPage.MAIN || nativePages(scene))) maxH - BACK_HINT_ROOM else maxH, reveal = reveal,
         closing = closing,
         pageBody = { m ->
             when (page) {
@@ -2387,19 +2501,26 @@ private fun SceneBody(
     if (sharedPageFor(scene, page)) SceneExpandedPage(look, ctx, page, maxW, maxH, reveal)
     // (523x, Flip 2 fp523u: in the window's corner the hint lay over the scene's own keys - Arctic's System, Channel grid's Start,
     // the Pocket scenes' Inspect. It stands under the window now, in room the scene gives up for it (BACK_HINT_ROOM).)
-    else if (labActions && page == WinPage.MAIN) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
+    // (529l, KONKR page walk k529s1, frame by frame: Info -> Details changed in one frame in all four shelf layouts while the
+    // later page changes moved. Leaving the main page moved the scene from this branch to the plain one below - a new
+    // composition, so the scene's own page motion started from nothing. A layout that draws its own pages stays in this
+    // branch on every page.)
+    else if (labActions && (page == WinPage.MAIN || nativePages(scene))) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
         // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
         // The hint is measured first; the scene gets the rest.)
         Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }
-        LabBackHint(onClose, Modifier.padding(top = 4.dp))
+        // (529m, frame review k529l2: on a page the hint's room went to the scene, so the case and card jumped at the first
+        // frame of Info -> Details. A layout with its own pages keeps the hint - and its room - on every page.)
+        // (529r: on a page the hint goes back to the first page, as B does there; on the first page it closes the window.)
+        LabBackHint({ if (page != WinPage.MAIN) setPage(WinPage.MAIN) else onClose() }, Modifier.padding(top = 4.dp))
     }
     else DrawWinScene(scene, ctx)
 }
 
 /**
  * v0.6.67 (update 451): the layout windows that get More (they showed all nine actions and two status lines at once). The others
- * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Airy, Arctic's drawer,
- * Discover card) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
+ * already have a compact design of their own (Channel grid's More, Cinema's icons, Bubbles, Cards, Memory card, Arctic's drawer;
+ * Airy and the Discover card joined the list below) or are a console-style menu list by design (Arcade, Camera, Terminal, Cross, Night, Side, Panels, Magazine, Shop,
  * Storage, Box, Orbit, Blades).
  */
 /** 523x: the height the Back hint takes under a scene (hint 28 dp + 4 dp gap). */
@@ -2412,7 +2533,11 @@ internal val MORE_SCENES = setOf(
     WinScene.CASE_MEDIA, WinScene.FILE_CARD, WinScene.STUDIO_PANEL,
     // (Update 477, D266: Airy's eight round keys took two rows on the KONKR and the chips' second line — Played, ★ — was not
     // drawn. Play, Details, Back, Inspect and More in one row; the rest opens in the panel's well with More.)
-    WinScene.AIRY_PANEL
+    WinScene.AIRY_PANEL,
+    // (Update 529, master sprint Phase 3, Flip 2 f529a: Resume's discover card showed all seven actions as chips — Play, Details,
+    // Options, Achievements, Save sync, Inspect and the save line. It draws its keys with SceneKey, so it takes the approved row:
+    // Play, Details, ••• and Inspect in view, the rest behind More in the same card.)
+    WinScene.DISCOVER_CARD
 )
 
 /** Focus [f] once the actions it belongs to are drawn (More / Less swap places in the same frame). */
@@ -2549,11 +2674,11 @@ private fun WinStatusChip(look: WinLook, icon: androidx.compose.ui.graphics.vect
 private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier: Modifier) {
     val st = LocalWinStatus.current
     val s = st?.perf
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     Column(
-        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        modifier.background(paper).pageScroll().padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         // (If / else, never an early return out of the Column — see update 144.)
@@ -2587,7 +2712,7 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
 
 /** Update 125: one row of the window's own lists (options, achievements), in its colours and button shape. */
 @Composable
-private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> Unit, content: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit) {
+private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> Unit, minHeight: Dp = 44.dp, content: @Composable androidx.compose.foundation.layout.RowScope.(Boolean) -> Unit) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -2601,7 +2726,7 @@ private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> 
         Btn.TAB -> RoundedCornerShape(topStart = 4.dp, topEnd = 12.dp, bottomEnd = 4.dp, bottomStart = 4.dp)
     }
     Row(
-        modifier.fillMaxWidth().heightIn(min = 44.dp)
+        modifier.fillMaxWidth().heightIn(min = minHeight)
             .clip(shape)
             .background(if (focused) look.btnOnFill else if (look.btn == Btn.TEXT) solid(Color.Transparent) else look.btnFill)
             .then(if (look.btnBorder != null) Modifier.border(if (focused) 2.dp else 1.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
@@ -2614,9 +2739,9 @@ private fun WinRow(look: WinLook, modifier: Modifier = Modifier, onClick: () -> 
 /** Update 125: the game's options as a page of the window (they used to open a separate menu over it). */
 @Composable
 private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: FocusRequester, modifier: Modifier) {
-    val paper = look.paper ?: Color(0xFF15181E)
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
     Column(
-        modifier.background(paper).verticalScroll(rememberScrollState()).padding(10.dp),
+        modifier.background(paper).pageScroll().padding(if (LocalNativePageHost.current != null) 4.dp else 10.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         options.forEachIndexed { i, opt ->
@@ -2631,10 +2756,12 @@ private fun WindowOptions(look: WinLook, options: List<WinOption>, listFocus: Fo
                     // ShelfTextRoboTest). Whole now: two lines, then a readable smaller size, then it slides.)
                     WinFullText(
                         if (look.caps) opt.label.uppercase() else opt.label, color = ink, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 18.sp
                     )
+                    // (529l, KONKR k529s1: Coverflow details' narrower page showed "Sync, second screen, artwork, look — for" - the
+                    // line slid with its end out of view. A line that doesn't fit takes a second line before it slides.)
                     opt.sub?.let {
-                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 1, fontFamily = if (look.mono) FontFamily.Monospace else null)
+                        WinFullText(it, color = ink.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 14.sp)
                     }
                 }
             }
@@ -2653,50 +2780,72 @@ private val LockedGrey = androidx.compose.ui.graphics.ColorFilter.colorMatrix(an
  */
 @Composable
 private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listFocus: FocusRequester, modifier: Modifier, onLoadComments: (Int) -> Unit = {}) {
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     val order = Features.winTrophyOrder.state.value
     val details = state.raAchievementDetails[g.stableKey]
     val list = remember(details, order) { trophyOrder(details.orEmpty(), order) }
     val earned = list.count { it.isUnlocked }
     var openId by remember(g.stableKey) { mutableStateOf<Int?>(null) }
-    Column(modifier.background(paper).padding(10.dp)) {
+    // (529o, ×1.3 KONKR: on a native page the card's label already says Achievements - the counter is the count alone, one
+    // line, and the card's well is the margin; "Achievements / 8 / 10" took two lines and no achievement row was left in view.)
+    val native = LocalNativePageHost.current != null
+    // The order: A steps to the next one.
+    val orderRow: @Composable (Modifier, Boolean) -> Unit = { m, compact ->
+        WinRow(look, m.focusRequester(listFocus), onClick = {
+            val all = Features.TrophyOrder.values()
+            Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
+        }, minHeight = if (compact) 38.dp else 44.dp) { on ->
+            val rowInk = if (on) look.btnOnInk else look.btnInk
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            androidx.compose.material3.Text(
+                // (529p, ×1.3 KONKR Coverflow details: one line cut it to "Order: Set" beside the hint - it wraps whole now.)
+                // (529r: on the count's line - compact - its swap icon says "order"; the order's own name is whole.)
+                (if (compact) (if (look.caps) order.label.uppercase() else order.label) else if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label),
+                color = rowInk, fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 2, lineHeight = 16.sp, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+            )
+            // (529r: on a native page - a narrow card - the hint is the controller's A in its ring, as the window's "Ⓑ Back"
+            // is drawn, so "Order: Set order" keeps one line; the words stay on the wider shared page.)
+            if (native || compact) Box(Modifier.size(18.dp).border(1.dp, rowInk.copy(alpha = 0.55f), androidx.compose.foundation.shape.CircleShape)
+                .semantics { contentDescription = "A: next order" }, contentAlignment = Alignment.Center) { InkGlyph("A", rowInk.copy(alpha = 0.7f), 11.dp) }
+            else androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp)
+        }
+    }
+    val progress: @Composable (Modifier) -> Unit = { m ->
+        Box(m.clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
+            Box(Modifier.fillMaxWidth(if (list.isEmpty()) 0f else earned.toFloat() / list.size).fillMaxHeight().background(look.accent))
+        }
+    }
+    // (529r, owner P0 "the first achievement must be fully visible": on a short page - a native card, or a shared page under
+    // trophiesTightBelow - the order control sits on the count's line and the progress bar becomes a thin line under it, so
+    // the list starts with the achievements; nothing is dropped. Taller pages keep the order as the list's first row.)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(paper).padding(if (native) 4.dp else 10.dp)) {
+    val tight = native || maxHeight < TROPHIES_TIGHT_BELOW.dp
+    Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             androidx.compose.material3.Text(
-                (if (look.caps) "ACHIEVEMENTS" else "Achievements") + "  $earned / ${list.size}", color = ink, fontSize = 15.sp,
-                fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null
+                // (on a short page the page's own title says Achievements; the line keeps the count and the order control)
+                (if (native || tight) "" else if (look.caps) "ACHIEVEMENTS  " else "Achievements  ") + "$earned / ${list.size}", color = ink, fontSize = 15.sp,
+                fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null, maxLines = 1, lineHeight = 19.sp
             )
             Spacer(Modifier.width(10.dp))
-            Box(Modifier.weight(1f).height(5.dp).clip(RoundedCornerShape(3.dp)).background(ink.copy(alpha = 0.18f))) {
-                Box(Modifier.fillMaxWidth(if (list.isEmpty()) 0f else earned.toFloat() / list.size).fillMaxHeight().background(look.accent))
-            }
+            if (tight) orderRow(Modifier.weight(1f), true) else progress(Modifier.weight(1f).height(5.dp))
         }
-        Spacer(Modifier.height(8.dp))
-        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            // The order: A steps to the next one.
-            WinRow(look, Modifier.focusRequester(listFocus), onClick = {
-                val all = Features.TrophyOrder.values()
-                Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
-            }) { on ->
-                val rowInk = if (on) look.btnOnInk else look.btnInk
-                androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.SwapVert, null, tint = rowInk, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(10.dp))
-                androidx.compose.material3.Text(
-                    (if (look.caps) "ORDER: " + order.label.uppercase() else "Order: " + order.label), color = rowInk, fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
-                )
-                androidx.compose.material3.Text("A: next", color = rowInk.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1)
-            }
+        if (tight) { Spacer(Modifier.height(4.dp)); progress(Modifier.fillMaxWidth().height(3.dp)) }
+        Spacer(Modifier.height(if (native) 6.dp else 8.dp))
+        Column(Modifier.fillMaxWidth().weight(1f).pageScroll(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            if (!tight) orderRow(Modifier, false)
             list.forEach { a ->
                 androidx.compose.runtime.key(a.id) {
                     val opened = openId == a.id
-                    WinRow(look, onClick = {
-                        openId = if (opened) null else a.id
-                        if (!opened) onLoadComments(a.id)
-                    }) { on ->
+                    // (Achievements compact hotfix, update 529: opening an achievement shows its facts; its comments are a folded row
+                    // of their own, fetched only when opened.)
+                    WinRow(look, onClick = { openId = if (opened) null else a.id }) { on ->
                         val rowInk = if (on) look.btnOnInk else look.btnInk
                         AsyncImage(
                             com.shelf.launcher.data.RaBadges.url(a.badgeName), a.title, contentScale = ContentScale.Crop,
@@ -2705,28 +2854,31 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                         )
                         Spacer(Modifier.width(10.dp))
                         Column(Modifier.weight(1f)) {
+                            // (Rule 11, achievements hotfix 529: no "…" - the name wraps whole; the description is whole once the row is
+                            // open (A), and while it's closed it fits two lines by shrinking readably, then slides.)
+                            // (529r, owner P0 - Coverflow ×1.3 showed a sliver of the first row: these texts took the theme's 24 sp line,
+                            // so a 13 sp name in two lines was ~62 dp at ×1.3. Their own line heights now - same size, nothing hidden.)
                             androidx.compose.material3.Text(
                                 a.title ?: "Achievement", color = rowInk.copy(alpha = if (a.isUnlocked) 1f else 0.62f), fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                fontFamily = if (look.mono) FontFamily.Monospace else null
+                                fontWeight = FontWeight.SemiBold, fontFamily = if (look.mono) FontFamily.Monospace else null, lineHeight = 17.sp
                             )
                             a.description?.let {
-                                androidx.compose.material3.Text(
-                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = if (opened) 6 else 2,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
+                                if (opened) androidx.compose.material3.Text(
+                                    it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, lineHeight = 14.sp
+                                ) else WinFullText(it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp)
                             }
                         }
                         a.points?.let {
                             Spacer(Modifier.width(8.dp))
-                            androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp)
                         }
                     }
-                    if (opened) TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading)
+                    AchDetailReveal(opened) { TrophyMore(look, ink, a, state.raComments[a.id], a.id in state.raCommentsLoading) { onLoadComments(a.id) } }
                 }
             }
         }
     }
+}
 }
 
 /** Update 132: the achievements page's order ([Features.TrophyOrder]); ties keep the set's own order. */
@@ -2745,7 +2897,9 @@ private fun trophyOrder(all: List<com.shelf.launcher.data.RaAchievementDetail>, 
 
 /** Update 132: under an opened achievement — when you earned it, how rare it is, and the comments people left. */
 @Composable
-private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean) {
+private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaAchievementDetail, comments: List<com.shelf.launcher.data.RaComment>?, loading: Boolean, onLoad: () -> Unit) {
+    var commentsOpen by remember(a.id) { mutableStateOf(false) }
+    androidx.activity.compose.BackHandler(enabled = commentsOpen) { commentsOpen = false }
     Column(
         Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, bottom = 4.dp)
             .clip(RoundedCornerShape(8.dp)).background(ink.copy(alpha = 0.07f)).padding(horizontal = 10.dp, vertical = 8.dp),
@@ -2756,22 +2910,35 @@ private fun TrophyMore(look: WinLook, ink: Color, a: com.shelf.launcher.data.RaA
             a.unlockPercent?.let { add("%.1f %% of players have it".format(it)) }
             if (a.isMissable) add("Missable")
         }
-        if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-        androidx.compose.material3.Text(if (look.caps) "COMMENTS" else "Comments", color = ink, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        when {
-            comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-            comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close it and open it again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-            comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
-            else -> comments.take(8).forEach { cm ->
-                Column {
-                    androidx.compose.material3.Text(
-                        (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
-                        color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
-                    )
-                    androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp, maxLines = 6, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                }
-            }
+        if (facts.isNotEmpty()) androidx.compose.material3.Text(facts.joinToString("  ·  "), color = look.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 15.sp)
+        WinRow(look, onClick = { commentsOpen = !commentsOpen; if (commentsOpen && comments == null && !loading) onLoad() }) { on ->
+            val rowInk = if (on) look.btnOnInk else look.btnInk
+            androidx.compose.material3.Text(
+                (if (look.caps) "COMMENTS" else "Comments") + (comments?.let { "  ${it.size}" } ?: ""), color = rowInk, fontSize = 12.sp,
+                fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), fontFamily = if (look.mono) FontFamily.Monospace else null
+            )
+            AchChevron(commentsOpen, rowInk)
         }
+        AchPanelBody(commentsOpen) { Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { when {
+            comments == null && loading -> androidx.compose.material3.Text("Loading comments…", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            comments == null -> androidx.compose.material3.Text("Couldn't load the comments (no connection?). Close Comments and open them again to try again.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            comments.isEmpty() -> androidx.compose.material3.Text("No comments yet.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp)
+            else -> {
+                comments.take(8).forEach { cm ->
+                    Column {
+                        WinFullText(
+                            (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
+                            color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold
+                        )
+                        androidx.compose.material3.Text(cm.CommentText.orEmpty().trim(), color = ink, fontSize = 11.sp)  // (whole, rule 11)
+                    }
+                }
+                // (The page shows the newest 8; the rest are never hidden silently - Full list has them all, with Load older.)
+                if (comments.size > 8) androidx.compose.material3.Text(
+                    "8 of ${comments.size} comments here - Full list shows them all.", color = ink.copy(alpha = 0.6f), fontSize = 11.sp
+                )
+            }
+        } } }
     }
 }
 
@@ -2877,11 +3044,19 @@ private fun ButtonRow(key: Any, content: @Composable () -> Unit) {
     androidx.compose.runtime.CompositionLocalProvider(LocalButtonRowSize provides size) { content() }
 }
 
+/**
+ * 529k: a page drawn inside a layout's own card (ShelfFamilyPages and the next families): its paper (the card's well shows
+ * through: transparent), whether that card is dark, and what the card already shows beside the page - the case / cover, the
+ * game's name - so Details does not repeat them.
+ */
+internal class NativePageHost(val paper: Color, val dark: Boolean, val showsCover: Boolean, val showsName: Boolean)
+internal val LocalNativePageHost = androidx.compose.runtime.staticCompositionLocalOf<NativePageHost?> { null }
+
 /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
 @Composable
 private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
-    val paper = look.paper ?: Color(0xFF15181E)
-    val light = (paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f
+    val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
+    val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
     val muted = if (light) Color(0xFF6A7584) else Color.White.copy(alpha = 0.7f)
     val meta = state.metadata[g.stableKey]
@@ -2890,8 +3065,11 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     // the full-height cover took all but 61 dp and the text broke mid-word over 114 lines. The text keeps at least
     // DETAILS_MIN_TEXT; the cover shrinks first (top-aligned, its shape kept), and when even a small cover doesn't fit beside
     // the text it goes above it. Nothing is hidden: every fact and the whole story stay on the page.)
-    BoxWithConstraints(modifier.background(paper).padding(16.dp)) {
-    val fit = detailsCoverFit(maxWidth.value, maxHeight.value)
+    // (529o, ×1.3 KONKR: on a native page the card's well already has its margin - 16 dp more left three lines of text.)
+    BoxWithConstraints(modifier.background(paper).padding(if (LocalNativePageHost.current != null) 6.dp else 16.dp)) {
+    val host = LocalNativePageHost.current
+    // (529k: on a native page the card shows the case beside it already - no second cover.)
+    val fit = if (host?.showsCover == true) null else detailsCoverFit(maxWidth.value, maxHeight.value)
     val stackedCoverH = minOf(maxHeight * 0.45f, 160.dp)
     val coverBox: @Composable (Modifier) -> Unit = { m ->
         Box(m.clip(RoundedCornerShape(8.dp)).background(placeholderBrush(g.hue))) {
@@ -2899,13 +3077,13 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             if (cover != null) SmartArt(cover, null, Modifier.fillMaxSize(), request = rememberCoverRequest(cover))
         }
     }
-    val stacked = fit == null
+    val stacked = fit == null && host?.showsCover != true
     Row(Modifier.fillMaxSize()) {
         if (fit != null) {
             coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
             Spacer(Modifier.width(DETAILS_GAP.dp))
         }
-        Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState())) {
+        Column(Modifier.weight(1f).fillMaxHeight().pageScroll()) {
             if (stacked) {
                 coverBox(Modifier.height(stackedCoverH).aspectRatio(0.72f))
                 Spacer(Modifier.height(10.dp))
@@ -2913,13 +3091,14 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             // (Update 470, long-name run: "From TV / Animation" and the rest of the name was cut at two lines — the column
             // scrolls, so the name and the facts wrap in full.)
             // (Update 471: no word split across lines — "(Parmentat / ion)" in the Box's narrow column; the size steps down instead.)
-            WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
+            if (host?.showsName != true) WholeWordsText(titles.display(g.name), color = ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null,
                 modifier = Modifier.fillMaxWidth())
             val facts = listOfNotNull(
                 titles.console(g.platform), meta?.releaseYear?.toString(), meta?.developer,
                 meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() }
             ).joinToString("  ·  ")
-            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp)
+            // (529o: the theme's 24 sp line made each wrapped fact line twice as tall as its words at ×1.3.)
+            androidx.compose.material3.Text(facts, color = muted, fontSize = 12.sp, lineHeight = 16.sp)
             Spacer(Modifier.height(8.dp))
             val list = state.raAchievementDetails[g.stableKey].orEmpty()
             val p = state.raProgress[g.stableKey]
@@ -2931,7 +3110,7 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
                 if (total > 0) "Achievements $earned / $total" else null
             )
             if (played.isNotEmpty()) {
-                androidx.compose.material3.Text(played.joinToString("  ·  "), color = if (light) ShelfTheme.accent else look.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                androidx.compose.material3.Text(played.joinToString("  ·  "), color = if (light) ShelfTheme.accent else look.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp)
                 Spacer(Modifier.height(8.dp))
             }
             androidx.compose.material3.Text(meta?.summary?.takeIf { it.isNotBlank() } ?: "No description yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 18.sp)
@@ -2939,6 +3118,9 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
     }
     }
 }
+
+/** 529r: a shared Achievements page shorter than this (dp) puts its order control on the count's line. */
+internal const val TROPHIES_TIGHT_BELOW = 330f
 
 internal const val DETAILS_MIN_TEXT = 200f   // dp the details text column keeps, at least (≈ 28 characters of 13 sp)
 internal const val DETAILS_GAP = 14f
@@ -2958,3 +3140,17 @@ internal fun detailsCoverFit(w: Float, h: Float): Float? {
         else -> null
     }
 }
+
+/** (529o) Controller buttons that, finding nothing lit in the game window after a touch, only put the focus back. */
+internal val WIN_REHOME_LIGHT = setOf(
+    android.view.KeyEvent.KEYCODE_BUTTON_A, android.view.KeyEvent.KEYCODE_BUTTON_X, android.view.KeyEvent.KEYCODE_BUTTON_Y,
+    android.view.KeyEvent.KEYCODE_BUTTON_START, android.view.KeyEvent.KEYCODE_ENTER, android.view.KeyEvent.KEYCODE_DPAD_CENTER,
+    android.view.KeyEvent.KEYCODE_DPAD_UP, android.view.KeyEvent.KEYCODE_DPAD_DOWN, android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+    android.view.KeyEvent.KEYCODE_DPAD_RIGHT
+)
+
+/** (529o) …and the page keys, which are then delivered to it, so the first press after a touch turns the page. */
+internal val WIN_REHOME_DELIVER = setOf(
+    android.view.KeyEvent.KEYCODE_BUTTON_R1, android.view.KeyEvent.KEYCODE_BUTTON_L1,
+    android.view.KeyEvent.KEYCODE_BUTTON_R2, android.view.KeyEvent.KEYCODE_BUTTON_L2
+)

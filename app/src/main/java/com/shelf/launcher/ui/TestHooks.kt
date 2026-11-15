@@ -111,6 +111,8 @@ internal object TestHooks {
     val sort = mutableStateOf(false)
     /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
     val window = mutableStateOf(false)
+    /** Update 529 (achievements compact hotfix): `--ez voltcap_test_achlist true` - the per-game achievement list of the game you're on. */
+    val achList = mutableStateOf(false)
     /** v0.6.66 (D123): `--ez voltcap_test_scenecover false` — the scene's colours from the cover off/on for this preview only. */
     val sceneCover = mutableStateOf<Boolean?>(null)
     /** v0.6.66 (D137): `--ez voltcap_test_novideo true|false` — the home screen's gameplay clips off for this session (frame-pacing A/B runs; nothing saved). */
@@ -338,6 +340,7 @@ internal object TestHooks {
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
+        if (intent?.getBooleanExtra("voltcap_test_achlist", false) == true && enabled(context)) achList.value = true
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
         intent?.getStringExtra("voltcap_test_mediadump")?.let { if (enabled(context)) mediaDump.value = it }
@@ -378,6 +381,16 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_clipshade")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
             android.util.Log.e("VoltcapQA", "clipshade $v")
+        }
+        // 529j: same-build A/B for the category strips (`voltcap_test_chipglide legacy|new`: the old instant window / hard end
+        // fades) and the Night menu's bar layers (`voltcap_test_nmlayers legacy|new`). Isolated QA app only, session only.
+        intent?.getStringExtra("voltcap_test_chipglide")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) { ChipGlide.legacy = v == "legacy"; GlidingChips.legacyFade = v == "legacy"; LivePivot.legacy = v == "legacy" }
+            android.util.Log.e("VoltcapQA", "chipglide $v")
+        }
+        intent?.getStringExtra("voltcap_test_nmlayers")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) NightMotion.legacyLayers = v == "legacy"
+            android.util.Log.e("VoltcapQA", "nmlayers $v")
         }
         intent?.getStringExtra("voltcap_test_catscreen")?.let { v ->
             if (enabled(context)) catScreen.value = (catScreen.value.first + 1) to (v == "open")
@@ -519,6 +532,17 @@ internal object TestHooks {
         if (intent?.hasExtra("voltcap_test_preview") == true && enabled(context)) (context as? android.app.Activity)?.window?.let {
             if (pv) it.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             else it.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        // 529p (emulator harness, deterministic first run): `--ez voltcap_test_firstrun_done true` — a fresh QA install's
+        // first-start questions answered as "done / no extra art / battery note seen", so a throwaway emulator starts on the bare
+        // home screen like the handhelds' QA app. QA app / hooks only; the harness restarts the app after it (the first-start
+        // flags are read at start). Never sent to a handheld's QA app, whose own answers stay as they are.
+        if (intent?.getBooleanExtra("voltcap_test_firstrun_done", false) == true && enabled(context)) {
+            val app = context.applicationContext
+            com.shelf.launcher.data.FirstRun.markDone(app)
+            com.shelf.launcher.data.BatterySaver.introSeen(app)
+            if (com.shelf.launcher.data.Packs.choice(app) == null) com.shelf.launcher.data.Packs.setChoice(app, com.shelf.launcher.data.Packs.Choice.NONE)
+            android.util.Log.e("VoltcapQA", "firstrun done (QA hook)")
         }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).
         val su = intent?.getIntExtra("voltcap_test_setup", -1) ?: -1

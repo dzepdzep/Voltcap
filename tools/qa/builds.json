@@ -770,6 +770,248 @@
    "apk_sha256": "c3a458177b55a32b8f5d1d46216d989b4d4f144f9f9f6df24472859329c59f57",
    "base_commit": "c827ff9",
    "note": "v0.6.71 integration candidate RC4 (integration/0.6.71 = RC3 b018aca + popup-native 07520c9; 3D Shelf off). Built 12 Nov 15:04 in worktree int (assembleDebug: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). testDebugUnitTest EXECUTED in int 14:55 (BUILD SUCCESSFUL; EndlessFillLitRoboTest 460/460, EndlessOnceRoboTest 279/279, WinFocusRoboTest 448 (51 skipped by design), ShelfTextRoboTest 144 (24 skipped by design)). sha256 = installed base.apk on the Flip 2 (55,375,174 bytes). App code = RC3 + a QA-trace-only rename (OldSpineTrace.Track); hardware runs were on RC3, RC4 smoke on the Flip 2 (starts, Shelf composes, 0 crashes)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "main 558cb1f (app code = v0.6.71 827632f)",
+   "id": "qa-0.6.71-558cb1f",
+   "apk_sha256": "fd6075ba4dc3cb6dc5875ae7caa4a017c43ce58b5aa9e72a1954c85de171e683",
+   "base_commit": "827632f",
+   "note": "Update 529: QA app built from the released v0.6.71 source (main tree, assembleDebug 13 Nov 06:46 CET: verifyQaIsolation + verifyNoEmbeddedSecrets 4 values). Used for the master-sprint popup regression (pop529.sh / popclip.sh)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "feature/popup-native 5821da85 (worktree pnat)",
+   "id": "qa-0.6.71-pnat-5821da85",
+   "apk_sha256": "086176440ccb6016a4a0abce6eef104f4ed481fc597ee5e9fe489d30cb8a2e20",
+   "base_commit": "5821da85",
+   "note": "Update 529b: More last + Night motion + achievements compact (Flip 2 findings fixed). assembleQa in worktree pnat 13 Nov 11:35Z; testDebugUnitTest BUILD SUCCESSFUL 11:33Z. sha256 = installed base.apk on the Flip 2 (evidence.sh manifest of mlast529); installed 12:42 device time."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "feature/popup-native fd7bcc52 (worktree pnat)",
+   "id": "qa-0.6.71-pnat-fd7bcc52",
+   "apk_sha256": "c4f1be8761518575a42ac0b1b383272e92ff27196a88e85e01355081fedf1031",
+   "base_commit": "fd7bcc52",
+   "note": "Update 529b: ••• after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 8b18aaaf (worktree int; integration/0.6.72 1983ac72 + 3 repair commits)",
+   "id": "qa-0.6.72-repair-8b18aaaf",
+   "apk_sha256": "facac8dc0a9452617b67f2ef83b614deb68973ee232fce936e1818b0223dcfff",
+   "base_commit": "8b18aaaf",
+   "note": "Update 529h: assembleQa in worktree int 13 Nov 16:30Z (BUILD SUCCESSFUL 2m 42s, verifyQaIsolation + verifyNoEmbeddedSecrets); testDebugUnitTest on 8b18aaaf 2568 tests, 0 failures, 75 skipped. apksigner: CN=Android Debug, SHA-256 a48b27ed. sha256 = installed base.apk on the Flip 2 and KONKR (install_build 13 Nov 17:31 device time)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c4ba1760 (worktree int)",
+   "id": "qa-0.6.72-repair-c4ba1760",
+   "apk_sha256": "315842e7ae321a383db1d92a2fb254af910cda582a77df993e6e87636220b7de",
+   "base_commit": "c4ba1760",
+   "note": "Update 529i: Airy facts fix (KONKR q0672k2). assembleQa in worktree int 13 Nov 17:20Z (BUILD SUCCESSFUL 1m 19s, verifyQaIsolation); testDebugUnitTest 2570 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests ff043d51 (worktree int)",
+   "id": "qa-0.6.72-repair-ff043d51",
+   "apk_sha256": "b43b192dcaa718eb4feb3f944af9e44c9a235da35112efb95f8f42ff01316ed8",
+   "base_commit": "ff043d51",
+   "note": "Update 529i: QA update-prompt crash fix + Airy facts as two lines (KONKR q0672k3). assembleQa in worktree int 13 Nov 17:37Z (BUILD SUCCESSFUL 1m 36s, verifyQaIsolation); testDebugUnitTest 2572 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests dc9d1191 (worktree int)",
+   "id": "qa-0.6.72-repair-dc9d1191",
+   "apk_sha256": "2e8ba9bfcc02e393f1f0f1cf0675976eda7c78c226369b6c3ff3a34b380f89bb",
+   "base_commit": "dc9d1191",
+   "note": "Update 529j: category strips glide (WholeChipRow / Live words / Pocket Quest plate / bar fades), Night bars ModulateAlpha in motion, QA A/B hooks voltcap_test_chipglide / voltcap_test_nmlayers. assembleQa in worktree int 13 Nov 18:30Z (BUILD SUCCESSFUL 1m 42s, verifyQaIsolation); testDebugUnitTest 2576 tests, 0 failures, 75 skipped. apksigner CN=Android Debug a48b27ed. Not installed (KONKR owner-blocked this round)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair a966964d (worktree int)",
+   "id": "qa-0.6.72-repair-a966964d",
+   "apk_sha256": "c0b640c3e6e94ca3f87ede41bb46a9e3832e5fbfe1f168b20b350523c04e51c0",
+   "base_commit": "a966964d",
+   "note": "529k: shelf family native pages (ShelfFamilyPages). assembleQa in worktree int 13 Nov 20:36 (BUILD SUCCESSFUL 3m 31s, verifyQaIsolation); testDebugUnitTest 2625 tests, 0 failures, 47 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair a966964d + 529k2 working tree (NativePageHost, Console stack card fit) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529k2",
+   "apk_sha256": "22c7858453a5730caee560a6c1eac73241da88dd101d6abfa76c11ee7e4d5e7a",
+   "base_commit": "a966964d",
+   "note": "529k2: shelf pages without a second cover / name (NativePageHost), Console stack name / facts give way to the keys. assembleQa 13 Nov 20:48 (BUILD SUCCESSFUL, verifyQaIsolation). apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair c1bde53c + 529l working tree - commit follows (same tree)",
+   "id": "qa-0.6.72-repair-529l",
+   "apk_sha256": "91083e40aa3067e34de1e8439c2f39c28403ce2fd9f93903557a3062a7528b60",
+   "base_commit": "c1bde53c",
+   "note": "529l: Coverflow details compact panel (x1.3 More open), native page scenes keep one composition across pages (Info -> page moves), page cross-fade without double text, Options sub-lines wrap, Twin family native pages (TwinTouchPages). assembleQa 13 Nov 21:37 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets); testDebugUnitTest 2698 tests, 0 failures, 44 skipped. apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair b14d4021 + 529m working tree (owner visual correction #15 6865249152) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529m",
+   "apk_sha256": "ef935a157f7082bc55f9b4304fd95831ddc25b79ddca248dfb4f8b06178280da",
+   "base_commit": "b14d4021",
+   "note": "529m: Cover details actions as full-width bars + save status line (owner #15), home title block room at large text, leaving page copy draws its own page / keys, Back hint kept on native pages, window keeps focus through a touch. assembleQa 13 Nov 22:04 (BUILD SUCCESSFUL, verifyQaIsolation, verifyNoEmbeddedSecrets). apksigner CN=Android Debug a48b27ed."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair abf3c2b5 + 529o working tree (#15 queue 1-2) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529o",
+   "apk_sha256": "10d3d7645cbe6fa9ebb4107dc52f33b0bbc68331eff4a78f736873bba811596a",
+   "base_commit": "abf3c2b5",
+   "note": "529o: controller re-home after a touch in the game window (R1/L1/R2/L2 delivered, A/Start/X/Y/D-pad light only); Game settings opens over the window so one B returns to its Options. assembleQa 14 Nov 11:02 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 26949935 + 529p working tree (#15 6866376184 compact pages) - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529p",
+   "apk_sha256": "4116b9c83983fd411757798ec2fcec7dcc4cb89d72f0544e67ed24e7115a9933",
+   "base_commit": "26949935",
+   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round ••• kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 760753f8 + 529q working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529q",
+   "apk_sha256": "52bef443e52a54a8ef1dc1be6617d9f4e866ba380009e3a8f80d00d9245a880e",
+   "base_commit": "760753f8",
+   "note": "529q: category strip - a chip gliding in is cut at the span's edge (no word over the +N hint); QA hook voltcap_test_firstrun_done for the emulator trial's first-run state. assembleQa 14 Nov 12:56 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9311e4da + 529r working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529r",
+   "apk_sha256": "22f0c95845f00c59116a321010303c458a4f57746dae08b14a10c7eabbe9f617",
+   "base_commit": "9311e4da",
+   "note": "529r: owner P0 - first achievement whole at x1.3 on every layout (AchFirstRowRoboTest): achievement texts' own line heights, order control on the count's line on short pages, page Back is the hint on native-page layouts (hint goes back a page), Coverflow panel 60 % at large text, case 52 % / card full height on Shelf / Stacks, one-line page heading at large text (shelf cards, Tiles), Tiles / Storage native page host and taller sheets, Storage keys on the name line when the name keeps two lines, no save line on Storage sheets. assembleQa 14 Nov 14:24 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 1450b569 + 529s working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529s",
+   "apk_sha256": "8745509f8703d56eed3887868b91369e3eca07e17059e98230edf26f3399c46c",
+   "base_commit": "1450b569",
+   "note": "529s: native pages' scroll cue is a slim bar on the list's right edge (the bottom chevron lay over the last whole row's text, Console stack x1.3). assembleQa 14 Nov 14:37 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 922e23ec + 529s pickups working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529s-pickups",
+   "apk_sha256": "379d99915387c01af5cc0bf68c232f4065d91f532faa5039a77bcd137d3c15c4",
+   "base_commit": "922e23ec",
+   "note": "529s: physical pickups for Storage boxes / Cube menu / TV room (PickupOverlay, TvCaseFlyer), Coverflow panel keeps clear of the title (CoverFlight.headRight), Cube x1.3 pills. assembleQa 14 Nov 16:22 (verifyNoEmbeddedSecrets). KONKR runs pk529s16."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair f91cdaa7 + 529t record crate working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-crate",
+   "apk_sha256": "3c63faf4fd069627bdc307cefa341d8f7a002e0ba0c10b5ddcd0710652d622e1",
+   "base_commit": "f91cdaa7",
+   "note": "529t: Record crate's sleeve comes out of the crate and turns over into the window (sleeveFlip). assembleQa 14 Nov 16:52; testDebugUnitTest BUILD SUCCESSFUL. Flip 2 runs pkf529v."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9d6287f8 + 529t card binder working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-cards",
+   "apk_sha256": "7a2963a6e0971010359d0208acfb57b952127a6906d9560e9659c78c0fed9c8a",
+   "base_commit": "9d6287f8",
+   "note": "529t: Card binder's whole card comes out of its pocket and turns over (sleeveFlip incl. CARD_BACK). assembleQa 14 Nov 17:06; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t1 (CARDS, CRATE x1.0 / x1.3)."
+  },
+  {
+   "version_name": "0.6.71-qa",
+   "version_code": 78,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 9607696f + 529t consoles / box / smooth trips working tree - commit follows its unit tests",
+   "id": "qa-0.6.72-repair-529t-consoles",
+   "apk_sha256": "e17bade62a40030af5bef8314fb08fc524c5f5b023337645f7226845391da3b8",
+   "base_commit": "9607696f",
+   "note": "529t: Console stack card into the bay, Cardboard box resting copy hidden with its piece, trips prewarmed + flat unfold. assembleQa 14 Nov 18:37; testDebugUnitTest BUILD SUCCESSFUL. KONKR pk529t5-t7."
+  },
+  {
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 8de089c5 (v0.6.72 candidate, Save Sync excluded)",
+   "id": "qa-0.6.72-rc-8de089c5",
+   "apk_sha256": "5e4c1be2012a6c8db86a1b092d5962d58baedf0799540b33f33289f5cc23c33a",
+   "base_commit": "8de089c5",
+   "note": "v0.6.72 RC QA build: assembleQa 14 Nov 19:29 UTC; testDebugUnitTest BUILD SUCCESSFUL. Popup gate k672a (KONKR x1.0) / f672b (Flip 2 x1.3)."
+  },
+  {
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 3ba6a039 (v0.6.72 candidate 2: Save Sync excluded + Box rapid B fix)",
+   "id": "qa-0.6.72-rc2-3ba6a039",
+   "apk_sha256": "1837ca7f75bbec1432ff32ef2f840d7de52a01dfc2c039c5bdd13bb81e4f7a08",
+   "base_commit": "3ba6a039",
+   "note": "v0.6.72 RC2 QA build: assembleQa 14 Nov 21:03 UTC; testDebugUnitTest BUILD SUCCESSFUL."
   }
  ]
 }

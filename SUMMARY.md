@@ -1,3 +1,64 @@
+# v0.6.72 release candidate (14 Nov 2026) - branch repair/0.6.72-windows-tests, NOT released
+- Owner instruction 14 Nov: ship v0.6.72 as a safe incremental release; the new Save Sync stays out until real Google Drive
+  cross-device tests prove it. This commit takes it out cleanly: every Save Sync 529 / 529c change (fix/save-sync 29011eff..2992f7eb,
+  plus 63c0268e and 33aa0241) is reversed, so CloudSync, DriveClient, DriveOnlySaves, PlaySession, SaveObserver, SaveWatchWorker,
+  SyncNotifier, SyncStatusStore, SaveExplorer, SaveSyncUi and SyncPrompts are byte-identical to v0.6.71; the files it added
+  (PrelaunchCheck, QaDriveTest, QaSaveDryRun, SaveBackups, SaveChangeDetect, SaveSyncTrace, SaveUnitTransaction, SyncDecision,
+  SyncGuards, their tests, docs/SAVE_SYNC_529.md, midsave529.sh) are gone from this line. The blur hotfix (5ab8b4bc, a03ae8d2) stays.
+- Save Sync is kept whole on fix/save-sync; to bring it back after the Drive tests: revert this commit's Save Sync part.
+- Version 0.6.72 / versionCode 79 (0.6.N = code N+7).
+
+# Save sync 529c (13 Nov 2026) - branch `fix/save-sync`, NOT merged into a release, NOT compiled for Android yet
+- Last-moment upload race (`UploadRace`, Drive revisions kept + parked + pinned), multi-file saves sent whole (`UnitManifest`,
+  held while Drive is mid-upload, a conflict after 24 h), "Newest" corrected to Google's clock (`ConflictClock`, never guesses
+  when close), open play sessions from before a restart closed and synced (`BootSession`), "Earlier versions" restore in the save
+  window (verified md5, live save backed up first, read back, rolled back on failure; refused while the game runs), isolated real-Drive
+  QA switch (`QaDriveTest`: QA app + flag file + only folders inside the QA app's own files). Record: `docs/SAVE_SYNC_529.md` section 8.
+- Rule 11 on the save screens: game names, save file names and places, Drive problems and sync lines are never cut with "..." any
+  more (22 places in SaveExplorer / SaveSyncUi / SyncPrompts); a Save Vault row grows past 46 dp when a long name wraps.
+- Copy: `src_copy/data/{SyncGuards,QaDriveTest}.kt` (new), `src_copy/data/{CloudSync,DriveClient,SaveBackups,PrelaunchCheck,PlaySession,SaveWatchWorker}.kt`,
+  `src_copy/ui/{SaveSyncUi,SaveExplorer,SyncPrompts,LauncherScreen}.kt`; tests `SyncGuards529Test`, `SaveSyncSim529Test`.
+- Checked: the pure rules and the simulation on the JVM in the cloud (mutation-checked); the save-screen source test fails on the old
+  code. NOT checked: Android compile (no SDK in the cloud, PC unreachable), device run, real Drive.
+
+# Save sync P0 (update 529, 13 Nov 2026) - on branch `fix/save-sync`, NOT merged, NOT released
+- Audit of review findings 1-8 against v0.6.71: 1, 2, 3, 4, 5, 6, 7 confirmed, 8 partly; two dismissed. Three new: twin lineage (9),
+  multi-file saves not a transaction (10), "keep this device's" parked Drive's copy unchecked (11). Record: `docs/SAVE_SYNC_529.md`.
+- New `data/SyncDecision.kt` (decision table, + lineage rule), `data/SaveUnitTransaction.kt` (all-or-none multi-file writes),
+  `data/SaveBackups.kt` (verified backups + sidecar, keep >= 10 / 30 days), `data/SaveChangeDetect.kt` (racy-clean hash trust),
+  `data/PrelaunchCheck.kt` (Play waits <= 10 s; Play anyway / Retry). Changed: CloudSync, SaveWatchWorker, SaveObserver,
+  SyncStatusStore, SyncNotifier, DriveOnlySaves, ui/SaveSyncUi, ui/SaveExplorer, LauncherViewModel (`src_copy` mirrors identical).
+- Tests: `SaveSync529Test` (18), `SaveSyncSim529Test` (12; two/three handhelds on a fake Drive, random runs, invariants);
+  every fix mutation-checked. Full `testDebugUnitTest` green on the PC.
+- Devices: read-only only (Flip 2: no emulators; GT78: RetroArch cloud sync off, Syncthing markers in saves/, Pokemon Silver live save
+  is the furthest-along copy). Not proven: real Drive two-device QA (QA app never syncs; OAuth is the owner's), KONKR not connected.
+- Base: `hotfix/0.6.72-blur` (smooth blur, also unreleased). PC main tree holds both as UNCOMMITTED changes - do not
+  `git_commit_push` them to main until approved. Bundle `Claude outputs\backups\fix-save-sync.bundle` (prereq 558cb1f7).
+# Update 529b — More last, Moonlight motion, achievements compact hotfix (13 Nov 2026, `feature/popup-native`, not released)
+
+- **More last** (c819139a): the round ••• is the last key of every window that has it (after Inspect; after Start on the Channel grid;
+  last on Storage's line); fd7bcc52: after the save line too, in every window that builds its keys with `sceneKeys` (Game shelf had
+  put "Saves: …" beside ••• after it). `Hierarchy529Test`; `popclip.py` fails a key placed after More (selftest); popclip.sh taps the
+  round "•••". Flip 2: mlast529 (10 layouts), mlast529b (6, More step), mlast529c (fd7bcc52: Shelf, Classic, Storage, Night) - •••
+  last everywhere. Open gate notes, not from this change: Storage hierarchy "INFO before PLAY" (its page tabs; the check is newer
+  than Storage's 12 Nov PASS), Spotlight home "SELECT" glyph graded off centre (centred in the screenshot).
+- **Moonlight (Night menu) motion** (15d47abf, 93b5bbb2, 23f63dcb): `NightMotion` - entrance wave + layered stagger (520 ms Full,
+  300 ms Lite), game-to-game white sweep + bend + cover step, category change moves the games only (rule 14) along the slant, the
+  window's panels arrive along the slant and leave the same way. Nothing loops at rest. `NightMotion529Test`. Flip 2 frame times
+  equal or better than before (Full busy p90 18 -> 17 ms, Lite p90 17 -> 14 ms). KONKR not tested. `tools/qa/device/moon529.sh`.
+- **Achievements compact** (a7be137b, 2b689b5d, 3ea66a36, 5821da85): one control bar (Show / Order / View / Stats / Last session),
+  each a folded panel (180 ms); no rest-to-open; A opens one achievement, B closes comments, then the details, then the list (the
+  handlers sit inside the dialog - before, B closed the whole list: Flip 2 ach_after3); comments fetched only when opened (list,
+  inline detail, detail window, window page); Power cells' stat tiles in the Stats panel; the window page shows whole names,
+  descriptions and comments (rule 11) and says when Full list has more. `AchCompact529Test` (8). QA fixture sets 1 / 10 / 120 /
+  none with long texts, missables and synthetic comments (none / few / many / offline); hook `voltcap_test_achlist`;
+  `tools/qa/device/ach529.sh`. Flip 2 ach_after4: 1 / 10 / 120 / none, x1.3, page and list, fast moves - PASS by review. KONKR not
+  tested (not connected). Before shots of the old list could not be captured (the old window's keys moved between runs).
+- Files: ui/GameWindow.kt, WinScenes.kt, WinScenesWii.kt, StyleNightMenu.kt, AchievementListDialog.kt, AchievementDetailDialog.kt,
+  AchievementViews.kt, SteamAchievementsUi.kt, SettingsDialog.kt, SettingsIndex.kt, TestHooks.kt, LauncherScreen.kt,
+  LauncherViewModel.kt; tests Hierarchy529Test, NightMotion529Test, AchCompact529Test; tools/qa (popclip.py, selftest, moon529.sh,
+  ach529.sh). Checked: testDebugUnitTest + assembleQa green on 5821da85 (PC).
+
 # v0.6.71 published (13 Nov 2026, update 529)
 - GitHub release v0.6.71 (Latest) at `827632f` = `feature/popup-native` 002e6c9e merged onto main (`44ea53f`) + version 0.6.71 / 78
   + bump-proof version test. Assets: Voltcap-0.6.71.apk 4ec2ed40…4962, -compat 63b8dc5f…2606 (GitHub digests = local build);
