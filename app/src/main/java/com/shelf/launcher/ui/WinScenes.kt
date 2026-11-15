@@ -683,7 +683,10 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         WinFullText(ctx.name.uppercase(), color = ink, fontSize = if (tight) 20.sp else 26.sp, lineHeight = if (tight) 22.sp else 29.sp, fontWeight = FontWeight.Black, maxLines = if (tight) 2 else 3,
                             style = if (ink == Color.White) FsOutline else androidx.compose.material3.LocalTextStyle.current)
                         Spacer(Modifier.height(4.dp))
-                        Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
+                        // (674j, KONKR x1.3 k674i: the meta's second line left TIME no room - on a tight file it is one sliding line.)
+                        if (tight) WinFullText(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 1,
+                            fontWeight = FontWeight.SemiBold)
+                        else Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
                             fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(8.dp))
                         // The inset panel: time played and the story.
@@ -1832,7 +1835,10 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                     // Played / ★ chip was dropped, so the facts are the same two plain lines with More closed too.)
                     val facts = airyFacts(ctx.year, ctx.developer, ctx.genres, ctx.played, ctx.earned, ctx.total)
                     Column(verticalArrangement = Arrangement.spacedBy(if (secondary.isEmpty()) 4.dp else 2.dp)) {
-                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty() && !tight) 13.sp else 12.sp, maxLines = 1, reserve = false) }
+                        // (674j, KONKR x1.3 k674i with More open: no room for the second fact line - there the facts are one line
+                        // that slides (rule 11), every fact still on it.)
+                        val lines = airyFactLines(facts).let { if (tight && secondary.isNotEmpty()) listOf(it.joinToString("  ·  ")) else it }
+                        lines.forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty() && !tight) 13.sp else 12.sp, maxLines = 1, reserve = false) }
                     }
                     // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
                     // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)

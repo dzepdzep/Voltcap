@@ -355,11 +355,14 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # out of view: FAIL — unless it sits in a part marked as giving way by design (QaClip.GivesWay), then a warning.)
     squeezed, gave = [], []
     give = {(t.get("text", "")[:80], tuple(t.get("full") or [])) for w in wins for t in (w.get("texts") or []) if t.get("giveway")}
+    # (674i: a node's label is shortened (~60 characters) where its text entry keeps 80 - a long story marked as giving way
+    # never matched by label. The semantics id both carry decides first.)
+    give_ids = {t.get("id") for w in wins for t in (w.get("texts") or []) if t.get("giveway") and t.get("id") is not None}
     for w, n in nodes:
         f = n.get("full") or []
         if len(f) == 4 and f[2] > 0 and f[3] <= 1 and _label(n).strip():
             what = f"{_label(n)[:40]} ({n.get('kind')}) is {f[2]:g} x {f[3]:g} px"
-            (gave if (_label(n)[:80], tuple(f)) in give else squeezed).append(what)
+            (gave if (n.get("id") is not None and n.get("id") in give_ids) or (_label(n)[:80], tuple(f)) in give else squeezed).append(what)
     # (Update 474: each text's own layout — needs QaClip's "texts" (staging builds from update 474 on). Cut inside its own box
     # (didOverflowHeight: given less height than its lines, or stopped by maxLines), cut sideways (didOverflowWidth with no
     # wrap and no marquee), or ending in an ellipsis the text itself doesn't have (rule 11). Popup texts only: the home screen

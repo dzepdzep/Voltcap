@@ -1254,6 +1254,17 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 9c11c496 + 674g (Crate stack without fade, whole fact rows; Circuit pinout gives way; Library story gives way; Airy small keys with More on a tight panel) - the 674g commit",
    "note": "674g QA build: assembleQa 15 Nov 17:27 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674i",
+   "apk_sha256": "2f9a5432464509c2d848f97d5a7caf2653731976f87a7a9f0c807badf6d033d6",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "59ca073a",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 59ca073a (674g + 674h + 674i) - clean",
+   "note": "674i QA build: assembleQa 15 Nov 17:43 UTC."
   }
  ]
 }

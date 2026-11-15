@@ -1,3 +1,14 @@
+# Update 674j (15 Nov 2026, evening, after the owner's power cut) - same branch, NOT released
+- Power cut ~18:55: the PC went offline mid-run. The KONKR finished its x1.0 gate on its own (k674g, 674f build: 40 / 53 PASS;
+  FAIL Arcade main glyph, Crate rapid once, File select More story - fixed in 674h); the Flip 2's stopped at 41 / 53 on the
+  "Use USB for" dialog after the USB came back (f674g, INFRA - redone as f674j). Both restored diff=0; worktree intact.
+- x1.3 recheck on 674i (6 layouts): Flip 2 f674i 6 / 6 PASS; KONKR k674i 2 / 6 before 674j.
+- geomcheck: a node is matched to its text entry by the semantics id first - long stories marked as giving way (File select,
+  Library) never matched by label (labels shortened to ~60 characters, text entries 80). QA selftest 151 / 155 (4 = this VM's ffmpeg).
+- 674j, KONKR x1.3: Airy with More open on a tight panel - the facts one sliding line, every fact on it; Dashboard under 400 dp
+  without the art band; File select's meta one sliding line on a tight file. Airy477Test follows.
+- Open: Record crate's MORE in the vertical menu not reached by popclip (walking down) - to debug on hardware.
+
 # Update 674h / 674i (15 Nov 2026, evening) - same branch, NOT released
 - 674h, D332 x1.3: Dashboard's art strip a 16 % band on a short window (the three stat widgets were 0-1 px); File select on a tight
   panel writes the name smaller (two lines, slides) and its buttons 42 dp, its story gives way by design.

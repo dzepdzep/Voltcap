@@ -68,7 +68,9 @@ class Airy477Test {
         assertEquals(listOf("Played 1 h"), airyFactLines(listOf("Played 1 h")))
         val s = src("WinScenes.kt").replace("\r\n", "\n")
         val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
-        assertTrue(airy.contains("airyFactLines(facts).forEach { FullText(it"))
+        // (674j: the lines from airyFactLines - joined into one sliding line on a tight panel with More open, every fact on it.)
+        assertTrue(airy.contains("val lines = airyFactLines(facts)"))
+        assertTrue(airy.contains("lines.forEach { FullText(it"))
         // q0672k3: no chips row left that a two-line name can push a fact out of.
         assertTrue(!airy.contains("facts.forEach {"))
     }
