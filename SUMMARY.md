@@ -1,3 +1,13 @@
+# Update 674k (15 Nov 2026, evening) - same branch, NOT released
+- Full gates: Flip 2 x1.0 f674j (674i) 46 / 53 PASS (FAIL: Arcade main glyph, Pocket ribbon home START glyph, Side status line
+  38 px); KONKR x1.3 k674j (674i) 33 / 53 PASS (FAIL Airy / Dash / File select - fixed in 674j, Cards rapid once, Library R2 and
+  Spot START home glyphs); KONKR x1.0 k674g (674f) 40 / 53. NOT TESTED rows = the pixel compare (uniform rows not recognised).
+- KONKR x1.3 recheck on 674j: k674k Airy, Dashboard, Crate PASS; File select main PASS, More state TIME still 0 px -> 674k.
+- 674k: File select on a tight file puts its round tools beside the buttons; Side's status line its own 24 dp form (it was one of
+  the drawer's fitted rows). popclip.sh: back up to a vertical menu's first key before walking down to MORE - k674l: Record crate
+  "More reached walking down the menu" (3 presses); screenshots main / More sent to the owner for review.
+- Backlog (docs/MASTER_BACKLOG.md 0a) updated with the 674 items.
+
 # Update 674j (15 Nov 2026, evening, after the owner's power cut) - same branch, NOT released
 - Power cut ~18:55: the PC went offline mid-run. The KONKR finished its x1.0 gate on its own (k674g, 674f build: 40 / 53 PASS;
   FAIL Arcade main glyph, Crate rapid once, File select More story - fixed in 674h); the Flip 2's stopped at 41 / 53 on the

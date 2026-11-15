@@ -275,6 +275,16 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
             // the last one shown is never cut, p488d: Back cut 13 px.)
             val snapH = if (rowH == null) snapRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp) else null
             KeyColumn(keys, Modifier.fillMaxWidth(), scroll = rowH == null) { k ->
+                // (674k, Flip 2 x1.0 f674j: the drawer drew its status line as one of its rows, at the fitted height - 38 px, under
+                // the 24 dp touch size. A status line is words under the menu, at least 24 dp.)
+                if (LocalKeyAsStatus.current) SceneControl(k, Modifier.fillMaxWidth()) { on ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(k.icon, null, tint = if (k.urgent) Color(0xFFFF8A3D) else Color.White.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(sceneLabel(k.label), color = if (k.urgent) Color(0xFFFF8A3D) else Color.White.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 3)
+                    }
+                } else
                 SceneControl(k, Modifier.fillMaxWidth()) { on ->
                     Row(Modifier.fillMaxWidth().height(rowH ?: snapH ?: 40.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.width(4.dp).fillMaxHeight().background(if (on) a else Color.Transparent))

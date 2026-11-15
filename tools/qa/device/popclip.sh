@@ -127,7 +127,9 @@ for lay in $LAYS; do
         k DPAD_RIGHT 0.45; mr=$((mr + 1)); up
       done
       # (674g: a vertical menu - Record crate at x1.3 - keeps MORE under its visible keys: the D-pad walks down to it.)
-      if [ $found = 0 ]; then up; if seek "(More|⋯|•••)" DPAD_DOWN; then found=1; mr=$sk; echo "$n More reached walking down the menu" >> $OUT/log.txt; fi; fi
+      # (674k: the walk right can leave the stack (KONKR k674i / k674k: "More not on screen") - back up to its first key, then down.)
+      if [ $found = 0 ]; then for i in 1 2 3 4 5 6; do k DPAD_UP 0.35; done; up
+        if seek "(More|⋯|•••)" DPAD_DOWN; then found=1; mr=$sk; echo "$n More reached walking down the menu" >> $OUT/log.txt; fi; fi
       if [ $found = 1 ]; then [ $mr -gt 0 ] && echo "$n More reached with $mr D-pad presses (the row scrolled)" >> $OUT/log.txt
         sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi

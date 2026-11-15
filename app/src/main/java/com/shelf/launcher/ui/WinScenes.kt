@@ -724,6 +724,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
             // The fat buttons, then the round tools (on as many lines as they need).
             // (673g, owner brief 15 Nov: the fat buttons one row of identical buttons; a lit one keeps its size (its colour shows
             // it); the round tools a group of their own under them.)
+            // (674k, KONKR x1.3 k674k with More open: the round tools' row under the buttons left TIME 0 px - on a tight file
+            // they stand beside the buttons, which share the rest of the row.)
+            StackOrRow(tight && ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty(), Modifier, 8.dp, { m -> Box(m) {
             UniformKeyRow(ctx.buttons, 10.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         Box(
@@ -739,7 +742,8 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         }
                     }
             }
-            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            } }) {
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = if (tight) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 ctx.tools.forEach { a ->
                     SceneControl(a, Modifier.size(42.dp)) { on ->
                         val pop by animateFloatAsState(if (on) 1.15f else 1f, spring(dampingRatio = 0.35f), label = "fsTool")
@@ -751,6 +755,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         ) { Icon(a.icon, a.label, tint = if (on) Color(0xFF2A2200) else Color.White, modifier = Modifier.size(21.dp)) }
                     }
                 }
+            }
             }
             if (ctx.chips.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
