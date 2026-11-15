@@ -1,3 +1,23 @@
+# Update 674e / 674f (15 Nov 2026, evening) - same branch, NOT released - IN PROGRESS
+- CI: afa71561 green (both runners). 60fd7c4e failed on ubuntu-24.04 only: the test worker grew to 9.6 GB (native memory outside
+  the 2 GB heap) and the watchdog stopped it; ubuntu-latest ran 2,813 / 0 failures. app/build.gradle.kts: forkEvery 400 - a fresh
+  test worker every 400 tests (D325).
+- Record crate at x1.3 (owner decision 15 Nov, option A): where two sleeve keys can't share the row, the actions are a deliberate
+  vertical menu - identical keys the sleeve's width, even gaps, Play first, MORE last, whole keys only (2-3 at a time, measured
+  from the room under the sleeve's rule so the track list keeps two rows), the D-pad scrolling the stack; x1.0 keeps its row.
+  crateKeysVertical / crateVisibleKeys, CrateVertical674Test. No other row turns vertical. Owner review pending (screenshot).
+- D332: Airy tight panel (x1.3 KONKR, Flip 2 with More): smaller name / console / LCD, closer gaps; with More open on the KONKR
+  one sliding name line and no LCD. Blades' standing name centred in its strip (it ran off the top of the screen). Blades' facts:
+  80 % type, then a narrower cover, then no cover when even that overflows. Orbit: no "LAST —" row for a game never played.
+- Uniform groups: Night's commands one height; Rental shop tag one row of identical punched keys, Play first and no longer
+  stretched across the tag (two-line words on a narrow tag; ShopTag673Test updated); Terminal / Camera rows identical; Magazine's
+  page keys a vertical menu (its callouts keep their own size - as wide as the column they outranked the starburst Play); Cinema's
+  page keys a row. BANNER / CLASSIC / SHARED / ROW_* checked: already uniform groups (673g); BANNER's round shortcuts one group.
+- Terminal: the TROPHY line may take two lines (cut at one on the KONKR x1.3).
+- Hardware x1.3 (qa-0.6.73-674e, 9 layouts): Flip 2 f674e 8 / 9 (Magazine hierarchy - fixed in 674f), KONKR k674e 6 / 9 (Airy More,
+  Blades facts, Terminal trophy line - fixed in 674f). Crate's vertical menu PASS on both.
+- Unit tests 2,818 / 0.
+
 # Update 674 (15 Nov 2026) - same branch, NOT released - IN PROGRESS
 - 673h (finishing 673g's local edits): Case flow's pills, Memory card's choices and Cinema's round keys are uniform groups;
   Cinema's Play is as tall as the round keys. Cinema's edit compiles (missing `heightIn` import). Batch478Test's Cinema check now

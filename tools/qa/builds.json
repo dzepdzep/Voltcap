@@ -1221,6 +1221,28 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 60fd7c4e + 674d (Cinema: the other pages' branch only off the main page; their keys a uniform row) - the 674d commit",
    "note": "674d QA build: assembleQa 15 Nov 15:43 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674e",
+   "apk_sha256": "2228706188ed39ddd7f49fc2d0d144eabd6996fb29f7ab4af7dba3d6526fb964",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "afa71561",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests afa71561 + 674e (Record crate vertical menu at x1.3, Airy tight panel, Blades standing name centred, Blades narrow cover, Orbit LAST row, Night / Magazine / Rental tag / Terminal / Camera uniform groups, test forkEvery) - the 674e commit",
+   "note": "674e QA build: assembleQa 15 Nov 16:17 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674f",
+   "apk_sha256": "18a7595b878972fad5a8698b40a3228cfd1ccbbe8951aa578505cb4f2b0d7edd",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "afa71561",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests afa71561 + 674e + 674f (Crate whole keys, Magazine callouts own size, Airy More tight, Blades cover step, Terminal trophy line) - the 674e/f commit",
+   "note": "674f QA build: assembleQa 15 Nov 16:34 UTC."
   }
  ]
 }

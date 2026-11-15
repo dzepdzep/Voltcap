@@ -1715,7 +1715,9 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
                 }
             }
             readout("TIME", ctx.played)
-            readout("LAST", ctx.last ?: "—")
+            // (674e, KONKR x1.3 k674c: "LAST —" for a game never played repeated TIME's "Never played" and took the row the genre
+            // needed at the readout's foot (cut 22 of 56 px). Shown when there is a last time.)
+            readout("LAST", ctx.last)
             readout("YEAR", ctx.year)
             readout("MAKER", ctx.developer)
             readout("KIND", ctx.genres)
@@ -1788,6 +1790,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     val (primaryTools, secondary) = airySplit(tools)
     val w = minOf(ctx.maxW * 0.92f, 860.dp)
     val h = minOf(ctx.maxH * 0.9f, 480.dp)
+    // (674e, D332 - x1.3: on the KONKR (a 334 dp panel) and with More open on the Flip 2 the name's two 28 sp lines, the console
+    // and the LCD left the two fact lines 0 px. A tight panel writes the name smaller, the LCD smaller and the gaps closer.)
+    val tight = h < 340.dp || (secondary.isNotEmpty() && h < 400.dp)
     Column(
         Modifier.size(w, h)
             .graphicsLayer { val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx() }
@@ -1808,13 +1813,14 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         Column(Modifier.weight(1f)) {
                             // (Update 477: two lines at most — it shrinks, then slides, never cut (a long name stopped at 3 lines,
                             // k477f); no reserved height, so a short name leaves the facts their room.)
-                            FullText(ctx.name, Color(0xFF2D3440), 28.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 31.sp, reserve = false)
-                            Text(ctx.console, color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            FullText(ctx.name, Color(0xFF2D3440), if (tight) 21.sp else 28.sp, maxLines = if (tight && secondary.isNotEmpty()) 1 else 2, fontWeight = FontWeight.Light, lineHeight = if (tight) 24.sp else 31.sp, reserve = false)
+                            Text(ctx.console, color = accent, fontSize = if (tight) 12.sp else 14.sp, lineHeight = if (tight) 15.sp else androidx.compose.ui.unit.TextUnit.Unspecified, fontWeight = FontWeight.SemiBold)
                         }
                         // (Update 477, D266: a little smaller with More open — the facts under it keep their room on the KONKR.)
-                        AiryLcd(ctx.cover, if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
+                        // (674f, KONKR x1.3 k674e with More open: one name line - it slides, rule 11 - and no LCD; the facts' second line had 0 px.)
+                        if (!(tight && secondary.isNotEmpty())) AiryLcd(ctx.cover, if (tight) Modifier.size(60.dp, 46.dp) else if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(if (tight) 4.dp else 10.dp))
                     // (Update 529i, KONKR q0672k2: a long maker and genre took the chips to a third row, which the FlowRow never
                     // placed - "★ 8 / 10" was gone, and with More open "Played" too. Played and ★ now share one chip, and with
                     // More open the facts are two plain lines (as Cover details' window), so every fact stays in view.
@@ -1822,7 +1828,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                     // Played / ★ chip was dropped, so the facts are the same two plain lines with More closed too.)
                     val facts = airyFacts(ctx.year, ctx.developer, ctx.genres, ctx.played, ctx.earned, ctx.total)
                     Column(verticalArrangement = Arrangement.spacedBy(if (secondary.isEmpty()) 4.dp else 2.dp)) {
-                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty()) 13.sp else 12.sp, maxLines = 1, reserve = false) }
+                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty() && !tight) 13.sp else 12.sp, maxLines = 1, reserve = false) }
                     }
                     // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
                     // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)
@@ -1833,7 +1839,7 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                 } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
         }
-        Spacer(Modifier.height(if (secondary.isEmpty()) 14.dp else 10.dp))
+        Spacer(Modifier.height(if (tight) 6.dp else if (secondary.isEmpty()) 14.dp else 10.dp))
         // (Update 477, D266: the round keys always shown along the bottom; with More open the others in one compact row of
         // rounded pills under them — word beside the icon, so the row is short and the facts above keep their room (477a put
         // them in the panel's well: squeezed to 14 px on the KONKR; 477b as small round keys in the same row: it wrapped).)
@@ -2082,7 +2088,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         }
                         Spacer(Modifier.width(4.dp))
                         Box(
-                            Modifier.weight(1f).height(if (a.primary) 32.dp else 26.dp).clip(slantShape(0.5f))
+                            // (674e, owner brief 15 Nov - vertical menus: every command the same height, Play told by its bigger word.)
+                            Modifier.weight(1f).height(28.dp).clip(slantShape(0.5f))
                                 .background(Color(col.top).copy(alpha = 0.85f))
                                 .drawBehind {
                                     if (pull > 0.001f) {
@@ -2097,7 +2104,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                             // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
                             // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
                             WinFullText(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
-                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
+                                fontSize = if (a.primary) 16.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
                                 style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
                         }
                     }

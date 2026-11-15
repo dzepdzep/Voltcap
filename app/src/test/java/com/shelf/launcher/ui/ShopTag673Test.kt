@@ -50,16 +50,17 @@ class ShopTag673Test {
     @Test fun unmeasuredWidthKeepsOneCellEach() = assertEquals(
         listOf(listOf(0 to 1, 1 to 1, -1 to 1)), tagKeyGrid(listOf(500, 500), 0, 7, 3))
 
-    @Test fun theTagMeasuresItsKeysAndUsesTheGrid() {
+    // (674e, owner brief 15 Nov: the tag's keys are one row of identical punched keys - Play first, not stretched across the
+    // tag - that scrolls a key at a time; the grid above stays as a pure helper.)
+    @Test fun theTagsKeysAreOneUniformRowPlayFirst() {
         val s = src("WinScenesConsole.kt")
         val i = s.indexOf("private fun RentalTagCard(")
         assertTrue(i > 0)
         val body = s.substring(i, s.indexOf("private fun tagKeyNeeds(", i))
-        assertTrue(body.contains("tagKeyGrid(need, innerPx"))
-        assertTrue(body.contains("tagKeyNeeds(rest.map { rentalKeyLabel(it.label, false) }"))
-        assertTrue(body.contains("grow = need[i] > innerPx"))
+        assertTrue(body.contains("UniformKeyRow(ctx.buttons.filter { it.primary } + rest, 4.dp) { a -> key(a, Modifier) }"))
+        assertFalse("Play stretched across the tag", body.contains("key(a, Modifier.fillMaxWidth(), grow"))
+        assertFalse("the grid of cells", body.contains("tagKeyGrid(need, innerPx"))
         assertFalse("the old fixed chunks", body.contains("rest.chunked(across)"))
-        // The keys keep their punched height unless a word is wider than the whole tag.
-        assertTrue(body.contains("if (grow) Modifier.heightIn(min = kh) else Modifier.height(kh)"))
+        assertTrue(body.contains("val kh = if (h < 440.dp) 30.dp else 36.dp"))
     }
 }

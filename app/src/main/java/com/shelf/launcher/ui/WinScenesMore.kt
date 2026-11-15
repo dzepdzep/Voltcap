@@ -594,6 +594,11 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 }
             }
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(2.dp).background(ink))
+            // (674f: the room under the rule, measured - the vertical menu shows whole keys only, as many as leave the track list
+            // two rows (k674e KONKR x1.3: three keys took all of it; f674e Flip 2: the third key cut at the stack's foot).)
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val regionH = maxHeight
+            Column(Modifier.fillMaxSize()) {
             if (ctx.page == WinPage.MAIN) {
                 // The facts as the track list.
                 // (672a, Flip 2 x1.3 popup gate f672e: with More open the keys left the list 2 px - the top of one row, "1. Console",
@@ -632,11 +637,32 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             // measured before the track list (which gives way) and, on a sleeve too small even for them, scroll - every key is
             // there, and the D-pad brings the one it is on into view.)
             val keyScroll = rememberScrollState()
-            Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
+            // (674e, owner decision 15 Nov - Record crate at x1.3, option A: where two of the sleeve's keys can't stand side by
+            // side (the row showed one at a time), its actions are a deliberate vertical menu, WWE SmackDown vs. Raw 2011 style:
+            // identical keys the sleeve's width, edges in line, even gaps, Play first and MORE last; three at a time, the D-pad
+            // scrolling the stack smoothly; the track list keeps its room above. Only here - no other row turns vertical.)
+            val actions = keys.filterNot { it.status }
+            val widest = actions.maxOfOrNull { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: 0.dp
+            if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)) {
+                val keyH = 34.dp
+                val shown = crateVisibleKeys(regionH, keyH, 6.dp, if (ctx.page == WinPage.MAIN) 46.dp else 0.dp, actions.size)
+                Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0)).sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
+                    UniformKeyColumn(actions, 6.dp, fill = true) { a ->
+                        SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red,
+                            RoundedCornerShape(3.dp), upper = true, size = 11.sp, height = keyH, lineHeight = 14.sp)
+                    }
+                }
+                val status = keys.filter { it.status }
+                if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) {
+                    status.forEach { a -> SceneKey(a, paper, ink, ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp) }
+                }
+            } else Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
                 KeyRow(keys) { a ->
                     SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
                         minWidth = if (a.primary) playMin else Dp.Unspecified)
                 }
+            }
+            }
             }
         }
     }
@@ -644,6 +670,18 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
 
 /** 672a (pure, CompactX13Fixes672Test): Play's least width beside a Details key [details] wide in a row [row] wide with [gap]
  *  between them - Details' width, or what the row leaves beside it when two keys that wide don't fit (never below 0). */
+/** 674e (pure): Record crate's keys stand as a vertical menu where two keys [widest] wide can't share the sleeve's row [row]
+ *  ([gap] between them, the row's ‹ › [gutter]s each side) - the row would show one key at a time. */
+internal fun crateKeysVertical(widest: Dp, row: Dp, gap: Dp, gutter: Dp): Boolean = widest * 2 + gap > row - gutter * 2
+
+/** 674f (pure): whole keys [keyH] tall, [gap] apart, the vertical menu shows in [region] (the room under the sleeve's rule, an
+ *  8 dp gap above the keys) leaving the track list [facts] - two at least (of [n]), three at most; the rest scroll. */
+internal fun crateVisibleKeys(region: Dp, keyH: Dp, gap: Dp, facts: Dp, n: Int): Int {
+    if (n <= 0) return 0
+    val fit = ((region - 8.dp - facts + gap) / (keyH + gap)).toInt()
+    return fit.coerceIn(minOf(2, n), minOf(3, n))
+}
+
 internal fun crateKeyMin(details: Dp, row: Dp, gap: Dp): Dp = minOf(details, row - gap - details).coerceAtLeast(0.dp)
 
 // ───────────────────────────── Card binder: the card flips to its back ─────────────────────────────
