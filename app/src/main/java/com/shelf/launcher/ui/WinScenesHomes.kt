@@ -144,16 +144,19 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else {
+                    } else if (ctx.page != WinPage.MAIN) {
+                        // (674d: only the other pages - k674c drew the page body and these keys on the main page too where Play
+                        // went into the round keys' row, the main page's own keys squeezed to 5 px.)
                         Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f))) { ctx.pageBody(Modifier.fillMaxSize()) }
                         Spacer(Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ctx.buttons.forEach { a ->
+                        // (674d, owner brief 15 Nov: the page's keys one row of identical keys - they were as wide as their words.)
+                        UniformKeyRow(ctx.buttons, 8.dp) { a ->
                                 SceneControl(a, Modifier) { on ->
-                                    Text(a.label, color = if (on) Color.Black else Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(if (on) Color.White else Color(0xFF333333)).padding(horizontal = 14.dp, vertical = 6.dp))
+                                    Box(Modifier.uniformFill().clip(RoundedCornerShape(4.dp)).background(if (on) Color.White else Color(0xFF333333)).padding(horizontal = 14.dp, vertical = 6.dp),
+                                        contentAlignment = Alignment.Center) {
+                                        Text(a.label, color = if (on) Color.Black else Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                                    }
                                 }
-                            }
                         }
                     }
                 }

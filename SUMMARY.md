@@ -31,6 +31,13 @@
   where every key really grows a second line at that width (a single-line drawing keeps the group at the one-line width - no
   word is ever cut); `twoLine = false` for Storage's keys on its name line (AchFirstRowRoboTest). TwoLineKeys674Test.
   Needs the owner's visual review.
+- 674c hardware (qa-0.6.73-674c, x1.3): Flip 2 f674c 10 / 15 PASS (FAIL only the known D332 Airy More squeeze and Blades'
+  standing name), KONKR k674c 7 / 15 (Crate / Pocket / Cube / Case flow / Panels now pass; Cinema drew the other pages' body and
+  keys on its main page where Play went into the row - fixed in 674d; Airy, Blades, Orbit facts as D332). The two-line keys show
+  two keys at a time on Discover (Resume); Record crate's sleeve still holds only one key at x1.3 even with two-line words (SLEEVE
+  NOTES at half the sleeve is still too wide) - a vertical stack there is a design choice for the owner.
+- 674d: Cinema's other-pages branch only off the main page; its page keys a uniform row. KONKR x1.3 k674d Cinema PASS
+  (qa-0.6.73-674d).
 - Checked: compileDebugKotlin, testDebugUnitTest PASS (674c: all, incl. TwoLineKeys674Test), static_checks PASS, QA selftest 151 / 155 (the 4 FramesPy /
   screen-script failures are this VM's ffmpeg, unrelated). QA build qa-0.6.73-674b on Flip 2 and KONKR (isolated QA app; real
   Voltcap unchanged). Hardware gates k674a / f674a (x1.3, 15 layouts) - see the next entry.

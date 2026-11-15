@@ -1210,6 +1210,17 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 5c6905c1 + 673h + 674a + 674b + 674c (two-line uniform keys, Cinema Play in the row on short windows, Case flow tools beside the pills, Panels line height) - the 674 commit",
    "note": "674c QA build: assembleQa 15 Nov 15:23 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674d",
+   "apk_sha256": "fe37aece59dfa027f57f7ee883d38c76a57f6e993904c53cac671d22f36c2353",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "60fd7c4e",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 60fd7c4e + 674d (Cinema: the other pages' branch only off the main page; their keys a uniform row) - the 674d commit",
+   "note": "674d QA build: assembleQa 15 Nov 15:43 UTC."
   }
  ]
 }
