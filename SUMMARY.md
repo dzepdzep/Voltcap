@@ -1,3 +1,9 @@
+# Update 674m (15 Nov 2026, evening) - same branch, NOT released
+- Glyph centring (glyph gate f674j): Arcade's menu pointer drawn alone in its box with a gap after it ("▶ " carried its own space -
+  the arrow 16 % left of the box's middle; unlit lines keep an unseen arrow, cleared from semantics so line names are just the
+  words); Pocket ribbon's START tab text moved 0.9 units down (capitals sat 3 px high in a line box sized for descenders).
+- Not yet on hardware (next gates). Library R2 / Spot START / Bar ◀ home glyphs: still open.
+
 # Update 674l (15 Nov 2026, evening) - same branch, NOT released
 - Owner decisions 15 Nov: Record crate x1.3 vertical menu VISUALLY APPROVED (keep it; finish its verification checklist); Flip 2
   charge-loop fix may be tested with the QA app only - BLOCKED: production Voltcap's own limit is on and toggles input_suspend
