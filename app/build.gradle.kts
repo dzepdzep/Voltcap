@@ -44,7 +44,9 @@ fun buildConfigString(v: String?): String =
 
 // Update 310: compile-only CI check when the proprietary Discord binary is not in GitHub.
 // The stub is NEVER included in ordinary local or release builds and CI must not publish it.
-val voltcapCiWithoutDiscord = System.getenv("GITHUB_ACTIONS") == "true" &&
+// (674o, cloud migration: Claude Code cloud sessions have no Discord binary either - they set VOLTCAP_CLOUD=1, the same stub
+// and the same release guard below apply.)
+val voltcapCiWithoutDiscord = (System.getenv("GITHUB_ACTIONS") == "true" || System.getenv("VOLTCAP_CLOUD") == "1") &&
     providers.gradleProperty("voltcapCiWithoutDiscord").orNull == "true"
 if (voltcapCiWithoutDiscord && gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }) {
     error("CI-only Discord stub must never be used for release builds.")
@@ -122,6 +124,10 @@ android {
         // Handheld CPUs only — also keeps Discord's native library small.
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+            // (674o, emulator QA: the x86_64 emulator ran the ARM build through its ARM translation and crashed ~90 s in
+            // (runs 43615955063 .. 43702622416). The emulator build adds x86_64 - only with the Discord stub (Discord's own
+            // library is ARM only), never in a handheld or release build.)
+            if (voltcapCiWithoutDiscord && providers.gradleProperty("voltcapEmulatorAbi").orNull == "true") abiFilters += "x86_64"
         }
     }
 

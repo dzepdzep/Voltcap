@@ -243,6 +243,7 @@ private val SIDE_DRAWER_TEXT = 84.dp
 /** (674n) What KeyColumn draws between keys, and the room one status line under them takes (24 dp touch size, one 12 sp line). */
 private val SIDE_KEY_GAP = 4.dp
 private val SIDE_STATUS_H = 24.dp
+private val SIDE_ROUNDING = 2.dp
 /** (674n, KONKR x1.0 window 360 dp: 6 keys + a status line need 228 dp - with the picture held at 64 dp they were 12 dp short and
  *  the menu scrolled. The picture now gives up height down to 44 dp before any key scrolls.) */
 internal val SIDE_ART_MIN = 44.dp
@@ -261,7 +262,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
     val nAct = keys.count { !it.status }
     val nStat = keys.size - nAct
     val statusNeed = (SIDE_STATUS_H + SIDE_KEY_GAP) * nStat
-    val rowsNeed = 30.dp * nAct + SIDE_KEY_GAP * (nAct - 1).coerceAtLeast(0) + statusNeed
+    val rowsNeed = 30.dp * nAct + SIDE_KEY_GAP * (nAct - 1).coerceAtLeast(0) + statusNeed + SIDE_ROUNDING
     val headerH = if (ctx.page != WinPage.MAIN) w / 2.1f else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.align(Alignment.CenterStart).width(w).fillMaxHeight().graphicsLayer {
@@ -282,7 +283,9 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
             // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
             // when there is room, down to 30 dp when not, scrolling only below that.)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) {
-            val rowRoom = maxHeight - statusNeed
+            // (674o, Flip 2 x1.0 f674o: the fit filled the room to the last dp and pixel rounding left the status line 51 px -
+            // under its 24 dp (54 px) touch size. 2 dp stay free for rounding.)
+            val rowRoom = maxHeight - statusNeed - SIDE_ROUNDING
             val rowH = fitRowHeight(rowRoom, nAct, SIDE_KEY_GAP, 40.dp, 30.dp)
             // (Update 488b: with many rows (the Thor's 8) the list scrolls — then a whole number of rows fills the room, so
             // the last one shown is never cut, p488d: Back cut 13 px.)

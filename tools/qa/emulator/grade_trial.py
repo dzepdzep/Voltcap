@@ -14,15 +14,30 @@ json.dump({"builds": [{"id": "emulator-ci-" + os.environ.get("GITHUB_SHA", "loca
                        "base_commit": os.environ.get("GITHUB_SHA", "local")[:8], "patch_sha256": None,
                        "tree_hash": "CI stub build (no Discord SDK), EMULATOR trial", "note": "not a user build"}]}, open(ledger, "w"))
 
+# (674o) One verdict for the whole trial, written to verdict.txt: PASS only when every expected popup gate graded PASS (exit 0
+# and "Popup gate: PASS"); otherwise the worst of FAIL > INFRA > NOT TESTED, with one line per gate. The workflow's last step
+# fails unless the first line is "VERDICT: PASS". A missing gate is NOT TESTED, never PASS.
+verdicts = []
 print("\n## Popup gate (EMULATOR)")
 for tag in ("e529a", "e529b"):
     run = os.path.join(raw, tag)
     if not os.path.isdir(run):
-        print(f"- {tag}: NOT TESTED (no run folder pulled)"); continue
+        print(f"- {tag}: NOT TESTED (no run folder pulled)"); verdicts.append((tag, "NOT TESTED", "no run folder pulled")); continue
     r = subprocess.run([sys.executable, os.path.join(tools, "popclip.py"), run, "--ledger", ledger, "--md", os.path.join(out, f"{tag}_report.md")],
                        capture_output=True, text=True)
     lines = [l for l in r.stdout.splitlines() if l.startswith("Popup gate") or l.strip().startswith("[")]
     print(f"- {tag}: " + ("; ".join(lines[:6]) if lines else "no grade output (NOT TESTED): " + (r.stderr or "")[-300:]))
+    gate = next((l for l in r.stdout.splitlines() if l.startswith("Popup gate: ")), "")
+    if r.returncode == 0 and gate.startswith("Popup gate: PASS"): verdicts.append((tag, "PASS", gate))
+    elif "FAIL=" in gate and not gate.split("FAIL=")[1].startswith("0"): verdicts.append((tag, "FAIL", gate))
+    elif gate.startswith("Popup gate: INFRA") or ("INFRA=" in gate and not gate.split("INFRA=")[1].startswith("0")): verdicts.append((tag, "INFRA", gate))
+    else: verdicts.append((tag, "NOT TESTED", gate or "no grade output"))
+rank = {"FAIL": 3, "INFRA": 2, "NOT TESTED": 1, "PASS": 0}
+worst = max((v[1] for v in verdicts), key=lambda v: rank[v]) if verdicts else "NOT TESTED"
+with open(os.path.join(out, "verdict.txt"), "w", encoding="utf-8") as fh:
+    fh.write(f"VERDICT: {worst}\n")
+    for t, v, why in verdicts: fh.write(f"{t}: {v} - {why}\n")
+    fh.write("EMULATOR evidence only - not real-handheld verification.\n")
 
 def bursts(path):
     cap = cv2.VideoCapture(path); prev = None; ev = []

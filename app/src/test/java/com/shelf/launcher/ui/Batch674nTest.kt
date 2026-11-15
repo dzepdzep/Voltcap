@@ -25,8 +25,9 @@ class Batch674nTest {
         // KONKR x1.0: window 360 dp; name + console line 84 dp; 6 keys + 1 status line.
         val keysNeed = 30.dp * 6 + 4.dp * 5
         val statusNeed = 24.dp + 4.dp
-        val header = (360.dp - (keysNeed + statusNeed) - 84.dp).coerceAtLeast(SIDE_ART_MIN)
-        val room = 360.dp - header - 84.dp - statusNeed
+        // (674o: 2 dp stay free for pixel rounding - f674o's status line came out 51 px of its 54.)
+        val header = (360.dp - (keysNeed + statusNeed + 2.dp) - 84.dp).coerceAtLeast(SIDE_ART_MIN)
+        val room = 360.dp - header - 84.dp - statusNeed - 2.dp
         assertNotNull(fitRowHeight(room, 6, 4.dp, 40.dp, 30.dp))
     }
 

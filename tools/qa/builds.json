@@ -1287,6 +1287,17 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 7358016a - clean",
    "note": "674k QA build: assembleQa 15 Nov 19:21 UTC."
+  },
+  {
+   "id": "qa-0.6.73-674n",
+   "apk_sha256": "c2cdfc81e104a83afcb37c1b88b571ac0d20e35dc9a3b72b9afb5830d97684af",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "cf629e2e",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests cf629e2e - clean",
+   "note": "674n QA build: assembleQa 15 Nov 20:23 UTC (PC)."
   }
  ]
 }

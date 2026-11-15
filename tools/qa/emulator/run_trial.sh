@@ -27,7 +27,10 @@ timeout 300 adb wait-for-device || { note "EMULATOR never came up (5 min) - ever
 for _ in $(seq 1 60); do [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ] && break; sleep 3; done
 # A throwaway emulator with no lock credential: dismiss its swipe screen; the compact profile the KONKR has (960x640, 240 dpi).
 adb shell settings put secure lockscreen.disabled 1 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
-adb shell wm size 960x640; adb shell wm density 240; adb shell settings put system font_scale 1.0
+# (674o: the AVD is made at the profile's own size with -skin (QA_SKIN), so no size override - the 320x640 AVD forced to
+# 960x640 is gone; QA_DENSITY is the profile's dpi. Without QA_SKIN the old override still applies.)
+if [ -n "${QA_SKIN:-}" ]; then adb shell wm size reset; else adb shell wm size 960x640; fi
+adb shell wm density "${QA_DENSITY:-240}"; adb shell settings put system font_scale 1.0
 adb shell settings put system screen_off_timeout 1800000; adb shell svc power stayon true
 sleep 3
 {
@@ -36,6 +39,7 @@ sleep 3
   echo "wm_size=$(adb shell wm size | tr -d '\r' | tr '\n' ' ')"
   echo "wm_density=$(adb shell wm density | tr -d '\r' | tr '\n' ' ')"
   echo "font_scale=$(adb shell settings get system font_scale | tr -d '\r') animator=$(adb shell settings get global animator_duration_scale | tr -d '\r')"
+  echo "profile=${QA_PROFILE:-konkr} skin=${QA_SKIN:-override} gpu=${QA_GPU:-unknown}"
 } > "$OUT/profile.txt"
 note '```'; cat "$OUT/profile.txt" | tee -a "$S"; note '```'
 APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)

@@ -41,15 +41,18 @@ old SUMMARY entries before 529, GitHub issues (no API access in these sessions).
 | G1 | Record crate x1.3: deliberate vertical menu (identical keys, Play first, MORE last, D-pad scroll, no clipped keys / facts) | 674e–g | CrateVertical674Test | f674i Flip 2 x1.3 PASS, k674k / k674l KONKR x1.3 PASS (MORE reached walking down) | **APPROVED 15 Nov** (visual) | no | VERIFY - owner's checklist: MORE reachable (yes, k674l), MORE once and last (warn-uniform), focus after More open/close, rapid A/B, x1.0 and x1.3 clipping, no size change while navigating - to confirm in the 674k full gates |
 | G2 | Two-line keys on narrow rows (item 4) | 674c | TwoLineKeys674Test | gates 674c+ | no | no | VERIFY |
 | G3 | Cinema: Play first in the row on short windows | 674c/d | Batch478Test | k674d PASS | no | no | VERIFY |
-| G4 | D332 x1.3 squeezes (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal) | 674e–k | | f674i 6/6; k674k 3/4 (File select More -> 674k) | no | no | VERIFY in the 674k gates |
+| G4 | D332 x1.3 squeezes (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal) | 674e–k | | f674k Flip 2 x1.3 52/53, k674n KONKR x1.3 51/53 - none of the D332 layouts FAIL | no | no | TESTED (hardware) - awaiting owner visual review |
 | G5 | Wii channel: one uniform row (Start not stretched, worded MORE, no •••), More page one row, no broken words | 674l | Hierarchy529Test | not yet | no | no | IN PROGRESS (gate pending) |
-| G6 | Rapid A/B leaves a window open once (Cards, Crate, TV - D319 / D333 family) | - | | seen k674j, k674g, k673i | | | OPEN (investigate) |
-| G7 | Home glyph centring: Arcade popup ▶, Pocket ribbon START, Spot START, Library R2, Bar ◀ | - | glyphcheck | FAIL in f674j / k674j | | | OPEN |
+| G6 | Rapid A/B leaves a window open once (Cards, Crate, TV - D319 / D333 family) | - | | no rapid FAIL in f674k, k674m, f674o, k674n (4 full gates) | | | WATCH (HW-5) |
+| G7 | Home glyph centring: Arcade popup ▶, Pocket ribbon START, Spot START, Library R2, Bar ◀ | 674m Arcade + Pocket; 674n Bar; 674o Library | Batch674nTest, Batch674oTest, glyphcheck | Arcade, Pocket, Bar PASS on 674n (f674o / k674n); Library R2 FAIL on 674n -> 674o not on HW; Spot START = checker (D-674o-1) | | | IN PROGRESS |
 | G8 | Cube: first A opened nothing on KONKR x1.3; L2 · R2 fact 0 px; Cube Classic x1.3 small card | - | | k673k, k674a | small card: owner's design choice | | OPEN / BLOCKED-OWNER (card) |
-| G9 | QA checker: untested rows never counted as passes; the pixel compare covers uniform rows | 674l (POPUP_KEY_WORDS) | selftest 151/155 (4 = VM ffmpeg) | re-grade f674j 4->0, k674j 14->0 NOT TESTED | | | VERIFY |
+| G9 | QA checker: untested rows never counted as passes; the pixel compare covers uniform rows | 674l (POPUP_KEY_WORDS); 674o emulator verdict step | selftest 155/155 | full gates 674k / 674n: NOT TESTED = 0; unknown build -> INFRA (k674n before registration) | | | TESTED |
 | G10 | Flip 2 charging sparkle replays (charge-limit loop on input_suspend) | 674i | ChargeLoop674Test | **BLOCKED**: production Voltcap's own limit is on and would fight the QA app over input_suspend; a clean test needs production's limit off (owner keeps production settings) | owner authorized a QA-app test | no | BLOCKED-OWNER |
 | G11 | CI memory (test worker 9.6 GB) | 674e forkEvery 400 | | CI 9c11c496 green | | | DONE |
-| G12 | Hourly scheduled development run | scheduled task "VoltCap hourly backlog run" (15 Nov) | | | requested by the owner | | IN PROGRESS (first runs to be checked in claude/AUTORUN_LOG.md) |
+| G12 | Scheduled autonomous development - CLOUD (owner 15 Nov: replaces the PC hourly task once verified) | docs/claude/CLOUD_DEVELOPMENT.md, AUTORUN_LOCK.md | | clone + push verified from a cloud session 15 Nov; scheduled cloud run: pending verification | | | IN PROGRESS |
+| G13 | Cloud development environment (build, tests, static checks, CI, commits from the cloud) | 674o tools/cloud/setup_android.sh, VOLTCAP_CLOUD stub | | SDK install + push verified; cloud unit-test run in progress (2 cores, slow) | | | IN PROGRESS |
+| G14 | Emulator QA in GitHub Actions: all 53 layouts, native pages, 17 category styles, x1.0 / x1.3, KONKR / Flip 2 / RP Classic-like profiles, bounded jobs, artifacts, verdicts, failures -> backlog | 674o first stage (stabilise: x86_64, -skin, renderer matrix, verdict) | grade_trial verdict | first 674o run pending | | | IN PROGRESS (stage 1 of n) |
+| G15 | Hardware QA request queue (cloud never waits for devices) | docs/claude/HARDWARE_QA_QUEUE.md (HW-1..5) | | | | | IN PROGRESS |
 
 ## A–F. Carried from REQUEST_COVERAGE_529 (13 Nov) - status as of then; update when touched
 

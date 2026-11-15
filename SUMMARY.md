@@ -1,3 +1,22 @@
+# Update 674o (15 Nov 2026, late evening) - same branch, NOT released - cloud migration
+- Owner request 15 Nov: VoltCap development moves to Claude Code cloud sessions + a cloud scheduled task; the PC is for handheld QA.
+  New: docs/claude/CLOUD_DEVELOPMENT.md (how to work, lock, never-list), docs/claude/HANDOFF.md (read first / update last),
+  docs/claude/HARDWARE_QA_QUEUE.md (HW requests), docs/claude/AUTORUN_LOG.md, docs/claude/AUTORUN_LOCK.md, tools/cloud/setup_android.sh.
+- Build: VOLTCAP_CLOUD=1 uses the same Discord stub as CI (the Discord .aar is local-only); the release guard still refuses it.
+  -PvoltcapEmulatorAbi=true adds x86_64 to the stub build only (never a handheld or release build).
+- Emulator trial (emulator-qa-trial.yml): the emulator crashed ~90 s into every trial since 14 Nov (ARM build through ARM
+  translation, 320x640 AVD forced to 960x640, host renderer errors). Now: one x86_64 build job, the AVD at 960x640 (-skin, no
+  size override), a renderer matrix (swiftshader_indirect / swangle_indirect / guest), the emulator's crash data kept, and a
+  verdict step that fails unless every graded gate is PASS (verdict.txt from grade_trial.py; NOT TESTED / INFRA / FAIL stay red).
+- Handheld gates on 674n (c2cdfc81, registered in builds.json): Flip 2 x1.0 f674o 52/53 (FAIL Side status line 51 px < 24 dp);
+  KONKR x1.3 k674n 51/53 (FAIL Library R2 6 px high; Spot START dy +3 px). Devices restored (diff=0, fatal=0).
+- Fixes: Side menu keeps 2 dp free for pixel rounding (status line back to >= 24 dp); Library L2 / R2 hints draw with InkGlyph
+  (ink centred; size still follows the font scale). Spot START: the ink is centred in its pill - glyphcheck walked past the pill
+  edge into a backdrop shape of nearly the same colour; logged as D-674o-1 (checker), threshold unchanged.
+- Tests: Batch674oTest (new), Batch674nTest follows the rounding slack. QA selftest 155/155 (cloud). Unit tests: CI on push.
+- Files: app/build.gradle.kts, ui/WinScenesHomes2.kt, ui/StyleLibrary.kt, .github/workflows/emulator-qa-trial.yml,
+  tools/qa/emulator/run_trial.sh, tools/qa/emulator/grade_trial.py, tools/qa/builds.json, tools/cloud/setup_android.sh, docs/claude/*.
+
 # Update 674n (15 Nov 2026, evening) - same branch, NOT released
 - Full gates on 674k graded (new checker, 0 NOT TESTED): Flip 2 x1.3 f674k 52 / 53 PASS (was 42 at f674f; FAIL: Bar home '◀'
   5.5 px off centre); KONKR x1.0 k674m 51 / 53 PASS (was 40; FAIL: Arcade pointer glyph - fixed in 674m, not yet on hardware;

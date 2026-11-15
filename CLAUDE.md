@@ -139,7 +139,10 @@ SUMMARY.md, README.md       running change log / feature overview (large: grep, 
 
 ## Build & checks
 - Toolchain: AGP 9.3.3 (built-in Kotlin, no kotlin-android plugin), Kotlin/Compose plugin 2.2.10, Gradle 9.5.0, compileSdk/targetSdk 36, minSdk 24, Java 17, NDK 28 (CMake bridge), Compose BOM 2026.02.01, Coil 2.7, Retrofit 2.11, WorkManager 2.10.1. Release = R8 + resource shrinking (`app/src/main/keepRules/rules.keep`; own classes kept for Gson).
-- I build in Android Studio on Windows (`gradlew.bat assembleDebug`) from `app/src` after copying. No Android SDK in Claude's cloud workspace; a type-check against the Android/Compose jars in `~/.gradle` caches is the usual substitute. Say clearly what was and wasn't compiled.
+- I build in Android Studio on Windows (`gradlew.bat assembleDebug`) from `app/src` after copying. **Cloud (primary since 15 Nov 2026):**
+  `docs/claude/CLOUD_DEVELOPMENT.md` - `bash tools/cloud/setup_android.sh`, `VOLTCAP_CLOUD=1`, `-PvoltcapCiWithoutDiscord=true`; edits go
+  straight into `app/` there; read `docs/claude/HANDOFF.md` first; hardware-only work goes to `docs/claude/HARDWARE_QA_QUEUE.md`.
+  Say clearly what was and wasn't compiled.
 - Shader change: `python tools/themes/gen.py` then `python tools/themes/check_uniforms.py` (details in `docs/claude/themes.md`). Nothing else for Kotlin-only changes.
 - Keep `MainMenu` and `GameDetailsOverlay` functions under the JVM method-size limit (split into sub-composables).
 - Theme names/art must be original (no trademarks, characters, logos).
