@@ -213,7 +213,9 @@ internal fun sceneKeyWidth(a: WinAction, size: TextUnit, font: FontFamily?, uppe
 internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily? = null, upperLabels: Boolean = true,
     omit: Set<String> = emptySet(), inline: Boolean = false,
     /** Update 508: a larger type for a window that has room to spare on a small screen (Tile home on the GT78); 1 = as before. */
-    scale: Float = 1f) {
+    scale: Float = 1f,
+    /** 673e (D328): the story cue's own line height (the theme's is 24 sp, a tall box round 9 sp words); Unspecified = as before. */
+    cueLineHeight: TextUnit = TextUnit.Unspecified) {
     // (529m: the copy of a page change draws its own page - LocalShownPage.)
     if ((LocalShownPage.current ?: ctx.page) == WinPage.MAIN) {
         // (Update 424: a fact cut at the window's edge fades out — it scrolls — instead of ending in half a line.)
@@ -236,7 +238,18 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         // can scroll further, a small cue at its bottom edge says where the whole story is.)
         // (529m, owner #15: the cue lay over the facts it cut - "Full story on Details ›" across "Action" and "PLAYED" on the
         // KONKR at x1.3. It has its own line under the box now; the box gives it the room.)
-        Column(Modifier.weight(1f, fill = false)) {
+        // (673e, D328, Flip 2 x1.3 gate f673g: with More open in Disc station the cue was laid out 0 px high - there, not shown.
+        // Where the room left for the facts is shorter than the cue's line, the cue is left out (the facts have given way
+        // there too); judged at every layout pass, so it is back as soon as there is room (Less).)
+        val cueH = with(androidx.compose.ui.platform.LocalDensity.current) {
+            (reservedLinesHeight(9.sp, cueLineHeight, FontWeight.Bold, font) + 2.dp).roundToPx() }
+        var cueFits by remember { mutableStateOf(true) }
+        // (673e: the window's whole width, so the cue stands at its end whether the facts show or have given way - it stood at
+        // the start with More open and at the end with Less, Flip 2 x1.3 f673h.)
+        Column(Modifier.weight(1f, fill = false).fillMaxWidth().layout { m, c ->
+            cueFits = !c.hasBoundedHeight || c.maxHeight >= cueH - 1
+            val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) }
+        }) {
         Column(Modifier.weight(1f, fill = false).layout { m, c ->
             if (c.hasBoundedHeight && c.maxHeight < minRow) layout(0, 0) {} else { val p = m.measure(c); layout(p.width, p.height) { p.place(0, 0) } }
         }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
@@ -264,8 +277,8 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
             }
             ctx.summary?.let { Text(it, color = value.copy(alpha = 0.78f), fontSize = 11.sp * scale, lineHeight = 14.sp * scale, fontFamily = font, modifier = Modifier.padding(top = 2.dp)) }
         }
-        if (ctx.summary != null && viewH > 0 && sc.canScrollForward) FullText(STORY_CUE, color = label, fontSize = 9.sp,
-            fontWeight = FontWeight.Bold, fontFamily = font,
+        if (ctx.summary != null && viewH > 0 && sc.canScrollForward && cueFits) FullText(STORY_CUE, color = label, fontSize = 9.sp,
+            fontWeight = FontWeight.Bold, fontFamily = font, lineHeight = cueLineHeight,
             modifier = Modifier.align(Alignment.End).padding(top = 2.dp).background(sceneCueBack(value)).padding(horizontal = 4.dp))
         }
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
@@ -424,24 +437,28 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
         }.background(metal).border(1.dp, rim, RoundedCornerShape(8.dp)).padding(12.dp)) {
             // The tray slot line and the disc-kind plate.
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("NOW LOADED", color = lcd.copy(alpha = 0.8f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text("NOW LOADED", color = lcd.copy(alpha = 0.8f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp, lineHeight = 12.sp)
                 Spacer(Modifier.width(10.dp))
                 Box(Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFF05080D)))
                 Spacer(Modifier.width(10.dp))
-                Text(labels.first, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                Text(labels.first, color = Color.White.copy(alpha = 0.6f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp, lineHeight = 12.sp)
             }
             Spacer(Modifier.height(10.dp))
             // The LCD: the title on the display, the facts as its readouts.
+            // (673e, D328, Flip 2 x1.3 gate f673g: the LCD's lines kept the theme's 24 sp line height round 9-10 sp readouts and
+            // the name kept three lines' height for a two-line name - its facts had no room even with the keys folded, and with
+            // More open its story cue was laid out 0 px high. The readouts get their own line heights, the name the lines it
+            // needs (a window's own text, rule 478); the room goes to the facts.)
             Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
                 .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)).padding(10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                    Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
                     Spacer(Modifier.weight(1f))
-                    Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+                    Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
                 }
-                StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, reserve = false)
                 Spacer(Modifier.height(4.dp))
-                SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace)
+                SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)
             }
             Spacer(Modifier.height(10.dp))
             // The transport keys.

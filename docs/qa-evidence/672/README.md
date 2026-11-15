@@ -63,3 +63,9 @@ Each 4-picture sheet: the home screen; the window after A (the object stays wher
 - Coverflow details: A opens the side panel with the case standing where it was. Inspect pulls that case forward from the angle,
   tilt and size it stood at and turns it; B puts it back as it stood.
 - With Inspect pressed, the Inspect key leaves the panel, which re-centres by half a row.
+
+**673e, Disc station's LCD at x1.3 (D328):**
+- `discs_flip2_x13_lcd_BEFORE_673e.jpg` (f673g, Flip 2, Less | More): an empty third title line where the facts belong; with More
+  the story cue was laid out 0 px high (not drawn).
+- `discs_x13_lcd_after_673e_flip2_konkr.jpg` (f673i Flip 2 | k673h KONKR, each Less | More): CONSOLE / YEAR / MADE BY / GENRE on
+  the LCD, the cue at its end; with More the cue where it fits (Flip 2), left out where it doesn't (KONKR).

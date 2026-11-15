@@ -1,3 +1,23 @@
+# Update 673e (15 Nov 2026) - same branch, NOT released
+- Disc station's LCD at x1.3 (D328, Flip 2 gate f673g): its lines kept the theme's 24 sp line height round 9-10 sp readouts and
+  the name kept three lines' height for a two-line name, so the facts never had room (an empty line in their place) and with
+  More open the 'Full story on Details' cue was laid out 0 px high. The readouts get their own line heights, the name the lines
+  it needs (rule 478), the cue a 12 sp line: with Less the LCD now shows CONSOLE / YEAR / MADE BY / GENRE, with More the cue.
+- Every window's story cue (SceneFactsBody): left out where its line doesn't fit, never laid out squeezed; it stands at the
+  window's end whether the facts show or have given way (it moved between More and Less).
+- Popup checker (D329): rows that were measured but never placed (a facts box giving way by design) are not graded as drawn -
+  they were reported as a sliver of a line and as a fact with its value cut. The 0 px cue stays a FAIL (self-test, real dump).
+- CI (D325): the hosted runner was lost a third time in the unit tests (6308b2a4) - the step's timeout never fired and 673b's
+  annotations died with it. tools/ci/watchdog.py now runs the tests: a status line a minute (memory, load, the test in flight),
+  and before the machine runs out of memory or at 35 min, public annotations (why, tests in flight, biggest processes) and the
+  tests stopped. assembleDebug has its own step; the job runs on ubuntu-24.04 and ubuntu-latest side by side until the cause
+  is known (the ubuntu-latest label is moving to Ubuntu 26).
+- Gates (x1.3, isolated QA app, QA snapshot restored diff=0): f673h Flip 2 9/9 PASS (673e build); 673e2 (this commit's tree):
+  f673i Flip 2 7/7, k673h KONKR 9/9 PASS - Disc station, Coverflow details and 12 other windows that show facts. Unit tests
+  (Windows) 2798 / 0 (one flaky failure on the first run, D330, passed on the re-run); QA self-tests 153 (the 4 that need a
+  device screen / ffmpeg fail in the VM as before); static checks strict PASS.
+- Owner: tested Save Sync during the session and reports it worked.
+
 # Update 673d (15 Nov 2026) - same branch, NOT released
 - Disc station at x1.3 on the KONKR with More open (D327, found by the first KONKR x1.3 gate of Disc station, k673f): the keys
   wrapped to rows that took the deck panel - the LCD's title squeezed to nothing, its readouts cut. The keys take at most 45 % of

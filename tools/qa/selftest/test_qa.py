@@ -1252,6 +1252,21 @@ class TestQa474(unittest.TestCase):
         self.assertEqual(st[0], "FAIL"); self.assertIn("CATALOGUE CARD", st[1]); self.assertIn("ACHIEVEMENTS", st[1])
         self.assertEqual(self.clip(self.fx("shop_tag_keys_whole_672.json"))["text"][0], "PASS")
 
+    def test_unplaced_rows_are_not_judged_as_drawn_673(self):
+        # 673e, D329: Disc station's facts box gives way by design at x1.3 with More open (Flip 2, f673g) - its rows are measured,
+        # never placed, their nodes stacked at the box's corner. They were graded "a scrolling box shows only part of a line"
+        # and the name in capitals paired with 'PlayStation 2' under it. Not drawn: left out. The cue laid out 0 px high is
+        # placed - still a FAIL.
+        d = self.fx("disc_lcd_more_unplaced_x13_673.json")
+        st = self.clip(d)
+        self.assertEqual(st["clip"][0], "PASS"); self.assertEqual(st["facts"][0], "PASS")
+        self.assertEqual(st["squeezed"][0], "FAIL"); self.assertIn("Full story on Details", st["squeezed"][1])
+        # The same rows placed: still caught (the checks themselves unchanged).
+        for w in d["windows"]:
+            for t in w["texts"]: t["placed"] = True
+        st = self.clip(d)
+        self.assertEqual(st["clip"][0], "FAIL"); self.assertIn("only part of a line", st["clip"][1])
+
     def test_narrow_column_breaking_words_is_a_warning(self):
         """Update 475, D253: Cross's details page on the KONKR — 63 characters on 7 lines, 92 px wide."""
         st = self.clip(self.text_dump(text="Nintendo 64 · 2000 · HAL Laboratory · Simulator, Strategy ok", len=63, lines=7, full=[367, 265, 92, 252], shown=[367, 265, 92, 252], textH=252, boxH=252))
@@ -1667,6 +1682,44 @@ class TestCiProgress673(unittest.TestCase):
         self.assertEqual(timed[0], ("a.B.t1", 25000))
         self.assertEqual(test_progress.esc("a%b\nc"), "a%25b%0Ac")
 
+
+
+class TestCiWatchdog673(unittest.TestCase):
+    """673e (D325): tools/ci/watchdog.py stops the unit tests before the runner starves and names why (CI lost its runner 3x)."""
+    def mod(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import watchdog
+        return watchdog
+
+    def test_progress_counts_and_the_test_in_flight(self):
+        w = self.mod()
+        s, e, run = w.progress(["START a.B.t1 100", "END a.B.t1 SUCCESS 9", "START a.C.t2 200", "junk", "END x"])
+        self.assertEqual((s, e), (2, 2)); self.assertEqual(run, {"a.C.t2": 200})
+
+    def test_stops_under_the_memory_floor_or_at_the_limit_only(self):
+        w = self.mod()
+        self.assertIsNone(w.decide(4000, 60, 1500, 2100))
+        self.assertIsNone(w.decide(None, 60, 1500, 2100))          # no /proc/meminfo: only the time limit
+        self.assertIn("under 1500 MB", w.decide(1200, 60, 1500, 2100))
+        self.assertIn("after 35 min", w.decide(4000, 2100, 1500, 2100))
+
+    def test_process_roles_not_classpaths(self):
+        w = self.mod()
+        self.assertEqual(w.label("/usr/lib/jvm/bin/java -cp a.jar:b.jar worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 1'"), "Gradle worker (tests)")
+        self.assertEqual(w.label("java -Xmx4g org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.5"), "Gradle daemon")
+        self.assertEqual(w.label("/usr/bin/python3 x.py"), "python3")
+
+    def test_a_command_past_its_limit_is_stopped_and_named(self):
+        import subprocess
+        prog = os.path.join(tempfile.mkdtemp(), "p.log")
+        with open(prog, "w") as fh: fh.write("START a.C.slow 1\n")
+        r = subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "ci", "watchdog.py"), "--progress", prog, "--limit-min", "0.02",
+                            "--poll", "0.2", "--", sys.executable, "-c", "import time; time.sleep(60)"], capture_output=True, text=True, timeout=40)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("::error title=Unit tests stopped by the watchdog::", r.stdout); self.assertIn("a.C.slow", r.stdout)
+        r = subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "ci", "watchdog.py"), "--progress", prog, "--poll", "0.2", "--",
+                            sys.executable, "-c", "import sys; sys.exit(3)"], capture_output=True, text=True, timeout=40)
+        self.assertEqual(r.returncode, 3); self.assertNotIn("::error", r.stdout)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

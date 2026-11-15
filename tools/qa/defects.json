@@ -3842,11 +3842,12 @@
   },
   {
    "id": "D325",
-   "title": "CI Verify job hung twice in the unit-test step (7f7a74d2: runner lost after 53 min; 9c9f41ac: still running after 40 min; usual 12.5 min). Its log needs a signed-in download, so the hanging test is unknown; Windows runs pass (2794 tests, slowest 4.9 s)",
+   "title": "CI Verify lost its hosted runner three times in the unit-test step (15 Nov: 7f7a74d2, 9c9f41ac, 6308b2a4 - each after ~53 min, 'starves it for CPU/Memory'; the step's 40 min timeout never fired, so nothing after it ran). 21dd393c passed at 04:27 in 12.5 min. Its log needs a signed-in download; Windows runs pass (2795 tests, slowest 4.9 s)",
    "rule": "QA-TOOL",
    "severity": "high",
-   "status": "diagnostics in 673b: every test's start / end to app/build/test-progress.log, annotations (public) for tests that never ended / failed / slow, test step bounded at 40 min. Cause OPEN until the next CI run names it",
-   "found": "2026-11-15 CI runs 43692222586 / 43698117456"
+   "status": "673b's progress file and annotations did not survive the lost runner (6308b2a4, run 43702622417). 673e: tools/ci/watchdog.py runs the tests, logs memory / load / the test in flight each minute and stops them before the machine runs out (MemAvailable < 1500 MB) or at 35 min with public annotations (why, tests in flight, the biggest processes); assembleDebug in its own step; the job runs on ubuntu-24.04 and ubuntu-latest side by side (the ubuntu-latest label is moving to Ubuntu 26). Cause OPEN until that run reports",
+   "found": "2026-11-15 CI runs 43692222586 / 43698117456",
+   "note": "Suspects: 672a's changes (c0e98022: TV strip keys, Record crate facts layout) composed by WinFocusRoboTest for every layout; the Ubuntu 26 image; native memory in Robolectric NATIVE-graphics tests. A Linux run here is blocked (Maven Central 404 / 429 through the agent proxy)."
   },
   {
    "id": "D326",
@@ -3863,6 +3864,30 @@
    "severity": "medium",
    "status": "fixed in 673d (the keys take at most 45 % of the panel's height and scroll past it, the LCD keeps the rest), verified k673g (KONKR x1.3 Disc station PASS, was FAIL in k673f)",
    "found": "2026-11-15 k673f (first KONKR x1.3 gate of Disc station on this line)"
+  },
+  {
+   "id": "D328",
+   "title": "Disc station at x1.3 on the Flip 2: the LCD's lines kept the theme's 24 sp line height round 9-10 sp readouts and the name kept three lines' height for a two-line name - its facts never had room (an empty third title line in their place), and with More open its 'Full story on Details' cue was laid out 0 px high (geometry FAIL, f673g)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 673e: NOW LOADED / DISC-TRACK / PLAYED readouts get their own line heights (12 / 13 sp), the name the lines it needs (reserve = false, rule 478), the cue a 12 sp line; any window's story cue is left out rather than laid out squeezed where its line doesn't fit, and stands at the window's end whether the facts show or not. Verified: f673h Flip 2 x1.3 9/9 PASS (673e build: the LCD shows CONSOLE / YEAR / MADE BY / GENRE with Less, the cue with More); 673e2 (the commit's tree): f673i Flip 2 x1.3 7/7 PASS, k673h KONKR x1.3 9/9 PASS (Disc station, Coverflow details and 12 other windows that show facts)",
+   "found": "2026-11-15 f673g (Flip 2 x1.3 Disc station, 673d build)"
+  },
+  {
+   "id": "D329",
+   "title": "Popup checker graded rows that were never placed: Disc station's facts box gives way by design (Update 467), its rows measured but not placed, their nodes stacked at the box's corner with stale sizes - 'a scrolling box shows only part of a line' and the name in capitals paired with 'PlayStation 2' as a fact whose value is cut",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "fixed in 673e: geomcheck leaves out nodes whose own text QaClip reports placed=false (cut / sliver / facts / overlap / text checks; readcheck's facts check still owns a text that isn't shown). Self-test on the real f673g dump: the slivers gone, the 0 px cue still a FAIL; the same rows marked placed still FAIL",
+   "found": "2026-11-15 f673g"
+  },
+  {
+   "id": "D330",
+   "title": "Unit test EndlessOnceRoboTest.eachGameOnceOneFocus[BOX n=12 x1] failed once on Windows (15 Nov 11:06, 673e tree) at its first frame: 'IllegalArgumentException: performMeasureAndLayout called during measure layout' from Compose's test clock (AndroidComposeUiTestEnvironment) - the Box home's own code not involved; the re-run passed (2798 / 0)",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "suspect (flaky test environment: a frame performed inside another's measure / layout - likely a frame callback left by an earlier test in the same JVM). Watch: CI or a Windows run failing on it again -> isolate the class (forkEvery) or reset the main clock between tests",
+   "found": "2026-11-15 Windows testDebugUnitTest 11:05 (gradle_int_testDebugUnitTest_2026-11-15T11-05-31-586Z.log)"
   }
  ]
 }

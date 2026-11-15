@@ -1111,6 +1111,28 @@
    "patch_sha256": null,
    "tree_hash": "repair/0.6.72-windows-tests 3666ca5b + the 673d working tree (Disc station panel keys scroll, D327), committed next",
    "note": "673d QA build: assembleQa 15 Nov 10:29 UTC. Gates k673g (KONKR x1.3 Disc station), f673g (Flip 2)."
+  },
+  {
+   "id": "qa-0.6.73-673e",
+   "apk_sha256": "c2c274790bc1ab281f33eb9805666ce8585cf08937916c736bf3b92e36266f83",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c6353c34",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c6353c34 + the 673e working tree (Disc station LCD line heights / name lines, story cue left out where it can't fit, D328), committed next",
+   "note": "673e QA build: assembleQa 15 Nov 10:49 UTC. Gates f673h (Flip 2 x1.3 Disc station), k673h (KONKR x1.3)."
+  },
+  {
+   "id": "qa-0.6.73-673e2",
+   "apk_sha256": "51bf8c4858e3962257e50de18ed4664c7c15bfb6bbb93119640f360528d713f8",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c6353c34",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c6353c34 + the 673e working tree as committed (673e build + the story cue at the window's end whether the facts show or not)",
+   "note": "673e2 QA build: assembleQa 15 Nov 10:56 UTC (the 673e commit's tree). Gates f673i (Flip 2 x1.3), the second handheld x1.3."
   }
  ]
 }

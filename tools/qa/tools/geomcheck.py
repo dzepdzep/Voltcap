@@ -184,7 +184,13 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # (Only the window that has the controller — the popup, a dialog — when one has it; the home screen behind a popup is
     # its own window and not what is being checked.)
     if any(w.get("focus") for w in wins): wins = [w for w in wins if w.get("focus")]
-    nodes = [(w, n) for w in wins for n in (w.get("nodes") or []) if _key(n) not in home]
+    # (673e, D329, Flip 2 x1.3 f673g: Disc station's facts box gives way by design (Update 467) - its rows measured, never
+    # placed, their nodes left at the box's corner with stale sizes; graded "a scrolling box shows only part of a line" and the
+    # name in capitals paired with a value under it. A node whose own text was not placed is not drawn: left out of these
+    # checks (readcheck's facts check owns a text that isn't shown).)
+    unplaced = {t.get("id") for w in wins for t in (w.get("texts") or []) if t.get("placed") is False and t.get("id") is not None}
+    drawn = lambda n: n.get("id") is None or n.get("id") not in unplaced
+    nodes = [(w, n) for w in wins for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n)]
     if not wins or not any(n.get("kind") == "control" for _, n in nodes):
         return [qalib.Result("clip dump", qalib.INFRA, "no windows / no controls in the dump: nothing was measured")]
     lim = dict(CLIP_DEFAULTS); lim.update(limits or {})
@@ -238,19 +244,19 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # its short rows (one or two lines) are all partly shown or hidden, none whole.
     tiny = []
     for w in wins:
-        rows = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("full") and n.get("shown")
+        rows = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("scroll") and n.get("full") and n.get("shown")
                 and n["full"][3] <= 48 * dens and n["full"][3] > 0]
         whole = [n for n in rows if n["shown"][3] >= n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
         part = [n for n in rows if 0 < n["shown"][3] < n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
         # (Only when the box itself is that small: the tallest thing it shows is under one of its rows — a long story
         # scrolling above a facts line, Cinema's, is a normal list.)
-        seen = max([n["shown"][3] for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("shown")] or [0])
+        seen = max([n["shown"][3] for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("scroll") and n.get("shown")] or [0])
         if part and not whole and seen < min(n["full"][3] for n in part):
             tiny.append(f"a scrolling box shows only part of a line ({', '.join(_label(n) for n in part[:3])}: "
                         f"{max(n['shown'][3] for n in part):g} of {part[0]['full'][3]:g} px) and no whole one")
     cut.extend(tiny)
     for w in wins:
-        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "control" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "control" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
         for i in range(len(ctl)):
             for j in range(i + 1, len(ctl)):
                 a, b = ctl[i]["shown"], ctl[j]["shown"]
@@ -261,7 +267,7 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
                 if inside(a, b) or inside(b, a): continue
                 ovl.append(f"{_label(ctl[i])} and {_label(ctl[j])} overlap {ix:g}x{iy:g} px")
         # (Words drawn under / over a button that aren't its own: a text node crossing a control's box without being inside it.)
-        txt = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "text" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        txt = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "text" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
         for t in txt:
             a = t["shown"]
             for c in ctl:
@@ -322,6 +328,7 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         for t in w.get("texts") or []:
             f = t.get("full") or []
             if (t.get("text"), tuple(f)) in hometx or "lines" not in t: continue
+            if t.get("placed") is False: continue  # (673e, D329: not drawn - its layout a stale one; readcheck's facts check)
             if summary_ok and (t.get("len") or len(t.get("text") or "")) > 160 and (t.get("ellipsis") or t.get("ovH")):
                 tsum.append(f"'{(t.get('text') or '')[:30]}' shortened to {t.get('lines')} line(s) (the whole text: Details / More)")
                 continue
