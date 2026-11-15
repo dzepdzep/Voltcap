@@ -198,7 +198,9 @@ internal fun DashCard(ctx: WinSceneCtx) {
         shadowElevation = 16.dp.toPx() * e
     }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
         // Header strip with the art.
-        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.3f, 150.dp))) {
+        // (674h, D332 x1.3: on a short window (KONKR; Flip 2 with More open) the art took 30 % first and the three stat widgets
+        // were laid out 0-1 px high. There the strip is a band of 16 %; the stats keep their room.)
+        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * (if (ctx.maxH < 440.dp) 0.16f else 0.3f), 150.dp))) {
             (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
         }

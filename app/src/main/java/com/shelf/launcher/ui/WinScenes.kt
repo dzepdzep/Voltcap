@@ -643,6 +643,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH * 0.94f, 500.dp)
     val shape = RoundedCornerShape(28.dp)
     val yellow = Color(0xFFFFE04A)
+    // (674h, D332 x1.3: on the KONKR and the Flip 2 the name's three 26 sp lines and the 50 dp buttons left the inset - TIME and
+    // the story - 0 px. A tight file writes the name smaller (two lines; it slides) and its buttons a little lower.)
+    val tight = h < 420.dp
     Box(Modifier.size(w, h)) {
         // Its thickness.
         Box(Modifier.fillMaxSize().offset(0.dp, 9.dp).clip(shape).background(mixS(base, Color.Black, 0.5f)))
@@ -677,7 +680,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     }
                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f).fillMaxHeight()) {
-                        WinFullText(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                        WinFullText(ctx.name.uppercase(), color = ink, fontSize = if (tight) 20.sp else 26.sp, lineHeight = if (tight) 22.sp else 29.sp, fontWeight = FontWeight.Black, maxLines = if (tight) 2 else 3,
                             style = if (ink == Color.White) FsOutline else androidx.compose.material3.LocalTextStyle.current)
                         Spacer(Modifier.height(4.dp))
                         Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
@@ -701,8 +704,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                             }
                             ctx.summary?.let {
                                 Spacer(Modifier.height(8.dp))
+                                // (674h: the story gives way by design where the inset has no room left - Details has it whole.)
                                 Text(it, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = 16.sp,
-                                    maxLines = if (h > 420.dp) 5 else 3)
+                                    maxLines = if (h > 420.dp) 5 else 3, modifier = Modifier.semantics { this[QaClip.GivesWay] = true })
                             }
                         }
                     }
@@ -721,7 +725,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     SceneControl(a, Modifier) { on ->
                         Box(
                             Modifier.uniformFill()
-                                .height(50.dp)
+                                .height(if (tight) 42.dp else 50.dp)
                                 .clip(RoundedCornerShape(50)).background(if (on) yellow else mixS(base, Color.Black, 0.38f))
                                 .border(3.dp, if (on) Color.White else mixS(base, Color.White, 0.4f), RoundedCornerShape(50))
                                 .padding(horizontal = if (a.primary) 22.dp else 16.dp),

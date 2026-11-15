@@ -1,3 +1,15 @@
+# Update 674h / 674i (15 Nov 2026, evening) - same branch, NOT released
+- 674h, D332 x1.3: Dashboard's art strip a 16 % band on a short window (the three stat widgets were 0-1 px); File select on a tight
+  panel writes the name smaller (two lines, slides) and its buttons 42 dp, its story gives way by design.
+- 674i, owner report (Flip 2): the charging sparkle replayed every few seconds while plugged in. Read-only check on the Flip 2:
+  input_suspend 0 / 1 every 1-2 s, usb online 0 / 1 with it, battery_status charging -> discharging -> not charging -> charging
+  every ~3 s at 80 %, ChargeLimitService restarted each time - the cable never dropped; Voltcap's 80 % limit paused through
+  input_suspend, Android then reported "not plugged", the check released the pause, the charger came back as a new plug-in (the
+  system's sparkle - not drawn by Voltcap) and was suspended again. ChargeLimiter.wantPause: while Voltcap itself holds the input
+  suspended, "not plugged" is not an unplug - the pause holds until under 77 %; the service keeps running then. ChargeLoop674Test
+  (fails on the old rule). NOT on any device: the real Voltcap on the Flip 2 runs the limiter; a charging change needs the
+  owner's approval (install / test).
+
 # Update 674g (15 Nov 2026, evening) - same branch, NOT released
 - Full x1.3 gates on 674f (53 layouts, OWN style): Flip 2 f674f 42 / 53 PASS, 4 FAIL (Bar home glyph, Circuit More status line,
   Dashboard More squeeze, File select squeeze), 7 NOT TESTED (visual "no window action buttons to compare" - the pixel compare
