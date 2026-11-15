@@ -1,3 +1,61 @@
+# Update 673a (15 Nov 2026) - same branch (repair/0.6.72-windows-tests, pushed as claude/qa-0672-repair), NOT released
+- Rental shop at x1.3: the tag's punched keys cut their words - KONKR "CATALOGU" / "ACHIEVEME", Flip 2 "CATALOGUE" (D320). Beside
+  the held case (672b) the tag is narrower and kept three equal keys across. Each key's word is now measured at its own size
+  (`tagKeyNeeds`) and a longer word takes two cells of the tag's grid (`tagKeyGrid`): order kept, columns aligned; with every word
+  fitting its cell the block is exactly as before. A word wider than the whole tag gets a second line (its key grows), never a
+  hidden one.
+- QA checker (D321): that cut was only an "unconfirmed" warning - the text's box (41 px) is not its own height (108 px), the rule
+  kept for auto-sized texts. Two or more lines in a box that can't hold all but half of the last line now FAIL ("a whole line out
+  of its box"). Run over the 793 dumps of the 0672 / 0673 gates: only these two keys are reported.
+- Found by the KONKR pickup recordings (pkk673d_10 / _13, 672d build). The same recordings: Case flow and Rental shop on the
+  KONKR at x1.0 and x1.3 - one object out and back, no frame gap over 29 ms during the trips.
+- Measured, open (D322): about 0.10-0.14 s from A to the first visible motion in every pickup window on the KONKR (60 Hz) - the
+  window's first frame takes ~63 ms to compose, then the flight waits for its target's place. The same in 0.6.71 (Storage, pk529t7).
+- Tests: ShopTag673Test (8); QA self-test +1 (real dumps: k673c FAIL, k672h PASS); testDebugUnitTest 2786 / 0 failures.
+- Hardware (673a QA build 2b2570c2, isolated QA app, restored diff=0): KONKR x1.3 k673e Rental shop PASS, Flip 2 x1.3 f673e
+  Rental shop PASS, both with the stricter checker. KONKR x1.3: three rows of keys, the last under the key column's scroll fade
+  (the "not set up" line below it scrolls in); Flip 2 x1.3: two rows.
+
+# Updates 672a-d (15 Nov 2026) - the v0.6.73 line on branch repair/0.6.72-windows-tests (pushed as claude/qa-0672-repair), NOT released
+- 672a, the x1.3 items v0.6.72 shipped with (Flip 2 gate f672c / f672e, 4 FAIL rows):
+  - TV room, Details page: three equal keys gave "Full details" a third of the strip - cut even at the smallest size the keys
+    shrink to. `TvControls` asks each key for its word's width at the keys' own size (`tvKeyNeeds`, `tvKeyRows`): equal keys
+    while every word fits its third (the look as before), else widths by word, else Play | Back over a whole-width Full details.
+  - Record crate, More open: the track list kept a 2 px strip under four rows of keys. Under one whole row's room it gives its
+    room away (as SceneFactsBody since 467); and it no longer repeats the console and year printed under the name.
+  - Record crate, hierarchy: PLAY (218 px) beside SLEEVE NOTES (378 px). Play is as wide as Sleeve notes (`SceneKey(minWidth)`)
+    as far as both still share their row (`crateKeyMin`; KONKR x1.3 k673a: a Play alone on its row pushed the ••• off the sleeve).
+  - Storage boxes / Case flow, hierarchy: checker errors, app unchanged. Page tabs are left out of the Details comparison (Play was
+    measured against the INFO tab); rows are read by vertical centre (`popclip.reading_first`: Case flow's round keys with their
+    word under them are taller than Play and start higher on the same line). Self-tests on the real f672e dumps.
+  - Cardboard box at x1.3 on the KONKR (k673a, found by this pass): beside the case the insert sheet is ~300 dp tall and the Saves
+    line showed 20 of its 54 px. A short sheet with large text gives its margins and gaps to the words (`tight`).
+- 672b, the two remaining physical pickups decided by the owner (14 Nov):
+  - Case flow: the case itself lifts out of the flow, turns edge-on at the window's place and the window turns in; B turns it back
+    and lands it in exactly its slot (the Record crate / Card binder trip, `sleeveFlip`). The case at home no longer also comes
+    forward behind the window (it is away). Home's picture of it: `LocalPickupSnapshot`.
+  - Rental shop: the shelf's own case comes off the board and is held beside the tag (`RentalTag`, a sprite trip like Console
+    stack's), its slot left empty, shelf labels where they were; B puts it back in the same slot. The tag's veil is lighter so the
+    shelf stays in view. Without a trip (motion off) the tag alone, as before - never a second copy of a case still on the shelf.
+- 672c (KONKR x1.3 gates k673a / k673b):
+  - Record crate with More open: Save sync, Inspect, the save line and ••• were not drawn at all (FlowRow drops what doesn't fit) -
+    More could not be closed by touch. The name keeps only the lines it needs (`reserve = false`); the keys are measured before the
+    track list and scroll on a sleeve too small for them.
+  - Cardboard box: the story box (24 px, a D-pad stop under the touch size) gives its room away under one line.
+  - The achievement chip on a tiny card (Cube menu Classic: "80%" cut by the card's edge): words chosen by their measured width
+    at the drawn size, less margin when needed, the bar alone on a card too narrow for any word.
+- 672d: Cardboard box - the gap above the Saves line stays 8 dp (Flip 2 x1.3 f673c: at 4 dp the tilted sheet's round Save sync
+  sticker crossed the line by 3 px).
+- Emulator trial workflow: "[emulator-qa]" in the head commit message is enough again (the paths filter skipped the RC commits).
+- QA tools: rapid515.sh takes GAME=… (the gate's fixture game).
+- Tests: CompactX13Fixes672Test (7), Pickups672Test (7); QA self-tests +3 (popclip on real dumps); testDebugUnitTest 2778 / 0.
+- Hardware (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after every run):
+  - Flip 2 x1.3: f673a 10/10 PASS (was 6/10 on RC2), f673c 10/11 (Box overlap -> 672d), f673d Box / Crate / TV 3/3 PASS.
+  - Flip 2 x1.0: f673b 11/11 PASS (incl. Rental shop and Case flow with their pickups).
+  - KONKR x1.3 (first gate on this line): k673a 7/10 -> k673b 9/11 -> k673c 10/11 (Box rapid A B A B left the window open once).
+    Box rapid on 672c / 672d, KONKR x1.3: r673c 16/16 closed, r673d 40/40 closed (retro, human, B while open, B while closing).
+  - Pickup frames, Flip 2 x1.0 / x1.3 (pkf673b_10 / _13): Case flow and Rental shop - one object all the way out and back.
+
 # v0.6.72 release candidate (14 Nov 2026) - branch repair/0.6.72-windows-tests, NOT released
 - Owner instruction 14 Nov: ship v0.6.72 as a safe incremental release; the new Save Sync stays out until real Google Drive
   cross-device tests prove it. This commit takes it out cleanly: every Save Sync 529 / 529c change (fix/save-sync 29011eff..2992f7eb,

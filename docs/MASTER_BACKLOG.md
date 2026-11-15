@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **13 Nov 2026 (update 529c: section 0 and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
+Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -13,7 +13,39 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. Update 529 / 529b / 529c (13 Nov 2026) - newest; the full per-request view is docs/REQUEST_COVERAGE_529.md
+## 0. v0.6.72 released; updates 672a-d and 673a (15 Nov 2026) - newest
+
+**Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
+equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
+0.6.72 (first install 2026-10-19 kept); KONKR real Voltcap still 0.6.69 (not upgraded: needs the owner's separate OK).
+**Development line for 0.6.73:** `repair/0.6.72-windows-tests` (worktree `int`), pushed as `claude/qa-0672-repair`: 91d3bf86 (v0.6.72
+production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 45286cd6 (672d) + the docs commit.
+
+| Item | Status | Evidence / next |
+|---|---|---|
+| TV room "Full details" cut at x1.3 (D310) | DONE (672a) | f673a Flip 2 x1.3, k673c KONKR x1.3, f673b Flip 2 x1.0: PASS |
+| Record crate More: facts 2 px sliver (D311); repeated console / year (D315) | DONE (672a) | f673a / k673c PASS |
+| Play-size rule: Record crate (D312) | DONE (672a + 672c crateKeyMin) | f673a / f673d / k673c PASS |
+| Play-size rule: Storage tabs (D313), Case flow (D314) | CLOSED - checker errors (Play measured against a page tab; top-edge row buckets). App unchanged; popclip fixed, self-tests on the real dumps | the same app screens grade FAIL with the old checker, PASS with the new |
+| Record crate More at x1.3 on the KONKR: four keys and ••• not drawn (D316) | DONE (672c) | k673c PASS |
+| Cardboard box insert sheet at x1.3 on the KONKR: Saves line cut, story sliver (D317) | DONE (672a / c / d) | k673c geometry PASS, f673d PASS |
+| Cardboard box rapid A B A B (owner: keep the RC2 fix) | KEPT; one intermittent "left open" in gate k673c (D319, suspect) | not reproduced: r673c 16/16, r673d 40/40 closed (trace-recording rounds) - watch |
+| Cube menu Classic x1.3: achievement chip cut (D318) | DONE (672c) | KONKR x1.3 pkk673d_13: "80%" whole on the card |
+| Cube menu Classic x1.3: small game card | OPEN (design) | the docked cube's band + the info area at x1.3 leave the row ~60 dp on a 556 dp-wide screen; options: a left dock below 600 dp at large text, or a slimmer band - owner's pick |
+| **Physical pickups** | **12 / 14 move the real object** | + Case flow and Rental shop (672b, owner design 14 Nov; frames Flip 2 pkf673b_10 / _13, KONKR pkk673d_10 / _13 - one object out and back, x1.0 and x1.3). Left: Disc station and Coverflow Inspect (lift the real disc / case for Inspect only) |
+| **Native popup pages** | **12 / 53 layouts** (6 scenes: Storage, Night, Tiles + Grid, Blades, shelf family x4, Twin x3) | 41 layouts still open Details / Achievements / Options on the shared page (recounted from NATIVE_PAGE_SCENES, 15 Nov) |
+| Emulator trial workflow did not run on the RC commits | FIXED (672a) | the paths filter skipped app-only commits; "[emulator-qa]" in the head commit message is enough now |
+| Production pins for 0.6.72 | DONE on the dev branch (91d3bf86 + LF 7f7a74d2) | reach main with the next PR |
+| Rental shop tag at x1.3: keys cut "CATALOGU" / "ACHIEVEME" (D320; narrower beside the held case since 672b) | DONE (673a) | k673e KONKR x1.3 PASS, f673e Flip 2 x1.3 PASS (stricter checker); KONKR: three key rows, the last under the scroll fade |
+| QA checker passed D320 (two lines in a one-line box only a warning) (D321) | FIXED (673a) | geomcheck: a whole line out of its box = FAIL; self-test on the real dumps; 0 other reports in 793 dumps |
+| Pickup windows: ~0.10-0.14 s from A to first motion on the KONKR (D322) | OPEN (P2 perf, measured) | shared by every pickup since 0.6.71; the window's first frame ~63 ms + the flight's target one more frame |
+
+Gates on this line (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after each):
+k673e KONKR x1.3 SHOP PASS · f673e Flip 2 x1.3 SHOP PASS (673a) · f673a Flip 2 x1.3 10/10 · f673b Flip 2 x1.0 11/11 · f673c Flip 2 x1.3 10/11 (Box overlap -> 672d) · f673d Flip 2 x1.3 3/3 ·
+k673a KONKR x1.3 7/10 · k673b 9/11 · k673c 10/11 (Box rapid once). Unit tests (Windows) 2786 / 0 failures (673a); static checks strict PASS.
+Not run on this line yet: KONKR x1.0 full gate, RP Classic / Thor / Odin (not connected or not used: max two handhelds), emulator.
+
+## 0b. Update 529 / 529b / 529c (13 Nov 2026) - previous; the full per-request view is docs/REQUEST_COVERAGE_529.md
 
 | Item | Status | Evidence / next |
 |---|---|---|

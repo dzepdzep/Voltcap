@@ -3719,6 +3719,110 @@
    "severity": "medium",
    "status": "fixed in 523z3 (cbf9162c), verified home13.sh before/after on KONKR + Flip 2 at x1.0 and x1.3; File select popups 6/6 PASS",
    "found": "2026-11-11 kpb523z2 review (owner)"
+  },
+  {
+   "id": "D310",
+   "title": "TV room Details page at x1.3: 'Full details' cut inside its key - three equal keys gave it a third of the strip, cut even at the 9 sp the keys shrink to (Flip 2)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 672a (c0e98022: tvKeyNeeds / tvKeyRows - equal keys while every word fits, else widths by word, else Play | Back over Full details), verified f673a (Flip 2 x1.3), k673c (KONKR x1.3), f673b (Flip 2 x1.0)",
+   "found": "2026-11-14 f672c / f672e (v0.6.72 RC2, shipped as known)"
+  },
+  {
+   "id": "D311",
+   "title": "Record crate with More open at x1.3: the track list kept a 2 px strip (the top of '1. Console') and no whole row (Flip 2)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 672a (c0e98022: under one whole row's room the list gives its room away), verified f673a / k673c",
+   "found": "2026-11-14 f672e"
+  },
+  {
+   "id": "D312",
+   "title": "Record crate hierarchy: PLAY 218 px beside SLEEVE NOTES 378 px (Play the smaller key, x1.3 Flip 2)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 672a (Play as wide as Sleeve notes) + 672c (crateKeyMin: only while both share their row - KONKR x1.3 k673a lost the ••• to a lone Play row), verified f673a / f673d / k673c",
+   "found": "2026-11-14 f672e"
+  },
+  {
+   "id": "D313",
+   "title": "QA checker: popclip hierarchy measured Play against Storage boxes' INFO page tab (navigation, 117 px at x1.3) - false FAIL",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "fixed in 672a (page tabs left out of the Details comparison), self-test on the real f672e dump",
+   "found": "2026-11-14 f672e"
+  },
+  {
+   "id": "D314",
+   "title": "QA checker: popclip reading order by top-edge buckets put Case flow's round More (circle + word, 165 px) a row above Play on the same centre line - false FAIL",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "fixed in 672a (popclip.reading_first: rows by vertical centre), self-test on the real f672e dump",
+   "found": "2026-11-14 f672e"
+  },
+  {
+   "id": "D315",
+   "title": "Record crate track list repeated the console and year printed under the name (duplicated facts)",
+   "rule": "R26",
+   "severity": "low",
+   "status": "fixed in 672a (shownFacts omits Console / Year there), verified f673a screenshots",
+   "found": "2026-11-15 672a review"
+  },
+  {
+   "id": "D316",
+   "title": "Record crate with More open at x1.3 on the KONKR: Save sync, Inspect, the save line and ••• not drawn (FlowRow drops what doesn't fit; the name reserved three lines) - More could not be closed by touch",
+   "rule": "R26",
+   "severity": "high",
+   "status": "fixed in 672c (3deaca0d: the name takes the lines it needs, the keys scroll on a sleeve too small for them), verified k673c (KONKR x1.3 Crate PASS)",
+   "found": "2026-11-15 k673b"
+  },
+  {
+   "id": "D317",
+   "title": "Cardboard box at x1.3 on the KONKR: the Saves line under the stamps showed 20 of its 54 px; then the story box a 24 px sliver (a D-pad stop under the touch size)",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "fixed in 672a / 672c / 672d (short sheet with large text gives its margins to the words; the story box gives its room away under one line; the gap above the Saves line stays 8 dp), verified k673c (geometry PASS), f673d (Flip 2 x1.3 PASS)",
+   "found": "2026-11-15 k673a"
+  },
+  {
+   "id": "D318",
+   "title": "Achievement chip on a tiny card at x1.3 (Cube menu Classic, KONKR): '80%' cut by the card's edge",
+   "rule": "TRUNCATE",
+   "severity": "low",
+   "status": "fixed in 672c (words measured at the drawn size, less margin when needed, the bar alone on a card too narrow for any word); KONKR screenshot recheck pending. The small card itself (the room left at x1.3 by the docked cube's band and the info area) stays OPEN for a design decision",
+   "found": "2026-11-14 529s (pk529s16_13), k673a"
+  },
+  {
+   "id": "D319",
+   "title": "Cardboard box rapid A B A B left the window open once at x1.3 on the KONKR (popup gate k673c, 672c build)",
+   "rule": "ONEPRESS",
+   "severity": "medium",
+   "status": "suspect (intermittent): not reproduced in 56 trace-recording rounds on the same and the next build (r673c 16/16, r673d 40/40 closed: retro, human, B while open, B while closing). Watch in later gates",
+   "found": "2026-11-15 k673c"
+  },
+  {
+   "id": "D320",
+   "title": "Rental shop tag at x1.3: the punched keys cut their words - KONKR 'CATALOGU' / 'ACHIEVEME', Flip 2 'CATALOGUE' (CARD lost). Beside the held case (672b) the tag is narrower and kept three equal keys across (whether v0.6.72's wider tag cut them at x1.3 is not known: Rental shop was not in its x1.3 gates)",
+   "rule": "TRUNCATE",
+   "severity": "medium",
+   "status": "fixed in 673a (tagKeyNeeds / tagKeyGrid: each key's word measured at its own size; a word longer than its cell takes two cells of the tag's grid; every word fitting: the block as before), verified k673e (KONKR x1.3) and f673e (Flip 2 x1.3) PASS with the D321 checker; KONKR pickup recording pkk673e_13",
+   "found": "2026-11-15 pkk673d_13 (KONKR pickup recording) - then in the gate dumps k673b / k673c / f673c, where it was only a warning (D321)"
+  },
+  {
+   "id": "D321",
+   "title": "QA checker: a text laid out on two lines in a box one line high (Rental shop's keys, box 41 of 108 px) stayed an unconfirmed warning because its box is not its text's own height - the x1.3 gates passed the cut words",
+   "rule": "QA-TOOL",
+   "severity": "medium",
+   "status": "fixed in 673a (geomcheck: two or more lines in a box that can't hold all but half of the last one = a whole line out of its box = FAIL; self-test on the real k673c / k672h dumps; no other report in 793 dumps of the 0672 / 0673 gates)",
+   "found": "2026-11-15 673a review of D320"
+  },
+  {
+   "id": "D322",
+   "title": "Pickup windows on the KONKR (60 Hz): about 0.10-0.14 s from A to the first visible motion - the window's first frame takes ~63 ms to compose and the flight then waits for its target's place (to=true +78 ms). The same in 0.6.71 (pk529t7 Storage) and in every pickup layout recorded (Cube, Case flow, Rental shop)",
+   "rule": "ONEPRESS",
+   "severity": "low",
+   "status": "open (measured, shared by every pickup since 0.6.71 - not a 672 regression); candidate: compose the window's first frame lighter / place the flight's target the frame the window appears",
+   "found": "2026-11-15 pkk673d_10 / _13 frame-difference timing + VoltcapQA trace (pickupfly to=false -> to=true)"
   }
  ]
 }

@@ -1239,6 +1239,19 @@ class TestQa474(unittest.TestCase):
         st = self.clip(self.text_dump(ellipsis=True, maxLines=3, lines=2, textH=56, boxH=56))   # a short text: trusted ellipsis
         self.assertEqual(st["text"][0], "FAIL")
 
+    def test_two_lines_in_a_one_line_box_is_a_cut_673(self):
+        # 673a, D321: Rental shop's CATALOGUE CARD on two lines in a key one line high - its box (41 px) is not its text's height
+        # (108), so it was only an unconfirmed warning. A whole line out of the box is a cut; a box holding all but half a line
+        # stays a warning (an auto-sized text reports its unshrunk layout).
+        st = self.clip(self.text_dump(text="CATALOGUE CARD", len=14, ovH=True, maxLines=2, lines=2, textH=108, boxH=41))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("a whole line out of its box", st[1])
+        st = self.clip(self.text_dump(text="CATALOGUE CARD", len=14, ovH=True, maxLines=2, lines=2, textH=108, boxH=90))
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("warn-text-unconfirmed", st)
+        # The real dumps: KONKR x1.3, 672c build (k673c) - the gate passed it; the same tag at v0.6.72 (k672h), words whole.
+        st = self.clip(self.fx("shop_tag_keys_cut_x13_673.json"))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("CATALOGUE CARD", st[1]); self.assertIn("ACHIEVEMENTS", st[1])
+        self.assertEqual(self.clip(self.fx("shop_tag_keys_whole_672.json"))["text"][0], "PASS")
+
     def test_narrow_column_breaking_words_is_a_warning(self):
         """Update 475, D253: Cross's details page on the KONKR — 63 characters on 7 lines, 92 px wide."""
         st = self.clip(self.text_dump(text="Nintendo 64 · 2000 · HAL Laboratory · Simulator, Strategy ok", len=63, lines=7, full=[367, 265, 92, 252], shown=[367, 265, 92, 252], textH=252, boxH=252))

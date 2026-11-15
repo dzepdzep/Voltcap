@@ -1043,7 +1043,7 @@
    "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
    "base_commit": "7f7a74d2",
    "patch_sha256": null,
-   "tree_hash": "repair/0.6.72-windows-tests 7f7a74d2 + 672b working tree (Case flow / Rental shop pickups, Crate key row, Box sheet x1.3), committed next",
+   "tree_hash": "repair/0.6.72-windows-tests 3deaca0d without its 672c parts (the achievement chip, the Crate name / key scroll, the Box sheet story room): 7f7a74d2 + the Case flow / Rental shop pickups, crateKeyMin and the Box sheet tight margins",
    "note": "672b QA build: assembleQa 15 Nov 08:08 UTC. Popup gates f673b / k673b, pickup recordings pkf673b / pkk673b."
   },
   {
@@ -1052,10 +1052,32 @@
    "version_name": "0.6.72-qa",
    "version_code": 79,
    "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
-   "base_commit": "7f7a74d2",
+   "base_commit": "3deaca0d",
    "patch_sha256": null,
-   "tree_hash": "repair/0.6.72-windows-tests 7f7a74d2 + 672b + 672c working tree (achievement chip on tiny cards, Crate name / key scroll, Box sheet story room), committed next",
+   "tree_hash": "repair/0.6.72-windows-tests 3deaca0d (the tree committed)",
    "note": "672c QA build: assembleQa 15 Nov 08:23 UTC. Popup gates k673c (KONKR x1.3), f673c (Flip 2 x1.3)."
+  },
+  {
+   "id": "qa-0.6.73-672d",
+   "apk_sha256": "56c2274ac3e116811051800332023c2d89b09eada3b958af61e666f3ec7d556d",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "45286cd6",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 45286cd6 (the tree committed)",
+   "note": "672d QA build: assembleQa 15 Nov 08:36 UTC. Flip 2 x1.3 gate f673d (Box, Crate, TV); KONKR rapid A/B r673d."
+  },
+  {
+   "id": "qa-0.6.73-673a",
+   "apk_sha256": "2b2570c2a10d9c590f2f24098b6b0e8d5eee00ae31adcb497fb4af6aa52d1fcb",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "45286cd6",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 45286cd6 + the 673a working tree (Rental shop tag keys: tagKeyNeeds / tagKeyGrid), committed next",
+   "note": "673a QA build: assembleQa 15 Nov 09:05 UTC. Gates k673e (KONKR x1.3 SHOP), f673e (Flip 2 x1.3 SHOP)."
   }
  ]
 }

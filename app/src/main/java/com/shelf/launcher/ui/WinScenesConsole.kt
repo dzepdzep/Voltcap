@@ -998,9 +998,12 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
                 // space the rows closer and make them 24 dp, still a whole touch size.)
                 Column(Modifier.weight(1f, fill = false).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(if (h < 440.dp) 2.dp else 4.dp)) {
                     @Composable
-                    fun key(a: WinAction, m: Modifier) {
+                    fun key(a: WinAction, m: Modifier, grow: Boolean = false) {
                         SceneControl(a, m) { on ->
-                            Row(Modifier.fillMaxWidth().height(if (a.primary) (if (h < 440.dp) 30.dp else 38.dp) else if (h < 440.dp) 24.dp else 30.dp).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
+                            // (673a: a word wider than the whole tag - only with very large text on a narrow tag - takes a second line
+                            // and its key grows to show it; every other key keeps its punched height.)
+                            val kh = if (a.primary) (if (h < 440.dp) 30.dp else 38.dp) else if (h < 440.dp) 24.dp else 30.dp
+                            Row(Modifier.fillMaxWidth().then(if (grow) Modifier.heightIn(min = kh) else Modifier.height(kh)).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
                                 // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
                                 val tight = !a.primary && w < 340.dp
@@ -1016,13 +1019,25 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
                         }
                     }
                     // Play across the tag; the others as a block of punched keys, two by two, so they all fit on the tag.
-                    ctx.buttons.filter { it.primary }.forEach { key(it, Modifier.fillMaxWidth()) }
+                    // (673a, D320: beside the held case (672b) the tag is narrower - at 1.3x on the KONKR its three-across keys cut
+                    // CATALOGUE CARD and ACHIEVEMENTS to "CATALOGU" / "ACHIEVEME", on the Flip 2 CATALOGUE CARD to "CATALOGUE". Each
+                    // key's word is measured at its own size: a word longer than its cell takes two cells of the same grid, so
+                    // every word reads whole; with every word fitting its cell the block is exactly as before.)
+                    val inner = w - 36.dp
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
+                    val innerPx = with(dens) { inner.roundToPx() }
+                    val playNeed = tagKeyNeeds(ctx.buttons.filter { it.primary }.map { rentalKeyLabel(it.label, true) }, 15.sp, 46.dp)
+                    ctx.buttons.filter { it.primary }.forEachIndexed { i, a -> key(a, Modifier.fillMaxWidth(), grow = (playNeed.getOrNull(i) ?: 0) > innerPx) }
                     val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                     val across = if (w >= 340.dp || short) 3 else 2
-                    rest.chunked(across).forEach { group ->
+                    val narrowKeys = w < 340.dp
+                    val need = tagKeyNeeds(rest.map { rentalKeyLabel(it.label, false) }, if (narrowKeys) 9.sp else 10.sp, if (narrowKeys) 14.dp else 30.dp)
+                    tagKeyGrid(need, innerPx, with(dens) { 4.dp.roundToPx() }, across).forEach { row ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            group.forEach { key(it, Modifier.weight(1f)) }
-                            repeat(across - group.size) { Spacer(Modifier.weight(1f)) }
+                            row.forEach { (i, cells) ->
+                                if (i < 0) repeat(cells) { Spacer(Modifier.weight(1f)) }
+                                else key(rest[i], Modifier.weight(cells.toFloat()), grow = need[i] > innerPx)
+                            }
                         }
                     }
                     ctx.chips.forEach { a ->
@@ -1042,6 +1057,43 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
             }
         }
     }
+}
+
+/**
+ * 673a: the width (px) each of the rental tag's keys needs for its whole word at the key's own [size] (Black, the tag's text
+ * style) plus [chrome] (its icon, its padding and 2 dp to spare) - the size asked for, never a shrunk one.
+ */
+@Composable
+private fun tagKeyNeeds(labels: List<String>, size: androidx.compose.ui.unit.TextUnit, chrome: androidx.compose.ui.unit.Dp): List<Int> {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val textStyle = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    return remember(labels, size, chrome, textStyle, density) {
+        val extra = with(density) { chrome.roundToPx() }
+        val style = textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = size, fontWeight = FontWeight.Black))
+        labels.map { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width + extra }
+    }
+}
+
+/**
+ * 673a (pure, ShopTag673Test): the rental tag's punched keys on its grid of [across] equal cells ([width] px, [gap] between),
+ * in their own order - rows of (key, cells), then (-1, cells left empty) where a row isn't full. Every word fitting its cell:
+ * the block as designed (one cell each). A longer word takes as many cells as it needs (two for CATALOGUE CARD at 1.3x beside
+ * the held case), starting a new row when its row is full; a word wider than the whole row has the row to itself.
+ */
+internal fun tagKeyGrid(need: List<Int>, width: Int, gap: Int, across: Int): List<List<Pair<Int, Int>>> {
+    if (need.isEmpty() || across < 1) return emptyList()
+    val cell = (width - gap * (across - 1)).toFloat() / across
+    fun cells(n: Int): Int { var c = 1; while (c < across && n > cell * c + gap * (c - 1)) c++; return c }
+    val rows = ArrayList<List<Pair<Int, Int>>>()
+    var row = ArrayList<Pair<Int, Int>>(); var used = 0
+    for (i in need.indices) {
+        val c = if (width <= 0) 1 else cells(need[i])
+        if (used + c > across) { if (used < across) row.add(-1 to across - used); rows.add(row); row = ArrayList(); used = 0 }
+        row.add(i to c); used += c
+    }
+    if (row.isNotEmpty()) { if (used < across) row.add(-1 to across - used); rows.add(row) }
+    return rows
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

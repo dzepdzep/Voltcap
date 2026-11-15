@@ -339,8 +339,15 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
             elif t.get("ovH") and not t.get("scroll"):
                 why = (f"stopped at maxLines {t.get('maxLines')}" if t.get("maxLines", -1) > 0 and t.get("lines") == t.get("maxLines")
                        else f"needs more than its {bh} px")
-                (sink if sink is not None else tcut if (trusted or tiny) else tunc).append(
-                    f"'{lab}' cut inside its own box ({why}; {t.get('lines')} line(s) shown" + ("" if trusted else f"; box {bh} of {th} px") + ")")
+                # (673a, D321: Rental shop's punched keys at 1.3x - CATALOGUE CARD laid out on two lines in a key one line high
+                # (box 41 of 108 px). Its box is not its text's own height, so this stayed an unconfirmed warning and the gate
+                # passed the cut word (k673b, k673c, f673c). Two or more lines in a box that can't hold all but half of the last
+                # one: a whole line is out of the box at any size - a cut. No such report in the 793 earlier dumps of 0672 / 0673.)
+                ln_ = t.get("lines") or 0
+                lost = not trusted and bool(th) and bh is not None and ln_ >= 2 and bh < (ln_ - 0.5) * th / ln_
+                (sink if sink is not None else tcut if (trusted or tiny or lost) else tunc).append(
+                    f"'{lab}' cut inside its own box ({why}; {t.get('lines')} line(s)" + ("" if trusted else f"; box {bh} of {th} px") +
+                    (", a whole line out of its box" if lost else "") + ")")
             elif t.get("ovW") and not t.get("scroll"):
                 (sink if sink is not None else tunc).append(f"'{lab}' may be cut sideways (reported, unconfirmed)")
     out = []
