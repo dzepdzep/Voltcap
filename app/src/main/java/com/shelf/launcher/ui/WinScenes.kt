@@ -57,6 +57,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.focusable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.layout.layout
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -454,6 +455,10 @@ private val SheetRed = Color(0xFFB8322A)
 private fun BoxInsertSheet(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 560.dp)
     val mono = FontFamily.Monospace
+    // (672a, KONKR x1.3 popup gate k673a: beside the case the sheet is ~300 dp tall; with the text at x1.3 the Saves line under
+    // the stamps showed its top 20 px of 54 (the story had already given all its room). A short sheet with large text gives its
+    // paper margins and gaps to the words - the same words, the same size, every line whole.)
+    val tight = bigPageText() && ctx.maxH < 420.dp
     val accent = if (ctx.accent.luminance() > 0.6f) SheetRed else ctx.accent
     val scroll = rememberScrollState()
     Box(
@@ -476,7 +481,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     while (y < size.height) { drawLine(SheetRule.copy(alpha = 0.12f), Offset(0f, y), Offset(size.width, y), 1f); y += 22.dp.toPx() }
                     drawLine(SheetRed.copy(alpha = 0.35f), Offset(30.dp.toPx(), 0f), Offset(30.dp.toPx(), size.height), 1.5f)
                 }
-                .padding(start = 40.dp, end = 18.dp, top = 20.dp, bottom = 14.dp)
+                .padding(start = 40.dp, end = 18.dp, top = if (tight) 10.dp else 20.dp, bottom = if (tight) 8.dp else 14.dp)
         ) {
             // (Update 469, D222: the whole sheet was one scroll — on the KONKR Play / Contents / Back sat under the story and the
             // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
@@ -486,15 +491,23 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text(ctx.console.uppercase(), color = SheetMuted, fontSize = 11.sp, fontFamily = mono, maxLines = 1)
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(if (tight) 2.dp else 4.dp))
             // (Update 424, rule 11: the sheet scrolls, so its title, values and description are never cut with "…" — seen on the Thor
             // with "Role-playing (RPG), Turn-based strat…" and the description's last words.)
             // (Update 478, D271: shrinks to the readable minimum, then slides — a long name was cut at 3 lines.)
             WinFullText(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 3)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(if (tight) 4.dp else 6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus).sceneFadeEdges(scroll).verticalScroll(scroll)) {
+            Spacer(Modifier.height(if (tight) 5.dp else 8.dp))
+            // (672c, KONKR x1.3 k673b: with the Saves line whole the story box had 24 px - a sliver that was also a D-pad stop
+            // under the touch size. Under one line's room it gives its room away and is no stop; CONTENTS has the whole story.)
+            var middleRoom by remember { androidx.compose.runtime.mutableIntStateOf(Int.MAX_VALUE) }
+            val middleMin = with(androidx.compose.ui.platform.LocalDensity.current) { (16.sp.toPx() + 8.dp.toPx()).toInt() }
+            val middleGone = middleRoom < middleMin
+            Column(Modifier.weight(1f, fill = false).layout { m, c ->
+                if (c.hasBoundedHeight && middleRoom != c.maxHeight) middleRoom = c.maxHeight
+                if (c.hasBoundedHeight && c.maxHeight < middleMin) layout(0, 0) {} else { val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) } }
+            }.then(if (middleGone) Modifier else Modifier.sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus)).sceneFadeEdges(scroll).verticalScroll(scroll)) {
             if (ctx.page == WinPage.MAIN) {
                 @Composable
                 fun line(label: String, value: String?) {
@@ -538,7 +551,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
             }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(if (tight) 6.dp else 12.dp))
             // The actions, stamped.
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                 ctx.buttons.forEach { a ->
@@ -573,7 +586,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 }
             }
             if (ctx.chips.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(if (tight) 4.dp else 8.dp))
                 // (Update 470: a gap between the status lines — the sheet lies tilted, and two lines touching edge to edge
                 // crossed each other's box by up to 19 px on the Odin at font 1.3; 12 dp clears it.)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -1235,8 +1248,21 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
     val accent = ctx.accent
     val onAccent = if (accent.luminance() > 0.5f) Color(0xFF111111) else Color.White
     val w = minOf(ctx.maxW, 760.dp)
+    // (672b, owner 14 Nov: with a pickup the flow's own case lifts out, comes forward and turns edge-on at this window's place
+    // (PickupOverlay); the window then turns in from edge-on - flipBackTurn - and back the other way on B.)
+    val flip = LocalSceneOrigin.current != null
     Column(
         Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+            .pickupFlipTarget(flip)
+            .graphicsLayer {
+                if (!flip) return@graphicsLayer
+                val t = flipBackTurn(ctx.reveal())
+                rotationY = -90f * t
+                cameraDistance = 14f * density
+                flatTextFor3d()
+                shadowElevation = 18.dp.toPx() * (1f - t)
+                shape = RoundedCornerShape(16.dp); clip = false
+            }
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
             .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))

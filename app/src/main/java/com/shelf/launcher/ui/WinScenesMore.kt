@@ -321,7 +321,9 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("SIDE A", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                    StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Black, lineHeight = 21.sp)
+                    // (672c, KONKR x1.3 k673b: the name kept three lines' height for a two-line name - the sleeve's keys then had no
+                    // room for More's rows. A window's own name takes the lines it needs.)
+                    StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Black, lineHeight = 21.sp, reserve = false)
                     Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
                 }
             }
@@ -354,16 +356,29 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
             Spacer(Modifier.height(8.dp))
             // (672a, f672e hierarchy: PLAY 218 px wide beside SLEEVE NOTES 378 px - the sleeve's long word made Play the smaller
-            // key. Play is never narrower than Sleeve notes now; its word stays centred.)
+            // key. Play is as wide as Sleeve notes now, its word centred - as far as the two still share their row: KONKR x1.3
+            // (k673a) has no room for two keys that wide, and a Play alone on its row pushed the ••• off the sleeve.)
             val keys = sceneKeys(ctx)
-            val playMin = keys.firstOrNull { PopupLab.isDetails(it) }?.let { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: Dp.Unspecified
-            KeyRow(keys) { a ->
-                SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
-                    minWidth = if (a.primary) playMin else Dp.Unspecified)
+            val playMin = keys.firstOrNull { PopupLab.isDetails(it) }?.let { sceneKeyWidth(it, 11.sp, null, upper = true) }
+                ?.let { dw -> crateKeyMin(dw, side - 33.dp, 6.dp) } ?: Dp.Unspecified
+            // (672c, KONKR x1.3 k673b: with More open the sleeve had room for two rows of keys - Save sync, Inspect, the save line
+            // and ••• were not drawn at all (FlowRow drops what doesn't fit), so More could not be closed by touch. The keys are
+            // measured before the track list (which gives way) and, on a sleeve too small even for them, scroll - every key is
+            // there, and the D-pad brings the one it is on into view.)
+            val keyScroll = rememberScrollState()
+            Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
+                KeyRow(keys) { a ->
+                    SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
+                        minWidth = if (a.primary) playMin else Dp.Unspecified)
+                }
             }
         }
     }
 }
+
+/** 672a (pure, CompactX13Fixes672Test): Play's least width beside a Details key [details] wide in a row [row] wide with [gap]
+ *  between them - Details' width, or what the row leaves beside it when two keys that wide don't fit (never below 0). */
+internal fun crateKeyMin(details: Dp, row: Dp, gap: Dp): Dp = minOf(details, row - gap - details).coerceAtLeast(0.dp)
 
 // ───────────────────────────── Card binder: the card flips to its back ─────────────────────────────
 

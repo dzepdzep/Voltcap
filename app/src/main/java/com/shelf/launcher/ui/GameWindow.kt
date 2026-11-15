@@ -1158,7 +1158,10 @@ internal fun GameWindow(
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
     // (529t: Record crate's sleeve itself comes out and turns over - sleeveFlip, a spriteFlight - instead of a window grown out of it.)
     // (529t: Card binder's card the same way - out of its pocket, over to its stats side.)
-    val sleeveFlip = ((scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE) || (scene == WinScene.CARD_BACK && layout == HomeLayout.CARDS)) && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    // (672b, owner 14 Nov: Case flow's case lifts out of the flow, turns into the window and goes back to exactly its place -
+    // the same trip; the window no longer grows out of a case that stays in the row.)
+    val sleeveFlip = ((scene == WinScene.RECORD_SLEEVE && layout == HomeLayout.CRATE) || (scene == WinScene.CARD_BACK && layout == HomeLayout.CARDS) ||
+        (scene == WinScene.CASE_MEDIA && layout == HomeLayout.CASEFLOW)) && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
     // (529t: Console stack's card goes into the module's bay - consoleFlight, a spriteFlight.)
     val consoleFlight = scene == WinScene.INDEX_CARD && layout == HomeLayout.CONSOLES && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
     val cardFlight = piece == null && (scene == null || scene == WinScene.RECORD_SLEEVE || scene == WinScene.CARD_BACK || scene == WinScene.INDEX_CARD) && layout in PICKUP_CARD_LAYOUTS && sysAnims && origin != null && origin.top != Float.MAX_VALUE && MotionPrefs.popup() && !sleeveFlip && !consoleFlight
@@ -1172,7 +1175,10 @@ internal fun GameWindow(
     // switching on round it, and hops back into the same slot (WinSceneStorageFlight.kt). The window isn't scaled out of the
     // icon any more; the box's copy is hidden for the whole trip.
     // (Cube menu, same direction: the game's picture travels into the turning face's inset and back - CubeTurnFace.)
-    val spriteFlight = ((scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion) || sleeveFlip || consoleFlight
+    // (672b, owner 14 Nov: Rental shop - the case comes off its shelf as drawn and is held beside the tag, its slot empty, and goes
+    // back into the same slot on B - RentalTag. Only with the shelf's own picture of it (originLayer).)
+    val shopFlight = scene == WinScene.SHOP_TAG && layout == HomeLayout.SHOP && piece == null && originLayer != null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion && sysAnims
+    val spriteFlight = ((scene == WinScene.STORAGE_RECORD || scene == WinScene.CUBE_FACE) && piece == null && origin != null && origin.top != Float.MAX_VALUE && layoutMotion) || sleeveFlip || consoleFlight || shopFlight
     // (TV room, same direction: the case you picked leaves the games and goes into the set - it slips into the switch-on line
     // as the picture opens out of it; closing, the picture shrinks back into the line and the case comes out and goes home.
     // Only with the case's own picture from the home (originLayer); otherwise the set switches on as before.)

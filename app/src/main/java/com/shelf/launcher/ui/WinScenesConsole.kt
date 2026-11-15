@@ -60,6 +60,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -900,13 +902,39 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
  */
 @Composable
 internal fun RentalTag(ctx: WinSceneCtx) {
+    // (672b, owner 14 Nov: "pull the actual case from its shelf; shelf labels stay; the empty slot shows; the case returns
+    // naturally." With a pickup (LocalSceneOrigin - GameWindow's shopFlight) the shelf's own case comes off the board as drawn
+    // (PickupOverlay) and is held beside the tag, its slot left empty; B puts it back in the same slot. The tag swings in beside
+    // it as before. Without a pickup (motion off) the tag alone, as before - never a second copy of a case still on the shelf.)
+    val origin = LocalSceneOrigin.current
+    if (origin == null) { RentalTagCard(ctx, minOf(ctx.maxW, 460.dp)); return }
+    val flight = remember { StorageFlightSlot() }
+    val rootAt = remember { androidx.compose.runtime.mutableStateOf<Offset?>(null) }
+    val aspect = sceneCaseAspect(ctx.g.platform)
+    val caseW = minOf(minOf(ctx.maxH * 0.62f, 260.dp) * aspect, ctx.maxW * 0.3f)
+    val gap = 18.dp
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides flight) {
+        Box(Modifier.storageFlightRoot { if (rootAt.value != it) rootAt.value = it }) {
+            Row(Modifier.onGloballyPositioned { flight.panel = it }, verticalAlignment = Alignment.CenterVertically) {
+                SceneCase(ctx, Modifier.width(caseW).height(caseW / aspect).storageFlightSlot(true)
+                    .graphicsLayer { if (storageSlotHidden(true, ctx.reveal())) alpha = 0f })
+                Spacer(Modifier.width(gap))
+                RentalTagCard(ctx, minOf(ctx.maxW - caseW - gap, 460.dp))
+            }
+            PickupTarget(flight, rootAt.value, uniform = false) { SceneCase(ctx, Modifier.fillMaxSize()) }
+        }
+    }
+}
+
+/** The rental tag itself, [w] wide (RentalTag puts the held case beside it). */
+@Composable
+private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
     val yellow = Color(0xFFFFE14A); val ink = Color(0xFF1C1C1C)
     // (Update 505: the key you're on lit in the shop's own neon — the wall you picked (purple / teal / blue), or your accent when
     // this layout has its own colours — instead of always the purple wall's pink. The tag stays the shop's yellow paper.)
     val neon = sceneLit(com.shelf.launcher.data.HomeLayout.SHOP, shopColors(com.shelf.launcher.data.Features.rsWall.state.value).neon, ink)
     val onNeon = com.shelf.launcher.ui.theme.textOn(neon, ink)
     val stamp = legibleOn(neon, yellow)
-    val w = minOf(ctx.maxW, 460.dp)
     val h = minOf(ctx.maxH, 520.dp)
     // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
     // (Update 469, D214: with larger text (1.3×) on a short screen — the KONKR — the title and facts grew and pushed BACK under

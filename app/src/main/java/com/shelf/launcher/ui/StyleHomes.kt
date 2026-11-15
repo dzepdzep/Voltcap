@@ -1169,9 +1169,29 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
     val compact = maxWidth < 112.dp
     val chipW = maxWidth
+    // (672c, KONKR x1.3 Cube menu Classic (k673a): on a 43 dp card "80%" at the larger text needed 46 dp with the chip's
+    // margins and was cut by the card's edge ("80⁹"). The words are measured at the size they are drawn (the text scale
+    // included); a chip that wouldn't fit keeps its words and gives up margin instead (2 + 4 dp a side, not 5 + 7); on a
+    // card too narrow even for that, the chip is the bar alone - the count is on the window and the game's line.)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val chipStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+    fun wordW(t: String): androidx.compose.ui.unit.Dp = with(dens) { measurer.measure(t, chipStyle, maxLines = 1, softWrap = false).size.width.toDp() }
+    val count = "$earned/$total"
+    val word = if (mastered) "" else if (!compact) "$count · $pct%" else if (wordW(count) + 24.dp <= chipW) count else "$pct%"
+    val need = if (mastered) (if (compact) 14.dp else 16.dp + wordW("MASTERED")) else wordW(word) + (if (compact) 0.dp else 42.dp)
+    val tight = need + 24.dp > chipW
+    val barOnly = !mastered && compact && need + 12.dp > chipW
+    if (barOnly) {
+        Box(Modifier.padding(horizontal = 4.dp, vertical = 5.dp).width((chipW - 8.dp).coerceAtLeast(8.dp)).height(4.dp).clip(RoundedCornerShape(2.dp))
+            .background(Color.Black.copy(alpha = 0.62f))) {
+            Box(Modifier.fillMaxWidth(earned.toFloat() / total).fillMaxHeight().background(ShelfTheme.accent))
+        }
+        return@BoxWithConstraints
+    }
     Row(
-        Modifier.padding(5.dp).clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = 7.dp, vertical = 3.dp),
+        Modifier.padding(if (tight) 2.dp else 5.dp).clip(RoundedCornerShape(50))
+            .background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = if (tight) 4.dp else 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (mastered) {
@@ -1189,10 +1209,8 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
                 ProgressTick()
             }
             // (0.6.17: on the smallest pictures — Twin icons, Pocket Quest's strip — "107/155" was cut to "107/1": the
-            // share alone there, which always fits.)
-            val count = "$earned/$total"
-            val tiny = count.length * 6f > (chipW - 24.dp).value
-            Text(if (tiny) "$pct%" else if (compact) count else "$count · $pct%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+            // share alone there. 672c: chosen by the words' measured width above, not 6 dp a letter.)
+            Text(word, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
         }
     }
     }
@@ -1391,8 +1409,8 @@ internal fun StyleHome(
         HomeLayout.CUBE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCube(c, modifier) }
         // Update 330: Memory card (StyleMemoryCard.kt).
         HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
-        // Update 330: Case flow (StyleCaseFlow.kt).
-        HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
+        // Update 330: Case flow (StyleCaseFlow.kt). (672b: its window turns the case itself into the window - LocalPickupSnapshot.)
+        HomeLayout.CASEFLOW -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCaseFlow(c, modifier) }
         // Update 330, phase 2 (StyleCardboardBox.kt, StyleStorageBoxes.kt, StyleFileSelect.kt).
         HomeLayout.BOX -> StyleCardboardBox(c, modifier)
         HomeLayout.STORAGE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleStorageBoxes(c, modifier) }
@@ -1407,7 +1425,8 @@ internal fun StyleHome(
         HomeLayout.CAMERA -> StylePocketCamera(c, modifier)
         HomeLayout.PANELS -> StylePanels(c, modifier)
         HomeLayout.MAGAZINE -> StyleMagazine(c, modifier)
-        HomeLayout.SHOP -> StyleRentalShop(c, modifier)
+        // (672b: Rental shop's window takes the shelf's own case off the board - LocalPickupSnapshot.)
+        HomeLayout.SHOP -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleRentalShop(c, modifier) }
         HomeLayout.TERMINAL -> StyleTerminal(c, modifier)
         HomeLayout.CINEMA -> StyleCinema(c, modifier)
         HomeLayout.ARCTIC -> StyleArctic(c, modifier)

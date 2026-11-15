@@ -149,6 +149,10 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
     val g0 = c.game
     val windowOn = GamePopup.game != null && GamePopup.game?.stableKey == g0?.stableKey
     val expand by animateFloatAsState(if (windowOn) 1f else 0f, if (animate) spring(dampingRatio = 0.8f, stiffness = Spring.StiffnessMediumLow) else tween(0), label = "cfExpand")
+    // (672b: when the window takes the case itself out of the flow (LocalPickupSnapshot - GameWindow's flip trip), the case at
+    // home doesn't also come forward: it is away, and must be exactly where it left when it lands back. The others still dim.)
+    val pickupOwn = LocalPickupSnapshot.current
+    val expandOn = if (pickupOwn) 0f else 1f
     // The draw order changes only when the row passes half way between two cases.
     val centre by remember { derivedStateOf { pos.value.roundToInt() } }
     val lo by remember { derivedStateOf { floor(pos.value).toInt() } }
@@ -221,9 +225,9 @@ private fun CaseFlowRow(c: StyleCtx, modifier: Modifier) {
                                     val x = side * (x0 * near + step * far)
                                     translationX = cx + x - size.width / 2f
                                     // Along the curve: the further out, the smaller and a little higher (receding).
-                                    val s = ((1f - 0.2f * near) * (1f - curve * 0.07f * far)).coerceAtLeast(0.35f) * (1f + 0.14f * expand * (1f - near))
+                                    val s = ((1f - 0.2f * near) * (1f - curve * 0.07f * far)).coerceAtLeast(0.35f) * (1f + 0.14f * expand * expandOn * (1f - near))
                                     scaleX = s; scaleY = s
-                                    translationY = cy - size.height / 2f - curve * baseHPx * 0.035f * far * far.coerceAtMost(4f) - expand * (1f - near) * baseHPx * 0.05f
+                                    translationY = cy - size.height / 2f - curve * baseHPx * 0.035f * far * far.coerceAtMost(4f) - expand * expandOn * (1f - near) * baseHPx * 0.05f
                                     alpha = (if (short) flowEdgeFade(r, count) else (nSide + 1.3f - a).coerceIn(0f, 1f)) * (1f - 0.35f * expand * near)
                                 }
                                 .pointerInput(idx) {

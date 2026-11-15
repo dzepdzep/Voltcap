@@ -1012,6 +1012,50 @@
    "apk_sha256": "1837ca7f75bbec1432ff32ef2f840d7de52a01dfc2c039c5bdd13bb81e4f7a08",
    "base_commit": "3ba6a039",
    "note": "v0.6.72 RC2 QA build: assembleQa 14 Nov 21:03 UTC; testDebugUnitTest BUILD SUCCESSFUL."
+  },
+  {
+   "id": "qa-0.6.73-672a-c0e98022",
+   "apk_sha256": "b5020fbe3c16e94096844ab77e7477e0f3d7fa41355d7900f5e1ecf4c2087a5d",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c0e98022",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c0e98022 (672a: x1.3 popup fixes on the v0.6.72 line)",
+   "note": "672a QA build: assembleQa 15 Nov 07:49 UTC (the tree committed as c0e98022); testDebugUnitTest BUILD SUCCESSFUL, 2771 tests / 0 failures. Popup gates f673a (Flip 2 x1.3), k673a (KONKR x1.3)."
+  },
+  {
+   "id": "qa-0.6.73-672b-pre",
+   "apk_sha256": "e21ea8cfb1fde4fdba340da7cd367a6c1bc4aa63d8f56d58d97360089c526521",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "c0e98022",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests c0e98022 + the Case flow / Rental shop pickups only (before the Crate key row and Box sheet follow-ups of qa-0.6.73-672b)",
+   "note": "assembleQa 15 Nov 08:02 UTC. Flip 2 pickup recordings pkf673b_10 / pkf673b_13 (Case flow, Rental shop). Superseded by qa-0.6.73-672b."
+  },
+  {
+   "id": "qa-0.6.73-672b",
+   "apk_sha256": "cd3d851edfd312a85d81dec9658f8075cb3401afcb687394354bace7dd087137",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "7f7a74d2",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 7f7a74d2 + 672b working tree (Case flow / Rental shop pickups, Crate key row, Box sheet x1.3), committed next",
+   "note": "672b QA build: assembleQa 15 Nov 08:08 UTC. Popup gates f673b / k673b, pickup recordings pkf673b / pkk673b."
+  },
+  {
+   "id": "qa-0.6.73-672c",
+   "apk_sha256": "8470d2a8083488ee97f4f39b1e2fa35e690ac0dad457f19d403042790e45c9cf",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "qa (isolated QA app com.shelf.launcher.qa, debug key a48b27ed; never over the real app)",
+   "base_commit": "7f7a74d2",
+   "patch_sha256": null,
+   "tree_hash": "repair/0.6.72-windows-tests 7f7a74d2 + 672b + 672c working tree (achievement chip on tiny cards, Crate name / key scroll, Box sheet story room), committed next",
+   "note": "672c QA build: assembleQa 15 Nov 08:23 UTC. Popup gates k673c (KONKR x1.3), f673c (Flip 2 x1.3)."
   }
  ]
 }
