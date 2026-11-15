@@ -126,6 +126,17 @@ def page_tabs(acts, pb, tol):
     return strip if len(strip) >= 3 else []
 
 
+def reading_first(items, tol):
+    """The first of [items] ((label, box) pairs) in reading order: the top row - every control whose vertical centre is within
+    [tol] of the highest centre - then the leftmost in it. (672a, Flip 2 x1.3 f672e: Case flow's round Inspect / More keys, a
+    circle with its word under it, are 165 px tall beside Play's 135 and start 15 px higher on the same centre line; the old
+    top-edge buckets put More on a row above Play.) None for no items. Pure."""
+    if not items: return None
+    cy = lambda lb: lb[1][1] + lb[1][3] / 2
+    top = min(cy(it) for it in items)
+    return min([it for it in items if cy(it) - top <= tol], key=lambda lb: lb[1][0])
+
+
 def hierarchy(main, home):
     """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
     home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
@@ -146,9 +157,11 @@ def hierarchy(main, home):
     # OPTIONS over the PLAY line - is navigation between pages, not an action placed before Play (mlast529 / 529c false FAIL).)
     tabs = page_tabs(ctl, pb, tol)
     if tabs: notes.append("page tabs above the actions (" + ", ".join(l for l, _ in tabs) + ")")
-    first = min([a for a in acts if a not in tabs] or acts, key=lambda lb: (lb[1][1] // tol, lb[1][0]))
+    first = reading_first([a for a in acts if a not in tabs] or acts, tol)
     if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
-    det = [(l, b) for l, b in ctl if DET_RE.match(l)]
+    # (672a, Flip 2 x1.3 f672e: Storage boxes' INFO page tab - 117 px tall with large text - was taken for the Details key and
+    # Play's row (103 px) failed against it. A page tab is navigation; Play is measured against the Details action.)
+    det = [(l, b) for l, b in ctl if DET_RE.match(l) and (l, b) not in tabs]
     if det:
         # (A key's width follows its word - "Turn over" is wider than "Play" on the Game shelf (f529a): only a Play drawn
         # lower than Details, or at most 60 % of its area, is a demoted Play.)

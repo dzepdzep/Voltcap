@@ -2,9 +2,11 @@ name: Emulator QA trial (draft, isolated QA app)
 
 # 529m - first hosted Android-emulator smoke test of the isolated QA app (com.shelf.launcher.qa), owner request in #16.
 # Draft for review. It runs ONLY when asked:
-#  - workflow_dispatch (works once this file is on the default branch), or
-#  - a push to claude/qa-0672-repair that changes this trial's own files AND whose head commit message contains
-#    "[emulator-qa]" (workflow_dispatch cannot start a workflow that exists only on a development branch).
+#  - workflow_dispatch (this file is on the default branch since v0.6.72, PR #20), or
+#  - a push to claude/qa-0672-repair whose head commit message contains "[emulator-qa]".
+#    (672a: the push also had to change this trial's own files - the v0.6.72 RC commits e68c01c1 / 3ba6a039 asked for it in
+#    their messages but changed only app code, so the paths filter skipped them and the release candidate never got its
+#    emulator run. The message tag alone asks now.)
 # Ordinary development pushes never start it. No secrets are used or exposed; contents: read; checkout keeps no credentials.
 # Synthetic QA fixtures only (the app's own QA hooks); no accounts, ROMs, saves or private recordings.
 # Emulator evidence is labelled EMULATOR and is never real-handheld evidence (GPU / frame pacing, OEM behaviour, physical
@@ -14,9 +16,6 @@ on:
   workflow_dispatch:
   push:
     branches: [claude/qa-0672-repair]
-    paths:
-      - .github/workflows/emulator-qa-trial.yml
-      - tools/qa/emulator/**
 
 permissions:
   contents: read

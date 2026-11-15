@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 
@@ -113,7 +114,9 @@ internal fun SceneKey(
     lineHeight: TextUnit = TextUnit.Unspecified,
     /** 529m (owner, #15 6865249152): a full-width bar - the window's width, its icon in a fixed column, the word after it,
      *  growing only when the whole word needs a second line. */
-    wide: Boolean = false
+    wide: Boolean = false,
+    /** 672a: at least this wide, its icon and word centred (Record crate's Play as wide as Sleeve notes); unspecified = its own. */
+    minWidth: Dp = Dp.Unspecified
 ) {
     // Update 487 (E7 popup hierarchy, owner-approved): Play is the clear first action in every window. A window that drew
     // every key alike gets Play tinted with its lit colour (and a firm edge) while another key is lit; a lit key's word is
@@ -137,8 +140,10 @@ internal fun SceneKey(
     // (ViewConfiguration.minimumTouchTargetSize) where nothing else is under the finger.)
     SceneControl(a, if (wide) Modifier.fillMaxWidth() else Modifier) { on ->
         Row(
-            Modifier.then(if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
+            Modifier.then(if (wide) Modifier.fillMaxWidth() else Modifier).then(if (minWidth.isSpecified && !wide) Modifier.widthIn(min = minWidth) else Modifier)
+                .heightIn(min = height).clip(shape).background(if (on) k.onFill else if (lab && PopupLab.isDetails(a)) Color.Transparent else k.fill)
                 .border(if (on) 2.dp else if (k.firmEdge) 1.5.dp else 1.dp, if (on) k.onEdge else k.edge, shape).padding(horizontal = pad),
+            horizontalArrangement = if (minWidth.isSpecified && !wide) Arrangement.Center else Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (wide) Box(Modifier.width(18.dp), contentAlignment = Alignment.Center) {
@@ -184,6 +189,24 @@ internal fun sceneKeyColors(
  * key already draws its icon, so it read "▶ ▶ continue"), first letter capitalised.
  */
 internal fun sceneLabel(l: String): String = l.trimStart { !it.isLetterOrDigit() }.ifEmpty { l }.replaceFirstChar { it.uppercase() }
+
+/**
+ * 672a: the width a plain [SceneKey] (not wide, not the round More) draws for [a] - its word on one line at [size] (Play's 15 %
+ * larger, as SceneKey draws it), its icon, the gap and [pad] each side.
+ */
+@Composable
+internal fun sceneKeyWidth(a: WinAction, size: TextUnit, font: FontFamily?, upper: Boolean, pad: Dp = 10.dp): Dp {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val style = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val word = if (upper) sceneLabel(a.label).uppercase() else sceneLabel(a.label)
+    val sz = if (a.primary) size * 1.15f else size
+    return remember(word, sz, font, style, density, pad) {
+        val w = measurer.measure(word, style.merge(androidx.compose.ui.text.TextStyle(fontSize = sz, fontWeight = FontWeight.Bold, fontFamily = font)),
+            maxLines = 1, softWrap = false).size.width
+        with(density) { w.toDp() } + (if (a.primary) 16.dp else 13.dp) + 5.dp + pad * 2
+    }
+}
 
 /** The first page's facts, label over value in two columns, or the other page's body. */
 @Composable
@@ -305,9 +328,23 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(2.dp).background(ink))
             if (ctx.page == WinPage.MAIN) {
                 // The facts as the track list.
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                    sceneFacts(ctx).forEachIndexed { i, (l, v) ->
-                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                // (672a, Flip 2 x1.3 popup gate f672e: with More open the keys left the list 2 px - the top of one row, "1. Console",
+                // and no whole one. Under one whole row's room the list gives its room away (as SceneFactsBody since 467): the
+                // facts come back when More closes and stay on Sleeve notes. And the console and year it began with are already
+                // printed under the name: the list starts with what the sleeve doesn't say yet.)
+                val facts = shownFacts(ctx, setOf("Console", "Year"))
+                var rowH by remember { mutableStateOf(0) }
+                val lineH = androidx.compose.material3.LocalTextStyle.current.lineHeight
+                val guess = with(androidx.compose.ui.platform.LocalDensity.current) {
+                    ((if (lineH.isSp) lineH else 16.sp).toPx().coerceAtLeast(14.sp.toPx()) + 4.dp.toPx()).toInt()
+                }
+                Column(Modifier.weight(1f).layout { m, c ->
+                    val minRow = if (rowH > 0) rowH else guess
+                    if (c.hasBoundedHeight && c.maxHeight < minRow) layout(c.minWidth, c.minHeight) {}
+                    else { val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) } }
+                }.verticalScroll(rememberScrollState())) {
+                    facts.forEachIndexed { i, (l, v) ->
+                        Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).then(if (i == 0) Modifier.onSizeChanged { rowH = it.height } else Modifier)) {
                             Text("${i + 1}.", color = red, fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp))
                             Text(l, color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif, modifier = Modifier.width(78.dp))
                             Text(v, color = ink, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, fontFamily = FontFamily.Serif, modifier = Modifier.weight(1f))
@@ -316,8 +353,13 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 }
             } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
             Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx)) { a ->
-                SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp)
+            // (672a, f672e hierarchy: PLAY 218 px wide beside SLEEVE NOTES 378 px - the sleeve's long word made Play the smaller
+            // key. Play is never narrower than Sleeve notes now; its word stays centred.)
+            val keys = sceneKeys(ctx)
+            val playMin = keys.firstOrNull { PopupLab.isDetails(it) }?.let { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: Dp.Unspecified
+            KeyRow(keys) { a ->
+                SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
+                    minWidth = if (a.primary) playMin else Dp.Unspecified)
             }
         }
     }

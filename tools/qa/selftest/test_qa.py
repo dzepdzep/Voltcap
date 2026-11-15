@@ -1010,6 +1010,43 @@ class TestPopupGate(unittest.TestCase):
         tabs = [("INFO", [100, 200, 90, 50]), ("DETAILS", [200, 200, 90, 50]), ("OPTIONS", [300, 200, 90, 50])]
         self.assertEqual(len(popclip.page_tabs(tabs + [play], play[1], 30)), 3)
 
+    def test_hierarchy_page_tab_is_not_the_details_key_672(self):
+        # 672a: Flip 2 x1.3 (f672e) - Storage boxes' INFO page tab (166x117) is taller than the PLAY row (569x103); a tab is
+        # navigation, so Play is measured against SUMMARY, the Details action of that window. A real Details key still counts.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_storage_tabs_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "PASS", why); self.assertIn("page tabs", why); self.assertIn("SUMMARY", why)
+        small = json.loads(json.dumps(d))
+        for w in small["windows"]:
+            for n in w.get("nodes") or []:
+                if n.get("label") == "\u25b6/PLAY": n["shown"] = [785, 381, 150, 60]
+        st, why = popclip.hierarchy(small, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("smaller than SUMMARY", why)
+
+    def test_hierarchy_round_keys_share_plays_row_672(self):
+        # 672a: Flip 2 x1.3 (f672e) - Case flow's round Inspect / More (circle + word under it, 165 px) start 15 px above
+        # Play (135 px) on the same centre line: Play is first. A More a whole row above Play still comes before it.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_caseflow_roundkeys_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "PASS", why)
+        up = json.loads(json.dumps(d))
+        for w in up["windows"]:
+            for n in w.get("nodes") or []:
+                if n.get("label") == "More More": n["shown"] = [758, 560, 124, 165]
+        st, why = popclip.hierarchy(up, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("comes before Play", why)
+        self.assertEqual(popclip.reading_first([("More", [758, 726, 124, 165]), ("Play", [93, 741, 235, 135])], 67)[0], "Play")
+        self.assertIsNone(popclip.reading_first([], 30))
+
+    def test_hierarchy_narrow_play_beside_a_long_details_word_still_fails_672(self):
+        # 672a: the genuine defect of the same run - Record crate's PLAY (218x82) beside SLEEVE NOTES (378x81) - stays caught.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_crate_narrow_play_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("smaller than SLEEVE NOTES", why)
+
     def test_glyph_in_a_see_through_pill_is_measured_against_the_pill(self):
         # Update 529c: Spotlight's SELECT key - a see-through pill over a dark picture - read 40 px off centre (the walk ran through
         # the pill's low-contrast edge). Centred in the real screenshot; the pill's edge is a sharp step, now found.

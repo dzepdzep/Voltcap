@@ -1992,14 +1992,33 @@ private fun TvControls(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             val openers = LocalPageOpeners.current
             val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, openers = openers)
-            ButtonRow(tvItems.map { it.first }) { tvItems.forEach { (l, f, isPlay) ->
-                WinButton(
-                    look, if (look.caps) l.uppercase() else l,
-                    Modifier.weight(1f).then(if (isPlay) Modifier.focusRequester(playFocus)
-                        else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier),
-                    wideButton = false, stretch = true, compact = true, onClick = f
-                )
-            } }
+            // (672a, Flip 2 x1.3 popup gate f672e: three equal keys left "Full details" a third of the strip - cut even at the
+            // smallest size the keys shrink to. Each key now asks for its word's width at the keys' own size: equal keys while
+            // every word fits its third (as before), else widths by word, else Play | Back over a whole-width Full details -
+            // never a cut word, never smaller than asked.)
+            BoxWithConstraints(Modifier.weight(1f)) {
+                val labels = tvItems.map { if (look.caps) it.first.uppercase() else it.first }
+                val need = tvKeyNeeds(look, labels)
+                val gapPx = with(androidx.compose.ui.platform.LocalDensity.current) { 6.dp.roundToPx() }
+                val rows = tvKeyRows(need, constraints.maxWidth, gapPx)
+                ButtonRow(tvItems.map { it.first }) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        rows.forEach { row ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                row.forEach { (i, wt) ->
+                                    val (l, f, isPlay) = tvItems[i]
+                                    WinButton(
+                                        look, labels[i],
+                                        Modifier.weight(wt).then(if (isPlay) Modifier.focusRequester(playFocus)
+                                            else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier),
+                                        wideButton = false, stretch = true, compact = true, onClick = f
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             // (Update 213: Performance as a round button in the TV's small strip.)
             if (page == WinPage.MAIN && status?.perf != null) Box(Modifier.focusRequester(status.perfFocus)) {
                 WinIconButton(look, androidx.compose.material.icons.Icons.Filled.Speed, PERF_LABEL, 32.dp, status.onPerf)
@@ -3036,6 +3055,41 @@ internal fun buttonFitSize(base: Float, fits: (Float) -> Boolean): Float {
 
 /** The row's shared size after a button laid its word out at [used] sp (only ever goes down; NaN / unset sizes ignored). */
 internal fun sharedButtonSize(current: Float, used: Float): Float = if (used.isNaN() || used <= 0f) current else minOf(current, used)
+
+/**
+ * 672a: the width (px) each of the TV strip's compact keys needs for its whole word at the keys' own size ([WinButton] compact:
+ * 12 sp SemiBold in the look's family, 6 dp each side) and 2 dp to spare - the size asked for, never a shrunk one.
+ */
+@Composable
+private fun tvKeyNeeds(look: WinLook, labels: List<String>): List<Int> {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val textStyle = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val family = if (look.mono) FontFamily.Monospace else null
+    val size = if (look.btn == Btn.TEXT) 19.sp else 12.sp
+    return remember(labels, textStyle, density, family, size) {
+        val chrome = with(density) { 14.dp.roundToPx() }
+        labels.map { l ->
+            measurer.measure(l, textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = size, fontWeight = FontWeight.SemiBold, fontFamily = family)),
+                maxLines = 1, softWrap = false).size.width + chrome
+        }
+    }
+}
+
+/**
+ * 672a (pure, CompactX13Fixes672Test): the TV strip's keys in rows of (key, weight). Every word fitting an equal share: one row of
+ * equal keys (the look as before). Else, all words fitting the strip: one row, each key weighted by its word (so each gets at
+ * least its word). Else the fewest rows that keep every word whole, Play first ([pageBarRows]: Play | Back over Full details).
+ */
+internal fun tvKeyRows(need: List<Int>, width: Int, gap: Int): List<List<Pair<Int, Float>>> {
+    if (need.isEmpty()) return emptyList()
+    fun row(ix: List<Int>): List<Pair<Int, Float>> {
+        val share = (width - gap * (ix.size - 1)) / ix.size
+        return if (ix.all { need[it] <= share }) ix.map { it to 1f } else ix.map { it to need[it].coerceAtLeast(1).toFloat() }
+    }
+    if (width <= 0 || need.sum() + gap * (need.size - 1) <= width) return listOf(row(need.indices.toList()))
+    return pageBarRows(need, width, gap).map { row(it) }
+}
 
 /** Update 476 (D259): [content]'s buttons share one font size; [key] (the labels) starts it afresh when the words change. */
 @Composable
