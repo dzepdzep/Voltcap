@@ -1,3 +1,26 @@
+# Update 675o (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial read; device-side dump reads in ASCII
+- Read emulator run 43833359452 (675m commit 1990deb4, swangle_indirect): the start-up fixes (675k) worked - all three
+  preconditions HOME / 1 QA window, and the trial GRADED for the first time with no infra failure. VERDICT FAIL:
+  e529b (x1.0) SHELF PASS on all 11 checks, COVERDETAILS open FAIL ("first A opened nothing"); e529a (x1.3) COVERDETAILS
+  10/11 (rapid), SHELF 9/11 (More step missing, rapid). e529c: achievement / Game settings taps "no shown control".
+- Cause (from the artifacts): the device's grep still missed controls that were in the dumps - e529b's probeA / probeB (copied
+  right after the failed read) hold Play / Details / More; e529a's SHELF main holds More - and again only the dumps holding
+  "Full story on Details ›" (dumps with only "·" read fine). The two rapid FAILs follow from it: the POP_EXTRA A's window
+  was up but read as "A opened nothing", so the rapid A B A B's first A pressed its Play (launch blocked, counted).
+  Not reproducible with glibc toybox here; the emulator's toybox / bionic regex is the suspect.
+- Fix (QA tools only, no app code): popclip.sh / shelfpages529.sh `jl` hands grep plain ASCII (the More glyphs' own last
+  bytes kept apart: ⋯ = ~12, • = ~~3; every other non-ASCII byte = ~); MOREW = (More|~12|~~3~~3~~3) replaces the multibyte
+  patterns. POP_EXTRA: a window that opens late is re-probed 1.5 s later ("extra: A opened late", closed with B) so the rapid
+  presses start from the home. New diagnostics: "More: none read in the main dump (N controls read)", "read: Play keys probe
+  X, home Y" after a first A that opened nothing. Grader unchanged; no assertion weakened.
+- Test: selftest test_dump_reads_are_plain_ascii_and_find_the_round_more_keys (fails on 675m: no ASCII fold, multibyte More
+  pattern); selftest 164/164 PASS; static checks PASS.
+- CI: Verify 310 green on a1945934. Flake seen on 0e0b1dc1 (docs-only lock commit): EndlessOnceRoboTest [BOX n=12 x1]
+  "performMeasureAndLayout called during measure layout", ubuntu-latest only; green on the next push - watch.
+- Not tested: on the emulator (next "[emulator-qa]" allowed from ~11:42 UTC) or a handheld.
+- Files: tools/qa/device/popclip.sh, tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; docs (matrix G14,
+  HANDOFF, HARDWARE_QA_QUEUE, AUTORUN_LOG, run_reports.jsonl, releases.json, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
 # Update 675m (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: notifications panel shown whole
 - Notifications panel (R1 / pull-down): app name, notification title, notification text, background-task label, date and
   the charge-limit pill used TextOverflow.Ellipsis (6). Now FullText (wrap to the same line count, shrink to fitMin, then

@@ -32,7 +32,8 @@ request (restored, fatal=0) - can run when the home PC is used again.
 
 ## Next hardware session (batched) - 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")
 1. Identify every USB handheld (serial, model, Android, screen, dpi; USB not wireless - CLAUDE.md device rule). QA app only.
-2. One QA build of the newest dev commit on each; register it in tools/qa/builds.json.
+2. One QA build of the newest dev commit on each; register it in tools/qa/builds.json. Push the newest tools/qa/device scripts
+   too (675o: popclip.sh / shelfpages529.sh read dumps in plain ASCII - the emulator's grep missed keys in dumps holding "›").
 3. Full popup gates x1.0 + x1.3 on each device (two at a time, ~50 min each): closes HW-1 for those devices, HW-5, HW-6.
 4. Record crate checklist (HW-2) and Cube first press (HW-4) on the KONKR; controller / onepress / animation checks where
    the device differs (screen size, controller).

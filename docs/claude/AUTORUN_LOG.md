@@ -79,3 +79,9 @@
 - Lock free (released by 675l); taken 08:21. CI: Verify 310 green on 8bd5e4ae (675l).
 - Item: rule 11 filler (trial not allowed before 08:41): notifications panel, 6 Ellipsis -> FullText (268 -> 262).
   NotificationsFullText675mTest 2/2, compile OK (one Maven 429 retry), static PASS. Head commit carries "[emulator-qa]".
+
+## 2026-11-16 09:20-09:50 UTC - cloud scheduled run (675o)
+- Lock free (released 08:48); taken ~09:35. CI: Verify 310 green on a1945934; one flaky EndlessOnceRoboTest on 0e0b1dc1.
+- Item: emulator trial 43833359452 (675m) read - first fully graded trial (x1.0 SHELF PASS 11/11); FAILs = device grep
+  missing keys in dumps with "›". Fix 675o in popclip.sh / shelfpages529.sh (ASCII reads, late extra-A closed). Selftest
+  164/164, static PASS. Next trial from ~11:42.

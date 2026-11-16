@@ -30,7 +30,13 @@ DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve no
 # - "no Details action" / More step missing / "A opened nothing" with Play, Details and More on screen - on exactly the dumps
 # whose one 10-13 KB line also held "Full story on Details ›"; the same files matched on the PC. Short per-node lines keep one
 # odd node or the line's length from hiding every other node from the device's regex.)
-jl() { tr '{' '\n' < "$1" 2>/dev/null; }
+# (675o, emulator run 43833359452 on 1990deb4: the misses go on with jl - e529b's probe held Play, Details and More (copied
+# right after the failed read: probeA / probeB) and e529a's SHELF main held More, yet the device's grep read none of them -
+# and again exactly the dumps that hold "Full story on Details ›"; "·" alone never did it. The PC's grep and toybox on
+# glibc read the same files. jl now hands grep plain ASCII: the bytes of the round More glyphs are kept apart first
+# (⋯ = ~12, • = ~~3 - their own last bytes) and every other non-ASCII byte becomes ~. MOREW is the More key in that form.)
+jl() { tr '{' '\n' < "$1" 2>/dev/null | tr '\213\257\242' '123' | tr '\200-\377' '~'; }
+MOREW="(More|~12|~~3~~3~~3)"
 pc() { jl $1 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' | wc -l; }
 # dw FILE: wait for the app's own dump. (675b, emulator run 43762702001: the software-rendered emulator wrote the dumps after
 # the fixed sleep - the probe read no file, so a popup that was up counted as "first A opened nothing" / "no Details action"
@@ -119,6 +125,8 @@ for lay in $LAYS; do
         echo "$n first A opened late" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
       else cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeB.json 2>/dev/null
         echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+        # (675o: what the device's grep read - Play keys in the probe / the home - to set beside the copied probes.)
+        echo "$n read: Play keys probe $(pc $F/qa_clip/${TAG}_probe.json), home $(pc $F/qa_clip/${TAG}_${n}_home.json)" >> $OUT/log.txt
         # (Update 469: a crash left the system's "has stopped" dialog / launcher in front and the next keys went to App info
         # and Android Settings — never press on outside Voltcap.)
         case "$(dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity')" in *com.shelf.launcher*) ;;
@@ -136,24 +144,26 @@ for lay in $LAYS; do
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
-    if jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"'; then
+    if jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"[^"]*'"$MOREW"'","kind":"control"'; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
       # (673g, owner brief 15 Nov: a key row that doesn't fit scrolls a whole key at a time and MORE is its last key - off
       # screen at first on a narrow window. The D-pad walks right until the row brings it into view, as a player would.)
       mr=0; found=0
       while :; do
-        if tapat "(More|⋯|•••)" probe; then found=1; break; fi
+        if tapat "$MOREW" probe; then found=1; break; fi
         [ $mr -ge 7 ] && break
         k DPAD_RIGHT 0.45; mr=$((mr + 1)); up
       done
       # (674g: a vertical menu - Record crate at x1.3 - keeps MORE under its visible keys: the D-pad walks down to it.)
       # (674k: the walk right can leave the stack (KONKR k674i / k674k: "More not on screen") - back up to its first key, then down.)
       if [ $found = 0 ]; then for i in 1 2 3 4 5 6; do k DPAD_UP 0.35; done; up
-        if seek "(More|⋯|•••)" DPAD_DOWN; then found=1; mr=$sk; echo "$n More reached walking down the menu" >> $OUT/log.txt; fi; fi
+        if seek "$MOREW" DPAD_DOWN; then found=1; mr=$sk; echo "$n More reached walking down the menu" >> $OUT/log.txt; fi; fi
       if [ $found = 1 ]; then [ $mr -gt 0 ] && echo "$n More reached with $mr D-pad presses (the row scrolled)" >> $OUT/log.txt
         sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi
+    # (675o: a main dump the device read without a More key is said so - before, the step was silently missing.)
+    else echo "$n More: none read in the main dump ($(jl $F/qa_clip/${TAG}_${n}_main.json | grep -c '"kind":"control"') controls read)" >> $OUT/log.txt
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.
     # (Update 489b, D287: only when the running build confirms the block — qaguard.sh; else the tap is skipped.)
@@ -175,6 +185,10 @@ for lay in $LAYS; do
     if [ -n "$POP_EXTRA" ]; then
       k BUTTON_A 1.6
       if up; then k BUTTON_R1 1.1; shot ${n}_r1; k BUTTON_L1 1.1; shot ${n}_l1; k BUTTON_B 1.0; up && k BUTTON_B 1.2; up && k BUTTON_B 1.2
+      # (675o, e529a: "extra: A opened nothing", then the rapid A B A B started a launch - its first A met the window that had
+      # opened after all. Asked once more 1.5 s later, as the first A is: up then = "extra: A opened late", closed with B, so
+      # the rapid presses start from the home as their check says. Still nothing = "A opened nothing", as before.)
+      elif sleep 1.5 && up; then echo "$n extra: A opened late" >> $OUT/log.txt; k BUTTON_B 1.2; up && k BUTTON_B 1.2
       else echo "$n extra: A opened nothing" >> $OUT/log.txt; fi
       logcat -c
       for i in 1 2; do fg; input keyevent KEYCODE_BUTTON_A; sleep 0.25; fg; input keyevent KEYCODE_BUTTON_B; sleep 0.25; done; sleep 1.6

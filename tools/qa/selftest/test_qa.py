@@ -1239,6 +1239,51 @@ class TestPopclipScript(unittest.TestCase):
         self.assertNotIn("Full story", out)
         self.assertIn("whole", out); self.assertIn("half", out)
 
+    def test_dump_reads_are_plain_ascii_and_find_the_round_more_keys(self):
+        # 675o (emulator run 43833359452): with jl the device's grep still read no Play in e529b's probe and no More in e529a's
+        # SHELF main although both files held them - again only the dumps holding "Full story on Details \u203a". jl hands grep
+        # plain ASCII (the More glyphs' own last bytes kept apart), MOREW finds More / \u22ef / \u2022\u2022\u2022 in that
+        # form and no other key that ends in a non-ASCII mark (a "+N \u203a" chip is not More).
+        import subprocess, json, tempfile
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        for name in ("popclip.sh", "shelfpages529.sh"):
+            sh = open(os.path.join(dev, name), encoding="utf-8").read()
+            self.assertIn("tr '\\200-\\377' '~'", sh, name)
+        sh = open(os.path.join(dev, "popclip.sh"), encoding="utf-8").read()
+        code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+        self.assertFalse([l for l in code if any(ch in l for ch in "\u22ef\u2022")])   # no multibyte pattern left
+        defs = "\n".join(l for l in code if l.startswith(("PLAYW=", "DETW=", "MOREW=", "jl()", "pc()", "ctl()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        def run(nodes, cmd):
+            d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": nodes}], "images": {}}
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+                f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+            try:
+                return subprocess.run(["sh", "-c", defs + "\n" + cmd, "x", path], capture_output=True, text=True).stdout
+            finally:
+                os.unlink(path)
+        story = node("Full story on Details \u203a", "text", [10, 10, 100, 20])
+        out = run([story, node("Play", "control", [365, 464, 247, 56]), node("PlayStation 2 \u00b7 2000", "text", [1, 1, 9, 9]),
+                   node("+N \u203a", "control", [5, 5, 40, 40]), node("\u22ef", "control", [700, 464, 60, 56])],
+                  'echo pc=$(pc "$1"); ctl "$MOREW" "$1"; jl "$1" | LC_ALL=C grep -c "[^ -~]"')
+        self.assertIn("pc=1", out)
+        self.assertIn('"label":"~12","kind":"control","full":[700,464,60,56],"shown":[700,464,60,56]', out)
+        self.assertNotIn("+N", out)
+        self.assertTrue(out.rstrip().endswith("\n0"), out)              # nothing but ASCII reaches grep
+        out = run([story, node("\u2022\u2022\u2022", "control", [700, 464, 60, 56])], 'ctl "$MOREW" "$1"')
+        self.assertIn('"label":"~~3~~3~~3","kind":"control","full":[700,464,60,56]', out)
+        out = run([story, node("More", "control", [1136, 464, 247, 56])],
+                  """jl "$1" | grep -qiE '"label":"[^"]*'"$MOREW"'","kind":"control"' && echo more""")
+        self.assertIn("more", out)
+        # A late window on the POP_EXTRA A is closed before the rapid presses (e529a: their first A met it and launched);
+        # "opened nothing" stays its own exact log line (popclip.py matches whole lines).
+        ex = sh[sh.index('if [ -n "$POP_EXTRA" ]; then'):sh.index('_rapid.txt')]
+        late = ex[ex.index("elif sleep 1.5 && up; then"):ex.index('echo "$n extra: A opened nothing"')]
+        self.assertIn("extra: A opened late", late); self.assertIn("k BUTTON_B", late); self.assertNotIn("BUTTON_A", late)
+        self.assertLess(ex.index('echo "$n extra: A opened late"'), ex.index("for i in 1 2; do fg; input keyevent KEYCODE_BUTTON_A"))
+        self.assertIn('echo "$n first A opened nothing" >> $OUT/log.txt', sh)
+        self.assertIn('More: none read in the main dump', sh)
+
     def test_first_a_late_is_kept_apart_and_still_fails_open(self):
         # 675c (emulator run 43780985909): e529a's probe missed a popup the next screenshot showed, and the second A pressed
         # its Play. The failed probe is kept, the app is asked once more; up then = "opened late" (open FAIL, no second A).

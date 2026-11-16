@@ -95,7 +95,7 @@
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PENDING",
-     "evidence": "run 43811840328 (675i): NOT TESTED - grader fixed, but the precondition failed: Pixel Launcher's ANR dialog stood over the QA app and the Inspect / Wobble first-start question came up 9 s after each start (675k: both handled). Next trial from ~08:45 UTC. Emulator evidence supports, never replaces, the handheld gates"
+     "evidence": "run 43833359452 (675m, 1990deb4): FAIL, graded for the first time (preconditions PASS): x1.0 SHELF PASS on all checks, COVERDETAILS did not open on the first A; x1.3 COVERDETAILS fails only the rapid A/B check, SHELF the More step + rapid. All traced to the test reading its screen dumps wrongly on the emulator (the dumps hold the keys) - fixed in the test tools 675o; next trial from ~11:42 UTC. Emulator evidence supports, never replaces, the handheld gates"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
