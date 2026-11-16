@@ -112,3 +112,12 @@ class NameUnderBadge676zTest {
         assertTrue(src("BadgeLane.kt").contains("insetPx + shiftY.roundToPx()"))
     }
 }
+
+/** 676z2: the Tiles name is fixed lane content (the count keeps off it); app folders show the apps icon in both logo paths. */
+class TilesNameLane676z2Test {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n").map { File(it) }.first { it.exists() }.readText()
+    @Test fun wired() {
+        assertTrue(src("TileHome.kt").contains(".laneContentAt(lane, Alignment.BottomStart, 10.dp, 10.dp + consoleRoom)"))
+        assertTrue(src("PlatformLogos.kt").split("name.contains(\"app\", ignoreCase = true)").size == 3)
+    }
+}
