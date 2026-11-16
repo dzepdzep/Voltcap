@@ -32,16 +32,19 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - IN PROGRESS
-- Thor 16 Nov (L1): drawer START menu row + picker (Top / Bottom names), Bottom saved and used by the launch path (APP SCREEN
-  display=4 = Screen-2), restored. Still to do: an Android game (game path: rule "Set for this game", "Screen layouts..."),
-  long-press on the touchscreen, single-screen regression on the Nova, then the second-screen dock menu once built.
-- How to open the drawer in the QA app without the bottom swipe (a Home-gesture risk where the owner's Voltcap is home): Tile
-  home preview (voltcap_test_layout TILES), the second icon of its bar.
+### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - THOR DONE 16 Nov
+- Thor 16 Nov (L1, owner's HARDWARE TESTING AUTHORIZATION; supervised launch window 676n - qa_allow_app_launch, Clock only,
+  10 min, plain-app path only): drawer touch long-press -> "Open on screen"; Clock Bottom -> really opened on display 4 (bottom),
+  Top -> display 0 (top); picker shows the saved choice; restored to Follow default. Android game (Call of Duty): game picker
+  (Top / Bottom / Follow default + Screen layouts...) shown, nothing changed, nothing launched. Clock closed (its notification
+  prompt left unanswered), window file removed, QA app stopped. Still to do: single-screen regression on the Nova, the
+  second-screen dock menu once built.
+- How to open the drawer in the QA app: Cube home (voltcap_test_layout CUBE) ▼ ▼ A on "Apps", or Tile home's bar.
 
-### HW-11 Cube facet status bar (branch claude/cube-statusbar-facet) - waiting for the owner's approval
-- Thor top screen x1.0 + x1.3 shown 16 Nov (shots\cube_facet_thor.jpg). Small screen (Nova 640x480 dp) at x1.0 + x1.3 still to do.
-
+### HW-11 Cube facet status bar (branch claude/cube-statusbar-facet) - APPROVED (owner, option C); Thor DONE, Nova running
+- Thor 16 Nov x1.0 + x1.3 (676q, CI 2146018): facet with the controller icon (QA app hides the built-in pad by default -
+  "Hide the handheld's own controls"; production shows it), hints whole and on screen, cover flow kept (D338). Nova full gates
+  r676x13 / r676x10 on the candidate 676r running.
 
 ## Hardware session 16 Nov (running): RP Nova d3641c41 via the owner's work laptop (msi, C:\VoltcapQA bundle, QA build
 8bd5e4a cloud debug key 4d133dde; old QA app 0.6.68 removed with the owner's OK). Nova = 4:3, 1280x960 @ 320 dpi (640x480 dp).
@@ -75,6 +78,9 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   never where the owner's Voltcap is the home app). PASS = SecondaryHomeHandle0 / NavigationBar0 not visible in every Voltcap state
   with Hide nav bar on; with the test hook off, the bar follows the device's own rules.
 - Nova 16 Nov: before (675r) pill in 12/12 Voltcap states; after (676) 0/14. Pending on the next build: re-run the same.
+- Thor 16 Nov (676n): 13/13 steps no pill (NavigationBar0 / SecondaryHomeHandle0 hidden); swipe NOT TESTED (owner's Voltcap is
+  home). Thor's own hide_nav_bar=1 keeps the bar hidden with the app's setting off too (device rule, not ours). The script's
+  guard first aborted on the Thor (D341, DroidDeck's window on another display) - fixed 676o.
 
 ### HW-9 Badge lane on small screens (676a) - IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open)
 - KONKR, RP Classic, Nova at x1.0 + x1.3: pop529 "CUBE GRID TILES CLASSIC SHELF STACKS" then `badgecheck.py <run>/qa_clip` (R27).

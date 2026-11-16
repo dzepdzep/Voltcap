@@ -1,3 +1,23 @@
+# Update 676n-r (16 Nov 2026, live session) - Thor real launches, Cube x1.3, home-text gate, D340 fixes
+- 676n supervised launch window (owner's HARDWARE TESTING AUTHORIZATION): ui/QaLaunchWindow.kt; TestHooks.interceptLaunch lets
+  the isolated QA app open a plain app ("vm.app" / "launcher.app") only when <files>/qa_allow_app_launch lists it, at most 15 min
+  ahead; games / ROMs / resume stay blocked. QaClip.appLaunchWindow. Test QaLaunchWindow676nTest.
+- Thor (L1, ~12 min): drawer "Open on screen" Bottom -> Clock on display 4, Top -> display 0; Android-game picker shown; nav
+  13/13 no pill; facet controller icon present (QA app hides the built-in pad by default). All restored (see HW-10 / HW-11).
+- 676o/q Cube x1.3 (D338): the left hint wraps in halves with a tight line height; a short library panel keeps one reserved line
+  for the name and the info line (FullText) so the cover flow keeps its room. Thor x1.3 + x1.0 checked on the Facet build.
+- 676o navbar676.sh guard reads the focused resumed activity (D341). 676p Spotlight hints FlowRow (D339).
+- 676p tools/qa/tools/homecut.py (+selftest): grades home-screen texts the popup gate never did. Nova f676x10 4 FAIL, f676x13 9 FAIL.
+- 676r (owner: fix all for v0.6.73; Night's word must fit): Arcade (FitText slideWhenCut, console FullText), Circuit / Greencore
+  buttons + label, Camera bar, Orbit info line (FullText), Crate facts (FlowRow), Classic achievement line (FullText, no "…"),
+  Night watermark (autoSize 120 -> 24 sp, width 90 %). Test HomeCuts676rTest.
+- Nova f676x10 (676f) graded: popup 52/53 (SPOT glyphs: home-legend glyphs measured under the window - checker issue, open),
+  badges 118/118.
+- Branches: claude/v0674-screen-shortcut (all of it) and claude/cube-statusbar-facet (v0.6.73 candidate: 676m..r cherry-picked).
+  builds.json: qa-0.6.73-676r-facet-ci (CI 43911642798, b2626e75). Nova full gates r676x13 / r676x10 running.
+- Compiled: unit tests named above + CategoryStable394Test, static checks PASS, QA selftests OK. Not tested: KONKR (not connected),
+  RP Classic, Odin.
+
 # Update 676l (16 Nov 2026, live session) - QA signing in CI, Cube facet + v0.6.74 drawer branches, full gate x1.3
 - QA APK signing (owner 3A, secret added by the owner): .github/workflows/qa-device-apk.yml - workflow_dispatch or a claude/* push
   with "[qa-apk]", never pull_request; the secret goes to one step, is checked against tools/qa/qa_signing.json, written to a temp
