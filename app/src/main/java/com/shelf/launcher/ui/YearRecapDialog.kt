@@ -53,7 +53,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -281,8 +280,8 @@ internal fun YearRecapDialog(
                             }
                             Spacer(Modifier.width(Ds.s3))
                             Column(Modifier.weight(1f)) {
-                                Text(nameOf(g.key), color = Color.White, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold,
-                                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                FullText(nameOf(g.key), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                                    maxLines = 2, reserve = false)
                                 Spacer(Modifier.height(4.dp))
                                 Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.1f))) {
                                     Box(Modifier.fillMaxWidth((g.ms.toFloat() / max).coerceIn(0.03f, 1f)).fillMaxHeight().background(ShelfTheme.accent))
@@ -309,7 +308,7 @@ internal fun YearRecapDialog(
                                     .background(if (m == r.busiest) ShelfTheme.accent else ShelfTheme.accent.copy(alpha = 0.4f))
                             )
                             Spacer(Modifier.height(4.dp))
-                            Text(r.bucketLabels.getOrElse(m) { "" }, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+                            FullText(r.bucketLabels.getOrElse(m) { "" }, color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, reserve = false)
                         }
                     }
                 }
@@ -440,9 +439,9 @@ private fun RecapPodium(top: List<YearRecap.GameTime>, coverFor: (String) -> Str
                     }
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(nameOf(g.key), color = Color.White.copy(alpha = 0.9f * drop.coerceIn(0f, 1f)), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(PlaytimeStore.format(g.ms), color = Color.White.copy(alpha = 0.6f * drop.coerceIn(0f, 1f)), fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                FullText(nameOf(g.key), color = Color.White.copy(alpha = 0.9f * drop.coerceIn(0f, 1f)), fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                    maxLines = 2, reserve = false)
+                FullText(PlaytimeStore.format(g.ms), color = Color.White.copy(alpha = 0.6f * drop.coerceIn(0f, 1f)), fontSize = 10.sp, reserve = false)
                 Spacer(Modifier.height(4.dp))
                 Box(
                     Modifier
@@ -488,8 +487,8 @@ private fun RecapTile(label: String, value: String, modifier: Modifier) {
             .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(Ds.rMedium))
             .padding(horizontal = Ds.s3, vertical = Ds.s2)
     ) {
-        Text(value, color = Color.White, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Black, maxLines = 2, reserve = false)
+        FullText(label, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 2, reserve = false)
     }
 }
 
@@ -497,7 +496,7 @@ private fun RecapTile(label: String, value: String, modifier: Modifier) {
 private fun Fact(label: String, value: String) {
     Row {
         Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, modifier = Modifier.width(170.dp))
-        Text(value, color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(value, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
     }
 }
 
@@ -528,8 +527,8 @@ private fun RecapAchievementsSection(a: com.shelf.launcher.data.RecapAchievement
             if (pic != null) AsyncImage(model = pic, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(width = 30.dp, height = 40.dp).clip(RoundedCornerShape(Ds.rSmall)))
             else Box(Modifier.size(width = 30.dp, height = 40.dp).clip(RoundedCornerShape(Ds.rSmall)).background(ShelfTheme.accent.copy(alpha = 0.25f)))
             Spacer(Modifier.width(Ds.s3))
-            Text(gameDisplayName(g.name), color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2,
-                overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            FullText(gameDisplayName(g.name), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+                reserve = false, modifier = Modifier.weight(1f))
             Text("+${g.count}", color = Color(0xFFFFC94D), fontSize = 13.sp, fontWeight = FontWeight.Bold)
             if (g.total > 0) {
                 Spacer(Modifier.width(Ds.s3))
@@ -541,7 +540,7 @@ private fun RecapAchievementsSection(a: com.shelf.launcher.data.RecapAchievement
         RecapHeading("Completion")
         a.changes.take(5).forEach { c ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(gameDisplayName(c.name), color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                FullText(gameDisplayName(c.name), color = Color.White, fontSize = 13.sp, maxLines = 2, reserve = false, modifier = Modifier.weight(1f))
                 Text("${c.before}% → ${c.after}%", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(Ds.s2))
                 Box(Modifier.width(90.dp).height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.1f))) {

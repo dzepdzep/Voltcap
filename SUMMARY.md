@@ -1,3 +1,13 @@
+# Update 678c (16 Nov 2026, cloud scheduled run) - rule 11: year recap shown whole
+- Year recap (top games, monthly bar labels, the game shelf names + play times, stat tiles, facts, achievement and completion
+  rows): 9 TextOverflow.Ellipsis uses -> FullText (wraps, shrinks to a readable size, then slides). reserve = false everywhere
+  so heights stay as they were; the old StepBased autoSize is replaced by FullText's own fit. Static TRUNCATE 245 -> 236.
+- Test: YearRecapFullText678cTest (fails on the 678b sources). Compiled in the cloud (:app:compileDebugUnitTestKotlin OK after
+  one Maven 429 retry) and the test PASS; static checks PASS. Not tested on a handheld (look only - no HW request: same
+  FullText as 675l-677d). GameWindowBanner (12) left for a later run: it is a popup file and needs the popclip gate (R26).
+- Emulator trial started on this commit ("[emulator-qa]") - first trial with 678a / 678b's regex-free label reads.
+- Files: ui/YearRecapDialog.kt, test YearRecapFullText678cTest.kt; trackers.
+
 # Update 678b (16 Nov 2026, cloud scheduled run) - QA tool only - touch-walk taps read labels without the device's regex
 - shelfpages529.sh (emulator job e529c, TOUCH=1): its two taps (first achievement row, Game settings) still handed regex
   labels to the device's grep -oiE - the same reader that missed Play / Details / More in 678a; trial 43929836268 logged "tap:

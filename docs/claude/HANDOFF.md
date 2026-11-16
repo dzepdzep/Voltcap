@@ -1,6 +1,7 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~20:30 UTC, update 678b (cloud run: QA tool - shelfpages529.sh touch taps read labels without the device's grep -iE, TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex; selftest 178/178; CI green on 866a956).
+Updated: 2026-11-16 ~21:45 UTC, update 678c (cloud run: rule 11 - year recap FullText, YearRecapFullText678cTest compiled + PASS; emulator trial STARTED on this commit).
+Before: 2026-11-16 ~20:30 UTC, update 678b (cloud run: QA tool - shelfpages529.sh touch taps read labels without the device's grep -iE, TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex; selftest 178/178; CI green on 866a956).
 Before: 2026-11-16 ~19:50 UTC, update 678a (cloud run: QA tool - popclip.sh reads labels without the device's grep -iE (emulator run 43929836268 on 677d: SHELF PASS x1.0 + x1.3, COVERDETAILS only buttons FAIL = grep -iE missed Play / Details / More that fixed-string reads found); selftest 178/178; CI green on eba2de4).
 Before: update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
 (PlayHeaderStatsFullText677dTest, compiled + PASS in the cloud); run bootstrap tools/cloud/start_run.sh - the pre-cloned
@@ -33,6 +34,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678c): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678c push. READ the emulator trial started on
+  678c ("[emulator-qa]", ~21:45 UTC; next allowed from ~00:45): expect "Play keys 1" in the probe lines, COVERDETAILS Details
+  page + More step at both scales, and e529c's touch log "tap '*achievement 1*' at x,y" / "tap 'game settings*' at x,y".
+  Meanwhile: rule 11 GameWindowBanner (12) - a popup file: FullText + test, then a popclip gate (emulator trial covers
+  COVERDETAILS / SHELF; add the handheld check to HW queue). YearRecapDialog DONE 678c.
 - FIRST (678b): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678b push. From ~21:35 UTC START the emulator
   trial (head commit "[emulator-qa]") and read it the run after: popclip expectations as 678a below, and e529c's touch log should
   now show "tap '*achievement 1*' at x,y" / "tap 'game settings*' at x,y" instead of "tap: no shown control". Meanwhile: rule 11

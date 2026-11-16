@@ -30,7 +30,7 @@ old SUMMARY entries before 529, GitHub issues (no API access in these sessions).
 | P10 | Save Vault | yes | | | | partly | VERIFY (D6) |
 | P11 | Save Sync 529 (data safety A1–A11) | fix/save-sync line | full | Flip 2 dry runs | "worked" (owner test 15 Nov, build unknown) | Save Sync excluded from 0.6.72 | BLOCKED-OWNER (real Drive E2E) - see A |
 | P12 | Accessibility (touch >= 24 dp, contrast, reduced motion, TalkBack labels) | partly | | popclip touch / contrast | | | IN PROGRESS (reduced motion BLOCKED: system setting) |
-| P13 | Rule 11: no "…" truncation anywhere | 245 TRUNCATE places left (16 Nov, 677d: play header + Stats page; 677a: post-game session card + status note; 675m: notifications panel; 675l: Spotify screen + player; 281 -> 256) | static TRUNCATE, NowPlayingTruncate79Test, SpotifyFullText675lTest, NotificationsFullText675mTest, SessionSummaryFullText677aTest, PlayHeaderStatsFullText677dTest | | | | IN PROGRESS (F21; Spotify + notifications + session card: owner look pending) |
+| P13 | Rule 11: no "…" truncation anywhere | 236 TRUNCATE places left (16 Nov, 678c: year recap; 677d: play header + Stats page; 677a: post-game session card + status note; 675m: notifications panel; 675l: Spotify screen + player; 281 -> 256) | static TRUNCATE, NowPlayingTruncate79Test, SpotifyFullText675lTest, NotificationsFullText675mTest, SessionSummaryFullText677aTest, PlayHeaderStatsFullText677dTest, YearRecapFullText678cTest | | | | IN PROGRESS (F21; Spotify + notifications + session card: owner look pending) |
 | P14 | Category +N overflow counters removed | no | | | | | DEFER (owner: later refinement) |
 | P15 | Everything stays free, no paid unlocks / mandatory paid APIs | yes | | | standing rule | yes | DONE (standing) |
 

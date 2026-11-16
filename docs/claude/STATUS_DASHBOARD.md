@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678b · 2026-11-16 20:30 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 866a956 (678a) · effort: medium
+**1. LATEST UPDATE** - 678c · 2026-11-16 21:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 67d745f (678b) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The second emulator test script (the one that taps the screen on the game window's Achievements and Options pages) had the same weakness fixed last hour: it relied on the emulator's text-search tool, which misses button names. It now compares the names itself, so its two taps should land. No app change.
+**2. WHAT CLAUDE JUST FIXED** - The year recap screen no longer cuts game names, month labels, stat tiles or facts off with '...': long text now wraps, shrinks a little or slides so it can be read whole. Also started a new emulator test run to check last hour's test-script fixes.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
-- **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
 - **App** (677d): The game header (continue line, stat chips, Play button, category label) and the Stats page no longer cut text off with '...': long text now wraps, shrinks a little or slides so it can be read whole. Also fixed why the hourly cloud run kept starting on the main branch: the cloud workspace is prepared on main before the run starts; every run now switches itself safely to the development branch first and stops with a clear reason if anything is uncommitted or out of step.
+- **CI / build** (677b): The automatic build check had turned red after the new QA-app signing step: one test was reading the wrong part of the build file. The app itself was fine; the test now reads the right part and also checks that the QA signing never touches the real release key. The latest emulator run was read: one popup now passes every check there; a few test steps on the other still miss.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: start and read the next emulator test run (from about 21:35 UTC); then: show two more screens' text in full (game window banner, year recap); finish the v0.6.73 hardware checks (KONKR / Nova)
+**5. WORKING ON NEXT** - now: read the emulator test run started on this update; then: show the game window banner's text in full (needs the popup check after); finish the v0.6.73 hardware checks (KONKR / Nova)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 

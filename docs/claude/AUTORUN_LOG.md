@@ -115,3 +115,8 @@
 ## 2026-11-16 ~20:30 UTC - cloud run 678b
 - BOOTSTRAP OK (866a956); lock free (none since 19:24), taken 20:18. CI: Verify 310 GREEN on 866a956 (678a). Effort env: medium.
 - Item: shelfpages529.sh touch taps without the device's grep -iE + selftest (178/178). No emulator trial (3 h rule, from ~21:35).
+
+## 2026-11-16 ~21:18-21:50 UTC - cloud run 678c
+- BOOTSTRAP OK (67d745f); lock free, taken 21:18. CI: Verify 310 GREEN on 67d745f (678b). Effort env: medium.
+- Rule 11: year recap text shown whole (9 "…" removed, YearRecapFullText678cTest PASS, compiled after one Maven 429 retry).
+  Emulator trial started on this commit ("[emulator-qa]"). Lock released.
