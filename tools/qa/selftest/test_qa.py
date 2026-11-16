@@ -2062,6 +2062,11 @@ class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
     def test_navbar_script_guards_keys_and_never_swipes_home_by_default(self):
         sh = self._src("navbar676.sh")
         self.assertIn("k() { fgq; input keyevent", sh)
+        # (676n: the guard reads the focused resumed activity - the first mCurrentFocus line can be another display's window.)
+        g = sh[sh.index("fgq() {"):sh.index("k() { fgq")]
+        self.assertIn('grep -m1 "ResumedActivity: "', g)
+        self.assertIn('*" $PKG/"*', g)
+        self.assertIn("exit 2", g)
         self.assertLess(sh.index("touch /sdcard/Android/data/$PKG/files/qa_nolaunch"), sh.index("k BUTTON_A"))
         self.assertIn('[ "$SWIPE" = 1 ]', sh)
         self.assertIn("packageName=com.shelf.launcher$", sh)
