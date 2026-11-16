@@ -2098,6 +2098,34 @@ class TestGlyphsUnderFocusedWindow676s(unittest.TestCase):
         self.assertEqual(len(glyphcheck.candidates({"windows": [dict(home, focus=True)]})), 1)
 
 
+class TestStatusCheck677d(unittest.TestCase):
+    """677d: status-bar texts never squeezed / cut / over each other; one profile picture per screen."""
+    def _run(self, win):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": 2.0, "windows": [dict(win, focus=True)]}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "statuscheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def test_squashed_points_fail_whole_pass(self):
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50]}
+        pts = {"text": "123456", "full": [1100, 20, 40, 30], "shown": [1100, 20, 40, 30], "needW": 70, "boxW": 40, "textH": 30, "boxH": 30, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts]})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("squeezed", r.stdout)
+        ok = dict(pts, full=[1100, 20, 70, 30], shown=[1100, 20, 70, 30], boxW=70)
+        self.assertEqual(self._run({"statusBars": [bar], "avatars": [], "texts": [ok]}).returncode, 0)
+
+    def test_duplicate_avatar_fails(self):
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50]}
+        a2 = {"where": "console", "full": [20, 20, 68, 68], "shown": [20, 20, 68, 68]}
+        r = self._run({"statusBars": [], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("2 pictures", r.stdout)
+        self.assertEqual(self._run({"statusBars": [], "avatars": [a1], "texts": []}).returncode, 0)
+
+    def test_old_build_is_infra(self):
+        self.assertEqual(self._run({"avatars": [], "texts": []}).returncode, 2)
+
+
 class TestHomecut676o(unittest.TestCase):
     """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
     def _dump(self, texts, focus=True):
