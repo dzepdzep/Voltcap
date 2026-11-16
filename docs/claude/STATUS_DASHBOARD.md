@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678a · 2026-11-16 19:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on eba2de4 (677d-2) · effort: medium
+**1. LATEST UPDATE** - 678b · 2026-11-16 20:30 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 866a956 (678a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The emulator test run on the last update got much further: the shelf layout passed at both text sizes and the cover layout failed only one check. The cause of that last miss is now clear - the emulator's text-search tool sometimes fails to find button names that are plainly in the app's own report. The popup test no longer depends on that tool: it compares the button names itself. The next emulator run (from about 21:35 UTC) should confirm it.
+**2. WHAT CLAUDE JUST FIXED** - The second emulator test script (the one that taps the screen on the game window's Achievements and Options pages) had the same weakness fixed last hour: it relied on the emulator's text-search tool, which misses button names. It now compares the names itself, so its two taps should land. No app change.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: start and read the next emulator test run on this fix; then: the same fix for the touch-walk test script; finish the v0.6.73 hardware checks (KONKR / Nova)
+**5. WORKING ON NEXT** - now: start and read the next emulator test run (from about 21:35 UTC); then: show two more screens' text in full (game window banner, year recap); finish the v0.6.73 hardware checks (KONKR / Nova)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 

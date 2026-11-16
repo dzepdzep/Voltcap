@@ -1218,7 +1218,7 @@ class TestPopclipScript(unittest.TestCase):
         for l in code:
             if "grep" in l and ("qa_clip/" in l or l.startswith("ctl()")):
                 self.assertTrue("jl " in l or l.startswith("tapj()"), l)
-        self.assertIn("jl $2 | grep -oiE", sp)
+        self.assertIn("jl $2 | while IFS= read -r ln; do", sp)    # (678b: ctl reads labels without a regex)
         self.assertIn("dump unreadable", sp)
         self.assertLess(sp.index("jl() {"), sp.index("ctl() {"))
         defs = "\n".join(l for l in code if l.startswith(("jl()", "dr()", "ctl()")))
@@ -1232,7 +1232,7 @@ class TestPopclipScript(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
             f.write('{"windows":[{"nodes":[{"label":"Game settings","kind":"control"'); half = f.name
         try:
-            out = subprocess.run(["sh", "-c", defs + '\nctl "[^\\"]*achievement 1[^\\"]*" "$1"; ctl "Game settings[^\\"]*" "$1"; '
+            out = subprocess.run(["sh", "-c", defs + '\nctl "*achievement 1*" "$1"; ctl "game settings*" "$1"; '
                                   'dr "$1" && echo whole; dr "$2" || echo half', "x", path, half],
                                  capture_output=True, text=True).stdout
         finally:
@@ -1241,6 +1241,53 @@ class TestPopclipScript(unittest.TestCase):
         self.assertIn('"label":"Game settings for this game","kind":"control","full":[40,300,600,48],"shown":[40,300,600,48]', out)
         self.assertNotIn("Full story", out)
         self.assertIn("whole", out); self.assertIn("half", out)
+
+    def test_shelfpages_taps_read_labels_without_the_devices_regex(self):
+        # 678b: shelfpages529.sh (e529c touch walk) still handed its labels to the device's grep -oiE, which read no label
+        # that fixed-string reads found (678a); the trial logged "tap: no shown control" for both taps. ctl now takes a shell
+        # glob (case-blind; the label matches it or ends in a non-letter + it) and tapj skips zero-size keys in the shell. Run
+        # here with a grep that reads nothing for -E (the device), both taps land on the shown middle of the right control.
+        import subprocess, json, tempfile, shutil
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        lines = sp.splitlines()
+        code = [l for l in lines if not l.lstrip().startswith("#")]
+        for l in code:
+            if l.startswith(("ctl()", "tapj()")) or "tapj " in l:
+                self.assertNotRegex(l, r"grep -[a-zA-Z]*E", l)
+                self.assertNotIn("[^", l, l)                       # no regex classes handed to the taps
+        defs = [l for l in lines if l.startswith(("jl()", "ctl()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapj()")); defs += lines[i:i + 3]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            {"label": "Full story on Details \u203a", "kind": "text", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9]},
+            node("Achievement 1, hidden", [40, 60, 600, 0]),           # zero height: never tapped
+            node("Shadow of the Colossus achievement 1, Unlocked", [40, 120, 600, 48]),
+            node("Agame settings", [9, 9, 9, 9]),                     # not a word boundary
+            node("GAME SETTINGS for this game", [40, 300, 600, 48])]}], "images": {}}
+        tmp = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(tmp, "bin")); os.makedirs(os.path.join(tmp, "qa_clip"))
+            real = shutil.which("grep")
+            with open(os.path.join(tmp, "bin", "grep"), "w") as f:
+                f.write('#!/bin/sh\nfor a in "$@"; do case "$a" in -*E*) case "$a" in --*) ;; *) exit 1;; esac;; esac; done\n'
+                        'exec ' + real + ' "$@"\n')
+            os.chmod(os.path.join(tmp, "bin", "grep"), 0o755)
+            for step in ("t_trophies", "t_options"):
+                open(os.path.join(tmp, "qa_clip", "T_" + step + ".json"), "w", encoding="utf-8").write(
+                    json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+            env = dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"])
+            cmd = ("\n".join(defs) + '\ngate() { :; }; log() { echo "log $*"; }; input() { echo "tap $2 $3"; }\n'
+                   'F=$1; TAG=T; tapj "*achievement 1*" t_trophies; tapj "game settings*" t_options; '
+                   'tapj "nothing here*" t_options || echo missed; echo ego=$(echo x | grep -E x | wc -l)')
+            out = subprocess.run(["sh", "-c", cmd, "x", tmp], capture_output=True, text=True, env=env).stdout
+        finally:
+            shutil.rmtree(tmp)
+        self.assertIn("ego=0", out)
+        self.assertIn("tap 340 144", out)                          # the shown achievement row, not the zero-size one
+        self.assertIn("tap 340 324", out)                          # GAME SETTINGS (case-blind), not "Agame settings"
+        self.assertIn("log tap '*achievement 1*' at 340,144", out)  # the log names the asked control, not a coordinate
+        self.assertIn("missed", out); self.assertIn("no shown control 'nothing here*'", out)
+        self.assertNotIn("tap 13 13", out)
 
     def test_dump_reads_are_plain_ascii_and_find_the_round_more_keys(self):
         # 675o (emulator run 43833359452): with jl the device's grep still read no Play in e529b's probe and no More in e529a's

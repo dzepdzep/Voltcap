@@ -37,15 +37,19 @@ walk() { # name: R1 x3 recorded with a shot per page, then L1 x3
 # 529l touch (TOUCH=1): on the Achievements page a tap on the first achievement row, on the Options page a tap on the
 # "Game settings" row (opens a sheet - nothing is chosen in it; B goes back). Taps go to the middle of the shown part of the
 # control in that page's layout dump; nothing is tapped when the dump has no such control.
-ctl() { jl $2 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]'; }
-tapj() { r=$(ctl "$1" $F/qa_clip/${TAG}_$2.json | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
+# (678b: as popclip.sh 678a - the device's grep -iE read no label that fixed-string reads found, and this trial logged "tap:
+# no shown control" for both taps. No regex reads a label any more: ctl takes a shell glob (case-blind; the label matches it,
+# or ends in a non-letter + it - the old rule), cuts label / full / shown out with ${x#..} / ${x%%..} and prints the same line
+# the old grep -o did; tapj skips zero-size keys in the shell instead of a grep -vE.)
+ctl() { w=$(printf '%s' "$1" | tr A-Z a-z); jl $2 | while IFS= read -r ln; do case "$ln" in '"label":"'*'","kind":"control","full":['*'],"shown":['*) ;; *) continue;; esac; lb=${ln#'"label":"'}; lb=${lb%%'"'*}; r=${ln#*'"full":['}; fu=${r%%']'*}; r=${ln#*'"shown":['}; sw=${r%%']'*}; case "$fu,$sw" in *[!0-9,-]*) continue;; esac; lo=$(printf '%s' "$lb" | tr A-Z a-z); case "$lo" in $w|*[!a-z]$w) printf '"label":"%s","kind":"control","full":[%s],"shown":[%s]\n' "$lb" "$fu" "$sw";; esac; done; }
+tapj() { r=$(ctl "$1" $F/qa_clip/${TAG}_$2.json | while IFS= read -r c; do s=${c#*'"shown":['}; s=${s%%']'*}; set -- $(echo $s | tr ',' ' '); [ "$3" != 0 ] && [ "$4" != 0 ] && { echo $s; break; }; done)
   [ -n "$r" ] || { log "tap: no shown control '$1' in $2"; return 1; }
-  gate; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 )); log "tap '$1' at $(( $1 + $3 / 2 )),$(( $2 + $4 / 2 ))"; }
+  gate; q=$1; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 )); log "tap '$q' at $(( $1 + $3 / 2 )),$(( $2 + $4 / 2 ))"; }
 touchp() {
   k BUTTON_R1 1.0; k BUTTON_R1 1.2; shot $1_t_trophies
-  tapj "[^\"]*achievement 1[^\"]*" $1_t_trophies && { sleep 1.3; shot $1_t_ach_tap; }
+  tapj "*achievement 1*" $1_t_trophies && { sleep 1.3; shot $1_t_ach_tap; }
   k BUTTON_R1 1.2; shot $1_t_options
-  tapj "Game settings[^\"]*" $1_t_options && { sleep 1.6; shot $1_t_opt_tap; k BUTTON_B 1.3; shot $1_t_opt_back; }
+  tapj "game settings*" $1_t_options && { sleep 1.6; shot $1_t_opt_tap; k BUTTON_B 1.3; shot $1_t_opt_back; }
   k BUTTON_L1 0.9; k BUTTON_L1 0.9; k BUTTON_L1 1.0; shot $1_t_main
 }
 case $MODE in

@@ -111,3 +111,7 @@
 - BOOTSTRAP OK (eba2de4); lock free (none since 18:32), taken 19:19. CI: Verify 310 GREEN on eba2de4. Effort env: medium.
 - Read emulator trial 43929836268 (677d): SHELF PASS both scales, COVERDETAILS buttons FAIL from the device's grep -iE.
 - Item: popclip.sh label reads without a regex + selftest (178/178). No emulator trial this run (3 h rule, from ~21:35).
+
+## 2026-11-16 ~20:30 UTC - cloud run 678b
+- BOOTSTRAP OK (866a956); lock free (none since 19:24), taken 20:18. CI: Verify 310 GREEN on 866a956 (678a). Effort env: medium.
+- Item: shelfpages529.sh touch taps without the device's grep -iE + selftest (178/178). No emulator trial (3 h rule, from ~21:35).

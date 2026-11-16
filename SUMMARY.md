@@ -1,3 +1,15 @@
+# Update 678b (16 Nov 2026, cloud scheduled run) - QA tool only - touch-walk taps read labels without the device's regex
+- shelfpages529.sh (emulator job e529c, TOUCH=1): its two taps (first achievement row, Game settings) still handed regex
+  labels to the device's grep -oiE - the same reader that missed Play / Details / More in 678a; trial 43929836268 logged "tap:
+  no shown control" for both. ctl now takes a shell glob ("*achievement 1*", "game settings*"), lower-cases with tr, cuts
+  label / full / shown out with parameter expansion and compares with case (old rule kept: case-blind, the label matches or
+  ends in a non-letter + the pattern); tapj skips zero-size keys in the shell (was grep -vE) and its log names the asked
+  control (it printed a coordinate after set --).
+- Test: TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex - runs ctl / tapj with a stand-in grep that
+  reads nothing for -E; fails on 678a's script. One older test follows the new ctl. Selftest 178/178 PASS; static checks PASS.
+  No app code changed. EMULATOR tooling only; next emulator trial allowed from ~21:35 UTC (not started this run).
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; trackers.
+
 # Update 678a (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads labels without the device's regex
 - Emulator trial 43929836268 (677d, c45d0ab) read: SHELF PASS at x1.0 and x1.3; COVERDETAILS fails only "buttons" (x1.3 More
   step, x1.0 Details page). The new log lines settle the cause: the device's grep -iE read no Play key in 9 of 9 probes (the

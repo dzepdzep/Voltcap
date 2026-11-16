@@ -1,6 +1,7 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~19:50 UTC, update 678a (cloud run: QA tool - popclip.sh reads labels without the device's grep -iE (emulator run 43929836268 on 677d: SHELF PASS x1.0 + x1.3, COVERDETAILS only buttons FAIL = grep -iE missed Play / Details / More that fixed-string reads found); selftest 178/178; CI green on eba2de4).
+Updated: 2026-11-16 ~20:30 UTC, update 678b (cloud run: QA tool - shelfpages529.sh touch taps read labels without the device's grep -iE, TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex; selftest 178/178; CI green on 866a956).
+Before: 2026-11-16 ~19:50 UTC, update 678a (cloud run: QA tool - popclip.sh reads labels without the device's grep -iE (emulator run 43929836268 on 677d: SHELF PASS x1.0 + x1.3, COVERDETAILS only buttons FAIL = grep -iE missed Play / Details / More that fixed-string reads found); selftest 178/178; CI green on eba2de4).
 Before: update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
 (PlayHeaderStatsFullText677dTest, compiled + PASS in the cloud); run bootstrap tools/cloud/start_run.sh - the pre-cloned
 workspace starts on main; the task prompt now switches to the dev branch safely; emulator trial started on this commit).
@@ -32,7 +33,12 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-- FIRST (678a): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678a push. From ~21:35 UTC START the emulator
+- FIRST (678b): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678b push. From ~21:35 UTC START the emulator
+  trial (head commit "[emulator-qa]") and read it the run after: popclip expectations as 678a below, and e529c's touch log should
+  now show "tap '*achievement 1*' at x,y" / "tap 'game settings*' at x,y" instead of "tap: no shown control". Meanwhile: rule 11
+  screens GameWindowBanner (12), YearRecapDialog (9) (Kotlin: compile + a FullText test, as 677d).
+- DONE 678b: shelfpages529.sh taps regex-free (see SUMMARY "Update 678b").
+- (678a item, kept for its expectations) BOOTSTRAP OK required. Check "Verify Android update 310" on the 678a push. From ~21:35 UTC START the emulator
   trial (head commit "[emulator-qa]") and read it the run after: expect "Play keys 1" in the probe lines (no more "up by the
   app's own popupAgeMs (Play key not read"), COVERDETAILS Details page + More step present at both scales. Meanwhile: give
   shelfpages529.sh (e529c touch walk) the same regex-free reads (its ctl takes real regexes like '[^"]*achievement 1[^"]*' -
