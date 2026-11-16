@@ -31,7 +31,7 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 3. Full popup gates x1.0 + x1.3 on each device (two at a time, ~50 min each): closes HW-1 for those devices, HW-5, HW-6.
 4. Record crate checklist (HW-2) and Cube first press (HW-4) on the KONKR; controller / onepress / animation checks where
    the device differs (screen size, controller).
-4b. HW-7 (5 min, KONKR): Spotify screen + player long names (675l) - look only, no account change.
+4b. HW-7 (5 min, KONKR): Spotify screen + player (675l) and notifications panel (675m) long names - look only, no account change.
 5. Restore every device (snapshot diff=0, fatal=0), push results, update releases.json gates.
 Flip 2 (unavailable): its 15 Nov gates stay HISTORICAL evidence for v0.6.73 (owner 16 Nov); its own session (popup gates on
 the newest build + the charging reproduction, HW-3) waits until it is back.
@@ -80,3 +80,6 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - Why not emulator: the emulator has no Spotify session; row heights / slide speed are judged on the real panel.
 - Tests: a playlist / album / track with a long name and long artist line: the name wraps to 2 lines, shrinks, then slides
   (never "…"); list rows keep their height when the artist line is one line; D-pad focus moves row to row without jumps.
+- 675m extension: notifications panel (R1 pull-down) with a long app name, a long notification title and a long two-line text,
+  a running background task and the charge-limit pill: wrap / shrink / slide, never "…"; rows keep their height; D-pad ▶ / ◀
+  still steps between a notification and its ✕ (D26). Use notifications the QA app can already see; post none from other apps.

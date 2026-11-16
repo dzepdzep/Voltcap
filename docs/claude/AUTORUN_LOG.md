@@ -74,3 +74,8 @@
 - Item: HANDOFF FIRST - read emulator run 43811840328: NOT TESTED, precondition failed (Pixel Launcher ANR dialog + the
   Inspect / Wobble question). Fixed in run_trial.sh + the QA first-run hook; EmulatorHarness529Test 4/4, compile OK, static
   PASS, selftest 163/163. No [emulator-qa] (3 h rule: next from ~08:45).
+
+## 2026-11-16 08:21-08:45 UTC - cloud scheduled run (675m)
+- Lock free (released by 675l); taken 08:21. CI: Verify 310 green on 8bd5e4ae (675l).
+- Item: rule 11 filler (trial not allowed before 08:41): notifications panel, 6 Ellipsis -> FullText (268 -> 262).
+  NotificationsFullText675mTest 2/2, compile OK (one Maven 429 retry), static PASS. Head commit carries "[emulator-qa]".

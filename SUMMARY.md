@@ -1,3 +1,15 @@
+# Update 675m (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: notifications panel shown whole
+- Notifications panel (R1 / pull-down): app name, notification title, notification text, background-task label, date and
+  the charge-limit pill used TextOverflow.Ellipsis (6). Now FullText (wrap to the same line count, shrink to fitMin, then
+  slide), reserve = false so rows keep today's height. Same sizes, colours, weights, focus and dismiss (D26) unchanged.
+  TRUNCATE count 268 -> 262.
+- Test: NotificationsFullText675mTest (fails on the 675l sources: Ellipsis present) 2/2 PASS in the cloud; app + tests
+  compiled (compileDebugUnitTestKotlin, after one Maven 429 retry). Static checks PASS.
+- Not tested: on a handheld (HW-7 extended, look only). Emulator trial re-run on this commit ("[emulator-qa]").
+- Files: app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt,
+  app/src/test/java/com/shelf/launcher/ui/NotificationsFullText675mTest.kt; docs (matrix P13, HANDOFF, HARDWARE_QA_QUEUE HW-7,
+  AUTORUN_LOG, run_reports.jsonl, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
 # Update 675l (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: Spotify names shown whole
 - Spotify screen (9) and player (4): every track / artist / album / playlist / heading Text with TextOverflow.Ellipsis is now
   FullText (wrap up to the same line count, shrink to fitMin, then slide), reserve = false so rows keep today's height. Same

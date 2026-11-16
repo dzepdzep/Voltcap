@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675l · 2026-11-16 07:45 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 339839f9 (675k) · effort: medium
+**1. LATEST UPDATE** - 675m · 2026-11-16 08:45 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 8bd5e4ae (675l) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Spotify screen and player: long track, artist, album and playlist names are no longer cut off with '...'; they wrap, shrink a little, or slide so the whole name can be read. The list rows keep their height.
+**2. WHAT CLAUDE JUST FIXED** - Notifications panel: long app names, notification titles and texts, background-task names, the date and the charge-limit label are no longer cut off with '...'; they wrap, shrink a little, or slide so all of it can be read. Rows keep their height. The emulator test is started again on this update.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: re-run the emulator trial (allowed from ~08:45 UTC) and read its popup results; then: hardware checks on today's handhelds when you say "devices ready"; remove the remaining '...' cut-offs screen by screen (268 left)
+**5. WORKING ON NEXT** - now: read the emulator test started on this update (the first one with the start-up dialog fixes); then: hardware checks on today's handhelds when you say "devices ready"; remove the remaining '...' cut-offs screen by screen (262 left)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 5 items (see Owner actions below); cloud work continues without them.
 
@@ -119,16 +119,16 @@ Cloud development continues without any of these. v0.6.73 / KONKR production upg
 | | |
 |---|---|
 | Stable production version | **v0.6.72** (main 5b01ef39). Nothing released since. |
-| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675l cb9fe4e (16 Nov 07:50 UTC, Spotify names shown whole) |
-| Latest CI ("Verify Android update 310") | **green** on 339839f9 (675k); 675l pending; green on every finished push since the 675a memory fix |
-| Latest emulator trial | 43811840328 (675i): NOT TESTED (precondition: ANR dialog + Inspect question, handled 675k); next trial from ~08:45 UTC |
-| Last successful cloud run | 16 Nov 07:22-07:55 UTC (675l) |
-| Cloud runs so far | 9 scheduled (675a-675e, 675h, 675k, 675l) + live sessions, hourly at :17 |
+| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675m (16 Nov 08:45 UTC, notifications panel texts shown whole) |
+| Latest CI ("Verify Android update 310") | **green** on 8bd5e4ae (675l); 675m pending; green on every finished push since the 675a memory fix |
+| Latest emulator trial | 43811840328 (675i): NOT TESTED (precondition: ANR dialog + Inspect question, handled 675k); new trial started on the 675m commit - result next run |
+| Last successful cloud run | 16 Nov 08:21-08:45 UTC (675m) |
+| Cloud runs so far | 10 scheduled (675a-675e, 675h, 675k-675m) + live sessions, hourly at :17 |
 | Waiting for hardware | 7 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
 | Waiting for your approval / decision | see Owner actions |
 
 ## Next development priorities (hand-written)
-1. Re-run the emulator trial from ~08:45 UTC (675k preconditions) and read it; then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
+1. Read the emulator trial started on the 675m commit (675k preconditions); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
    Flip 2-like and RP Classic-like screens, the 17 category looks.
 2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
 3. Native popup pages for the 40 layouts still on the shared page (P2).

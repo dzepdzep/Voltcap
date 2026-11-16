@@ -1,8 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~07:50 UTC, update 675l (cloud run: rule 11 - Spotify screen + player use FullText, 13 "…" removed;
-compiled + SpotifyFullText675lTest PASS in the cloud; trial not re-run yet, 3 h rule). Previous: 675k (emulator trial
-preconditions - foreign ANR dialog + Inspect question).
+Updated: 2026-11-16 ~08:45 UTC, update 675m (cloud run: rule 11 - notifications panel uses FullText, 6 "…" removed;
+compiled + NotificationsFullText675mTest PASS in the cloud). The 675m head commit carries "[emulator-qa]": the emulator trial
+runs on it (first trial with the 675k precondition fixes). Previous: 675l (Spotify screen + player FullText).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -21,7 +21,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-- FIRST: re-run the emulator trial ("[emulator-qa]" in a head commit message, allowed from ~08:45 UTC) and read it. Run
+- FIRST: read the emulator trial STARTED on the 675m commit (~08:45 UTC; next "[emulator-qa]" allowed from ~11:45). Run
   43811840328 (675i) graded NOTHING: precondition e529a failed - "Pixel Launcher isn't responding" over the QA app and the
   Inspect / Wobble first-start question over the picker. 675k: trial hides / closes foreign ANR dialogs, the first-run QA
   hook answers the Inspect question. If a precondition still fails, read precondition_*.png for what else is in front
@@ -53,9 +53,10 @@ When a progress.json count changes, change its source text with it.
    QaClip.GlyphKey mark if a run shows the same walk symptom there.
 3. Native popup pages for the remaining layouts; physical pickup / return animations (Disc Station etc.); D323 / D324 in-place
    Inspect; D322 pickup latency; promote warn-uniform to FAIL; Cube first-A / L2-R2 fact (HW-4).
-3b. Rule 11 (P13 / F21): 268 TRUNCATE left (static_checks). Filler item between trials: one screen per run, FullText(...,
+3b. Rule 11 (P13 / F21): 262 TRUNCATE left (static_checks). Filler item between trials: one screen per run, FullText(...,
    reserve = false) where the old Text had no reserved height + a source test (pattern: SpotifyFullText675lTest). Done:
-   Now Playing (D79), Spotify screen + player (675l). Biggest left: SettingsDialog 17, SaveExplorer 13, GameDetailsOverlay 13,
+   Now Playing (D79), Spotify screen + player (675l), notifications panel (675m). Next small ones: SessionSummary 6,
+   PlayHeader 6, StatsContent 5. Biggest left: SettingsDialog 17, SaveExplorer 13, GameDetailsOverlay 13,
    GameWindowBanner 12, YearRecapDialog 9. Popup files (GameDetailsOverlay, GameWindowBanner) need a popclip gate after (R26).
 4. Requirements matrix reconciliation (docs/REQUIREMENTS_MATRIX.md) and the full backlog (docs/MASTER_BACKLOG.md).
 5. Later: +N category counters.
