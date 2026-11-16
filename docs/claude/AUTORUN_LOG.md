@@ -90,3 +90,8 @@
 - Lock free (released 14:15 by the live session); taken 14:23. CI: Verify 310 on 1e1400c in progress at start (d712fab cancelled, d1d6d98 green).
 - Item: rule 11 filler - SessionSummary (6 TRUNCATE -> FullText) + SessionSummaryFullText677aTest; compiled + tests PASS in the cloud.
   Emulator trial started on this commit (first on the 675o fix). Effort env: medium.
+
+## 2026-11-16 16:20-16:50 UTC - cloud scheduled run (677b)
+- Lock free (released 15:29 by the live session); taken 16:21. CI: Verify 310 RED on 0cc6739 + 0e23337 (QaIsolation521Test lookup).
+- Item: fixed the test lookup (buildTypes debug block) + QA-key block assertion; not compiled here (Maven 429 x2), CI decides.
+  Emulator trial 43887216747 read (x1.0 COVERDETAILS full PASS; SHELF / x1.3 misses remain). Effort env: medium.

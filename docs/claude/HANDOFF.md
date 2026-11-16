@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~14:50 UTC, update 677a (cloud run: rule 11 - post-game session card + status note
+Updated: 2026-11-16 ~16:45 UTC, update 677b (cloud run: CI red on 0cc6739 / 0e23337 fixed - QaIsolation521Test
+looked at the new QA-key signingConfigs debug block instead of the debug build type; NOT compiled here (Maven 429), CI decides).
+Before: update 677a (cloud run: rule 11 - post-game session card + status note
 shown whole (FullText, SessionSummaryFullText677aTest; compiled in the cloud); emulator trial started on this commit).
 Before: update 675o (cloud run: read emulator run 43833359452 on 675m - first fully graded
 trial: x1.0 SHELF PASS 11/11; every FAIL traced to the device grep missing keys in dumps holding "›" -> popclip.sh /
@@ -24,6 +26,13 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (677b): check "Verify Android update 310" on the 677b push. If QaIsolation521Test still fails, fix it first; if anything
+  else is red, that is item 0.
+- Emulator trial 43887216747 (677a) READ: x1.0 COVERDETAILS 12/12 PASS; x1.0 SHELF "first A opened nothing" (read: Play keys
+  probe 1, home 0 - the probe saw Play, yet graded as not open: look at the open grading in popclip.py vs the probe line);
+  x1.3 COVERDETAILS late open (1.5 s) + "More: none read in the main dump (7 controls read)" + no Details action; x1.3 SHELF no
+  Details action (More reached). Next: compare raw/e529a/COVERDETAILS_OWN dumps for the More / Details keys (QaClip names) vs
+  what popclip.sh greps; next trial allowed from ~17:35 UTC.
 - DONE 16 Nov live (675r / 676 / 676c, SUMMARY "Update 676"): the four Nova x1.3 FAILs fixed and PASS on the Nova; Hide nav
   bar root cause fixed (Retroid handle quirk was gated on a lazy root check); global badge lane (ui/BadgeLane.kt + badgecheck R27).
 - DONE 676d-f: D334 guard (app + scripts, proven on the Nova), QA levels in CLAUDE.md, pinned QA key, badge lane final (name plate
@@ -39,7 +48,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   v0.6.71). Rebase / port onto claude/qa-0672-repair on a NEW branch (claude/save-sync-0674), never into the v0.6.73 line;
   compile + full unit suite + SaveSync529Test / SaveSyncSim529Test / SyncGuards529Test. Real Drive test waits for the owner
   (OAuth client for com.shelf.launcher.qa + spare-account sign-in; D337: the QA key must be stable first).
-- FIRST: read the emulator trial STARTED by the 677a cloud run (head commit "[emulator-qa]", ~14:50 UTC, first trial on the
+- DONE 677b (see above): read the emulator trial STARTED by the 677a cloud run (head commit "[emulator-qa]", ~14:50 UTC, first trial on the
   675o fix; next one allowed from ~17:50) - artifacts emulator-qa-<gpu>-<sha>. Expect e529a/e529b COVERDETAILS + SHELF to grade without "opened
   nothing" / "More step missing" / rapid launches. If a miss remains, the new log lines say what the device read ("read: Play
   keys probe X, home Y", "More: none read in the main dump (N controls read)") - set them beside the copied probes. If misses

@@ -1,3 +1,15 @@
+# Update 677b (16 Nov 2026, cloud run) - CI red fixed: QaIsolation521Test found the wrong debug block
+- CI "Verify Android update 310" was RED on 0cc6739 (676h) and 0e23337 (676l): 1 of 2114 tests,
+  QaIsolation521Test.qaBuildsAreSignedWithTheDebugKeyNotTheReleaseKey ("release key only with the owner opt-out"). Cause: 676h
+  added `getByName("debug") { }` inside `signingConfigs { }` (pinned QA key from VOLTCAP_QA_KEYSTORE_PATH); the test's
+  first-match text lookup landed there instead of the debug BUILD TYPE. The app/Gradle file is right; the test now looks inside
+  `buildTypes {` and also asserts that the QA-key block only re-points the debug signing config and never names the release key.
+- Emulator trial 43887216747 (677a) read: x1.0 COVERDETAILS PASS on every check (first full row); x1.0 SHELF first A opened
+  nothing; x1.3 COVERDETAILS opened late + More / Details steps missing, SHELF Details page missing. EMULATOR evidence only.
+- Files: app/src/test/java/com/shelf/launcher/data/QaIsolation521Test.kt; trackers.
+- Checks: test logic replayed in Python against build.gradle.kts (both lookups hit the intended blocks); static checks PASS.
+  NOT compiled in the cloud (Maven Central 429 twice) - CI on this push is the first compile + run.
+
 # Update 676l (16 Nov 2026, live session) - QA signing in CI, Cube facet + v0.6.74 drawer branches, full gate x1.3
 - QA APK signing (owner 3A, secret added by the owner): .github/workflows/qa-device-apk.yml - workflow_dispatch or a claude/* push
   with "[qa-apk]", never pull_request; the secret goes to one step, is checked against tools/qa/qa_signing.json, written to a temp

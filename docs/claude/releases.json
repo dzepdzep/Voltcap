@@ -116,13 +116,13 @@
    "gates": [
     {
      "gate": "CI unit tests + debug build (Verify Android update 310)",
-     "state": "PASS",
-     "evidence": "green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit"
+     "state": "PENDING",
+     "evidence": "RED on 0cc6739 + 0e23337 (676h/676l): QaIsolation521Test read the new QA-key signing block as the debug build type (test lookup, not the app); lookup fixed in 677b, CI on the 677b push decides. Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
     },
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PENDING",
-     "evidence": "run 43833359452 (675m, 1990deb4): FAIL, graded for the first time (preconditions PASS): x1.0 SHELF PASS on all checks, COVERDETAILS did not open on the first A; x1.3 COVERDETAILS fails only the rapid A/B check, SHELF the More step + rapid. All traced to the test reading its screen dumps wrongly on the emulator (the dumps hold the keys) - fixed in the test tools 675o; next trial from ~11:42 UTC. Emulator evidence supports, never replaces, the handheld gates"
+     "evidence": "run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",

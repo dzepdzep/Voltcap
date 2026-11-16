@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 677a · 2026-11-16 14:55 UTC · commit `4c332f1` · CI: Verify 310 on 1e1400c in progress at start; d1d6d98 green · effort: medium
+**1. LATEST UPDATE** - 677b · 2026-11-16 16:45 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on 0cc6739 + 0e23337 (test lookup); fix pushed in this commit, result pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The card that appears after you finish playing (game name, time played, achievements, milestone) and the short note in the status bar now show long names in full - they wrap, shrink a little or slide - instead of ending in '...'. An emulator test run was also started to check yesterday's fix to the automatic popup tests.
+**2. WHAT CLAUDE JUST FIXED** - The automatic build check had turned red after the new QA-app signing step: one test was reading the wrong part of the build file. The app itself was fine; the test now reads the right part and also checks that the QA signing never touches the real release key. The latest emulator run was read: one popup now passes every check there; a few test steps on the other still miss.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
 - **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
-- **QA tools** (675q): On the RP Nova, all 14 'physical' animations (the cartridge, disc or case lifting out and going back) opened correctly with no flicker or black frames, and scrolling stays smooth most of the time with occasional short hitches.
+- **CI / build** (677b): The automatic build check had turned red after the new QA-app signing step: one test was reading the wrong part of the build file. The app itself was fine; the test now reads the right part and also checks that the QA signing never touches the real release key. The latest emulator run was read: one popup now passes every check there; a few test steps on the other still miss.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: read the emulator test run started by this update; then: finish the v0.6.73 hardware checks (KONKR / Nova); next screens with '...' text: play header, stats
+**5. WORKING ON NEXT** - now: confirm the build check is green again on this commit; then: look into the remaining emulator popup misses; finish the v0.6.73 hardware checks (KONKR / Nova)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 9 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 9 app fixes fully verified · 8 gates left (next: CI unit tests + debug build (Verify Android update 310)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -70,8 +70,8 @@ work. Emulator results never count as handheld verification. Release status is d
 
 | Gate | State | Evidence |
 |---|---|---|
-| CI unit tests + debug build (Verify Android update 310) | PASS | green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit |
-| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43833359452 (675m, 1990deb4): FAIL, graded for the first time (preconditions PASS): x1.0 SHELF PASS on all checks, COVERDETAILS did not open on the first A; x1.3 COVERDETAILS fails only the rapid A/B check, SHELF the More step + rapid. All traced to the test reading its screen dumps wrongly on the emulator (the dumps hold the keys) - fixed in the test tools 675o; next trial from ~11:42 UTC. Emulator evidence supports, never replaces, the handheld gates |
+| CI unit tests + debug build (Verify Android update 310) | PENDING | RED on 0cc6739 + 0e23337 (676h/676l): QaIsolation521Test read the new QA-key signing block as the debug build type (test lookup, not the app); lookup fixed in 677b, CI on the 677b push decides. Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
+| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
@@ -84,7 +84,7 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: CI unit tests + debug build (Verify Android update 310) (PENDING); Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
