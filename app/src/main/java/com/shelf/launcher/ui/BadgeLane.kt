@@ -160,20 +160,21 @@ internal fun rememberBadgeLane(): BadgeLane = remember { BadgeLane() }
  * clear of it (beside, stacked, another corner) or, on a tile with no room for both, leave it out - never over the name. No lane:
  * nothing changes.
  */
-internal fun Modifier.laneContent(lane: BadgeLane?, inset: Dp): Modifier = if (lane == null) this else this.then(LaneContentElement(lane, inset))
+internal fun Modifier.laneContent(lane: BadgeLane?, inset: Dp, shiftY: Dp = 0.dp): Modifier = if (lane == null) this else this.then(LaneContentElement(lane, inset, shiftY))
 
-private data class LaneContentElement(val lane: BadgeLane, val inset: Dp) : ModifierNodeElement<LaneContentNode>() {
-    override fun create() = LaneContentNode(lane, inset)
-    override fun update(node: LaneContentNode) { if (node.lane !== lane) node.lane.remove(BadgeKind.CONTENT); node.lane = lane; node.inset = inset }
+private data class LaneContentElement(val lane: BadgeLane, val inset: Dp, val shiftY: Dp) : ModifierNodeElement<LaneContentNode>() {
+    override fun create() = LaneContentNode(lane, inset, shiftY)
+    override fun update(node: LaneContentNode) { if (node.lane !== lane) node.lane.remove(BadgeKind.CONTENT); node.lane = lane; node.inset = inset; node.shiftY = shiftY }
 }
 
-private class LaneContentNode(var lane: BadgeLane, var inset: Dp) : Modifier.Node(), LayoutModifierNode {
+/** [shiftY] (676z): room a padding before this node keeps above the content (the console's band) - added to its reported top. */
+private class LaneContentNode(var lane: BadgeLane, var inset: Dp, var shiftY: Dp = 0.dp) : Modifier.Node(), LayoutModifierNode {
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
         val p = measurable.measure(constraints)
         // The plate's box fills the tile less [inset] and centres the text: its margin from the tile's edges is the slack round it.
         val insetPx = inset.roundToPx()
         val mx = ((constraints.maxWidth - p.width) / 2).coerceAtLeast(0) + insetPx
-        val my = ((constraints.maxHeight - p.height) / 2).coerceAtLeast(0) + insetPx
+        val my = ((constraints.maxHeight - p.height) / 2).coerceAtLeast(0) + insetPx + shiftY.roundToPx()
         lane.report(BadgeBox(BadgeKind.CONTENT, Alignment.TopStart, mx, my, p.width, p.height))
         return layout(p.width, p.height) { p.place(0, 0) }
     }
