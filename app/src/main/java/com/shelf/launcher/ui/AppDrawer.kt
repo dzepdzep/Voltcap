@@ -67,7 +67,9 @@ internal fun AppDrawer(
     onToggleContinue: ((String) -> Unit)? = null,
     /** Update 450: "Clear from Continue playing" for an opted-in app that has history; null hides it. */
     hasContinueHistory: (String) -> Boolean = { false },
-    onClearContinue: ((String) -> Unit)? = null
+    onClearContinue: ((String) -> Unit)? = null,
+    /** 676j (v0.6.74): "Open on screen" for the app (ScreenTarget.kt); null: not shown. */
+    screenRow: (@Composable (Game) -> Unit)? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppDrawer")
     val sorted = remember(apps) { apps.sortedBy { it.name.lowercase() } }
@@ -104,7 +106,7 @@ internal fun AppDrawer(
             }
         }
     }
-    menuFor?.let { app -> AppOptionsMenu(app, isGame, onSetKind, onHide = { onHide(app) }, onDismiss = { menuFor = null }, isInContinue = isInContinue, onToggleContinue = onToggleContinue, hasContinueHistory = hasContinueHistory, onClearContinue = onClearContinue) }
+    menuFor?.let { app -> AppOptionsMenu(app, isGame, onSetKind, onHide = { onHide(app) }, onDismiss = { menuFor = null }, isInContinue = isInContinue, onToggleContinue = onToggleContinue, hasContinueHistory = hasContinueHistory, onClearContinue = onClearContinue, screenRow = screenRow) }
 }
 
 /** Long-press / Start on an app: uninstall, Android's app info, hide, game or app. */
@@ -118,7 +120,8 @@ private fun AppOptionsMenu(
     isInContinue: (String) -> Boolean = { false },
     onToggleContinue: ((String) -> Unit)? = null,
     hasContinueHistory: (String) -> Boolean = { false },
-    onClearContinue: ((String) -> Unit)? = null
+    onClearContinue: ((String) -> Unit)? = null,
+    screenRow: (@Composable (Game) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val pkg = app.packageName ?: run { onDismiss(); return }
@@ -133,6 +136,8 @@ private fun AppOptionsMenu(
                 }
                 onDismiss()
             }
+            // 676j (v0.6.74): which screen it opens on - its own choice or what it follows; saved at once, never opens it.
+            screenRow?.invoke(app)
             MenuRow(
                 Icons.Filled.SportsEsports,
                 if (game) "Mark as app" else "Mark as game",

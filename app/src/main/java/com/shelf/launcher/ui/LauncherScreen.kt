@@ -6434,7 +6434,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             isInContinue = { pkg -> pkg in state.libraryApps.continueApps },
             onToggleContinue = { pkg -> viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) },
             hasContinueHistory = { pkg -> state.lastPlayedAt.containsKey(pkg) },
-            onClearContinue = { pkg -> viewModel.clearContinueHistory(pkg) }
+            onClearContinue = { pkg -> viewModel.clearContinueHistory(pkg) },
+            // 676j (v0.6.74): "Open on screen" (ScreenTarget.kt); an Android game's "Screen layouts…" opens its full rules.
+            screenRow = { app -> ScreenTargetRow(app, viewModel, onScreenLayouts = { g -> showAppDrawer = false; screensForGame = g }) }
         )
     }
 
