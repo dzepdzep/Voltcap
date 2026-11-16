@@ -3719,8 +3719,6 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             setStatusMessage("${app.name} has nothing to open.")
             return
         }
-        // (Update 489c, D287: and every app or emulator opened from Voltcap — a QA build never starts one.)
-        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.app", pkg)) return
         val state = _uiState.value
         // Update 200: every Android game (Voltcap's "Android games" category) takes the game path, wherever it's
         // opened from (second-screen dock, app drawer, L1 shortcuts, hotkeys, notifications). It also required the app
@@ -3756,6 +3754,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             wantSecond -> second.displayId
             else -> android.view.Display.DEFAULT_DISPLAY
         }
+        // (Update 489c, D287: every app or emulator opened from Voltcap — a QA build never starts one.) 676j (v0.6.74): the
+        // block comes after the screen is chosen, and a QA build logs that choice ("open on screen" is checked from it on the
+        // Thor without starting anything); nothing else changes - the block itself is the same.
+        if (com.shelf.launcher.data.QaVariant.isolatedNow || com.shelf.launcher.ui.QaTrace.on)
+            android.util.Log.e("VoltcapQA", "APP SCREEN $pkg display=${displayId ?: "default"} second=${second?.displayId} target=$target source=$source origin=$origin")
+        if (com.shelf.launcher.ui.TestHooks.interceptLaunch("vm.app", pkg)) return
         // Already open on the other screen? Android would just bring that
         // task forward there. A second instance is only safe for ordinary
         // apps — never emulators, whose two copies would fight over saves.

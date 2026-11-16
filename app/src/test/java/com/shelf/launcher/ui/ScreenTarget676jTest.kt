@@ -54,3 +54,16 @@ class ScreenTarget676jTest {
         assertTrue(t.contains("setAppDisplay(it, appTargetFor(pick))"))
     }
 }
+
+/** 676j: a QA build logs the screen an app would open on, then blocks the launch as before (the block never moves earlier than the choice). */
+class AppScreenLog676jTest {
+    @Test fun blockAfterTheChoiceAndLogged() {
+        val s = listOf("src/main/java/com/shelf/launcher/LauncherViewModel.kt", "app/src/main/java/com/shelf/launcher/LauncherViewModel.kt").map { File(it) }.first { it.exists() }.readText()
+        val f = s.substring(s.indexOf("fun launchApp(app: Game"), s.indexOf("// ---- Live app list ----"))
+        val log = f.indexOf("\"APP SCREEN \$pkg display=")
+        val block = f.indexOf("TestHooks.interceptLaunch(\"vm.app\", pkg)")
+        val start = f.indexOf("GameLauncher.launchAppOn(")
+        assertTrue(log in 1 until block); assertTrue(block < start)
+        assertEquals(1, f.split("TestHooks.interceptLaunch(\"vm.app\", pkg)").size - 1)
+    }
+}
