@@ -17,10 +17,14 @@ A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 3
 # (677p: QA_PREF="key=value" - one QA-app setting for this run (ui_font=PIXEL); saved first, put back at the end.)
 if [ -n "$QA_PREF" ]; then A --es voltcap_test_snapshot save; sleep 2; A --es voltcap_test_pref "$QA_PREF"; sleep 3; ev_note $OUT "pref=$QA_PREF"; fi
 for SC in $SCALES; do
-  A --es voltcap_test_scale "$SC"; sleep 3
+  A --es voltcap_test_scale "$SC"; sleep ${SCALE_WAIT:-3}
+  # (RP Classic c677b: a scale change recreates the screen; on a slower handheld its first frames were still blank - the
+  # script waits until the app's own dump reports a home layout before its first step.)
+  for w in 1 2 3 4 5 6 7 8 9 10; do echo "${TAG}_wait" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.5
+    grep -q '"homeLayout":"[A-Z]' $F/qa_clip/${TAG}_wait.json 2>/dev/null && break; done
   S=x13; [ "$SC" = off ] && S=x10
   for lay in $LAYS; do
-    A --es voltcap_test_layout $lay; sleep 3
+    A --es voltcap_test_layout $lay; sleep ${LAYOUT_WAIT:-3}
     for combo in "points=12345678" "points=12345678,notes=12" "points=12345678,notes=12,trophy=3,pads=2"; do
       fg || { echo "ABORT: the QA app is not in front - nothing done" >> $OUT/log.txt; break 3; }
       A --es voltcap_test_status "$combo"; sleep 1.5

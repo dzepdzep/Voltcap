@@ -1496,6 +1496,28 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet d6cecde - clean (CI run 43976192466)",
    "note": "676z2 + 677d QA-only status / avatar instrumentation (BEFORE the status-bar / avatar fixes)"
+  },
+  {
+   "id": "qa-facet-677g-ci",
+   "apk_sha256": "f408ff1c920e9e8e3a6eec526e4e0c6b79826e6467742d68a6825652103925d3",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 3064472",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 3064472 - clean (CI run 43979429667)",
+   "note": "v0.6.73 candidate 676z2 + 677e-g status fit / one avatar / Storage facts"
+  },
+  {
+   "id": "qa-pixel-677p-ci",
+   "apk_sha256": "e40b370a71201a6ef18cf5a380a945c4f0ad54ca29ade87609cde0133a63b776",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/pixel-font-small c712ed2",
+   "patch_sha256": null,
+   "tree_hash": "claude/pixel-font-small c712ed2 - clean (CI run 43979483843)",
+   "note": "677p pixel font 62.5 % on 677g (owner review branch)"
   }
  ]
 }
