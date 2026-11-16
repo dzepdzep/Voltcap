@@ -220,7 +220,7 @@ internal fun StatusBar(
             }
             Row(
                 Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons")
-                    .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look).then(pieceH)
+                    .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look, atBottom).then(pieceH)
                     .onGloballyPositioned { onCluster(it.boundsInRoot()) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
