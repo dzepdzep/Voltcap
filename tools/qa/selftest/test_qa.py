@@ -2072,6 +2072,31 @@ class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
         self.assertIn("packageName=com.shelf.launcher$", sh)
 
 
+class TestHomecut676o(unittest.TestCase):
+    """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
+    def _dump(self, texts, focus=True):
+        return {"windows": [{"focus": focus, "texts": texts}]}
+
+    def test_cuts_fail_and_whole_or_sliding_pass(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        opt = {"text": "OPTIONS", "needW": 127, "boxW": 123, "ovH": True, "placed": True}
+        menu = {"text": "MENU", "needW": 84, "boxW": 0, "ovH": True, "placed": True}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([opt, menu]))], ["OPTIONS", "MENU"])
+        whole = {"text": "OPEN", "needW": 78, "boxW": 78, "ovH": True, "placed": True}
+        slides = dict(opt, scroll=True)
+        unplaced = dict(opt, placed=False)
+        self.assertEqual(homecut.cut_texts(self._dump([whole, slides, unplaced])), [])
+        self.assertIsNone(homecut.cut_texts(self._dump([opt], focus=False)))  # nothing of the focused window: INFRA
+        import tempfile, json as _j
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "f676x10_SPOT_OWN_home.json"); _j.dump(self._dump([opt]), open(f, "w"))
+        self.assertEqual(homecut.layout_of(f), "SPOT_OWN")
+        r = homecut.check([f], {})
+        self.assertEqual(r[0].status, "FAIL")
+        self.assertEqual(homecut.check([f], {"SPOT_OWN": {"OPTIONS": "owner-approved decoration"}})[0].status, "PASS")
+
+
 class TestReadcheckUnplaced676f(unittest.TestCase):
     """676f: an unplaced text (a badge the lane left out) is not drawn - it can't overlap; a placed one still FAILs."""
     def test_unplaced_text_is_not_an_overlap(self):

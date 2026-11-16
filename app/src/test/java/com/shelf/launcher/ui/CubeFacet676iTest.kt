@@ -48,3 +48,13 @@ class CubeShort676nTest {
         assertTrue(!lib.contains("Ellipsis"))
     }
 }
+
+/** 676o (D339, RP Nova x1.0): Spotlight's five hints wrap whole instead of cutting OPTIONS and squeezing MENU to nothing. */
+class SpotHints676oTest {
+    @Test fun hintsWrapWhole() {
+        val s = listOf("src/main/java/com/shelf/launcher/ui/StyleSpotlight.kt", "app/src/main/java/com/shelf/launcher/ui/StyleSpotlight.kt").map { File(it) }.first { it.exists() }.readText()
+        val f = s.substring(s.indexOf("private fun SpotHints"), s.indexOf("hints.forEachIndexed", s.indexOf("private fun SpotHints")))
+        assertTrue(f.contains("FlowRow("))
+        assertTrue(!f.contains("    Row(\n"))
+    }
+}
