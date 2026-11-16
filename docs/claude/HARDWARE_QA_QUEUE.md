@@ -32,6 +32,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - IN PROGRESS
+- Thor 16 Nov (L1): drawer START menu row + picker (Top / Bottom names), Bottom saved and used by the launch path (APP SCREEN
+  display=4 = Screen-2), restored. Still to do: an Android game (game path: rule "Set for this game", "Screen layouts..."),
+  long-press on the touchscreen, single-screen regression on the Nova, then the second-screen dock menu once built.
+- How to open the drawer in the QA app without the bottom swipe (a Home-gesture risk where the owner's Voltcap is home): Tile
+  home preview (voltcap_test_layout TILES), the second icon of its bar.
+
+### HW-11 Cube facet status bar (branch claude/cube-statusbar-facet) - waiting for the owner's approval
+- Thor top screen x1.0 + x1.3 shown 16 Nov (shots\cube_facet_thor.jpg). Small screen (Nova 640x480 dp) at x1.0 + x1.3 still to do.
+
+
 ## Hardware session 16 Nov (running): RP Nova d3641c41 via the owner's work laptop (msi, C:\VoltcapQA bundle, QA build
 8bd5e4a cloud debug key 4d133dde; old QA app 0.6.68 removed with the owner's OK). Nova = 4:3, 1280x960 @ 320 dpi (640x480 dp).
 Results (build 8bd5e4a, QA app): x1.0 n675c **53/53 PASS**; x1.3 n675d **49/53** - FAIL Record crate (More: facts dropped,
