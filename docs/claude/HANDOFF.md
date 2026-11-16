@@ -22,6 +22,16 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (v0.6.73 blockers found on the RP Nova, 640x480 dp, x1.3 gate n675d on 8bd5e4a, 49/53; x1.0 n675c 53/53 PASS):
+  1. Record crate x1.3 with More open: the facts row (Played / Never played / 1. 2.) is dropped and leaves an EMPTY band
+     between the divider and PLAY ("not placed (a full row / column dropped it)") - collapse the band or fit the facts; keep
+     the owner-approved vertical menu exactly as it is.
+  2. Pocket ribbon x1.3 More page: fact labels cut - "CONSOL", "TROPHI" (box 33 of 66 px, 2 lines needed) - rule 11 truncation:
+     narrower label font / wrap / give the label column its measured width.
+  3. Storage boxes x1.3 Details page: a "Shadow Of The Colossus" text laid out 426 x 1 px (invisible duplicate squeezed) -
+     find it (QaClip dump n675d STORAGE_OWN_page) and leave it out instead of laying it out squeezed.
+  4. Cube first A (known, HW-4) - also on the Nova x1.3.
+  Evidence: owner laptop C:\VoltcapQA\runs\n675c.tar / n675d.tar (and shots\). Re-test on a handheld after the fixes (HW-7).
 - FIRST: start the emulator trial on the 675o fix (head commit message "[emulator-qa]", allowed from ~11:42 UTC; the
   previous one ran on 1990deb4 at 08:42) and read it. Expect e529a/e529b COVERDETAILS + SHELF to grade without "opened
   nothing" / "More step missing" / rapid launches. If a miss remains, the new log lines say what the device read ("read: Play

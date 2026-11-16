@@ -27,7 +27,9 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 
 ## Hardware session 16 Nov (running): RP Nova d3641c41 via the owner's work laptop (msi, C:\VoltcapQA bundle, QA build
 8bd5e4a cloud debug key 4d133dde; old QA app 0.6.68 removed with the owner's OK). Nova = 4:3, 1280x960 @ 320 dpi (640x480 dp).
-Gate n675c x1.0 running; x1.3 next. Odin 2 Portal (home PC): QA app 8bd5e4a installed, gate started then stopped at the owner's
+Results (build 8bd5e4a, QA app): x1.0 n675c **53/53 PASS**; x1.3 n675d **49/53** - FAIL Record crate (More: facts dropped,
+empty band), Pocket ribbon (More: labels CONSOL / TROPHI cut), Storage boxes (Details: a title laid out 1 px high), Cube (first A).
+All restored (snapshot diff=0, fatal=0). Pickup recordings pkn675 (14 layouts) running. Odin 2 Portal (home PC): QA app 8bd5e4a installed, gate started then stopped at the owner's
 request (restored, fatal=0) - can run when the home PC is used again.
 
 ## Next hardware session (batched) - 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")
@@ -41,6 +43,10 @@ request (restored, fatal=0) - can run when the home PC is used again.
 5. Restore every device (snapshot diff=0, fatal=0), push results, update releases.json gates.
 Flip 2 (unavailable): its 15 Nov gates stay HISTORICAL evidence for v0.6.73 (owner 16 Nov); its own session (popup gates on
 the newest build + the charging reproduction, HW-3) waits until it is back.
+
+### HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs - OPEN
+- Device: RP Nova d3641c41 (via the owner's laptop) or any 4:3 / 640x480 dp handheld. After the fixes in HANDOFF "FIRST".
+- Tests: pop529.sh run <tag> font=1.3,density=1.15 "CRATE POCKET_RIBBON STORAGE CUBE" OWN, then popclip.py.
 
 ### HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) - IN PROGRESS
 - Device(s): Flip 2, KONKR.

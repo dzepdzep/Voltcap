@@ -99,8 +99,8 @@
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
-     "state": "PENDING",
-     "evidence": "owner 16 Nov: KONKR + other handhelds available today (\"devices ready\"). Last KONKR: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since"
+     "state": "FAIL",
+     "evidence": "RP Nova (4:3, 640x480 dp) on 8bd5e4a: x1.0 n675c 53/53 PASS; x1.3 n675d 49/53 - FAIL Record crate (facts dropped, empty band), Pocket ribbon (labels cut), Storage boxes (title squeezed 1 px), Cube first A. KONKR not run yet (at home). Fixes in progress; re-test HW-7"
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
@@ -142,7 +142,8 @@
    ],
    "risks": [
     "Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).",
-    "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk)."
+    "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).",
+    "Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens."
    ]
   },
   {
