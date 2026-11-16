@@ -127,7 +127,7 @@ class BadgeContent676eTest {
         assertFalse(plan.getValue(BadgeKind.PROGRESS).shown)
         val s = listOf("src/main/java/com/shelf/launcher/ui/StyleHomes.kt", "app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt").map { File(it) }.first { it.exists() }.readText()
         assertEquals(2, s.split("else -> StyleNamePlate(titles.display(g.name), lane = lane)").size - 1)
-        assertTrue(s.contains("modifier = Modifier.laneContent(lane, 6.dp)"))
+        assertTrue(s.contains(".laneContent(lane, 6.dp, shiftY ="))
         val l = listOf("src/main/java/com/shelf/launcher/ui/BadgeLane.kt", "app/src/main/java/com/shelf/launcher/ui/BadgeLane.kt").map { File(it) }.first { it.exists() }.readText()
         assertFalse("a badge with no room is not placed (no alpha-0 text left under another)", l.contains("placeWithLayer(0, 0) { alpha = 0f }"))
     }

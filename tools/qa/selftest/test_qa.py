@@ -2000,6 +2000,19 @@ class TestBadgeCheck676a(unittest.TestCase):
             {"kind": "PROGRESS", "lane": "a", "full": [216, 160, 101, 86], "shown": [216, 160, 82, 70], "placed": True}]))
         self.assertEqual(r.returncode, 0, r.stdout)
 
+    def test_a_badge_over_the_name_fails(self):
+        # 676z, Nova x1.3 Tiles: the console pill (bottom right) over the end of a coverless tile's name
+        name = {"text": "Colossus", "full": [110, 300, 150, 40], "shown": [110, 300, 150, 40], "placed": True}
+        win = self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [190, 310, 104, 30], "shown": [190, 310, 104, 30], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 106, 74, 22], "shown": [216, 106, 74, 22], "placed": True}])
+        win[0]["texts"] = [name]
+        r = self._run(win)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("covers text", r.stdout)
+        win[0]["texts"] = [dict(name, full=[110, 260, 150, 40], shown=[110, 260, 150, 40])]  # the name above the pill
+        self.assertEqual(self._run(win).returncode, 0)
+
     def test_cut_badge_fails(self):
         r = self._run(self._win([
             {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
