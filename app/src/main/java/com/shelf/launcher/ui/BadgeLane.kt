@@ -32,22 +32,23 @@ import androidx.compose.ui.unit.dp
  * them, the lane resolves the whole set at once, in the same frame - no badge is drawn first and moved later, so nothing
  * jumps or flickers when a count changes, a logo loads, the text grows (x1.3) or the tile resizes.
  *
- * The rule ([planBadges]):
- *  - a badge keeps the corner its look / setting gives it (console top-left, achievements top-right by default) whenever its
- *    pill stays at least [BADGE_GAP] clear of every badge already placed (borders / glow included: [BadgeBox.reach]);
- *  - badges are placed in [BadgeKind] order: the console badge first (it carries the console's branding), then the
- *    achievement count, the NEW pill, the score - a later badge never moves an earlier one;
- *  - a badge that would touch one before it STACKS: it moves along its own side, away from its edge, to [BADGE_GAP] below
- *    (or above) the badge in the way - the console top-left, the count right under it on the right;
- *  - only when that runs off the tile does it try the other corners (the same side's other edge first);
- *  - a tile too small for both (none of that fits) keeps the earlier badge and leaves the later one out - never one over
- *    the other, never cut, never pushed off the picture. The QA dump reports it (badgecheck.py fails a hidden badge's
- *    overlap), so it can't happen silently.
- * Styles, colours and sizes are the badges' own: the lane only moves pills, it never redraws them.
+ * The rule ([planBadges]) - 676w, owner 16 Nov ("REVISE GLOBAL BADGE COLLISION RULE": no second row under the console):
+ *  - every badge keeps the corner its look / setting gives it (console top-left, achievements top-right by default);
+ *  - when they don't all fit there at least [BADGE_GAP] apart (borders / glow included: [BadgeBox.reach]) and clear of the
+ *    card's own name plate ([BadgeKind.CONTENT]), ALL of them shrink by the same factor - the whole badge (icon, text, bar,
+ *    padding, border) drawn smaller, each anchored in its own corner - to the largest size where they fit side by side with
+ *    the same [BADGE_GAP] between them. Nothing moves to another row or corner;
+ *  - the size never goes under [BADGE_MIN_SCALE] (they stay readable). A tile with no fit even there leaves the latest badge
+ *    out (score, then NEW, then the count - [BadgeKind] order, the console last and never) and tries the rest again at full
+ *    size: never one over the other, never cut, never pushed off the picture. The QA dump reports it (badgecheck.py).
+ * Styles, colours and branding are the badges' own: the lane only scales and places pills, it never redraws them.
  */
 
 /** The minimum clear space between two badges' drawn edges. */
 internal val BADGE_GAP: Dp = 6.dp
+
+/** 676w: the smallest a badge is drawn to make room beside another (below this a badge is left out instead). */
+internal const val BADGE_MIN_SCALE = 0.72f
 
 /** The badges a tile can carry, in the order they are placed (the earlier keeps its corner). */
 internal enum class BadgeKind { CONSOLE, PROGRESS, NEW_UNLOCK, SCORE,
@@ -59,8 +60,11 @@ internal data class BadgeBox(
     val kind: BadgeKind, val align: Alignment, val mx: Int, val my: Int, val w: Int, val h: Int, val reach: Int = 0
 )
 
-/** Where a badge goes: moved by [dx] / [dy] from its own corner, or left out ([shown] false) on a tile with no room for it. */
-internal data class BadgeSpot(val dx: Int, val dy: Int, val shown: Boolean = true)
+/**
+ * Where a badge goes: moved by [dx] / [dy] from its own corner (676w: always 0 - badges keep their corner), drawn at [scale]
+ * about the point ([ox], [oy] as fractions of the pill) that sits in its corner, or left out ([shown] false).
+ */
+internal data class BadgeSpot(val dx: Int, val dy: Int, val shown: Boolean = true, val scale: Float = 1f, val ox: Float = 0f, val oy: Float = 0f)
 
 /** The pill of [b] in its own corner of a [tile] tile. */
 internal fun badgeRect(b: BadgeBox, tile: IntSize, dir: LayoutDirection, align: Alignment = b.align): IntRect {
@@ -75,60 +79,62 @@ internal fun badgesTouch(a: IntRect, b: IntRect, gap: Int): Boolean =
     a.left < b.right + gap && b.left < a.right + gap && a.top < b.bottom + gap && b.top < a.bottom + gap
 
 /**
- * The lane's rule (see the file's head): where each of [boxes] goes on a [tile] tile so no two come within [gap] of each
- * other. Pure, so the unit tests check it with the real devices' numbers.
+ * The lane's rule (see the file's head): which of [boxes] are shown on a [tile] tile and at what common scale, so no two come
+ * within [gap] of each other. Pure, so the unit tests check it with the real devices' numbers.
  */
 internal fun planBadges(tile: IntSize, boxes: List<BadgeBox>, gap: Int, dir: LayoutDirection = LayoutDirection.Ltr): Map<BadgeKind, BadgeSpot> {
     val out = HashMap<BadgeKind, BadgeSpot>()
-    val placed = ArrayList<IntRect>() // drawn edges, glow included
-    // (676e: the console badge first, then the card's own content (its name plate, fixed where it is), then the rest.)
     val content = boxes.filter { it.kind == BadgeKind.CONTENT }
     for (cb in content) out[cb.kind] = BadgeSpot(0, 0)
-    var contentAdded = content.isEmpty()
-    for (b in boxes.filter { it.kind != BadgeKind.CONTENT }.sortedBy { it.kind.ordinal }) {
-        if (!contentAdded && b.kind != BadgeKind.CONSOLE) { content.forEach { placed += badgeRect(it, tile, dir) }; contentAdded = true }
-        val own = badgeRect(b, tile, dir)
-        fun clear(r: IntRect) = placed.none { badgesTouch(r.grow(b.reach), it, gap) }
-        fun inside(r: IntRect) = r.grow(b.reach).let { it.left >= 0 && it.top >= 0 && it.right <= tile.width && it.bottom <= tile.height }
-        // Its own corner as it is (a badge alone keeps exactly the place it always had, even on a tile it overhangs).
-        if (clear(own)) { out[b.kind] = BadgeSpot(0, 0); placed += own.grow(b.reach); continue }
-        val v = b.align.align(IntSize(0, 0), IntSize(0, 2), dir).y // 0 top, 1 centre, 2 bottom
-        val h = b.align.align(IntSize(0, 0), IntSize(2, 0), dir).x // 0 start, 1 centre, 2 end (absolute)
-        fun corner(hx: Int, vy: Int): Alignment = when {
-            vy == 2 && hx == 0 -> Alignment.BottomStart; vy == 2 && hx == 2 -> Alignment.BottomEnd; vy == 2 -> Alignment.BottomCenter
-            vy == 1 && hx == 0 -> Alignment.CenterStart; vy == 1 && hx == 2 -> Alignment.CenterEnd; vy == 1 -> Alignment.Center
-            hx == 0 -> Alignment.TopStart; hx == 2 -> Alignment.TopEnd; else -> Alignment.TopCenter
-        }.let { if (dir == LayoutDirection.Rtl && it != Alignment.TopCenter && it != Alignment.BottomCenter && it != Alignment.Center) mirror(it) else it }
-        val flipV = if (v == 2) 0 else 2
-        val flipH = if (h == 2) 0 else if (h == 0) 2 else 1
-        // Its own corner first, then the same side's other edge, then the other side (its edge, then the other).
-        val anchors = listOf(b.align, corner(h, flipV), corner(flipH, v), corner(flipH, flipV)).distinct()
-        var chosen: IntRect? = null
-        for (a in anchors) {
-            var r = badgeRect(b, tile, dir, a)
-            val down = a.align(IntSize(0, 0), IntSize(0, 2), dir).y != 2
-            // Stack away from the edge past whatever is in the way (at most one step per badge already placed).
-            for (step in 0..placed.size) {
-                if (!inside(r) && !(a == b.align && step == 0)) break
-                val hit = placed.filter { badgesTouch(r.grow(b.reach), it, gap) }
-                if (hit.isEmpty()) { if (inside(r) || a == b.align) chosen = r; break }
-                r = if (down) r.translate(0, hit.maxOf { it.bottom } + gap + b.reach - r.top)
-                else r.translate(0, hit.minOf { it.top } - gap - b.reach - r.bottom)
+    val plate = content.map { badgeRect(it, tile, dir) }
+    val set = boxes.filter { it.kind != BadgeKind.CONTENT }.sortedBy { it.kind.ordinal }.toMutableList()
+    // The point of the pill that stays in its corner while it shrinks: 0 start / top, 0.5 centre, 1 end / bottom (absolute).
+    fun pivot(b: BadgeBox): Pair<Float, Float> =
+        b.align.align(IntSize(0, 0), IntSize(2, 0), dir).x / 2f to b.align.align(IntSize(0, 0), IntSize(0, 2), dir).y / 2f
+    fun scaled(b: BadgeBox, k: Float): IntRect {
+        val r = badgeRect(b, tile, dir)
+        if (k == 1f) return r.grow(b.reach)
+        val (fx, fy) = pivot(b)
+        val ax = r.left + fx * r.width; val ay = r.top + fy * r.height
+        val w = r.width * k; val h = r.height * k; val reach = (b.reach * k).toInt()
+        val left = kotlin.math.round(ax - fx * w).toInt(); val top = kotlin.math.round(ay - fy * h).toInt()
+        return IntRect(left, top, left + kotlin.math.round(w).toInt(), top + kotlin.math.round(h).toInt()).grow(reach)
+    }
+    fun fits(k: Float): Boolean {
+        val rs = set.map { it to scaled(it, k) }
+        for (x in rs.indices) for (y in x + 1 until rs.size) if (badgesTouch(rs[x].second, rs[y].second, gap)) return false
+        // (676e: the name plate is fixed; the console was placed before it and keeps its place - the others keep clear of it.)
+        return rs.none { (b, r) -> b.kind != BadgeKind.CONSOLE && plate.any { badgesTouch(r, it, gap) } }
+    }
+    while (set.isNotEmpty()) {
+        var k = 1f
+        if (!fits(1f)) {
+            if (set.size == 1 || !fits(BADGE_MIN_SCALE)) {
+                // No common size fits: the latest badge is left out, the rest tried again from full size.
+                val drop = if (set.size == 1) set.last() else set.last { it.kind != BadgeKind.CONSOLE }
+                if (set.size == 1 && drop.kind == BadgeKind.CONSOLE) { k = 1f } // the console alone always keeps its place
+                else { out[drop.kind] = BadgeSpot(0, 0, shown = false); set.remove(drop); continue }
+            } else {
+                // The largest common size that fits (a size that fits stays fitting when smaller: corners only pull apart).
+                var lo = BADGE_MIN_SCALE; var hi = 1f
+                repeat(10) { val mid = (lo + hi) / 2f; if (fits(mid)) lo = mid else hi = mid }
+                k = kotlin.math.floor(lo * 100f) / 100f
             }
-            if (chosen != null) break
         }
-        val c = chosen
-        if (c == null) out[b.kind] = BadgeSpot(0, 0, shown = false)
-        else { out[b.kind] = BadgeSpot(c.left - own.left, c.top - own.top); placed += c.grow(b.reach) }
+        for (b in set) { val (fx, fy) = pivot(b); out[b.kind] = BadgeSpot(0, 0, true, k, fx, fy) }
+        break
     }
     return out
 }
 
-private fun mirror(a: Alignment): Alignment = when (a) {
-    Alignment.TopStart -> Alignment.TopEnd; Alignment.TopEnd -> Alignment.TopStart
-    Alignment.BottomStart -> Alignment.BottomEnd; Alignment.BottomEnd -> Alignment.BottomStart
-    Alignment.CenterStart -> Alignment.CenterEnd; Alignment.CenterEnd -> Alignment.CenterStart
-    else -> a
+/** 676w: where [b]'s pill is drawn on a [tile] tile with its [spot] (scaled about its corner point) - for the tests and QA. */
+internal fun badgeShownRect(b: BadgeBox, tile: IntSize, dir: LayoutDirection, spot: BadgeSpot): IntRect {
+    val r = badgeRect(b, tile, dir).translate(spot.dx, spot.dy)
+    if (spot.scale == 1f) return r
+    val ax = r.left + spot.ox * r.width; val ay = r.top + spot.oy * r.height
+    val w = r.width * spot.scale; val h = r.height * spot.scale
+    val left = kotlin.math.round(ax - spot.ox * w).toInt(); val top = kotlin.math.round(ay - spot.oy * h).toInt()
+    return IntRect(left, top, left + kotlin.math.round(w).toInt(), top + kotlin.math.round(h).toInt())
 }
 
 /** A tile's lane: what its badges measured, read back when they are placed (snapshot state, so a change re-places them). */
@@ -239,7 +245,14 @@ private class LaneBadgeNode(var lane: BadgeLane, var kind: BadgeKind, var align:
         return layout(p.width, p.height) {
             val s = lane.spot(kind)
             // (676e: a badge with no room is not placed at all - nothing drawn, no text left under another one.)
-            if (s.shown) p.place(s.dx, s.dy)
+            // (676w: shrunk as a whole about the point in its corner - the same layer scale for every part of it.)
+            if (s.shown) {
+                if (s.scale == 1f) p.place(s.dx, s.dy)
+                else p.placeWithLayer(s.dx, s.dy) {
+                    scaleX = s.scale; scaleY = s.scale
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(s.ox, s.oy)
+                }
+            }
         }
     }
     override fun onDetach() { lane.remove(kind) }

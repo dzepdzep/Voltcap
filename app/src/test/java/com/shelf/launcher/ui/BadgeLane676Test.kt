@@ -17,7 +17,7 @@ class BadgeLane676Test {
 
     private fun rects(tile: IntSize, boxes: List<BadgeBox>, dir: LayoutDirection = LayoutDirection.Ltr) =
         planBadges(tile, boxes, gap, dir).let { plan ->
-            boxes.associate { b -> b.kind to badgeRect(b, tile, dir).let { r -> plan.getValue(b.kind).let { s -> r.translate(s.dx, s.dy) to s.shown } } }
+            boxes.associate { b -> b.kind to plan.getValue(b.kind).let { s -> badgeShownRect(b, tile, dir, s) to s.shown } }
         }
 
     private fun assertClear(tile: IntSize, boxes: List<BadgeBox>) {
@@ -30,20 +30,37 @@ class BadgeLane676Test {
     @Test fun roomyTileKeepsBothCorners() {
         // a 200 dp tile: a 120 dp wordmark and the count side by side, nothing moves
         val plan = planBadges(IntSize(400, 560), listOf(console(240), count(80)), gap)
-        assertEquals(BadgeSpot(0, 0), plan[BadgeKind.CONSOLE]); assertEquals(BadgeSpot(0, 0), plan[BadgeKind.PROGRESS])
+        assertEquals(1f, plan.getValue(BadgeKind.CONSOLE).scale); assertEquals(1f, plan.getValue(BadgeKind.PROGRESS).scale)
+        assertEquals(0, plan.getValue(BadgeKind.PROGRESS).dx + plan.getValue(BadgeKind.PROGRESS).dy)
     }
 
-    @Test fun novaCubeCardStacksTheCountUnderTheConsole() {
-        // RP Nova Cube home x1.0: a 98 dp card, the PS2 wordmark at 78 % of it and "6/10" in the top right - they overlapped
+    @Test fun novaCubeCardShrinksBothOnTheSameRow() {
+        // RP Nova Cube home x1.0: a 98 dp card, the PS2 wordmark at 78 % of it and "6/10" in the top right - they overlapped.
+        // 676w (owner): no second row - both shrink by the same factor, each in its own corner, 6 dp apart.
         val tile = IntSize(196, 266)
         val boxes = listOf(console(152), count(74))
         assertTrue(badgesTouch(badgeRect(boxes[0], tile, LayoutDirection.Ltr), badgeRect(boxes[1], tile, LayoutDirection.Ltr), gap))
+        val plan = planBadges(tile, boxes, gap)
+        val c = plan.getValue(BadgeKind.CONSOLE); val p = plan.getValue(BadgeKind.PROGRESS)
+        assertEquals(c.scale, p.scale, 0f) // one factor for both
+        assertTrue("${c.scale}", c.scale in BADGE_MIN_SCALE..0.8f)
         val r = rects(tile, boxes)
-        assertEquals(BadgeSpot(0, 0), planBadges(tile, boxes, gap)[BadgeKind.CONSOLE]) // the console keeps its corner
-        val c = r.getValue(BadgeKind.PROGRESS).first
-        assertEquals(tile.width - 10 - 74, c.left) // still on the right
-        assertEquals(6 + 26 + gap, c.top) // 6 dp under the console's pill
+        val cr = r.getValue(BadgeKind.CONSOLE).first; val pr = r.getValue(BadgeKind.PROGRESS).first
+        assertEquals(6, cr.left); assertEquals(6, cr.top) // the console's corner point stays
+        assertEquals(tile.width - 10, pr.right); assertEquals(10, pr.top) // the count's corner point stays: same row
+        assertTrue(pr.top < cr.bottom) // side by side, not under it
+        assertTrue("gap ${pr.left - cr.right}", pr.left - cr.right in gap..gap + 4) // a small, consistent gap
         assertClear(tile, boxes)
+    }
+
+    @Test fun neverASecondRow() {
+        for (tw in listOf(120, 150, 196, 260)) for (cw in listOf(60, 90, 150)) for (pw in listOf(40, 74, 96)) {
+            val tile = IntSize(tw, tw * 4 / 3)
+            if (cw + 12 > tw || pw + 20 > tw) continue
+            val boxes = listOf(console(cw), count(pw))
+            val plan = planBadges(tile, boxes, gap)
+            for (b in boxes) assertEquals(0, plan.getValue(b.kind).dx + plan.getValue(b.kind).dy) // nothing moves off its corner
+        }
     }
 
     @Test fun x13AndSmallTilesStayClearWherePossible() {
@@ -66,7 +83,7 @@ class BadgeLane676Test {
         val tile = IntSize(196, 266)
         val r = rects(tile, listOf(console(152), count(74)), LayoutDirection.Rtl)
         val c = r.getValue(BadgeKind.CONSOLE).first; val p = r.getValue(BadgeKind.PROGRESS).first
-        assertEquals(tile.width - 6 - 152, c.left)
+        assertEquals(tile.width - 6, c.right) // the console's corner point stays on the right in RTL
         assertFalse(badgesTouch(c, p, gap))
     }
 
@@ -91,14 +108,14 @@ class BadgeContent676eTest {
     private val console = BadgeBox(BadgeKind.CONSOLE, Alignment.TopStart, 6, 6, 152, 26)
     private val count = BadgeBox(BadgeKind.PROGRESS, Alignment.TopEnd, 10, 10, 74, 22)
 
-    @Test fun theCountStacksClearOfAShortPlate() {
+    @Test fun theCountStaysClearOfAShortPlate() {
         val tile = IntSize(196, 266)
         val plate = BadgeBox(BadgeKind.CONTENT, Alignment.TopStart, 20, 120, 156, 40) // a 2-line name in the middle
         val plan = planBadges(tile, listOf(console, count, plate), 12)
-        assertEquals(BadgeSpot(0, 0), plan[BadgeKind.CONSOLE])
-        val c = badgeRect(count, tile, LayoutDirection.Ltr).translate(plan.getValue(BadgeKind.PROGRESS).dx, plan.getValue(BadgeKind.PROGRESS).dy)
         assertTrue(plan.getValue(BadgeKind.PROGRESS).shown)
+        val c = badgeShownRect(count, tile, LayoutDirection.Ltr, plan.getValue(BadgeKind.PROGRESS))
         assertFalse(badgesTouch(c, badgeRect(plate, tile, LayoutDirection.Ltr), 12))
+        assertFalse(badgesTouch(c, badgeShownRect(console, tile, LayoutDirection.Ltr, plan.getValue(BadgeKind.CONSOLE)), 12))
     }
 
     @Test fun noRoomLeavesTheCountOutNeverOverTheName() {
