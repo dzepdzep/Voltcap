@@ -1441,6 +1441,28 @@
    "patch_sha256": null,
    "tree_hash": "claude/badge-same-row 36d82cf - clean (CI run 43947248225)",
    "note": "676v trimmed lines + 676x/676y height-cut fixes + 676w badge lane same-row scaling (owner review)"
+  },
+  {
+   "id": "qa-0.6.73-676z-facet-ci",
+   "apk_sha256": "d5288d09bc355ebeae890ca69c2abde4ea90277c5511ca0c7fc9d64934800637",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 18e7825",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 18e7825 - clean (CI run 43954655948)",
+   "note": "v0.6.73 candidate: 676y + 676z names clear of the console badge, no word breaks"
+  },
+  {
+   "id": "qa-0.6.74-676z-badges-ci",
+   "apk_sha256": "b0fb20cc247d5200be619a84af5aeb968a221a76278ed8fc83bc2d7ca8620a1a",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/badge-same-row 10d78a0",
+   "patch_sha256": null,
+   "tree_hash": "claude/badge-same-row 10d78a0 - clean (CI run 43954676769)",
+   "note": "676z candidate + 676w badge lane same-row scaling (owner review)"
   }
  ]
 }
