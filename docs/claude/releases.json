@@ -10,7 +10,7 @@
   {
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
-   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675f); Save Sync 529 stays out",
+   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out",
    "window": "UNKNOWN - waits for the batched hardware session; then about 1.5 h of release steps after the owner's GO",
    "items": [
     {
@@ -28,7 +28,7 @@
      "impl": true,
      "unit": true,
      "emulator": "no",
-     "device": "PASS Flip 2 + KONKR at x1.3; owner's checklist (focus, rapid A/B, no size change) not run yet",
+     "device": "PASS Flip 2 + KONKR at x1.3 (15 Nov); owner's checklist (focus, rapid A/B, no size change) not run yet - KONKR session A",
      "owner": "APPROVED 15 Nov"
     },
     {
@@ -77,15 +77,6 @@
      "owner": "not needed"
     },
     {
-     "what": "Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging)",
-     "kind": "app",
-     "impl": true,
-     "unit": true,
-     "emulator": "no",
-     "device": "NOT TESTED - blocked: production Voltcap's own limit would fight the QA app",
-     "owner": "decision needed: test it (production limit off for one test) or hold it back from v0.6.73"
-    },
-    {
      "what": "Test and CI reliability (test-runner memory, emulator trial, QA checkers)",
      "kind": "ci",
      "impl": true,
@@ -104,22 +95,22 @@
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PENDING",
-     "evidence": "last run 43786748164 (675c) FAILed 2 layouts from QA-script dump reading, not an app defect; fix 675d needs a re-run. Emulator evidence supports, never replaces, the handheld gates"
+     "evidence": "run 43809583379 (675h): NOT TESTED - the grader crashed (QA-tool bug, fixed 675i); 675i re-runs it. Emulator evidence supports, never replaces, the handheld gates"
     },
     {
-     "gate": "Full popup gates on real handhelds, newest build (Flip 2 + KONKR, x1.0 + x1.3)",
+     "gate": "Full popup gates on the KONKR, newest build (x1.0 + x1.3)",
      "state": "PENDING",
-     "evidence": "last full gates 15 Nov: 52/53, 52/53, 51/53, 51/53; all 5 failures fixed since - needs the batched hardware session"
+     "evidence": "last: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since - hardware session A"
+    },
+    {
+     "gate": "Full popup gates on the Flip 2, newest build (x1.0 + x1.3)",
+     "state": "PENDING",
+     "evidence": "Flip 2 unavailable (owner 16 Nov). Last: 15 Nov f674k 52/53, f674o 52/53 (builds 674k / 674n). Either run when it is back, or the owner decides to accept the 15 Nov results"
     },
     {
      "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
      "state": "PENDING",
      "evidence": "hardware request HW-2"
-    },
-    {
-     "gate": "Charge-loop fix tested on the Flip 2, or held back from the release",
-     "state": "BLOCKED",
-     "evidence": "owner decision (HW-3)"
     },
     {
      "gate": "Owner visual review of the new menus and x1.3 fixes",
@@ -140,6 +131,43 @@
      "gate": "Owner GO to merge to main and publish",
      "state": "NOT STARTED",
      "evidence": "never automatic"
+    }
+   ],
+   "excluded": [
+    {
+     "what": "Flip 2 charging sparkle fix (charge-limit pause read as unplugging)",
+     "why": "owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device",
+     "kept": "branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72"
+    }
+   ]
+  },
+  {
+   "version": "v0.6.74",
+   "base": "after v0.6.73",
+   "scope": "postponed items; contents grow as later fixes finish",
+   "window": "UNKNOWN - the Flip 2 is unavailable",
+   "items": [
+    {
+     "what": "Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging)",
+     "kind": "app",
+     "impl": false,
+     "unit": true,
+     "emulator": "no",
+     "device": "BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run",
+     "owner": "test when the Flip 2 is back (production limit off for one supervised test)",
+     "note": "kept on claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch; impl=false on the dev line until it is re-applied"
+    }
+   ],
+   "gates": [
+    {
+     "gate": "Charging fix re-applied on the dev line",
+     "state": "NOT STARTED",
+     "evidence": "waits for the Flip 2"
+    },
+    {
+     "gate": "Flip 2 charging test (QA app, production limit off for one supervised test)",
+     "state": "BLOCKED",
+     "evidence": "DEVICE UNAVAILABLE (owner 16 Nov) - not a failure"
     }
    ]
   }

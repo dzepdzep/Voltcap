@@ -1881,5 +1881,27 @@ class TestUniformAudit673(unittest.TestCase):
         self.assertEqual(geomcheck.uniform_audit([{"nodes": [key("Save sync", 10, 300), key("Play", 140, 300)]}]), [])
         self.assertIn("status line", " ".join(geomcheck.uniform_audit([{"nodes": [key("Save sync is not set up", 10, 300), key("Play", 140, 300)]}])))
 
+class TestGlyphCandidatesCallers675i(unittest.TestCase):
+    """675i: popclip.py unpacked glyphcheck.candidates() into three names after 675e made it return four (the key box) -
+    every popup grade with a glyph crashed (emulator run 43809583379). Every caller must unpack what candidates() returns."""
+    def test_every_caller_unpacks_four(self):
+        import ast
+        tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools")
+        for name in ("popclip.py", "glyphcheck.py"):
+            tree = ast.parse(open(os.path.join(tools, name), encoding="utf-8").read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.For) and isinstance(node.iter, ast.Call):
+                    f = node.iter.func
+                    called = (getattr(f, "attr", None) or getattr(f, "id", None))
+                    if called == "enumerate" and node.iter.args and isinstance(node.iter.args[0], ast.Call):
+                        inner = node.iter.args[0].func
+                        if (getattr(inner, "attr", None) or getattr(inner, "id", None)) == "candidates":
+                            tgt = node.target.elts[1]
+                            self.assertEqual(len(tgt.elts), 4, f"{name}:{node.lineno}")
+                    elif called == "candidates":
+                        self.assertIsInstance(node.target, ast.Tuple, f"{name}:{node.lineno}")
+                        self.assertEqual(len(node.target.elts), 4, f"{name}:{node.lineno}")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

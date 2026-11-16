@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~05:35 UTC, update 675h (cloud run: shelfpages529.sh reads dumps one node per line; emulator trial started). Previous: 675g (live), 675f.
+Updated: 2026-11-16 ~06:00 UTC, update 675i (live session: charging fix postponed to v0.6.74, popclip grade crash fixed). Previous: 675h (cloud run 05:17).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -19,6 +19,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST: read the emulator trial that 675i started (its commit carries "[emulator-qa]"; the next trial is allowed from 09:05 UTC) - run 43809583379 (675h) graded NOTHING because popclip.py
+  crashed on glyphcheck's 4-value candidates (fixed 675i); its e529b precondition also failed (not HOME) - read that next.
+- The Flip 2 is unavailable (owner 16 Nov): don't wait for it; its checks are batched as hardware session B. The charging fix
+  lives on branch claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch - do NOT re-apply it until the owner
+  says the Flip 2 is back (target v0.6.74).
 Every run also: append ONE line to docs/claude/run_reports.jsonl (plain English for the owner, see CLOUD_DEVELOPMENT.md), keep
 releases.json / owner_actions.json / progress.json true to the evidence, then `python3 tools/cloud/dashboard.py`.
 When a progress.json count changes, change its source text with it.
@@ -47,7 +52,7 @@ When a progress.json count changes, change its source text with it.
 ## Needs the owner
 - (done 675f: the task prompt now says -Xmx4g / -Xmx1500m and reads + regenerates docs/claude/STATUS_DASHBOARD.md every run.)
 - Retire the PC hourly task "VoltCap hourly backlog run" once the cloud task's first run is verified (Claude does it then).
-- Flip 2 charge-loop fix test (HW-3): production limit off, or a production update - owner's call.
+- Flip 2 charge-loop fix: postponed to v0.6.74 (owner 16 Nov, Flip 2 unavailable); HW-3 BLOCKED - DEVICE UNAVAILABLE.
 - Local-only branches `review/ai-setup-0672` (2 commits) and `feature/dual-welcome` (7 commits) are on the PC only (bundle in
   `Claude outputs\cloudmig\local_branches.bundle`); they change CI workflows, so they were not pushed. Push / keep: owner's call.
 - v0.6.73, KONKR production upgrade, merges to main: separate authorization.

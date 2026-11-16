@@ -1,3 +1,19 @@
+# Update 675i (16 Nov 2026, morning) - live session - charging fix postponed; grader crash fixed
+- Owner 16 Nov: the Flip 2 is unavailable - the charging-loop fix (674i) moves to v0.6.74 or later. It is taken OFF the dev
+  line: device/ChargeLimiter.kt is byte-identical to v0.6.72 again and ChargeLoop674Test is removed with it. Kept whole on
+  branch `claude/charge-loop-674i` (tip 32e7112 = dev line with the fix) and in docs/claude/patches/charge-loop-674i.patch
+  (checked: re-applies cleanly). Its hardware test: BLOCKED - DEVICE UNAVAILABLE (not failed; never run).
+- Release tracker: v0.6.73 TESTING (7 app fixes, charging fix listed as left out on purpose); KONKR and Flip 2 popup gates are
+  separate gates; owner choice added: wait for the Flip 2 or accept its 15 Nov gates. v0.6.74 holds the charging fix.
+  Hardware queue: session A (KONKR, whenever the PC is on) and session B (Flip 2, when it is back).
+- QA tool bug found by the emulator run 43809583379: popclip.py unpacked glyphcheck.candidates() into 3 values after 675e made
+  it return 4 - every popup grade with a glyph crashed (emulator AND handheld grading). Fixed; selftest
+  TestGlyphCandidatesCallers675i fails on the old popclip.py. QA selftest 163/163.
+- Files: app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt (= v0.6.72), app/src/test/.../ChargeLoop674Test.kt
+  (removed), docs/claude/patches/charge-loop-674i.patch, tools/qa/tools/popclip.py, tools/qa/selftest/test_qa.py,
+  tools/cloud/dashboard.py, docs/claude/{releases.json,owner_actions.json,HARDWARE_QA_QUEUE.md,STATUS_DASHBOARD.md,HANDOFF.md,
+  AUTORUN_LOG.md,run_reports.jsonl}, docs/REQUIREMENTS_MATRIX.md.
+
 # Update 675h (16 Nov 2026, morning, cloud run) - same branch, NOT released - emulator trial: shelfpages529.sh reads dumps like popclip
 - shelfpages529.sh (emulator job e529c, TOUCH=1 taps on the first achievement row / Game settings) still read each QaClip dump
   with one grep over its single long line and took "has a size" as "written" - the read pattern 675d fixed in popclip.sh

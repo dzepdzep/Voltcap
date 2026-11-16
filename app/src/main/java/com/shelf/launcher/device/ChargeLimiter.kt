@@ -89,19 +89,6 @@ object ChargeLimiter {
     /** Battery current (mA, + = into the battery on the Retroid) that still counts as charging after a stop. */
     const val STILL_CHARGING_MA = 150
 
-    /**
-     * 674i (pure, ChargeLoop674Test): whether charging should be paused. [plugged] as Android reports it; [inputHeld]: Voltcap
-     * itself holds the charger's input suspended (input_suspend) - then "not plugged" is its own doing, not an unplug, and the
-     * pause holds until the level is under the resume point (it was released at once and re-taken: a 1-2 s loop).
-     */
-    internal fun wantPause(limitOn: Boolean, plugged: Boolean, inputHeld: Boolean, percent: Int, stopAt: Int, paused: Boolean?): Boolean = when {
-        !limitOn -> false
-        !plugged && !inputHeld -> false
-        percent >= stopAt -> true
-        percent < RESUME_BELOW -> false
-        else -> paused ?: false // in between: keep whatever it is doing
-    }
-
     /** Where a charge stops: [STOP_AT], or up to [MAX_LEAD] % earlier on a fast charge with a learned lead. */
     internal fun stopLevel(lead: Int, fast: Boolean): Int = if (fast) STOP_AT - lead.coerceIn(0, MAX_LEAD) else STOP_AT
 
@@ -523,15 +510,13 @@ object ChargeLimiter {
             }
         }
 
-        // (674i, owner report 15 Nov - Flip 2: the charging sparkle replayed every ~3 s while plugged in. The pause there is
-        // input_suspend, which takes the charger offline: Android then reports "not plugged", this check took that for an
-        // unplug and released the pause, the charger came back as a fresh plug-in (the system's sparkle), the level was still
-        // 80 % and it paused again - input_suspend 0 / 1 every 1-2 s, k battery_status log. While Voltcap itself holds the input
-        // suspended, "not plugged" is its own doing: the pause holds until the level is under the resume point.)
-        val inputHeld = paused == true && flags.any { it.path.endsWith("/input_suspend") }
-        val cable = plugged || inputHeld
         if (flags.isNotEmpty()) {
-            val wantPaused = wantPause(limitOn, plugged, inputHeld, percent, stopAt, paused)
+            val wantPaused = when {
+                !limitOn || !plugged -> false
+                percent >= stopAt -> true
+                percent < RESUME_BELOW -> false
+                else -> paused ?: false // in between: keep whatever it is doing
+            }
             if (paused != wantPaused) {
                 val list = if (wantPaused) flags else flags.asReversed()
                 list.forEach { setSwitch(it, wantPaused) }
@@ -588,9 +573,8 @@ object ChargeLimiter {
             plugged -> Status.LIMITING
             else -> Status.ON
         }
-        // Keep enforcing while a game runs or Voltcap is closed: only needed while plugged in (or while Voltcap holds the
-        // charger's input off itself - 674i).
-        if (limitOn && cable) ChargeLimitService.ensureRunning(context, _status.value)
+        // Keep enforcing while a game runs or Voltcap is closed: only needed while plugged in.
+        if (limitOn && plugged) ChargeLimitService.ensureRunning(context, _status.value)
         else ChargeLimitService.stop(context)
     }
 

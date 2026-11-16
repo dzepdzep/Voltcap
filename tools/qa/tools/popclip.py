@@ -292,8 +292,10 @@ def grade(run, n):
             img = Image.open(png[s]).convert("RGB")
         except Exception:
             continue
-        for text, box, ink in glyphcheck.candidates(d[s]):
-            r = glyphcheck.check(img, box, ink, text)
+        # (675i: candidates() returns the GlyphPill key box too since 675e - unpacking three values crashed every grade,
+        # emulator run 43809583379 "too many values to unpack". The key box is passed on, as glyphcheck's own main does.)
+        for text, box, ink, key in glyphcheck.candidates(d[s]):
+            r = glyphcheck.check(img, box, ink, text, key)
             seen += 1
             if r["verdict"] == "FAIL":
                 gl.append(f"{s} '{text}' off centre dx={r['dx']} dy={r['dy']} px ({r['dxPct']}% / {r['dyPct']}%)")

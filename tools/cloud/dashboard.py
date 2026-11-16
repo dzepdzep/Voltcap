@@ -239,6 +239,8 @@ def gen_release():
         out += ["", "| Gate | State | Evidence |", "|---|---|---|"]
         for g in rel["gates"]:
             out.append(f"| {g['gate']} | {g['state']} | {g['evidence']} |")
+        for ex in rel.get("excluded", []):
+            out.append(f"- **Left out on purpose:** {ex['what']} - {ex['why']}. Kept: {ex['kept']}.")
         reasons = [g["gate"] + f" ({g['state']})" for g in sorted(rel["gates"], key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1) if g["state"].upper() != "PASS"]
         out += ["", "Why it cannot ship yet: " + ("; ".join(reasons) if reasons else "nothing - waiting for your GO") + ".",
                 "Merging, the production install and publishing always wait for your explicit GO.", ""]
@@ -309,8 +311,11 @@ def gen_summary():
         out.append(f"**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: {len(acts)} items (see Owner actions below); "
                    f"cloud work continues without them.")
     out.append("")
-    for rel in rels["releases"]:
+    for n, rel in enumerate(rels["releases"]):
         st = release_status(rel)
+        if n:  # later releases: one short line each
+            out.append(f"- later: **{rel['version']}: {st}** - {rel['scope']} ({rel['window'].split(' - ')[0]})")
+            continue
         apps = [i for i in rel["items"] if i.get("kind") == "app"]
         ver = [i for i in apps if item_verified(i)]
         left = [g for g in rel["gates"] if g["state"].upper() != "PASS"]
