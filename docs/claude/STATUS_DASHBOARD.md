@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675i · 2026-11-16 06:00 UTC · commit `this update (being pushed)` · CI: pending on this commit (last green: deedfa4) · effort: medium (this live session)
+**1. LATEST UPDATE** - 675j · 2026-11-16 06:15 UTC · commit `this update (being pushed)` · CI: pending on 675i (last green: deedfa4) · effort: medium (this live session)
 
-**2. WHAT CLAUDE JUST FIXED** - The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
+**2. WHAT CLAUDE JUST FIXED** - v0.6.73 no longer waits for the Flip 2: today's KONKR and other handhelds will be tested, and the Flip 2's results from 15 Nov count only as older evidence with the gap listed as a risk. The charging fix will only be used if the problem can still be reproduced.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
 - **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
+- **Docs** (675j): v0.6.73 no longer waits for the Flip 2: today's KONKR and other handhelds will be tested, and the Flip 2's results from 15 Nov count only as older evidence with the gap listed as a risk. The charging fix will only be used if the problem can still be reproduced.
 - **Docs** (675g): The dashboard now opens with a plain-English owner summary and a release tracker: v0.6.73's fixes, which are verified, which gates are left and why it cannot ship yet - all worked out from the evidence files, not typed by hand.
-- **Docs** (675f): Added this status dashboard, with counts taken from the evidence files and all hardware checks batched into one PC session.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: re-run the emulator trial now that its grader no longer crashes; then: widen the emulator trial to more layouts in separate short jobs; native popup pages for the 40 layouts still on the shared page
+**5. WORKING ON NEXT** - now: hardware checks on today's handhelds when you say "devices ready"; then: read the emulator re-run of 675i; native popup pages for the 40 layouts still on the shared page
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 5 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 7 app fixes fully verified · 8 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 7 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - postponed items; contents grow as later fixes finish (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -51,7 +51,7 @@ work. Emulator results never count as handheld verification. Release status is d
 
 ### v0.6.73 - **TESTING**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out.
-- Release window: UNKNOWN - waits for the batched hardware session; then about 1.5 h of release steps after the owner's GO
+- Release window: UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO
 - App fixes and features: 7 (7 implemented, 0 fully verified, 3 implemented but not yet tested on a handheld, 4 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
@@ -69,16 +69,18 @@ work. Emulator results never count as handheld verification. Release status is d
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PASS | green on deedfa45 and the 4 code pushes before it; re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43809583379 (675h): NOT TESTED - the grader crashed (QA-tool bug, fixed 675i); 675i re-runs it. Emulator evidence supports, never replaces, the handheld gates |
-| Full popup gates on the KONKR, newest build (x1.0 + x1.3) | PENDING | last: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since - hardware session A |
-| Full popup gates on the Flip 2, newest build (x1.0 + x1.3) | PENDING | Flip 2 unavailable (owner 16 Nov). Last: 15 Nov f674k 52/53, f674o 52/53 (builds 674k / 674n). Either run when it is back, or the owner decides to accept the 15 Nov results |
+| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | owner 16 Nov: KONKR + other handhelds available today ("devices ready"). Last KONKR: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since |
+| Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
 | Owner visual review of the new menus and x1.3 fixes | PENDING | screenshots come from the hardware session |
 | Signed release build, frozen RC, secret scan (main tree on the PC) | NOT STARTED | after the gates above; signing keys live only on the PC |
 | Upgrade install over the real Voltcap on one handheld + smoke test | NOT STARTED | needs the owner's GO (production app) |
 | Owner GO to merge to main and publish | NOT STARTED | never automatic |
+- **Risk / known gap:** Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).
+- **Risk / known gap:** Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on the KONKR, newest build (x1.0 + x1.3) (PENDING); Full popup gates on the Flip 2, newest build (x1.0 + x1.3) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
@@ -88,14 +90,15 @@ Merging, the production install and publishing always wait for your explicit GO.
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
-| Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run | test when the Flip 2 is back (production limit off for one supervised test) |
+| Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible? | test when the Flip 2 is back (production limit off for one supervised test) |
 
 | Gate | State | Evidence |
 |---|---|---|
+| Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min) | BLOCKED | DEVICE UNAVAILABLE (owner 16 Nov) |
 | Charging fix re-applied on the dev line | NOT STARTED | waits for the Flip 2 |
 | Flip 2 charging test (QA app, production limit off for one supervised test) | BLOCKED | DEVICE UNAVAILABLE (owner 16 Nov) - not a failure |
 
-Why it cannot ship yet: Flip 2 charging test (QA app, production limit off for one supervised test) (BLOCKED); Charging fix re-applied on the dev line (NOT STARTED).
+Why it cannot ship yet: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min) (BLOCKED); Flip 2 charging test (QA app, production limit off for one supervised test) (BLOCKED); Charging fix re-applied on the dev line (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 <!-- /GEN:release -->
 
@@ -103,12 +106,11 @@ Merging, the production install and publishing always wait for your explicit GO.
 <!-- GEN:owner -->
 | # | What I need from you | Why | Device | Urgent? | Blocks |
 |---|---|---|---|---|---|
-| 1 | One hardware session: PC on, KONKR on USB (and the Flip 2 when it is back), then tell Claude "devices ready" | closes the device checks for v0.6.73 (popup gates on the newest build, Record crate checklist, Cube first press, glyph re-measure) in one go; Flip 2-only checks wait for the Flip 2 | KONKR now; Flip 2 later (unavailable) | no | v0.6.73 (not cloud work) |
-| 2 | v0.6.73 and the Flip 2: wait for it to come back, or accept its 15 Nov results (52/53 at x1.0 and x1.3) and ship on fresh KONKR gates | the Flip 2 is unavailable; everything else for v0.6.73 can be finished without it | none (a yes / no) | no | v0.6.73 timing only |
-| 3 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
-| 4 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
-| 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
-| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 1 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
+| 2 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
+| 3 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
+| 4 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
+| 5 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -160,7 +162,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 |---|---|
 | HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) | IN PROGRESS |
 | HW-2 Record crate x1.3 vertical menu - verification checklist | OPEN |
-| HW-3 Flip 2 charge-loop fix (674i) | BLOCKED - DEVICE UNAVAILABLE |
+| HW-3 Flip 2 charging sparkle - reproduce first | BLOCKED - DEVICE UNAVAILABLE |
 | HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px | OPEN |
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | OPEN (watch) |
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |

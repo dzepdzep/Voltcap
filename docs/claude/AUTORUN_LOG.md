@@ -3,6 +3,10 @@
 
 
 
+
+## 2026-11-16 06:02-06:20 UTC - live session (675j)
+- v0.6.73 plan without the Flip 2 (historical evidence + risk); HW-3 reproduce-first; .claude/settings.json effortLevel high (to verify via run logs).
+
 ## 2026-11-16 05:33-06:05 UTC - live session (675i)
 - Owner: Flip 2 unavailable, charging fix to v0.6.74. Fix kept on claude/charge-loop-674i + patch, removed from the dev line. popclip grade crash (675e regression) fixed. Note: this session's lock push cancelled CI on 675h's commit; CI on 675i covers both.
 

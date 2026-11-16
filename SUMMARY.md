@@ -1,3 +1,16 @@
+# Update 675j (16 Nov 2026, morning) - live session - v0.6.73 without the Flip 2; effort setting
+- Owner 16 Nov: proceed to v0.6.73 with the KONKR and the other handhelds connected today; the Flip 2's 15 Nov popup gates are
+  HISTORICAL evidence (older builds 674k / 674n), never treated as verification of the newest build; the gap is listed under
+  risks; the release is not blocked on the Flip 2. Hardware session for today written into HARDWARE_QA_QUEUE (waits for
+  "devices ready").
+- Charging: the 674i patch stays off the dev line; HW-3 now starts with a read-only reproduction - the owner saw one 78 -> 80 %
+  cycle with one sparkle, the 15 Nov log showed fast toggling at 79-80 %. Patch only if the loop reproduces.
+- dashboard.py: gate state HISTORICAL (never blocks, shown as a risk); release risks listed.
+- `.claude/settings.json` "effortLevel": "high" (the task editor has no Effort control). Not yet verified for scheduled runs:
+  each run logs $CLAUDE_EFFORT.
+- Files: .claude/settings.json, tools/cloud/dashboard.py, docs/claude/{releases.json,owner_actions.json,HARDWARE_QA_QUEUE.md,
+  CLOUD_DEVELOPMENT.md,HANDOFF.md,STATUS_DASHBOARD.md,run_reports.jsonl,AUTORUN_LOG.md}. No app code.
+
 # Update 675i (16 Nov 2026, morning) - live session - charging fix postponed; grader crash fixed
 - Owner 16 Nov: the Flip 2 is unavailable - the charging-loop fix (674i) moves to v0.6.74 or later. It is taken OFF the dev
   line: device/ChargeLimiter.kt is byte-identical to v0.6.72 again and ChargeLoop674Test is removed with it. Kept whole on

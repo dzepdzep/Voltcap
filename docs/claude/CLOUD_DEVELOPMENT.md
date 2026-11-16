@@ -42,6 +42,13 @@ python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
   use the flags above. The full unit-test suite (1,900+ Robolectric tests) belongs to CI, not the cloud container.
 - No KVM in cloud sessions: no Android emulator there. Emulator QA runs in GitHub Actions (below).
 
+## Effort
+The task editor offers no Effort control for this task (owner screenshot 16 Nov). `.claude/settings.json` sets
+`"effortLevel": "high"` - the Claude Code docs' project-settings level, which applies to every model unless a session gets an
+explicit level (env var CLAUDE_CODE_EFFORT_LEVEL / --effort). Each run logs `$CLAUDE_EFFORT` in run_reports.jsonl; if runs keep
+saying medium, the host sets the level explicitly and the remaining lever is CLAUDE_CODE_EFFORT_LEVEL=high in the cloud
+environment's environment variables (claude.ai/code environment settings - the owner's step).
+
 ## CI
 - `verify-update-310.yml` - unit tests + debug build on every push (mandatory gate; keep it green).
 - `emulator-qa-trial.yml` - emulator QA of the isolated QA app; runs on `workflow_dispatch` or a push whose head commit message

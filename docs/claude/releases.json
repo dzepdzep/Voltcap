@@ -11,7 +11,7 @@
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
    "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out",
-   "window": "UNKNOWN - waits for the batched hardware session; then about 1.5 h of release steps after the owner's GO",
+   "window": "UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO",
    "items": [
     {
      "what": "Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed)",
@@ -98,14 +98,14 @@
      "evidence": "run 43809583379 (675h): NOT TESTED - the grader crashed (QA-tool bug, fixed 675i); 675i re-runs it. Emulator evidence supports, never replaces, the handheld gates"
     },
     {
-     "gate": "Full popup gates on the KONKR, newest build (x1.0 + x1.3)",
+     "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
      "state": "PENDING",
-     "evidence": "last: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since - hardware session A"
+     "evidence": "owner 16 Nov: KONKR + other handhelds available today (\"devices ready\"). Last KONKR: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since"
     },
     {
-     "gate": "Full popup gates on the Flip 2, newest build (x1.0 + x1.3)",
-     "state": "PENDING",
-     "evidence": "Flip 2 unavailable (owner 16 Nov). Last: 15 Nov f674k 52/53, f674o 52/53 (builds 674k / 674n). Either run when it is back, or the owner decides to accept the 15 Nov results"
+     "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
+     "state": "HISTORICAL",
+     "evidence": "f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks"
     },
     {
      "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
@@ -139,6 +139,10 @@
      "why": "owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device",
      "kept": "branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72"
     }
+   ],
+   "risks": [
+    "Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).",
+    "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk)."
    ]
   },
   {
@@ -153,12 +157,17 @@
      "impl": false,
      "unit": true,
      "emulator": "no",
-     "device": "BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run",
+     "device": "BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible?",
      "owner": "test when the Flip 2 is back (production limit off for one supervised test)",
-     "note": "kept on claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch; impl=false on the dev line until it is re-applied"
+     "note": "kept on claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch, NOT on the dev line, never installed or tested. Evidence conflict to settle on the Flip 2: 15 Nov 20:20 log showed the switch toggling every 1-2 s at 79-80 %; the owner later saw 78 % -> charge -> 80 % with the sparkle only at 80 % (one cycle, not a loop). Apply the patch only if the loop reproduces."
     }
    ],
    "gates": [
+    {
+     "gate": "Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)",
+     "state": "BLOCKED",
+     "evidence": "DEVICE UNAVAILABLE (owner 16 Nov)"
+    },
     {
      "gate": "Charging fix re-applied on the dev line",
      "state": "NOT STARTED",

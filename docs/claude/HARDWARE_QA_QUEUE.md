@@ -25,15 +25,15 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 
 ## Requests
 
-## Next hardware session (batched)
-Owner 16 Nov: the Flip 2 is unavailable. Split so nothing waits on it:
-- **Session A - KONKR (when the PC is on):** full popup gates x1.0 + x1.3 on the newest build (2 runs, ~50 min each),
-  Record crate checklist (HW-2), Cube first A (HW-4), Spot START re-measure (HW-6), rapid A/B watch (HW-5). Tell Claude
-  "devices ready".
-- **Session B - Flip 2 (when it is back):** its popup gates x1.0 + x1.3 (HW-1's Flip 2 half, HW-6's Flip 2 x1.0), then the
-  charging test (HW-3, needs production's limit off for one supervised test).
-v0.6.73 needs Session A plus Session B's popup gates, or the owner's decision to ship on KONKR evidence plus the 15 Nov Flip 2
-gates (52/53 at x1.0 and x1.3).
+## Next hardware session (batched) - TODAY, 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")
+1. Identify every USB handheld (serial, model, Android, screen, dpi; USB not wireless - CLAUDE.md device rule). QA app only.
+2. One QA build of the newest dev commit on each; register it in tools/qa/builds.json.
+3. Full popup gates x1.0 + x1.3 on each device (two at a time, ~50 min each): closes HW-1 for those devices, HW-5, HW-6.
+4. Record crate checklist (HW-2) and Cube first press (HW-4) on the KONKR; controller / onepress / animation checks where
+   the device differs (screen size, controller).
+5. Restore every device (snapshot diff=0, fatal=0), push results, update releases.json gates.
+Flip 2 (unavailable): its 15 Nov gates stay HISTORICAL evidence for v0.6.73 (owner 16 Nov); its own session (popup gates on
+the newest build + the charging reproduction, HW-3) waits until it is back.
 
 ### HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) - IN PROGRESS
 - Device(s): Flip 2, KONKR.
@@ -52,15 +52,14 @@ gates (52/53 at x1.0 and x1.3).
 - Tests: every action incl. MORE reachable by D-pad; MORE once, last, no dots; More open / close restores focus; rapid A/B
   reliable; nothing clipped at x1.0 / x1.3; menu never changes size while navigating. (Visual design APPROVED by the owner 15 Nov.)
 
-### HW-3 Flip 2 charge-loop fix (674i) - BLOCKED - DEVICE UNAVAILABLE
-- Device(s): Flip 2.
-- Why not emulator: OEM charging switch (`input_suspend`) behaviour.
-- Status (owner 16 Nov): the Flip 2 is unavailable - BLOCKED - DEVICE UNAVAILABLE, not failed (the test never ran).
-  Postponed to v0.6.74 or later. The fix is kept on branch `claude/charge-loop-674i` and in
-  `docs/claude/patches/charge-loop-674i.patch`; it was taken off the dev line in 675i so v0.6.73 cannot contain it.
-- When the Flip 2 is back: re-apply the patch (`git apply docs/claude/patches/charge-loop-674i.patch`), QA build, then one
-  supervised test with production Voltcap's own 80 % limit off (owner's step) - the QA app would otherwise fight it over
-  `input_suspend`.
+### HW-3 Flip 2 charging sparkle - reproduce first - BLOCKED - DEVICE UNAVAILABLE
+- Device(s): Flip 2. Why not emulator: OEM charging switch (`input_suspend`) behaviour.
+- The 674i patch is NOT on the dev line, never installed, never tested (branch claude/charge-loop-674i, docs/claude/patches/).
+- Evidence conflict (owner 16 Nov): the owner saw the battery drop to ~78 %, charge back to 80 % and the sparkle only at
+  80 % - one cycle, not a loop. The 15 Nov 20:20 log showed production's limit toggling `input_suspend` every 1-2 s at 79-80 %.
+- Next, when the Flip 2 is back: read-only reproduction first (production Voltcap as it is, plugged in near 80 %, 15 min:
+  logcat + battery state + whether the sparkle shows more than once). Only if it loops: apply the patch to a QA build and one
+  supervised test with production's limit off (owner's step). If it does not loop: close the patch as not needed.
 
 ### HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px - OPEN
 - Device(s): KONKR. Build: latest. Tests: popclip gate CUBE at x1.3 + onepress.

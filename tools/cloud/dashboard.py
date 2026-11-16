@@ -210,7 +210,8 @@ def release_status(rel):
     states = [g["state"].upper() for g in rel["gates"]]
     if any(st in ("FAIL", "BLOCKED") for st in states):
         return "BLOCKED"
-    left = [g for g in rel["gates"] if g["state"].upper() != "PASS"]
+    # HISTORICAL = an older build's evidence the owner chose not to block on; it never blocks, it is listed under risks
+    left = [g for g in rel["gates"] if g["state"].upper() not in ("PASS", "HISTORICAL")]
     if all(re.search(r"owner GO|Upgrade install", g["gate"], re.I) for g in left):
         return "READY FOR OWNER APPROVAL"
     return "TESTING"
@@ -239,9 +240,11 @@ def gen_release():
         out += ["", "| Gate | State | Evidence |", "|---|---|---|"]
         for g in rel["gates"]:
             out.append(f"| {g['gate']} | {g['state']} | {g['evidence']} |")
+        for rk in rel.get("risks", []):
+            out.append(f"- **Risk / known gap:** {rk}")
         for ex in rel.get("excluded", []):
             out.append(f"- **Left out on purpose:** {ex['what']} - {ex['why']}. Kept: {ex['kept']}.")
-        reasons = [g["gate"] + f" ({g['state']})" for g in sorted(rel["gates"], key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1) if g["state"].upper() != "PASS"]
+        reasons = [g["gate"] + f" ({g['state']})" for g in sorted(rel["gates"], key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1) if g["state"].upper() not in ("PASS", "HISTORICAL")]
         out += ["", "Why it cannot ship yet: " + ("; ".join(reasons) if reasons else "nothing - waiting for your GO") + ".",
                 "Merging, the production install and publishing always wait for your explicit GO.", ""]
     return "\n".join(out).rstrip()
@@ -318,7 +321,7 @@ def gen_summary():
             continue
         apps = [i for i in rel["items"] if i.get("kind") == "app"]
         ver = [i for i in apps if item_verified(i)]
-        left = [g for g in rel["gates"] if g["state"].upper() != "PASS"]
+        left = [g for g in rel["gates"] if g["state"].upper() not in ("PASS", "HISTORICAL")]
         left.sort(key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1)
         need = "yes - when it is ready" if st != "READY FOR OWNER APPROVAL" else "**yes - now (RELEASE READY)**"
         out.append(f"**7. NEXT RELEASE** - current {rels['current']['version']} · **{rel['version']}: {st}** · "

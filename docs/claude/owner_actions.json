@@ -2,18 +2,11 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
-   "what": "One hardware session: PC on, KONKR on USB (and the Flip 2 when it is back), then tell Claude \"devices ready\"",
-   "why": "closes the device checks for v0.6.73 (popup gates on the newest build, Record crate checklist, Cube first press, glyph re-measure) in one go; Flip 2-only checks wait for the Flip 2",
-   "device": "KONKR now; Flip 2 later (unavailable)",
+   "what": "Today: connect the KONKR and the other handhelds by USB, PC on, then say \"devices ready\"",
+   "why": "the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks)",
+   "device": "KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73",
    "urgent": false,
-   "blocks": "v0.6.73 (not cloud work)"
-  },
-  {
-   "what": "v0.6.73 and the Flip 2: wait for it to come back, or accept its 15 Nov results (52/53 at x1.0 and x1.3) and ship on fresh KONKR gates",
-   "why": "the Flip 2 is unavailable; everything else for v0.6.73 can be finished without it",
-   "device": "none (a yes / no)",
-   "urgent": false,
-   "blocks": "v0.6.73 timing only"
+   "blocks": "v0.6.73"
   },
   {
    "what": "Pause or retire the old PC task \"VoltCap hourly backlog run\"",

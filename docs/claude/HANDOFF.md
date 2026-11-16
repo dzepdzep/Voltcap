@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~06:00 UTC, update 675i (live session: charging fix postponed to v0.6.74, popclip grade crash fixed). Previous: 675h (cloud run 05:17).
+Updated: 2026-11-16 ~06:15 UTC, update 675j (live session: v0.6.73 plan with today's handhelds; effort setting). Previous: 675i.
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -21,6 +21,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 ## Next (in order; skip what needs hardware - queue it instead)
 - FIRST: read the emulator trial that 675i started (its commit carries "[emulator-qa]"; the next trial is allowed from 09:05 UTC) - run 43809583379 (675h) graded NOTHING because popclip.py
   crashed on glyphcheck's 4-value candidates (fixed 675i); its e529b precondition also failed (not HOME) - read that next.
+- v0.6.73 (owner 16 Nov): proceed with the KONKR + today's other handhelds; the Flip 2's 15 Nov gates are HISTORICAL evidence
+  (risk listed, not a blocker). A live session runs the hardware batch when the owner says "devices ready".
 - The Flip 2 is unavailable (owner 16 Nov): don't wait for it; its checks are batched as hardware session B. The charging fix
   lives on branch claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch - do NOT re-apply it until the owner
   says the Flip 2 is back (target v0.6.74).
