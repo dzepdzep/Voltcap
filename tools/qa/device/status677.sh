@@ -14,6 +14,8 @@ A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 fg() { dumpsys activity activities | grep -m1 "ResumedActivity: " | grep -q " $P/"; }
 touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 3
+# (677p: QA_PREF="key=value" - one QA-app setting for this run (ui_font=PIXEL); saved first, put back at the end.)
+if [ -n "$QA_PREF" ]; then A --es voltcap_test_snapshot save; sleep 2; A --es voltcap_test_pref "$QA_PREF"; sleep 3; ev_note $OUT "pref=$QA_PREF"; fi
 for SC in $SCALES; do
   A --es voltcap_test_scale "$SC"; sleep 3
   S=x13; [ "$SC" = off ] && S=x10
@@ -31,5 +33,6 @@ for SC in $SCALES; do
   done
 done
 A --es voltcap_test_status off; A --es voltcap_test_scale off; sleep 2; A --ez voltcap_test_preview false; sleep 1
+[ -n "$QA_PREF" ] && { A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cut -c1-40 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)" >> $OUT/log.txt; }
 ev_end $OUT
 echo DONE >> $OUT/log.txt
