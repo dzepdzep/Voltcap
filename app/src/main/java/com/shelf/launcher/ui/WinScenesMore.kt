@@ -508,14 +508,26 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         }.onSizeChanged { viewH = it.height }.sceneFadeEdges(sc).verticalScroll(sc)) {
             val facts = shownFacts(ctx, omit)
             Column(Modifier.onSizeChanged { factsH = it.height }) {
-            if (asLines) facts.forEach { (l, v) ->
+            // (675r, RP Nova x1.3 n675d: Pocket ribbon's pixel font made "CONSOLE" / "TROPHIES" wider than the fixed 78 dp label
+            // column - cut to "CONSOL" / "TROPHI" (rule 11). The column is as wide as its widest label (78 dp at least, as
+            // before); past 45 % of the row a label wraps instead of being cut.)
+            val labelStyle = androidx.compose.ui.text.TextStyle(fontSize = 9.sp * scale, lineHeight = 11.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font)
+            val labelMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+            val dens = androidx.compose.ui.platform.LocalDensity.current
+            val widestLabel = remember(facts, labelStyle, dens) {
+                facts.maxOfOrNull { (l, _) -> labelMeasurer.measure(if (upperLabels) l.uppercase() else l, labelStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+            }
+            if (asLines) androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+              val labelW = factLabelWidth(with(dens) { widestLabel.toDp() }, maxWidth)
+              Column { facts.forEach { (l, v) ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 2.dp), verticalAlignment = Alignment.Top) {
                     // (Its own line height — the theme's tall one made every row half as tall again as its value: 470's KONKR
                     // run showed three facts of four.)
-                    Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp * scale, lineHeight = 11.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font,
-                        softWrap = false, modifier = Modifier.width(78.dp).padding(top = 3.dp))
+                    Text(if (upperLabels) l.uppercase() else l, color = label, style = labelStyle,
+                        softWrap = true, modifier = Modifier.width(labelW).padding(top = 3.dp, end = 4.dp))
                     Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
                 }
+              } }
             } else facts.chunked(2).forEach { pair ->
                 Row(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     pair.forEach { (l, v) ->
@@ -536,6 +548,11 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
         }
     } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
 }
+
+/** 675r (pure, Batch675rTest): the inline facts' label column - the widest label plus its 4 dp gap, 78 dp at least (the old fixed
+ *  width), 45 % of the row at most (a label wider than that wraps, never cut). */
+internal fun factLabelWidth(widest: androidx.compose.ui.unit.Dp, row: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
+    (widest + 4.dp + 1.dp).coerceAtLeast(78.dp).coerceAtMost(maxOf(78.dp, row * 0.45f))
 
 /** Update 476: the cue's backing — the window's ground behind light ink (dark windows), a pale one behind dark ink. */
 internal fun sceneCueBack(ink: Color): Color =
@@ -611,7 +628,10 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 val guess = with(androidx.compose.ui.platform.LocalDensity.current) {
                     ((if (lineH.isSp) lineH else 16.sp).toPx().coerceAtLeast(14.sp.toPx()) + 4.dp.toPx()).toInt()
                 }
-                Column(Modifier.weight(1f).layout { m, c ->
+                // (675r, RP Nova x1.3 n675d: with More open the list had less than one whole row and drew none, but kept its
+                // weight - an empty band between the rule and PLAY. fill = false: a list that shows no row takes no room; the keys
+                // stand under the rule and the sleeve's own paper is left below them.)
+                Column(Modifier.weight(1f, fill = false).layout { m, c ->
                     val minRow = if (rowH > 0) rowH else guess
                     if (c.hasBoundedHeight && c.maxHeight < minRow) layout(c.minWidth, c.minHeight) {}
                     else {
@@ -650,7 +670,12 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             val widest = actions.maxOfOrNull { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: 0.dp
             if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)) {
                 val keyH = 34.dp
-                val shown = crateVisibleKeys(regionH, keyH, 6.dp, if (ctx.page == WinPage.MAIN) 46.dp else 0.dp, actions.size)
+                // (675r, n675d: the status line under the keys ("Save sync is not set up", ~36 dp at x1.3) was not counted, so three
+                // keys left the list less than one row. Its height is measured and reserved too.)
+                val status = keys.filter { it.status }
+                var statusH by remember { mutableStateOf(0.dp) }
+                val statusRoom = if (status.isEmpty()) 0.dp else if (statusH > 0.dp) statusH + 6.dp else CRATE_STATUS_GUESS * status.size
+                val shown = crateVisibleKeys(regionH, keyH, 6.dp, (if (ctx.page == WinPage.MAIN) 46.dp else 0.dp) + statusRoom, actions.size)
                 // (674g, owner review prep f674f / k674f: the fade at the stack's foot hid the last key's lower edge - it read as cut.
                 // The view holds whole keys exactly, so no fade; a hair of room for the keys' borders.)
                 Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp).verticalScroll(keyScroll)) {
@@ -659,9 +684,11 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                             RoundedCornerShape(3.dp), upper = true, size = 11.sp, height = keyH, lineHeight = 14.sp)
                     }
                 }
-                val status = keys.filter { it.status }
                 if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) {
-                    status.forEach { a -> SceneKey(a, paper, ink, ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp) }
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
+                    Column(Modifier.onSizeChanged { with(dens) { statusH = it.height.toDp() } }) {
+                        status.forEach { a -> SceneKey(a, paper, ink, ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp) }
+                    }
                 }
             } else Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
                 KeyRow(keys) { a ->
@@ -688,6 +715,9 @@ internal fun crateVisibleKeys(region: Dp, keyH: Dp, gap: Dp, facts: Dp, n: Int):
     val fit = ((region - 8.dp - facts + gap) / (keyH + gap)).toInt()
     return fit.coerceIn(minOf(2, n), minOf(3, n))
 }
+
+/** 675r: room kept for one status line under the vertical menu until its real height is measured (24 dp touch size + a 12 sp line). */
+internal val CRATE_STATUS_GUESS = 30.dp
 
 internal fun crateKeyMin(details: Dp, row: Dp, gap: Dp): Dp = minOf(details, row - gap - details).coerceAtLeast(0.dp)
 

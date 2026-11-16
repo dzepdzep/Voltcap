@@ -1948,5 +1948,19 @@ class TestGlyphCandidatesCallers675i(unittest.TestCase):
                         self.assertEqual(len(node.target.elts), 4, f"{name}:{node.lineno}")
 
 
+class TestCubeCategoryHome675r(unittest.TestCase):
+    """675r: Cube's x1.3 home on the RP Nova is its category cube (A = Open, no game drawn); the gate read the A that opens the
+    games as "first A opened nothing". popclip.sh enters the games first - only on that screen (hasRow false + an Open key)."""
+    def test_popclip_enters_cubes_games_only_on_the_category_cube(self):
+        sh = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "popclip.sh"), encoding="utf-8").read()
+        i = sh.index("if [ $lay = CUBE ]")
+        block = sh[i:i + 700]
+        self.assertIn('"hasRow":false', block)
+        self.assertIn('"label":"Open"', block)
+        self.assertIn("k BUTTON_A", block)
+        self.assertIn(">> $OUT/log.txt", block)
+        self.assertLess(i, sh.index('shot ${n}_home'))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

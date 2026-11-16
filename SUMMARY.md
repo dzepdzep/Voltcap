@@ -1,3 +1,23 @@
+# Update 675r (16 Nov 2026, live session) - same branch, NOT released - the four RP Nova x1.3 popup FAILs (n675d)
+- RP Nova (640 x 480 dp) x1.3 gate n675d on QA build 8bd5e4a: 49/53; x1.0 n675c 53/53, pickups 14/14. The four FAILs fixed:
+  - Record crate (visible): with More open, its status line ("Not installed" etc.) was not counted in `crateVisibleKeys`, so a
+    third key left the facts less than one row, and the facts column kept its weight - an empty band. The status line's
+    measured height (guess 30 dp before the first frame) is now reserved; the facts column is `weight(1f, fill = false)`.
+    Nova numbers: 185 dp region -> 2 keys + 2 whole fact rows (was 3 keys + empty band). Vertical menu design unchanged.
+  - Pocket ribbon (visible): inline fact labels had a fixed 78 dp column with softWrap = false, so CONSOLE / TROPHIES were cut
+    at x1.3. Label column = widest label measured (min 78 dp, max 45 % of the row); a label wider than that wraps.
+  - Storage boxes (hidden duplicate title): PickupOverlay's landed copy (alpha 0) stayed in semantics as a 426 x 1 px title -
+    `clearAndSetSemantics {}` on the flying copy. Nothing visible changes.
+  - Cube ("first A opened nothing"): at x1.3 Cube's home is its category cube (hint "Ⓐ Open", no game drawn, hasRow false);
+    its A opens the category's games as designed, the next A opens the window. Not an app bug: the gate now enters the games
+    first on that screen only (popclip.sh, logged), as it already does for Green Core's home menu. Gate assertions unchanged.
+- Tests: Batch675rTest (3, fail on the old code), QA selftest TestCubeCategoryHome675r; neighbours CrateVertical674Test,
+  CompactX13Fixes672Test, Batch674n/o, Pickup*, StorageFlight529Test, PopupNativeStorageTest, TwoLineKeys674Test - 61/61 PASS.
+  static_checks PASS, QA selftest OK, cloud compileDebugUnitTestKotlin OK.
+- Files: ui/WinScenesMore.kt, ui/WinSceneStorageFlight.kt, test ui/Batch675rTest.kt, tools/qa/device/popclip.sh,
+  tools/qa/selftest/test_qa.py.
+- NOT TESTED on hardware yet: targeted RP Nova re-test (x1.3 + x1.0: CRATE POCKET_RIBBON STORAGE CUBE) on the fresh QA build.
+
 # Update 675o (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial read; device-side dump reads in ASCII
 - Read emulator run 43833359452 (675m commit 1990deb4, swangle_indirect): the start-up fixes (675k) worked - all three
   preconditions HOME / 1 QA window, and the trial GRADED for the first time with no infra failure. VERDICT FAIL:

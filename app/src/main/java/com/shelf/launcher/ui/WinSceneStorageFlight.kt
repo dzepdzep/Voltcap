@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -130,6 +131,10 @@ internal fun PickupOverlay(origin: Rect, snap: androidx.compose.ui.graphics.laye
         Modifier.offset { val r = rootInWindow(); IntOffset((box.left - r.x).toInt(), (box.top - r.y).toInt()) }
             .size(with(dens) { box.width.toDp() }, with(dens) { box.height.toDp() })
             .onGloballyPositioned { if (!PickupStage.drawn) PickupStage.drawn = true }
+            // (675r, RP Nova x1.3 n675d Storage boxes: once landed this copy is drawn at alpha 0 but stayed in the semantics
+            // tree - the game's title read by TalkBack twice and by the popup gate as a text laid out 426 x 1 px. It is the
+            // trip's picture only; the place it lands on carries the title.)
+            .clearAndSetSemantics {}
             .graphicsLayer {
                 val k = if (to == null) 0f else reveal()
                 if (QaTrace.on) QaTrace.event("pickupfly", "k=$k to=${to != null}")

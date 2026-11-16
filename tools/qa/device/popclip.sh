@@ -110,6 +110,13 @@ for lay in $LAYS; do
     # first layout picked a profile there and the gate failed "open" (TV / Arcade / Classic, o478C / o478E). Closed with B
     # whenever the app's own mark says PICKER, right before the home shot, and logged.)
     for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "$lay: profile picker closed with B" >> $OUT/log.txt; done
+    # (675r, RP Nova x1.3 n675d: Cube's home there is the category cube - "1 game · you're here", an Open key, the hint "Ⓐ Open" -
+    # and no game drawn ("hasRow":false). Its A opens the category's games, as its hint says; the next A opens the window. The
+    # gate read that as "first A opened nothing". As for Green Core's home menu: only on that screen, A enters the games
+    # first and it is logged; on Cube's menu home (x1.0) the game is drawn and nothing changes.)
+    if [ $lay = CUBE ]; then rm -f $F/qa_clip/${TAG}_cube.json; echo "${TAG}_cube" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_cube.json
+      if jl $F/qa_clip/${TAG}_cube.json | grep -q '"hasRow":false' && jl $F/qa_clip/${TAG}_cube.json | grep -q '"label":"Open"'; then
+        k BUTTON_A 1.8; echo "$n: A entered the category's games (Cube's category cube home, hint: A Open)" >> $OUT/log.txt; fi; fi
     # The home screen before the popup (what "closed" must come back to).
     shot ${n}_home
     # Controller: A opens the popup.
