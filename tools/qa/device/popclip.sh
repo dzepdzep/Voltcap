@@ -101,8 +101,16 @@ for lay in $LAYS; do
     # Controller: A opens the popup.
     logcat -c; k BUTTON_A 1.9
     # (A first A that opened nothing is recorded — the gate fails "open" on it — and A is pressed once more to go on.)
-    up || { if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
-      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+    # (675c, emulator run 43780985909: e529a's probe saw no popup while the firstA screenshot taken just after showed it, and
+    # the second A then pressed the open window's Play. The failed probe is kept (${n}_probeA) and the app is asked once more
+    # 1.5 s later (${n}_probeB, both carry the app's own popupAgeMs and its known windows): up then = "first A opened late"
+    # - still a FAIL of the open gate, but no second A on the open window. Not up = "first A opened nothing", as before.)
+    up || { cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeA.json 2>/dev/null
+      if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
+      elif sleep 1.5 && up; then cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeB.json 2>/dev/null
+        echo "$n first A opened late" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+      else cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeB.json 2>/dev/null
+        echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
         # (Update 469: a crash left the system's "has stopped" dialog / launcher in front and the next keys went to App info
         # and Android Settings — never press on outside Voltcap.)
         case "$(dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity')" in *com.shelf.launcher*) ;;

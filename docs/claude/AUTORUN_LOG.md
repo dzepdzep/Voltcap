@@ -26,3 +26,9 @@
 - Results on 750b669c: Verify 310 green (G11: 2 green pushes). Emulator trial 43780985909: e529b SHELF PASS, COVERDETAILS 10/11;
   e529a still FAIL - popup on screen but the dump has only the home window (QaWalk roots after the test scale) -> next run.
 
+## 2026-11-16 01:18-01:55 UTC - cloud scheduled run
+- Lock free (released 00:32); taken 01:19. CI: Verify 310 green on 750b669c and 2fa6bc39 (G11: 3 green pushes).
+- Item: HANDOFF Next 1. Artifact of trial 43780985909: e529a firstA shots show the popup the probe missed; fontScale 1.0 in the
+  dumps is expected (in-app scale). The probe was deleted, so late vs missing root was unknowable. 675c: dumps carry popupAgeMs +
+  roots, popclip.sh keeps the failed probe and re-probes once ("opened late" still FAILs open, no second A on Play).
+  Selftest 157/157, QaClipDiag675cTest 2/2, static PASS, compile OK. Pushed with "[emulator-qa]".

@@ -138,7 +138,9 @@ internal object GamePopup {
      * Dashboard / Hero, RP Classic). Now such a late press acts at once, and a newly opened window starts with no stale request.
      */
     var current: Any? = null
-    fun opened(token: Any) { current = token; reopenRequested = false }
+    /** 675c (QA): when the window on screen now was first composed (uptime ms) - QaClip dumps its age ("popupAgeMs"). */
+    @Volatile var openedAt = 0L
+    fun opened(token: Any) { current = token; reopenRequested = false; openedAt = android.os.SystemClock.uptimeMillis() }
     /** A pressed on a closing (or just closed) window: open it again once it is gone. */
     fun askAgain(token: Any, g: Game) {
         if (game != null && current === token) reopenRequested = true

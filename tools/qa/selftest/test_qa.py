@@ -1174,6 +1174,22 @@ class TestPopclipScript(unittest.TestCase):
         sp = open(os.path.join(dev, "shelfpages529.sh"), encoding="utf-8").read()
         self.assertIn('[ ! -s $F/qa_clip/${TAG}_$1.json ]', sp)
 
+    def test_first_a_late_is_kept_apart_and_still_fails_open(self):
+        # 675c (emulator run 43780985909): e529a's probe missed a popup the next screenshot showed, and the second A pressed
+        # its Play. The failed probe is kept, the app is asked once more; up then = "opened late" (open FAIL, no second A).
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn('${TAG}_${n}_probeA.json', sh)
+        self.assertIn('elif sleep 1.5 && up; then', sh)
+        self.assertIn('first A opened late', sh)
+        late = sh[sh.index('elif sleep 1.5 && up; then'):sh.index('first A opened nothing" >> $OUT/log.txt')]
+        self.assertNotIn("k BUTTON_A", late)                        # no second A on a window that is up
+        import popclip
+        d = TestPopupGate().run_dir(before=False)
+        with open(os.path.join(d, "log.txt"), "a") as f:
+            f.write("CASEFLOW_OWN first A opened late\n")
+        g = popclip.grade(d, "CASEFLOW_OWN")["open"]
+        self.assertEqual(g[0], "FAIL", g); self.assertIn("late", g[1])
+
     def test_stops_outside_voltcap(self):
         # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()

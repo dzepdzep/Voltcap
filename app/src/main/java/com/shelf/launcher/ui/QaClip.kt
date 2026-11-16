@@ -110,6 +110,13 @@ internal object QaClip {
         if (!part.renameTo(target)) { target.writeText(text); part.delete() }
     }
 
+    /** 675c: how long the app's own game window has been up (ms), or null when none is. */
+    fun popupAge(open: Boolean, openedAt: Long, now: Long): Long? = if (open && openedAt > 0L) (now - openedAt).coerceAtLeast(0L) else null
+
+    /** 675c: one known Compose root, as listed in a dump's "roots". */
+    fun rootJson(id: String, attached: Boolean, shown: Boolean, focus: Boolean): String =
+        "{\"id\":\"${esc(id)}\",\"attached\":$attached,\"shown\":$shown,\"focus\":$focus}"
+
     private fun paged(n: SemanticsNode): Boolean {
         var p = n.parent
         while (p != null) { if (p.config.getOrNull(Paged) == true) return true; p = p.parent }
@@ -233,6 +240,13 @@ internal object QaClip {
         sb.append("\"origin\":${GameOrigin.rect?.let { "[${it.left.toInt()},${it.top.toInt()},${it.width.toInt()},${it.height.toInt()}]" } ?: "null"},")
         sb.append("\"popupGame\":${GamePopup.game?.let { "\"" + esc(it.stableKey.takeLast(120)) + "\"" } ?: "null"},")
         sb.append("\"popupName\":${GamePopup.game?.let { "\"" + esc(it.name.take(120)) + "\"" } ?: "null"},")
+        // (675c, emulator run 43780985909: e529a's first-A probe saw the home window only while the screenshot taken right
+        // after showed the popup. These two fields tell the cases apart in the next dump: the app's own popup is up (and for
+        // how long), and every Compose root it knows with its state - a missing root vs one not attached / not shown yet.)
+        sb.append("\"popupAgeMs\":${popupAge(GamePopup.game != null, GamePopup.openedAt, android.os.SystemClock.uptimeMillis()) ?: "null"},")
+        sb.append("\"roots\":[${QaWalk.allRoots().joinToString(",") { r ->
+            rootJson(System.identityHashCode(r.view).toString(16), r.view.isAttachedToWindow, r.view.isShown, r.view.hasWindowFocus())
+        }}],")
         sb.append("\"images\":${QaArt.json()}}")
         return sb.toString()
     }

@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~01:00 UTC, update 675b (cloud scheduled run).
+Updated: 2026-11-16 ~01:50 UTC, update 675c (cloud scheduled run).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -14,7 +14,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 - Handheld gates (674n build, c2cdfc81): Flip 2 x1.3 f674k 52/53 (674k build), Flip 2 x1.0 f674o 52/53 (Side status line
   51 px < 54 -> fixed 674o), KONKR x1.0 k674m 51/53 (674k build; both fixed since), KONKR x1.3 k674n 51/53 (Library R2 -> fixed
   674o; Spot START = checker reads a backdrop shape as the pill edge, ink measured centred by eye -> D-674o-1 below).
-- CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e, 7dbcab0c (675a), 750b669c (675b).
+- CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e, 7dbcab0c (675a), 750b669c (675b), 2fa6bc39.
 
 ## Next (in order; skip what needs hardware - queue it instead)
 0. CI memory (G11, 675a): green on 7dbcab0c (both runners, heavy task ran, lowest free memory 6.4 GB) - 1 green push. Keep
@@ -22,13 +22,14 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
    again (add the growing class to heavyRoboTests in app/build.gradle.kts).
    Side finding: lazily made global Compose states crash a fresh JVM's first frame - look for other objects with lazily made
    states read by Case3D / warm-ahead threads (LookStyles fixed via Features.warmUiStores).
-1. Emulator trial (675b run 43780985909 on 750b669c, swangle, EMULATOR evidence): the dump waits worked - e529b x1.0 SHELF
-   all 11 checks PASS, COVERDETAILS 10/11 (FAIL "More shown but its step is missing"); no "dump missing" lines. e529a
-   (font=1.3, density=1.15) still "first A opened nothing" on both layouts, but the firstA shot SHOWS the popup while its dumps
-   (home / main) hold ONE window of 11 nodes (home only, fontScale 1.0): QaWalk.liveRoots() misses the popup's window after the
-   test scale is applied (activity recreated? stale roots?). Next: find why (QaWalk.kt, how roots are collected after a
-   configuration change) and fix it in the app's QA hooks with a test; then COVERDETAILS e529b More step (log shows no More
-   line: the More walk never ran or tapped - check `up` before it). e529c did not run (precondition after e529a). Then widen.
+1. Emulator trial: read the trial on the 675c commit (EMULATOR evidence). 675b's run 43780985909 on 750b669c: e529b x1.0 SHELF
+   11/11 PASS, COVERDETAILS 10/11 (FAIL "More shown but its step is missing" - no More line in the log: check `up` before the
+   More walk). e529a (font=1.3, density=1.15): "first A opened nothing" while the firstA shot shows the popup (the dumps'
+   fontScale 1.0 is expected: WithTestScale only). 675c keeps the failed probe (qa_clip/<tag>_<n>_probeA.json) and re-probes
+   1.5 s later (_probeB); each dump has "popupAgeMs" and "roots". Read them: probeA popupAgeMs null + probeB up = the window
+   opens late at x1.3 on the emulator (find what is slow: first composition at the new font scale?); popupAgeMs set but no
+   popup window in "windows" while "roots" lists it not attached / not shown = a QaWalk filter problem; not listed at all = the
+   root callback (ViewRootForTest.onViewCreatedCallback) missed the Dialog. Fix with a test. e529c did not run (precondition).
 2. D-674o-1 glyphcheck: Spot START pill over a backdrop shape of nearly the pill's colour - the walk ran past the pill's edge
    (dy +3 px). Make the pill's edge measurable (e.g. GlyphPill's own known size from the dump) - never loosen the threshold.
 3. Native popup pages for the remaining layouts; physical pickup / return animations (Disc Station etc.); D323 / D324 in-place

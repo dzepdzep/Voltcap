@@ -1,3 +1,21 @@
+# Update 675c (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: first-A evidence
+- Emulator run 43780985909 (750b669c) artifact read: e529a (font=1.3, density=1.15) "first A opened nothing" on COVERDETAILS and
+  SHELF, yet the firstA screenshot (taken right after the failed probe) shows the popup up. The dumps' fontScale 1.0 is not a
+  stale root: the test scale is drawn by WithTestScale only, resources keep 1.0 (e529b dumps say 1.0 as well). The second A then
+  pressed the open window's Play (launch blocked: 1), so the main step dumped the home only. The probe itself was deleted, so
+  whether the window was late or missing from QaWalk's roots could not be told.
+- Evidence (no gate loosened): a QaClip dump now carries "popupAgeMs" (the app's own game window up, and for how long:
+  GamePopup.openedAt) and "roots" (every Compose root QaWalk knows, attached / shown / focus). popclip.sh keeps a failed first-A
+  probe (<n>_probeA) and asks once more 1.5 s later (<n>_probeB): up then = "first A opened late" - the open gate still FAILs
+  (popclip.py: "opened the window late"), but no second A lands on the open window's Play; not up = "first A opened nothing" as
+  before. On hardware the first probe sees the window, so nothing changes there.
+- Checks (cloud): QA selftest 157/157 (new test_first_a_late_is_kept_apart_and_still_fails_open); QaClipDiag675cTest 2/2,
+  QaClipWriteWhole675bTest 2/2; static checks PASS; compileDebugUnitTestKotlin OK. Emulator trial on this push ("[emulator-qa]");
+  EMULATOR evidence only.
+- Files: ui/QaClip.kt, ui/QaWalk.kt, ui/GameWindow.kt (GamePopup.openedAt), test QaClipDiag675cTest.kt (new),
+  tools/qa/device/popclip.sh, tools/qa/tools/popclip.py, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md,
+  docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md.
+
 # Update 675b (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: QA waits for the dumps
 - Emulator run 43762702001 (swangle_indirect, 960x640) read: the COVERDETAILS "first A opened nothing" screenshot SHOWS the popup
   open; e529b "no Details action" with Details on screen and "More reached with 1 D-pad press". Cause: the QaClip dump (asked

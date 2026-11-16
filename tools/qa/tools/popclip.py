@@ -207,6 +207,8 @@ def grade(run, n):
     # (Whole log lines: "CLASSIC_OWN …" must not match "POCKET_CLASSIC_OWN …".)
     loglines = set(open(lp, encoding="utf-8").read().splitlines()) if os.path.exists(lp) else set()
     first_a = f"{n} first A opened nothing" in loglines
+    # (675c: up only at the second probe, 1.5 s after the first one ~2.8 s after A - opened, but late: the open gate fails.)
+    late_a = f"{n} first A opened late" in loglines
     closed_ok = d["closed"] is not None and len(acts(d["closed"])) <= len(home_act)
     # A layout whose home screen shows its own Play key (Pocket's "A Play Game", Card binder's "A Play"): A plays from there
     # and opens no popup — the popup isn't reachable by A, so nothing about it was tested.
@@ -215,6 +217,7 @@ def grade(run, n):
     if not opened and home_act and d["home"] is not None:
         return {k: (qalib.NOT_TESTED, f"A plays from the home screen's own key ({home_act[0]}): no popup opened by A") for k in CATS}
     out["open"] = (qalib.FAIL, "the first A opened nothing (a second A did)") if opened and first_a else \
+        (qalib.FAIL, "the first A opened the window late (not up at the probe, up 1.5 s later)") if opened and late_a else \
         (qalib.PASS, "opened, B closed") if opened and closed_ok else \
         (qalib.FAIL, ("did not open (no Play / Continue)" if not opened else "still open after B B")) if d["closed"] is not None or not opened else \
         (qalib.INFRA, "no closed-step dump")
