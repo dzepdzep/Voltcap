@@ -1,3 +1,19 @@
+# Update 676v-z2 (16 Nov 2026 evening, live) - app-wide trimmed line heights, height cuts, names clear of badges, same-row badges (review)
+- Owner: "hold v0.6.73" for the height-cut class (D342). 676v Theme: every Material style LineHeightStyle(Center, Trim.Both).
+  676x status lines keep a 24 dp touch box (SceneControl), progress chip full form asks 4 dp more. 676y Cube arrows as icons,
+  Memory card name 1 line when tight, FitText slides at its fitted size, arcade tube name leaves the console line room, bubble names
+  FitText, Resume / Hub ticker rows unbounded, app folders draw the apps icon. 676z coverless name plates leave the console's band
+  (lane shiftY), names never split inside a word, Tiles name above a bottom console pill; badgecheck fails a badge over a tile's
+  text (found ~20 layouts). 676z2 Tiles name is lane content (laneContentAt); app icon on the logo path too.
+- QA tools: homecut.py (width + height cuts, off-screen skipped), glyphcheck focused window on top, navbar guard; selftests OK.
+- Nova gates, candidate claude/cube-statusbar-facet: 676z x1.3 popup 52/53 (Twin desk dump missing - flake, PASS on rerun),
+  badges 86/94 (Tiles count over raised name -> 676z2), homecut 52/53 (Cross -> 676z2); 676z x1.0 popup 53/53, badges 142/142,
+  homecut 52/53 (Cross). 676z2 recheck Tiles / Cross / Twin desk x1.3 + x1.0: all PASS (x1.3 Tiles badges NOT TESTED: the count
+  is left out on the coverless tile - no room). Before/after shots: line_height_before_after_x13, badges_before_after_nova.
+- 676w (owner request): badge lane same row, one common scale down to 0.72, else the latest badge left out - branch
+  claude/badge-same-row, Nova Cube/Grid/Tiles/Classic/Shelf/Stacks x1.0 + x1.3 all gates PASS; waiting for the owner's review.
+- Open: Storage boxes x1.3 facts column wraps letter by letter ("6 / 1 0") - not cut, poor reading; KONKR not connected.
+
 # Update 676n-r (16 Nov 2026, live session) - Thor real launches, Cube x1.3, home-text gate, D340 fixes
 - 676n supervised launch window (owner's HARDWARE TESTING AUTHORIZATION): ui/QaLaunchWindow.kt; TestHooks.interceptLaunch lets
   the isolated QA app open a plain app ("vm.app" / "launcher.app") only when <files>/qa_allow_app_launch lists it, at most 15 min
