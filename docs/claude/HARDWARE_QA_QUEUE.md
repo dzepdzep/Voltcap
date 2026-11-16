@@ -29,7 +29,14 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 8bd5e4a cloud debug key 4d133dde; old QA app 0.6.68 removed with the owner's OK). Nova = 4:3, 1280x960 @ 320 dpi (640x480 dp).
 Results (build 8bd5e4a, QA app): x1.0 n675c **53/53 PASS**; x1.3 n675d **49/53** - FAIL Record crate (More: facts dropped,
 empty band), Pocket ribbon (More: labels CONSOL / TROPHI cut), Storage boxes (Details: a title laid out 1 px high), Cube (first A).
-All restored (snapshot diff=0, fatal=0). Pickup recordings pkn675 (14 layouts) running. Odin 2 Portal (home PC): QA app 8bd5e4a installed, gate started then stopped at the owner's
+All restored (snapshot diff=0, fatal=0). Pickup recordings pkn675 (x1.0, 14 layouts: Shelf, Case stacks, Storage, Cube, TV, Crate, Card binder, Console stack, Box,
+Rental shop, Case flow, Disc station, Cover details, Memory card): window opened every time, fatal=0, frames.py (cloud ffmpeg 6;
+the laptop VM's ffmpeg 4.4 gives INFRA) **14/14 PASS - no flash, no black frame**.
+Frame pacing perf514 (gfxinfo, display 60 Hz mode): Game shelf steps 90th 10 ms / 99th 42 ms, janky 1.7 %; burst 99th 61 ms, 2.8 %;
+window open / close 99th 13 ms, 0.6 %. Disc station 10 / 42 ms 1.4 %; burst 48 ms 3.3 %; window 24 ms 0.7 %. Tile home 13 / 69 ms
+2.7 %; burst 16 / 57 ms 5.0 %; window 25 ms 1.2 %. No baseline on this device; single hitches (42-69 ms) while stepping - watch.
+Not tested on the Nova: sound effects (no automated check - needs the owner's ear), the Record crate checklist (HW-2), the
+category-switch recording (catswitch), one-press logs (focus / rapid / shoulder steps of the popup gate passed). Odin 2 Portal (home PC): QA app 8bd5e4a installed, gate started then stopped at the owner's
 request (restored, fatal=0) - can run when the home PC is used again.
 
 ## Next hardware session (batched) - 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")

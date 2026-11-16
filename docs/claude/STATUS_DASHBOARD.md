@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675p · 2026-11-16 09:50 UTC · commit `this update (being pushed)` · CI: see Actions (last code commit 7303845) · effort: high (this live session)
+**1. LATEST UPDATE** - 675q · 2026-11-16 10:05 UTC · commit `this update (being pushed)` · CI: see Actions · effort: high (this live session)
 
-**2. WHAT CLAUDE JUST FIXED** - First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
+**2. WHAT CLAUDE JUST FIXED** - On the RP Nova, all 14 'physical' animations (the cartridge, disc or case lifting out and going back) opened correctly with no flicker or black frames, and scrolling stays smooth most of the time with occasional short hitches.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
 - **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
-- **QA tools** (675o): The emulator test finally ran all the way and graded the popups: on the normal text size the Shelf popup passed every check. The remaining failures came from the test itself misreading the screen on the emulator (the buttons were there, the test's text search skipped them on screens with a '›' arrow). The test tools now read the screen in plain text and close a slow-opening popup before the quick-press check. No app change.
+- **QA tools** (675q): On the RP Nova, all 14 'physical' animations (the cartridge, disc or case lifting out and going back) opened correctly with no flicker or black frames, and scrolling stays smooth most of the time with occasional short hitches.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -19,7 +19,7 @@
 |---|---|---|---|
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 |
 | Native pages | `██░░░░░░░░` 13/53 | `██░░░░░░░░` 13/53 | `░░░░░░░░░░` 0/53 |
-| Pickup animations | `██████████` 14/14 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/14 |
+| Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 |
 | Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
@@ -187,7 +187,7 @@ _Evidence file: docs/claude/progress.json (2026-11-16 (live session, from repo +
 - Owner approved: 0 (0 %)
 - Released: 53 (older state, v0.6.72)
 - Remaining / blocked: 5 layouts fixed since their last FAIL (Bar, Side, Arcade, Library, Spot) - re-test HW-1 / HW-6; owner visual review of all 53
-- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like, run 43786748164+). unit: per-layout test coverage not counted yet.
+- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like, run 43786748164+). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d)
 
 **Native popup pages**
 - Total: 53
@@ -205,11 +205,11 @@ _Evidence file: docs/claude/progress.json (2026-11-16 (live session, from repo +
 - Implemented: 14 (100 %)
 - Unit-tested: UNKNOWN
 - Emulator-tested: 0 (0 %)
-- Real-device verified: UNKNOWN
+- Real-device verified: 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner
 - Owner approved: 0 (0 %)
 - Released: UNKNOWN
 - Remaining / blocked: in-place Inspect for other Inspect windows (D323 / D324), pickup latency (D322); per-layout hardware count not recorded (pickup529 runs 673b)
-- Source: REQUIREMENTS_MATRIX P4
+- Source: REQUIREMENTS_MATRIX P4; RP Nova pkn675 16 Nov
 
 **Category styles (looks)**
 - Total: 17

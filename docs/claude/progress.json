@@ -12,7 +12,7 @@
    "owner": 0,
    "released": "53 (older state, v0.6.72)",
    "remaining": "5 layouts fixed since their last FAIL (Bar, Side, Arcade, Library, Spot) - re-test HW-1 / HW-6; owner visual review of all 53",
-   "source": "device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like, run 43786748164+). unit: per-layout test coverage not counted yet."
+   "source": "device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like, run 43786748164+). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d)"
   },
   {
    "area": "Native popup pages",
@@ -32,11 +32,11 @@
    "impl": 14,
    "unit": "UNKNOWN",
    "emulator": 0,
-   "device": "UNKNOWN",
+   "device": "14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner",
    "owner": 0,
    "released": "UNKNOWN",
    "remaining": "in-place Inspect for other Inspect windows (D323 / D324), pickup latency (D322); per-layout hardware count not recorded (pickup529 runs 673b)",
-   "source": "REQUIREMENTS_MATRIX P4"
+   "source": "REQUIREMENTS_MATRIX P4; RP Nova pkn675 16 Nov"
   },
   {
    "area": "Category styles (looks)",
