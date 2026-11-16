@@ -1,9 +1,35 @@
 # VoltCap status dashboard
 
-> Phone view of the whole project. Updated after every cloud run.
-> Rules: counts come only from evidence (matrix rows, gate tags, CI runs); UNKNOWN means not counted yet, never a guess.
-> "Implemented" is code on the dev branch, not finished work. Emulator results never count as handheld verification.
-> Sections marked "generated" are rewritten by `python3 tools/cloud/dashboard.py`; the rest is edited by hand each run.
+## OWNER SUMMARY (generated after every run - read this first)
+<!-- GEN:summary -->
+**1. LATEST UPDATE** - 675g · 2026-11-16 05:40 UTC · commit `this update (being pushed)` · CI: green on deedfa4 (last code change) · effort: medium (this live session)
+
+**2. WHAT CLAUDE JUST FIXED** - The dashboard now opens with a plain-English owner summary and a release tracker: v0.6.73's fixes, which are verified, which gates are left and why it cannot ship yet - all worked out from the evidence files, not typed by hand.
+
+**3. LAST 24 HOURS** (most important first)
+- **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
+- **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
+- **Docs** (675g): The dashboard now opens with a plain-English owner summary and a release tracker: v0.6.73's fixes, which are verified, which gates are left and why it cannot ship yet - all worked out from the evidence files, not typed by hand.
+- **Docs** (675f): Added this status dashboard, with counts taken from the evidence files and all hardware checks batched into one PC session.
+- **QA tools** (675d): Emulator test reads very long screen descriptions correctly (it missed buttons on long lines before), which caused false 'no Details button' failures.
+
+**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
+
+| Area | Implemented | Verified on handhelds | Approved by you |
+|---|---|---|---|
+| Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 |
+| Native pages | `██░░░░░░░░` 13/53 | `██░░░░░░░░` 13/53 | `░░░░░░░░░░` 0/53 |
+| Pickup animations | `██████████` 14/14 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/14 |
+| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 |
+| Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
+| Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
+
+**5. WORKING ON NEXT** - now: re-run the emulator trial with the 675d QA-script fix and read it; then: widen the emulator trial to more layouts in separate short jobs; native popup pages for the 40 layouts still on the shared page
+
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
+
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: BLOCKED** · 0 of 8 app fixes fully verified · 8 gates left (blocking: Charge-loop fix tested on the Flip 2, or held back from the release) · your approval needed: yes - when it is ready · window: UNKNOWN
+<!-- /GEN:summary -->
 
 **Links:** [this dashboard](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/claude/STATUS_DASHBOARD.md) ·
 [CI runs](https://github.com/dzepdzep/voltcap/actions?query=branch%3Aclaude%2Fqa-0672-repair) ·
@@ -12,7 +38,64 @@
 [handoff](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/claude/HANDOFF.md) ·
 [requirements matrix](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/REQUIREMENTS_MATRIX.md)
 
-## At a glance (hand-written)
+---
+_How this page works: everything marked "generated" is rebuilt by `python3 tools/cloud/dashboard.py` from the evidence files
+(docs/claude/run_reports.jsonl, progress.json, releases.json, owner_actions.json, the requirements matrix and the hardware
+queue). Counts come only from evidence; UNKNOWN means not counted yet. "Implemented" is code on the dev branch, not finished
+work. Emulator results never count as handheld verification. Release status is derived from the gates, never typed._
+
+## RELEASE TRACKER (generated)
+<!-- GEN:release -->
+**Current stable:** v0.6.72 (5b01ef39, 2026-11-14) - Latest stable release (main). Save Sync 529 not included.
+
+### v0.6.73 - **BLOCKED**
+- Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675f); Save Sync 529 stays out.
+- Release window: UNKNOWN - waits for the batched hardware session; then about 1.5 h of release steps after the owner's GO
+- App fixes and features: 8 (8 implemented, 0 fully verified, 4 implemented but not yet tested on a handheld, 5 need your look or decision)
+
+| Fix / feature | Handheld evidence | Your approval |
+|---|---|---|
+| Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed) | popup gate on 53 layouts: 48 pass everywhere, 5 fixed since and need a re-run | review needed (only the Record crate menu is approved) |
+| Record crate at x1.3: a vertical menu (WWE SvR 2011 style) | PASS Flip 2 + KONKR at x1.3; owner's checklist (focus, rapid A/B, no size change) not run yet | APPROVED 15 Nov |
+| Disc station: the disc stays in the tray for normal info, the real disc lifts out for Inspect; its own track pages for Details / Achievements / Options | PASS KONKR x1.3, Flip 2 x1.0 / x1.3 (673d-f) | review needed |
+| x1.3 screen-fit fixes (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal, Rental shop, Cinema) | PASS in the latest full gates | review needed |
+| Wii channel buttons: one row of equal keys, worded MORE, More page without broken words | PASS Flip 2 x1.0, KONKR x1.3 (674n build); x1.3 Flip 2 / x1.0 KONKR not run on that build | review needed |
+| Centred symbols on home hints (Arcade pointer, Pocket START, Bar arrows, Library L2 / R2, Spot START) | Arcade, Pocket, Bar PASS; Library and Spot fixed after the last run - re-test needed | not needed |
+| Side menu: every key and the Save sync line fit the drawer without scrolling | fixed after the last run - re-test needed | not needed |
+| Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | NOT TESTED - blocked: production Voltcap's own limit would fight the QA app | decision needed: test it (production limit off for one test) or hold it back from v0.6.73 |
+| Test and CI reliability (test-runner memory, emulator trial, QA checkers) | - | not needed |
+
+| Gate | State | Evidence |
+|---|---|---|
+| CI unit tests + debug build (Verify Android update 310) | PASS | green on deedfa45 and the 4 code pushes before it; re-check on the release commit |
+| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | last run 43786748164 (675c) FAILed 2 layouts from QA-script dump reading, not an app defect; fix 675d needs a re-run. Emulator evidence supports, never replaces, the handheld gates |
+| Full popup gates on real handhelds, newest build (Flip 2 + KONKR, x1.0 + x1.3) | PENDING | last full gates 15 Nov: 52/53, 52/53, 51/53, 51/53; all 5 failures fixed since - needs the batched hardware session |
+| Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
+| Charge-loop fix tested on the Flip 2, or held back from the release | BLOCKED | owner decision (HW-3) |
+| Owner visual review of the new menus and x1.3 fixes | PENDING | screenshots come from the hardware session |
+| Signed release build, frozen RC, secret scan (main tree on the PC) | NOT STARTED | after the gates above; signing keys live only on the PC |
+| Upgrade install over the real Voltcap on one handheld + smoke test | NOT STARTED | needs the owner's GO (production app) |
+| Owner GO to merge to main and publish | NOT STARTED | never automatic |
+
+Why it cannot ship yet: Charge-loop fix tested on the Flip 2, or held back from the release (BLOCKED); Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on real handhelds, newest build (Flip 2 + KONKR, x1.0 + x1.3) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Merging, the production install and publishing always wait for your explicit GO.
+<!-- /GEN:release -->
+
+## OWNER ACTIONS REQUIRED (generated; only what genuinely needs you)
+<!-- GEN:owner -->
+| # | What I need from you | Why | Device | Urgent? | Blocks |
+|---|---|---|---|---|---|
+| 1 | One hardware session: PC on, Flip 2 + KONKR on USB, then tell Claude "devices ready" | closes the device checks for v0.6.73 (full popup gates, Record crate checklist, Cube first press, glyph re-measure) in one go | Flip 2 + KONKR, ~2 h unattended | no | v0.6.73 (not cloud work) |
+| 2 | Charging fix: switch production Voltcap's 80 % limit off for one supervised test on the Flip 2, or say "hold it back" | the fix can't be tested while the real app's limit fights the QA app; untested power code should not ship | Flip 2 | no | v0.6.73 (not cloud work) |
+| 3 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
+| 4 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
+| 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
+| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+
+Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
+<!-- /GEN:owner -->
+
+## Technical status (hand-written by each run)
 | | |
 |---|---|
 | Stable production version | **v0.6.72** (main 5b01ef39). Nothing released since. |
@@ -23,6 +106,14 @@
 | Cloud runs so far | 6 (675a-675e + this dashboard), hourly at :17 |
 | Waiting for hardware | 6 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
 | Waiting for your approval / decision | see Owner actions |
+
+## Next development priorities (hand-written)
+1. Emulator trial on the 675d+ QA scripts (dump reading); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
+   Flip 2-like and RP Classic-like screens, the 17 category looks.
+2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
+3. Native popup pages for the 40 layouts still on the shared page (P2).
+4. Physical pickup / return: in-place Inspect for the other Inspect windows (D323 / D324), pickup latency (D322).
+5. Reconcile the older requests (A-F) and the master backlog into the matrix, so the total stops being UNKNOWN.
 
 ## Overall requirement counts (generated)
 <!-- GEN:overall -->
@@ -44,26 +135,6 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 - waiting for hardware: A2, A4, A6, A7, B1, B3, B4, B6, C2, D2, D5, D6, D9, D10, D11, D12, D13, D14, D17, D19, F7, F9, F16, F19, F21
 - waiting for owner: P11, G10, A1, A10, A11, B7, D1, D3, D4, D8, D18, F1, F2, F4, F8, F10, F12, F14, F15, F18, F20
 <!-- /GEN:overall -->
-
-## Next development priorities (hand-written)
-1. Emulator trial on the 675d+ QA scripts (dump reading); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
-   Flip 2-like and RP Classic-like screens, the 17 category looks.
-2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
-3. Native popup pages for the 40 layouts still on the shared page (P2).
-4. Physical pickup / return: in-place Inspect for the other Inspect windows (D323 / D324), pickup latency (D322).
-5. Reconcile the older requests (A-F) and the master backlog into the matrix, so the total stops being UNKNOWN.
-
-## OWNER ACTIONS REQUIRED (hand-written; only what genuinely needs you)
-| # | What I need from you | Why | Device / screenshot | Urgent? | Cloud work continues without it? |
-|---|---|---|---|---|---|
-| 1 | **One hardware session**: PC on, Flip 2 + KONKR on USB, say "devices ready" | 6 queued checks (gates on the newest build, Record crate checklist, Cube first A, glyph re-measure) can only be closed on real handhelds; batched so you turn the PC on once | Flip 2, KONKR; ~2 h, unattended | No - this week | Yes |
-| 2 | **Pause or retire the old PC task** "VoltCap hourly backlog run" | its PC worktree is behind the cloud branch; a run would fail to push (refused, harmless but wasted) | Claude app → scheduled tasks | Low | Yes |
-| 3 | Flip 2 charging: either switch production Voltcap's 80 % limit off for one supervised test, or wait for a production update | the fix (674i) can't be tested while the real app's limit fights the QA app | Flip 2 | No | Yes |
-| 4 | Visual review of the uniform button system and the x1.3 squeezes (only the Record crate menu is approved) | a design is not done without your approval | screenshots from the next hardware session | No | Yes |
-| 5 | Save Sync real-Drive test: register / sign in the QA app's OAuth client (SAVE_SYNC_529 §8) | the last data-safety step needs a real Google Drive and two handhelds | Flip 2 + KONKR | No | Yes |
-| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push? | they change CI workflows, so they were not pushed automatically | none | No | Yes |
-| 7 | Nothing yet: 19 older requests (13 Nov list, e.g. F12 style pick, D3 / D8 visual approvals) are marked as waiting for you | Claude re-checks each against today's code first and asks only for the ones still open, grouped | - | No | Yes |
-| - | v0.6.73, KONKR production upgrade, merges to main | need your separate authorization; nothing is done without it | - | - | Yes |
 
 ## Hardware QA queue (generated)
 <!-- GEN:hw -->
@@ -121,7 +192,7 @@ _Evidence file: docs/claude/progress.json (2026-11-16 (live session, from repo +
 - Implemented: 17 (100 %)
 - Unit-tested: UNKNOWN
 - Emulator-tested: 0 (0 %)
-- Real-device verified: 17 (100 %)
+- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)
 - Owner approved: 0 (0 %)
 - Released: 17 (older state)
 - Remaining / blocked: third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review

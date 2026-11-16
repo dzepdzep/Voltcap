@@ -1,0 +1,147 @@
+{
+ "_rules": "Release tracker evidence for STATUS_DASHBOARD.md (rendered by tools/cloud/dashboard.py). Status is DERIVED, never typed: any gate FAIL or BLOCKED -> BLOCKED; any gate PENDING / NOT STARTED -> TESTING; an item not implemented -> DEVELOPMENT; every gate PASS -> READY FOR OWNER APPROVAL. A gate is PASS only with evidence in 'evidence'. window stays UNKNOWN unless the remaining gates have a date. Merging, production installs and publishing always wait for the owner's explicit GO.",
+ "current": {
+  "version": "v0.6.72",
+  "commit": "5b01ef39",
+  "date": "2026-11-14",
+  "note": "Latest stable release (main). Save Sync 529 not included."
+ },
+ "releases": [
+  {
+   "version": "v0.6.73",
+   "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
+   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675f); Save Sync 529 stays out",
+   "window": "UNKNOWN - waits for the batched hardware session; then about 1.5 h of release steps after the owner's GO",
+   "items": [
+    {
+     "what": "Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "2 layouts",
+     "device": "popup gate on 53 layouts: 48 pass everywhere, 5 fixed since and need a re-run",
+     "owner": "review needed (only the Record crate menu is approved)"
+    },
+    {
+     "what": "Record crate at x1.3: a vertical menu (WWE SvR 2011 style)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS Flip 2 + KONKR at x1.3; owner's checklist (focus, rapid A/B, no size change) not run yet",
+     "owner": "APPROVED 15 Nov"
+    },
+    {
+     "what": "Disc station: the disc stays in the tray for normal info, the real disc lifts out for Inspect; its own track pages for Details / Achievements / Options",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS KONKR x1.3, Flip 2 x1.0 / x1.3 (673d-f)",
+     "owner": "review needed"
+    },
+    {
+     "what": "x1.3 screen-fit fixes (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal, Rental shop, Cinema)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS in the latest full gates",
+     "owner": "review needed"
+    },
+    {
+     "what": "Wii channel buttons: one row of equal keys, worded MORE, More page without broken words",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS Flip 2 x1.0, KONKR x1.3 (674n build); x1.3 Flip 2 / x1.0 KONKR not run on that build",
+     "owner": "review needed"
+    },
+    {
+     "what": "Centred symbols on home hints (Arcade pointer, Pocket START, Bar arrows, Library L2 / R2, Spot START)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "Arcade, Pocket, Bar PASS; Library and Spot fixed after the last run - re-test needed",
+     "owner": "not needed"
+    },
+    {
+     "what": "Side menu: every key and the Save sync line fit the drawer without scrolling",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "fixed after the last run - re-test needed",
+     "owner": "not needed"
+    },
+    {
+     "what": "Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "NOT TESTED - blocked: production Voltcap's own limit would fight the QA app",
+     "owner": "decision needed: test it (production limit off for one test) or hold it back from v0.6.73"
+    },
+    {
+     "what": "Test and CI reliability (test-runner memory, emulator trial, QA checkers)",
+     "kind": "ci",
+     "impl": true,
+     "unit": true,
+     "emulator": "-",
+     "device": "-",
+     "owner": "not needed"
+    }
+   ],
+   "gates": [
+    {
+     "gate": "CI unit tests + debug build (Verify Android update 310)",
+     "state": "PASS",
+     "evidence": "green on deedfa45 and the 4 code pushes before it; re-check on the release commit"
+    },
+    {
+     "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
+     "state": "PENDING",
+     "evidence": "last run 43786748164 (675c) FAILed 2 layouts from QA-script dump reading, not an app defect; fix 675d needs a re-run. Emulator evidence supports, never replaces, the handheld gates"
+    },
+    {
+     "gate": "Full popup gates on real handhelds, newest build (Flip 2 + KONKR, x1.0 + x1.3)",
+     "state": "PENDING",
+     "evidence": "last full gates 15 Nov: 52/53, 52/53, 51/53, 51/53; all 5 failures fixed since - needs the batched hardware session"
+    },
+    {
+     "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
+     "state": "PENDING",
+     "evidence": "hardware request HW-2"
+    },
+    {
+     "gate": "Charge-loop fix tested on the Flip 2, or held back from the release",
+     "state": "BLOCKED",
+     "evidence": "owner decision (HW-3)"
+    },
+    {
+     "gate": "Owner visual review of the new menus and x1.3 fixes",
+     "state": "PENDING",
+     "evidence": "screenshots come from the hardware session"
+    },
+    {
+     "gate": "Signed release build, frozen RC, secret scan (main tree on the PC)",
+     "state": "NOT STARTED",
+     "evidence": "after the gates above; signing keys live only on the PC"
+    },
+    {
+     "gate": "Upgrade install over the real Voltcap on one handheld + smoke test",
+     "state": "NOT STARTED",
+     "evidence": "needs the owner's GO (production app)"
+    },
+    {
+     "gate": "Owner GO to merge to main and publish",
+     "state": "NOT STARTED",
+     "evidence": "never automatic"
+    }
+   ]
+  }
+ ]
+}

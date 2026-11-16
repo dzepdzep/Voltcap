@@ -1,0 +1,11 @@
+{
+ "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
+ "actions": [
+  {"what": "One hardware session: PC on, Flip 2 + KONKR on USB, then tell Claude \"devices ready\"", "why": "closes the device checks for v0.6.73 (full popup gates, Record crate checklist, Cube first press, glyph re-measure) in one go", "device": "Flip 2 + KONKR, ~2 h unattended", "urgent": false, "blocks": "v0.6.73 (not cloud work)"},
+  {"what": "Charging fix: switch production Voltcap's 80 % limit off for one supervised test on the Flip 2, or say \"hold it back\"", "why": "the fix can't be tested while the real app's limit fights the QA app; untested power code should not ship", "device": "Flip 2", "urgent": false, "blocks": "v0.6.73 (not cloud work)"},
+  {"what": "Pause or retire the old PC task \"VoltCap hourly backlog run\"", "why": "its PC copy is behind the cloud branch; its runs can't push (harmless, wasted)", "device": "Claude app > scheduled tasks", "urgent": false, "blocks": "nothing"},
+  {"what": "Look at the new menus and x1.3 fixes (screenshots after the hardware session)", "why": "a design is not done without your approval; only the Record crate menu is approved", "device": "screenshots", "urgent": false, "blocks": "v0.6.73 approval"},
+  {"what": "Save Sync real-Drive test: sign the QA app in to a spare Google account", "why": "last data-safety step before Save Sync 529 can ship (not in v0.6.73)", "device": "Flip 2 + KONKR", "urgent": false, "blocks": "a later release"},
+  {"what": "Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push", "why": "they change CI workflows, so they were not pushed automatically", "device": "none", "urgent": false, "blocks": "nothing"}
+ ]
+}

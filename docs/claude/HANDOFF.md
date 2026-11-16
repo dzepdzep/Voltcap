@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~04:40 UTC, update 675f (live session: owner status dashboard; no app code). Previous: 675e (cloud run 03:17).
+Updated: 2026-11-16 ~05:45 UTC, update 675g (live session: owner summary + release tracker; no app code). Previous: 675f, 675e (cloud run 03:17).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -19,7 +19,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-Every run also: `python3 tools/cloud/dashboard.py` + the dashboard's hand-written lines (latest commit, CI, last run, report).
+Every run also: append ONE line to docs/claude/run_reports.jsonl (plain English for the owner, see CLOUD_DEVELOPMENT.md), keep
+releases.json / owner_actions.json / progress.json true to the evidence, then `python3 tools/cloud/dashboard.py`.
 When a progress.json count changes, change its source text with it.
 0. CI memory (G11, 675a): green on 7dbcab0c (both runners, heavy task ran, lowest free memory 6.4 GB) - 1 green push. Keep
    checking "Verify Android update 310" on each push; G11 DONE only after several green pushes in a row. If red, first item

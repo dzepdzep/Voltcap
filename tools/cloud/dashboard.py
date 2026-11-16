@@ -160,6 +160,184 @@ def gen_hw():
 GENS = {"overall": gen_overall, "areas": gen_areas, "hw": gen_hw}
 
 
+# ---------------- owner summary + release tracker (owner request 16 Nov 2026) ----------------
+
+def load_json(*parts):
+    return json.load(open(P(*parts), encoding="utf-8"))
+
+
+def run_reports():
+    path = P("docs", "claude", "run_reports.jsonl")
+    out = []
+    if os.path.exists(path):
+        for line in open(path, encoding="utf-8"):
+            line = line.strip()
+            if line:
+                out.append(json.loads(line))
+    return out
+
+
+def _utc(s):
+    import datetime
+    s = s.replace("Z", "+00:00")
+    if len(s) == 22:  # 2026-11-16T04:23+00:00
+        s = s[:16] + ":00" + s[16:]
+    return datetime.datetime.fromisoformat(s)
+
+
+def bar(n, total, width=10):
+    if not (isinstance(n, int) and isinstance(total, int)) or isinstance(n, bool) or total <= 0:
+        return f"`{'?' * width}` {n if n not in ('', None) else 'UNKNOWN'}"
+    full = round(width * n / total)
+    return f"`{'█' * full}{'░' * (width - full)}` {n}/{total}"
+
+
+ITEM_DONE_BLOCK = re.compile(r"not run|re-test|NOT TESTED|need|pending", re.I)
+
+
+def item_verified(it):
+    dev, own = str(it.get("device", "")), str(it.get("owner", ""))
+    if it.get("kind") != "app":
+        return False
+    return dev.startswith("PASS") and not ITEM_DONE_BLOCK.search(dev) and (own.startswith("APPROVED") or own == "not needed")
+
+
+def release_status(rel):
+    """Derived, never typed: DEVELOPMENT (an item not built) > BLOCKED (a gate FAIL / BLOCKED) > TESTING (a gate not PASS
+    other than the owner's own steps) > READY FOR OWNER APPROVAL (only the upgrade install and the owner's GO are left)."""
+    if any(not it.get("impl") for it in rel["items"]):
+        return "DEVELOPMENT"
+    states = [g["state"].upper() for g in rel["gates"]]
+    if any(st in ("FAIL", "BLOCKED") for st in states):
+        return "BLOCKED"
+    left = [g for g in rel["gates"] if g["state"].upper() != "PASS"]
+    if all(re.search(r"owner GO|Upgrade install", g["gate"], re.I) for g in left):
+        return "READY FOR OWNER APPROVAL"
+    return "TESTING"
+
+
+def gen_release():
+    d = load_json("docs", "claude", "releases.json")
+    cur = d["current"]
+    out = [f"**Current stable:** {cur['version']} ({cur['commit']}, {cur['date']}) - {cur['note']}", ""]
+    for rel in d["releases"]:
+        st = release_status(rel)
+        items = rel["items"]
+        apps = [i for i in items if i.get("kind") == "app"]
+        impl = [i for i in apps if i.get("impl")]
+        ver = [i for i in apps if item_verified(i)]
+        untested = [i for i in impl if i.get("kind") == "app" and not str(i.get("device", "")).startswith("PASS")]
+        appr = [i for i in items if re.search(r"review needed|decision needed", str(i.get("owner", "")), re.I)]
+        out += [f"### {rel['version']} - **{st}**",
+                f"- Base: {rel['base']}. Scope: {rel['scope']}.",
+                f"- Release window: {rel['window']}",
+                f"- App fixes and features: {len(apps)} ({len(impl)} implemented, {len(ver)} fully verified, "
+                f"{len(untested)} implemented but not yet tested on a handheld, {len(appr)} need your look or decision)", "",
+                "| Fix / feature | Handheld evidence | Your approval |", "|---|---|---|"]
+        for i in items:
+            out.append(f"| {i['what']} | {i.get('device', '-')} | {i.get('owner', '-')} |")
+        out += ["", "| Gate | State | Evidence |", "|---|---|---|"]
+        for g in rel["gates"]:
+            out.append(f"| {g['gate']} | {g['state']} | {g['evidence']} |")
+        reasons = [g["gate"] + f" ({g['state']})" for g in sorted(rel["gates"], key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1) if g["state"].upper() != "PASS"]
+        out += ["", "Why it cannot ship yet: " + ("; ".join(reasons) if reasons else "nothing - waiting for your GO") + ".",
+                "Merging, the production install and publishing always wait for your explicit GO.", ""]
+    return "\n".join(out).rstrip()
+
+
+SUMMARY_AREAS = [("Home layouts (popup gate)", "Home layouts"), ("Native popup pages", "Native pages"),
+                 ("Physical pickup / return animations", "Pickup animations"), ("Category styles (looks)", "Category styles"),
+                 ("Save Vault + Save Sync 529", "Save Vault + Sync")]
+
+
+def commit_of(rep):
+    """A run can't know its own hash before it commits: '(this commit)' is resolved from git (the commit whose subject starts
+    with '<update>:'), so the next regeneration fills it in."""
+    c = str(rep.get("commit", ""))
+    if c and not c.startswith("("):
+        return c
+    import subprocess
+    try:
+        h = subprocess.run(["git", "-C", ROOT, "log", "-1", "--format=%h", "--grep", "^" + re.escape(rep["update"]) + ":"],
+                           capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception:
+        h = ""
+    return h or "this update (being pushed)"
+
+
+def gen_summary():
+    reps = run_reports()
+    prog = {a["area"]: a for a in load_json("docs", "claude", "progress.json")["areas"]}
+    rels = load_json("docs", "claude", "releases.json")
+    acts = load_json("docs", "claude", "owner_actions.json")["actions"]
+    out = []
+    if reps:
+        last = reps[-1]
+        out += [f"**1. LATEST UPDATE** - {last['update']} · {last['utc'].replace('T', ' ').replace('Z', '')} UTC · commit `{commit_of(last)}`"
+                + (f" · CI: {last['ci']}" if last.get("ci") else "") + (f" · effort: {last['effort']}" if last.get("effort") else ""), "",
+                f"**2. WHAT CLAUDE JUST FIXED** - {last['plain']}", ""]
+        t_last = _utc(last["utc"])
+        recent = [r for r in reps if (t_last - _utc(r["utc"])).total_seconds() <= 86400]
+        recent.sort(key=lambda r: r["utc"], reverse=True)
+        recent.sort(key=lambda r: -int(r.get("importance", 1)))  # stable: newest first within the same importance
+        out.append("**3. LAST 24 HOURS** (most important first)")
+        label = {"app": "App", "ci": "CI / build", "qa": "QA tools", "docs": "Docs"}
+        for r in recent[:5]:
+            out.append(f"- **{label.get(r.get('kind'), r.get('kind'))}** ({r['update']}): {r['plain']}")
+        out.append("")
+    out += ["**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)", "",
+            "| Area | Implemented | Verified on handhelds | Approved by you |", "|---|---|---|---|"]
+    for key, name in SUMMARY_AREAS:
+        a = prog.get(key)
+        if not a:
+            continue
+        t = a.get("total")
+        out.append(f"| {name} | {bar(a.get('impl'), t)} | {bar(a.get('device'), t)} | {bar(a.get('owner'), t)} |")
+    emu = prog.get("Cloud emulator QA coverage")
+    if emu:
+        home = prog.get("Home layouts (popup gate)", {})
+        out.append(f"| Emulator QA (layouts) | {bar(home.get('emulator'), home.get('total'))} | emulator never counts as handheld | - |")
+    out.append("")
+    if reps and reps[-1].get("next"):
+        nx = reps[-1]["next"]
+        out.append(f"**5. WORKING ON NEXT** - now: {nx[0]}" + ("" if len(nx) < 2 else "; then: " + "; ".join(nx[1:3])))
+        out.append("")
+    urgent = [a for a in acts if a.get("urgent")]
+    if urgent:
+        out.append("**6. WHAT YOU NEED TO DO** - " + " · ".join(f"{a['what']} ({a['why']})" for a in urgent))
+    else:
+        out.append(f"**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: {len(acts)} items (see Owner actions below); "
+                   f"cloud work continues without them.")
+    out.append("")
+    for rel in rels["releases"]:
+        st = release_status(rel)
+        apps = [i for i in rel["items"] if i.get("kind") == "app"]
+        ver = [i for i in apps if item_verified(i)]
+        left = [g for g in rel["gates"] if g["state"].upper() != "PASS"]
+        left.sort(key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1)
+        need = "yes - when it is ready" if st != "READY FOR OWNER APPROVAL" else "**yes - now (RELEASE READY)**"
+        out.append(f"**7. NEXT RELEASE** - current {rels['current']['version']} · **{rel['version']}: {st}** · "
+                   f"{len(ver)} of {len(apps)} app fixes fully verified · {len(left)} gates left"
+                   + (f" (blocking: {left[0]['gate']})" if left and left[0]['state'].upper() in ('BLOCKED', 'FAIL') else
+                      (f" (next: {left[0]['gate']})" if left else ""))
+                   + f" · your approval needed: {need} · window: {rel['window'].split(' - ')[0]}")
+    return "\n".join(out).rstrip()
+
+
+def gen_owner():
+    acts = load_json("docs", "claude", "owner_actions.json")["actions"]
+    out = ["| # | What I need from you | Why | Device | Urgent? | Blocks |", "|---|---|---|---|---|---|"]
+    for n, a in enumerate(acts, 1):
+        out.append(f"| {n} | {a['what']} | {a['why']} | {a['device']} | {'YES' if a.get('urgent') else 'no'} | {a['blocks']} |")
+    out.append("")
+    out.append("Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your "
+               "separate GO.")
+    return "\n".join(out)
+
+
+GENS.update({"summary": gen_summary, "release": gen_release, "owner": gen_owner})
+
+
 def render(text):
     for name, fn in GENS.items():
         a, b = f"<!-- GEN:{name} -->", f"<!-- /GEN:{name} -->"

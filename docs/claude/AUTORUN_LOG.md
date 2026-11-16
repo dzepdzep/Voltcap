@@ -1,6 +1,10 @@
 # Autorun log (newest first; one short entry per scheduled or live session)
 
 
+
+## 2026-11-16 05:09-05:50 UTC - live session (675g, owner summary + release tracker)
+- Lock taken 05:09 (the 05:17 cloud run skips). Owner summary + release tracker generated; task prompt updated; effort: cloud host passes CLAUDE_EFFORT=medium.
+
 ## 2026-11-16 04:18-04:45 UTC - live session (675f, owner dashboard)
 - Lock taken 04:18 (the 04:17 cloud run skips). STATUS_DASHBOARD.md + dashboard.py + progress.json; HW queue batched; task prompt -Xmx4g. No app code; CI green on deedfa45 before.
 

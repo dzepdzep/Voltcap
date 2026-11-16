@@ -1,3 +1,20 @@
+# Update 675g (16 Nov 2026, early morning) - live session - owner summary + release tracker
+- STATUS_DASHBOARD.md now opens with a generated OWNER SUMMARY (latest update, what was just fixed in plain words, the five most
+  important changes of the last 24 h by kind, progress bars implemented / handheld-verified / approved, next work, what the owner
+  must do or NONE, next release) and a generated RELEASE TRACKER (v0.6.73: items, handheld evidence, approvals, gates, why it
+  cannot ship); owner actions are generated too. The detailed tables follow unchanged.
+- New evidence files: docs/claude/run_reports.jsonl (one plain-English line per run, seeded 674l-675g), releases.json (release
+  status DERIVED from gates: DEVELOPMENT / BLOCKED / TESTING / READY FOR OWNER APPROVAL), owner_actions.json.
+- v0.6.73 today: BLOCKED (charge-loop fix needs the owner's test-or-hold-back decision); 8 app fixes implemented, 0 fully
+  verified; gates left: handheld popup gates on the newest build, Record crate checklist, emulator re-run, owner visual review,
+  signed RC, upgrade install, GO. main fast-forwards to the dev branch (41 ahead, 0 behind).
+- Scheduled task prompt: writes the run report line (incl. $CLAUDE_EFFORT), keeps releases.json / owner_actions.json current,
+  release-ready protocol ("VOLTCAP vX — READY FOR RELEASE APPROVAL", never merge / install / publish without GO).
+- Effort check: the cloud host passes CLAUDE_EFFORT=medium (Opus 5.5's default per the Claude Code docs); a task's effort is
+  set in its own editor (model selector > Effort) - not settable from the scheduling tool. Runs now log their effort.
+- Files: tools/cloud/dashboard.py, docs/claude/{STATUS_DASHBOARD.md,run_reports.jsonl,releases.json,owner_actions.json,
+  progress.json,CLOUD_DEVELOPMENT.md,HANDOFF.md,AUTORUN_LOG.md}. No app code.
+
 # Update 675f (16 Nov 2026, morning) - live session - status dashboard
 - docs/claude/STATUS_DASHBOARD.md (owner request 16 Nov): phone view - at a glance, overall counts, owner actions, hardware
   queue, progress by area, phone report, links. Generated sections come from `python3 tools/cloud/dashboard.py`

@@ -44,7 +44,7 @@
    "impl": 17,
    "unit": "UNKNOWN",
    "emulator": 0,
-   "device": 17,
+   "device": "UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)",
    "owner": 0,
    "released": "17 (older state)",
    "remaining": "third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review",

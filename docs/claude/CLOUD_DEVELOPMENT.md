@@ -15,7 +15,8 @@ Windows PC is used for physical handheld QA and occasional local work only. Noth
 | Backlog | `docs/MASTER_BACKLOG.md`; hardware-only work in `docs/claude/HARDWARE_QA_QUEUE.md`. |
 | Change log | `SUMMARY.md` (newest entry on top). |
 | Run log | `docs/claude/AUTORUN_LOG.md` (one short entry per scheduled run). |
-| Owner dashboard | `docs/claude/STATUS_DASHBOARD.md` - every run: `python3 tools/cloud/dashboard.py`, then the hand-written lines (rules at its top; evidence counts in `docs/claude/progress.json`, each with its source). |
+| Owner dashboard | `docs/claude/STATUS_DASHBOARD.md`, rebuilt every run by `python3 tools/cloud/dashboard.py` from: `docs/claude/run_reports.jsonl` (ONE line per run: update, utc, commit "(this commit)", kind app/ci/qa/docs, importance 1-3, plain = what changed in plain English for the owner (no IDs like G11 / D323), ci, effort = `$CLAUDE_EFFORT`, next = [now, then, then]), `progress.json` (per-area counts + source), `releases.json` (release items + gates; status is derived), `owner_actions.json` (urgent only when something is stuck on the owner now), the matrix and the hardware queue. |
+| Releases | When `releases.json`'s next release derives READY FOR OWNER APPROVAL: write `docs/claude/RELEASE_<version>_CANDIDATE.md` (changelog in plain English, QA results with run tags, known issues, risks) and start the run's summary with "VOLTCAP <version> — READY FOR RELEASE APPROVAL". Never merge, install production or publish without the owner's explicit GO. Propose a smaller release (move an item out of scope) only as an owner action, never by yourself. |
 
 ## Toolchain in a cloud session
 ```
