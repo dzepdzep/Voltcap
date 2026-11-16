@@ -29,7 +29,9 @@ pm path $PKG > /dev/null 2>&1 || { echo "STOP: $PKG not installed" >> $R; exit 1
 echo "target: serial=$(getprop ro.serialno) package=$PKG" >> $R
 touch /sdcard/Android/data/$PKG/files/qa_nolaunch
 # keys only while the QA app has the focus; anything else (the owner's Voltcap included): stop, nothing pressed
-fgq() { dumpsys window | grep -m1 mCurrentFocus | grep -q "$PKG/" || { echo "ABORT: focus is $(dumpsys window | grep -m1 mCurrentFocus | sed 's/.*{[^ ]* [^ ]* //; s/}.*//') - no key pressed" >> $R; exit 2; }; }
+# (676n, Thor t676n_nav: the first mCurrentFocus line can be another display's window - DroidDeck's session on the Thor - while the
+# QA app is the resumed activity that gets the keys; the guard reads Android's focused resumed activity, the package exactly.)
+fgq() { r=$(dumpsys activity activities | grep -m1 "ResumedActivity: "); case "$r" in *" $PKG/"*) ;; *) echo "ABORT: resumed is $(echo "$r" | sed 's/.*{[^ ]* [^ ]* //; s/}.*//') - no key pressed" >> $R; exit 2;; esac; }
 k() { fgq; input keyevent $1; sleep ${2:-1.2}; }
 am force-stop $PKG; sleep 1
 am start -n $ACT >/dev/null 2>&1; sleep 5; sample 01_startup

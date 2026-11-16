@@ -29,3 +29,22 @@ class CubeHints676mTest {
         assertTrue(s.contains("Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, softWrap = false)"))
     }
 }
+
+/** 676n (Thor x1.3 t676n_x13): the menu hint is never cut, and a short panel keeps the cover flow instead of two-line reserves. */
+class CubeShort676nTest {
+    private val s = listOf("src/main/java/com/shelf/launcher/ui/CubeHub.kt", "app/src/main/java/com/shelf/launcher/ui/CubeHub.kt").map { File(it) }.first { it.exists() }.readText()
+
+    @Test fun menuHintWrapsInHalves() {
+        assertTrue(!s.contains("\"▲ ▼ Choose   Ⓐ Open\""))
+        assertTrue(s.contains("listOf(\"▲ ▼ Choose\", \"Ⓐ Open\")"))
+    }
+
+    @Test fun shortPanelGivesTheCoversRoom() {
+        val lib = s.substring(s.indexOf("private fun HubLibrary"), s.indexOf("private fun HubHint"))
+        assertTrue(lib.contains("val lines = if (maxHeight - fixed < CUBE_COVERS_MIN) 1 else 2"))
+        // one line still shown whole: FullText shrinks, then slides (rule 11) and reserves its line (Update 460)
+        assertTrue(lib.contains("if (lines == 1) FullText(\n                    titles.display(g.name)"))
+        assertTrue(lib.contains("if (lines == 1) FullText(line,"))
+        assertTrue(!lib.contains("Ellipsis"))
+    }
+}
