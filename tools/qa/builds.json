@@ -1463,6 +1463,28 @@
    "patch_sha256": null,
    "tree_hash": "claude/badge-same-row 10d78a0 - clean (CI run 43954676769)",
    "note": "676z candidate + 676w badge lane same-row scaling (owner review)"
+  },
+  {
+   "id": "qa-0.6.73-676z2-facet-ci",
+   "apk_sha256": "7f27df3939b71dde22cae83a1190ec4f6b5db063a9c02c6b3df80a68d70cfed2",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 4f56e3a",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 4f56e3a - clean (CI run 43964694347)",
+   "note": "676z2 Tiles name lane content + app folder icon (v0.6.73 candidate)"
+  },
+  {
+   "id": "qa-0.6.74-676z2-badges-ci",
+   "apk_sha256": "f13a3e721f029e130b8d94aed6d0605ebf49257ab9c61c7d869641cc5c45f244",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/badge-same-row 67bcf5d",
+   "patch_sha256": null,
+   "tree_hash": "claude/badge-same-row 67bcf5d - clean (CI run 43964700382)",
+   "note": "676z2 Tiles name lane content + app folder icon + 676w badge lane same-row (owner review)"
   }
  ]
 }
