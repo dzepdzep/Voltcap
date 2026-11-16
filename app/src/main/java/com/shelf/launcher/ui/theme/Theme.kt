@@ -251,9 +251,11 @@ fun ShelfLauncherTheme(
             bodyLarge = normal.bodyLarge.px(), bodyMedium = normal.bodyMedium.px(), bodySmall = normal.bodySmall.px(),
             labelLarge = normal.labelLarge.px(), labelMedium = normal.labelMedium.px(), labelSmall = normal.labelSmall.px()
         ) else if (headings) normal.copy(
-            displayLarge = normal.displayLarge.px(0.86f), displayMedium = normal.displayMedium.px(0.86f), displaySmall = normal.displaySmall.px(0.86f),
-            headlineLarge = normal.headlineLarge.px(0.86f), headlineMedium = normal.headlineMedium.px(0.86f), headlineSmall = normal.headlineSmall.px(0.86f),
-            titleLarge = normal.titleLarge.px(0.86f), titleMedium = normal.titleMedium.px(0.86f), titleSmall = normal.titleSmall.px(0.86f)
+            // (677p, owner 17 Nov "GLOBAL PIXEL FONT SIZE OVERHAUL": the pixel font itself now draws at 62.5 % (volt_pixel.ttf
+            // unitsPerEm 1000 -> 1600). Its old 0.86 head-room factor would scale it twice - headings take the font at 1.)
+            displayLarge = normal.displayLarge.px(), displayMedium = normal.displayMedium.px(), displaySmall = normal.displaySmall.px(),
+            headlineLarge = normal.headlineLarge.px(), headlineMedium = normal.headlineMedium.px(), headlineSmall = normal.headlineSmall.px(),
+            titleLarge = normal.titleLarge.px(), titleMedium = normal.titleMedium.px(), titleSmall = normal.titleSmall.px()
         ) else if (lab != null) {
             val fam = com.shelf.launcher.ui.PopupLab.family(labContext, lab)
             fun androidx.compose.ui.text.TextStyle.lab() = copy(fontFamily = fam ?: fontFamily,

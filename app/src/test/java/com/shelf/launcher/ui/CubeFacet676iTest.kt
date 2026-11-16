@@ -121,3 +121,23 @@ class TilesNameLane676z2Test {
         assertTrue(src("PlatformLogos.kt").split("name.contains(\"app\", ignoreCase = true)").size == 3)
     }
 }
+
+/** 677p (owner 17 Nov, pixel font overhaul, branch claude/pixel-font-small): the pixel font draws at 62.5 % - in the font itself. */
+class PixelFont677pTest {
+    @Test fun fontAndThemeScaleOnce() {
+        val f = listOf("src/main/res/font/volt_pixel.ttf", "app/src/main/res/font/volt_pixel.ttf").map { File(it) }.first { it.exists() }.readBytes()
+        // head table: unitsPerEm (uint16) at offset 18 of the table
+        val n = ((f[4].toInt() and 0xFF) shl 8) or (f[5].toInt() and 0xFF)
+        var upem = -1
+        for (i in 0 until n) {
+            val r = 12 + 16 * i
+            if (String(f, r, 4) == "head") {
+                val off = ((f[r + 8].toInt() and 0xFF) shl 24) or ((f[r + 9].toInt() and 0xFF) shl 16) or ((f[r + 10].toInt() and 0xFF) shl 8) or (f[r + 11].toInt() and 0xFF)
+                upem = ((f[off + 18].toInt() and 0xFF) shl 8) or (f[off + 19].toInt() and 0xFF)
+            }
+        }
+        assertTrue("unitsPerEm $upem", upem == 1600)
+        val t = listOf("src/main/java/com/shelf/launcher/ui/theme/Theme.kt", "app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt").map { File(it) }.first { it.exists() }.readText()
+        assertTrue(!t.contains("px(0.86f)")) // no second factor on the headings
+    }
+}
