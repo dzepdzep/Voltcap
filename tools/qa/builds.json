@@ -1331,6 +1331,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 7213e53 - clean",
    "note": "cloud assembleDebug 16 Nov 11:12 UTC (VOLTCAP_CLOUD stub); 676 nav bar + badge lane + Storage sprite; on RP Nova d3641c41"
+  },
+  {
+   "id": "qa-0.6.73-676c-cloud",
+   "apk_sha256": "8169c3cdcc97ab092741ac106c2a1b07832b3b5bef9ad97c8e6cf723e25c86d6",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, cloud debug key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "09e1226",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 09e1226 - clean",
+   "note": "cloud assembleDebug 16 Nov 11:37 UTC; 676c chip text + QaClip needW; on RP Nova d3641c41"
   }
  ]
 }
