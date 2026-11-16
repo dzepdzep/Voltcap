@@ -65,7 +65,7 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   with Hide nav bar on; with the test hook off, the bar follows the device's own rules.
 - Nova 16 Nov: before (675r) pill in 12/12 Voltcap states; after (676) 0/14. Pending on the next build: re-run the same.
 
-### HW-9 Badge lane on small screens (676a) - OPEN
+### HW-9 Badge lane on small screens (676a) - IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open)
 - KONKR, RP Classic, Nova at x1.0 + x1.3: pop529 "CUBE GRID TILES CLASSIC SHELF STACKS" then `badgecheck.py <run>/qa_clip` (R27).
 - Nova x1.3 676: collisions 25/25 PASS; Grid chip text was clipped inside its pill (pre-existing) - fixed in 676c, text check needs
   the 676c build's dumps (needW / boxW).

@@ -84,6 +84,33 @@
      "emulator": "-",
      "device": "-",
      "owner": "not needed"
+    },
+    {
+     "what": "Hide navigation bar: Retroid pill fixed at its root (676b); polling removed",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "RP Nova: pill 12/12 states before, 0/14 after (676, 676c, 676d); Thor / KONKR / RP Classic NOT TESTED (HW-8)",
+     "owner": "APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass)"
+    },
+    {
+     "what": "Global badge lane (676a/c/e/f): console / achievement / NEW / score never overlap, never cut, never over a coverless name",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "RP Nova 676f: x1.3 CUBE/TILES/GRID popup 3/3 + badges 17/17, x1.0 CUBE 1/1 + 10/10; 676d x1.0 GRID/CUBE/TILES 3/3 + 26/26; KONKR / RP Classic NOT TESTED (HW-9)",
+     "owner": "APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass)"
+    },
+    {
+     "what": "QA safety: harness can't reach the owner's Voltcap (D334), QA levels, pinned QA key",
+     "kind": "qa",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "D334 guard proven on the Nova (5 root Backs kept)",
+     "owner": "requested 16 Nov"
     }
    ],
    "gates": [
@@ -145,18 +172,7 @@
     "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).",
     "Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens."
    ],
-   "candidates_owner_decision": [
-    {
-     "what": "Hide navigation bar: the Retroid pill (676b root cause: lazy root-gated quirk rule) + no more polling",
-     "state": "Nova PASS 14/14 states (navbefore/navafter), AYN / KONKR / RP Classic not run",
-     "decision": "owner: v0.6.73 or v0.6.74?"
-    },
-    {
-     "what": "Global badge lane (676a): console / achievement / NEW / score badges never overlap, badgecheck R27",
-     "state": "Nova x1.3 collisions PASS 25/25 (n676x13); text-cut check needs the next build",
-     "decision": "owner: v0.6.73 or v0.6.74?"
-    }
-   ]
+   "candidates_owner_decision": []
   },
   {
    "version": "v0.6.74",

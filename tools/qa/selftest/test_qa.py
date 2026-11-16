@@ -2056,5 +2056,18 @@ class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
         self.assertIn("packageName=com.shelf.launcher$", sh)
 
 
+class TestReadcheckUnplaced676f(unittest.TestCase):
+    """676f: an unplaced text (a badge the lane left out) is not drawn - it can't overlap; a placed one still FAILs."""
+    def test_unplaced_text_is_not_an_overlap(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import readcheck
+        base = {"text": "Shadow Of The Colossus", "full": [79, 448, 134, 168], "shown": [79, 448, 134, 168], "placed": True}
+        chip = {"text": "6/10", "full": [114, 470, 69, 72], "shown": [114, 470, 69, 72], "placed": False}
+        dump = {"windows": [{"id": "w", "nodes": [], "texts": [base, chip]}]}
+        self.assertEqual(readcheck.overlaps(dump), [])
+        chip["placed"] = True
+        self.assertTrue(readcheck.overlaps(dump))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

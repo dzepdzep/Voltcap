@@ -1,3 +1,10 @@
+# Update 676g (16 Nov 2026, live session) - QA tool only - readcheck: an unplaced text is not drawn
+- n676f13 graded FAIL only because readcheck counted the left-out count ('6/10', "placed": false in the dump) as drawn over the name;
+  the screenshot shows the name alone. readcheck.overlaps skips texts with an explicit "placed": false (older dumps graded as before).
+  Proof it is not a loosening: the same checker still FAILs n676d13 / n676e13, where the count was really drawn over the name.
+- RP Nova 676f, graded with it: x1.3 CUBE / TILES / GRID popup 3/3 PASS + badge gate 17/17; x1.0 CUBE 1/1 + 10/10. QA selftest OK
+  (+TestReadcheckUnplaced676f). Evidence: C:\VoltcapQA\runs\n676f.tar, shots\cube_badge_ba_676f.jpg.
+
 # Update 676f (16 Nov 2026, live session) - same branch, NOT released - name plate as lane content (replaces 676e's offset)
 - n676e13 (676e, x1.3): Cube still "'Shadow Of The Colossus' and '6/10' drawn over each other": the Nova x1.3 Cube tile is 162 x 224
   px, console 29 + stacked count 86 px leave 73 px for a 168 px (4-line) plate - 676e only moved a plate that fitted. 676f: the

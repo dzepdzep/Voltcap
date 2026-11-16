@@ -24,9 +24,14 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 ## Next (in order; skip what needs hardware - queue it instead)
 - DONE 16 Nov live (675r / 676 / 676c, SUMMARY "Update 676"): the four Nova x1.3 FAILs fixed and PASS on the Nova; Hide nav
   bar root cause fixed (Retroid handle quirk was gated on a lazy root check); global badge lane (ui/BadgeLane.kt + badgecheck R27).
-- FIRST (harness, D334b - blocks further hardware runs): pop529.sh / popclip.sh must (1) wait for the QA app to settle after an
-  install (first-start ROM scan) and (2) check the focused window is the QA app before every BUTTON_B, aborting otherwise - a B on
-  the QA app's root closed it and Android showed the owner's Voltcap (the home app). Add a selftest.
+- DONE 676d-f: D334 guard (app + scripts, proven on the Nova), QA levels in CLAUDE.md, pinned QA key, badge lane final (name plate
+  as lane content; readcheck skips unplaced texts). Nova 676f: x1.3 CUBE/TILES/GRID + x1.0 CUBE all PASS.
+- v0.6.73 (owner: nav bar + badge lane IN, if CI + hardware regression pass): remaining gates - full 53-layout x1.3 re-run on the
+  newest QA build (Nova, live session), KONKR when connected, CI green on the release commit; then the release checklist and the
+  owner's final GO. Owner waits on: the Cube status-bar option (A capsule / B floating / C facet - shown 16 Nov), the GitHub
+  secret + cloud env var for the QA key (docs/claude/QA_SIGNING_KEY.md).
+- NEXT (v0.6.74): per-item "Open on screen" shortcut - docs/claude/SCREEN_SHORTCUT_PLAN.md (audit done; implement step 1 first:
+  one shared ScreenTargetRow used by AppDrawer AppOptionsMenu, SecondScreenHome DockAppMenu, the game options; tests; no device).
 - NEXT (v0.6.74, owner 16 Nov): Save Sync 529 / 529c onto the dev line. The branch fix/save-sync exists only as a bundle
   (project doc claude/backups/fix_save_sync_bundle_b64.txt; PC Claude outputs\backups\fix-save-sync.bundle; base 558cb1f7 =
   v0.6.71). Rebase / port onto claude/qa-0672-repair on a NEW branch (claude/save-sync-0674), never into the v0.6.73 line;
