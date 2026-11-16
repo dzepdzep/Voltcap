@@ -460,7 +460,8 @@ private fun HubMenu(modifier: Modifier, tint: Color, section: Int, on: Boolean, 
             Modifier.padding(start = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             for (part in if (on) listOf("▲ ▼ Choose", "Ⓐ Open") else listOf("Ⓑ Menu"))
-                Text(part, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, maxLines = 1, softWrap = false)
+                // (676q, Thor x1.3 t676o_x13: with the theme's 24 sp line height the second line ran 21 px off the screen.)
+                Text(part, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, softWrap = false)
         }
     }
 }
@@ -480,7 +481,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
     val nameStyle = nameTextStyle(NameBackdrop.SHADOW)
     val fixed = reservedLinesHeight(17.sp, fontWeight = FontWeight.Bold, style = nameStyle) + 8.dp + 30.dp + 4.dp +
         reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameStyle, lines = 2) + reservedLinesHeight(12.sp, lines = 2) +
-        8.dp + reservedLinesHeight(12.sp, lines = 2) + 8.dp
+        8.dp + maxOf(19.dp, reservedLinesHeight(12.sp, lineHeight = 15.sp)) * 2 + 4.dp + 8.dp
     BoxWithConstraints(modifier) {
     val lines = if (maxHeight - fixed < CUBE_COVERS_MIN) 1 else 2
     Column(Modifier.fillMaxSize()) {
@@ -551,7 +552,7 @@ private fun HubHint(button: String, label: String, onTap: () -> Unit) {
             InkGlyph(button, Color(0xFF1A1530), 11.dp) // (Batch 521: centred by its ink - CenteredLine still sat it low)
         }
         Spacer(Modifier.width(5.dp))
-        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, softWrap = false)
+        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 15.sp, maxLines = 1, softWrap = false)
     }
 }
 
