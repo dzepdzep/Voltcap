@@ -1190,7 +1190,8 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     // (676a, RP Nova x1.3 Grid n676x13: "6/10 · 60%" was cut inside its own pill - the full form was estimated at its words +
     // 66 dp and needs its words + the bar (34) + the tick (9) + its padding (14) + its margin (10) = + 67 dp, so on a 116 dp
     // card the "%" was clipped. The full form only where it fits with that real width and a little room; else the compact one.)
-    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 4.dp > chipW)
+    // (676x, Nova x1.3 Blades v676x13: the full form chosen with 2 dp too little - "%" cut by 5 px. A little more room asked.)
+    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 8.dp > chipW)
     val word = if (mastered) "" else if (!compact) "$count · $pct%" else if (wordW(count) + 24.dp <= chipW) count else "$pct%"
     val need = if (mastered) (if (compact) 14.dp else 16.dp + wordW("MASTERED")) else wordW(word) + (if (compact) 0.dp else 42.dp)
     val tight = need + 24.dp > chipW
