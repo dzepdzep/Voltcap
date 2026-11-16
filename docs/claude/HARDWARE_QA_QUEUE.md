@@ -32,6 +32,15 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-12 Banner game window text shown whole (678e, rule 11) - OPEN
+- Device(s): RP Nova or KONKR (any USB handheld; batch with HW-1 / HW-9 in the same session). Level L1 (QA app only).
+- Build: commit of update 678e on claude/qa-0672-repair; QA build = assembleDebug of that commit.
+- Why not emulator: R26 needs the popup gate on hardware; the emulator trial runs the layouts' OWN style only, not Banner.
+- Tests: popclip.sh <tag> "SHELF COVERDETAILS" "BANNER" "<game with a long name + story>" at off and font=1.3,density=1.15,
+  then popclip.py (all six grades PASS); look at the Story page (More pill on a cut story), Options rows, achievement rows
+  (opened = whole description) and the saves chip. Popup style restored by the snapshot.
+- Result:
+
 ### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - IN PROGRESS
 - Thor 16 Nov (L1): drawer START menu row + picker (Top / Bottom names), Bottom saved and used by the launch path (APP SCREEN
   display=4 = Screen-2), restored. Still to do: an Android game (game path: rule "Set for this game", "Screen layouts..."),

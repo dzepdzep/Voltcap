@@ -96,7 +96,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.shelf.launcher.LauncherUiState
@@ -459,9 +458,9 @@ internal fun BannerGameWindow(
                         // Update 213: the game's save sync, always in sight (a tap opens it; stronger only when it needs you).
                         if (sync != null) {
                             BannerSyncChip(look, sync, onClick = if (sync.inert) ({}) else if (sync.setUp) onSyncSetUp else onSync, modifier = Modifier.padding(start = 10.dp))
-                        } else Text(
+                        } else WinFullText(
                             listOfNotNull(titles.console(g.platform), meta?.releaseYear?.toString()).joinToString("  ·  "),
-                            color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            color = look.muted, fontSize = 12.sp, maxLines = 1,
                             modifier = Modifier.padding(start = 10.dp)
                         )
                     }
@@ -691,14 +690,19 @@ internal fun BannerGameWindow(
                                     item(key = "story") {
                                         val summary = meta?.summary?.takeIf { it.isNotBlank() }
                                         // A / a tap shows the whole story (it starts at a few lines).
+                                        // Update 678e (rule 11): the closed story is cut at 5 lines only with its way to the rest in sight -
+                                        // the More pill shows whenever the text is cut (it showed only past 260 characters before).
+                                        var storyCut by remember(k, summary) { mutableStateOf(false) }
                                         BannerCard(look, firstMod, onClick = if (summary != null) ({ storyOpen = !storyOpen }) else null) {
-                                            Text(titles.display(g.name), color = look.ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2)
+                                            WinFullText(titles.display(g.name), color = look.ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2)
                                             Spacer(Modifier.height(6.dp))
                                             Text(
                                                 summary ?: "No description yet.", color = look.ink.copy(alpha = 0.88f), fontSize = 13.sp, lineHeight = 19.sp,
-                                                maxLines = if (storyOpen) Int.MAX_VALUE else 5, overflow = TextOverflow.Ellipsis
+                                                maxLines = if (storyOpen) Int.MAX_VALUE else 5,
+                                                overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (closed story: A / tap or the More pill shows it whole)
+                                                onTextLayout = { if (!storyOpen) storyCut = it.hasVisualOverflow }
                                             )
-                                            if (summary != null && summary.length > 260) {
+                                            if (summary != null && (summary.length > 260 || storyCut || storyOpen)) {
                                                 Spacer(Modifier.height(6.dp))
                                                 BannerPill(look, if (storyOpen) "Less" else "More")
                                             }
@@ -708,7 +712,7 @@ internal fun BannerGameWindow(
                                         BannerCard(look, onClick = onFullDetails) {
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text("Full details", color = look.ink, fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                                                Text("Everything about this game", color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                                WinFullText("Everything about this game", color = look.muted, fontSize = 12.sp, maxLines = 1)
                                             }
                                         }
                                     }
@@ -717,7 +721,7 @@ internal fun BannerGameWindow(
                                     item(key = "perfHead") {
                                         BannerCard(look, firstMod) {
                                             Text("FOR THIS GAME", color = look.muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.2.sp)
-                                            Text(perf.perf.summary, color = look.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+                                            WinFullText(perf.perf.summary, color = look.ink, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
                                             Spacer(Modifier.height(4.dp))
                                             Text(perfNote(perf), color = look.muted, fontSize = 12.sp)
                                         }
@@ -725,22 +729,22 @@ internal fun BannerGameWindow(
                                     val rows = perfRows(perf, hasFan, onPerfAdvanced)
                                     itemsIndexed(rows, key = { i, r -> "p$i${r.label}" }) { _, r ->
                                         BannerCard(look, onClick = r.onClick) {
-                                            Text(
+                                            WinFullText(
                                                 r.label, color = if (r.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
-                                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                                fontWeight = FontWeight.SemiBold, maxLines = 1
                                             )
-                                            Text(r.value, color = look.muted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            WinFullText(r.value, color = look.muted, fontSize = 12.sp, maxLines = 2)
                                         }
                                     }
                                 }
                                 BannerTab.OPTIONS -> {
                                     itemsIndexed(options, key = { i, _ -> "o$i" }) { i, opt ->
                                         BannerCard(look, if (i == 0) firstMod else Modifier, onClick = opt.onClick) {
-                                            Text(
+                                            WinFullText(
                                                 opt.label, color = if (opt.destructive) com.shelf.launcher.ui.theme.dangerOn(look.ink) else look.ink, fontSize = 14.sp,
-                                                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                                                fontWeight = FontWeight.SemiBold, maxLines = 1
                                             )
-                                            opt.sub?.let { Text(it, color = look.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                            opt.sub?.let { WinFullText(it, color = look.muted, fontSize = 12.sp, maxLines = 1) }
                                         }
                                     }
                                 }
@@ -830,11 +834,12 @@ private fun BannerHero(
             if (logo != null && !logoFailed) AsyncImage(
                 logo, titles.display(g.name), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart,
                 onError = { logoFailed = true }, modifier = Modifier.fillMaxSize()
-            ) else Text(
+            ) else WinFullText(
+                // (Update 678e, rule 11: FullText's own fit replaces the StepBased autoSize; it slides past the readable size.)
                 titles.display(g.name), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, maxLines = 2,
                 // (v0.6.66 popup polish: a fixed 34 sp line height left a wide gap between the two lines once the name shrank — GT78.)
-                overflow = TextOverflow.Ellipsis, lineHeight = 1.08.em,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 13.sp, maxFontSize = 32.sp, stepSize = 1.sp),
+                // (678e: given in sp - StableFullText keeps an sp line height's ratio (1.08) as it shrinks; an em one became 1.2.)
+                lineHeight = (32 * 1.08f).sp,
                 style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW)
             )
         }
@@ -968,9 +973,9 @@ private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> 
         val ink = if (sync.urgent) warn else look.muted
         Icon(sync.icon, null, tint = ink, modifier = Modifier.size(14.dp))
         Spacer(Modifier.width(5.dp))
-        Text(
+        WinFullText(
             savesLabel(sync.text), color = if (focused) look.ink else ink, fontSize = 12.sp,
-            fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis
+            fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1
         )
     }
 }
@@ -1081,15 +1086,14 @@ private fun BannerTrophyLine(look: BannerLook, t: RaAchievementDetail, opened: B
         )
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            WinFullText(
                 t.title ?: "Achievement", color = look.ink.copy(alpha = if (t.isUnlocked) 1f else 0.65f), fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                fontWeight = FontWeight.SemiBold, maxLines = 1
             )
             t.description?.let {
-                Text(
-                    it, color = look.muted.copy(alpha = if (t.isUnlocked) 1f else 0.7f), fontSize = 12.sp,
-                    maxLines = if (opened) 6 else 2, overflow = TextOverflow.Ellipsis
-                )
+                // Update 678e (rule 11): opened = the whole description (it stopped at 6 lines); closed = 2 lines that fit.
+                if (opened) Text(it, color = look.muted.copy(alpha = if (t.isUnlocked) 1f else 0.7f), fontSize = 12.sp)
+                else WinFullText(it, color = look.muted.copy(alpha = if (t.isUnlocked) 1f else 0.7f), fontSize = 12.sp, maxLines = 2)
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -1125,7 +1129,7 @@ private fun BannerTrophyMore(look: BannerLook, a: RaAchievementDetail, comments:
                         (cm.User ?: "Player") + (cm.Submitted?.let { "  ·  " + it.take(10) } ?: ""),
                         color = look.muted, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1
                     )
-                    Text(cm.CommentText.orEmpty().trim(), color = look.ink, fontSize = 11.sp, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                    Text(cm.CommentText.orEmpty().trim(), color = look.ink, fontSize = 11.sp) // 678e: the whole comment (it stopped at 6 lines)
                 }
             }
         }

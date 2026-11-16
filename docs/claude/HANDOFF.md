@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~22:40 UTC, update 678d (cloud run: emulator trial 43961010406 on 678c READ - VERDICT PASS, first fully
+Updated: 2026-11-16 ~23:45 UTC, update 678e (cloud run: rule 11 - banner game window FullText, GameWindowBannerFullText678eTest;
+TRUNCATE 236 -> 224; popclip gate for the Banner style queued as HW-12; no trial started - next allowed from ~00:45).
+Before: 2026-11-16 ~22:40 UTC, update 678d (cloud run: emulator trial 43961010406 on 678c READ - VERDICT PASS, first fully
 green trial; e529c touch walk made page-aware + game with an achievement set (selftest 179/179); no trial started).
 Before: 2026-11-16 ~21:45 UTC, update 678c (cloud run: rule 11 - year recap FullText, YearRecapFullText678cTest compiled + PASS; emulator trial STARTED on this commit).
 Before: 2026-11-16 ~20:30 UTC, update 678b (cloud run: QA tool - shelfpages529.sh touch taps read labels without the device's grep -iE, TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex; selftest 178/178; CI green on 866a956).
@@ -36,6 +38,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678e): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678e push (if red: first item). From ~00:45 UTC
+  START the emulator trial (head commit "[emulator-qa]") and read it the run after (expectations: 678d item below). If the
+  trial can run a second popup style within the job time, add BANNER to its popclip STYLES (covers HW-12's geometry on the
+  emulator; HW-12 still needs a handheld). Next rule 11 filler: SaveExplorer (13) or SettingsDialog (17), one per run.
+- DONE 678e: banner game window text shown whole (SUMMARY "Update 678e").
 - FIRST (678d): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678d push. From ~00:45 UTC START the emulator
   trial (head commit "[emulator-qa]") and read it the run after: e529a/e529b must stay PASS; e529c log should show "tap
   '*achievement 1*' at x,y" + "tap 'game settings*' at x,y" (or "using '<game>' (a set of 10)" in setup), no "no shown

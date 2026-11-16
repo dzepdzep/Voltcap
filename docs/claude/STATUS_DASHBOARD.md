@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678d · 2026-11-16 22:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 88e3457 (678c); Emulator QA trial PASS on 88e3457 · effort: medium
+**1. LATEST UPDATE** - 678e · 2026-11-16 23:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on a3b685e (678d) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The emulator test run started last hour passed every check for the first time (game window on two layouts, normal and large text). Its separate screen-tap test still tapped nothing: the test game had no achievements, so the window had one page fewer than the script assumed. The script now recognises each page from what is on it and picks a game that has achievements. No app change.
+**2. WHAT CLAUDE JUST FIXED** - The 'Banner page' style of the game window no longer cuts text off with '...': the console and year line, option and performance rows, the big game name, the saves button and achievement names now wrap, shrink a little or slide so they can be read whole; an opened achievement and its comments show in full. The short story at the top still starts at five lines, but its More button now always appears when the story is longer.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
-- **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
 - **QA tools** (678d): The emulator test run started last hour passed every check for the first time (game window on two layouts, normal and large text). Its separate screen-tap test still tapped nothing: the test game had no achievements, so the window had one page fewer than the script assumed. The script now recognises each page from what is on it and picks a game that has achievements. No app change.
 - **App** (677d): The game header (continue line, stat chips, Play button, category label) and the Stats page no longer cut text off with '...': long text now wraps, shrinks a little or slides so it can be read whole. Also fixed why the hourly cloud run kept starting on the main branch: the cloud workspace is prepared on main before the run starts; every run now switches itself safely to the development branch first and stops with a clear reason if anything is uncommitted or out of step.
+- **CI / build** (677b): The automatic build check had turned red after the new QA-app signing step: one test was reading the wrong part of the build file. The app itself was fine; the test now reads the right part and also checks that the QA signing never touches the real release key. The latest emulator run was read: one popup now passes every check there; a few test steps on the other still miss.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: start the next emulator run (from about 00:45 UTC) and check the screen taps now land; then: show the game window banner's text in full (needs the popup check after); finish the v0.6.73 hardware checks (KONKR / Nova)
+**5. WORKING ON NEXT** - now: start the next emulator run (from about 00:45 UTC) and read it; then: show the save explorer's text in full; finish the v0.6.73 hardware checks (KONKR / Nova, incl. the banner window check)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -129,16 +129,16 @@ Cloud development continues without any of these. v0.6.73 / KONKR production upg
 | | |
 |---|---|
 | Stable production version | **v0.6.72** (main 5b01ef39). Nothing released since. |
-| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675m (16 Nov 08:45 UTC, notifications panel texts shown whole) |
-| Latest CI ("Verify Android update 310") | **green** on 8bd5e4ae (675l); 675m pending; green on every finished push since the 675a memory fix |
-| Latest emulator trial | 43811840328 (675i): NOT TESTED (precondition: ANR dialog + Inspect question, handled 675k); new trial started on the 675m commit - result next run |
-| Last successful cloud run | 16 Nov 08:21-08:45 UTC (675m) |
-| Cloud runs so far | 10 scheduled (675a-675e, 675h, 675k-675m) + live sessions, hourly at :17 |
-| Waiting for hardware | 7 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
+| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 678e (16 Nov 23:45 UTC, banner game window texts shown whole) |
+| Latest CI ("Verify Android update 310") | **green** on a3b685e (678d); 678e pending; green on every finished push since the 675a memory fix |
+| Latest emulator trial | 43961010406 (678c): **PASS** - popup gate on 2 of 53 layouts (SHELF, COVERDETAILS) at x1.0 + x1.3, EMULATOR only; next trial from ~00:45 UTC |
+| Last successful cloud run | 16 Nov 23:18-23:50 UTC (678e) |
+| Cloud runs so far | hourly scheduled runs since 15 Nov (675a-678e; one entry each in AUTORUN_LOG) + live sessions |
+| Waiting for hardware | open hardware requests batched into one session (see the queue; HW-12 banner window added 678e); 25 older requests (13 Nov) also need a device |
 | Waiting for your approval / decision | see Owner actions |
 
 ## Next development priorities (hand-written)
-1. Read the emulator trial started on the 675m commit (675k preconditions); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
+1. Start / read the next emulator trial (from ~00:45 UTC); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3, the Banner style,
    Flip 2-like and RP Classic-like screens, the 17 category looks.
 2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
 3. Native popup pages for the 40 layouts still on the shared page (P2).
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-12 Banner game window text shown whole (678e, rule 11) | OPEN |
 | HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) | IN PROGRESS |
 | HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
 | HW-9 Badge lane on small screens (676a) | IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open) |
@@ -182,7 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 10 of 11.
+Open hardware requests: 11 of 12.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

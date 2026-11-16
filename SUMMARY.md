@@ -1,3 +1,16 @@
+# Update 678e (16 Nov 2026, cloud scheduled run) - rule 11: the banner game window shows its text whole
+- Banner page game window (Settings > Game window > Style = Banner): console / year line, the story card's name, Full details
+  line, performance summary + rows, options rows + their notes, the big name (when no logo), the saves chip and achievement
+  titles / closed descriptions go through WinFullText (wraps, shrinks to a readable size, then slides; no reserved height,
+  so heights stay as before). The big name's StepBased autoSize is replaced by FullText's fit, with its 1.08 line spacing kept.
+- An opened achievement shows its whole description (it stopped at 6 lines); RetroAchievements comments show whole (6 lines).
+- The one cut left is the closed story (5 lines): marked qa-ok, and its More pill now shows whenever the text is really cut
+  (before: only past 260 characters, so a shorter story could be cut with no way to the rest in sight).
+- Static TRUNCATE 236 -> 224. Test: GameWindowBannerFullText678eTest (fails on the 678d sources). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin OK after a Maven 429 retry) and the test PASS; static checks PASS.
+- Popup file (R26): needs the popclip gate with the Banner style - queued as HW-12 (emulator trial runs the OWN style only).
+- Files: ui/GameWindowBanner.kt, test GameWindowBannerFullText678eTest.kt; trackers.
+
 # Update 678d (16 Nov 2026, cloud scheduled run) - QA tool only - first fully green emulator trial; touch walk page-aware
 - Emulator trial 43961010406 (678c, 88e3457) READ: VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, every
   graded check on COVERDETAILS and SHELF PASS, FATAL 0, owner snapshot restored diff=0. First fully green trial (678a's

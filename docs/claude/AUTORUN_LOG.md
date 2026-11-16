@@ -125,3 +125,8 @@
 - BOOTSTRAP OK (88e3457); lock free, taken 22:18. CI: Verify 310 GREEN on 88e3457 (678c). Effort env: medium.
 - Read emulator trial 43961010406 (678c): VERDICT PASS (first fully green). e529c touch taps missed because the game had no
   achievement set -> shelfpages529.sh touch walk page-aware + game with a set; selftest 179/179. No trial started (3 h rule). Lock released.
+
+## 2026-11-16 ~23:18-23:50 UTC - cloud run 678e
+- BOOTSTRAP OK (a3b685e); lock free (none since 22:22), taken 23:18. CI: Verify 310 GREEN on a3b685e (678d). Effort env: medium.
+- Rule 11: banner game window text shown whole (12 "…" -> 1 marked), GameWindowBannerFullText678eTest PASS, compiled after a
+  Maven 429 retry; HW-12 queued (popclip, Banner style). No trial started (3 h rule, from ~00:45). Lock released.
