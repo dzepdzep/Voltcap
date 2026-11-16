@@ -55,8 +55,12 @@ jobs:
           set -euo pipefail
           if [ -z "${VOLTCAP_QA_DEBUG_KEYSTORE_B64:-}" ]; then echo "::error::the repository secret VOLTCAP_QA_DEBUG_KEYSTORE_B64 is missing"; exit 1; fi
           bash tools/cloud/qa_key.sh restore
+          # (the runner's Android user folder isn't always ~/.android: Gradle is told the key's path - build.gradle.kts)
+          install -m 600 "$HOME/.android/debug.keystore" "$RUNNER_TEMP/qa-debug.keystore"
       - name: Build (debug = com.shelf.launcher.qa, Discord SDK stub)
         timeout-minutes: 25
+        env:
+          VOLTCAP_QA_KEYSTORE_PATH: ${{ runner.temp }}/qa-debug.keystore
         run: |
           for i in 1 2; do
             bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug -x lintVitalAnalyzeDebug && exit 0
@@ -65,7 +69,7 @@ jobs:
           exit 1
       - name: Remove the key from the runner
         if: always()
-        run: rm -f "$HOME/.android/debug.keystore" "$HOME/.android/debug.keystore".*
+        run: rm -f "$HOME/.android/debug.keystore" "$HOME/.android/debug.keystore".* "$RUNNER_TEMP/qa-debug.keystore"
       - name: Check it is the QA app, signed with the pinned key
         run: |
           set -euo pipefail

@@ -165,6 +165,15 @@ android {
     }
 
     signingConfigs {
+        // (676h, owner 16 Nov: the isolated QA app for handhelds is signed in GitHub Actions with ONE pinned key - the
+        // repository secret, restored by .github/workflows/qa-device-apk.yml to a temp file named here. Debug (QA) only;
+        // the release key is never touched. Without the variable nothing changes.)
+        System.getenv("VOLTCAP_QA_KEYSTORE_PATH")?.takeIf { it.isNotBlank() && file(it).isFile }?.let { qaKey ->
+            getByName("debug") {
+                this.storeFile = file(qaKey)
+                storePassword = "android"; keyAlias = "androiddebugkey"; keyPassword = "android"
+            }
+        }
         val storeFile = keystoreProps.getProperty("storeFile")?.trim()?.trim('"')
         // (Update 144: only when the key file is really there — a wrong path in keystore.properties made every build
         // stop at validateSigningDebug; then this PC's debug key signs, with a warning.)
