@@ -1397,6 +1397,28 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet 4c208ff - clean (CI run 43922613406)",
    "note": "v0.6.73 candidate 676r + 676s (QA tools) + 676t Greencore facts wrap"
+  },
+  {
+   "id": "qa-0.6.73-676v-facet-ci",
+   "apk_sha256": "9c00536a1fa719fd4664df5b97064727f9a65d8bf6549731a37a1ad460c554a0",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet df0de82",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet df0de82 - clean (CI run 43933884220)",
+   "note": "v0.6.73 candidate 676r + 676u (676t reverted) + 676v app-wide trimmed line heights (D342, for owner review)"
+  },
+  {
+   "id": "qa-0.6.74-676w-badges-ci",
+   "apk_sha256": "921cc53317e95f35ff9559bb3e35b01023cf27ebcddf4278970223a06f7f7bf7",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/badge-same-row 6f00d87",
+   "patch_sha256": null,
+   "tree_hash": "claude/badge-same-row 6f00d87 - clean (CI run 43939131515)",
+   "note": "676v candidate + 676w badge lane same-row scaling (owner review)"
   }
  ]
 }
