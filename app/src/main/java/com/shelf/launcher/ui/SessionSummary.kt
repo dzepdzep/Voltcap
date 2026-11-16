@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.CloudSync
@@ -170,14 +169,12 @@ fun SessionSummaryCard(summary: SessionSummary?, onDismiss: () -> Unit, modifier
                 Text(
                     "SESSION", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp
                 )
-                Text(
-                    s.gameName, color = Color.White, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis
-                )
+                // Rule 11 (677a): the whole name - wraps to 2 lines, shrinks readably, then slides; no "…".
+                FullText(s.gameName, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
                 Spacer(Modifier.height(2.dp))
                 val played = if (s.sessionMs >= 60_000L) PlaytimeStore.format(s.sessionMs) else "Short session"
                 val total = if (s.totalMs > s.sessionMs) " · ${PlaytimeStore.format(s.totalMs)} total" else ""
-                Text(played + total, color = Color.White.copy(alpha = 0.78f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(played + total, color = Color.White.copy(alpha = 0.78f), fontSize = 12.sp, maxLines = 2, reserve = false)
                 if (s.achievementCount > 0) {
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -191,18 +188,18 @@ fun SessionSummaryCard(summary: SessionSummary?, onDismiss: () -> Unit, modifier
                             )
                         }
                         Spacer(Modifier.width(4.dp))
-                        Text(
+                        FullText(
                             "${s.achievementCount} achievement${if (s.achievementCount == 1) "" else "s"} earned",
-                            color = com.shelf.launcher.ui.theme.Ds.gold, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            color = com.shelf.launcher.ui.theme.Ds.gold, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, reserve = false
                         )
                     }
                 }
                 if (s.achievementTotal > 0) {
                     Spacer(Modifier.height(6.dp))
                     val change = if (s.percentBefore >= 0 && s.percentAfter > s.percentBefore) "   ${s.percentBefore}% → ${s.percentAfter}%" else ""
-                    Text(
+                    FullText(
                         com.shelf.launcher.data.achievementProgress(s.unlockedAfter, s.achievementTotal) + change,
-                        color = Color.White, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Medium, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium, reserve = false
                     )
                     Spacer(Modifier.height(4.dp))
                     // Progress line: the part gained this session in gold.
@@ -217,7 +214,7 @@ fun SessionSummaryCard(summary: SessionSummary?, onDismiss: () -> Unit, modifier
                 }
                 s.milestone?.let { m ->
                     Spacer(Modifier.height(6.dp))
-                    Text(m, color = ShelfTheme.accent, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    FullText(m, color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, reserve = false)
                 }
             }
         }
@@ -234,10 +231,10 @@ internal fun SessionStatusNote(text: String?) {
         enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.expandHorizontally(),
         exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.shrinkHorizontally()
     ) {
-        androidx.compose.material3.Text(
+        // Rule 11 (677a): a long note slides inside its 320 dp instead of ending in "…".
+        FullText(
             "🎮 $last", color = com.shelf.launcher.ui.theme.ShelfTheme.colors.textPrimary,
-            fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold, reserve = false,
             modifier = Modifier.padding(end = 8.dp).widthIn(max = 320.dp)
         )
     }

@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~09:45 UTC, update 675o (cloud run: read emulator run 43833359452 on 675m - first fully graded
+Updated: 2026-11-16 ~14:50 UTC, update 677a (cloud run: rule 11 - post-game session card + status note
+shown whole (FullText, SessionSummaryFullText677aTest; compiled in the cloud); emulator trial started on this commit).
+Before: update 675o (cloud run: read emulator run 43833359452 on 675m - first fully graded
 trial: x1.0 SHELF PASS 11/11; every FAIL traced to the device grep missing keys in dumps holding "›" -> popclip.sh /
 shelfpages529.sh read dumps in plain ASCII, late extra-A window closed before the rapid presses; selftest 164/164).
 Previous: 675m (notifications panel FullText).
@@ -37,8 +39,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   v0.6.71). Rebase / port onto claude/qa-0672-repair on a NEW branch (claude/save-sync-0674), never into the v0.6.73 line;
   compile + full unit suite + SaveSync529Test / SaveSyncSim529Test / SyncGuards529Test. Real Drive test waits for the owner
   (OAuth client for com.shelf.launcher.qa + spare-account sign-in; D337: the QA key must be stable first).
-- FIRST: start the emulator trial on the 675o fix (head commit message "[emulator-qa]", allowed from ~11:42 UTC; the
-  previous one ran on 1990deb4 at 08:42) and read it. Expect e529a/e529b COVERDETAILS + SHELF to grade without "opened
+- FIRST: read the emulator trial STARTED by the 677a cloud run (head commit "[emulator-qa]", ~14:50 UTC, first trial on the
+  675o fix; next one allowed from ~17:50) - artifacts emulator-qa-<gpu>-<sha>. Expect e529a/e529b COVERDETAILS + SHELF to grade without "opened
   nothing" / "More step missing" / rapid launches. If a miss remains, the new log lines say what the device read ("read: Play
   keys probe X, home Y", "More: none read in the main dump (N controls read)") - set them beside the copied probes. If misses
   remain even so, the next step is QaClip writing non-ASCII as \uXXXX escapes (check every consumer of the raw dump text first).
@@ -73,8 +75,8 @@ When a progress.json count changes, change its source text with it.
    Inspect; D322 pickup latency; promote warn-uniform to FAIL; Cube first-A / L2-R2 fact (HW-4).
 3b. Rule 11 (P13 / F21): 262 TRUNCATE left (static_checks). Filler item between trials: one screen per run, FullText(...,
    reserve = false) where the old Text had no reserved height + a source test (pattern: SpotifyFullText675lTest). Done:
-   Now Playing (D79), Spotify screen + player (675l), notifications panel (675m). Next small ones: SessionSummary 6,
-   PlayHeader 6, StatsContent 5. Biggest left: SettingsDialog 17, SaveExplorer 13, GameDetailsOverlay 13,
+   Now Playing (D79), Spotify screen + player (675l), notifications panel (675m), session card + status note (677a, 256 left).
+   Next small ones: PlayHeader 6, StatsContent 5. Biggest left: SettingsDialog 17, SaveExplorer 13, GameDetailsOverlay 13,
    GameWindowBanner 12, YearRecapDialog 9. Popup files (GameDetailsOverlay, GameWindowBanner) need a popclip gate after (R26).
 4. Requirements matrix reconciliation (docs/REQUIREMENTS_MATRIX.md) and the full backlog (docs/MASTER_BACKLOG.md).
 5. Later: +N category counters.
