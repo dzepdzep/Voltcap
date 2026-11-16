@@ -18,6 +18,17 @@ Windows PC is used for physical handheld QA and occasional local work only. Noth
 | Owner dashboard | `docs/claude/STATUS_DASHBOARD.md`, rebuilt every run by `python3 tools/cloud/dashboard.py` from: `docs/claude/run_reports.jsonl` (ONE line per run: update, utc, commit "(this commit)", kind app/ci/qa/docs, importance 1-3, plain = what changed in plain English for the owner (no IDs like G11 / D323), ci, effort = `$CLAUDE_EFFORT`, next = [now, then, then]), `progress.json` (per-area counts + source), `releases.json` (release items + gates; status is derived), `owner_actions.json` (urgent only when something is stuck on the owner now), the matrix and the hardware queue. |
 | Releases | When `releases.json`'s next release derives READY FOR OWNER APPROVAL: write `docs/claude/RELEASE_<version>_CANDIDATE.md` (changelog in plain English, QA results with run tags, known issues, risks) and start the run's summary with "VOLTCAP <version> — READY FOR RELEASE APPROVAL". Never merge, install production or publish without the owner's explicit GO. Propose a smaller release (move an item out of scope) only as an owner action, never by yourself. |
 
+## Run bootstrap (every scheduled run, before anything else)
+The cloud environment pre-clones the repo at `/home/claude/voltcap` on `main` (detached HEAD). Never `git clone` over it.
+```
+cd /home/claude/voltcap && git fetch -q origin +refs/heads/claude/qa-0672-repair:refs/remotes/origin/claude/qa-0672-repair \
+  && git show origin/claude/qa-0672-repair:tools/cloud/start_run.sh > /tmp/start_run.sh && bash /tmp/start_run.sh /home/claude/voltcap
+```
+`start_run.sh` switches to (or creates) `claude/qa-0672-repair` tracking origin, fast-forwards only, and prints
+`BOOTSTRAP OK <branch> <sha>`; on uncommitted work, unpushed or diverged commits it prints `BOOTSTRAP BLOCKED: <reason>`, changes
+nothing and the run stops and reports. Before the lock, every commit and every push:
+`test "$(git rev-parse --abbrev-ref HEAD)" = claude/qa-0672-repair`.
+
 ## Toolchain in a cloud session
 ```
 bash tools/cloud/setup_android.sh          # Android SDK (platform 36, build-tools 36, NDK 28, CMake) ~1 min, idempotent

@@ -1,3 +1,20 @@
+# Update 677d (16 Nov 2026, cloud scheduled run) - rule 11: play header + Stats page shown whole; cloud run starts on the dev branch
+- Play header (continue line, the stat chips' label + value, the Play button, the category above the title in both title
+  placements) and the Stats page (summary tiles, weekly bar times + labels, per-game bar names + times): 11 TextOverflow.Ellipsis
+  uses -> FullText (wraps, shrinks to a readable size, then slides). reserve = false everywhere so heights stay as they were; the
+  category line keeps its fixed size (autoFit = false). Static TRUNCATE 256 -> 245.
+- Test: PlayHeaderStatsFullText677dTest (fails on the 677c sources). Compiled in the cloud (:app:compileDebugUnitTestKotlin OK)
+  and the test PASS; static checks PASS. Not tested on a handheld (look only - no HW request: same FullText as 675l-677a).
+- Owner request (live, 16 Nov): hourly runs kept reporting "the working copy is main". Cause: the cloud environment pre-clones
+  the repo at /home/claude/voltcap on main (detached HEAD) before the run; the prompt's `git clone -b claude/qa-0672-repair ...
+  /home/claude/voltcap` then cannot write there, so every run started on main and had to improvise. New tools/cloud/start_run.sh:
+  checks the repo + origin, stops on uncommitted work, fetches the dev branch explicitly (the pre-clone only knows main),
+  checks it out (or creates it tracking origin), fast-forwards only (ahead / diverged = BLOCKED, never reset / stash / force),
+  verifies branch == origin's head, prints "BOOTSTRAP OK <branch> <sha>". The scheduled task's prompt now runs it from
+  origin's copy (git show) and checks the branch again before the lock, every commit and every push.
+- Files: ui/PlayHeader.kt, ui/StatsContent.kt, test PlayHeaderStatsFullText677dTest.kt, tools/cloud/start_run.sh,
+  docs/claude/CLOUD_DEVELOPMENT.md; trackers.
+
 # Update 677c (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads its own probe; app's window age counts
 - Emulator trial 43887216747 (677a): e529b SHELF "first A opened nothing" and e529a COVERDETAILS "first A opened late", yet the
   probes copied right after those reads (probeA / probeB) hold the window's Play key AND the app's own popupAgeMs (2188 / 2708 ms,

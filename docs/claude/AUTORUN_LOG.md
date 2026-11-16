@@ -100,3 +100,9 @@
 - Lock free (released 16:32 by 677b); taken 17:19. CI: Verify 310 GREEN on 833f308 (677b fix confirmed).
 - Item: emulator trial 43887216747 misses traced (probes held Play + popupAgeMs while up() read none) -> popclip.sh up() own
   probe names + app popupAgeMs + read diagnostics; selftest 177/177. Trial not started (3 h window opens ~17:50). Effort env: medium.
+
+## 2026-11-16 ~18:20-18:55 UTC - cloud run 677d
+- Lock free (none since 17:25); taken 18:20. CI: Verify 310 GREEN on 0eb3904 (677c). Effort env: medium.
+- Workspace started on main (pre-cloned); worked in a separate dev-branch clone. Owner (live) asked for a permanent fix:
+  tools/cloud/start_run.sh + scheduled task prompt updated (bootstrap + branch check before lock / commit / push).
+- Item: rule 11 play header + Stats page FullText (11 places; test compiled + PASS). Emulator trial started on this commit.

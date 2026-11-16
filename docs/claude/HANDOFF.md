@@ -1,6 +1,9 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~17:35 UTC, update 677c (cloud run: QA tool - popclip.sh up() reads a probe of its own name each
+Updated: 2026-11-16 ~18:55 UTC, update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
+(PlayHeaderStatsFullText677dTest, compiled + PASS in the cloud); run bootstrap tools/cloud/start_run.sh - the pre-cloned
+workspace starts on main; the task prompt now switches to the dev branch safely; emulator trial started on this commit).
+Before: update 677c (cloud run: QA tool - popclip.sh up() reads a probe of its own name each
 time and also trusts the app's popupAgeMs; Details / More misses log plain-vs-pattern reads; selftest 177/177. CI green on 677b.)
 Before: update 677b (cloud run: CI red on 0cc6739 / 0e23337 fixed - QaIsolation521Test
 looked at the new QA-key signingConfigs debug block instead of the debug build type; NOT compiled here (Maven 429), CI decides).
@@ -28,6 +31,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (677d): the run must print "BOOTSTRAP OK claude/qa-0672-repair <sha>" (tools/cloud/start_run.sh); if BLOCKED, report
+  the reason and stop. Check "Verify Android update 310" on the 677d push. READ the emulator trial started on 677d
+  ("[emulator-qa]", ~18:55 UTC; next allowed from ~21:55) per the 677c item below. Then rule 11 next screens: GameWindowBanner (12),
+  YearRecapDialog (9).
 - FIRST (677c): check "Verify Android update 310" on the 677c push (677b 833f308 GREEN). Then START the emulator trial on the
   next commit (head message "[emulator-qa]", allowed from ~17:50 UTC) and read it next run: expect no "first A opened nothing /
   late" where the probe holds popupAgeMs; read the new "read: probe N ..." / "Details read: plain X, pattern Y" / "plain More
