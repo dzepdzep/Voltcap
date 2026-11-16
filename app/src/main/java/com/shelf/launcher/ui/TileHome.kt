@@ -856,7 +856,9 @@ private fun HomeTile(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
+                // (676z2: fixed content in the tile's lane - the count keeps clear of the name, never over it.)
                 modifier = Modifier.align(Alignment.BottomStart).padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 10.dp + consoleRoom)
+                    .laneContentAt(lane, Alignment.BottomStart, 10.dp, 10.dp + consoleRoom)
             )
         }
         if (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL) {
