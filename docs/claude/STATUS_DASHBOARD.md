@@ -2,7 +2,7 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 677a · 2026-11-16 14:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on 1e1400c in progress at start; d1d6d98 green · effort: medium
+**1. LATEST UPDATE** - 677a · 2026-11-16 14:55 UTC · commit `4c332f1` · CI: Verify 310 on 1e1400c in progress at start; d1d6d98 green · effort: medium
 
 **2. WHAT CLAUDE JUST FIXED** - The card that appears after you finish playing (game name, time played, achievements, milestone) and the short note in the status bar now show long names in full - they wrap, shrink a little or slide - instead of ending in '...'. An emulator test run was also started to check yesterday's fix to the automatic popup tests.
 
@@ -72,7 +72,7 @@ work. Emulator results never count as handheld verification. Release status is d
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PASS | green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43833359452 (675m, 1990deb4): FAIL, graded for the first time (preconditions PASS): x1.0 SHELF PASS on all checks, COVERDETAILS did not open on the first A; x1.3 COVERDETAILS fails only the rapid A/B check, SHELF the More step + rapid. All traced to the test reading its screen dumps wrongly on the emulator (the dumps hold the keys) - fixed in the test tools 675o; next trial from ~11:42 UTC. Emulator evidence supports, never replaces, the handheld gates |
-| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova (4:3, 640x480 dp): x1.0 n675c 53/53 PASS (8bd5e4a). The 4 x1.3 FAILs of n675d fixed: build 675r n675r13 x1.3 CRATE / POCKET_RIBBON / CUBE PASS, STORAGE FAIL (sprite title) -> build 676 n676x13 x1.3 STORAGE CUBE GRID TILES CLASSIC 5/5 PASS; x1.0 n675r10 4/4 PASS. Full 53-layout x1.3 re-run on the newest build and the KONKR still to do |
+| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
 | Owner visual review of the new menus and x1.3 fixes | PENDING | screenshots come from the hardware session |
@@ -90,13 +90,13 @@ Merging, the production install and publishing always wait for your explicit GO.
 ### v0.6.74 - **DEVELOPMENT**
 - Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
 - Release window: UNKNOWN - the Flip 2 is unavailable
-- App fixes and features: 3 (0 implemented, 0 fully verified, 0 implemented but not yet tested on a handheld, 0 need your look or decision)
+- App fixes and features: 3 (1 implemented, 0 fully verified, 1 implemented but not yet tested on a handheld, 0 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
 | Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible? | test when the Flip 2 is back (production limit off for one supervised test) |
 | Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore) | Flip 2 dry run only (no Drive) | owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval |
-| Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md) | Thor + Nova (single-screen) after implementation | requested 16 Nov |
+| Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md) | AYN Thor (QA app, branch claude/v0674-screen-shortcut 8dab0b2): All apps START menu shows the row; picker Top/Bottom/Where I open it/Follow default; chose Bottom -> launch path chose display 4 (Screen-2) target=SECOND source=APP; restored. Android-game picker, second-screen dock menu, single-screen Nova: NOT TESTED | requested 16 Nov |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) | IN PROGRESS |
 | HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
 | HW-9 Badge lane on small screens (676a) | IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open) |
 | HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs | DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS) |
@@ -181,7 +182,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 9 of 10.
+Open hardware requests: 10 of 11.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

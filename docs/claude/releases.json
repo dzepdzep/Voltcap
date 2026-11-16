@@ -127,7 +127,7 @@
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
      "state": "PENDING",
-     "evidence": "RP Nova (4:3, 640x480 dp): x1.0 n675c 53/53 PASS (8bd5e4a). The 4 x1.3 FAILs of n675d fixed: build 675r n675r13 x1.3 CRATE / POCKET_RIBBON / CUBE PASS, STORAGE FAIL (sprite title) -> build 676 n676x13 x1.3 STORAGE CUBE GRID TILES CLASSIC 5/5 PASS; x1.0 n675r10 4/4 PASS. Full 53-layout x1.3 re-run on the newest build and the KONKR still to do"
+     "evidence": "RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build."
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
@@ -202,10 +202,10 @@
     {
      "what": "Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md)",
      "kind": "app",
-     "impl": false,
-     "unit": false,
+     "impl": true,
+     "unit": true,
      "emulator": "no",
-     "device": "Thor + Nova (single-screen) after implementation",
+     "device": "AYN Thor (QA app, branch claude/v0674-screen-shortcut 8dab0b2): All apps START menu shows the row; picker Top/Bottom/Where I open it/Follow default; chose Bottom -> launch path chose display 4 (Screen-2) target=SECOND source=APP; restored. Android-game picker, second-screen dock menu, single-screen Nova: NOT TESTED",
      "owner": "requested 16 Nov"
     }
    ],

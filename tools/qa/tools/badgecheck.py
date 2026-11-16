@@ -69,14 +69,24 @@ def check_dump(path, gap_dp=6.0):
                 f, s = b["full"], b["shown"]
                 if s[2] <= 0 or s[3] <= 0:
                     continue  # a badge not on the screen at all (scrolled away with its tile)
-                if f[2] - s[2] > TOL or f[3] - s[3] > TOL:
+                # (f676x13, RP Nova: "full" is the laid-out size, "shown" what is on screen after the tile's own scale - an
+                # unfocused tile drawn at 0.81 read as 44 "cut" badges. The same shrink both ways is the tile's scale: the badge
+                # is measured at that scale; only an uneven shrink - one side trimmed - is a cut.)
+                rw, rh = s[2] / max(1, f[2]), s[3] / max(1, f[3])
+                if abs(rw - rh) <= 0.03 or (f[2] - s[2] <= TOL and f[3] - s[3] <= TOL):
+                    r = min(1.0, (rw + rh) / 2)
+                    b["_t"] = [f[0], f[1], round(f[2] * r), round(f[3] * r)]
+                else:
+                    b["_t"] = f
                     bad.append(f"{b['kind']} cut: laid out {f[2]}x{f[3]} px, shown {s[2]}x{s[3]}")
-                x0, y0, x1, y1 = rect(f)
+                x0, y0, x1, y1 = rect(b["_t"])
                 if sw and sh and (x0 < -TOL or y0 < -TOL or x1 > sw + TOL or y1 > sh + TOL):
                     bad.append(f"{b['kind']} off the screen at {f}")
             for b in bs:
                 x0, y0, x1, y1 = rect(b["full"])
                 for t in w.get("texts", []):
+                    if t.get("placed", True) is False:
+                        continue  # (f676x13 Twin icons: a badge the lane left out is not drawn - its text can't be cut)
                     tx, ty, tw, th = t["full"]
                     cx, cy = tx + tw / 2, ty + th / 2
                     if not (x0 <= cx <= x1 and y0 <= cy <= y1):
@@ -94,7 +104,7 @@ def check_dump(path, gap_dp=6.0):
             need = gap_dp * dens - TOL
             for i in range(len(bs)):
                 for j in range(i + 1, len(bs)):
-                    g = gap(rect(bs[i]["full"]), rect(bs[j]["full"]))
+                    g = gap(rect(bs[i].get("_t", bs[i]["full"])), rect(bs[j].get("_t", bs[j]["full"])))
                     if g < need:
                         what = "overlap" if g < 0 else "too close"
                         bad.append(f"{bs[i]['kind']} / {bs[j]['kind']} {what}: {g / dens:.1f} dp apart (min {gap_dp:g} dp)")

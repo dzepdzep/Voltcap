@@ -64,7 +64,12 @@ internal enum class BarBacking {
     /** A printed label (paper, card). */
     LABEL,
     /** No box: a fine line under the pieces. */
-    UNDERLINE
+    UNDERLINE,
+    /**
+     * 676i (owner 16 Nov, Cube option C): one panel hanging from the screen's corner, its inner corner cut like the cube's edge -
+     * a lit rim along its two inner edges and the cut, a fine bevel inside the cut. All the pieces on it, no separate boxes.
+     */
+    FACET
 }
 
 /** The small details of a layout's material, drawn with the bar's box. */
@@ -294,7 +299,9 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         HomeLayout.CUBE -> Features.cubeTint.state.value.let { t ->
             // (Update 339: the cube's own tint — indigo, lilac, smoke or the theme's.)
             val tint = if (t == Features.CubeTint.THEME) acc else Color(t.argb)
-            StatusLook(BarBacking.SEGMENTS, bg = mixC(tint, Color.Black, 0.55f).copy(alpha = 0.7f), rim = mixC(tint, Color.White, 0.3f).copy(alpha = 0.6f), accent = mixC(tint, Color.White, 0.45f), rimWidth = 1.5.dp, corner = 6.dp, gap = 5.dp, avatar = AvatarShape.ROUNDED, clockWeight = FontWeight.Bold, avatarSize = 22.dp)
+            // (676i, owner 16 Nov - option C "Cube facet": one panel hanging from the corner, its inner corner cut like the
+            // cube's edge, the cube's lit rim - no separate outlined boxes. Same pieces, same sizes, read at x1.0 and x1.3.)
+            StatusLook(BarBacking.FACET, bg = mixC(tint, Color.Black, 0.5f).copy(alpha = 0.86f), rim = mixC(tint, Color.White, 0.42f).copy(alpha = 0.85f), accent = mixC(tint, Color.White, 0.45f), rimWidth = 1.dp, corner = 12.dp, gap = 9.dp, avatar = AvatarShape.ROUNDED, clockWeight = FontWeight.Bold, avatarSize = 22.dp)
         }
         // Memory card: the 2000s browser's pale grey — no box, its dark grey type.
         HomeLayout.MEMCARD -> if (Features.mcBack.state.value == Features.McBack.THEME)
@@ -391,10 +398,12 @@ internal fun StatusLook.avatarShape(): Shape = when (avatar) {
 }
 
 /** Whether the pieces sit in one box (CAPSULE, LCD, LABEL). */
-internal val StatusLook.boxed: Boolean get() = backing == BarBacking.CAPSULE || backing == BarBacking.LCD || backing == BarBacking.LABEL
+internal val StatusLook.boxed: Boolean get() = backing == BarBacking.CAPSULE || backing == BarBacking.LCD || backing == BarBacking.LABEL || backing == BarBacking.FACET
 
 /** The box round all the pieces (CAPSULE, LCD, LABEL) or the ruled line under them (UNDERLINE). */
-internal fun Modifier.statusContainer(look: StatusLook): Modifier = when {
+internal fun Modifier.statusContainer(look: StatusLook, atBottom: Boolean = false): Modifier = when {
+    look.backing == BarBacking.FACET -> this.drawBehind { drawFacet(look, atBottom) }
+        .padding(start = if (look.left) 6.dp else look.corner + 8.dp, end = if (look.left) look.corner + 8.dp else 4.dp, top = 3.dp, bottom = 4.dp)
     look.boxed -> {
         val shape = look.shape()
         val round = look.corner >= 12.dp
@@ -423,6 +432,44 @@ internal fun Modifier.statusContainer(look: StatusLook): Modifier = when {
         while (x <= size.width) { drawRect(r.copy(alpha = 0.55f), Offset(x, size.height - h - 3.dp.toPx()), Size(1.dp.toPx(), 3.dp.toPx())); x += step }
     }.padding(bottom = 6.dp)
     else -> this
+}
+
+/**
+ * 676i: the FACET panel. It runs past the cluster to the screen's edges (the bar's own padding: 6 dp to the top / bottom edge, 12 dp
+ * to the side), so it hangs from the corner; the corner that faces into the screen is cut by [StatusLook.corner].
+ */
+private fun DrawScope.drawFacet(look: StatusLook, atBottom: Boolean) {
+    val outY = 6.dp.toPx(); val outX = (if (look.left) 14.dp else 12.dp).toPx(); val c = look.corner.toPx()
+    val w = size.width; val h = size.height
+    // In the panel's own frame: x grows away from the screen's side edge, y away from its top / bottom edge.
+    fun pt(x: Float, y: Float): Offset {
+        val px = if (look.left) x else w - x
+        val py = if (atBottom) h - y else y
+        return Offset(px, py)
+    }
+    val inner = w // the box's side that faces into the screen, measured from its screen-side edge
+    val face = androidx.compose.ui.graphics.Path().apply {
+        moveTo(pt(-outX, -outY).x, pt(-outX, -outY).y)
+        lineTo(pt(inner, -outY).x, pt(inner, -outY).y)
+        lineTo(pt(inner, h - c).x, pt(inner, h - c).y)
+        lineTo(pt(inner - c, h).x, pt(inner - c, h).y)
+        lineTo(pt(-outX, h).x, pt(-outX, h).y)
+        close()
+    }
+    drawPath(face, look.bg)
+    val rim = look.rim ?: return
+    val sw = look.rimWidth.toPx()
+    // The lit edges: down the inner side, along the cut, along the bottom to the screen's edge.
+    val edge = androidx.compose.ui.graphics.Path().apply {
+        moveTo(pt(inner, -outY).x, pt(inner, -outY).y)
+        lineTo(pt(inner, h - c).x, pt(inner, h - c).y)
+        lineTo(pt(inner - c, h).x, pt(inner - c, h).y)
+        lineTo(pt(-outX, h).x, pt(-outX, h).y)
+    }
+    drawPath(edge, rim, style = Stroke(sw))
+    // The bevel inside the cut: the cube's second edge, fainter.
+    val b = 3.dp.toPx()
+    drawLine(rim.copy(alpha = rim.alpha * 0.45f), pt(inner - b, h - c + b * 0.4f), pt(inner - c + b * 0.4f, h - b), sw)
 }
 
 /** One group's own box (SEGMENTS). */
