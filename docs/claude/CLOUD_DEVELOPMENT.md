@@ -15,6 +15,7 @@ Windows PC is used for physical handheld QA and occasional local work only. Noth
 | Backlog | `docs/MASTER_BACKLOG.md`; hardware-only work in `docs/claude/HARDWARE_QA_QUEUE.md`. |
 | Change log | `SUMMARY.md` (newest entry on top). |
 | Run log | `docs/claude/AUTORUN_LOG.md` (one short entry per scheduled run). |
+| Owner dashboard | `docs/claude/STATUS_DASHBOARD.md` - every run: `python3 tools/cloud/dashboard.py`, then the hand-written lines (rules at its top; evidence counts in `docs/claude/progress.json`, each with its source). |
 
 ## Toolchain in a cloud session
 ```

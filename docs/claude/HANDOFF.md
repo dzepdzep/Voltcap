@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~03:45 UTC, update 675e (cloud scheduled run).
+Updated: 2026-11-16 ~04:40 UTC, update 675f (live session: owner status dashboard; no app code). Previous: 675e (cloud run 03:17).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -19,6 +19,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+Every run also: `python3 tools/cloud/dashboard.py` + the dashboard's hand-written lines (latest commit, CI, last run, report).
+When a progress.json count changes, change its source text with it.
 0. CI memory (G11, 675a): green on 7dbcab0c (both runners, heavy task ran, lowest free memory 6.4 GB) - 1 green push. Keep
    checking "Verify Android update 310" on each push; G11 DONE only after several green pushes in a row. If red, first item
    again (add the growing class to heavyRoboTests in app/build.gradle.kts).
@@ -42,8 +44,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 5. Later: +N category counters.
 
 ## Needs the owner
-- The cloud task's prompt says -Xmx5g; the cloud shell's memory cgroup is ~5.8 GB, so CLOUD_DEVELOPMENT.md now says -Xmx4g
-  (the doc is the source of the flags). Updating the stored prompt's text is the owner's call.
+- (done 675f: the task prompt now says -Xmx4g / -Xmx1500m and reads + regenerates docs/claude/STATUS_DASHBOARD.md every run.)
 - Retire the PC hourly task "VoltCap hourly backlog run" once the cloud task's first run is verified (Claude does it then).
 - Flip 2 charge-loop fix test (HW-3): production limit off, or a production update - owner's call.
 - Local-only branches `review/ai-setup-0672` (2 commits) and `feature/dual-welcome` (7 commits) are on the PC only (bundle in

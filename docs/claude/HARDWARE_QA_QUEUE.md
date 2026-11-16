@@ -25,13 +25,22 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 
 ## Requests
 
+## Next hardware session (batched - one PC session, both handhelds, about 2 hours unattended)
+Plug in Flip 2 + KONKR by USB, PC on, then tell Claude "devices ready". One QA build of the newest dev commit covers all of this:
+1. Full popup gates, both handhelds, x1.0 + x1.3 (4 runs, ~50 min each, two at a time) - closes HW-1, HW-5, HW-6 and
+   re-tests the 5 layouts fixed since their last FAIL (Bar, Side, Arcade, Library, Spot).
+2. Record crate checklist (HW-2) and Cube first A (HW-4): ~10 min, after the gates.
+Not in the batch: HW-3 (needs the owner's decision first).
+
 ### HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) - IN PROGRESS
 - Device(s): Flip 2, KONKR.
 - Build: c7ad53a7 (674n code = cf629e2e) - QA build installed on both 15 Nov 21:24.
 - Why not emulator: the 53-layout gate's PASS needs real GPU / panel / controller; emulator evidence does not count.
 - Tests: Flip 2 x1.0 `f674o`, KONKR x1.3 `k674n` (running 15 Nov from 21:28); then Flip 2 x1.3 and KONKR x1.0 on the same build
   to confirm the 674n fixes (Side menu Save sync, Bar arrows) and 674m glyphs (Arcade, Pocket ribbon).
-- Result so far (674k build): Flip 2 x1.3 f674k 52/53 (Bar ◀ glyph); KONKR x1.0 k674m 51/53 (Arcade glyph = 674m, Side Save sync = 674n).
+- Result so far: Flip 2 x1.3 f674k (674k) 52/53 - Bar ◀; Flip 2 x1.0 f674o (674n) 52/53 - Side status line; KONKR x1.0 k674m (674k)
+  51/53 - Arcade, Side; KONKR x1.3 k674n (674n) 51/53 - Library R2, Spot START. All five fixed in code since (674m-675e): a full
+  re-run of all four on the newest build closes this request.
 
 ### HW-2 Record crate x1.3 vertical menu - verification checklist - OPEN
 - Device(s): Flip 2 + KONKR (x1.0 and x1.3).

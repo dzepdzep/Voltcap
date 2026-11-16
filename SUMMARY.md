@@ -1,3 +1,15 @@
+# Update 675f (16 Nov 2026, morning) - live session - status dashboard
+- docs/claude/STATUS_DASHBOARD.md (owner request 16 Nov): phone view - at a glance, overall counts, owner actions, hardware
+  queue, progress by area, phone report, links. Generated sections come from `python3 tools/cloud/dashboard.py`
+  (matrix Status column by its LEADING word, the 13 Nov A-F rows by status word / owner / hardware phrases, HW-<n> headers,
+  docs/claude/progress.json for per-area evidence); `--check` exits 1 when stale. UNKNOWN stays UNKNOWN; percentages only of
+  counted rows.
+- HARDWARE_QA_QUEUE: one batched session (Flip 2 + KONKR, ~2 h) closes HW-1, HW-2, HW-4, HW-5, HW-6.
+- Scheduled task prompt: -Xmx4g (was -Xmx5g; the shell's cgroup is ~5.8 GB, 675a), reads + regenerates the dashboard each run,
+  short reports for routine runs, the phone format only after milestones, "HARDWARE QA NEEDED" first when a device is needed.
+- Files: docs/claude/STATUS_DASHBOARD.md, docs/claude/progress.json, tools/cloud/dashboard.py, docs/claude/HARDWARE_QA_QUEUE.md,
+  docs/claude/CLOUD_DEVELOPMENT.md, docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md. No app code.
+
 # Update 675e (16 Nov 2026, night, cloud run) - same branch, NOT released - glyphcheck measures GlyphPill glyphs in their key
 - D-674o-1 (KONKR x1.3 k674n, Spot START dy +3 px): the ink is centred, but GlyphPill's 12 % white pill sat over a backdrop shape
   of nearly its colour, so glyphcheck's walk ran past the pill's edge. Fix (QA tooling + a QA-only mark, threshold unchanged):
