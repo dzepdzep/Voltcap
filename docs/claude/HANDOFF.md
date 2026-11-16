@@ -1,6 +1,7 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~18:55 UTC, update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
+Updated: 2026-11-16 ~19:50 UTC, update 678a (cloud run: QA tool - popclip.sh reads labels without the device's grep -iE (emulator run 43929836268 on 677d: SHELF PASS x1.0 + x1.3, COVERDETAILS only buttons FAIL = grep -iE missed Play / Details / More that fixed-string reads found); selftest 178/178; CI green on eba2de4).
+Before: update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
 (PlayHeaderStatsFullText677dTest, compiled + PASS in the cloud); run bootstrap tools/cloud/start_run.sh - the pre-cloned
 workspace starts on main; the task prompt now switches to the dev branch safely; emulator trial started on this commit).
 Before: update 677c (cloud run: QA tool - popclip.sh up() reads a probe of its own name each
@@ -31,6 +32,13 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678a): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678a push. From ~21:35 UTC START the emulator
+  trial (head commit "[emulator-qa]") and read it the run after: expect "Play keys 1" in the probe lines (no more "up by the
+  app's own popupAgeMs (Play key not read"), COVERDETAILS Details page + More step present at both scales. Meanwhile: give
+  shelfpages529.sh (e529c touch walk) the same regex-free reads (its ctl takes real regexes like '[^"]*achievement 1[^"]*' -
+  turn them into prefix / contains word compares; this trial logged "tap: no shown control" for both taps); then rule 11
+  screens GameWindowBanner (12), YearRecapDialog (9).
+- DONE 678a: emulator trial 43929836268 (677d) READ - see SUMMARY "Update 678a".
 - FIRST (677d): the run must print "BOOTSTRAP OK claude/qa-0672-repair <sha>" (tools/cloud/start_run.sh); if BLOCKED, report
   the reason and stop. Check "Verify Android update 310" on the 677d push. READ the emulator trial started on 677d
   ("[emulator-qa]", ~18:55 UTC; next allowed from ~21:55) per the 677c item below. Then rule 11 next screens: GameWindowBanner (12),

@@ -1186,8 +1186,9 @@ class TestPopclipScript(unittest.TestCase):
         for l in code:
             if "qa_clip/" in l and "grep" in l:
                 self.assertIn("jl ", l, l)                         # no grep reads a dump's one long line directly
-        self.assertIn("jl $2 | grep -oiE", sh)                       # ctl (tapat / seek)
-        self.assertIn("jl $1 | grep -oiE", sh)                       # pc (up)
+        # (678a: ctl reads labels without a regex - see test_labels_are_read_without_the_devices_regex; pc goes through ctl.)
+        self.assertIn("jl $2 | while IFS= read -r ln; do", sh)      # ctl (tapat / seek)
+        self.assertIn('pc() { ctl "$PLAYW" $1 | wc -l; }', sh)        # pc (up)
         self.assertIn('dump unreadable', sh)
         defs = "\n".join(l for l in code if l.startswith(("PLAYW=", "DETW=", "jl()", "pc()", "ctl()", "dr()")))
         node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
@@ -1302,6 +1303,58 @@ class TestPopclipScript(unittest.TestCase):
         g = popclip.grade(d, "CASEFLOW_OWN")["open"]
         self.assertEqual(g[0], "FAIL", g); self.assertIn("late", g[1])
 
+    def test_labels_are_read_without_the_devices_regex(self):
+        # 678a (emulator run 43929836268 on c45d0ab): the probe and main dumps were whole and plain ASCII, yet the device's
+        # grep -iE read no Play in 9 of 9 probes, "Details read: plain 1, pattern 0" and "More: none read (plain More keys 1)"
+        # on the same file at the same moment. ctl / pc / the Details and More checks no longer hand a label to a regex: run
+        # here with a grep that matches nothing for -E (the device's behaviour), they still find Play, Details, Turn over and
+        # More, keep the old rules (case-blind; the label is the word or ends in a non-letter + the word; "Played" is not
+        # Play; zero-size keys are not tapped) and print the same line the old grep -o did.
+        import subprocess, json, tempfile, shutil
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        lines = sh.splitlines()
+        code = [l for l in lines if not l.lstrip().startswith("#")]
+        for l in code:                                             # no label pattern goes through grep -E any more
+            if '"label":' in l and "grep" in l:
+                self.assertNotRegex(l, r"grep -[a-zA-Z]*E", l)
+        defs = [l for l in lines if l.startswith(("PLAYW=", "DETW=", "MOREW=", "jl()", "ctl()", "pc()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapat()"))
+        j = next(k for k in range(i, len(lines)) if lines[k] == "}"); defs += lines[i:j + 1]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            {"label": "Full story on Details \u203a", "kind": "text", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9]},
+            node("Played", [5, 5, 50, 20]), node("PLAY", [510, 318, 393, 48]), node("Sleeve: Turn over", [510, 375, 393, 48]),
+            node("Details", [0, 0, 0, 0]), node("Details", [510, 432, 393, 48]), node("\u2022\u2022\u2022", [700, 464, 60, 56]),
+            node("Ammore", [9, 9, 9, 9])]}], "images": {}}
+        tmp = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(tmp, "bin")); os.makedirs(os.path.join(tmp, "qa_clip"))
+            real = shutil.which("grep")
+            with open(os.path.join(tmp, "bin", "grep"), "w") as f:   # the device: -E patterns read nothing; -F works
+                f.write('#!/bin/sh\nfor a in "$@"; do case "$a" in -*E*) case "$a" in --*) ;; *) exit 1;; esac;; esac; done\n'
+                        'exec ' + real + ' "$@"\n')
+            os.chmod(os.path.join(tmp, "bin", "grep"), 0o755)
+            path = os.path.join(tmp, "qa_clip", "T_X_main.json")
+            open(path, "w", encoding="utf-8").write(json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+            open(os.path.join(tmp, "qa_clip", "T_X_home.json"), "w").write('{"windows":[{"nodes":[]}]}')
+            env = dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"])
+            cmd = ("\n".join(defs) + '\nfg() { :; }; input() { echo "tap $2 $3"; }\n'
+                   'echo pc=$(pc "$1"); ctl "$DETW" "$1"; ctl "$MOREW" "$1"; echo d=$(ctl "(Details|Full details)" "$1" | wc -l)\n'
+                   'F=$2; TAG=T; n=X; tapat "(Details|Full details)" main; tapat "$PLAYW" main; '
+                   'echo ego=$(echo x | grep -E x | wc -l)')
+            out = subprocess.run(["sh", "-c", cmd, "x", path, tmp], capture_output=True, text=True, env=env).stdout
+        finally:
+            shutil.rmtree(tmp)
+        self.assertIn("ego=0", out)                                # the stand-in grep really reads nothing for -E
+        self.assertIn("pc=1", out)                                 # PLAY (case-blind), not "Played"
+        self.assertIn('"label":"Sleeve: Turn over","kind":"control","full":[510,375,393,48],"shown":[510,375,393,48]', out)
+        self.assertIn('"label":"Details","kind":"control","full":[510,432,393,48],"shown":[510,432,393,48]', out)
+        self.assertIn('"label":"~~3~~3~~3","kind":"control","full":[700,464,60,56],"shown":[700,464,60,56]', out)
+        self.assertNotIn("Ammore", out); self.assertNotIn("Full story", out)
+        self.assertIn("d=2", out)                                  # both Details keys read ...
+        self.assertIn("tap 706 456", out)                          # ... the zero-size one is never tapped
+        self.assertIn("tap 706 342", out)                          # Play
+
     def test_up_reads_its_own_probe_and_trusts_the_apps_window_age(self):
         # 677c (emulator run 43887216747): "first A opened nothing" / "opened late" while the probe kept right after the read
         # held Play and the app's popupAgeMs. up() asks for a probe of its own name each time, hands it on as ${TAG}_probe.json,
@@ -1309,7 +1362,7 @@ class TestPopclipScript(unittest.TestCase):
         import subprocess, json, tempfile, shutil
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
         lines = sh.splitlines()
-        defs = [l for l in lines if l.startswith(("PLAYW=", "jl()", "pc()", "age()", "dr()", "PN="))]
+        defs = [l for l in lines if l.startswith(("PLAYW=", "jl()", "ctl()", "pc()", "age()", "dr()", "PN="))]
         i = next(k for k, l in enumerate(lines) if l.startswith("dw()")); defs += lines[i:i + 2]
         i = next(k for k, l in enumerate(lines) if l.startswith("up()"))
         j = next(k for k in range(i, len(lines)) if lines[k].strip() == "return 1; }"); defs += lines[i:j + 1]

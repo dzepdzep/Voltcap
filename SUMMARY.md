@@ -1,3 +1,20 @@
+# Update 678a (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads labels without the device's regex
+- Emulator trial 43929836268 (677d, c45d0ab) read: SHELF PASS at x1.0 and x1.3; COVERDETAILS fails only "buttons" (x1.3 More
+  step, x1.0 Details page). The new log lines settle the cause: the device's grep -iE read no Play key in 9 of 9 probes (the
+  window counted as up only through the app's popupAgeMs), "Details read: plain 1, pattern 0" and "More: none read (plain More
+  keys 1)" - fixed-string and pattern reads of the same file at the same moment. The pulled dumps hold Play / Details / More
+  as plain ASCII controls.
+- popclip.sh: ctl (tapat / seek), pc (up) and the main-dump Details / More checks no longer hand a label to a regex. ctl splits
+  the word list itself, cuts label / full / shown out with shell parameter expansion, lower-cases with tr A-Z a-z and compares
+  with case (same rule: the label is the word or ends in a non-letter + the word, case-blind). tapat's zero-size filter is a
+  shell compare too. Old and new ctl give identical output on all 128 reads of the trial's dumps (glibc grep, dash + bash).
+- Test: TestPopclipScript.test_labels_are_read_without_the_devices_regex - runs ctl / pc / tapat with a stand-in grep that
+  reads nothing for -E (the device's behaviour); fails on 677d's popclip.sh. Two older tests follow the new ctl. Selftest
+  178/178 PASS; static checks PASS. No app code changed. EMULATOR tooling only; next trial allowed from ~21:35 UTC.
+- Not changed: shelfpages529.sh (e529c touch walk) still uses grep -oiE for its own regex taps ("tap: no shown control
+  '...achievement 1...'" in this trial) - candidate for the same treatment next.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
 # Update 677d (16 Nov 2026, cloud scheduled run) - rule 11: play header + Stats page shown whole; cloud run starts on the dev branch
 - Play header (continue line, the stat chips' label + value, the Play button, the category above the title in both title
   placements) and the Stats page (summary tiles, weekly bar times + labels, per-game bar names + times): 11 TextOverflow.Ellipsis

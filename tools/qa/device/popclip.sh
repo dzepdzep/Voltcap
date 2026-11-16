@@ -43,7 +43,7 @@ DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve no
 # (⋯ = ~12, • = ~~3 - their own last bytes) and every other non-ASCII byte becomes ~. MOREW is the More key in that form.)
 jl() { tr '{' '\n' < "$1" 2>/dev/null | tr '\213\257\242' '123' | tr '\200-\377' '~'; }
 MOREW="(More|~12|~~3~~3~~3)"
-pc() { jl $1 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' | wc -l; }
+pc() { ctl "$PLAYW" $1 | wc -l; }
 age() { jl $1 | grep -o '"popupAgeMs":[0-9a-z]*' | head -1 | sed 's/.*://'; }
 # dw FILE: wait for the app's own dump. (675b, emulator run 43762702001: the software-rendered emulator wrote the dumps after
 # the fixed sleep - the probe read no file, so a popup that was up counted as "first A opened nothing" / "no Details action"
@@ -69,11 +69,17 @@ up() { PN=$((PN + 1)); pf=$F/qa_clip/${TAG}_probe_$PN.json; rm -f $pf; echo "${T
   return 1; }
 # tapat LABEL_RE STEP: tap the middle of the shown part of the first control whose label ends in LABEL_RE (false if none shows).
 # (The popup's own control: one that the home step didn't have — Custom's home has a Play button of its own.)
-ctl() { jl $2 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]'; }
+# (678a, emulator run 43929836268 on c45d0ab: with the probe and the dumps whole and plain ASCII, the device's grep -iE still
+# read no Play in ANY probe (Play keys 0 in 9 of 9 reads while popupAgeMs said the window was up), "Details read: plain 1,
+# pattern 0" and "More: none read (plain More keys 1)" - the same file, the same moment; the dumps hold "Play" / "Details" /
+# "More" as plain controls. No regex reads a label any more: ctl splits the word list "(A|B|C)" itself, cuts each control
+# line's label / full / shown out with the shell's own ${x#..} / ${x%%..}, lower-cases with tr and compares with case (the
+# label IS a word, or ends in a non-letter + the word - the old rule, still case-blind). pc = ctl "$PLAYW" | wc -l.)
+ctl() { ws=$(printf '%s\n' "$1" | sed 's/^(//;s/)$//' | tr '|' '\n' | tr A-Z a-z); jl $2 | while IFS= read -r ln; do case "$ln" in '"label":"'*'","kind":"control","full":['*'],"shown":['*) ;; *) continue;; esac; lb=${ln#'"label":"'}; lb=${lb%%'"'*}; r=${ln#*'"full":['}; fu=${r%%']'*}; r=${ln#*'"shown":['}; sw=${r%%']'*}; case "$fu,$sw" in *[!0-9,-]*) continue;; esac; lo=$(printf '%s' "$lb" | tr A-Z a-z); printf '%s\n' "$ws" | while IFS= read -r w; do case "$lo" in "$w"|*[!a-z]"$w") printf '"label":"%s","kind":"control","full":[%s],"shown":[%s]\n' "$lb" "$fu" "$sw"; break;; esac; done; done; }
 tapat() {
   ctl "$1" $F/qa_clip/${TAG}_${n}_home.json > $F/qa_tap_home.txt
   [ "$2" = probe ] && src=$F/qa_clip/${TAG}_probe.json || src=$F/qa_clip/${TAG}_${n}_$2.json
-  r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
+  r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | while IFS= read -r ln; do sw=${ln##*'"shown":['}; sw=${sw%']'}; set -- $(echo $sw | tr ',' ' '); [ "${3:-0}" -gt 0 ] && [ "${4:-0}" -gt 0 ] && { echo "$sw"; break; }; done)
   [ -n "$r" ] || return 1
   fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
@@ -177,7 +183,7 @@ for lay in $LAYS; do
     # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     # (674c: the layout's own word for Details too - Record crate's "Sleeve notes", Pocket's "Status" (k674a).)
-    elif jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"([^"]*[^A-Za-z])?'"$DETW"'","kind":"control"' && up && seek "$DETW" DPAD_RIGHT; then
+    elif [ -n "$(ctl "$DETW" $F/qa_clip/${TAG}_${n}_main.json)" ] && up && seek "$DETW" DPAD_RIGHT; then
       echo "$n Details reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt
       # (677c: e529a COVERDETAILS / SHELF main held "Details" / "Turn over" keys on screen - what the device read, plainly
@@ -185,7 +191,7 @@ for lay in $LAYS; do
       echo "$n Details read: plain $(jl $F/qa_clip/${TAG}_${n}_main.json | grep -cF -e '"label":"Details","kind":"control"' -e '"label":"Turn over","kind":"control"'), pattern $(ctl "$DETW" $F/qa_clip/${TAG}_${n}_main.json | wc -l), home $(wc -l < $F/qa_tap_home.txt 2>/dev/null)" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
-    if jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"[^"]*'"$MOREW"'","kind":"control"'; then
+    if [ -n "$(ctl "$MOREW" $F/qa_clip/${TAG}_${n}_main.json)" ]; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
       # (673g, owner brief 15 Nov: a key row that doesn't fit scrolls a whole key at a time and MORE is its last key - off

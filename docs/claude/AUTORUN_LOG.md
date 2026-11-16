@@ -106,3 +106,8 @@
 - Workspace started on main (pre-cloned); worked in a separate dev-branch clone. Owner (live) asked for a permanent fix:
   tools/cloud/start_run.sh + scheduled task prompt updated (bootstrap + branch check before lock / commit / push).
 - Item: rule 11 play header + Stats page FullText (11 places; test compiled + PASS). Emulator trial started on this commit.
+
+## 2026-11-16 ~19:19-19:50 UTC - cloud run 678a
+- BOOTSTRAP OK (eba2de4); lock free (none since 18:32), taken 19:19. CI: Verify 310 GREEN on eba2de4. Effort env: medium.
+- Read emulator trial 43929836268 (677d): SHELF PASS both scales, COVERDETAILS buttons FAIL from the device's grep -iE.
+- Item: popclip.sh label reads without a regex + selftest (178/178). No emulator trial this run (3 h rule, from ~21:35).

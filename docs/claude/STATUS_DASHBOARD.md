@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 677d · 2026-11-16 18:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 0eb3904 (677c) · effort: medium
+**1. LATEST UPDATE** - 678a · 2026-11-16 19:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on eba2de4 (677d-2) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The game header (continue line, stat chips, Play button, category label) and the Stats page no longer cut text off with '...': long text now wraps, shrinks a little or slides so it can be read whole. Also fixed why the hourly cloud run kept starting on the main branch: the cloud workspace is prepared on main before the run starts; every run now switches itself safely to the development branch first and stops with a clear reason if anything is uncommitted or out of step.
+**2. WHAT CLAUDE JUST FIXED** - The emulator test run on the last update got much further: the shelf layout passed at both text sizes and the cover layout failed only one check. The cause of that last miss is now clear - the emulator's text-search tool sometimes fails to find button names that are plainly in the app's own report. The popup test no longer depends on that tool: it compares the button names itself. The next emulator run (from about 21:35 UTC) should confirm it.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: read the emulator test run started on this update; then: finish the v0.6.73 hardware checks (KONKR / Nova); next screens with '...' text: game window banner, year recap
+**5. WORKING ON NEXT** - now: start and read the next emulator test run on this fix; then: the same fix for the touch-walk test script; finish the v0.6.73 hardware checks (KONKR / Nova)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -70,8 +70,8 @@ work. Emulator results never count as handheld verification. Release status is d
 
 | Gate | State | Evidence |
 |---|---|---|
-| CI unit tests + debug build (Verify Android update 310) | PENDING | RED on 0cc6739 + 0e23337 (676h/676l): QaIsolation521Test read the new QA-key signing block as the debug build type (test lookup, not the app); lookup fixed in 677b, CI on the 677b push decides. Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
-| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
+| CI unit tests + debug build (Verify Android update 310) | PENDING | GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
+| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
