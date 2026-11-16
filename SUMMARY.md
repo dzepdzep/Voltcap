@@ -1,3 +1,11 @@
+# Update 676f (16 Nov 2026, live session) - same branch, NOT released - name plate as lane content (replaces 676e's offset)
+- n676e13 (676e, x1.3): Cube still "'Shadow Of The Colossus' and '6/10' drawn over each other": the Nova x1.3 Cube tile is 162 x 224
+  px, console 29 + stacked count 86 px leave 73 px for a 168 px (4-line) plate - 676e only moved a plate that fitted. 676f: the
+  coverless plate joins the lane as fixed CONTENT (BadgeKind.CONTENT, measured where it is drawn); the badges after the console keep
+  clear of it (beside, stacked, other corners) or, with no room, are left out - not placed at all (676e left an alpha-0 copy).
+  The count is still in the game's line under the row. 676e's freeBand / offset removed. x1.0 n676e10: popup 1/1, badges 10/10 PASS.
+- Tests: BadgeContent676eTest (2: stacks clear of a short plate; the Nova tile leaves the count out), BadgeLane676Test PASS.
+
 # Update 676e (16 Nov 2026, live session) - same branch, NOT released - coverless name plate clear of the badges
 - RP Nova x1.3 n676d13 (build 676d): Grid PASS (676c chip text fixed: "6/10 · 60%" needs 62 px, has 62); Cube readability FAIL
   "'Shadow Of The Colossus' and '6/10' drawn over each other" - the lane's stacked count landed on a coverless card's name plate.

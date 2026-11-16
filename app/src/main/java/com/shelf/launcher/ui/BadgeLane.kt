@@ -50,7 +50,9 @@ import androidx.compose.ui.unit.dp
 internal val BADGE_GAP: Dp = 6.dp
 
 /** The badges a tile can carry, in the order they are placed (the earlier keeps its corner). */
-internal enum class BadgeKind { CONSOLE, PROGRESS, NEW_UNLOCK, SCORE }
+internal enum class BadgeKind { CONSOLE, PROGRESS, NEW_UNLOCK, SCORE,
+    /** 676e: a coverless card's name plate - never moved; the badges after the console keep clear of it. */
+    CONTENT }
 
 /** One badge as measured: its corner, the margin round it inside the corner, its pill and how far its glow / border reaches. */
 internal data class BadgeBox(
@@ -79,7 +81,12 @@ internal fun badgesTouch(a: IntRect, b: IntRect, gap: Int): Boolean =
 internal fun planBadges(tile: IntSize, boxes: List<BadgeBox>, gap: Int, dir: LayoutDirection = LayoutDirection.Ltr): Map<BadgeKind, BadgeSpot> {
     val out = HashMap<BadgeKind, BadgeSpot>()
     val placed = ArrayList<IntRect>() // drawn edges, glow included
-    for (b in boxes.sortedBy { it.kind.ordinal }) {
+    // (676e: the console badge first, then the card's own content (its name plate, fixed where it is), then the rest.)
+    val content = boxes.filter { it.kind == BadgeKind.CONTENT }
+    for (cb in content) out[cb.kind] = BadgeSpot(0, 0)
+    var contentAdded = content.isEmpty()
+    for (b in boxes.filter { it.kind != BadgeKind.CONTENT }.sortedBy { it.kind.ordinal }) {
+        if (!contentAdded && b.kind != BadgeKind.CONSOLE) { content.forEach { placed += badgeRect(it, tile, dir) }; contentAdded = true }
         val own = badgeRect(b, tile, dir)
         fun clear(r: IntRect) = placed.none { badgesTouch(r.grow(b.reach), it, gap) }
         fun inside(r: IntRect) = r.grow(b.reach).let { it.left >= 0 && it.top >= 0 && it.right <= tile.width && it.bottom <= tile.height }
@@ -148,48 +155,29 @@ internal val LocalBadgeLane = staticCompositionLocalOf<BadgeLane?> { null }
 internal fun rememberBadgeLane(): BadgeLane = remember { BadgeLane() }
 
 /**
- * 676e (RP Nova x1.3 n676d13, Cube: "'Shadow Of The Colossus' and '6/10' drawn over each other"): the band of a [tile] tile the
- * shown badges leave free - from under the lowest badge along the top half to above the highest one along the bottom half
- * ([gap] clear of each). A coverless card's name plate centres itself there ([laneContent]).
- */
-internal fun freeBand(tile: IntSize, boxes: List<BadgeBox>, gap: Int, dir: LayoutDirection = LayoutDirection.Ltr): IntRange {
-    val plan = planBadges(tile, boxes, gap, dir)
-    var top = 0; var bottom = tile.height
-    for (b in boxes) {
-        val s = plan[b.kind] ?: continue
-        if (!s.shown) continue
-        val r = badgeRect(b, tile, dir).translate(s.dx, s.dy)
-        if (r.center.y < tile.height / 2) top = maxOf(top, r.bottom + gap) else bottom = minOf(bottom, r.top - gap)
-    }
-    return top..maxOf(top, bottom)
-}
-
-/**
- * 676e: on the text of a coverless card's name plate (centred in the tile, [inset] in from its edges): placed in the middle of
- * the band the badges leave free, in the same pass that places the badges - no jump. A plate taller than that band stays
- * centred in the tile as before. No lane: nothing changes.
+ * 676e (RP Nova x1.3 n676d13 / n676e13, Cube: "'Shadow Of The Colossus' and '6/10' drawn over each other"): on the text of a
+ * coverless card's name plate - it joins the tile's lane as fixed CONTENT where it is drawn, so the badges after the console keep
+ * clear of it (beside, stacked, another corner) or, on a tile with no room for both, leave it out - never over the name. No lane:
+ * nothing changes.
  */
 internal fun Modifier.laneContent(lane: BadgeLane?, inset: Dp): Modifier = if (lane == null) this else this.then(LaneContentElement(lane, inset))
 
 private data class LaneContentElement(val lane: BadgeLane, val inset: Dp) : ModifierNodeElement<LaneContentNode>() {
     override fun create() = LaneContentNode(lane, inset)
-    override fun update(node: LaneContentNode) { node.lane = lane; node.inset = inset }
+    override fun update(node: LaneContentNode) { if (node.lane !== lane) node.lane.remove(BadgeKind.CONTENT); node.lane = lane; node.inset = inset }
 }
 
 private class LaneContentNode(var lane: BadgeLane, var inset: Dp) : Modifier.Node(), LayoutModifierNode {
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
         val p = measurable.measure(constraints)
-        return layout(p.width, p.height) {
-            val t = lane.tile
-            if (t.height <= 0 || lane.boxes.isEmpty()) { p.place(0, 0); return@layout }
-            val band = freeBand(t, lane.boxes.values.toList(), lane.gap, lane.dir)
-            val room = band.last - band.first
-            if (p.height > room) { p.place(0, 0); return@layout }
-            val now = (t.height - p.height) / 2 // where the plate centres it now (tile coordinates)
-            val want = band.first + (room - p.height) / 2
-            p.place(0, want - now)
-        }
+        // The plate's box fills the tile less [inset] and centres the text: its margin from the tile's edges is the slack round it.
+        val insetPx = inset.roundToPx()
+        val mx = ((constraints.maxWidth - p.width) / 2).coerceAtLeast(0) + insetPx
+        val my = ((constraints.maxHeight - p.height) / 2).coerceAtLeast(0) + insetPx
+        lane.report(BadgeBox(BadgeKind.CONTENT, Alignment.TopStart, mx, my, p.width, p.height))
+        return layout(p.width, p.height) { p.place(0, 0) }
     }
+    override fun onDetach() { lane.remove(BadgeKind.CONTENT) }
 }
 
 /** QA (QaClip "badges"): a badge's kind and its tile's lane, "PROGRESS#1a2b". */
@@ -250,7 +238,8 @@ private class LaneBadgeNode(var lane: BadgeLane, var kind: BadgeKind, var align:
         lane.report(BadgeBox(kind, align, mx.roundToPx(), my.roundToPx(), p.width, p.height, reach.roundToPx()))
         return layout(p.width, p.height) {
             val s = lane.spot(kind)
-            if (s.shown) p.place(s.dx, s.dy) else p.placeWithLayer(0, 0) { alpha = 0f }
+            // (676e: a badge with no room is not placed at all - nothing drawn, no text left under another one.)
+            if (s.shown) p.place(s.dx, s.dy)
         }
     }
     override fun onDetach() { lane.remove(kind) }

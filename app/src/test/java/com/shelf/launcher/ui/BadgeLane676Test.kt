@@ -86,18 +86,32 @@ class BadgeLane676Test {
     }
 }
 
-/** 676e: a coverless card's name plate centres in the band its badges leave free (RP Nova x1.3 Cube: plate under "6/10"). */
-class BadgeFreeBand676eTest {
-    @Test fun plateBandSitsUnderTheStackedBadges() {
+/** 676e: a coverless card's name plate is fixed CONTENT in the lane (RP Nova x1.3 Cube: the count was drawn over the name). */
+class BadgeContent676eTest {
+    private val console = BadgeBox(BadgeKind.CONSOLE, Alignment.TopStart, 6, 6, 152, 26)
+    private val count = BadgeBox(BadgeKind.PROGRESS, Alignment.TopEnd, 10, 10, 74, 22)
+
+    @Test fun theCountStacksClearOfAShortPlate() {
         val tile = IntSize(196, 266)
-        val boxes = listOf(BadgeBox(BadgeKind.CONSOLE, Alignment.TopStart, 6, 6, 152, 26), BadgeBox(BadgeKind.PROGRESS, Alignment.TopEnd, 10, 10, 74, 22))
-        val band = freeBand(tile, boxes, 12)
-        // console 6..32, count stacked 44..66 -> free from 78 down to the tile's bottom
-        assertEquals(78, band.first); assertEquals(266, band.last)
-        // no badges: the whole tile
-        assertEquals(0..266, freeBand(tile, emptyList(), 12))
+        val plate = BadgeBox(BadgeKind.CONTENT, Alignment.TopStart, 20, 120, 156, 40) // a 2-line name in the middle
+        val plan = planBadges(tile, listOf(console, count, plate), 12)
+        assertEquals(BadgeSpot(0, 0), plan[BadgeKind.CONSOLE])
+        val c = badgeRect(count, tile, LayoutDirection.Ltr).translate(plan.getValue(BadgeKind.PROGRESS).dx, plan.getValue(BadgeKind.PROGRESS).dy)
+        assertTrue(plan.getValue(BadgeKind.PROGRESS).shown)
+        assertFalse(badgesTouch(c, badgeRect(plate, tile, LayoutDirection.Ltr), 12))
+    }
+
+    @Test fun noRoomLeavesTheCountOutNeverOverTheName() {
+        // the Nova x1.3 Cube tile: 162 x 224 px, the PS2 pill 126 x 29, the count 101 x 86, a 4-line plate 134 x 168
+        val tile = IntSize(162, 224)
+        val plan = planBadges(tile, listOf(BadgeBox(BadgeKind.CONSOLE, Alignment.TopStart, 8, 8, 126, 29),
+            BadgeBox(BadgeKind.PROGRESS, Alignment.TopEnd, 4, 4, 101, 86), BadgeBox(BadgeKind.CONTENT, Alignment.TopStart, 14, 28, 134, 168)), 14)
+        assertTrue(plan.getValue(BadgeKind.CONSOLE).shown)
+        assertFalse(plan.getValue(BadgeKind.PROGRESS).shown)
         val s = listOf("src/main/java/com/shelf/launcher/ui/StyleHomes.kt", "app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt").map { File(it) }.first { it.exists() }.readText()
         assertEquals(2, s.split("else -> StyleNamePlate(titles.display(g.name), lane = lane)").size - 1)
         assertTrue(s.contains("modifier = Modifier.laneContent(lane, 6.dp)"))
+        val l = listOf("src/main/java/com/shelf/launcher/ui/BadgeLane.kt", "app/src/main/java/com/shelf/launcher/ui/BadgeLane.kt").map { File(it) }.first { it.exists() }.readText()
+        assertFalse("a badge with no room is not placed (no alpha-0 text left under another)", l.contains("placeWithLayer(0, 0) { alpha = 0f }"))
     }
 }
