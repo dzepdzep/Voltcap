@@ -122,6 +122,18 @@ class TilesNameLane676z2Test {
     }
 }
 
+/** 677e-g (owner 16 Nov, RP Classic): status pieces never squeezed; one profile picture; Storage facts never broken inside. */
+class StatusFit677Test {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n").map { File(it) }.first { it.exists() }.readText()
+    @Test fun wired() {
+        val h = src("HomeChrome.kt")
+        assertTrue(h.contains("if (!look.left) StatusFit(cluster)") && h.contains("if (look.left) { StatusFit(cluster);"))
+        assertTrue(h.contains("maxWidth = androidx.compose.ui.unit.Constraints.Infinity")) // measured unsqueezed
+        assertTrue(h.contains("TileSwitch.hideBarAvatar || OwnProfile.count > 0"))
+        assertTrue(h.contains("level < 5 && OwnProfile.count == 0"))
+        val hub = src("StyleConsoleHomes.kt")
+        assertTrue(hub.contains("OwnProfile.Mark()\n    val open by rememberUpdatedState(c.actions.profile)"))
+        assertTrue(src("StyleStorageBoxes.kt").contains("StorageFact(\"Achievements\""))
 /** 677p (owner 17 Nov, pixel font overhaul, branch claude/pixel-font-small): the pixel font draws at 62.5 % - in the font itself. */
 class PixelFont677pTest {
     @Test fun fontAndThemeScaleOnce() {

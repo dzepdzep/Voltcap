@@ -2115,6 +2115,14 @@ class TestStatusCheck677d(unittest.TestCase):
         ok = dict(pts, full=[1100, 20, 70, 30], shown=[1100, 20, 70, 30], boxW=70)
         self.assertEqual(self._run({"statusBars": [bar], "avatars": [], "texts": [ok]}).returncode, 0)
 
+    def test_points_on_two_lines_and_initial_squeezed_away_fail(self):
+        bar = {"full": [41, 17, 1204, 141], "shown": [41, 17, 1204, 141]}
+        pts = {"text": "12345678", "full": [1095, 26, 138, 120], "shown": [1095, 26, 138, 120], "lines": 2, "textH": 120, "boxH": 120, "placed": True}
+        ini = {"text": "P", "full": [1233, 62, 0, 48], "shown": [0, 0, 0, 0], "needW": 26, "boxW": 0, "lines": 1, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts, ini]})
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("broken onto 2 lines", r.stdout); self.assertIn("squeezed to nothing", r.stdout)
+
     def test_duplicate_avatar_fails(self):
         a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50]}
         a2 = {"where": "console", "full": [20, 20, 68, 68], "shown": [20, 20, 68, 68]}

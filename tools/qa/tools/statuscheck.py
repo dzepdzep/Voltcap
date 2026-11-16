@@ -55,6 +55,10 @@ def check_dump(path):
                                     f"{len(avs)} pictures of the profile on screen: " + ", ".join(f"{a['where']}@{a['shown']}" for a in avs)))
         else:
             out.append(qalib.Result(f"{name} avatars", qalib.PASS, f"{len(avs)} profile picture"))
+        for a in w.get("avatars", []):
+            f, s_ = a["full"], a.get("shown") or [0, 0, 0, 0]
+            if f[2] > 0 and visible(a) and (f[2] - s_[2] > TOL or f[3] - s_[3] > TOL):
+                out.append(qalib.Result(f"{name} avatars", qalib.FAIL, f"{a['where']} picture cut: laid out {f[2]}x{f[3]}, shown {s_[2]}x{s_[3]}"))
         bars = [b for b in w["statusBars"] if visible(b)]
         if not bars:
             out.append(qalib.Result(f"{name} status", qalib.NOT_TESTED, "no status bar on screen"))
@@ -69,10 +73,18 @@ def check_dump(path):
             br = rect(f)
             texts = []
             for t in w.get("texts", []):
-                if t.get("placed", True) is False or not visible(t):
+                if t.get("placed", True) is False:
                     continue
-                x, y, tw, th = t["shown"]
+                x, y, tw, th = t["full"]
                 if not inside((x + tw / 2, y + th / 2), br):
+                    continue
+                # (s677n, RP Nova narrowed: the profile initial squeezed to 0 px wide - not drawn at all - and the points broken
+                # onto two lines ("1234 / 5678"); a status text is one line, at its own width.)
+                if (t.get("lines") or 1) > 1:
+                    bad.append(f"{t.get('text', '')!r} broken onto {t['lines']} lines")
+                if t.get("needW") and t.get("boxW") == 0:
+                    bad.append(f"{t.get('text', '')!r} squeezed to nothing (needs {t['needW']} px)")
+                if not visible(t):
                     continue
                 texts.append(t)
                 nw, bw = t.get("needW"), t.get("boxW")
