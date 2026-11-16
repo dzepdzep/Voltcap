@@ -22,16 +22,16 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-- FIRST (v0.6.73 blockers found on the RP Nova, 640x480 dp, x1.3 gate n675d on 8bd5e4a, 49/53; x1.0 n675c 53/53 PASS):
-  1. Record crate x1.3 with More open: the facts row (Played / Never played / 1. 2.) is dropped and leaves an EMPTY band
-     between the divider and PLAY ("not placed (a full row / column dropped it)") - collapse the band or fit the facts; keep
-     the owner-approved vertical menu exactly as it is.
-  2. Pocket ribbon x1.3 More page: fact labels cut - "CONSOL", "TROPHI" (box 33 of 66 px, 2 lines needed) - rule 11 truncation:
-     narrower label font / wrap / give the label column its measured width.
-  3. Storage boxes x1.3 Details page: a "Shadow Of The Colossus" text laid out 426 x 1 px (invisible duplicate squeezed) -
-     find it (QaClip dump n675d STORAGE_OWN_page) and leave it out instead of laying it out squeezed.
-  4. Cube first A (known, HW-4) - also on the Nova x1.3.
-  Evidence: owner laptop C:\VoltcapQA\runs\n675c.tar / n675d.tar (and shots\). Re-test on a handheld after the fixes (HW-7).
+- DONE 16 Nov live (675r / 676 / 676c, SUMMARY "Update 676"): the four Nova x1.3 FAILs fixed and PASS on the Nova; Hide nav
+  bar root cause fixed (Retroid handle quirk was gated on a lazy root check); global badge lane (ui/BadgeLane.kt + badgecheck R27).
+- FIRST (harness, D334b - blocks further hardware runs): pop529.sh / popclip.sh must (1) wait for the QA app to settle after an
+  install (first-start ROM scan) and (2) check the focused window is the QA app before every BUTTON_B, aborting otherwise - a B on
+  the QA app's root closed it and Android showed the owner's Voltcap (the home app). Add a selftest.
+- NEXT (v0.6.74, owner 16 Nov): Save Sync 529 / 529c onto the dev line. The branch fix/save-sync exists only as a bundle
+  (project doc claude/backups/fix_save_sync_bundle_b64.txt; PC Claude outputs\backups\fix-save-sync.bundle; base 558cb1f7 =
+  v0.6.71). Rebase / port onto claude/qa-0672-repair on a NEW branch (claude/save-sync-0674), never into the v0.6.73 line;
+  compile + full unit suite + SaveSync529Test / SaveSyncSim529Test / SyncGuards529Test. Real Drive test waits for the owner
+  (OAuth client for com.shelf.launcher.qa + spare-account sign-in; D337: the QA key must be stable first).
 - FIRST: start the emulator trial on the 675o fix (head commit message "[emulator-qa]", allowed from ~11:42 UTC; the
   previous one ran on 1990deb4 at 08:42) and read it. Expect e529a/e529b COVERDETAILS + SHELF to grade without "opened
   nothing" / "More step missing" / rapid launches. If a miss remains, the new log lines say what the device read ("read: Play

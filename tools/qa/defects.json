@@ -3912,6 +3912,38 @@
    "severity": "low",
    "status": "open: Cinema with D332; TV rapid - re-run to see if it is the intermittent D319 kind",
    "found": "2026-11-15 k673i"
+  },
+  {
+   "id": "D334",
+   "title": "QA harness can bring the owner's Voltcap (the home app) to the front: (a) navbar676.sh's bottom-edge swipe is a real Home gesture where the QA window no longer hides the bar (Retroid with hide_nav_bar 1, build 676); (b) pop529 started right after an install, while the QA app's first-start ROM scan ran, pressed B on the QA app's root and closed it - Android showed the default home. Nothing installed / changed / started fresh, the process was already running; still a breach of 'never point a QA script at the real app'",
+   "rule": "Thor/device authorization",
+   "severity": "high",
+   "status": "(a) fixed: swipe only with SWIPE=1 and never where the owner's Voltcap is the home app; (b) open: pop529 must wait for the QA app to settle after an install and check the focused window is the QA app before every B",
+   "found": "2026-11-16 navafter / n676c13"
+  },
+  {
+   "id": "D335",
+   "title": "Grid progress chip x1.3 (RP Nova n676x13, pre-existing since update 125): '6/10 · 60%' clipped inside its own pill - the full form's width estimate had no slack",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed 676c (real width + compact fallback + autoSize); hardware re-test NOT TESTED (n676c13 aborted, D334b)",
+   "found": "2026-11-16 n676x13"
+  },
+  {
+   "id": "D336",
+   "title": "Classic capsule progress line ends in an ellipsis at x1.3 ('6/10 · 60% · 4 re…', GameCard AchievementBadge: maxLines 1 + TextOverflow.Ellipsis)",
+   "rule": "R18",
+   "severity": "low",
+   "status": "open (not a collision; found while checking badges)",
+   "found": "2026-11-16 n676x13 CLASSIC"
+  },
+  {
+   "id": "D337",
+   "title": "Cloud QA builds are signed with a debug key generated in the cloud workspace (SHA-256 4d133dde, SHA-1 16062d37): a new cloud environment may make a different key -> QA-app updates need an uninstall (its test data lost) and a Google OAuth registration for the QA app would stop matching",
+   "rule": "infra",
+   "severity": "medium",
+   "status": "open: owner decision - keep one QA debug key outside the workspace (e.g. a repo secret) or always build QA APKs on the PC",
+   "found": "2026-11-16"
   }
  ]
 }
