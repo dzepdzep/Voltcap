@@ -23,3 +23,6 @@
 - Item: HANDOFF Next 1, emulator trial. Artifact of run 43762702001: popup open in the "first A opened nothing" shot - the
   QaClip dump came after the fixed sleeps. Fix 675b: scripts wait for the dump (dw), QaClip writes it whole. Selftest 156/156,
   QaClipWriteWhole675bTest 2/2, static checks PASS. Pushed with "[emulator-qa]"; next run reads that trial.
+- Results on 750b669c: Verify 310 green (G11: 2 green pushes). Emulator trial 43780985909: e529b SHELF PASS, COVERDETAILS 10/11;
+  e529a still FAIL - popup on screen but the dump has only the home window (QaWalk roots after the test scale) -> next run.
+
