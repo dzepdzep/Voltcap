@@ -14,7 +14,7 @@ R=$OUT/nav.txt
 : > $R
 echo "device=$(getprop ro.product.model) android=$(getprop ro.build.version.release) nav_mode=$(settings get secure navigation_mode) hide_nav_bar=$(settings get global hide_nav_bar)" >> $R
 dumpsys package $PKG | grep -m1 versionName >> $R
-k() { input keyevent $1; sleep ${2:-1.2}; }
+
 vis() { dumpsys window windows | sed -n "/$1}/,/Window #/p" | grep -m1 isVisible | tr -d ' '; }
 sample() {
   W=$(dumpsys window windows)
@@ -24,6 +24,13 @@ sample() {
   echo "$1 | req[$req] | NavigationBar0 $n | SecondaryHomeHandle0 $h | focus $foc" >> $R
   screencap -p $OUT/$1.png
 }
+# (676d, D334: the target confirmed first; the launch-block file makes the QA app's Back at its root stay in front.)
+pm path $PKG > /dev/null 2>&1 || { echo "STOP: $PKG not installed" >> $R; exit 1; }
+echo "target: serial=$(getprop ro.serialno) package=$PKG" >> $R
+touch /sdcard/Android/data/$PKG/files/qa_nolaunch
+# keys only while the QA app has the focus; anything else (the owner's Voltcap included): stop, nothing pressed
+fgq() { dumpsys window | grep -m1 mCurrentFocus | grep -q "$PKG/" || { echo "ABORT: focus is $(dumpsys window | grep -m1 mCurrentFocus | sed 's/.*{[^ ]* [^ ]* //; s/}.*//') - no key pressed" >> $R; exit 2; }; }
+k() { fgq; input keyevent $1; sleep ${2:-1.2}; }
 am force-stop $PKG; sleep 1
 am start -n $ACT >/dev/null 2>&1; sleep 5; sample 01_startup
 k BUTTON_A 2; sample 02_popup_open

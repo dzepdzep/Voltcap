@@ -23,6 +23,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
+## Levels (CLAUDE.md "Hardware QA levels", owner 16 Nov)
+Every request states its level: L1 QA app (default, autonomous on authorized USB devices), L2 production read-only (declared
+observation only, nothing changed, no input beyond what the plan declares), L3 production modification (the owner's explicit
+approval of that step, backup + rollback + certificate check first). An accidental switch to the production app: stop, press
+nothing, log a defect. Evidence is labelled QA or PRODUCTION. All requests below are L1 unless they say otherwise.
+
 ## Requests
 
 ## Hardware session 16 Nov (running): RP Nova d3641c41 via the owner's work laptop (msi, C:\VoltcapQA bundle, QA build

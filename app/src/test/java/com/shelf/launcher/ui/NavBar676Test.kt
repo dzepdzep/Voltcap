@@ -54,3 +54,19 @@ class NavBar676Test {
         assertTrue(main.contains("if (hasFocus) hideSystemBars()"))
     }
 }
+
+/** 676d (D334b): Back at the home's root never hands the screen to the owner's Voltcap while a QA script drives the QA app. */
+class QaHarnessBack676Test {
+    @Test fun backAtRoot() {
+        // the owner's Voltcap / the QA app by hand, not the home app: to the background as before
+        assertTrue(com.shelf.launcher.data.QaVariant.backAtRootLeaves(isDefaultHome = false, harness = false))
+        // the home app: stays
+        assertFalse(com.shelf.launcher.data.QaVariant.backAtRootLeaves(isDefaultHome = true, harness = false))
+        // a QA script running: stays in front
+        assertFalse(com.shelf.launcher.data.QaVariant.backAtRootLeaves(isDefaultHome = false, harness = true))
+        val main = listOf("src/main/java/com/shelf/launcher/MainActivity.kt", "app/src/main/java/com/shelf/launcher/MainActivity.kt").map(::File).first { it.exists() }.readText()
+        assertTrue(main.contains("QaVariant.backAtRootLeaves(com.shelf.launcher.data.HomeLauncher.isDefault(this@MainActivity), harness)) moveTaskToBack(true)"))
+        val qa = listOf("src/main/java/com/shelf/launcher/data/QaVariant.kt", "app/src/main/java/com/shelf/launcher/data/QaVariant.kt").map(::File).first { it.exists() }.readText()
+        assertTrue(qa.contains("fun harnessActive(context: Context): Boolean = isolated(context) &&"))
+    }
+}

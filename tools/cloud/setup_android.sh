@@ -25,3 +25,7 @@ root=$(cd "$(dirname "$0")/../.." && pwd)
 grep -q '^sdk.dir=' "$root/local.properties" 2>/dev/null || echo "sdk.dir=$SDK" >> "$root/local.properties"
 echo "Android SDK ready at $SDK ($(ls "$SDK/platforms" | tr '\n' ' '))"
 echo "export ANDROID_HOME=$SDK"
+# (676d, owner decision 3A: the stable QA signing key from the cloud environment's private variable - never printed. Without it
+# a QA build here would be signed with a new random debug key and could not update the installed QA app.)
+if [ -n "${VOLTCAP_QA_DEBUG_KEYSTORE_B64:-}" ]; then bash "$root/tools/cloud/qa_key.sh" restore || echo "QA key: restore FAILED - build no QA APK for devices"
+else bash "$root/tools/cloud/qa_key.sh" check 2>/dev/null || echo "QA key: not set up here (VOLTCAP_QA_DEBUG_KEYSTORE_B64 missing) - build no QA APK for devices"; fi

@@ -2024,5 +2024,37 @@ class TestBadgeCheck676a(unittest.TestCase):
         self.assertEqual(one.returncode, 3, one.stdout)
 
 
+class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
+    """676d (D334): QA scripts must never navigate into the owner's Voltcap - target confirmed, the QA app kept in front by
+    the launch-block file (QaVariant.harnessActive), a layout switch checked before keys, keys only while the QA app has focus."""
+    def _src(self, name):
+        return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", name), encoding="utf-8").read()
+
+    def test_popclip_confirms_target_and_blocks_before_any_key(self):
+        sh = self._src("popclip.sh")
+        first_key = sh.index("k BUTTON_B 1.5")
+        self.assertLess(sh.index("pm path $P"), first_key)
+        self.assertLess(sh.index("touch $F/qa_nolaunch"), first_key)
+        self.assertIn("target: serial=", sh)
+        # keys only through k(), which checks the focus first
+        self.assertIn("k() { fg; input keyevent", sh)
+        self.assertNotIn("\ninput keyevent", sh)
+
+    def test_popclip_checks_the_layout_switch_took(self):
+        sh = self._src("popclip.sh")
+        i = sh.index('A --es voltcap_test_layout $lay; sleep 3.5')
+        block = sh[i:i + 1500]
+        self.assertIn('"homeLayout"', block)
+        self.assertIn("no key pressed (NOT TESTED)", block)
+        self.assertIn("continue", block)
+
+    def test_navbar_script_guards_keys_and_never_swipes_home_by_default(self):
+        sh = self._src("navbar676.sh")
+        self.assertIn("k() { fgq; input keyevent", sh)
+        self.assertLess(sh.index("touch /sdcard/Android/data/$PKG/files/qa_nolaunch"), sh.index("k BUTTON_A"))
+        self.assertIn('[ "$SWIPE" = 1 ]', sh)
+        self.assertIn("packageName=com.shelf.launcher$", sh)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

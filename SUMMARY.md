@@ -1,3 +1,24 @@
+# Update 676d (16 Nov 2026, live session) - same branch, NOT released - D334 QA safety, QA levels, stable QA key, Cube status-bar options
+- D334 (owner: "finish D334 first"): the QA harness could put the owner's Voltcap in front. App side: MainActivity's Back at the
+  home's root called moveTaskToBack whenever Voltcap isn't the default home - always so for the QA app, so a script's B showed
+  the home app (the owner's Voltcap). Now the isolated QA app stays in front while a QA script runs (its launch-block file
+  qa_nolaunch, QaVariant.harnessActive / backAtRootLeaves); the owner's Voltcap and the QA app by hand behave as before.
+  Script side: popclip.sh confirms device + package (pm path, serial logged) and writes the block file before its first key;
+  after each layout switch it checks the app's own "homeLayout" (new in qaViewState + QaClip) and skips the layout (NOT TESTED,
+  nothing pressed) when the switch didn't take; navbar676.sh: target check, keys only with the QA app focused (fgq), swipe
+  only with SWIPE=1 and never where the owner's Voltcap is home.
+- CLAUDE.md: "Hardware QA levels" (owner 16 Nov): L1 QA app, L2 production read-only, L3 production modification (approval,
+  backup + rollback + certificate check); an accidental switch is never permission; evidence labelled QA / PRODUCTION; the cloud
+  task never reaches devices. HARDWARE_QA_QUEUE.md: every request states its level.
+- QA signing key (owner 3A): the key the QA app is installed with (4d133dde) pinned in tools/qa/qa_signing.json;
+  tools/cloud/qa_key.sh restore / check (never prints the key); setup_android.sh restores it from VOLTCAP_QA_DEBUG_KEYSTORE_B64;
+  private copy on the owner's laptop C:\VoltcapQA\keys\; docs/claude/QA_SIGNING_KEY.md (where kept, checks, recovery). The
+  GitHub secret and the cloud environment variable need the owner (the proxy can't set secrets).
+- Tests: QaHarnessBack676Test, NavBar676Test, BadgeLane676Test, Batch675rTest PASS; QA selftest OK (+TestHarnessNeverReachesTheOwnersApp676d);
+  static_checks PASS. Files: MainActivity.kt, data/QaVariant.kt, LauncherViewModel.kt (qaViewState layout), ui/QaClip.kt,
+  tools/qa/device/popclip.sh, navbar676.sh, tools/cloud/qa_key.sh, setup_android.sh, tools/qa/qa_signing.json, CLAUDE.md, docs.
+- Cube status bar: four options shown to the owner (current / one capsule / floating / cube facet) - nothing changed yet.
+
 # Update 676 (16 Nov 2026, live session) - same branch, NOT released - Hide navigation bar root cause, global badge lane, Storage title
 - 676b HIDE NAVIGATION BAR (owner P0): root cause found and reproduced on the RP Nova (gesture nav, its own hide_nav_bar = 1).
   Android's NavigationBar0 was hidden (no surface); the white pill was SystemUI's SecondaryHomeHandle0 (NAVIGATION_BAR_PANEL),

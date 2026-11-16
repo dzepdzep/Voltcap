@@ -170,7 +170,10 @@ class MainActivity : ComponentActivity() {
         // showing in between.
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (!com.shelf.launcher.data.HomeLauncher.isDefault(this@MainActivity)) moveTaskToBack(true)
+                // (676d, D334b: never while a QA script drives the isolated QA app - it put the owner's Voltcap in front.)
+                val harness = com.shelf.launcher.data.QaVariant.harnessActive(this@MainActivity)
+                if (com.shelf.launcher.data.QaVariant.backAtRootLeaves(com.shelf.launcher.data.HomeLauncher.isDefault(this@MainActivity), harness)) moveTaskToBack(true)
+                else if (harness) android.util.Log.e("VoltcapQA", "back at the root kept the QA app in front (harness)")
             }
         })
         // Phone web remote (Settings › Controls): its buttons arrive here as key presses.

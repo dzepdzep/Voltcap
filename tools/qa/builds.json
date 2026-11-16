@@ -1342,6 +1342,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 09e1226 - clean",
    "note": "cloud assembleDebug 16 Nov 11:37 UTC; 676c chip text + QaClip needW; on RP Nova d3641c41"
+  },
+  {
+   "id": "qa-0.6.73-676d-cloud",
+   "apk_sha256": "35bc14cce24761533ae51d89543a863dde2bd89faf284893b33ce3136cc19558",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde (tools/qa/qa_signing.json), Discord stub; never over the real app)",
+   "base_commit": "676d (this commit)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 676d - clean",
+   "note": "cloud assembleDebug 16 Nov ~12:30 UTC; D334 harness guard (Back at root kept in front while a script runs, homeLayout in the dump), 676c chip text, nav fix, badge lane"
   }
  ]
 }

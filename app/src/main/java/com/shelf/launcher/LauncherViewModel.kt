@@ -4208,6 +4208,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             .put("special", s.specialFilter?.name ?: "")
             .put("focus", s.visibleGames.getOrNull(s.focusedIndex)?.stableKey ?: "")
             .put("profile", com.shelf.launcher.data.Profiles.activeId.value)
+            // (676d, D334b: the layout on screen, so a QA script checks its layout switch took before pressing anything.)
+            .put("layout", s.appearance.homeLayout.name)
     }
 
     /**

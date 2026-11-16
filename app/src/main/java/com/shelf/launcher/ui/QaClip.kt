@@ -266,6 +266,9 @@ internal object QaClip {
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)
         val vmFocus = runCatching { TestHooks.viewState?.invoke()?.optString("focus") }.getOrNull()?.takeIf { it.isNotEmpty() }
         sb.append("\"focusedGame\":${vmFocus?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
+        // (676d: the home layout on screen - popclip.sh checks a layout switch took before its first key.)
+        val vmLayout = runCatching { TestHooks.viewState?.invoke()?.optString("layout") }.getOrNull()?.takeIf { it.isNotEmpty() }
+        sb.append("\"homeLayout\":${vmLayout?.let { "\"" + esc(it) + "\"" } ?: "null"},")
         sb.append("\"originKey\":${GameOrigin.key?.takeIf { it != GameOrigin.FOCUSED }?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
         sb.append("\"origin\":${GameOrigin.rect?.let { "[${it.left.toInt()},${it.top.toInt()},${it.width.toInt()},${it.height.toInt()}]" } ?: "null"},")
         sb.append("\"popupGame\":${GamePopup.game?.let { "\"" + esc(it.stableKey.takeLast(120)) + "\"" } ?: "null"},")

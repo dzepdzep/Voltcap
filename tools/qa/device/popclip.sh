@@ -13,6 +13,12 @@ OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
+# (676d, D334: the target confirmed before anything is pressed - this device, the QA package, installed; logged in the run. And
+# the launch-block file first: while it exists the QA app's Back at its root stays in front (QaVariant.harnessActive) - a B
+# there had closed it and Android showed the OWNER's Voltcap, the home app.)
+pm path $P > /dev/null 2>&1 || { echo "STOP: $P not installed - nothing pressed" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
+touch $F/qa_nolaunch
+echo "target: serial=$(getprop ro.serialno) model=$(getprop ro.product.model) package=$P $(dumpsys package $P | grep -m1 versionName | tr -d ' ')" >> $OUT/log.txt
 # (523p: a key or a tap only while a QA app window has the focus - a crash dialog's buttons lead into Settings' App info,
 # GT78 523. A dialog / other window: the QA app is stopped and the run ends; nothing else is pressed.)
 fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) echo "ABORT no window has the focus (asleep?) - not woken (owner rule)" >> $OUT/log.txt 2>/dev/null; exit 2;; esac; sleep 0.5; done
@@ -85,6 +91,16 @@ for lay in $LAYS; do
   # next layouts were SAVED: the KONKR ended on File select, the Odin on Art library after the 469 runs.)
   A --ez voltcap_test_preview true
   A --es voltcap_test_layout $lay; sleep 3.5
+  # (676d, D334b, RP Nova n676c13: just after an install the QA app was still on its first-start scan, the layout asked for
+  # never came, and the keys meant for it went to whatever was on screen. The app's own dump says which layout it shows
+  # ("homeLayout"); asked once more if it is another; still another: this layout is left out (NOT TESTED), nothing pressed.)
+  rm -f $F/qa_clip/${TAG}_lay.json; echo "${TAG}_lay" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_lay.json
+  if jl $F/qa_clip/${TAG}_lay.json | grep -q '"homeLayout"' && ! jl $F/qa_clip/${TAG}_lay.json | grep -q "\"homeLayout\":\"$lay\""; then
+    A --ez voltcap_test_preview true; A --es voltcap_test_layout $lay; sleep 5
+    rm -f $F/qa_clip/${TAG}_lay.json; echo "${TAG}_lay" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_lay.json
+    jl $F/qa_clip/${TAG}_lay.json | grep -q "\"homeLayout\":\"$lay\"" || {
+      echo "$lay: SKIPPED - the app shows $(jl $F/qa_clip/${TAG}_lay.json | grep -o '"homeLayout":"[A-Z_0-9]*"') after two asks; no key pressed (NOT TESTED)" >> $OUT/log.txt; continue; }
+  fi
   # (Update 469: Card binder and Pocket Quest play on A by default (cards_a_plays / pq_a_plays) — their window opens on A only
   # with that option off, so it is switched off for the sweep; the caller's voltcap_test_snapshot restore puts the owner's
   # value back. Before, these combos were "A plays" = NOT TESTED.)
