@@ -75,3 +75,12 @@ class HomeCuts676rTest {
         assertTrue(src("StyleNightMenu.kt").contains("TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 120.sp)"))
     }
 }
+
+/** 676t: Greencore's facts put the value under its label when the two don't fit, instead of sliding both side by side. */
+class GreencoreStats676tTest {
+    @Test fun statsWrap() {
+        val s = listOf("src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt", "app/src/main/java/com/shelf/launcher/ui/StyleGreenCore.kt").map { File(it) }.first { it.exists() }.readText()
+        val f = s.substring(s.indexOf("private fun GcStat"), s.indexOf("private fun GcBar"))
+        assertTrue(f.contains("FlowRow(") && f.contains("Arrangement.SpaceBetween") && !f.contains("Modifier.weight(1f)"))
+    }
+}
