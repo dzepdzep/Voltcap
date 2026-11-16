@@ -1386,6 +1386,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet 26a7bc3 - clean (CI run 43911642798)",
    "note": "v0.6.73 candidate: 676f dev line + Cube Facet (676i/h/m) + 676o/q Cube x1.3 + 676p Spotlight hints + 676r home texts (D340)"
+  },
+  {
+   "id": "qa-0.6.73-676t-facet-ci",
+   "apk_sha256": "94e2c3568e8040c7cbd1261a11a604b72460ccdbb735750f17555ba507461f83",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 4c208ff",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 4c208ff - clean (CI run 43922613406)",
+   "note": "v0.6.73 candidate 676r + 676s (QA tools) + 676t Greencore facts wrap"
   }
  ]
 }
