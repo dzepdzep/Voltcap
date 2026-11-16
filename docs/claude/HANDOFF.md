@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~16:45 UTC, update 677b (cloud run: CI red on 0cc6739 / 0e23337 fixed - QaIsolation521Test
+Updated: 2026-11-16 ~17:35 UTC, update 677c (cloud run: QA tool - popclip.sh up() reads a probe of its own name each
+time and also trusts the app's popupAgeMs; Details / More misses log plain-vs-pattern reads; selftest 177/177. CI green on 677b.)
+Before: update 677b (cloud run: CI red on 0cc6739 / 0e23337 fixed - QaIsolation521Test
 looked at the new QA-key signingConfigs debug block instead of the debug build type; NOT compiled here (Maven 429), CI decides).
 Before: update 677a (cloud run: rule 11 - post-game session card + status note
 shown whole (FullText, SessionSummaryFullText677aTest; compiled in the cloud); emulator trial started on this commit).
@@ -26,8 +28,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-- FIRST (677b): check "Verify Android update 310" on the 677b push. If QaIsolation521Test still fails, fix it first; if anything
-  else is red, that is item 0.
+- FIRST (677c): check "Verify Android update 310" on the 677c push (677b 833f308 GREEN). Then START the emulator trial on the
+  next commit (head message "[emulator-qa]", allowed from ~17:50 UTC) and read it next run: expect no "first A opened nothing /
+  late" where the probe holds popupAgeMs; read the new "read: probe N ..." / "Details read: plain X, pattern Y" / "plain More
+  keys" lines. If plain > 0 and pattern = 0, the device's grep -iE pattern is the culprit: replace the ERE label matches
+  (pc / ctl / DETW / MOREW greps) with label extraction + per-word fixed-string compares.
 - Emulator trial 43887216747 (677a) READ: x1.0 COVERDETAILS 12/12 PASS; x1.0 SHELF "first A opened nothing" (read: Play keys
   probe 1, home 0 - the probe saw Play, yet graded as not open: look at the open grading in popclip.py vs the probe line);
   x1.3 COVERDETAILS late open (1.5 s) + "More: none read in the main dump (7 controls read)" + no Details action; x1.3 SHELF no

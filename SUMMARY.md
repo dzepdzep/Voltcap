@@ -1,3 +1,20 @@
+# Update 677c (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads its own probe; app's window age counts
+- Emulator trial 43887216747 (677a): e529b SHELF "first A opened nothing" and e529a COVERDETAILS "first A opened late", yet the
+  probes copied right after those reads (probeA / probeB) hold the window's Play key AND the app's own popupAgeMs (2188 / 2708 ms,
+  i.e. the window was up ~0.6 s after A); the same file read 1 Play key when the log line was written. The second A then landed
+  on the open window (e529b SHELF main = home again, so Details / More / Play steps all missed).
+- popclip.sh up(): each probe asks for a file of its own name (${TAG}_probe_N), waits for it, hands it on as ${TAG}_probe.json
+  for the steps that read it; the window also counts as up when the app's dump says popupAgeMs (logged: "up by the app's own
+  popupAgeMs ..." - the grader's open check still reads the dumps itself, so a window without Play still FAILs). UPREAD keeps
+  what each read saw and is logged beside "opened late / nothing". "no Details action" / "More: none read" now also log the
+  plain fixed-string count vs the pattern count (e529a main held Details + More while the device's pattern read none).
+- Also checked: the e529a dumps' density 1.5 / fontScale 1.0 is the system's; x1.3 is Voltcap's own drawing scale
+  (voltcap_test_scale), so that is not a missing scale.
+- Test: TestPopclipScript.test_up_reads_its_own_probe_and_trusts_the_apps_window_age runs up() against a stand-in for
+  QaClip (fails on 677b's popclip.sh); selftest 177/177 PASS; static checks PASS. No app code changed. EMULATOR-only tooling;
+  next trial ("[emulator-qa]") allowed from ~17:50 UTC - the next run starts it.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
 # Update 677b (16 Nov 2026, cloud run) - CI red fixed: QaIsolation521Test found the wrong debug block
 - CI "Verify Android update 310" was RED on 0cc6739 (676h) and 0e23337 (676l): 1 of 2114 tests,
   QaIsolation521Test.qaBuildsAreSignedWithTheDebugKeyNotTheReleaseKey ("release key only with the owner opt-out"). Cause: 676h

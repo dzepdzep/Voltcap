@@ -95,3 +95,8 @@
 - Lock free (released 15:29 by the live session); taken 16:21. CI: Verify 310 RED on 0cc6739 + 0e23337 (QaIsolation521Test lookup).
 - Item: fixed the test lookup (buildTypes debug block) + QA-key block assertion; not compiled here (Maven 429 x2), CI decides.
   Emulator trial 43887216747 read (x1.0 COVERDETAILS full PASS; SHELF / x1.3 misses remain). Effort env: medium.
+
+## 2026-11-16 17:18-17:40 UTC - cloud scheduled run (677c)
+- Lock free (released 16:32 by 677b); taken 17:19. CI: Verify 310 GREEN on 833f308 (677b fix confirmed).
+- Item: emulator trial 43887216747 misses traced (probes held Play + popupAgeMs while up() read none) -> popclip.sh up() own
+  probe names + app popupAgeMs + read diagnostics; selftest 177/177. Trial not started (3 h window opens ~17:50). Effort env: medium.

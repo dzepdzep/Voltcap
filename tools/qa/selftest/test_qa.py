@@ -1166,7 +1166,9 @@ class TestPopclipScript(unittest.TestCase):
         # Every dump read waits for the file after the (unchanged) minimum sleep, and a dump that never comes is logged.
         dev = os.path.join(os.path.dirname(HERE), "device")
         sh = open(os.path.join(dev, "popclip.sh"), encoding="utf-8").read()
-        self.assertIn('sleep 0.9; dw $F/qa_clip/${TAG}_probe.json;', sh)
+        # (677c: the probe has a name of its own per read - waited for the same way, then handed on as ${TAG}_probe.json.)
+        self.assertIn('pf=$F/qa_clip/${TAG}_probe_$PN.json', sh)
+        self.assertIn('sleep 0.9; dw $pf;', sh)
         self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_$1.json;', sh)
         self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_gc.json', sh)
         self.assertIn('dump missing', sh)
@@ -1299,6 +1301,50 @@ class TestPopclipScript(unittest.TestCase):
             f.write("CASEFLOW_OWN first A opened late\n")
         g = popclip.grade(d, "CASEFLOW_OWN")["open"]
         self.assertEqual(g[0], "FAIL", g); self.assertIn("late", g[1])
+
+    def test_up_reads_its_own_probe_and_trusts_the_apps_window_age(self):
+        # 677c (emulator run 43887216747): "first A opened nothing" / "opened late" while the probe kept right after the read
+        # held Play and the app's popupAgeMs. up() asks for a probe of its own name each time, hands it on as ${TAG}_probe.json,
+        # counts the window as up on the app's popupAgeMs too (logged), and keeps what it read in UPREAD.
+        import subprocess, json, tempfile, shutil
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        lines = sh.splitlines()
+        defs = [l for l in lines if l.startswith(("PLAYW=", "jl()", "pc()", "age()", "dr()", "PN="))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("dw()")); defs += lines[i:i + 2]
+        i = next(k for k, l in enumerate(lines) if l.startswith("up()"))
+        j = next(k for k in range(i, len(lines)) if lines[k].strip() == "return 1; }"); defs += lines[i:j + 1]
+        self.assertIn('${TAG}_probe_$PN', "\n".join(defs))
+        node = lambda label: {"label": label, "kind": "control", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9], "id": 1}
+        dump = lambda labels, age: json.dumps({"screen": [960, 640], "windows": [{"id": "a", "nodes": [node(x) for x in labels]}],
+                                               "popupAgeMs": age, "images": []}, separators=(",", ":"))
+        # A stand-in for QaClip: answers each request with the dump queued for it, written whole (.part, renamed).
+        app = ('while [ ! -e "$F/stop" ]; do if [ -s "$F/qa_clip_req" ]; then t=$(cat "$F/qa_clip_req"); rm -f "$F/qa_clip_req"; '
+               'cp "$F/next.json" "$F/qa_clip/$t.json.part"; mv "$F/qa_clip/$t.json.part" "$F/qa_clip/$t.json"; fi; sleep 0.1; done')
+        def run(answer, stale=None):
+            d = tempfile.mkdtemp()
+            try:
+                os.makedirs(os.path.join(d, "qa_clip"))
+                open(os.path.join(d, "qa_clip", "T_X_home.json"), "w").write(dump(["Settings"], None))
+                open(os.path.join(d, "next.json"), "w").write(answer)
+                if stale is not None:          # an older probe under the shared name must not be what up() reads
+                    open(os.path.join(d, "qa_clip", "T_probe.json"), "w").write(stale)
+                script = "\n".join(defs) + f'\nF={d}; OUT={d}; TAG=T; n=X\n( {app} ) &\nif up; then echo UP; else echo DOWN; fi\n' \
+                    'echo "$UPREAD"; touch $F/stop; wait\nls $F/qa_clip'
+                r = subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=30)
+                log = open(os.path.join(d, "log.txt")).read() if os.path.exists(os.path.join(d, "log.txt")) else ""
+                return r.stdout, log
+            finally:
+                shutil.rmtree(d, ignore_errors=True)
+        out, log = run(dump(["Play", "More"], 812), stale=dump(["Settings"], None))
+        self.assertIn("UP", out.split()); self.assertIn("Play keys 1, home 0, popupAgeMs 812", out)
+        self.assertIn("T_probe.json", out); self.assertNotIn("T_probe_1.json", out)   # handed on, own file removed
+        out, log = run(dump(["Turn over"], 2188))                                         # Play not read, app says up
+        self.assertIn("UP", out.split()); self.assertIn("up by the app's own popupAgeMs 2188", log)
+        out, log = run(dump(["Settings"], None))                                          # nothing open: still down
+        self.assertIn("DOWN", out.split()); self.assertIn("popupAgeMs null", out)
+        # The first read is logged beside "opened late" / "opened nothing"; the Details / More misses log what was read.
+        self.assertIn('echo "$n read: $R1" >> $OUT/log.txt', sh)
+        self.assertIn("Details read: plain", sh); self.assertIn("plain More keys", sh)
 
     def test_stops_outside_voltcap(self):
         # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.

@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 677b · 2026-11-16 16:45 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on 0cc6739 + 0e23337 (test lookup); fix pushed in this commit, result pending · effort: medium
+**1. LATEST UPDATE** - 677c · 2026-11-16 17:35 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 833f308 (677b) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic build check had turned red after the new QA-app signing step: one test was reading the wrong part of the build file. The app itself was fine; the test now reads the right part and also checks that the QA signing never touches the real release key. The latest emulator run was read: one popup now passes every check there; a few test steps on the other still miss.
+**2. WHAT CLAUDE JUST FIXED** - The build check is green again. The automatic popup test on the emulator sometimes decided a game window had not opened when it actually had (the app's own record showed it open half a second after the button press), and then pressed the button a second time. The test now reads a fresh answer from the app every time, also trusts the app's own 'window is open' record, and writes down exactly what it read when a step misses, so the next emulator run can confirm the fix.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: confirm the build check is green again on this commit; then: look into the remaining emulator popup misses; finish the v0.6.73 hardware checks (KONKR / Nova)
+**5. WORKING ON NEXT** - now: start and read the next emulator test run on this fix; then: finish the v0.6.73 hardware checks (KONKR / Nova); next screens with '...' text: play header, stats
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
