@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~05:45 UTC, update 675g (live session: owner summary + release tracker; no app code). Previous: 675f, 675e (cloud run 03:17).
+Updated: 2026-11-16 ~05:35 UTC, update 675h (cloud run: shelfpages529.sh reads dumps one node per line; emulator trial started). Previous: 675g (live), 675f.
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -27,15 +27,15 @@ When a progress.json count changes, change its source text with it.
    again (add the growing class to heavyRoboTests in app/build.gradle.kts).
    Side finding: lazily made global Compose states crash a fresh JVM's first frame - look for other objects with lazily made
    states read by Case3D / warm-ahead threads (LookStyles fixed via Features.warmUiStores).
-1. Emulator trial: start one on the 675d (or later) commit with "[emulator-qa]" (allowed from 04:31 UTC 16 Nov: last one 01:31)
-   and read it (EMULATOR evidence). Run 43786748164 on ddca9b66 (675c): first A opened the window every time (no probeA/B).
+1. Emulator trial: STARTED on the 675h commit ("[emulator-qa]", ~05:35 UTC; next one allowed from ~08:35). Read it
+   (EMULATOR evidence): artifacts emulator-qa-<gpu>-<sha>. 675h gave shelfpages529.sh (e529c) jl + whole-dump waits too. Run 43786748164 on ddca9b66 (675c): first A opened the window every time (no probeA/B).
    FAILs left: e529a SHELF / e529b COVERDETAILS "no Details action" + More step missing (+ e529a "extra: A opened nothing"),
    with the controls IN the pulled dump - the device's grep missed them on the two dumps that also held "Full story on Details
    ›" (10-13 KB single line). 675d: popclip.sh reads every dump one node per line (jl) and dw waits for a whole dump ("dump
    unreadable" logged). If the trial still shows "no Details action" with the control in the dump: add a probe that copies
    `jl <dump> | grep -c control` into the log to see what the device reads. Also open: e529b COVERDETAILS "rapid A B A B left
    a window open" and e529c's precondition (qa_windows=2 after e529b) - is a window really left (rapid shot / after dump) or
-   is it the same read problem? shelfpages529.sh still greps dumps directly - give it jl too if it shows the same symptom.
+   is it the same read problem? (shelfpages529.sh: done 675h.)
 2. D-674o-1 glyphcheck: DONE in code 675e (GlyphPill glyphs measured in their dumped key box); HW-6 re-measures on the
    handhelds. Other pills drawn by hand round an InkGlyph (Library, Pocket, Memory card, Cube...) can get the same
    QaClip.GlyphKey mark if a run shows the same walk symptom there.

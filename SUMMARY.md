@@ -1,3 +1,14 @@
+# Update 675h (16 Nov 2026, morning, cloud run) - same branch, NOT released - emulator trial: shelfpages529.sh reads dumps like popclip
+- shelfpages529.sh (emulator job e529c, TOUCH=1 taps on the first achievement row / Game settings) still read each QaClip dump
+  with one grep over its single long line and took "has a size" as "written" - the read pattern 675d fixed in popclip.sh
+  (controls in the dump that the device's grep missed). Now: ctl reads through jl (one node per line); shot waits up to 8 s
+  more until the dump reads whole (closing brace) and logs "dump unreadable" / "dump missing". No limit or assertion changed.
+- Test: selftest test_shelfpages_dump_reads_go_one_node_per_line (runs ctl / dr on a long-line dump with "Full story on
+  Details ›" + a half-written dump; fails on the old script). Selftest 162/162, static checks PASS. No app code (no compile).
+- Pushed with "[emulator-qa]" (last trial 01:31, 3 h rule met): the trial on this commit is the first on the 675d+ scripts.
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; docs (HANDOFF, matrix G14, AUTORUN_LOG, dashboard,
+  run_reports.jsonl). Nothing to copy into src_copy / project_copy. EMULATOR evidence only; no handheld needed.
+
 # Update 675g (16 Nov 2026, early morning) - live session - owner summary + release tracker
 - STATUS_DASHBOARD.md now opens with a generated OWNER SUMMARY (latest update, what was just fixed in plain words, the five most
   important changes of the last 24 h by kind, progress bars implemented / handheld-verified / approved, next work, what the owner

@@ -1205,6 +1205,40 @@ class TestPopclipScript(unittest.TestCase):
         self.assertNotIn("Full story", out)
         self.assertIn("pc=1", out); self.assertIn("whole", out); self.assertIn("half", out)
 
+    def test_shelfpages_dump_reads_go_one_node_per_line(self):
+        # 675h: shelfpages529.sh (emulator job e529c, TOUCH=1) read its dumps the way popclip.sh did before 675d - one grep over
+        # the dump's single long line, and "a size" as the dump being there. Its taps (first achievement row, Game settings)
+        # now read the dump through jl and every shot waits for a whole dump ("dump unreadable" logged otherwise).
+        import subprocess, json, tempfile
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        code = [l for l in sp.splitlines() if not l.lstrip().startswith("#")]
+        for l in code:
+            if "grep" in l and ("qa_clip/" in l or l.startswith("ctl()")):
+                self.assertTrue("jl " in l or l.startswith("tapj()"), l)
+        self.assertIn("jl $2 | grep -oiE", sp)
+        self.assertIn("dump unreadable", sp)
+        self.assertLess(sp.index("jl() {"), sp.index("ctl() {"))
+        defs = "\n".join(l for l in code if l.startswith(("jl()", "dr()", "ctl()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            node("Full story on Details \u203a", "text", [10, 10, 100, 20]),
+            node("Shadow of the Colossus achievement 1, Unlocked", "control", [40, 120, 600, 48]),
+            node("Game settings for this game", "control", [40, 300, 600, 48])]}], "images": {}}
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write('{"windows":[{"nodes":[{"label":"Game settings","kind":"control"'); half = f.name
+        try:
+            out = subprocess.run(["sh", "-c", defs + '\nctl "[^\\"]*achievement 1[^\\"]*" "$1"; ctl "Game settings[^\\"]*" "$1"; '
+                                  'dr "$1" && echo whole; dr "$2" || echo half', "x", path, half],
+                                 capture_output=True, text=True).stdout
+        finally:
+            os.unlink(path); os.unlink(half)
+        self.assertIn('"label":"Shadow of the Colossus achievement 1, Unlocked","kind":"control","full":[40,120,600,48],"shown":[40,120,600,48]', out)
+        self.assertIn('"label":"Game settings for this game","kind":"control","full":[40,300,600,48],"shown":[40,300,600,48]', out)
+        self.assertNotIn("Full story", out)
+        self.assertIn("whole", out); self.assertIn("half", out)
+
     def test_first_a_late_is_kept_apart_and_still_fails_open(self):
         # 675c (emulator run 43780985909): e529a's probe missed a popup the next screenshot showed, and the second A pressed
         # its Play. The failed probe is kept, the app is asked once more; up then = "opened late" (open FAIL, no second A).

@@ -52,3 +52,9 @@
 - Item: HANDOFF Next 2 (D-674o-1). 675e: GlyphPill marks its pill (QA traces only), QaClip dumps the glyph's "key" box,
   glyphcheck measures in it (limits unchanged). Selftest 161/161, static PASS. Gradle compile blocked by Maven Central 429
   (2 tries) - CI compiles. HW-6 queued.
+
+## 2026-11-16 05:20-05:40 UTC - cloud scheduled run
+- Lock free (released 05:17 by 675g live session); taken 05:20. CI: Verify 310 green on c6d2f8a (675f, includes 675e Kotlin);
+  ec3e103 (675g) in progress, then superseded by the lock push.
+- Item: HANDOFF Next 1. 675h: shelfpages529.sh dumps read one node per line + whole-dump wait (as popclip 675d). Selftest
+  162/162 (new test fails on old script), static PASS. No app code. Pushed with "[emulator-qa]".

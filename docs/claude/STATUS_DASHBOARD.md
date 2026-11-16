@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675g · 2026-11-16 05:40 UTC · commit `this update (being pushed)` · CI: green on deedfa4 (last code change) · effort: medium (this live session)
+**1. LATEST UPDATE** - 675h · 2026-11-16 05:35 UTC · commit `this update (being pushed)` · CI: green on c6d2f8a (includes the last code change) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The dashboard now opens with a plain-English owner summary and a release tracker: v0.6.73's fixes, which are verified, which gates are left and why it cannot ship yet - all worked out from the evidence files, not typed by hand.
+**2. WHAT CLAUDE JUST FIXED** - The second emulator test script now reads screen descriptions the same careful way as the first (it could miss buttons on long lines), and a fresh emulator test was started on it.
 
 **3. LAST 24 HOURS** (most important first)
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: re-run the emulator trial with the 675d QA-script fix and read it; then: widen the emulator trial to more layouts in separate short jobs; native popup pages for the 40 layouts still on the shared page
+**5. WORKING ON NEXT** - now: read the emulator trial started on this commit; then: widen the emulator trial to more layouts in separate short jobs; native popup pages for the 40 layouts still on the shared page
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -100,15 +100,15 @@ Cloud development continues without any of these. v0.6.73 / KONKR production upg
 |---|---|
 | Stable production version | **v0.6.72** (main 5b01ef39). Nothing released since. |
 | Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675e deedfa45 (16 Nov 03:25 UTC) |
-| Latest CI ("Verify Android update 310") | **green** on deedfa45 (675e); green on 4 code pushes in a row since the 675a memory fix |
-| Latest emulator trial | 43786748164 on ddca9b66 (675c): emulator stays up; 2 layouts graded, FAIL (QA-script dump reading, fixed in 675d, not re-run yet) |
-| Last successful cloud run | 16 Nov 03:17-03:45 UTC (675e) |
-| Cloud runs so far | 6 (675a-675e + this dashboard), hourly at :17 |
+| Latest CI ("Verify Android update 310") | **green** on c6d2f8a (675f, first compile of 675e's Kotlin); green on every finished push since the 675a memory fix |
+| Latest emulator trial | 43786748164 on ddca9b66 (675c): FAIL (QA-script dump reading, fixed 675d + 675h); new trial started on the 675h commit - result next run |
+| Last successful cloud run | 16 Nov 05:20-05:40 UTC (675h) |
+| Cloud runs so far | 7 scheduled (675a-675e, 675h) + 2 live dashboard sessions, hourly at :17 |
 | Waiting for hardware | 6 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
 | Waiting for your approval / decision | see Owner actions |
 
 ## Next development priorities (hand-written)
-1. Emulator trial on the 675d+ QA scripts (dump reading); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
+1. Read the emulator trial on the 675h commit (both QA scripts read dumps one node per line); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
    Flip 2-like and RP Classic-like screens, the 17 category looks.
 2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
 3. Native popup pages for the 40 layouts still on the shared page (P2).
