@@ -58,3 +58,20 @@ class SpotHints676oTest {
         assertTrue(!f.contains("    Row(\n"))
     }
 }
+
+/** 676r (D340): the home texts homecut.py found cut now shrink then slide (or wrap) - never "…", never cut. */
+class HomeCuts676rTest {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n").map { File(it) }.first { it.exists() }.readText()
+    @Test fun eachFound() {
+        assertTrue(src("FitText.kt").contains("slideWhenCut && !fits(s, lines)"))
+        assertTrue(src("StyleArcade.kt").split("slideWhenCut = true").size == 3)
+        assertTrue(src("StyleCircuit.kt").contains("FullText(label, if (on) ink"))
+        assertTrue(src("StyleGreenCore.kt").contains("FullText(text, accent.copy(alpha = 0.7f), 9.sp"))
+        assertTrue(src("StylePocketCamera.kt").contains("FullText(\"POCKET CAMERA\""))
+        assertTrue(src("StyleOrbitDeck.kt").contains("FullText(bits.joinToString(\"   ·   \")"))
+        assertTrue(src("StyleRecordCrate.kt").contains("horizontalArrangement = Arrangement.SpaceBetween, itemVerticalAlignment"))
+        val card = src("GameCard.kt"); val i = card.indexOf("remainingNote(earned, possible)?.let { \"  ·  \$it\" }")
+        assertTrue(!card.substring(i, i + 300).contains("Ellipsis"))
+        assertTrue(src("StyleNightMenu.kt").contains("TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 120.sp)"))
+    }
+}

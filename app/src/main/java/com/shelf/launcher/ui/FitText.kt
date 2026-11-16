@@ -48,7 +48,12 @@ internal fun FitText(
     style: TextStyle = uiFontStyle(),
     lineHeightRatio: Float = 1.18f,
     /** Extra limit on the height in px (0 = only what the parent allows). */
-    maxHeight: Int = 0
+    maxHeight: Int = 0,
+    /**
+     * 676r (D340, rule 11): where even the smallest size and an extra line don't fit, slide the whole text along one line
+     * (FullText's slow marquee) instead of ending it in "…". Off keeps the old last resort for the music players' lyrics.
+     */
+    slideWhenCut: Boolean = false
 ) {
     // Centred / end-aligned text fills the width, so it's placed the same way while it fades in and out
     // (it used to start at the left edge and then jump to the middle once the old line was gone).
@@ -75,9 +80,13 @@ internal fun FitText(
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
             while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
             if (!fits(s, lines)) lines = maxLines + 1
-            s to lines
+            Triple(s, lines, slideWhenCut && !fits(s, lines))
         }
-        Text(
+        @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+        if (fit.third) FullTextMarquee(
+            text, color, maxSize, if (wide) Modifier.fillMaxWidth() else Modifier, fontWeight, null, TextUnit.Unspecified,
+            (maxSize.value * lineHeightRatio).sp, textAlign, style
+        ) else Text(
             text, color = color,
             fontSize = fit.first.sp, lineHeight = (fit.first * lineHeightRatio).sp,
             fontWeight = fontWeight, textAlign = textAlign, style = style,

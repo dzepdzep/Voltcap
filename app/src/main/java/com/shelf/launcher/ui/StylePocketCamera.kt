@@ -257,7 +257,8 @@ internal fun StylePocketCamera(c: StyleCtx, modifier: Modifier = Modifier) {
                     Row(Modifier.fillMaxWidth().background(c0).padding(horizontal = u * 2, vertical = u), verticalAlignment = Alignment.CenterVertically) {
                         PixelIcon(PX_CAMERA, u * 0.9f, c3)
                         Spacer(Modifier.width(u * 2))
-                        Text("POCKET CAMERA", color = c3, fontFamily = font, fontSize = fs(5.5f), maxLines = 1, modifier = Modifier.weight(1f))
+                        // (676r, D340 - RP Nova x1.3: "POCKET N" cut beside the photo's number: shrink, then slide - rule 11.)
+                        FullText("POCKET CAMERA", c3, fs(5.5f), Modifier.weight(1f), maxLines = 1, fontFamily = font)
                         Text("No." + (c.focus + 1).toString().padStart(3, '0'), color = c2, fontFamily = font, fontSize = fs(5.5f), maxLines = 1)
                     }
                     Spacer(Modifier.height(u * 2))

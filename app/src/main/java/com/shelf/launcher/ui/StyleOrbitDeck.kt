@@ -309,7 +309,8 @@ private fun OrbitRing(c: StyleCtx, loop: Boolean, modifier: Modifier) {
                 )
                 val bits = listOfNotNull(titles.console(gg.platform).takeIf { it.isNotBlank() }, stylePlaytime(c.playtime(gg), c.lastPlayed(gg) != null),
                     c.progress(gg)?.let { (e, t) -> "★ $e / $t" })
-                Text(bits.joinToString("   ·   "), color = Color(0xFFCFD8E6), fontSize = 14.sp, maxLines = 1, letterSpacing = 1.5.sp)
+                // (676r, D340 - RP Nova x1.3: the line was cut after "★ 6 /": shrink, then slide - rule 11.)
+                FullText(bits.joinToString("   ·   "), Color(0xFFCFD8E6), 14.sp, maxLines = 1, letterSpacing = 1.5.sp)
             }
         }
         if (caption) Box(
