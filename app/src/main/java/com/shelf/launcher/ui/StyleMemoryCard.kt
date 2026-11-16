@@ -383,7 +383,11 @@ private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
                     FullText(l1, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                     if (l2 != null) FullText(l2, color = McYellow, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                 } else {
-                    FullText(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.End, style = outline)
+                    // (676y, D342 - Nova x1.3: a two-line name left the info line under it cut at the header's foot. Where the
+                    // header can't hold both, the name keeps one line - shrinking, then sliding (rule 11).)
+                    val nameLines = if (height - 12.dp >= reservedLinesHeight(18.sp, 20.sp, FontWeight.Bold, style = outline, lines = 2) +
+                        reservedLinesHeight(12.sp, style = outline)) 2 else 1
+                    FullText(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = nameLines, textAlign = TextAlign.End, style = outline)
                 }
                 val bits = listOfNotNull(
                     titles.console(g.platform).takeIf { it.isNotBlank() },

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
@@ -190,7 +191,9 @@ private fun NextAchievementsTicker(list: List<com.shelf.launcher.data.RaAchievem
     ) {
         val shown = list + list // drawn twice so it goes round without a gap
         Column(
-            Modifier.fillMaxWidth().padding(start = 46.dp, end = 8.dp)
+            // (676y, D342 - Nova x1.3 Resume / Hub: the ticker's rows past the box were squeezed by its height - "4 Q" in 11 px,
+            // the rest 0 px - and slid in squashed. The list keeps every row its full height; the box clips what is outside.)
+            Modifier.fillMaxWidth().wrapContentHeight(align = Alignment.Top, unbounded = true).padding(start = 46.dp, end = 8.dp)
                 .graphicsLayer {
                     val ms = if (moving) (now.longValue - started).coerceAtLeast(0L) / 1_000_000L else 0L
                     val rowPx = rowDp.toPx()

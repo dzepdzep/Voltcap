@@ -83,9 +83,11 @@ internal fun FitText(
             Triple(s, lines, slideWhenCut && !fits(s, lines))
         }
         @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+        // (676y: it slides at the size it shrank to - a far arcade machine's sign is a few px tall; at the full size its letters
+        // were cut in height.)
         if (fit.third) FullTextMarquee(
-            text, color, maxSize, if (wide) Modifier.fillMaxWidth() else Modifier, fontWeight, null, TextUnit.Unspecified,
-            (maxSize.value * lineHeightRatio).sp, textAlign, style
+            text, color, fit.first.sp, if (wide) Modifier.fillMaxWidth() else Modifier, fontWeight, null, TextUnit.Unspecified,
+            (fit.first * lineHeightRatio).sp, textAlign, style
         ) else Text(
             text, color = color,
             fontSize = fit.first.sp, lineHeight = (fit.first * lineHeightRatio).sp,

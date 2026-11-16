@@ -86,3 +86,17 @@ class TrimmedLines676vTest {
         assertTrue(s.contains("LineHeightStyle.Trim.Both"))
     }
 }
+
+/** 676y (D342): the height cuts the trimmed lines didn't cure - each fixed where it was. */
+class HeightCuts676yTest {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n").map { File(it) }.first { it.exists() }.readText()
+    @Test fun eachFound() {
+        assertTrue(src("StyleCube.kt").contains("\"◀\" -> Icons.Filled.ArrowLeft"))
+        assertTrue(src("StyleMemoryCard.kt").contains("maxLines = nameLines"))
+        assertTrue(src("FitText.kt").contains("text, color, fit.first.sp,"))
+        assertTrue(src("StyleArcade.kt").contains("slideWhenCut = true, modifier = Modifier.weight(1f, fill = false))"))
+        assertTrue(src("StyleBubbles.kt").contains("maxSize = 11.sp, minSize = 7.sp, maxLines = 3"))
+        assertTrue(src("StyleConsoleHomes.kt").contains("wrapContentHeight(align = Alignment.Top, unbounded = true)"))
+        assertTrue(src("PlatformLogos.kt").contains("name.contains(\"app\", ignoreCase = true)"))
+    }
+}
