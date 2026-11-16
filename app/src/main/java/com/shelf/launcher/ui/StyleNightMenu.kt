@@ -11,6 +11,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -275,9 +276,12 @@ private fun NightList(c: StyleCtx, loop: Boolean, modifier: Modifier) {
             nightWave(NightMotion.ease(NightMotion.layer(t, 0f, 0f, 0.72f)), 1f, hi, 0.42f)
         }
         // The category, huge and faint, behind the framed cover.
+        // (676r, D340 - owner 16 Nov: "the whole word has to fit" - "PLAYSTATION 2" ran off the screen at 120 sp. It keeps
+        // 120 sp where it fits and steps down until the whole word does; its slant and drift stay.)
         if (caption) Text(
             c.categoryLabel.uppercase(), color = hi.copy(alpha = 0.09f), fontSize = 120.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
-            maxLines = 1, softWrap = false, modifier = Modifier.offset(x = (-12).dp, y = maxHeight * 0.02f).graphicsLayer {
+            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 120.sp),
+            maxLines = 1, softWrap = false, modifier = Modifier.offset(x = (-12).dp, y = maxHeight * 0.02f).then(Modifier.widthIn(max = maxWidth * 0.9f)).graphicsLayer {
                 rotationZ = -6f
                 // (It drifts in from the left, slower than the rest - the farthest layer.)
                 val e = NightMotion.ease(NightMotion.layer(enter.value, 0f, 0f, 0.9f))

@@ -822,12 +822,19 @@ private fun CrateInfo(c: StyleCtx, g: Game, compact: Boolean, wide: Boolean, woo
 
 @Composable
 private fun CrateFact(icon: ImageVector, label: String, value: String, compact: Boolean, ink: androidx.compose.ui.text.TextStyle) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(if (compact) 14.dp else 16.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 11.sp else 13.sp, maxLines = 1, style = ink)
-        Spacer(Modifier.weight(1f))
-        Text(value, color = Color.White, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, style = ink)
+    // (676r, D340 - RP Nova x1.3: "Time played" and "Never played" ran into each other, both cut. The value goes under the
+    // label when the two don't fit side by side, each whole - rule 11.)
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    androidx.compose.foundation.layout.FlowRow(
+        Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, itemVerticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(if (compact) 14.dp else 16.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = if (compact) 11.sp else 13.sp, maxLines = 1, softWrap = false, style = ink)
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(value, color = Color.White, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false, style = ink)
     }
 }
 
