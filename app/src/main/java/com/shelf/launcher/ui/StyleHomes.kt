@@ -1061,7 +1061,7 @@ internal fun StyleArt(
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                 url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
                 g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = wide, modifier = Modifier.fillMaxSize())
-                else -> StyleNamePlate(titles.display(g.name))
+                else -> StyleNamePlate(titles.display(g.name), lane = lane)
             }
             // Update 115: the console's badge.
             androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
@@ -1112,7 +1112,7 @@ internal fun StyleArt(
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the card.)
             url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = styleAspect(c.type) > 1f, modifier = Modifier.fillMaxSize())
-            else -> StyleNamePlate(titles.display(g.name))
+            else -> StyleNamePlate(titles.display(g.name), lane = lane)
         }
         // Update 115: the console's badge (update 141: on every look, cartridges, discs and cases too).
         androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
@@ -1233,11 +1233,13 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
-internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f)) {
+internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f), lane: BadgeLane? = LocalBadgeLane.current) {
     Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
         FullText(
             name, color = color, fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
-            textAlign = TextAlign.Center, maxLines = 4
+            textAlign = TextAlign.Center, maxLines = 4,
+            // (676e: in the band the card's badges leave free - BadgeLane.kt laneContent)
+            modifier = Modifier.laneContent(lane, 6.dp)
         )
     }
 }

@@ -1,3 +1,15 @@
+# Update 676e (16 Nov 2026, live session) - same branch, NOT released - coverless name plate clear of the badges
+- RP Nova x1.3 n676d13 (build 676d): Grid PASS (676c chip text fixed: "6/10 · 60%" needs 62 px, has 62); Cube readability FAIL
+  "'Shadow Of The Colossus' and '6/10' drawn over each other" - the lane's stacked count landed on a coverless card's name plate.
+  Fix: BadgeLane.freeBand + Modifier.laneContent - the plate's text is placed in the middle of the band the shown badges leave
+  free, in the same layout pass as the badges (no jump); a plate taller than the band stays centred. StyleNamePlate gets the lane.
+- n676d10 (x1.0): popup 3/3 PASS, badge gate 26/26 PASS. nav676d: pill hidden in every state (swipe step skipped, by design).
+  D334 on hardware: 6 system Back presses at the QA app's root - the guard fired 5x, focus never left the QA app.
+- Tests: BadgeFreeBand676eTest, BadgeLane676Test, Batch675rTest, QaHarnessBack676Test PASS. Files: ui/BadgeLane.kt, ui/StyleHomes.kt.
+- Planned (v0.6.74, owner 16 Nov): per-item "Open on screen" shortcut - docs/claude/SCREEN_SHORTCUT_PLAN.md (audit + plan).
+- Owner 16 Nov: replacing an incompatible QA app (uninstall com.shelf.launcher.qa only) is always allowed; the Thor is in use by the
+  owner today - its nav-bar check stays queued (HW-8).
+
 # Update 676d (16 Nov 2026, live session) - same branch, NOT released - D334 QA safety, QA levels, stable QA key, Cube status-bar options
 - D334 (owner: "finish D334 first"): the QA harness could put the owner's Voltcap in front. App side: MainActivity's Back at the
   home's root called moveTaskToBack whenever Voltcap isn't the default home - always so for the QA app, so a script's B showed

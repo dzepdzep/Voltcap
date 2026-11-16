@@ -28,6 +28,7 @@ Every request states its level: L1 QA app (default, autonomous on authorized USB
 observation only, nothing changed, no input beyond what the plan declares), L3 production modification (the owner's explicit
 approval of that step, backup + rollback + certificate check first). An accidental switch to the production app: stop, press
 nothing, log a defect. Evidence is labelled QA or PRODUCTION. All requests below are L1 unless they say otherwise.
+Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.qa only - its own test data) is always allowed.
 
 ## Requests
 

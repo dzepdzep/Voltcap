@@ -147,6 +147,51 @@ internal val LocalBadgeLane = staticCompositionLocalOf<BadgeLane?> { null }
 @Composable
 internal fun rememberBadgeLane(): BadgeLane = remember { BadgeLane() }
 
+/**
+ * 676e (RP Nova x1.3 n676d13, Cube: "'Shadow Of The Colossus' and '6/10' drawn over each other"): the band of a [tile] tile the
+ * shown badges leave free - from under the lowest badge along the top half to above the highest one along the bottom half
+ * ([gap] clear of each). A coverless card's name plate centres itself there ([laneContent]).
+ */
+internal fun freeBand(tile: IntSize, boxes: List<BadgeBox>, gap: Int, dir: LayoutDirection = LayoutDirection.Ltr): IntRange {
+    val plan = planBadges(tile, boxes, gap, dir)
+    var top = 0; var bottom = tile.height
+    for (b in boxes) {
+        val s = plan[b.kind] ?: continue
+        if (!s.shown) continue
+        val r = badgeRect(b, tile, dir).translate(s.dx, s.dy)
+        if (r.center.y < tile.height / 2) top = maxOf(top, r.bottom + gap) else bottom = minOf(bottom, r.top - gap)
+    }
+    return top..maxOf(top, bottom)
+}
+
+/**
+ * 676e: on the text of a coverless card's name plate (centred in the tile, [inset] in from its edges): placed in the middle of
+ * the band the badges leave free, in the same pass that places the badges - no jump. A plate taller than that band stays
+ * centred in the tile as before. No lane: nothing changes.
+ */
+internal fun Modifier.laneContent(lane: BadgeLane?, inset: Dp): Modifier = if (lane == null) this else this.then(LaneContentElement(lane, inset))
+
+private data class LaneContentElement(val lane: BadgeLane, val inset: Dp) : ModifierNodeElement<LaneContentNode>() {
+    override fun create() = LaneContentNode(lane, inset)
+    override fun update(node: LaneContentNode) { node.lane = lane; node.inset = inset }
+}
+
+private class LaneContentNode(var lane: BadgeLane, var inset: Dp) : Modifier.Node(), LayoutModifierNode {
+    override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        val p = measurable.measure(constraints)
+        return layout(p.width, p.height) {
+            val t = lane.tile
+            if (t.height <= 0 || lane.boxes.isEmpty()) { p.place(0, 0); return@layout }
+            val band = freeBand(t, lane.boxes.values.toList(), lane.gap, lane.dir)
+            val room = band.last - band.first
+            if (p.height > room) { p.place(0, 0); return@layout }
+            val now = (t.height - p.height) / 2 // where the plate centres it now (tile coordinates)
+            val want = band.first + (room - p.height) / 2
+            p.place(0, want - now)
+        }
+    }
+}
+
 /** QA (QaClip "badges"): a badge's kind and its tile's lane, "PROGRESS#1a2b". */
 internal val BadgeTag = SemanticsPropertyKey<String>("VoltcapBadge")
 /** QA: the tile a lane belongs to. */

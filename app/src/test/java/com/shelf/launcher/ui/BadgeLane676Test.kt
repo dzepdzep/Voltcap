@@ -85,3 +85,19 @@ class BadgeLane676Test {
         assertTrue(src("TileHome.kt").contains("laneBadge(lane, BadgeKind.PROGRESS, pillAt, chipPad)"))
     }
 }
+
+/** 676e: a coverless card's name plate centres in the band its badges leave free (RP Nova x1.3 Cube: plate under "6/10"). */
+class BadgeFreeBand676eTest {
+    @Test fun plateBandSitsUnderTheStackedBadges() {
+        val tile = IntSize(196, 266)
+        val boxes = listOf(BadgeBox(BadgeKind.CONSOLE, Alignment.TopStart, 6, 6, 152, 26), BadgeBox(BadgeKind.PROGRESS, Alignment.TopEnd, 10, 10, 74, 22))
+        val band = freeBand(tile, boxes, 12)
+        // console 6..32, count stacked 44..66 -> free from 78 down to the tile's bottom
+        assertEquals(78, band.first); assertEquals(266, band.last)
+        // no badges: the whole tile
+        assertEquals(0..266, freeBand(tile, emptyList(), 12))
+        val s = listOf("src/main/java/com/shelf/launcher/ui/StyleHomes.kt", "app/src/main/java/com/shelf/launcher/ui/StyleHomes.kt").map { File(it) }.first { it.exists() }.readText()
+        assertEquals(2, s.split("else -> StyleNamePlate(titles.display(g.name), lane = lane)").size - 1)
+        assertTrue(s.contains("modifier = Modifier.laneContent(lane, 6.dp)"))
+    }
+}

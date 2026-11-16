@@ -182,6 +182,15 @@
      "emulator": "no",
      "device": "Flip 2 dry run only (no Drive)",
      "owner": "owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval"
+    },
+    {
+     "what": "Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "Thor + Nova (single-screen) after implementation",
+     "owner": "requested 16 Nov"
     }
    ],
    "gates": [
