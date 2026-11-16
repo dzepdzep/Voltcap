@@ -119,16 +119,16 @@ Cloud development continues without any of these. v0.6.73 / KONKR production upg
 | | |
 |---|---|
 | Stable production version | **v0.6.72** (main 5b01ef39). Nothing released since. |
-| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675e deedfa45 (16 Nov 03:25 UTC) |
-| Latest CI ("Verify Android update 310") | **green** on c6d2f8a (675f, first compile of 675e's Kotlin); green on every finished push since the 675a memory fix |
-| Latest emulator trial | 43786748164 on ddca9b66 (675c): FAIL (QA-script dump reading, fixed 675d + 675h); new trial started on the 675h commit - result next run |
-| Last successful cloud run | 16 Nov 05:20-05:40 UTC (675h) |
-| Cloud runs so far | 7 scheduled (675a-675e, 675h) + 2 live dashboard sessions, hourly at :17 |
-| Waiting for hardware | 6 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
+| Latest development commit | see the top of the [dev branch](https://github.com/dzepdzep/voltcap/commits/claude/qa-0672-repair); last code change: 675l cb9fe4e (16 Nov 07:50 UTC, Spotify names shown whole) |
+| Latest CI ("Verify Android update 310") | **green** on 339839f9 (675k); 675l pending; green on every finished push since the 675a memory fix |
+| Latest emulator trial | 43811840328 (675i): NOT TESTED (precondition: ANR dialog + Inspect question, handled 675k); next trial from ~08:45 UTC |
+| Last successful cloud run | 16 Nov 07:22-07:55 UTC (675l) |
+| Cloud runs so far | 9 scheduled (675a-675e, 675h, 675k, 675l) + live sessions, hourly at :17 |
+| Waiting for hardware | 7 open hardware requests, batched into one session (Owner actions #1); 25 older requests (13 Nov) also need a device - folded into later sessions after re-checking |
 | Waiting for your approval / decision | see Owner actions |
 
 ## Next development priorities (hand-written)
-1. Read the emulator trial on the 675h commit (both QA scripts read dumps one node per line); then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
+1. Re-run the emulator trial from ~08:45 UTC (675k preconditions) and read it; then widen it: all 53 layouts in bounded jobs, x1.0 + x1.3,
    Flip 2-like and RP Classic-like screens, the 17 category looks.
 2. CI memory: keep watching (needs several green pushes in a row before G11 is DONE).
 3. Native popup pages for the 40 layouts still on the shared page (P2).
