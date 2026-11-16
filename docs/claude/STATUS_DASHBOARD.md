@@ -2,7 +2,7 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675m · 2026-11-16 08:45 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 8bd5e4ae (675l) · effort: medium
+**1. LATEST UPDATE** - 675m · 2026-11-16 08:45 UTC · commit `1990deb` · CI: Verify Android update 310 green on 8bd5e4ae (675l) · effort: medium
 
 **2. WHAT CLAUDE JUST FIXED** - Notifications panel: long app names, notification titles and texts, background-task names, the date and the charge-limit label are no longer cut off with '...'; they wrap, shrink a little, or slide so all of it can be read. Rows keep their height. The emulator test is started again on this update.
 
@@ -26,7 +26,7 @@
 
 **5. WORKING ON NEXT** - now: read the emulator test started on this update (the first one with the start-up dialog fixes); then: hardware checks on today's handhelds when you say "devices ready"; remove the remaining '...' cut-offs screen by screen (262 left)
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 5 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
 **7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 7 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - postponed items; contents grow as later fixes finish (UNKNOWN)
@@ -106,11 +106,12 @@ Merging, the production install and publishing always wait for your explicit GO.
 <!-- GEN:owner -->
 | # | What I need from you | Why | Device | Urgent? | Blocks |
 |---|---|---|---|---|---|
-| 1 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
-| 2 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
-| 3 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
-| 4 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
-| 5 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 1 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
+| 2 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
+| 3 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
+| 4 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
+| 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
+| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->

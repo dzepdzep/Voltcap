@@ -25,7 +25,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 
 ## Requests
 
-## Next hardware session (batched) - TODAY, 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")
+## Hardware session 16 Nov (running): RP Nova d3641c41 via the owner's work laptop (msi, C:\VoltcapQA bundle, QA build
+8bd5e4a cloud debug key 4d133dde; old QA app 0.6.68 removed with the owner's OK). Nova = 4:3, 1280x960 @ 320 dpi (640x480 dp).
+Gate n675c x1.0 running; x1.3 next. Odin 2 Portal (home PC): QA app 8bd5e4a installed, gate started then stopped at the owner's
+request (restored, fatal=0) - can run when the home PC is used again.
+
+## Next hardware session (batched) - 16 Nov (owner: KONKR + other handhelds; waits for "devices ready")
 1. Identify every USB handheld (serial, model, Android, screen, dpi; USB not wireless - CLAUDE.md device rule). QA app only.
 2. One QA build of the newest dev commit on each; register it in tools/qa/builds.json.
 3. Full popup gates x1.0 + x1.3 on each device (two at a time, ~50 min each): closes HW-1 for those devices, HW-5, HW-6.

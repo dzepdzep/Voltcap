@@ -159,6 +159,9 @@ Not run on this line yet: KONKR x1.0 full gate, RP Classic / Thor / Odin (not co
 | Game shelf extraction / Coverflow pickup motion (523f) | owner's eye on the device |
 
 ## 3. Genuinely open and reproducible
+- **Status bar blocks (owner 16 Nov, new):** the status bar's separate blocks look wrong - either one single block, or let each
+  layout draw the status bar its own way (it does not have to be the same fixed bar on every layout). Owner asked which layout he
+  saw it on: unknown yet. Design change -> owner's look approval needed; ask with a side-by-side before making it the default.
 
 | Item | Status / next step |
 |---|---|

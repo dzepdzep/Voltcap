@@ -2,6 +2,13 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
+   "what": "Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way?",
+   "why": "your request of 16 Nov - a design change needs your pick before it becomes the default",
+   "device": "a screenshot helps",
+   "urgent": false,
+   "blocks": "that design change only"
+  },
+  {
    "what": "Today: connect the KONKR and the other handhelds by USB, PC on, then say \"devices ready\"",
    "why": "the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks)",
    "device": "KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73",
