@@ -169,6 +169,14 @@ internal object TestHooks {
     fun interceptLaunch(where: String, key: String): Boolean {
         // (Update 500: the isolated QA app never starts a game — no file or switch can allow it.)
         if (com.shelf.launcher.data.QaVariant.isolatedNow) {
+            // 676n (owner 16 Nov, "HARDWARE TESTING AUTHORIZATION": real launches of harmless installed apps on the Thor's two
+            // screens, through a narrowly scoped, supervised path - the QA protections stay). Only the PLAIN-APP path ("vm.app" ->
+            // "launcher.app"), only packages a QA script listed in <files>/qa_allow_app_launch, only until that file's expiry (at
+            // most 15 min ahead), never a game, a ROM or a resume (their paths stay blocked whatever the file says).
+            if (QaLaunchWindow.allows(where, key, QaClip.appLaunchWindow)) {
+                android.util.Log.e("VoltcapQA", "LAUNCH allowed (supervised window) $where $key")
+                return false
+            }
             android.util.Log.e("VoltcapQA", "LAUNCH blocked (isolated QA app) $where $key")
             return true
         }

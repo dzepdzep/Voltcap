@@ -56,6 +56,9 @@ internal object QaClip {
     /** Update 489b (D287): launching allowed during QA only while <external files>/qa_allow_launch exists. */
     fun allowLaunchFile(): Boolean = allowFile?.exists() == true
 
+    /** 676n: the supervised plain-app launch window (QaLaunchWindow), <external files>/qa_allow_app_launch. */
+    @Volatile var appLaunchWindow: java.io.File? = null
+
     @Volatile private var watching = false
     fun watch(context: android.content.Context) {
         if (!QaTrace.on || watching) return
@@ -66,6 +69,7 @@ internal object QaClip {
         val more = java.io.File(app.getExternalFilesDir(null), "qa_winmore_req")
         nlFile = java.io.File(app.getExternalFilesDir(null), "qa_nolaunch")
         allowFile = java.io.File(app.getExternalFilesDir(null), "qa_allow_launch")
+        appLaunchWindow = java.io.File(app.getExternalFilesDir(null), "qa_allow_app_launch")
         // (Update 489b, D287: a QA script asks whether a tap on Play would start a game — answered in qa_launch_state.)
         val launchCheck = java.io.File(app.getExternalFilesDir(null), "qa_launch_check")
         val launchState = java.io.File(app.getExternalFilesDir(null), "qa_launch_state")
