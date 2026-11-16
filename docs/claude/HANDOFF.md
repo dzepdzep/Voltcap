@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~06:15 UTC, update 675j (live session: v0.6.73 plan with today's handhelds; effort setting). Previous: 675i.
+Updated: 2026-11-16 ~06:40 UTC, update 675k (cloud run: emulator trial preconditions - foreign ANR dialog + Inspect question). Previous: 675j.
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -19,8 +19,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
-- FIRST: read the emulator trial that 675i started (its commit carries "[emulator-qa]"; the next trial is allowed from 09:05 UTC) - run 43809583379 (675h) graded NOTHING because popclip.py
-  crashed on glyphcheck's 4-value candidates (fixed 675i); its e529b precondition also failed (not HOME) - read that next.
+- FIRST: re-run the emulator trial ("[emulator-qa]" in a head commit message, allowed from ~08:45 UTC) and read it. Run
+  43811840328 (675i) graded NOTHING: precondition e529a failed - "Pixel Launcher isn't responding" over the QA app and the
+  Inspect / Wobble first-start question over the picker. 675k: trial hides / closes foreign ANR dialogs, the first-run QA
+  hook answers the Inspect question. If a precondition still fails, read precondition_*.png for what else is in front
+  (PermissionsPrompt / WhatsNew are other start-up dialogs the hook does not answer).
 - v0.6.73 (owner 16 Nov): proceed with the KONKR + today's other handhelds; the Flip 2's 15 Nov gates are HISTORICAL evidence
   (risk listed, not a blocker). A live session runs the hardware batch when the owner says "devices ready".
 - The Flip 2 is unavailable (owner 16 Nov): don't wait for it; its checks are batched as hardware session B. The charging fix

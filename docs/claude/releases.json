@@ -90,12 +90,12 @@
     {
      "gate": "CI unit tests + debug build (Verify Android update 310)",
      "state": "PASS",
-     "evidence": "green on deedfa45 and the 4 code pushes before it; re-check on the release commit"
+     "evidence": "green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit"
     },
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PENDING",
-     "evidence": "run 43809583379 (675h): NOT TESTED - the grader crashed (QA-tool bug, fixed 675i); 675i re-runs it. Emulator evidence supports, never replaces, the handheld gates"
+     "evidence": "run 43811840328 (675i): NOT TESTED - grader fixed, but the precondition failed: Pixel Launcher's ANR dialog stood over the QA app and the Inspect / Wobble first-start question came up 9 s after each start (675k: both handled). Next trial from ~08:45 UTC. Emulator evidence supports, never replaces, the handheld gates"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",

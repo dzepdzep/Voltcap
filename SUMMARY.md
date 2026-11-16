@@ -1,3 +1,18 @@
+# Update 675k (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial preconditions
+- Read emulator run 43811840328 (675i commit, swangle_indirect): VERDICT NOT TESTED - precondition e529a failed
+  (focus = Pixel Launcher, screen PICKER, qa_windows=3). precondition_e529a.png: "Pixel Launcher isn't responding" over the
+  QA app's picker, and under it the Inspect / Wobble first-start question (InspectChoice.kt, shown 9 s after every start
+  until answered - never answered on a fresh emulator; it also explains earlier "not HOME / 2 QA windows" preconditions).
+- Fix (QA only): run_trial.sh sets hide_error_dialogs on the throwaway emulator and precheck closes another app's ANR
+  dialog (CLOSE_SYSTEM_DIALOGS, then ENTER; counted as a try, logged). The QA hook `voltcap_test_firstrun_done` also marks
+  the Inspect question answered, mode unchanged (default Inspect). Hooks are QA-app only (enabled(context)).
+- Tests: EmulatorHarness529Test +2 (fail on the old hook / script) - 4/4 PASS in the cloud; app + tests compiled
+  (compileDebugUnitTestKotlin). Static checks PASS, QA selftest 163/163.
+- Not tested: the trial itself (next one allowed from ~08:45 UTC, 3 h after 675i's). No handheld needed.
+- Files: app/src/main/java/com/shelf/launcher/ui/TestHooks.kt, app/src/test/java/com/shelf/launcher/ui/EmulatorHarness529Test.kt,
+  tools/qa/emulator/run_trial.sh, docs/REQUIREMENTS_MATRIX.md, docs/claude/{HANDOFF.md,AUTORUN_LOG.md,run_reports.jsonl,
+  releases.json,STATUS_DASHBOARD.md,AUTORUN_LOCK.md}.
+
 # Update 675j (16 Nov 2026, morning) - live session - v0.6.73 without the Flip 2; effort setting
 - Owner 16 Nov: proceed to v0.6.73 with the KONKR and the other handhelds connected today; the Flip 2's 15 Nov popup gates are
   HISTORICAL evidence (older builds 674k / 674n), never treated as verification of the newest build; the gap is listed under

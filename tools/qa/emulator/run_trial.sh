@@ -52,6 +52,9 @@ note "INSTALL: OK; primaryCpuAbi=$(adb shell dumpsys package $P | sed -n 's/.*pr
 # (The handhelds' QA app has all-files access from its first setup; a fresh emulator install does not - the QA fixture
 # library lives under shared storage. Granted to the isolated QA app on this throwaway emulator only.)
 adb shell appops set $P MANAGE_EXTERNAL_STORAGE allow > /dev/null 2>&1
+# (675k, run 43811840328: Pixel Launcher's ANR dialog took the key focus from the QA app. This throwaway emulator shows no
+# error dialogs at all - an app that stops responding is closed instead; precheck also closes one that still comes up.)
+adb shell settings put global hide_error_dialogs 1 > /dev/null 2>&1
 # (Run 43520733405: "no game matches 'Shadow of the Colossus'" - the handhelds' QA library holds empty stand-in ROM files
 # a QA script put there; a fresh emulator has none. The same synthetic stand-ins: empty files with game-like names.)
 QF=/sdcard/Android/data/$P/files/roms
@@ -101,6 +104,13 @@ precheck() { # name
     # (HOME twice, 4 s apart: the mark is HOME from the activity's start until the picker is shown after the intro)
     if [ "$mark" = HOME ]; then homes=$((homes + 1)); [ $homes -ge 2 ] && break; else homes=0; fi
     [ $tries -ge 5 ] && break
+    # (675k, run 43811840328: "Pixel Launcher isn't responding" stood over the picker - the B presses went to it and the
+    # precondition failed. Another app's ANR dialog on this throwaway emulator is closed, logged, and the loop goes on.)
+    if adb shell dumpsys window | grep -m1 mCurrentFocus | grep -q "Not Responding\|isn't responding"; then
+      adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1
+      adb shell dumpsys window | grep -m1 mCurrentFocus | grep -q "Not Responding\|isn't responding" && adb shell input keyevent KEYCODE_ENTER
+      note "precondition $1: another app's ANR dialog in front - closed"; sleep 2; tries=$((tries + 1)); continue
+    fi
     [ "$mark" = PICKER ] && { adb shell input keyevent KEYCODE_BUTTON_B; note "precondition $1: picker shown - B"; }
     sleep 4; tries=$((tries + 1))
   done

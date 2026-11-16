@@ -546,6 +546,10 @@ internal object TestHooks {
             com.shelf.launcher.data.FirstRun.markDone(app)
             com.shelf.launcher.data.BatterySaver.introSeen(app)
             if (com.shelf.launcher.data.Packs.choice(app) == null) com.shelf.launcher.data.Packs.setChoice(app, com.shelf.launcher.data.Packs.Choice.NONE)
+            // 675k (run 43811840328): the Inspect / Wobble question (InspectChoice.kt) comes up 9 s after every start until
+            // answered - on a fresh emulator it stood over the picker / home as a second QA window and failed the trial's
+            // preconditions. Marked answered with the mode left as it is (default Inspect); the handhelds answered it long ago.
+            if (!com.shelf.launcher.data.Features.inspectModeAsked.value) com.shelf.launcher.data.Features.inspectModeAsked.value = true
             android.util.Log.e("VoltcapQA", "firstrun done (QA hook)")
         }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).

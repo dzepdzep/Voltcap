@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675j · 2026-11-16 06:15 UTC · commit `this update (being pushed)` · CI: pending on 675i (last green: deedfa4) · effort: medium (this live session)
+**1. LATEST UPDATE** - 675k · 2026-11-16 06:35 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 2371ce29 (675i); lock push in progress · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - v0.6.73 no longer waits for the Flip 2: today's KONKR and other handhelds will be tested, and the Flip 2's results from 15 Nov count only as older evidence with the gap listed as a risk. The charging fix will only be used if the problem can still be reproduced.
+**2. WHAT CLAUDE JUST FIXED** - Found why the last emulator test graded nothing: another app's 'not responding' box covered VoltCap, and a one-time 'Inspect or Wobble?' question kept popping up 9 seconds after each start. The test now closes such boxes and answers that question in the test app only, so the next emulator run can actually check the popups.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
 - **CI / build** (675a): Fixed the automatic test run running out of memory (it was stopped by the watchdog on some pushes); the heaviest test groups now run in their own fresh process. CI has been green since.
 - **CI / build** (674o): Development moved to the cloud: it now builds, tests and pushes without your PC. The emulator test, which crashed every time, now stays up. Library's L2 / R2 hints are centred and the Side menu's sync line is full touch size again.
+- **QA tools** (675k): Found why the last emulator test graded nothing: another app's 'not responding' box covered VoltCap, and a one-time 'Inspect or Wobble?' question kept popping up 9 seconds after each start. The test now closes such boxes and answers that question in the test app only, so the next emulator run can actually check the popups.
 - **Docs** (675j): v0.6.73 no longer waits for the Flip 2: today's KONKR and other handhelds will be tested, and the Flip 2's results from 15 Nov count only as older evidence with the gap listed as a risk. The charging fix will only be used if the problem can still be reproduced.
-- **Docs** (675g): The dashboard now opens with a plain-English owner summary and a release tracker: v0.6.73's fixes, which are verified, which gates are left and why it cannot ship yet - all worked out from the evidence files, not typed by hand.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: hardware checks on today's handhelds when you say "devices ready"; then: read the emulator re-run of 675i; native popup pages for the 40 layouts still on the shared page
+**5. WORKING ON NEXT** - now: re-run the emulator trial (allowed from ~08:45 UTC) and read its popup results; then: hardware checks on today's handhelds when you say "devices ready"; native popup pages for the 40 layouts still on the shared page
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 5 items (see Owner actions below); cloud work continues without them.
 
@@ -67,8 +67,8 @@ work. Emulator results never count as handheld verification. Release status is d
 
 | Gate | State | Evidence |
 |---|---|---|
-| CI unit tests + debug build (Verify Android update 310) | PASS | green on deedfa45 and the 4 code pushes before it; re-check on the release commit |
-| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43809583379 (675h): NOT TESTED - the grader crashed (QA-tool bug, fixed 675i); 675i re-runs it. Emulator evidence supports, never replaces, the handheld gates |
+| CI unit tests + debug build (Verify Android update 310) | PASS | green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit |
+| Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43811840328 (675i): NOT TESTED - grader fixed, but the precondition failed: Pixel Launcher's ANR dialog stood over the QA app and the Inspect / Wobble first-start question came up 9 s after each start (675k: both handled). Next trial from ~08:45 UTC. Emulator evidence supports, never replaces, the handheld gates |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | owner 16 Nov: KONKR + other handhelds available today ("devices ready"). Last KONKR: 15 Nov k674m 51/53, k674n 51/53; all failures fixed since |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
