@@ -100,3 +100,15 @@ class HeightCuts676yTest {
         assertTrue(src("PlatformLogos.kt").contains("name.contains(\"app\", ignoreCase = true)"))
     }
 }
+
+/** 676z (badge review): a coverless name never sits under the console badge, nor breaks inside a word. */
+class NameUnderBadge676zTest {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n").map { File(it) }.first { it.exists() }.readText()
+    @Test fun plateAndTileLeaveTheBand() {
+        val h = src("StyleHomes.kt"); val plate = h.substring(h.indexOf("internal fun StyleNamePlate"), h.indexOf("/** A smooth 0 → 1 while"))
+        assertTrue(plate.contains("(BadgeLogos.ART_PILL + 0.6f)") && plate.contains("laneContent(lane, 6.dp, shiftY ="))
+        assertTrue(plate.contains("measurer.measure(longest"))
+        assertTrue(src("TileHome.kt").contains("bottom = 10.dp + consoleRoom"))
+        assertTrue(src("BadgeLane.kt").contains("insetPx + shiftY.roundToPx()"))
+    }
+}
