@@ -260,7 +260,17 @@ internal object QaClip {
                 sb.append("\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],")
                 sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
             }
-            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("]}")
+            // (677d: the status bar's cluster and every profile picture, for statuscheck.py.)
+            val bars = ArrayList<String>(); val avatars = ArrayList<String>()
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                val c = n.config
+                fun box(): String { val b = n.boundsInWindow; val p = n.positionInWindow
+                    return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}]" }
+                if (c.getOrNull(StatusClusterTag) == true) bars += "{${box()}}"
+                c.getOrNull(AvatarTag)?.let { w -> avatars += "{\"where\":\"$w\",${box()}}" }
+            }
+            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("],\"statusBars\":[").append(bars.joinToString(","))
+                .append("],\"avatars\":[").append(avatars.joinToString(",")).append("]}")
         }
         sb.append("],")
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)

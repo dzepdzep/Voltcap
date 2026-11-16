@@ -166,6 +166,11 @@ internal fun StatusBar(
     minimal: Boolean = false
 ) {
     if (QaTrace.on) androidx.compose.runtime.SideEffect { QaTrace.count("StatusBar") } // (Update 496, QA only: charging-light check)
+    // (677d, QA only: the bar's conditional pieces on demand - TestHooks.statusFake; null in every normal build / session.)
+    val fake = TestHooks.statusFake.value
+    val notificationCount = fake?.get("notes") ?: notificationCount
+    val trophyCount = fake?.get("trophy") ?: trophyCount
+    val raProfile = fake?.get("points")?.let { p -> (raProfile ?: com.shelf.launcher.data.RaUserProfile()).copy(TotalPoints = p) } ?: raProfile
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
     val look = animatedLook(if (lookLayout != null) statusLookFor(lookLayout, paleBehind) else look0)
     val ink = look.ink
@@ -175,7 +180,13 @@ internal fun StatusBar(
     val bar by StatusBarPrefs.state(context).collectAsState()
     val clockText = rememberClockText(bar.clock, bar.hours, bar.showDate)
     val wifiConnected = rememberWifiConnected()
-    val accessories = rememberAccessories(bar.accessories)
+    val accessories = rememberAccessories(bar.accessories).let { real ->
+        val n = fake?.get("pads") ?: 0
+        if (n <= 0) real else real + List(n) { i ->
+            com.shelf.launcher.device.accessories.Accessory("qa$i", "QA pad $i", com.shelf.launcher.device.accessories.AccessoryKind.CONTROLLER,
+                com.shelf.launcher.device.accessories.AccessoryTransport.BLUETOOTH, null)
+        }
+    }
     var showDevices by remember { mutableStateOf(false) }
     // Narrow screens: the clock and the first accessory keep their place, RA points go first.
     val widthDp = LocalConfiguration.current.screenWidthDp
@@ -219,7 +230,7 @@ internal fun StatusBar(
                 Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
             }
             Row(
-                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons")
+                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusClusterTag()
                     .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look, atBottom).then(pieceH)
                     .onGloballyPositioned { onCluster(it.boundsInRoot()) },
                 verticalAlignment = Alignment.CenterVertically
@@ -287,7 +298,7 @@ internal fun StatusBar(
                         )
                     )
                 }
-                val pic = Modifier.size(look.avatarSize)
+                val pic = Modifier.avatarTag("bar").size(look.avatarSize)
                     .then(if (look.ring != null) Modifier.border(2.dp, look.ring, look.avatarShape()).padding(3.dp) else Modifier)
                     .clip(look.avatarShape()).tapOnly(onProfileClick)
                 // (Update 358: not while Tile home's Switch style shows the profiles top-left — the same picture twice.)

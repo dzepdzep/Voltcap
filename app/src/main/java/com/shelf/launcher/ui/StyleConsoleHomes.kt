@@ -114,7 +114,7 @@ internal fun ConsoleProfile(c: StyleCtx, ink: Color = Color.White) {
     val name = profile?.User ?: c.state.raUsername ?: "Player"
     val avatar = profilePictureUrl(RaBadges.mediaUrl(profile?.UserPic))
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(CircleShape).background(ink.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.avatarTag("console").size(34.dp).clip(CircleShape).background(ink.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
             if (avatar != null) AsyncImage(avatar, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             else Icon(Icons.Filled.Person, null, tint = ink.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
         }
@@ -719,7 +719,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
                     .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, i); act() } },
                 contentAlignment = Alignment.Center
             ) {
-                if (i == 0 && avatar != null) AsyncImage(avatar, "Profile", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape))
+                if (i == 0 && avatar != null) AsyncImage(avatar, "Profile", contentScale = ContentScale.Crop, modifier = Modifier.avatarTag("channel").fillMaxSize().padding(2.dp).clip(CircleShape))
                 else Icon(icon, null, tint = if (on) ShelfTheme.accent else ink.copy(alpha = 0.85f), modifier = Modifier.size(19.dp))
             }
         }
