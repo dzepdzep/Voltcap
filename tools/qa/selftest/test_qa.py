@@ -1679,6 +1679,49 @@ class TestLaunchGuard(unittest.TestCase):
         self.assertIn("touch $F/qa_nolaunch\ncat $R", s)
 
 
+class GlyphKey675e(unittest.TestCase):
+    """675e (D-674o-1): KONKR x1.3 k674n - Spot START read dy +3 px: its 12 % white pill sat over a backdrop shape of nearly the
+    pill's colour, so the walk ran past the pill's bottom edge. A glyph whose dump entry carries "key" (GlyphPill's own box) is
+    measured against that box; the limits stay max(1.5 px, 5 %)."""
+    def _scene(self, oy):
+        from PIL import Image, ImageDraw
+        img = Image.new("RGB", (120, 80), (20, 20, 30)); d = ImageDraw.Draw(img)
+        # the backdrop shape right under the pill, 3 px off the pill's colour (no edge the walk can see)
+        d.rectangle((0, 40, 119, 79), fill=(48, 48, 58))
+        kx, ky, kw, kh = 30, 24, 60, 24
+        d.rounded_rectangle((kx, ky, kx + kw - 1, ky + kh - 1), radius=12, fill=(51, 51, 61))
+        x0, y0 = 45, 31 + oy                       # "START" ink 30 x 10, centred when oy = 0
+        d.rectangle((x0, y0, x0 + 29, y0 + 9), fill=(240, 240, 240))
+        g = {"text": "START", "shown": [x0 - 1, y0 - 1, 32, 12], "placed": True}
+        return img, g, [kx, ky, kw, kh]
+
+    def test_centred_glyph_passes_against_its_key_where_the_walk_failed(self):
+        import glyphcheck
+        img, g, key = self._scene(0)
+        b = tuple(g["shown"])
+        old = glyphcheck.check(img, b, True, "START")   # the walk alone (no key) runs past the pill
+        self.assertNotEqual(old["verdict"], "PASS", old)
+        dump = {"windows": [{"at": [0, 0], "nodes": [], "texts": [], "glyphs": [dict(g, key=key)]}]}
+        (text, box, ink, k), = glyphcheck.candidates(dump)
+        self.assertEqual(k, tuple(key))
+        r = glyphcheck.check(img, box, ink, text, k)
+        self.assertEqual(r["verdict"], "PASS", r); self.assertEqual(r["shape"], key)
+
+    def test_off_centre_glyph_in_its_key_still_fails(self):
+        import glyphcheck
+        img, g, key = self._scene(3)
+        r = glyphcheck.check(img, tuple(g["shown"]), True, "START", tuple(key))
+        self.assertEqual(r["verdict"], "FAIL", r); self.assertAlmostEqual(r["dy"], 3, delta=0.6)
+
+    def test_glyph_outside_its_key_fails_and_window_offset_applies(self):
+        import glyphcheck
+        img, g, key = self._scene(0)
+        r = glyphcheck.check(img, tuple(g["shown"]), True, "START", (0, 0, 20, 20))
+        self.assertEqual(r["verdict"], "FAIL", r)
+        dump = {"windows": [{"at": [5, 7], "nodes": [], "texts": [], "glyphs": [dict(g, key=key)]}]}
+        self.assertEqual(glyphcheck.candidates(dump)[0][3], (35, 31, 60, 24))
+
+
 class GlyphCheck521(unittest.TestCase):
     """Batch 521b: glyphcheck finds a letter that sits off the middle of its circle (and passes a centred one)."""
     def _scene(self, offsets):
@@ -1697,7 +1740,7 @@ class GlyphCheck521(unittest.TestCase):
     def test_centred_and_off(self):
         import glyphcheck
         img, dump = self._scene([(0, 0), (0, 4), (4, 0)])
-        res = [glyphcheck.check(img, tuple(b), ink) for _, b, ink in glyphcheck.candidates(dump)]
+        res = [glyphcheck.check(img, tuple(b), ink) for _, b, ink, _k in glyphcheck.candidates(dump)]
         self.assertEqual([r["verdict"] for r in res], ["PASS", "FAIL", "FAIL"])
         self.assertAlmostEqual(res[1]["dy"], 4, delta=1)
 
@@ -1716,7 +1759,7 @@ class GlyphCheck521(unittest.TestCase):
         dump = {"windows": [
             {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "L2", "shown": [10, 10, 20, 20]}], "glyphs": [{"text": "A", "shown": [40, 10, 12, 14]}]},
             {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "R1", "shown": [60, 10, 20, 20]}], "glyphs": []}]}
-        self.assertEqual([t for t, _, _ in glyphcheck.candidates(dump)], ["R1"])
+        self.assertEqual([c[0] for c in glyphcheck.candidates(dump)], ["R1"])
 
     def test_covered_and_oversized(self):
         """Batch 522: a glyph in the dump with no ink on the screenshot (under a popup) is HIDDEN; a letter on a big card is not

@@ -38,3 +38,9 @@
 - Item: HANDOFF Next 1. Artifact read: first A opens every time now; the 2 FAILs are controls present in the dump that the
   device's grep did not see (both dumps hold "Full story on Details ›" on one long line). 675d: popclip.sh reads dumps one node
   per line, dw waits for a whole dump. Selftest 158/158, static PASS. No "[emulator-qa]" (3 h rule) - next run starts it.
+
+## 2026-11-16 03:18-03:50 UTC - cloud scheduled run
+- Lock free (released 02:23); taken 03:18. CI: Verify 310 green on e1c1ad88 (675d). Emulator trial not started (3 h rule, from 04:31).
+- Item: HANDOFF Next 2 (D-674o-1). 675e: GlyphPill marks its pill (QA traces only), QaClip dumps the glyph's "key" box,
+  glyphcheck measures in it (limits unchanged). Selftest 161/161, static PASS. Gradle compile blocked by Maven Central 429
+  (2 tries) - CI compiles. HW-6 queued.

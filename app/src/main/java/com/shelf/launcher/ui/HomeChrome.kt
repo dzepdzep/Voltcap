@@ -1334,6 +1334,8 @@ internal fun GlyphPill(symbol: String) {
         Modifier
             .height(18.dp)
             .then(if (single) Modifier.size(18.dp) else Modifier.widthIn(min = 18.dp))
+            // (675e, D-674o-1: the pill's own box for glyphcheck - QA traces only, nothing changes on screen.)
+            .then(if (QaTrace.on) Modifier.semantics { this[QaClip.GlyphKey] = true } else Modifier)
             .clip(RoundedCornerShape(50))
             .background(Color.White.copy(alpha = 0.12f))
             .padding(horizontal = if (single) 0.dp else 6.dp),

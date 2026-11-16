@@ -25,6 +25,10 @@ internal object QaClip {
     val Ring = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaRing") { a, b -> a == true || b == true }
     /** Batch 521b: a controller glyph drawn by InkGlyph (its text); dumped under "glyphs" for tools/qa/tools/glyphcheck.py. */
     val Glyph = androidx.compose.ui.semantics.SemanticsPropertyKey<String>("QaGlyph") { a, _ -> a }
+    /** 675e (D-674o-1): the circle / pill a glyph sits in (GlyphPill) - set only while [QaTrace.on]. Its box goes into the
+     *  glyph's dump entry as "key", so glyphcheck measures the ink against the key's own laid-out box instead of walking the
+     *  screenshot to its edge (a 12 % white pill over a backdrop shape of nearly the same colour has no edge to find). */
+    val GlyphKey = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaGlyphKey") { a, b -> a == true || b == true }
     /** Update 467: a scene drawn tilted (the rental tag): its children's boxes overlap by the tilt. */
     val Tilted = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaTilted") { a, b -> a == true || b == true }
 
@@ -228,7 +232,10 @@ internal object QaClip {
                 val g = n.config.getOrNull(Glyph) ?: continue
                 val b = n.boundsInWindow
                 if (!firstG) sb.append(','); firstG = false
-                sb.append("{\"text\":\"${esc(g)}\",\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
+                sb.append("{\"text\":\"${esc(g)}\",\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}")
+                // (675e, D-674o-1: the key the glyph sits in, when its layout marks it - the nearest marked ancestor, a few levels up.)
+                glyphKeyOf(n)?.let { k -> sb.append(",\"key\":[${k.left.toInt()},${k.top.toInt()},${(k.right - k.left).toInt()},${(k.bottom - k.top).toInt()}]") }
+                sb.append('}')
             }
             sb.append("]}")
         }
@@ -256,6 +263,15 @@ internal object QaClip {
         var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
         while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }
         return true
+    }
+
+    /** 675e (D-674o-1): the box (in the window) of the key [n] (a glyph) sits in - the nearest ancestor marked [GlyphKey],
+     *  at most 3 levels up (GlyphPill's Box holds the InkGlyph directly); null when the layout marks none. */
+    internal fun glyphKeyOf(n: SemanticsNode): androidx.compose.ui.geometry.Rect? {
+        var p: SemanticsNode? = n.parent
+        var up = 0
+        while (p != null && up < 3) { if (p.config.getOrNull(GlyphKey) == true) return p.boundsInWindow; p = p.parent; up++ }
+        return null
     }
 
     /** Update 474: inside a part marked as giving way by design (it may shrink to nothing when the room is short). */

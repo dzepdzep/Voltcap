@@ -51,3 +51,9 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 
 ### HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) - OPEN (watch)
 - Device(s): KONKR + Flip 2. 674k gates (f674k, k674m) had no rapid FAIL; keep watching in HW-1 runs before closing.
+
+### HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) - OPEN
+- Device(s): KONKR (x1.3, where k674n read dy +3 px) + Flip 2 x1.0. Build: 675e or later (QA app).
+- Why not emulator: the reading came from the KONKR's real panel and backdrop at x1.3; emulator evidence never closes it.
+- Tests: popclip / navclip on SPOTLIGHT home with QA traces; glyphcheck on the run folder - START / SELECT / A / X / Y must read
+  source "InkGlyph+key" and PASS (limits unchanged, max(1.5 px, 5 %)); look at the crops of anything over 4 %.

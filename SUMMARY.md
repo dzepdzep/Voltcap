@@ -1,3 +1,19 @@
+# Update 675e (16 Nov 2026, night, cloud run) - same branch, NOT released - glyphcheck measures GlyphPill glyphs in their key
+- D-674o-1 (KONKR x1.3 k674n, Spot START dy +3 px): the ink is centred, but GlyphPill's 12 % white pill sat over a backdrop shape
+  of nearly its colour, so glyphcheck's walk ran past the pill's edge. Fix (QA tooling + a QA-only mark, threshold unchanged):
+  GlyphPill marks its pill with QaClip.GlyphKey while QA traces are on (nothing on screen changes); the QaClip dump gives each
+  glyph the box of its nearest marked ancestor as "key"; glyphcheck measures such a glyph's ink (screenshot pixels of the
+  glyph's own box against the key's inside colour) against that box - same limits max(1.5 px, 5 %); an ink box outside its key
+  FAILs; glyphs without a key keep the walk.
+- Checks (cloud): QA selftest 161/161 (new GlyphKey675e: the walk fails the scene, the key PASSes it, a 3 px drop still FAILs,
+  an ink box outside its key FAILs, window offset applied); static checks PASS. Kotlin NOT compiled here (Maven Central 429
+  twice, one retry) - QaGlyphKey675eTest (new Robolectric: GlyphPill's pill found for START, 18 dp high, holds the ink; no key
+  for a loose glyph; no mark without QA traces) runs in CI "Verify Android update 310" on this push.
+- Hardware: HW-6 (re-measure Spot START on KONKR x1.3 / Flip 2 with 675e). Not on hardware yet.
+- Files: app/src/main/java/com/shelf/launcher/ui/QaClip.kt, ui/HomeChrome.kt (GlyphPill), test ui/QaGlyphKey675eTest.kt (new),
+  tools/qa/tools/glyphcheck.py, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md,
+  docs/claude/HARDWARE_QA_QUEUE.md, docs/claude/AUTORUN_LOG.md.
+
 # Update 675d (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: dump reads one node per line
 - Emulator run 43786748164 (ddca9b66) read: the first A opened the window every time now (no probeA / probeB kept; 675c's late
   path never triggered). Left: e529a SHELF "no Details action" + More step missing + "extra: A opened nothing"; e529b COVERDETAILS

@@ -12,6 +12,9 @@ sits in; the ink's own box from the pixels that differ from the fill. Reported: 
 (dx, dy in px and in % of the shape). FAIL when |offset| > max(1.5 px, 5 % of the shape's size) on either axis; NO-SHAPE when no
 closed shape is found round it (a glyph drawn straight on the background — not graded), or the area is no button shape;
 HIDDEN when an InkGlyph in the dump has no ink on the screenshot (covered by a popup / page); exit 1 when anything FAILs.
+675e (D-674o-1): a glyph whose dump entry carries "key" (the laid-out box of the circle / pill it sits in - GlyphPill marks it)
+is measured against that box: the fill from inside the key, the ink from the glyph's own box on the screenshot, same limits. No
+walk, so a see-through pill over a backdrop shape of nearly its colour can no longer make the "shape" run past the pill's edge.
 A passing run proves centring only for what was on those screenshots: look at the crops of anything near the limit.
 """
 import json, os, re, sys
@@ -29,7 +32,46 @@ def median_colour(px):
     return px[len(px) // 2]
 
 
-def check(img, box, is_ink_box, text=''):
+def check_in_key(img, box, key):
+    """675e (D-674o-1): the ink (pixels of the glyph's own box that are not the key's fill) against the key's laid-out box."""
+    W, H = img.size
+    p = img.load()
+    x, y, w, h = box
+    kx, ky, kw, kh = key
+    if kw < 4 or kh < 4 or kx < 0 or ky < 0 or kx + kw > W or ky + kh > H:
+        return None
+    if not (kx - 1 <= x and ky - 1 <= y and x + w <= kx + kw + 1 and y + h <= ky + kh + 1):
+        return {'verdict': 'FAIL', 'why': 'ink box outside its key (dump)', 'shape': [kx, ky, kw, kh], 'ink': [x, y, w, h],
+                'dx': 0.0, 'dy': 0.0, 'dxPct': 0.0, 'dyPct': 0.0}
+    T = 60
+    # fill: the key's inside, inset so a circle's / pill's rounded corners (backdrop) stay out, minus the glyph's box
+    m = max(1, int(0.18 * min(kw, kh)))
+    fillpx = [p[xx, yy][:3] for yy in range(ky + m, ky + kh - m) for xx in range(kx + m, kx + kw - m)
+              if not (x - 1 <= xx <= x + w and y - 1 <= yy <= y + h)]
+    if len(fillpx) < 4:
+        return None
+    fill = median_colour(fillpx)
+    xs, ys = [], []
+    for yy in range(max(ky, y), min(ky + kh, y + h)):
+        for xx in range(max(kx, x), min(kx + kw, x + w)):
+            if diff(p[xx, yy][:3], fill) > T:
+                xs.append(xx); ys.append(yy)
+    if len(xs) < max(3, 0.06 * w * h):
+        return {'verdict': 'HIDDEN', 'why': 'no ink on the screenshot (covered)'}
+    ix0, ix1, iy0, iy1 = min(xs), max(xs), min(ys), max(ys)
+    dx = (ix0 + ix1) / 2.0 - (kx + (kw - 1) / 2.0)
+    dy = (iy0 + iy1) / 2.0 - (ky + (kh - 1) / 2.0)
+    limx, limy = max(1.5, 0.05 * kw), max(1.5, 0.05 * kh)
+    return {'verdict': 'FAIL' if abs(dx) > limx or abs(dy) > limy else 'PASS', 'dx': round(dx, 1), 'dy': round(dy, 1),
+            'dxPct': round(100 * dx / kw, 1), 'dyPct': round(100 * dy / kh, 1), 'shape': [kx, ky, kw, kh],
+            'ink': [ix0, iy0, ix1 - ix0, iy1 - iy0], 'fill': fill, 'why': 'measured in its key (dump box)'}
+
+
+def check(img, box, is_ink_box, text='', key=None):
+    if key is not None and is_ink_box:
+        r = check_in_key(img, box, key)
+        if r is not None:
+            return r
     text_is_arrow = text.strip() in ('◀', '▶', '▲', '▼', '◀ ▶', '▲▼')
     W, H = img.size
     p = img.load()
@@ -179,13 +221,15 @@ def candidates(dump):
         for g in win.get('glyphs', []):
             if g.get('placed', True):
                 s = g['shown']; b = (s[0] + ox, s[1] + oy, s[2], s[3])
+                k = g.get('key')
+                k = (k[0] + ox, k[1] + oy, k[2], k[3]) if isinstance(k, list) and len(k) == 4 else None
                 if not covered(b):
-                    out.append((g['text'], b, True))
+                    out.append((g['text'], b, True, k))
         for t in win.get('texts', []):
             if LABEL.match(t['text'].strip()) and t.get('placed', True):
                 s = t['shown']; b = (s[0] + ox, s[1] + oy, s[2], s[3])
                 if not covered(b):
-                    out.append((t['text'].strip(), b, False))
+                    out.append((t['text'].strip(), b, False, None))
     return out
 
 
@@ -220,9 +264,10 @@ def main():
         except Exception as e:
             print('SKIP %s: %s' % (js, e)); continue
         img = Image.open(png).convert('RGB')
-        for i, (text, box, ink) in enumerate(candidates(dump)):
-            r = check(img, box, ink, text)
-            r.update({'screen': os.path.basename(png), 'text': text, 'box': list(box), 'source': 'InkGlyph' if ink else 'Text'})
+        for i, (text, box, ink, key) in enumerate(candidates(dump)):
+            r = check(img, box, ink, text, key)
+            r.update({'screen': os.path.basename(png), 'text': text, 'box': list(box),
+                      'source': ('InkGlyph+key' if key and r.get('why', '').startswith('measured in its key') else 'InkGlyph') if ink else 'Text'})
             results.append(r)
             if r['verdict'] == 'FAIL':
                 fails += 1
