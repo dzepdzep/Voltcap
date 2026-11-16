@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675k · 2026-11-16 06:35 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 2371ce29 (675i); lock push in progress · effort: medium
+**1. LATEST UPDATE** - 675l · 2026-11-16 07:45 UTC · commit `this update (being pushed)` · CI: Verify Android update 310 green on 339839f9 (675k) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Found why the last emulator test graded nothing: another app's 'not responding' box covered VoltCap, and a one-time 'Inspect or Wobble?' question kept popping up 9 seconds after each start. The test now closes such boxes and answers that question in the test app only, so the next emulator run can actually check the popups.
+**2. WHAT CLAUDE JUST FIXED** - Spotify screen and player: long track, artist, album and playlist names are no longer cut off with '...'; they wrap, shrink a little, or slide so the whole name can be read. The list rows keep their height.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: re-run the emulator trial (allowed from ~08:45 UTC) and read its popup results; then: hardware checks on today's handhelds when you say "devices ready"; native popup pages for the 40 layouts still on the shared page
+**5. WORKING ON NEXT** - now: re-run the emulator trial (allowed from ~08:45 UTC) and read its popup results; then: hardware checks on today's handhelds when you say "devices ready"; remove the remaining '...' cut-offs screen by screen (268 left)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 5 items (see Owner actions below); cloud work continues without them.
 
@@ -143,8 +143,8 @@ Tracked requirement rows: **92** = 30 in the requirements matrix (programme + re
 |---|---|---|---|
 | done | 2 | 4 | 6 (6 %) |
 | implemented, verification pending | 12 | 0 | 12 (13 %) |
-| in progress | 9 | 4 | 13 (14 %) |
-| not started / open | 4 | 7 | 11 (11 %) |
+| in progress | 10 | 4 | 14 (15 %) |
+| not started / open | 3 | 7 | 10 (10 %) |
 | waiting for hardware | 0 | 25 | 25 (27 %) |
 | waiting for owner | 1 | 19 | 20 (21 %) |
 | blocked (references) | 0 | 1 | 1 (1 %) |
@@ -166,8 +166,9 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px | OPEN |
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | OPEN (watch) |
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
+| HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 6 of 6.
+Open hardware requests: 7 of 7.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

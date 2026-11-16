@@ -31,6 +31,7 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 3. Full popup gates x1.0 + x1.3 on each device (two at a time, ~50 min each): closes HW-1 for those devices, HW-5, HW-6.
 4. Record crate checklist (HW-2) and Cube first press (HW-4) on the KONKR; controller / onepress / animation checks where
    the device differs (screen size, controller).
+4b. HW-7 (5 min, KONKR): Spotify screen + player long names (675l) - look only, no account change.
 5. Restore every device (snapshot diff=0, fatal=0), push results, update releases.json gates.
 Flip 2 (unavailable): its 15 Nov gates stay HISTORICAL evidence for v0.6.73 (owner 16 Nov); its own session (popup gates on
 the newest build + the charging reproduction, HW-3) waits until it is back.
@@ -72,3 +73,10 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - Why not emulator: the reading came from the KONKR's real panel and backdrop at x1.3; emulator evidence never closes it.
 - Tests: popclip / navclip on SPOTLIGHT home with QA traces; glyphcheck on the run folder - START / SELECT / A / X / Y must read
   source "InkGlyph+key" and PASS (limits unchanged, max(1.5 px, 5 %)); look at the crops of anything over 4 %.
+
+### HW-7 Spotify screen + player: long names shown whole (675l, rule 11) - OPEN
+- Device(s): KONKR (960x640, the narrowest), x1.0 + x1.3. Build: 675l or later (QA app). Only if the QA app is already signed
+  in to Spotify or shows its lists without an account; never sign in with the owner's account for this.
+- Why not emulator: the emulator has no Spotify session; row heights / slide speed are judged on the real panel.
+- Tests: a playlist / album / track with a long name and long artist line: the name wraps to 2 lines, shrinks, then slides
+  (never "…"); list rows keep their height when the artist line is one line; D-pad focus moves row to row without jumps.

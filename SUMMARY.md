@@ -1,3 +1,14 @@
+# Update 675l (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: Spotify names shown whole
+- Spotify screen (9) and player (4): every track / artist / album / playlist / heading Text with TextOverflow.Ellipsis is now
+  FullText (wrap up to the same line count, shrink to fitMin, then slide), reserve = false so rows keep today's height. Same
+  sizes, colours, weights; no player design change. TRUNCATE count 281 -> 268.
+- Test: SpotifyFullText675lTest (fails on the 675k sources: Ellipsis present, no FullText) 2/2 PASS + NowPlayingTruncate79Test
+  PASS in the cloud; app + tests compiled (compileDebugUnitTestKotlin). Static checks PASS.
+- Not tested: on a handheld (HW-7 in the queue, look only). Emulator trial not re-run (3 h rule, from ~08:45 UTC).
+- Files: app/src/main/java/com/shelf/launcher/ui/spotify/{SpotifyScreen.kt,SpotifyPlayer.kt},
+  app/src/test/java/com/shelf/launcher/ui/SpotifyFullText675lTest.kt; docs (matrix P13, HANDOFF, HARDWARE_QA_QUEUE HW-7,
+  AUTORUN_LOG, run_reports.jsonl, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
 # Update 675k (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial preconditions
 - Read emulator run 43811840328 (675i commit, swangle_indirect): VERDICT NOT TESTED - precondition e529a failed
   (focus = Pixel Launcher, screen PICKER, qa_windows=3). precondition_e529a.png: "Pixel Launcher isn't responding" over the

@@ -30,7 +30,7 @@ old SUMMARY entries before 529, GitHub issues (no API access in these sessions).
 | P10 | Save Vault | yes | | | | partly | VERIFY (D6) |
 | P11 | Save Sync 529 (data safety A1–A11) | fix/save-sync line | full | Flip 2 dry runs | "worked" (owner test 15 Nov, build unknown) | Save Sync excluded from 0.6.72 | BLOCKED-OWNER (real Drive E2E) - see A |
 | P12 | Accessibility (touch >= 24 dp, contrast, reduced motion, TalkBack labels) | partly | | popclip touch / contrast | | | IN PROGRESS (reduced motion BLOCKED: system setting) |
-| P13 | Rule 11: no "…" truncation anywhere | 259 places left (13 Nov) | static TRUNCATE | | | | OPEN (F21) |
+| P13 | Rule 11: no "…" truncation anywhere | 268 TRUNCATE places left (16 Nov, 675l: Spotify screen + player done, 281 -> 268) | static TRUNCATE, NowPlayingTruncate79Test, SpotifyFullText675lTest | | | | IN PROGRESS (F21; Spotify: owner look pending) |
 | P14 | Category +N overflow counters removed | no | | | | | DEFER (owner: later refinement) |
 | P15 | Everything stays free, no paid unlocks / mandatory paid APIs | yes | | | standing rule | yes | DONE (standing) |
 

@@ -241,7 +241,7 @@ fun SpotifyScreen(
         Box(Modifier.fillMaxSize().background(ShelfTheme.background)) {
             Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Spotify", color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    com.shelf.launcher.ui.FullText("Spotify", color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
                     Spacer(Modifier.width(6.dp))
                     // The tabs wrap onto a second line on a narrow screen instead of pushing Close off it.
                     Box(Modifier.weight(1f)) {
@@ -506,8 +506,8 @@ private fun CoverCard(url: String?, title: String, subtitle: String, round: Bool
             modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(shape).background(Color.White.copy(alpha = 0.08f))
         )
         Spacer(Modifier.height(6.dp))
-        Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        if (subtitle.isNotBlank()) Text(subtitle, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+        com.shelf.launcher.ui.FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+        if (subtitle.isNotBlank()) com.shelf.launcher.ui.FullText(subtitle, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
     }
 }
 
@@ -531,12 +531,12 @@ private fun TrackRow(number: Int?, t: SpTrack, showCover: Boolean, playingUri: S
             Spacer(Modifier.width(10.dp))
         }
         Column(Modifier.weight(1f)) {
-            Text(
-                t.name ?: "Unknown track", fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            com.shelf.launcher.ui.FullText(
+                t.name ?: "Unknown track", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false,
                 color = (if (current) ShelfTheme.accent else ShelfTheme.colors.textPrimary).copy(alpha = alpha)
             )
             val sub = if (t.playable()) t.artistLine() else "Not available in your region"
-            if (sub.isNotBlank()) Text(sub, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (sub.isNotBlank()) com.shelf.launcher.ui.FullText(sub, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
         }
         t.duration_ms?.let { Text(formatTrackTime(it), color = ShelfTheme.textMuted, fontSize = 12.sp) }
     }
@@ -553,8 +553,8 @@ private fun DetailHeader(cover: String?, title: String, subtitle: String, action
         )
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (subtitle.isNotBlank()) Text(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            com.shelf.launcher.ui.FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+            if (subtitle.isNotBlank()) com.shelf.launcher.ui.FullText(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
             Spacer(Modifier.height(8.dp))
             ChipFlow { actions() }
         }
@@ -723,8 +723,8 @@ private fun ResultRow(cover: String?, title: String, subtitle: String, round: Bo
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (subtitle.isNotBlank()) Text(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            com.shelf.launcher.ui.FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+            if (subtitle.isNotBlank()) com.shelf.launcher.ui.FullText(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
         }
     }
 }

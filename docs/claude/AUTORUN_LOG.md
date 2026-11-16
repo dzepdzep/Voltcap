@@ -3,6 +3,8 @@
 
 
 
+## 2026-11-16 07:22-07:50 UTC - cloud scheduled run (675l)
+- Lock free, taken. Emulator trial not yet allowed (3 h rule, from ~08:45). Rule 11: Spotify screen + player names show whole (FullText), 13 "…" removed; compiled + tests PASS in the cloud.
 
 ## 2026-11-16 06:02-06:20 UTC - live session (675j)
 - v0.6.73 plan without the Flip 2 (historical evidence + risk); HW-3 reproduce-first; .claude/settings.json effortLevel high (to verify via run logs).
