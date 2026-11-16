@@ -2072,6 +2072,19 @@ class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
         self.assertIn("packageName=com.shelf.launcher$", sh)
 
 
+class TestGlyphsUnderFocusedWindow676s(unittest.TestCase):
+    """676s: a glyph of an unfocused window under the focused one is not measured, whatever order the dump lists them in."""
+    def test_focused_window_listed_first_still_covers(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import glyphcheck
+        pop = {"at": [0, 0, 1280, 960], "focus": True, "nodes": [{"label": "Play"}], "texts": [], "glyphs": []}
+        home = {"at": [0, 0, 1280, 960], "focus": False, "nodes": [{"label": "OPEN"}], "texts": [],
+                "glyphs": [{"text": "A", "shown": [95, 887, 22, 22], "placed": True, "key": [81, 873, 48, 48]}]}
+        self.assertEqual(glyphcheck.candidates({"windows": [pop, home]}), [])
+        self.assertEqual(glyphcheck.candidates({"windows": [home, pop]}), [])
+        self.assertEqual(len(glyphcheck.candidates({"windows": [dict(home, focus=True)]})), 1)
+
+
 class TestHomecut676o(unittest.TestCase):
     """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
     def _dump(self, texts, focus=True):
