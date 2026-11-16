@@ -1993,6 +1993,13 @@ class TestBadgeCheck676a(unittest.TestCase):
             {"kind": "PROGRESS", "lane": "a", "full": [216, 144, 74, 22], "shown": [216, 144, 74, 22], "placed": True}]))
         self.assertEqual(ok.returncode, 0, ok.stdout)  # stacked 12 px = 6 dp under it
 
+    def test_a_scaled_tile_is_not_a_cut(self):
+        # Pocket ribbon x1.3: an unfocused tile drawn at 0.81 - both sides shrink alike; the gap is measured at that scale
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 227, 45], "shown": [106, 106, 184, 36], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 160, 101, 86], "shown": [216, 160, 82, 70], "placed": True}]))
+        self.assertEqual(r.returncode, 0, r.stdout)
+
     def test_cut_badge_fails(self):
         r = self._run(self._win([
             {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
@@ -2012,6 +2019,10 @@ class TestBadgeCheck676a(unittest.TestCase):
         # a 1 px rounding flagged by the layout (the Nova's whole "6/10") is not a cut
         w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": False, "ovW": True, "ellipsis": False,
                           "needW": 41, "boxW": 40, "textH": 31, "boxH": 30}]
+        self.assertEqual(self._run(w).returncode, 0)
+        # a text the lane left out (not placed) is not drawn: never a cut
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": False, "ovW": True, "ellipsis": False,
+                          "needW": 60, "boxW": 40, "textH": 30, "boxH": 30, "placed": False}]
         self.assertEqual(self._run(w).returncode, 0)
         # an old dump with only the flags can't tell: INFRA, never PASS
         w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": True, "ovW": False, "ellipsis": False}]

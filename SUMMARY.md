@@ -1,3 +1,11 @@
+# Update 676k (16 Nov 2026, live session) - QA tool only - badgecheck reads scaled tiles and unplaced texts right
+- Full 53-layout gate on build 676f, RP Nova x1.3 (f676x13): popup gate 53/53 PASS; owner snapshot restored diff=0, fatal=0.
+- Its badge gate first read 44 FAIL: an unfocused tile drawn at its own scale (Pocket ribbon 0.81) - "full" is the laid-out size,
+  "shown" the scaled one - read as cut badges and too-close gaps; and Twin icons' count, which the lane had left out (not placed),
+  read as cut text on the console badge (the screenshot shows the badge and the name only). badgecheck: the same shrink both ways
+  is the tile's scale (gap measured at that scale), only an uneven shrink is a cut; unplaced texts are skipped. Graded again:
+  79/79 PASS. Selftests keep failing real overlaps / cuts / too-close fixtures (+2 new: a scaled tile passes, an unplaced text passes).
+
 # Update 677a (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: session card + status note shown whole
 - The post-game session card (game name, play time, achievement count, completion line, milestone) and the status-bar session
   note cut long text with "…". Now FullText (wrap -> readable shrink -> slide), reserve = false so a short name keeps today's
