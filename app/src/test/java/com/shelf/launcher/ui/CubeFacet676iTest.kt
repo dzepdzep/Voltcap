@@ -75,3 +75,14 @@ class HomeCuts676rTest {
         assertTrue(src("StyleNightMenu.kt").contains("TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 120.sp)"))
     }
 }
+
+/** 676v (D342): every Material type style trims the room above its first line and below its last (no letters cut in snug boxes). */
+class TrimmedLines676vTest {
+    @Test fun allStylesTrimmed() {
+        val s = listOf("src/main/java/com/shelf/launcher/ui/theme/Theme.kt", "app/src/main/java/com/shelf/launcher/ui/theme/Theme.kt").map { File(it) }.first { it.exists() }.readText()
+        val block = s.substring(s.indexOf("fun androidx.compose.ui.text.TextStyle.trim()"), s.indexOf("labelSmall = t.labelSmall.trim()"))
+        for (n in listOf("displayLarge", "headlineSmall", "titleMedium", "bodyLarge", "bodyMedium", "bodySmall", "labelLarge", "labelMedium"))
+            assertTrue(n, block.contains("$n = t.$n.trim()"))
+        assertTrue(s.contains("LineHeightStyle.Trim.Both"))
+    }
+}
