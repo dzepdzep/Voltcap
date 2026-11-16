@@ -2109,6 +2109,14 @@ class TestHomecut676o(unittest.TestCase):
         self.assertEqual(r[0].status, "FAIL")
         self.assertEqual(homecut.check([f], {"SPOT_OWN": {"OPTIONS": "owner-approved decoration"}})[0].status, "PASS")
 
+    def test_height_cuts_fail_even_when_sliding(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        play = {"text": "PLAY", "needW": 103, "boxW": 103, "ovH": True, "placed": True, "scroll": True, "textH": 72, "boxH": 14}
+        digit = {"text": "12", "needW": 30, "boxW": 30, "ovH": False, "placed": True, "textH": 48, "boxH": 38}  # line padding only
+        hidden = {"text": "6:38", "needW": 80, "boxW": 80, "ovH": True, "placed": True, "textH": 74, "boxH": 0}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([play, digit, hidden]))], ["PLAY (height)"])
+
 
 class TestReadcheckUnplaced676f(unittest.TestCase):
     """676f: an unplaced text (a badge the lane left out) is not drawn - it can't overlap; a placed one still FAILs."""

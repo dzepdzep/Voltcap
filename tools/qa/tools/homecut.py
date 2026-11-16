@@ -8,7 +8,8 @@ Reads the focused window of every *_home.json QaClip dump (ui/QaClip.kt "windows
 own layout reports an overflow (ovH) and its one-line width does not fit its box (needW > boxW + 1 px) - shrunk to nothing
 (boxW 0) included - unless it slides (scroll / marquee: the whole text is reachable) or gave way by design ("giveway").
 Allowed: an entry in --allow {"LAYOUT": ["text", ...]} for decoration the owner approved as cut on purpose (a watermark);
-each one must carry a reason there. No home dump with texts: INFRA. Exit code: qalib (0 = PASS only).
+each one must carry a reason there. 676u: a text whose box is under 60 % of its line height (textH) FAILs too - cut in
+height - sliding or not. No home dump with texts: INFRA. Exit code: qalib (0 = PASS only).
 """
 import glob, json, os, sys
 
@@ -16,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import qalib  # noqa: E402
 
 TOL = 1
+VCUT = 0.6  # a box under 60 % of the text's own line height cuts its letters (676u)
 
 
 def cut_texts(dump):
@@ -27,7 +29,16 @@ def cut_texts(dump):
         for t in w.get("texts", []):
             seen = True
             nw, bw = t.get("needW"), t.get("boxW")
-            if not t.get("placed", True) or t.get("scroll") or t.get("giveway") or not t.get("ovH"):
+            if not t.get("placed", True):
+                continue
+            # (676u, RP Nova x1.3 r676x13 / t676x13: texts squeezed in HEIGHT - Card binder facts drawn half high, Greencore's
+            # PLAY / DETAILS 14 px of 72 - the width check never saw them. Sliding doesn't help a text cut in height, so this
+            # one counts for sliding texts too. A box under 60 % of the text's line height cuts its letters; 0 px = not drawn.)
+            th, bh = t.get("textH"), t.get("boxH")
+            if th and bh is not None and 0 < bh < VCUT * th:
+                out.append((t.get("text", "") + " (height)", th, bh))
+                continue
+            if t.get("scroll") or t.get("giveway") or not t.get("ovH"):
                 continue
             if nw is None or bw is None or nw <= bw + TOL:
                 continue
