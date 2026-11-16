@@ -1,3 +1,18 @@
+# Update 678d (16 Nov 2026, cloud scheduled run) - QA tool only - first fully green emulator trial; touch walk page-aware
+- Emulator trial 43961010406 (678c, 88e3457) READ: VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, every
+  graded check on COVERDETAILS and SHELF PASS, FATAL 0, owner snapshot restored diff=0. First fully green trial (678a's
+  regex-free reads). EMULATOR evidence only, 2 of 53 layouts.
+- Same run, e529c touch walk: both taps "no shown control". Not a read problem this time - the game ("Shadow of the Colossus")
+  had no achievement set (the art fixture leaves one game in four without), so its window had Main / Details / Options: R1 R1
+  reached Options (dumped as "t_trophies") and the next R1 wrapped to Main ("t_options").
+- shelfpages529.sh: touchp names each page by what its dump holds (achievement row / Game settings), counts its R1 presses and
+  goes back with as many L1 (logs if it is not back on the main page); a game without a set logs the achievement tap NOT TESTED
+  instead of a miss. run clears logcat before the art fixture and swaps a game the fixture logs "achfix n=0" for the first
+  game with a set of 10 (achgame, grep -F only), logged and recorded in the setup line.
+- Test: TestPopclipScript.test_shelfpages_touch_walk_names_pages_by_their_dumps (3-page and 4-page windows, wrap-around, the
+  game swap, CR in logcat); fails on 678c's script. Selftest 179/179 PASS; static checks PASS. No app code changed (no compile).
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; trackers (releases.json emulator gate PASS with run).
+
 # Update 678c (16 Nov 2026, cloud scheduled run) - rule 11: year recap shown whole
 - Year recap (top games, monthly bar labels, the game shelf names + play times, stat tiles, facts, achievement and completion
   rows): 9 TextOverflow.Ellipsis uses -> FullText (wraps, shrinks to a readable size, then slides). reserve = false everywhere

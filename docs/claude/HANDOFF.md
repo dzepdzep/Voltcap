@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~21:45 UTC, update 678c (cloud run: rule 11 - year recap FullText, YearRecapFullText678cTest compiled + PASS; emulator trial STARTED on this commit).
+Updated: 2026-11-16 ~22:40 UTC, update 678d (cloud run: emulator trial 43961010406 on 678c READ - VERDICT PASS, first fully
+green trial; e529c touch walk made page-aware + game with an achievement set (selftest 179/179); no trial started).
+Before: 2026-11-16 ~21:45 UTC, update 678c (cloud run: rule 11 - year recap FullText, YearRecapFullText678cTest compiled + PASS; emulator trial STARTED on this commit).
 Before: 2026-11-16 ~20:30 UTC, update 678b (cloud run: QA tool - shelfpages529.sh touch taps read labels without the device's grep -iE, TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex; selftest 178/178; CI green on 866a956).
 Before: 2026-11-16 ~19:50 UTC, update 678a (cloud run: QA tool - popclip.sh reads labels without the device's grep -iE (emulator run 43929836268 on 677d: SHELF PASS x1.0 + x1.3, COVERDETAILS only buttons FAIL = grep -iE missed Play / Details / More that fixed-string reads found); selftest 178/178; CI green on eba2de4).
 Before: update 677d (cloud run, owner live: rule 11 - play header + Stats page FullText
@@ -34,6 +36,12 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678d): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678d push. From ~00:45 UTC START the emulator
+  trial (head commit "[emulator-qa]") and read it the run after: e529a/e529b must stay PASS; e529c log should show "tap
+  '*achievement 1*' at x,y" + "tap 'game settings*' at x,y" (or "using '<game>' (a set of 10)" in setup), no "no shown
+  control". Then widen the trial (more layouts in run_trial.sh's popclip LAYS, bounded by the job time) - item for G14.
+  Meanwhile: rule 11 GameWindowBanner (12) - popup file: FullText + test, then a popclip gate (emulator + HW queue).
+- DONE 678d: emulator trial 43961010406 (678c) READ - VERDICT PASS (see SUMMARY "Update 678d").
 - FIRST (678c): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678c push. READ the emulator trial started on
   678c ("[emulator-qa]", ~21:45 UTC; next allowed from ~00:45): expect "Play keys 1" in the probe lines, COVERDETAILS Details
   page + More step at both scales, and e529c's touch log "tap '*achievement 1*' at x,y" / "tap 'game settings*' at x,y".

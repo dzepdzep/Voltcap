@@ -1289,6 +1289,53 @@ class TestPopclipScript(unittest.TestCase):
         self.assertIn("missed", out); self.assertIn("no shown control 'nothing here*'", out)
         self.assertNotIn("tap 13 13", out)
 
+    def test_shelfpages_touch_walk_names_pages_by_their_dumps(self):
+        # 678d (emulator run 43961010406 on 678c): both e529c taps logged "no shown control" although the reads were right -
+        # the game had no achievement set, its window had Main / Details / Options, R1 R1 reached Options and the next R1
+        # wrapped to Main. touchp names each page by its dump, goes back with as many L1 as it pressed R1, and logs the
+        # achievement tap NOT TESTED on a game without a set; achgame swaps a game the art fixture logs n=0 for a set of 10.
+        import subprocess, json, tempfile, shutil
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        lines = sp.splitlines()
+        defs = [l for l in lines if l.startswith(("jl()", "ctl()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapj()")); defs += lines[i:i + 3]
+        i = next(k for k, l in enumerate(lines) if l.startswith("has()"))
+        j = next(k for k, l in enumerate(lines) if k > i and l.endswith("GM=$g; }; }"))
+        defs += [l for l in lines[i:j + 1] if not l.lstrip().startswith("#")]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        page = lambda *ns: {"screen": [960, 640], "windows": [{"id": "a", "nodes": list(ns)}], "images": {}}
+        main = page(node("Play", [10, 10, 100, 40]), node("Turn over", [10, 60, 100, 40]))
+        det = page(node("Play", [10, 10, 100, 40]), node("Full details", [10, 60, 100, 40]))
+        tro = page(node("QA achievement 1 of game 2", [40, 120, 600, 48]))
+        opt = page(node("Add to favorites", [40, 100, 600, 40]), node("Game settings/Sync, second screen", [40, 200, 600, 60]))
+        mock = ('gate() { :; }; log() { echo "log $*"; }; input() { echo "tap $2 $3"; }; sleep() { :; }\n'
+                'P=0; k() { case $1 in BUTTON_R1) P=$(( (P + 1) % NP ));; BUTTON_L1) P=$(( (P + NP - 1) % NP ));; esac; }\n'
+                'shot() { cp $D/p$P.json $F/qa_clip/${TAG}_$1.json; }\n'
+                'logcat() { printf "%s\\n" "E VoltcapQA: achfix n=0 game=Shadow Of The Colossus (USA)" '
+                '"E VoltcapQA: achfix n=1 game=Okami (USA)" "E VoltcapQA: achfix n=10 game=Super Metroid (USA)\r"; }\n')
+        outs = {}
+        for name, pages in (("noset", [main, det, opt]), ("set", [main, det, tro, opt])):
+            tmp = tempfile.mkdtemp()
+            try:
+                os.makedirs(os.path.join(tmp, "qa_clip")); os.makedirs(os.path.join(tmp, "pg"))
+                for n, pg in enumerate(pages):
+                    open(os.path.join(tmp, "pg", "p%d.json" % n), "w", encoding="utf-8").write(
+                        json.dumps(pg, separators=(",", ":")))
+                cmd = ("\n".join(defs) + "\n" + mock + 'F=$1; D=$1/pg; TAG=T; NP=%d; touchp X; echo "end page $P"; '
+                       'achgame; echo "GM=$GM"; GM="Okami"; achgame; echo "GM2=$GM"' % len(pages))
+                outs[name] = subprocess.run(["sh", "-c", cmd, "x", tmp], capture_output=True, text=True).stdout
+            finally:
+                shutil.rmtree(tmp)
+        a, b = outs["noset"], outs["set"]
+        self.assertIn("has no Achievements page", a); self.assertIn("NOT TESTED", a)
+        self.assertNotIn("no shown control", a)
+        self.assertIn("tap 340 230", a)                              # Game settings tapped on the real Options page
+        self.assertIn("end page 0", a); self.assertNotIn("not back on the main page", a)
+        self.assertIn("tap 340 144", b); self.assertIn("tap 340 230", b)   # set: achievement row, then Game settings
+        self.assertIn("end page 0", b); self.assertNotIn("NOT TESTED", b); self.assertNotIn("not back", b)
+        self.assertIn("GM=Super Metroid (USA)", a)                   # n=0 game swapped for a set of 10 (no \r kept)
+        self.assertIn("GM2=Okami", a)                                # a game with a set stays
+
     def test_dump_reads_are_plain_ascii_and_find_the_round_more_keys(self):
         # 675o (emulator run 43833359452): with jl the device's grep still read no Play in e529b's probe and no More in e529a's
         # SHELF main although both files held them - again only the dumps holding "Full story on Details \u203a". jl hands grep

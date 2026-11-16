@@ -120,3 +120,8 @@
 - BOOTSTRAP OK (67d745f); lock free, taken 21:18. CI: Verify 310 GREEN on 67d745f (678b). Effort env: medium.
 - Rule 11: year recap text shown whole (9 "…" removed, YearRecapFullText678cTest PASS, compiled after one Maven 429 retry).
   Emulator trial started on this commit ("[emulator-qa]"). Lock released.
+
+## 2026-11-16 ~22:18-22:45 UTC - cloud run 678d
+- BOOTSTRAP OK (88e3457); lock free, taken 22:18. CI: Verify 310 GREEN on 88e3457 (678c). Effort env: medium.
+- Read emulator trial 43961010406 (678c): VERDICT PASS (first fully green). e529c touch taps missed because the game had no
+  achievement set -> shelfpages529.sh touch walk page-aware + game with a set; selftest 179/179. No trial started (3 h rule). Lock released.

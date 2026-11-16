@@ -45,13 +45,34 @@ ctl() { w=$(printf '%s' "$1" | tr A-Z a-z); jl $2 | while IFS= read -r ln; do ca
 tapj() { r=$(ctl "$1" $F/qa_clip/${TAG}_$2.json | while IFS= read -r c; do s=${c#*'"shown":['}; s=${s%%']'*}; set -- $(echo $s | tr ',' ' '); [ "$3" != 0 ] && [ "$4" != 0 ] && { echo $s; break; }; done)
   [ -n "$r" ] || { log "tap: no shown control '$1' in $2"; return 1; }
   gate; q=$1; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 )); log "tap '$q' at $(( $1 + $3 / 2 )),$(( $2 + $4 / 2 ))"; }
-touchp() {
+# (678d, emulator run 43961010406 on 678c: both taps still "no shown control" - the dumps were read right, the PAGES were
+# wrong: the game had no achievement set (the art fixture gives one game in four none), so its window had Main / Details /
+# Options; R1 R1 landed on Options and the next R1 wrapped to Main. touchp now names a page by what its dump holds, counts
+# its R1 presses and goes back with as many L1; a game without a set logs the achievement tap NOT TESTED, never a miss.
+# And run takes a game WITH a set (the art fixture's "achfix n=10" log) when the chosen game logs n=0.)
+has() { [ -n "$(ctl "$1" $F/qa_clip/${TAG}_$2.json)" ]; }
+touchp() { n=2
   k BUTTON_R1 1.0; k BUTTON_R1 1.2; shot $1_t_trophies
-  tapj "*achievement 1*" $1_t_trophies && { sleep 1.3; shot $1_t_ach_tap; }
-  k BUTTON_R1 1.2; shot $1_t_options
+  if has "*achievement 1*" $1_t_trophies; then
+    tapj "*achievement 1*" $1_t_trophies && { sleep 1.3; shot $1_t_ach_tap; }
+    k BUTTON_R1 1.2; n=3; shot $1_t_options
+  elif has "game settings*" $1_t_trophies; then
+    log "touch: $1 has no Achievements page (R1 R1 reached Options: no achievement set) - achievement tap NOT TESTED"
+    shot $1_t_options
+  else
+    log "touch: $1 page after R1 R1 is neither Achievements nor Options - achievement tap NOT TESTED"
+    k BUTTON_R1 1.2; n=3; shot $1_t_options
+  fi
   tapj "game settings*" $1_t_options && { sleep 1.6; shot $1_t_opt_tap; k BUTTON_B 1.3; shot $1_t_opt_back; }
-  k BUTTON_L1 0.9; k BUTTON_L1 0.9; k BUTTON_L1 1.0; shot $1_t_main
+  m=$n; while [ $n -gt 0 ]; do k BUTTON_L1 $([ $n = 1 ] && echo 1.0 || echo 0.9); n=$((n - 1)); done; shot $1_t_main
+  { has "full details" $1_t_main || has "game settings*" $1_t_main || has "*achievement 1*" $1_t_main; } && log "touch: $1 not back on the main page after $m L1"; :
 }
+# (678d) GM: the game; a game whose art-fixture log says n=0 (no set) is swapped for the first one with a set of 10.
+GM="Shadow of the Colossus"
+achgame() { lc=$(printf '%s' "$GM" | tr A-Z a-z)
+  logcat -d -s VoltcapQA | grep -F "achfix n=0 game=" | sed 's/.*game=//' | tr A-Z a-z | grep -qF "$lc" || return 0
+  g=$(logcat -d -s VoltcapQA | grep -F "achfix n=10 game=" | head -1 | sed 's/.*game=//' | tr -d '\r')
+  [ -n "$g" ] && { log "'$GM' has no achievement set (art fixture n=0) - using '$g' (a set of 10)"; GM=$g; }; }
 case $MODE in
 run)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -62,11 +83,11 @@ run)
   grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { k BUTTON_B 1.5; log "picker closed with B"; }
   A --es voltcap_test_snapshot save; sleep 2
   A --ez voltcap_test_preview true; sleep 1
-  A --es voltcap_test_artfix "delay=0"; sleep 3
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
-  A --es voltcap_test_game "Shadow of the Colossus"; sleep 2
-  log "setup scale=$SC layouts=$LAYS"
+  achgame; A --es voltcap_test_game "$GM"; sleep 2
+  log "setup scale=$SC game=$GM layouts=$LAYS"
   for lay in $LAYS; do
     A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout $lay; sleep 3.5; gate
     n=${lay}; logcat -c
