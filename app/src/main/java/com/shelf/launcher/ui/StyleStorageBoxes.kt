@@ -448,15 +448,11 @@ private fun StoragePreview(c: StyleCtx, modifier: Modifier) {
         FullText(titles.display(g.name), color = Color(0xFF1E2A3A), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 18.sp)
         Text(titles.console(g.platform), color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 1)
         Spacer(Modifier.height(6.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Played", color = Color(0xFF4C5E76), fontSize = 12.sp)
-            Text(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null), color = Color(0xFF1E2A3A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        }
+        // (677e, owner 16 Nov - RP Nova x1.3: the facts broke letter by letter ("6 / 1 0", "Played / Never / played"). A value is
+        // never broken inside: it stays on one line beside its label, or goes whole onto the line under it.)
+        StorageFact("Played", stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
         val p = c.progress(g)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Achievements", color = Color(0xFF4C5E76), fontSize = 12.sp)
-            Text(p?.let { (e, t) -> "$e / $t" } ?: "—", color = Color(0xFF1E2A3A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-        }
+        StorageFact("Achievements", p?.let { (e, t) -> "$e / $t" } ?: "—")
         if (p != null) {
             Spacer(Modifier.height(4.dp))
             Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color(0xFFB9C6D6))) {
@@ -481,4 +477,14 @@ internal fun StorageBoxesSettings() {
     StyleChoice("Preview", Features.StPreview.values(), Features.stPreview.state.value, { it.label }) { Features.stPreview.value = it }
     StyleChoice("Motion", Features.StMotion.values(), Features.stMotion.state.value, { it.label }) { Features.stMotion.value = it }
     Toggle(Icons.Filled.TouchApp, "Pointer", "A pointer bobbing over the icon you're on. Off: only its red frame.", Features.stCursor)
+}
+
+/** 677e: a label and its value - side by side, or the value whole on the next line; never broken inside a value (rule 11). */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun StorageFact(label: String, value: String) {
+    androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Text(label, color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 1, softWrap = false, modifier = Modifier.padding(end = 8.dp))
+        FullText(value, color = Color(0xFF1E2A3A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+    }
 }
