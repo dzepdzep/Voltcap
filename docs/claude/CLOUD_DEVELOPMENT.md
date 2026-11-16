@@ -34,9 +34,9 @@ nothing and the run stops and reports. Before the lock, every commit and every p
 bash tools/cloud/setup_android.sh          # Android SDK (platform 36, build-tools 36, NDK 28, CMake) ~1 min, idempotent
 export ANDROID_HOME=$HOME/android-sdk VOLTCAP_CLOUD=1
 G="--no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g -Pkotlin.compiler.execution.strategy=in-process -PvoltcapCiWithoutDiscord=true"
-./gradlew $G :app:compileDebugUnitTestKotlin                      # app + tests compile: ~7 min cold on 2 cores (verified 15 Nov)
-./gradlew $G :app:testDebugUnitTest --tests 'com.shelf.launcher.ui.Batch674oTest'   # targeted tests: seconds once compiled
-./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug     # isolated QA app, Discord stub
+bash ./gradlew $G :app:compileDebugUnitTestKotlin                      # app + tests compile: ~7 min cold on 2 cores (verified 15 Nov)
+bash ./gradlew $G :app:testDebugUnitTest --tests 'com.shelf.launcher.ui.Batch674oTest'   # targeted tests: seconds once compiled
+bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug     # isolated QA app, Discord stub
 python3 tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher
 python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
 ```

@@ -48,5 +48,5 @@ git merge -q --ff-only "origin/$DEV" || block "fast-forward to origin/$DEV faile
 B=$(git rev-parse --abbrev-ref HEAD)
 [ "$B" = "$DEV" ] || block "active branch is $B, not $DEV"
 [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$DEV")" ] || block "HEAD is not origin/$DEV"
-chmod +x gradlew 2>/dev/null
+# (no chmod here: a mode change would make the next run see uncommitted work - run Gradle as `bash ./gradlew`)
 echo "BOOTSTRAP OK $B $(git rev-parse HEAD)"
