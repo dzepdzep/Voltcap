@@ -500,7 +500,14 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                 }.joinToString("  ·  ")
                 Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(12.sp, lines = 2)))
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                // (676m, owner 16 Nov - Thor x1.3: "Y Achievements" was squeezed to "Achieve" at the panel's edge. The hints keep
+                // their size and right edge; a hint that doesn't fit whole goes to a second line, never cut - rule 11.)
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     HubHint("A", "Open") { live.actions.open() }
                     HubHint("X", "Favourite") { live.game?.let { live.actions.favorite(it) } }
                     HubHint("Y", "Achievements") { live.game?.let { live.actions.achievements(it) } }
@@ -514,7 +521,7 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
 private fun HubHint(button: String, label: String, onTap: () -> Unit) {
     val tap by rememberUpdatedState(onTap)
     Row(
-        Modifier.padding(start = 12.dp).pointerInput(Unit) { detectTapGestures { tap() } },
+        Modifier.pointerInput(Unit) { detectTapGestures { tap() } },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(Modifier.size(19.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.92f)), contentAlignment = Alignment.Center) {
@@ -522,7 +529,7 @@ private fun HubHint(button: String, label: String, onTap: () -> Unit) {
             InkGlyph(button, Color(0xFF1A1530), 11.dp) // (Batch 521: centred by its ink - CenteredLine still sat it low)
         }
         Spacer(Modifier.width(5.dp))
-        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)
+        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, softWrap = false)
     }
 }
 
