@@ -2,7 +2,7 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675q · 2026-11-16 10:05 UTC · commit `this update (being pushed)` · CI: see Actions · effort: high (this live session)
+**1. LATEST UPDATE** - 675q · 2026-11-16 10:05 UTC · commit `ec4f6a6` · CI: see Actions · effort: high (this live session)
 
 **2. WHAT CLAUDE JUST FIXED** - On the RP Nova, all 14 'physical' animations (the cartridge, disc or case lifting out and going back) opened correctly with no flicker or black frames, and scrolling stays smooth most of the time with occasional short hitches.
 
@@ -28,8 +28,8 @@
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: BLOCKED** · 0 of 7 app fixes fully verified · 7 gates left (blocking: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)) · your approval needed: yes - when it is ready · window: UNKNOWN
-- later: **v0.6.74: DEVELOPMENT** - postponed items; contents grow as later fixes finish (UNKNOWN)
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 7 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
+- later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
 **Links:** [this dashboard](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/claude/STATUS_DASHBOARD.md) ·
@@ -49,7 +49,7 @@ work. Emulator results never count as handheld verification. Release status is d
 <!-- GEN:release -->
 **Current stable:** v0.6.72 (5b01ef39, 2026-11-14) - Latest stable release (main). Save Sync 529 not included.
 
-### v0.6.73 - **BLOCKED**
+### v0.6.73 - **TESTING**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out.
 - Release window: UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO
 - App fixes and features: 7 (7 implemented, 0 fully verified, 3 implemented but not yet tested on a handheld, 4 need your look or decision)
@@ -69,7 +69,7 @@ work. Emulator results never count as handheld verification. Release status is d
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PASS | green on 2371ce29 (675i), deedfa45 and the code pushes before it; re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PENDING | run 43833359452 (675m, 1990deb4): FAIL, graded for the first time (preconditions PASS): x1.0 SHELF PASS on all checks, COVERDETAILS did not open on the first A; x1.3 COVERDETAILS fails only the rapid A/B check, SHELF the More step + rapid. All traced to the test reading its screen dumps wrongly on the emulator (the dumps hold the keys) - fixed in the test tools 675o; next trial from ~11:42 UTC. Emulator evidence supports, never replaces, the handheld gates |
-| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | FAIL | RP Nova (4:3, 640x480 dp) on 8bd5e4a: x1.0 n675c 53/53 PASS; x1.3 n675d 49/53 - FAIL Record crate (facts dropped, empty band), Pocket ribbon (labels cut), Storage boxes (title squeezed 1 px), Cube first A. KONKR not run yet (at home). Fixes in progress; re-test HW-7 |
+| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova (4:3, 640x480 dp): x1.0 n675c 53/53 PASS (8bd5e4a). The 4 x1.3 FAILs of n675d fixed: build 675r n675r13 x1.3 CRATE / POCKET_RIBBON / CUBE PASS, STORAGE FAIL (sprite title) -> build 676 n676x13 x1.3 STORAGE CUBE GRID TILES CLASSIC 5/5 PASS; x1.0 n675r10 4/4 PASS. Full 53-layout x1.3 re-run on the newest build and the KONKR still to do |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
 | Owner visual review of the new menus and x1.3 fixes | PENDING | screenshots come from the hardware session |
@@ -81,25 +81,29 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (FAIL); Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: Emulator QA trial (KONKR-like, x1.0 + x1.3) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
-- Base: after v0.6.73. Scope: postponed items; contents grow as later fixes finish.
+- Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
 - Release window: UNKNOWN - the Flip 2 is unavailable
-- App fixes and features: 1 (0 implemented, 0 fully verified, 0 implemented but not yet tested on a handheld, 0 need your look or decision)
+- App fixes and features: 2 (0 implemented, 0 fully verified, 0 implemented but not yet tested on a handheld, 0 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
 | Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible? | test when the Flip 2 is back (production limit off for one supervised test) |
+| Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore) | Flip 2 dry run only (no Drive) | owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval |
 
 | Gate | State | Evidence |
 |---|---|---|
 | Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min) | BLOCKED | DEVICE UNAVAILABLE (owner 16 Nov) |
 | Charging fix re-applied on the dev line | NOT STARTED | waits for the Flip 2 |
 | Flip 2 charging test (QA app, production limit off for one supervised test) | BLOCKED | DEVICE UNAVAILABLE (owner 16 Nov) - not a failure |
+| Save Sync rebased onto the v0.6.73 dev line, compiled, full unit suite green | NOT STARTED | branch fix/save-sync only as a bundle (PC / project doc) |
+| QA app registered with Google (Android OAuth client, package com.shelf.launcher.qa, cloud debug key SHA-1) + spare-account sign-in | BLOCKED | owner action (only the owner can) |
+| Real Drive end-to-end on 2 handhelds, synthetic saves only: hand-over, simultaneous upload, half-sent multi-file save, restore, restart mid-game; real emulator saves never overwritten (read-only checksums before / after) | NOT STARTED | - |
 
-Why it cannot ship yet: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min) (BLOCKED); Flip 2 charging test (QA app, production limit off for one supervised test) (BLOCKED); Charging fix re-applied on the dev line (NOT STARTED).
+Why it cannot ship yet: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min) (BLOCKED); Flip 2 charging test (QA app, production limit off for one supervised test) (BLOCKED); QA app registered with Google (Android OAuth client, package com.shelf.launcher.qa, cloud debug key SHA-1) + spare-account sign-in (BLOCKED); Charging fix re-applied on the dev line (NOT STARTED); Save Sync rebased onto the v0.6.73 dev line, compiled, full unit suite green (NOT STARTED); Real Drive end-to-end on 2 handhelds, synthetic saves only: hand-over, simultaneous upload, half-sent multi-file save, restore, restart mid-game; real emulator saves never overwritten (read-only checksums before / after) (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 <!-- /GEN:release -->
 
@@ -162,7 +166,9 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
-| HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs | OPEN |
+| HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
+| HW-9 Badge lane on small screens (676a) | OPEN |
+| HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs | DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS) |
 | HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) | IN PROGRESS |
 | HW-2 Record crate x1.3 vertical menu - verification checklist | OPEN |
 | HW-3 Flip 2 charging sparkle - reproduce first | BLOCKED - DEVICE UNAVAILABLE |
@@ -171,7 +177,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 8 of 8.
+Open hardware requests: 9 of 10.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

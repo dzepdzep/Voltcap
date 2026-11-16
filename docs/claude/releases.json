@@ -99,8 +99,8 @@
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
-     "state": "FAIL",
-     "evidence": "RP Nova (4:3, 640x480 dp) on 8bd5e4a: x1.0 n675c 53/53 PASS; x1.3 n675d 49/53 - FAIL Record crate (facts dropped, empty band), Pocket ribbon (labels cut), Storage boxes (title squeezed 1 px), Cube first A. KONKR not run yet (at home). Fixes in progress; re-test HW-7"
+     "state": "PENDING",
+     "evidence": "RP Nova (4:3, 640x480 dp): x1.0 n675c 53/53 PASS (8bd5e4a). The 4 x1.3 FAILs of n675d fixed: build 675r n675r13 x1.3 CRATE / POCKET_RIBBON / CUBE PASS, STORAGE FAIL (sprite title) -> build 676 n676x13 x1.3 STORAGE CUBE GRID TILES CLASSIC 5/5 PASS; x1.0 n675r10 4/4 PASS. Full 53-layout x1.3 re-run on the newest build and the KONKR still to do"
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
@@ -144,12 +144,24 @@
     "Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).",
     "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).",
     "Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens."
+   ],
+   "candidates_owner_decision": [
+    {
+     "what": "Hide navigation bar: the Retroid pill (676b root cause: lazy root-gated quirk rule) + no more polling",
+     "state": "Nova PASS 14/14 states (navbefore/navafter), AYN / KONKR / RP Classic not run",
+     "decision": "owner: v0.6.73 or v0.6.74?"
+    },
+    {
+     "what": "Global badge lane (676a): console / achievement / NEW / score badges never overlap, badgecheck R27",
+     "state": "Nova x1.3 collisions PASS 25/25 (n676x13); text-cut check needs the next build",
+     "decision": "owner: v0.6.73 or v0.6.74?"
+    }
    ]
   },
   {
    "version": "v0.6.74",
    "base": "after v0.6.73",
-   "scope": "postponed items; contents grow as later fixes finish",
+   "scope": "Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval",
    "window": "UNKNOWN - the Flip 2 is unavailable",
    "items": [
     {
@@ -161,6 +173,15 @@
      "device": "BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible?",
      "owner": "test when the Flip 2 is back (production limit off for one supervised test)",
      "note": "kept on claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch, NOT on the dev line, never installed or tested. Evidence conflict to settle on the Flip 2: 15 Nov 20:20 log showed the switch toggling every 1-2 s at 79-80 %; the owner later saw 78 % -> charge -> 80 % with the sparkle only at 80 % (one cycle, not a loop). Apply the patch only if the loop reproduces."
+    },
+    {
+     "what": "Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore)",
+     "kind": "app",
+     "impl": false,
+     "unit": "on branch fix/save-sync (v0.6.71 base): 46 JVM tests + sims green on the PC 13 Nov; not on the dev line",
+     "emulator": "no",
+     "device": "Flip 2 dry run only (no Drive)",
+     "owner": "owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval"
     }
    ],
    "gates": [
@@ -178,6 +199,21 @@
      "gate": "Flip 2 charging test (QA app, production limit off for one supervised test)",
      "state": "BLOCKED",
      "evidence": "DEVICE UNAVAILABLE (owner 16 Nov) - not a failure"
+    },
+    {
+     "gate": "Save Sync rebased onto the v0.6.73 dev line, compiled, full unit suite green",
+     "state": "NOT STARTED",
+     "evidence": "branch fix/save-sync only as a bundle (PC / project doc)"
+    },
+    {
+     "gate": "QA app registered with Google (Android OAuth client, package com.shelf.launcher.qa, cloud debug key SHA-1) + spare-account sign-in",
+     "state": "BLOCKED",
+     "evidence": "owner action (only the owner can)"
+    },
+    {
+     "gate": "Real Drive end-to-end on 2 handhelds, synthetic saves only: hand-over, simultaneous upload, half-sent multi-file save, restore, restart mid-game; real emulator saves never overwritten (read-only checksums before / after)",
+     "state": "NOT STARTED",
+     "evidence": "-"
     }
    ]
   }

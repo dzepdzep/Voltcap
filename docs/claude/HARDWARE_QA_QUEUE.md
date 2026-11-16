@@ -51,7 +51,19 @@ request (restored, fatal=0) - can run when the home PC is used again.
 Flip 2 (unavailable): its 15 Nov gates stay HISTORICAL evidence for v0.6.73 (owner 16 Nov); its own session (popup gates on
 the newest build + the charging reproduction, HW-3) waits until it is back.
 
-### HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs - OPEN
+### HW-8 Hide navigation bar on other handhelds (676b) - OPEN
+- KONKR, RP Classic (Retroid, should match the Nova), AYN Thor / Odin (own hide_nav_bar 0 and 1 - never changed by us), any stock-Android
+  phone with 3-button nav. QA app only: `sh /data/local/tmp/navbar676.sh <tag>` (read-only; the swipe step only with SWIPE=1 and
+  never where the owner's Voltcap is the home app). PASS = SecondaryHomeHandle0 / NavigationBar0 not visible in every Voltcap state
+  with Hide nav bar on; with the test hook off, the bar follows the device's own rules.
+- Nova 16 Nov: before (675r) pill in 12/12 Voltcap states; after (676) 0/14. Pending on the next build: re-run the same.
+
+### HW-9 Badge lane on small screens (676a) - OPEN
+- KONKR, RP Classic, Nova at x1.0 + x1.3: pop529 "CUBE GRID TILES CLASSIC SHELF STACKS" then `badgecheck.py <run>/qa_clip` (R27).
+- Nova x1.3 676: collisions 25/25 PASS; Grid chip text was clipped inside its pill (pre-existing) - fixed in 676c, text check needs
+  the 676c build's dumps (needW / boxW).
+
+### HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs - DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS)
 - Device: RP Nova d3641c41 (via the owner's laptop) or any 4:3 / 640x480 dp handheld. After the fixes in HANDOFF "FIRST".
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CRATE POCKET_RIBBON STORAGE CUBE" OWN, then popclip.py.
 

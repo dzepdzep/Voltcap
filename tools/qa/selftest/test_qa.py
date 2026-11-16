@@ -2000,6 +2000,23 @@ class TestBadgeCheck676a(unittest.TestCase):
         self.assertEqual(r.returncode, 1, r.stdout)
         self.assertIn("cut", r.stdout)
 
+    def test_text_cut_inside_a_pill_fails(self):
+        w = self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [106, 150, 180, 40], "shown": [106, 150, 180, 40], "placed": True}])
+        w[0]["texts"] = [{"text": "6/10 \u00b7 60%", "full": [200, 155, 80, 30], "lines": 1, "ovH": True, "ovW": False, "ellipsis": False,
+                          "needW": 92, "boxW": 80, "textH": 30, "boxH": 30}]
+        r = self._run(w)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("text cut", r.stdout)
+        # a 1 px rounding flagged by the layout (the Nova's whole "6/10") is not a cut
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": False, "ovW": True, "ellipsis": False,
+                          "needW": 41, "boxW": 40, "textH": 31, "boxH": 30}]
+        self.assertEqual(self._run(w).returncode, 0)
+        # an old dump with only the flags can't tell: INFRA, never PASS
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": True, "ovW": False, "ellipsis": False}]
+        self.assertEqual(self._run(w).returncode, 2)
+
     def test_old_build_is_infra_and_one_badge_not_tested(self):
         old = self._run([{"nodes": []}])
         self.assertEqual(old.returncode, 2, old.stdout)

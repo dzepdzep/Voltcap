@@ -1177,7 +1177,6 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     // Update 136: on a narrow card the chip keeps to what fits — the trophy alone, or earned / total without the bar
     // (the word was cut to "MASTE" on the Dashboard's covers).
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
-    val compact = maxWidth < 112.dp
     val chipW = maxWidth
     // (672c, KONKR x1.3 Cube menu Classic (k673a): on a 43 dp card "80%" at the larger text needed 46 dp with the chip's
     // margins and was cut by the card's edge ("80⁹"). The words are measured at the size they are drawn (the text scale
@@ -1188,6 +1187,10 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     val chipStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     fun wordW(t: String): androidx.compose.ui.unit.Dp = with(dens) { measurer.measure(t, chipStyle, maxLines = 1, softWrap = false).size.width.toDp() }
     val count = "$earned/$total"
+    // (676a, RP Nova x1.3 Grid n676x13: "6/10 · 60%" was cut inside its own pill - the full form was estimated at its words +
+    // 66 dp and needs its words + the bar (34) + the tick (9) + its padding (14) + its margin (10) = + 67 dp, so on a 116 dp
+    // card the "%" was clipped. The full form only where it fits with that real width and a little room; else the compact one.)
+    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 4.dp > chipW)
     val word = if (mastered) "" else if (!compact) "$count · $pct%" else if (wordW(count) + 24.dp <= chipW) count else "$pct%"
     val need = if (mastered) (if (compact) 14.dp else 16.dp + wordW("MASTERED")) else wordW(word) + (if (compact) 0.dp else 42.dp)
     val tight = need + 24.dp > chipW
@@ -1220,7 +1223,9 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
             }
             // (0.6.17: on the smallest pictures — Twin icons, Pocket Quest's strip — "107/155" was cut to "107/1": the
             // share alone there. 672c: chosen by the words' measured width above, not 6 dp a letter.)
-            Text(word, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+            // (676a: never clipped - a word that still ends up a hair too wide steps its size down, rule 11.)
+            Text(word, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp))
         }
     }
     }
