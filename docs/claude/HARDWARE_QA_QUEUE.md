@@ -121,3 +121,6 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - 675m extension: notifications panel (R1 pull-down) with a long app name, a long notification title and a long two-line text,
   a running background task and the charge-limit pill: wrap / shrink / slide, never "…"; rows keep their height; D-pad ▶ / ◀
   still steps between a notification and its ✕ (D26). Use notifications the QA app can already see; post none from other apps.
+- 677a extension (commit: the 677a cloud run's): the post-game session card (return from a game with a long name, a session
+  with achievements and a milestone) and the status-bar session note: wrap / shrink / slide, never "…"; the card keeps its
+  height for a short name; the note slides inside its 320 dp and stops after 30 s idle. Emulator can't play a real game session.

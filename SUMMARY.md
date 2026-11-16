@@ -1,3 +1,12 @@
+# Update 677a (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: session card + status note shown whole
+- The post-game session card (game name, play time, achievement count, completion line, milestone) and the status-bar session
+  note cut long text with "…". Now FullText (wrap -> readable shrink -> slide), reserve = false so a short name keeps today's
+  card height; the note slides inside its 320 dp. TRUNCATE 262 -> 256 (static_checks).
+- Test: SessionSummaryFullText677aTest (fails on 676g: 6 Ellipsis, no FullText) + NotificationsFullText675mTest PASS; app +
+  tests compiled in the cloud (compileDebugUnitTestKotlin). static_checks PASS. Files: ui/SessionSummary.kt, the test.
+- Emulator trial started on this commit ("[emulator-qa]") - first trial on the 675o dump-read fix.
+- NOT TESTED on hardware: look of the card / note (HW-7 extended, KONKR).
+
 # Update 676g (16 Nov 2026, live session) - QA tool only - readcheck: an unplaced text is not drawn
 - n676f13 graded FAIL only because readcheck counted the left-out count ('6/10', "placed": false in the dump) as drawn over the name;
   the screenshot shows the name alone. readcheck.overlaps skips texts with an explicit "placed": false (older dumps graded as before).

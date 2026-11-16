@@ -173,7 +173,12 @@ def run_reports():
         for line in open(path, encoding="utf-8"):
             line = line.strip()
             if line:
-                out.append(json.loads(line))
+                r = json.loads(line)
+                # 677a: a live session wrote {"run", "at", "summary"} instead of {"update", "utc", "plain"}; read both shapes.
+                r.setdefault("update", r.get("run", "?"))
+                r.setdefault("utc", r.get("at", "1970-01-01T00:00Z"))
+                r.setdefault("plain", r.get("summary", ""))
+                out.append(r)
     return out
 
 

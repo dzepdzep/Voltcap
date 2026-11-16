@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 675q · 2026-11-16 10:05 UTC · commit `ec4f6a6` · CI: see Actions · effort: high (this live session)
+**1. LATEST UPDATE** - 677a · 2026-11-16 14:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on 1e1400c in progress at start; d1d6d98 green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - On the RP Nova, all 14 'physical' animations (the cartridge, disc or case lifting out and going back) opened correctly with no flicker or black frames, and scrolling stays smooth most of the time with occasional short hitches.
+**2. WHAT CLAUDE JUST FIXED** - The card that appears after you finish playing (game name, time played, achievements, milestone) and the short note in the status bar now show long names in full - they wrap, shrink a little or slide - instead of ending in '...'. An emulator test run was also started to check yesterday's fix to the automatic popup tests.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: fix the four RP Nova x1.3 problems; then: re-test them on a handheld; native popup pages for the 40 layouts still on the shared page
+**5. WORKING ON NEXT** - now: read the emulator test run started by this update; then: finish the v0.6.73 hardware checks (KONKR / Nova); next screens with '...' text: play header, stats
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 7 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 9 app fixes fully verified · 7 gates left (next: Emulator QA trial (KONKR-like, x1.0 + x1.3)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -52,7 +52,7 @@ work. Emulator results never count as handheld verification. Release status is d
 ### v0.6.73 - **TESTING**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out.
 - Release window: UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO
-- App fixes and features: 7 (7 implemented, 0 fully verified, 3 implemented but not yet tested on a handheld, 4 need your look or decision)
+- App fixes and features: 9 (9 implemented, 0 fully verified, 5 implemented but not yet tested on a handheld, 4 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
@@ -64,6 +64,9 @@ work. Emulator results never count as handheld verification. Release status is d
 | Centred symbols on home hints (Arcade pointer, Pocket START, Bar arrows, Library L2 / R2, Spot START) | Arcade, Pocket, Bar PASS; Library and Spot fixed after the last run - re-test needed | not needed |
 | Side menu: every key and the Save sync line fit the drawer without scrolling | fixed after the last run - re-test needed | not needed |
 | Test and CI reliability (test-runner memory, emulator trial, QA checkers) | - | not needed |
+| Hide navigation bar: Retroid pill fixed at its root (676b); polling removed | RP Nova: pill 12/12 states before, 0/14 after (676, 676c, 676d); Thor / KONKR / RP Classic NOT TESTED (HW-8) | APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass) |
+| Global badge lane (676a/c/e/f): console / achievement / NEW / score never overlap, never cut, never over a coverless name | RP Nova 676f: x1.3 CUBE/TILES/GRID popup 3/3 + badges 17/17, x1.0 CUBE 1/1 + 10/10; 676d x1.0 GRID/CUBE/TILES 3/3 + 26/26; KONKR / RP Classic NOT TESTED (HW-9) | APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass) |
+| QA safety: harness can't reach the owner's Voltcap (D334), QA levels, pinned QA key | D334 guard proven on the Nova (5 root Backs kept) | requested 16 Nov |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -87,12 +90,13 @@ Merging, the production install and publishing always wait for your explicit GO.
 ### v0.6.74 - **DEVELOPMENT**
 - Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
 - Release window: UNKNOWN - the Flip 2 is unavailable
-- App fixes and features: 2 (0 implemented, 0 fully verified, 0 implemented but not yet tested on a handheld, 0 need your look or decision)
+- App fixes and features: 3 (0 implemented, 0 fully verified, 0 implemented but not yet tested on a handheld, 0 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
 | Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible? | test when the Flip 2 is back (production limit off for one supervised test) |
 | Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore) | Flip 2 dry run only (no Drive) | owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval |
+| Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md) | Thor + Nova (single-screen) after implementation | requested 16 Nov |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -167,7 +171,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
-| HW-9 Badge lane on small screens (676a) | OPEN |
+| HW-9 Badge lane on small screens (676a) | IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open) |
 | HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs | DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS) |
 | HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) | IN PROGRESS |
 | HW-2 Record crate x1.3 vertical menu - verification checklist | OPEN |
