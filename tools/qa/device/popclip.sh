@@ -26,16 +26,24 @@ k() { fg; input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Start|Power on|Run|Play it!|Continue!|Rent & Play|Rent & Continue|Rent & Resume)"
 DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve notes|Card text|Turn over|Summary|The story|Type NFO|Catalogue card)"
 # (Counted against the home step: a layout whose home screen has its own Play button — Custom — is not "a popup up".)
-pc() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' $1 2>/dev/null | wc -l; }
+# jl FILE: the dump one node per line. (675d, emulator run 43786748164: the device's grep missed controls that were in the dump
+# - "no Details action" / More step missing / "A opened nothing" with Play, Details and More on screen - on exactly the dumps
+# whose one 10-13 KB line also held "Full story on Details ›"; the same files matched on the PC. Short per-node lines keep one
+# odd node or the line's length from hiding every other node from the device's regex.)
+jl() { tr '{' '\n' < "$1" 2>/dev/null; }
+pc() { jl $1 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' | wc -l; }
 # dw FILE: wait for the app's own dump. (675b, emulator run 43762702001: the software-rendered emulator wrote the dumps after
 # the fixed sleep - the probe read no file, so a popup that was up counted as "first A opened nothing" / "no Details action"
 # and A was pressed again on it. The fixed sleep stays the minimum; then up to 8 s more for the file, which QaClip writes
 # whole (renamed into place). A dump that never comes is logged - the step then fails / stays NOT TESTED as before.)
-dw() { i=0; while [ ! -s "$1" ] && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done; [ -s "$1" ] || echo "dump missing: ${1##*/}" >> $OUT/log.txt; }
+# (675d: and until the file READS whole - its last byte the JSON's closing brace - not only until it shows a size.)
+dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
+dw() { i=0; while ! dr "$1" && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
+  dr "$1" || { [ -s "$1" ] && echo "dump unreadable: ${1##*/}" >> $OUT/log.txt || echo "dump missing: ${1##*/}" >> $OUT/log.txt; }; }
 up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 0.9; dw $F/qa_clip/${TAG}_probe.json; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
 # tapat LABEL_RE STEP: tap the middle of the shown part of the first control whose label ends in LABEL_RE (false if none shows).
 # (The popup's own control: one that the home step didn't have — Custom's home has a Play button of its own.)
-ctl() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $2 2>/dev/null; }
+ctl() { jl $2 | grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]'; }
 tapat() {
   ctl "$1" $F/qa_clip/${TAG}_${n}_home.json > $F/qa_tap_home.txt
   [ "$2" = probe ] && src=$F/qa_clip/${TAG}_probe.json || src=$F/qa_clip/${TAG}_${n}_$2.json
@@ -80,7 +88,7 @@ for lay in $LAYS; do
     # A opened nothing" for it.)
     # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
     GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_gc.json
-      grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
+      jl $F/qa_clip/${TAG}_gc.json | grep -q '"label":"SAVE VAULT"' && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
     # (Update 475: the run's game again before every combination — after a combination whose window misbehaved (Blades'
@@ -123,12 +131,12 @@ for lay in $LAYS; do
     # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     # (674c: the layout's own word for Details too - Record crate's "Sleeve notes", Pocket's "Status" (k674a).)
-    elif grep -qiE '"label":"([^"]*[^A-Za-z])?'"$DETW"'","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null && up && seek "$DETW" DPAD_RIGHT; then
+    elif jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"([^"]*[^A-Za-z])?'"$DETW"'","kind":"control"' && up && seek "$DETW" DPAD_RIGHT; then
       echo "$n Details reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
     else echo "$n no Details action" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
-    if grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
+    if jl $F/qa_clip/${TAG}_${n}_main.json | grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"'; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
       # (673g, owner brief 15 Nov: a key row that doesn't fit scrolls a whole key at a time and MORE is its last key - off

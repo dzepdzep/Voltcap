@@ -1174,6 +1174,37 @@ class TestPopclipScript(unittest.TestCase):
         sp = open(os.path.join(dev, "shelfpages529.sh"), encoding="utf-8").read()
         self.assertIn('[ ! -s $F/qa_clip/${TAG}_$1.json ]', sp)
 
+    def test_dump_reads_go_one_node_per_line(self):
+        # 675d (emulator run 43786748164): on exactly the dumps whose single long line also held "Full story on Details ›" the
+        # device's grep found no Details / More / Play control that was in the file. Every read of a dump in popclip.sh goes
+        # through jl (one node per line), and dw waits until the dump reads whole (closing brace), not only for a size.
+        import subprocess, json, tempfile
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+        for l in code:
+            if "qa_clip/" in l and "grep" in l:
+                self.assertIn("jl ", l, l)                         # no grep reads a dump's one long line directly
+        self.assertIn("jl $2 | grep -oiE", sh)                       # ctl (tapat / seek)
+        self.assertIn("jl $1 | grep -oiE", sh)                       # pc (up)
+        self.assertIn('dump unreadable', sh)
+        defs = "\n".join(l for l in code if l.startswith(("PLAYW=", "DETW=", "jl()", "pc()", "ctl()", "dr()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            node("Full story on Details ›", "text", [10, 10, 100, 20]), node("Play", "control", [365, 464, 247, 56]),
+            node("Turn over", "control", [622, 464, 247, 56]), node("More", "control", [1136, 464, 247, 56])]}], "images": {}}
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write('{"screen":[960,640],"windows":[{"nodes":[{"label":"Play","kind":"control"'); half = f.name
+        try:
+            out = subprocess.run(["sh", "-c", defs + '\nctl "$DETW" "$1"; echo pc=$(pc "$1"); dr "$1" && echo whole; dr "$2" || echo half',
+                                  "x", path, half], capture_output=True, text=True).stdout
+        finally:
+            os.unlink(path); os.unlink(half)
+        self.assertIn('"label":"Turn over","kind":"control","full":[622,464,247,56],"shown":[622,464,247,56]', out)
+        self.assertNotIn("Full story", out)
+        self.assertIn("pc=1", out); self.assertIn("whole", out); self.assertIn("half", out)
+
     def test_first_a_late_is_kept_apart_and_still_fails_open(self):
         # 675c (emulator run 43780985909): e529a's probe missed a popup the next screenshot showed, and the second A pressed
         # its Play. The failed probe is kept, the app is asked once more; up then = "opened late" (open FAIL, no second A).

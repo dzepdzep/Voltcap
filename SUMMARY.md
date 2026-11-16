@@ -1,3 +1,21 @@
+# Update 675d (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: dump reads one node per line
+- Emulator run 43786748164 (ddca9b66) read: the first A opened the window every time now (no probeA / probeB kept; 675c's late
+  path never triggered). Left: e529a SHELF "no Details action" + More step missing + "extra: A opened nothing"; e529b COVERDETAILS
+  "no Details action", no More step, Play only after a D-pad press - each time with Turn over / Details / More / Play shown in
+  the pulled dump, and the same tapat / ctl lines match those files on the PC. The two failing main dumps are exactly the two
+  that also hold "Full story on Details ›" on their one 10-13 KB line (the two passing ones do not) - the device's grep did
+  not see controls that were in the file.
+- Fix (QA tooling, no check loosened): popclip.sh reads every dump through jl (one node per line: tr '{' '\n') - ctl / tapat /
+  seek, pc (up), the Details / More checks and Green Core's menu check - so one odd node or the line's length cannot hide the
+  rest; dw waits until the dump reads whole (last byte the closing brace) and logs "dump unreadable" apart from "dump missing".
+  Root cause on the device (toybox grep vs that line) not proven - the next trial shows whether the symptom is gone.
+- Not changed: e529b COVERDETAILS "rapid A B A B left a window open" and e529c's precondition (2 QA windows) - read on the next
+  trial after this fix (the rapid step's `up` reads the same way); HW-5 watches rapid on hardware.
+- Checks (cloud): QA selftest 158/158 (new test_dump_reads_go_one_node_per_line - fails on the 675c script); static checks PASS.
+  No Kotlin change (no compile needed). Emulator trial not started (last "[emulator-qa]" 01:31, 3 h rule) - next run.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md,
+  docs/claude/AUTORUN_LOG.md.
+
 # Update 675c (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: first-A evidence
 - Emulator run 43780985909 (750b669c) artifact read: e529a (font=1.3, density=1.15) "first A opened nothing" on COVERDETAILS and
   SHELF, yet the firstA screenshot (taken right after the failed probe) shows the popup up. The dumps' fontScale 1.0 is not a

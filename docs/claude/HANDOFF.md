@@ -1,6 +1,6 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~01:50 UTC, update 675c (cloud scheduled run).
+Updated: 2026-11-16 ~02:45 UTC, update 675d (cloud scheduled run).
 Dev branch `claude/qa-0672-repair`; production `main` = v0.6.72 (5b01ef39). Nothing released after v0.6.72; no production app
 touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/CLOUD_DEVELOPMENT.md`.
 
@@ -14,7 +14,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 - Handheld gates (674n build, c2cdfc81): Flip 2 x1.3 f674k 52/53 (674k build), Flip 2 x1.0 f674o 52/53 (Side status line
   51 px < 54 -> fixed 674o), KONKR x1.0 k674m 51/53 (674k build; both fixed since), KONKR x1.3 k674n 51/53 (Library R2 -> fixed
   674o; Spot START = checker reads a backdrop shape as the pill edge, ink measured centred by eye -> D-674o-1 below).
-- CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e, 7dbcab0c (675a), 750b669c (675b), 2fa6bc39.
+- CI: verify-update-310 green on 7358016a, c30d6f5a, cf629e2e, 7dbcab0c (675a), 750b669c (675b), 2fa6bc39, ddca9b66 (675c).
 
 ## Next (in order; skip what needs hardware - queue it instead)
 0. CI memory (G11, 675a): green on 7dbcab0c (both runners, heavy task ran, lowest free memory 6.4 GB) - 1 green push. Keep
@@ -22,14 +22,15 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
    again (add the growing class to heavyRoboTests in app/build.gradle.kts).
    Side finding: lazily made global Compose states crash a fresh JVM's first frame - look for other objects with lazily made
    states read by Case3D / warm-ahead threads (LookStyles fixed via Features.warmUiStores).
-1. Emulator trial: read the trial on the 675c commit (EMULATOR evidence). 675b's run 43780985909 on 750b669c: e529b x1.0 SHELF
-   11/11 PASS, COVERDETAILS 10/11 (FAIL "More shown but its step is missing" - no More line in the log: check `up` before the
-   More walk). e529a (font=1.3, density=1.15): "first A opened nothing" while the firstA shot shows the popup (the dumps'
-   fontScale 1.0 is expected: WithTestScale only). 675c keeps the failed probe (qa_clip/<tag>_<n>_probeA.json) and re-probes
-   1.5 s later (_probeB); each dump has "popupAgeMs" and "roots". Read them: probeA popupAgeMs null + probeB up = the window
-   opens late at x1.3 on the emulator (find what is slow: first composition at the new font scale?); popupAgeMs set but no
-   popup window in "windows" while "roots" lists it not attached / not shown = a QaWalk filter problem; not listed at all = the
-   root callback (ViewRootForTest.onViewCreatedCallback) missed the Dialog. Fix with a test. e529c did not run (precondition).
+1. Emulator trial: start one on the 675d (or later) commit with "[emulator-qa]" (allowed from 04:31 UTC 16 Nov: last one 01:31)
+   and read it (EMULATOR evidence). Run 43786748164 on ddca9b66 (675c): first A opened the window every time (no probeA/B).
+   FAILs left: e529a SHELF / e529b COVERDETAILS "no Details action" + More step missing (+ e529a "extra: A opened nothing"),
+   with the controls IN the pulled dump - the device's grep missed them on the two dumps that also held "Full story on Details
+   ›" (10-13 KB single line). 675d: popclip.sh reads every dump one node per line (jl) and dw waits for a whole dump ("dump
+   unreadable" logged). If the trial still shows "no Details action" with the control in the dump: add a probe that copies
+   `jl <dump> | grep -c control` into the log to see what the device reads. Also open: e529b COVERDETAILS "rapid A B A B left
+   a window open" and e529c's precondition (qa_windows=2 after e529b) - is a window really left (rapid shot / after dump) or
+   is it the same read problem? shelfpages529.sh still greps dumps directly - give it jl too if it shows the same symptom.
 2. D-674o-1 glyphcheck: Spot START pill over a backdrop shape of nearly the pill's colour - the walk ran past the pill's edge
    (dy +3 px). Make the pill's edge measurable (e.g. GlyphPill's own known size from the dump) - never loosen the threshold.
 3. Native popup pages for the remaining layouts; physical pickup / return animations (Disc Station etc.); D323 / D324 in-place

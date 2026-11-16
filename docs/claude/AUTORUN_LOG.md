@@ -32,3 +32,9 @@
   dumps is expected (in-app scale). The probe was deleted, so late vs missing root was unknowable. 675c: dumps carry popupAgeMs +
   roots, popclip.sh keeps the failed probe and re-probes once ("opened late" still FAILs open, no second A on Play).
   Selftest 157/157, QaClipDiag675cTest 2/2, static PASS, compile OK. Pushed with "[emulator-qa]".
+
+## 2026-11-16 02:18-02:50 UTC - cloud scheduled run
+- Lock free (released 01:31); taken 02:19. CI: Verify 310 green on ddca9b66 (675c). Emulator trial 43786748164 FAIL (EMULATOR).
+- Item: HANDOFF Next 1. Artifact read: first A opens every time now; the 2 FAILs are controls present in the dump that the
+  device's grep did not see (both dumps hold "Full story on Details ›" on one long line). 675d: popclip.sh reads dumps one node
+  per line, dw waits for a whole dump. Selftest 158/158, static PASS. No "[emulator-qa]" (3 h rule) - next run starts it.
