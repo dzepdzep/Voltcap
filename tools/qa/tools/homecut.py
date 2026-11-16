@@ -31,6 +31,9 @@ def cut_texts(dump):
             nw, bw = t.get("needW"), t.get("boxW")
             if not t.get("placed", True):
                 continue
+            sh = t.get("shown") or [0, 0, 1, 1]
+            if sh[2] <= 0 or sh[3] <= 0:
+                continue  # (676y: not on the screen at all - a ticker's row outside its box, a scrolled-away item)
             # (676u, RP Nova x1.3 r676x13 / t676x13: texts squeezed in HEIGHT - Card binder facts drawn half high, Greencore's
             # PLAY / DETAILS 14 px of 72 - the width check never saw them. Sliding doesn't help a text cut in height, so this
             # one counts for sliding texts too. A box under 60 % of the text's line height cuts its letters; 0 px = not drawn.)
