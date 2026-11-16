@@ -227,10 +227,13 @@ internal fun PlatformLogo(
                 },
                 modifier = Modifier.matchParentSize()
             )
+        } else if (platform == "App" || name.contains("app", ignoreCase = true)) {
+            // (676z2, D342 - Nova Cross x1.0 / x1.3: "OTHER APPS" on its folder cut to "OT": app categories draw the apps icon.)
+            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.Apps, name, tint = textColor, modifier = Modifier.fillMaxHeight(0.9f).aspectRatio(1f))
         } else {
-            Text(
-                name.uppercase(), color = textColor, fontSize = textSize, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                maxLines = 2, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = textSize * 0.5f, maxFontSize = textSize)
+            FitText(
+                name.uppercase(), textColor, maxSize = textSize, minSize = textSize * 0.5f, maxLines = 2, fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center, slideWhenCut = true
             )
         }
     }

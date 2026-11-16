@@ -187,6 +187,30 @@ private class LaneContentNode(var lane: BadgeLane, var inset: Dp, var shiftY: Dp
     override fun onDetach() { lane.remove(BadgeKind.CONTENT) }
 }
 
+/**
+ * 676z2 (Nova x1.3 Tiles: the count over a coverless tile's name): content in a CORNER of the tile ([align], held [mx] / [my] off
+ * its edges by the paddings before this) - fixed CONTENT in the lane, as [laneContent] for a centred plate.
+ */
+internal fun Modifier.laneContentAt(lane: BadgeLane?, align: Alignment, mx: Dp, my: Dp): Modifier =
+    if (lane == null) this else this.then(LaneCornerContentElement(lane, align, mx, my))
+
+private data class LaneCornerContentElement(val lane: BadgeLane, val align: Alignment, val mx: Dp, val my: Dp) : ModifierNodeElement<LaneCornerContentNode>() {
+    override fun create() = LaneCornerContentNode(lane, align, mx, my)
+    override fun update(node: LaneCornerContentNode) {
+        if (node.lane !== lane) node.lane.remove(BadgeKind.CONTENT)
+        node.lane = lane; node.align = align; node.mx = mx; node.my = my
+    }
+}
+
+private class LaneCornerContentNode(var lane: BadgeLane, var align: Alignment, var mx: Dp, var my: Dp) : Modifier.Node(), LayoutModifierNode {
+    override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
+        val p = measurable.measure(constraints)
+        lane.report(BadgeBox(BadgeKind.CONTENT, align, mx.roundToPx(), my.roundToPx(), p.width, p.height))
+        return layout(p.width, p.height) { p.place(0, 0) }
+    }
+    override fun onDetach() { lane.remove(BadgeKind.CONTENT) }
+}
+
 /** QA (QaClip "badges"): a badge's kind and its tile's lane, "PROGRESS#1a2b". */
 internal val BadgeTag = SemanticsPropertyKey<String>("VoltcapBadge")
 /** QA: the tile a lane belongs to. */
