@@ -2116,6 +2116,8 @@ class TestHomecut676o(unittest.TestCase):
         digit = {"text": "12", "needW": 30, "boxW": 30, "ovH": False, "placed": True, "textH": 48, "boxH": 38}  # line padding only
         hidden = {"text": "6:38", "needW": 80, "boxW": 80, "ovH": True, "placed": True, "textH": 74, "boxH": 0}
         self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([play, digit, hidden]))], ["PLAY (height)"])
+        offscreen = dict(play, shown=[0, 0, 0, 0])
+        self.assertEqual(homecut.cut_texts(self._dump([offscreen])), [])
 
 
 class TestReadcheckUnplaced676f(unittest.TestCase):
