@@ -113,7 +113,10 @@ internal fun ConsoleProfile(c: StyleCtx, ink: Color = Color.White) {
     val profile = c.state.raProfile
     val name = profile?.User ?: c.state.raUsername ?: "Player"
     val avatar = profilePictureUrl(RaBadges.mediaUrl(profile?.UserPic))
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    // (677g: the bar leaves its own picture out while this one shows - one picture of you on the screen; a tap opens the profile.)
+    OwnProfile.Mark()
+    val open by rememberUpdatedState(c.actions.profile)
+    Row(Modifier.pointerInput(Unit) { detectTapGestures { open() } }, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.avatarTag("console").size(34.dp).clip(CircleShape).background(ink.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
             if (avatar != null) AsyncImage(avatar, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             else Icon(Icons.Filled.Person, null, tint = ink.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
@@ -693,6 +696,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
     val pal = chanColors()
     val ink = if (light) pal.ink else Color.White
     val avatar = profilePictureUrl(RaBadges.mediaUrl(c.state.raProfile?.UserPic))
+    if (avatar != null) OwnProfile.Mark() // (677g: its first button is your picture - the bar leaves its own out)
     val items = listOf(
         Icons.Filled.Person to c.actions.profile, Icons.Filled.Settings to c.actions.settings,
         Icons.Filled.Notifications to c.actions.notifications, Icons.Filled.Cloud to c.actions.cloud

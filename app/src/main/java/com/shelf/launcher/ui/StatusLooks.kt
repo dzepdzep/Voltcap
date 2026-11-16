@@ -557,6 +557,20 @@ internal fun StatusLook.cased(s: String): String = if (caps) s.uppercase() else 
  * Update 333: a layout drawing its own clock on the home screen (Case stacks' panel, Channel grid's bar) marks it while
  * it's there; the status bar then leaves its clock out — never two clocks.
  */
+/** 677g: a layout drawing the playing profile itself (ConsoleProfile, Channel grid's corner) - the bar leaves its picture and points out. */
+internal object OwnProfile {
+    var count by androidx.compose.runtime.mutableIntStateOf(0)
+        private set
+
+    @Composable
+    fun Mark() {
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            count++
+            onDispose { count-- }
+        }
+    }
+}
+
 internal object OwnClock {
     var count by androidx.compose.runtime.mutableIntStateOf(0)
         private set
