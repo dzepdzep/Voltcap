@@ -73,7 +73,10 @@ jobs:
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)
           "$BT/aapt" dump badging "$APK" | grep -q "package: name='com.shelf.launcher.qa'"
           PIN=$(python3 -c "import json;print(json.load(open('tools/qa/qa_signing.json'))['cert_sha256'])")
-          GOT=$("$BT/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          # (public certificate fingerprints only; the first signer's SHA-256, whatever the label's exact wording)
+          "$BT/apksigner" verify --verbose --print-certs "$APK" > signer.txt 2>&1 || { cat signer.txt; exit 1; }
+          grep -iE "certificate SHA-256 digest" signer.txt | head -2
+          GOT=$(grep -iE "certificate SHA-256 digest" signer.txt | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
           if [ "$GOT" != "$PIN" ]; then echo "::error::signed with ${GOT:0:8}..., the QA app needs ${PIN:0:8}..."; exit 1; fi
           echo "QA app, signer ${GOT:0:8}... (pinned) - updates the installed QA app in place"
           mkdir -p qa-device-apk
