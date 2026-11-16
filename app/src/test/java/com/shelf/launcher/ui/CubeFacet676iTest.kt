@@ -26,7 +26,7 @@ class CubeHints676mTest {
         val i = s.indexOf("HubHint(\"Y\", \"Achievements\")")
         val block = s.substring(s.lastIndexOf("FlowRow(", i), i)
         assertTrue(block.contains("Arrangement.spacedBy(12.dp, Alignment.End)"))
-        assertTrue(s.contains("Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, softWrap = false)"))
+        assertTrue(s.contains("Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 15.sp, maxLines = 1, softWrap = false)"))
     }
 }
 
