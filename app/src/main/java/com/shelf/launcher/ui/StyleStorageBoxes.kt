@@ -376,11 +376,18 @@ internal fun StorageSprite(g: Game, state: com.shelf.launcher.LauncherUiState, c
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> rememberOwnAppIcon(g.packageName)?.let { icon ->
                 androidx.compose.foundation.Image(icon, g.name, Modifier.fillMaxSize(0.82f).clip(RoundedCornerShape(10.dp)), contentScale = ContentScale.Fit)
             } ?: Box(Modifier.fillMaxSize(0.7f).clip(RoundedCornerShape(10.dp)).background(placeholderBrush(g.hue)))
-            model == null -> Box(Modifier.fillMaxSize(0.8f).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.85f))) { StyleNamePlate(LocalTitleOptions.current.display(g.name)) }
+            // (675s, RP Nova x1.3 n675r13: in the record page's 30 dp header slot the plate's name came out 1 px tall - a second,
+            // unreadable title beside the real one. A slot too small to read a name in shows the plain card; the name is beside it.)
+            model == null -> androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize(0.8f).clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.85f))) {
+                if (spriteShowsName(maxWidth)) StyleNamePlate(LocalTitleOptions.current.display(g.name))
+            }
             else -> Box(Modifier.fillMaxSize(0.7f).clip(RoundedCornerShape(4.dp)).background(placeholderBrush(g.hue)))
         }
     }
 }
+
+/** 675s: a coverless sprite names its game only where the name can be read (the home's boxes, not the record's header slot). */
+internal fun spriteShowsName(slot: androidx.compose.ui.unit.Dp): Boolean = slot >= 48.dp
 
 /** [src] made into a [px] × [px] sprite (plus its one-pixel outline): see [StorageSprite]. */
 private fun spriteOf(src: android.graphics.Bitmap, px: Int): androidx.compose.ui.graphics.ImageBitmap {

@@ -109,9 +109,19 @@ object GestureHint {
      * hide the navigation bar brings the white gesture pill back — Hide nav bar on showed the pill, off hid it. There
      * the device's own setting (layer 2, through its root service) does the hiding and Voltcap's window doesn't ask.
      */
-    val systemOwnsNav: Boolean by lazy {
-        (android.os.Build.MODEL.contains("Retroid", true) || android.os.Build.MANUFACTURER.contains("Retroid", true)) && RootShell.available
-    }
+    // (676b, root cause of the white pill that stayed with Hide navigation bar on - RP Nova, 16 Nov: Android's NavigationBar0
+    // hidden, the pill was SystemUI's SecondaryHomeHandle0, shown exactly while the focused window asked for the navigation
+    // bar hidden with the device's own hide_nav_bar at 1; asking for it shown removed it. This was gated on the root service
+    // AND decided once per process ("by lazy"): the firmware quirk has nothing to do with Voltcap reaching AYN / Retroid's
+    // root service, and a home app starts before that service is up at boot (and after a backup / crash restart) - the
+    // empty answer stayed for the whole run, every window asked, and the pill stayed until Voltcap restarted. RootShell
+    // itself had the same lazy look-up fixed in Update 360. Now: the firmware alone (a fixed fact of the device); whether
+    // the device hides the bar is [deviceNavHidden], read with no permission and followed by a ContentObserver.)
+    val systemOwnsNav: Boolean by lazy { retroidFirmware(android.os.Build.MODEL, android.os.Build.MANUFACTURER) }
+
+    /** 676b: Retroid's firmware (Pocket Classic, Nova, Mini…): its SystemUI shows the home handle when an app hides the bar. */
+    internal fun retroidFirmware(model: String?, manufacturer: String?): Boolean =
+        model.orEmpty().contains("Retroid", true) || manufacturer.orEmpty().contains("Retroid", true)
 
     /**
      * Update 449: the device's own "hide_nav_bar" setting is on right now (AYN / Retroid). Kept current by a
@@ -133,9 +143,9 @@ object GestureHint {
      * hide_nav_bar is 0, even with Voltcap's window in immersive mode and focused (checked on the Thor: NavigationBar0
      * visible, Voltcap focused on display 0). There only the device setting — Force-hide — removes it.
      */
-    val aynHandle: Boolean by lazy {
-        (android.os.Build.MANUFACTURER.contains("AYN", true) || android.os.Build.MODEL.contains("AYN", true)) && RootShell.available
-    }
+    // (676b: not "by lazy" - the root service can be missing at the first look and come up later, Update 360.)
+    val aynHandle: Boolean
+        get() = (android.os.Build.MANUFACTURER.contains("AYN", true) || android.os.Build.MODEL.contains("AYN", true)) && RootShell.available
 
     /** Update 449: what the settings card says under the two switches when they can't do what they say on this device. */
     internal fun limitNote(immersive: Boolean, force: Boolean, ayn: Boolean, deviceHides: Boolean): String? = when {

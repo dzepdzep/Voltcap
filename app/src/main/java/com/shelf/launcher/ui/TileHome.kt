@@ -720,6 +720,7 @@ private fun HomeTile(
     // Cartridge / disc / box drawn as the real thing: it stands free in the tile's place (no square behind it, no
     // ring round the square — no empty bands next to the object); a light pool under the one you're on.
     val free = isFreeMedia(cardArtType, game.platform)
+    val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
     Box(
         modifier
             .size(tile)
@@ -796,6 +797,7 @@ private fun HomeTile(
                     .background(placeholderBrush(game.hue))
             )
             .pointerInput(game.stableKey) { detectTapGestures { tap() } }
+            .badgeTile(lane)
     ) {
         val pick = if (drawnMediaWanted(cardArtType, typedArtUrl, game.platform)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
@@ -890,6 +892,7 @@ private fun HomeTile(
                 Modifier
                     .align(pillAt)
                     .padding(chipPad)
+                    .laneBadge(lane, BadgeKind.PROGRESS, pillAt, chipPad)
                     .height(chipH)
                     .widthIn(max = pillMax)
                     .clip(RoundedCornerShape(50))
@@ -921,7 +924,7 @@ private fun HomeTile(
         }
         // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
         // the top left, or the top right when the achievement count has the top left. Not on a case printing its console.)
-        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null)
+        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null, lane = lane)
     }
 }
 

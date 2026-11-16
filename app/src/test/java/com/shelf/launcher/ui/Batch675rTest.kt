@@ -39,4 +39,12 @@ class Batch675rTest {
         val body = s.substring(s.indexOf("internal fun PickupOverlay("))
         assertTrue(body.substring(0, body.indexOf(".graphicsLayer {")).contains(".clearAndSetSemantics {}"))
     }
+    @Test fun aCoverlessSpriteNamesItsGameOnlyWhereTheNameReads() {
+        // 675s (n675r13: the 426 x 1 px title was the record header's 22 dp sprite drawing the name plate, not the flying copy)
+        assertTrue(!spriteShowsName(21.8.dp))
+        assertTrue(spriteShowsName(58.dp))
+        val s = src("StyleStorageBoxes.kt")
+        val body = s.substring(s.indexOf("internal fun StorageSprite("), s.indexOf("internal fun spriteShowsName("))
+        assertTrue(body.contains("if (spriteShowsName(maxWidth)) StyleNamePlate("))
+    }
 }

@@ -1,3 +1,33 @@
+# Update 676 (16 Nov 2026, live session) - same branch, NOT released - Hide navigation bar root cause, global badge lane, Storage title
+- 676b HIDE NAVIGATION BAR (owner P0): root cause found and reproduced on the RP Nova (gesture nav, its own hide_nav_bar = 1).
+  Android's NavigationBar0 was hidden (no surface); the white pill was SystemUI's SecondaryHomeHandle0 (NAVIGATION_BAR_PANEL),
+  shown exactly while Voltcap's focused window asked for the navigation bar hidden: QA app asking hidden -> handle visible,
+  asking shown (test hook voltcap_test_navshown) -> handle gone, back -> visible again. Update 155 knew this quirk, but
+  `GestureHint.systemOwnsNav` was `by lazy { isRetroid && RootShell.available }`: tied to the root service (irrelevant to the
+  firmware quirk) and decided once per process - a home app starting before the vendor service is up (boot, backup / crash
+  restart) kept "false" for the whole run, every window asked, the pill stayed until Voltcap restarted (RootShell's own
+  lazy look-up had the same bug, fixed in Update 360). The isolated QA app never uses root: always in that state.
+  Fix: systemOwnsNav = the Retroid firmware alone; whether the device hides the bar = deviceNavHidden (already observed, no
+  root). aynHandle no longer lazy. The polling safety net (navStuck every 1.5 s / 15 s for the whole run) is gone; a bar
+  that comes back for real is answered from SystemBars.watchKeyboard's inset-animation end (event-driven, once per time).
+  One policy for every window: GestureHint.windowHidesNav -> SystemBars.apply (activity, all popups via
+  ImmersiveDialogWindow, second screen, the small activities). Status bar handling unchanged and independent.
+- 676a BADGE LANE (owner): ui/BadgeLane.kt - every corner badge on a game's picture reports its measured pill to its tile's
+  lane during measure; placement resolves them in the same frame (no jump): console keeps its corner, the count / NEW /
+  score stack 6 dp clear on their own side, then other corners, never cut, never off the tile; a tile too small for both
+  leaves the later badge out (reported). Wired: ConsoleBadge, GameProgressChip, MetacriticChip, GameCard (trophy pill, NEW
+  pill), TileHome (count pill), GridHome, StyleHomes (StyleArt both branches), StyleCaseStacks (3 tiles). Styles untouched.
+  QaClip dumps "badges" / "badgeTiles" (actual laid-out bounds); tools/qa/tools/badgecheck.py (R27) fails < 6 dp / cut.
+- 675s Storage (RP Nova x1.3 n675r13 still FAIL): the 426 x 1 px title was the record header's 22 dp coverless sprite drawing
+  the name plate (StorageSprite), not the flying copy (675r's clearAndSetSemantics stays - harmless). spriteShowsName >= 48 dp.
+- n675r13 (x1.3, build 675r): CRATE, POCKET_RIBBON, CUBE PASS; STORAGE FAIL (fixed here, re-test pending).
+- Tests: BadgeLane676Test (6), NavBar676Test (3), Batch675rTest (4), NavBar449Test, CrateVertical674Test, CompactX13Fixes672Test
+  = 28/28 PASS; QA selftest OK (+TestBadgeCheck676a); static_checks PASS.
+- Files: ui/BadgeLane.kt (new), ui/ConsoleBadge.kt, ui/StyleHomes.kt, ui/GameCard.kt, ui/TileHome.kt, ui/GridHome.kt,
+  ui/StyleCaseStacks.kt, ui/QaClip.kt, ui/StyleStorageBoxes.kt, ui/SystemBars.kt, data/GestureHint.kt, MainActivity.kt;
+  tests BadgeLane676Test, NavBar676Test, Batch675rTest; tools/qa/tools/badgecheck.py, selftest; tools/qa/builds.json.
+- NOT TESTED on hardware yet: everything above on the fresh QA build (Nova next; KONKR / RP Classic / AYN queued).
+
 # Update 675r (16 Nov 2026, live session) - same branch, NOT released - the four RP Nova x1.3 popup FAILs (n675d)
 - RP Nova (640 x 480 dp) x1.3 gate n675d on QA build 8bd5e4a: 49/53; x1.0 n675c 53/53, pickups 14/14. The four FAILs fixed:
   - Record crate (visible): with More open, its status line ("Not installed" etc.) was not counted in `crateVisibleKeys`, so a

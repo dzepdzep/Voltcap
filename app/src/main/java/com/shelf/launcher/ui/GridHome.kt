@@ -227,6 +227,7 @@ internal fun HomeGameGrid(
                 // tuck behind the next game, as on the Voltcap row — but the grid drew it over its neighbour's case. Each game
                 // now sits a little above the one on its left; the one you're on above all.)
                 Column(Modifier.zIndex(if (on) 1f else (vi % cols) / (cols + 1f))) {
+                    val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
                     Box(
                         Modifier
                             .fillMaxWidth()
@@ -261,6 +262,7 @@ internal fun HomeGameGrid(
                             // Update 156: a tapped copy is where the selection goes (going round; its place counted from the
                             // middle copy, as rememberLoopPlace counts).
                             .pointerInput(vi) { detectTapGestures { if (i == GridHome.focus) open() else { if (drawLoop) loopTap.virtual = vi - (LOOP_COPIES / 2) * n; select(i) } } }
+                            .badgeTile(lane)
                     ) { ProvidePieceTurn(if (solidCart) PieceTurn({ (spin?.value ?: 0f) * lift }, 12f) else null) {
                         val pick = if (drawnMediaWanted(gArt, typed, g.platform)) mediaFor(g.platform, mixed, cardArtType == CardArtType.DISC && !(mixed && com.shelf.launcher.data.Features.mixedArt.state.value == MixedArt.CARTRIDGE), gameKey = g.stableKey) else null // (Update 229, #31: "All cartridges" in a mixed list no longer forced to a CD by Discs only)
                         // (Update 235, #27/#38: consoles without a template case too — Voltcap's plain case, caseMarker /
@@ -295,12 +297,12 @@ internal fun HomeGameGrid(
                             else -> FullText(titles.display(g.name), color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp, textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp), reserve = false)
                         }
                         // Update 115: the console's badge (update 141: on every look; too narrow a slot skips it).
-                        ConsoleBadge(g.platform, packageName = g.packageName)
+                        ConsoleBadge(g.platform, packageName = g.packageName, lane = lane)
                         // Update 125: the achievement progress on the game you're on (R1 Progress tile).
                         // (Update 129: placed by the R1 Achievements tile.)
                         val chipAt = achChipAlign(look.trophyCorner)
                         if (on && !spines && chipAt != null && look.achievementsOnCards) progressOf(g)?.let { (e, t) ->
-                            GameProgressChip(e, t, Modifier.align(chipAt))
+                            GameProgressChip(e, t, Modifier.align(chipAt), at = chipAt, lane = lane)
                         }
                     } }
                     if (showNames) Spacer(Modifier.height(5.dp))

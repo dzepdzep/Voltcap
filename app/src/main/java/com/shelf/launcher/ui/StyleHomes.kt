@@ -1055,7 +1055,8 @@ internal fun StyleArt(
     if (square || wide) {
         val url = if (wide) c.wide(g) else cover ?: c.wide(g)
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
-        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
+        val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
+        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue)).badgeTile(lane)) {
             when {
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                 url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
@@ -1063,9 +1064,11 @@ internal fun StyleArt(
                 else -> StyleNamePlate(titles.display(g.name))
             }
             // Update 115: the console's badge.
-            ConsoleBadge(g.platform, packageName = g.packageName)
-            StyleProgressChip(c, g)
-            StyleMetacriticChip(c, g)
+            androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
+                ConsoleBadge(g.platform, packageName = g.packageName)
+                StyleProgressChip(c, g)
+                StyleMetacriticChip(c, g)
+            }
         }
         return
     }
@@ -1092,7 +1095,8 @@ internal fun StyleArt(
     // Free-standing media get the pool of light under them, never a frame round their slot.
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
-    Box(if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))) {
+    val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
+    Box((if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))).badgeTile(lane)) {
         when {
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
@@ -1111,9 +1115,11 @@ internal fun StyleArt(
             else -> StyleNamePlate(titles.display(g.name))
         }
         // Update 115: the console's badge (update 141: on every look, cartridges, discs and cases too).
-        ConsoleBadge(g.platform, packageName = g.packageName)
-        StyleProgressChip(c, g)
-        StyleMetacriticChip(c, g)
+        androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
+            ConsoleBadge(g.platform, packageName = g.packageName)
+            StyleProgressChip(c, g)
+            StyleMetacriticChip(c, g)
+        }
     }
 }
 
@@ -1125,7 +1131,8 @@ private fun androidx.compose.foundation.layout.BoxScope.StyleMetacriticChip(c: S
     val score = metacriticScore(c.state.metadata[g.stableKey], g) ?: return
     val look = LocalCardLook.current
     val clash = achChipAlign(look.trophyCorner) == Alignment.BottomEnd
-    MetacriticChip(score, Modifier.align(if (clash) Alignment.TopEnd else Alignment.BottomEnd).padding(6.dp))
+    val at = if (clash) Alignment.TopEnd else Alignment.BottomEnd
+    MetacriticChip(score, Modifier.align(at).padding(6.dp).laneBadge(LocalBadgeLane.current, BadgeKind.SCORE, at, 6.dp))
 }
 
 /**
@@ -1141,7 +1148,7 @@ private fun androidx.compose.foundation.layout.BoxScope.StyleProgressChip(c: Sty
     val at = achChipAlign(look.trophyCorner) ?: return
     if (g.stableKey != c.game?.stableKey || c.state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CIRCUIT) return
     val (earned, total) = c.progress(g) ?: return
-    GameProgressChip(earned, total, Modifier.align(at))
+    GameProgressChip(earned, total, Modifier.align(at), at = at)
 }
 
 /** Update 129: where the progress chip sits on a picture (R1 Achievements tile); null when it's off. */
@@ -1160,7 +1167,10 @@ internal fun achChipAlign(corner: com.shelf.launcher.data.CardCorner): Alignment
 
 /** Update 125: the small progress chip (bar, earned / total and share — or the mastered trophy), for any layout. */
 @Composable
-internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modifier) {
+internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modifier,
+    /** 676a: the corner [modifier] aligns it to, and the tile's badge lane (BadgeLane.kt): it keeps clear of the console badge. */
+    at: Alignment? = null, lane: BadgeLane? = LocalBadgeLane.current) {
+    val inLane = if (at != null) lane else null
     if (total <= 0) return
     val mastered = earned >= total
     val pct = (earned * 100f / total).roundToInt()
@@ -1183,15 +1193,15 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     val tight = need + 24.dp > chipW
     val barOnly = !mastered && compact && need + 12.dp > chipW
     if (barOnly) {
-        Box(Modifier.padding(horizontal = 4.dp, vertical = 5.dp).width((chipW - 8.dp).coerceAtLeast(8.dp)).height(4.dp).clip(RoundedCornerShape(2.dp))
+        Box(Modifier.padding(horizontal = 4.dp, vertical = 5.dp).laneBadge(inLane, BadgeKind.PROGRESS, at ?: Alignment.TopEnd, 4.dp, 5.dp).width((chipW - 8.dp).coerceAtLeast(8.dp)).height(4.dp).clip(RoundedCornerShape(2.dp))
             .background(Color.Black.copy(alpha = 0.62f))) {
             Box(Modifier.fillMaxWidth(earned.toFloat() / total).fillMaxHeight().background(ShelfTheme.accent))
         }
         return@BoxWithConstraints
     }
     Row(
-        Modifier.padding(if (tight) 2.dp else 5.dp).clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = if (tight) 4.dp else 7.dp, vertical = 3.dp),
+        Modifier.padding(if (tight) 2.dp else 5.dp).laneBadge(inLane, BadgeKind.PROGRESS, at ?: Alignment.TopEnd, if (tight) 2.dp else 5.dp)
+            .clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = if (tight) 4.dp else 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (mastered) {

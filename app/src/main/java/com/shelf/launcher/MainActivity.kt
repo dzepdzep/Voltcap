@@ -211,21 +211,10 @@ class MainActivity : ComponentActivity() {
                 // Android ignores a hide that comes while the bar is still sliding in (Off → On): ask again once it settled.
                 for (wait in longArrayOf(120, 350, 800)) { kotlinx.coroutines.delay(wait); hideSystemBars() }
             }
-            // Update 130: a safety net. Some screens and handhelds brought the navigation bar back and it stayed (a hide
-            // asked while it was still animating, a window handing focus back…). While Voltcap has the focus and no
-            // keyboard is open, a bar that is really showing is hidden again (a swipe's short peek isn't "showing").
-            androidx.compose.runtime.LaunchedEffect(immersive) {
-                if (!immersive) return@LaunchedEffect
-                // A device that can't hide it at all would be asked every time: after a few tries in a row, only now and then.
-                var tries = 0
-                while (true) {
-                    kotlinx.coroutines.delay(if (tries < 4) 1500L else 15_000L)
-                    if (com.shelf.launcher.ui.SystemBars.navStuck(window, this@MainActivity.hasWindowFocus())) {
-                        tries++
-                        runCatching { com.shelf.launcher.ui.SystemBars.apply(window) }
-                    } else tries = 0
-                }
-            }
+            // (676b: Update 130's safety net - a loop checking the bar every 1.5 s, then every 15 s, for as long as Voltcap ran - is
+            // gone. The bar coming back is now answered when Android reports it (SystemBars.watchKeyboard: a navigation-bar
+            // animation ending), on focus (onWindowFocusChanged) and on resume; no polling. The pill that stayed on Retroid was
+            // not a lost hide at all - see GestureHint.systemOwnsNav.)
             var report by remember { mutableStateOf(crashReport) }
             val pending = report
             val exportReport = com.shelf.launcher.ui.rememberCrashExport()

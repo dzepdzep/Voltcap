@@ -34,8 +34,10 @@ internal object SystemBars {
     }
 
     /**
-     * Hides the bars again once the keyboard has closed. Android 11+ only; it watches the window's own decor
-     * view and lets every inset animation carry on to the views below (Compose's imePadding keeps working).
+     * Hides the bars again once the keyboard has closed, and (676b) once a navigation bar that came back has settled.
+     * Android 11+ only; it watches the window's own decor view and lets every inset animation carry on to the views below
+     * (Compose's imePadding keeps working). Event-driven: it acts only when Android reports a bar animation ending, never on
+     * a timer - so a device that can't hide the bar is asked once per time the bar comes in, not every few seconds.
      */
     fun watchKeyboard(window: Window) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
@@ -43,23 +45,24 @@ internal object SystemBars {
         decor.setWindowInsetsAnimationCallback(object : WindowInsetsAnimation.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
             override fun onProgress(insets: WindowInsets, running: MutableList<WindowInsetsAnimation>): WindowInsets = insets
             override fun onEnd(animation: WindowInsetsAnimation) {
-                if (animation.typeMask and WindowInsets.Type.ime() == 0) return
-                val imeShown = decor.rootWindowInsets?.isVisible(WindowInsets.Type.ime()) == true
-                if (!imeShown) decor.post { apply(window) }
+                val ime = animation.typeMask and WindowInsets.Type.ime() != 0
+                val nav = animation.typeMask and WindowInsets.Type.navigationBars() != 0
+                if (!ime && !nav) return
+                val now = decor.rootWindowInsets ?: return
+                val imeShown = now.isVisible(WindowInsets.Type.ime())
+                val navShown = now.isVisible(WindowInsets.Type.navigationBars())
+                if (reapplyAfter(ime, nav, imeShown, navShown, GestureHint.windowHidesNav(), decor.hasWindowFocus())) decor.post { apply(window) }
             }
         })
     }
 
     /**
-     * Update 130: the navigation bar is really up (not a swipe's short peek) while "Hide navigation bar" is on, the
-     * window has the focus and no keyboard is open — it should be hidden again.
+     * 676b: whether a bar animation that just ended should be answered by asking for the bars again: the keyboard closed, or
+     * the navigation bar came in for real (not a swipe's transient peek, which Android doesn't report to the window) while
+     * Hide navigation bar wants it hidden, the window has the focus and no keyboard is up.
      */
-    fun navStuck(window: Window, focused: Boolean): Boolean {
-        if (!focused || !GestureHint.windowHidesNav()) return false
-        val insets = window.decorView.rootWindowInsets ?: return false
-        val c = WindowInsetsCompat.toWindowInsetsCompat(insets, window.decorView)
-        return c.isVisible(WindowInsetsCompat.Type.navigationBars()) && !c.isVisible(WindowInsetsCompat.Type.ime())
-    }
+    internal fun reapplyAfter(imeAnim: Boolean, navAnim: Boolean, imeShown: Boolean, navShown: Boolean, wantHidden: Boolean, focused: Boolean): Boolean =
+        (imeAnim && !imeShown) || (navAnim && navShown && wantHidden && focused && !imeShown)
 
     fun stopWatching(window: Window) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) window.decorView.setWindowInsetsAnimationCallback(null)

@@ -237,7 +237,27 @@ internal object QaClip {
                 glyphKeyOf(n)?.let { k -> sb.append(",\"key\":[${k.left.toInt()},${k.top.toInt()},${(k.right - k.left).toInt()},${(k.bottom - k.top).toInt()}]") }
                 sb.append('}')
             }
-            sb.append("]}")
+            sb.append("],")
+            // (676a: every corner badge on a game's picture - kind, its tile's lane, its drawn pill as laid out (full) and as
+            // shown (clipped) - and every lane's tile, for badgecheck.py: two badges of one tile closer than 6 dp, or one cut by
+            // its tile, fail.)
+            sb.append("\"badges\":[")
+            var firstB = true
+            val tiles = ArrayList<String>()
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                val c = n.config
+                c.getOrNull(BadgeTileTag)?.let { id ->
+                    val b = n.boundsInWindow; val p = n.positionInWindow
+                    tiles += "{\"lane\":\"$id\",\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}]}"
+                }
+                val tag = c.getOrNull(BadgeTag) ?: continue
+                val b = n.boundsInWindow; val p = n.positionInWindow
+                if (!firstB) sb.append(','); firstB = false
+                sb.append("{\"kind\":\"${tag.substringBefore('#')}\",\"lane\":\"${tag.substringAfter('#')}\",")
+                sb.append("\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],")
+                sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
+            }
+            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("]}")
         }
         sb.append("],")
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)

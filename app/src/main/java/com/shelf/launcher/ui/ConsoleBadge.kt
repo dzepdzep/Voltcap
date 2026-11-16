@@ -104,7 +104,9 @@ internal fun BoxScope.ConsoleBadge(
     /** Update 202: the tile shows the game's case (its printed band carries the console's logo already). */
     onCase: Boolean = false,
     /** Batch 521b / 522 (QA badge gallery): the badge look for this badge only; null = the setting. */
-    styleOverride: Features.BadgeStyle? = null
+    styleOverride: Features.BadgeStyle? = null,
+    /** 676a: the tile's badge lane (BadgeLane.kt) - the console badge is placed first and keeps its corner. */
+    lane: BadgeLane? = LocalBadgeLane.current
 ) {
     if ((styleOverride == null && !Features.consoleBadges.state.value) || LocalArtMirror.current) return
     // (Update 317ao: the corner picked in Game look › Console badges › Where, else the layout's own.)
@@ -133,7 +135,7 @@ internal fun BoxScope.ConsoleBadge(
         // (Batch 523, final polish: one pill height per look - the Symbol and Logo looks' name / compact / ES-DE pills are as
         // tall as their artwork pills (they were 13 % lower than the logos beside them); the Text look keeps its own height.)
         val pillH = if (android || style == Features.BadgeStyle.TEXT) h else h * BadgeLogos.ART_PILL
-        val pill = Modifier.align(corner).padding(h * 0.3f).height(pillH).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
+        val pill = Modifier.align(corner).padding(h * 0.3f).laneBadge(lane, BadgeKind.CONSOLE, corner, h * 0.3f).height(pillH).clip(RoundedCornerShape(50)).background(bg.copy(alpha = 0.92f))
         // (Batch 522: a big tile lets the pill run a little wider, so a long wordmark - Game Boy Advance - shows whole there.)
         val cap = maxWidth * (if (maxWidth < 150.dp) 0.78f else 0.85f)
         // The artwork ([url], [aspect] = width / height) in a pill as wide as it needs (Update 125 / 129 / 136). Batch 523: a
@@ -144,7 +146,7 @@ internal fun BoxScope.ConsoleBadge(
             val artH = BadgeLogos.artHeight(aspect, lettering, symbol, h.value, cap.value).dp
             val w = (artH * aspect + lh * 0.7f).coerceIn(if (symbol) lh * 1.3f else lh * 2.2f, cap)
             Box(
-                Modifier.align(corner).padding(h * 0.3f).height(lh).width(w).clip(RoundedCornerShape(50))
+                Modifier.align(corner).padding(h * 0.3f).laneBadge(lane, BadgeKind.CONSOLE, corner, h * 0.3f).height(lh).width(w).clip(RoundedCornerShape(50))
                     .background(bg.copy(alpha = 0.94f)).padding(horizontal = lh * 0.35f),
                 contentAlignment = Alignment.Center
             ) {

@@ -1309,6 +1309,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 8bd5e4a - clean",
    "note": "cloud assembleDebug 16 Nov 07:53 UTC (VOLTCAP_CLOUD stub); on RP Nova d3641c41 + Odin 2 Portal b92036fb"
+  },
+  {
+   "id": "qa-0.6.73-675r-cloud",
+   "apk_sha256": "353510d49dedee1a92c2133531d15f6211728c3819a7a8ba3e7fd7a76fd1d86a",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, cloud debug key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "12597b5",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 12597b5 - clean",
+   "note": "cloud assembleDebug 16 Nov 10:30 UTC (VOLTCAP_CLOUD stub); 675r RP Nova x1.3 fixes; on RP Nova d3641c41"
   }
  ]
 }

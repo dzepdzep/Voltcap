@@ -1962,5 +1962,50 @@ class TestCubeCategoryHome675r(unittest.TestCase):
         self.assertLess(i, sh.index('shot ${n}_home'))
 
 
+class TestBadgeCheck676a(unittest.TestCase):
+    """676a (QA rule R27): badgecheck.py fails badges of one tile closer than 6 dp or cut by their tile, from real bounds."""
+    def _run(self, windows, density=2.0):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": density, "windows": windows}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "badgecheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def _win(self, badges, tiles=None):
+        return [{"nodes": [], "badges": badges, "badgeTiles": tiles or [{"lane": "a", "full": [100, 100, 200, 260], "shown": [100, 100, 200, 260]}]}]
+
+    def test_overlap_fails(self):
+        # the Nova's Cube card before the lane: the PS2 wordmark pill and "6/10" over each other
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 110, 74, 22], "shown": [216, 110, 74, 22], "placed": True}]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("overlap", r.stdout)
+
+    def test_too_close_fails_and_clear_passes(self):
+        close = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 100, 26], "shown": [106, 106, 100, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 106, 74, 22], "shown": [216, 106, 74, 22], "placed": True}]))
+        self.assertEqual(close.returncode, 1, close.stdout)  # 10 px = 5 dp
+        ok = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 144, 74, 22], "shown": [216, 144, 74, 22], "placed": True}]))
+        self.assertEqual(ok.returncode, 0, ok.stdout)  # stacked 12 px = 6 dp under it
+
+    def test_cut_badge_fails(self):
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 150, 74, 22], "shown": [216, 150, 74, 22], "placed": True}]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("cut", r.stdout)
+
+    def test_old_build_is_infra_and_one_badge_not_tested(self):
+        old = self._run([{"nodes": []}])
+        self.assertEqual(old.returncode, 2, old.stdout)
+        one = self._run(self._win([{"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True}]))
+        self.assertEqual(one.returncode, 3, one.stdout)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
