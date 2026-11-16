@@ -92,10 +92,22 @@ internal object QaClip {
         if (!QaTrace.on) return
         val dir = java.io.File(context.getExternalFilesDir(null), "qa_clip").apply { mkdirs() }
         main.postDelayed({
-            runCatching { java.io.File(dir, tag.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json").writeText(dump(context)) }
+            runCatching { writeWhole(java.io.File(dir, tag.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json"), dump(context)) }
                 .onFailure { QaTrace.event("clip", "error ${it.javaClass.simpleName} ${it.message}") }
             QaTrace.event("clip", "done $tag")
         }, delayMs)
+    }
+
+    /**
+     * 675b: the dump appears whole or not at all - written beside the target and renamed into place. The QA scripts wait for
+     * the file itself (a slow, software-rendered emulator wrote it after their fixed sleep and they read a missing or
+     * half-written file: "first A opened nothing" with the popup on screen, emulator run 43762702001).
+     */
+    fun writeWhole(target: java.io.File, text: String) {
+        val part = java.io.File(target.parentFile, target.name + ".part")
+        part.writeText(text)
+        target.delete()
+        if (!part.renameTo(target)) { target.writeText(text); part.delete() }
     }
 
     private fun paged(n: SemanticsNode): Boolean {

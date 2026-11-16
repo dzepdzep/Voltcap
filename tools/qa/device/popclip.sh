@@ -27,7 +27,12 @@ PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Star
 DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve notes|Card text|Turn over|Summary|The story|Type NFO|Catalogue card)"
 # (Counted against the home step: a layout whose home screen has its own Play button — Custom — is not "a popup up".)
 pc() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' $1 2>/dev/null | wc -l; }
-up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 0.9; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
+# dw FILE: wait for the app's own dump. (675b, emulator run 43762702001: the software-rendered emulator wrote the dumps after
+# the fixed sleep - the probe read no file, so a popup that was up counted as "first A opened nothing" / "no Details action"
+# and A was pressed again on it. The fixed sleep stays the minimum; then up to 8 s more for the file, which QaClip writes
+# whole (renamed into place). A dump that never comes is logged - the step then fails / stays NOT TESTED as before.)
+dw() { i=0; while [ ! -s "$1" ] && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done; [ -s "$1" ] || echo "dump missing: ${1##*/}" >> $OUT/log.txt; }
+up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 0.9; dw $F/qa_clip/${TAG}_probe.json; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
 # tapat LABEL_RE STEP: tap the middle of the shown part of the first control whose label ends in LABEL_RE (false if none shows).
 # (The popup's own control: one that the home step didn't have — Custom's home has a Play button of its own.)
 ctl() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $2 2>/dev/null; }
@@ -43,7 +48,7 @@ tapat() {
 # brings them in - k673k Crate / Pocket "Details shown but its tapped page is missing", f673l / k673k "Play tap not recorded"
 # after the walk to More had scrolled the row to its end.)
 seek() { sk=0; while :; do tapat "$1" probe && return 0; [ $sk -ge 7 ] && return 1; k $2 0.45; sk=$((sk + 1)); up; done; }
-shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
+shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_$1.json; }
 # (Owner, 12 Nov: never wake a device - an asleep display stops the run instead.)
 dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep - not woken" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 3; }
 # (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
@@ -74,7 +79,7 @@ for lay in $LAYS; do
     # (Green Core's home is its own menu — GAMES / SYSTEMS / ... — A enters the games first; the first combo logged "first
     # A opened nothing" for it.)
     # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
-    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
+    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_gc.json
       grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
@@ -171,6 +176,6 @@ done
 # Switching it off here let a later hand-made tap start a game.)
 A --ez voltcap_test_preview false
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
-mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
+mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $OUT/qa_clip/*.part $F/qa_tap_home.txt
 ev_end $OUT
 echo DONE >> $OUT/log.txt

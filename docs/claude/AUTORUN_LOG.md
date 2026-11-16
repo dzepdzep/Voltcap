@@ -17,3 +17,9 @@
 - Cloud tests: EndlessFillLitShardsTest PASS; all shards + EndlessOnceRoboTest PASS (shard 3 three runs); per-JVM peak <= 3.3 GB.
 - Cloud memory cgroup ~5.8 GB: -Xmx5g compile OOM-killed; -Xmx4g works (CLOUD_DEVELOPMENT.md updated).
 - CI on the push: see Actions; next run checks it first.
+
+## 2026-11-16 00:18-01:00 UTC - cloud scheduled run
+- Lock free (released 23:40); taken 00:21. CI: Verify 310 green on 7dbcab0c (675a), lowest free memory 6.4 GB.
+- Item: HANDOFF Next 1, emulator trial. Artifact of run 43762702001: popup open in the "first A opened nothing" shot - the
+  QaClip dump came after the fixed sleeps. Fix 675b: scripts wait for the dump (dw), QaClip writes it whole. Selftest 156/156,
+  QaClipWriteWhole675bTest 2/2, static checks PASS. Pushed with "[emulator-qa]"; next run reads that trial.

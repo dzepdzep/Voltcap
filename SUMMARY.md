@@ -1,3 +1,19 @@
+# Update 675b (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: QA waits for the dumps
+- Emulator run 43762702001 (swangle_indirect, 960x640) read: the COVERDETAILS "first A opened nothing" screenshot SHOWS the popup
+  open; e529b "no Details action" with Details on screen and "More reached with 1 D-pad press". Cause: the QaClip dump (asked
+  for by qa_clip_req, polled every 250 ms) came after the script's fixed sleep (0.9 s probe / 1.1 s shot) on the software-rendered
+  emulator, so the script read no file, judged "no popup" and pressed A again on the open popup (the follow-on SHELF "More step
+  missing" and "rapid: started 1 launch" came from those extra presses).
+- Fix (QA tooling, condition-based, no check loosened): popclip.sh `dw` waits for the dump file after the unchanged minimum sleep
+  (up to 8 s more, "dump missing: <name>" logged if it never comes) in up / shot / Green Core's probe; shelfpages529.sh's shot the
+  same. QaClip.writeWhole writes the dump beside the target and renames it into place, so a file that exists is whole. On
+  hardware the dumps came inside the old sleeps, so runs there are unchanged in timing.
+- CI: Verify 310 green on 7dbcab0c (675a, both runners, heavy task ran, lowest free memory 6.4 GB) - G11 1 green push of several.
+- Checks (cloud): QA selftest 156/156 (new test_waits_for_the_dump_not_only_a_fixed_sleep); QaClipWriteWhole675bTest 2/2;
+  static checks PASS; compileDebugUnitTestKotlin OK. Emulator trial started on this push ("[emulator-qa]"); EMULATOR evidence only.
+- Files: ui/QaClip.kt, test QaClipWriteWhole675bTest.kt (new), tools/qa/device/popclip.sh, tools/qa/device/shelfpages529.sh,
+  tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md.
+
 # Update 675a (15 Nov 2026, night, cloud run) - same branch, NOT released - CI memory (G11)
 - CI red on c0760eb (and c7ad53a7): the watchdog stopped the unit tests at ~1,120 with the test worker at 9.4 GB inside
   EndlessFillLitRoboTest. Measured in the cloud: the growth is NATIVE memory (NMT: the JVM itself ~0.5 GB, heap ~100 MB after a

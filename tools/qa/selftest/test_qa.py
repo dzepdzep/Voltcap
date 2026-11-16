@@ -1161,6 +1161,19 @@ class TestPopclipScript(unittest.TestCase):
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
         self.assertIn('tapat "(Details|Full details)" main || tapat "$DETW" main', sh)
 
+    def test_waits_for_the_dump_not_only_a_fixed_sleep(self):
+        # 675b (emulator run 43762702001): the dump came after the fixed sleep - "first A opened nothing" with the popup up.
+        # Every dump read waits for the file after the (unchanged) minimum sleep, and a dump that never comes is logged.
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        sh = open(os.path.join(dev, "popclip.sh"), encoding="utf-8").read()
+        self.assertIn('sleep 0.9; dw $F/qa_clip/${TAG}_probe.json;', sh)
+        self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_$1.json;', sh)
+        self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_gc.json', sh)
+        self.assertIn('dump missing', sh)
+        self.assertLess(sh.index("dw() {"), sh.index("up() {"))
+        sp = open(os.path.join(dev, "shelfpages529.sh"), encoding="utf-8").read()
+        self.assertIn('[ ! -s $F/qa_clip/${TAG}_$1.json ]', sp)
+
     def test_stops_outside_voltcap(self):
         # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()

@@ -15,7 +15,9 @@ gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 k() { gate; input keyevent KEYCODE_$1; sleep ${2:-0.8}; }
-shot() { screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
+# (675b: the fixed sleep is the minimum; then up to 8 s more for the app's own dump - see popclip.sh dw.)
+shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
+  i=0; while [ ! -s $F/qa_clip/${TAG}_$1.json ] && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done; [ -s $F/qa_clip/${TAG}_$1.json ] || log "dump missing: $1"; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Window #.*$P" | grep -c "isVisible=true"; }
 . /data/local/tmp/rec.sh 2>/dev/null
