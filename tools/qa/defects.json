@@ -3966,7 +3966,7 @@
    "title": "Home-screen text cuts the popup gate never graded (new homecut.py, RP Nova f676x10 / f676x13): Arcade cabinet name 'SHA…'/'S…' and platform, Camera 'POCKET CAMERA' (x1.3), Circuit 'SETTINGS'/'DETAILS' (x1.3), Classic '6/10 · 60% · 4 re…' (x1.3), Crate 'Never played' (x1.3), Greencore 'SELECTED TITLE'/'DETAILS' (x1.3), Orbit info line (x1.3), Night 'PLAYSTATION 2' watermark (decoration? owner)",
    "rule": "R18",
    "severity": "high",
-   "status": "open: pre-existing (not from 0.6.73 changes); fix per layout + owner decision on the Night watermark",
+   "status": "fixed 676r: Nova r676x13 / r676x10 homecut (width) 53/53 PASS, popup 53/53, badges 79/79 + 109/109",
    "found": "2026-11-16"
   },
   {
@@ -3975,6 +3975,14 @@
    "rule": "infra",
    "severity": "low",
    "status": "fixed 676o: the guard reads Android's focused resumed activity (exact QA package); Thor t676n_nav2 ran 13/13 steps, no pill",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D342",
+   "title": "Home texts cut in HEIGHT (homecut 676u, box < 60 % of the line height) - RP Nova x1.3 r676x13: Arctic platform line, Blades 6 / 10, Bubbles name, Card binder facts + platform, Circuit LCD facts, Cross folder label, Cube category line, Memory card info, Resume achievement, Stacks clock, Storage pill name, Hub achievement, Greencore / Arcade / Crate platform names; x1.0: Arcade, Cross",
+   "rule": "R18",
+   "severity": "high",
+   "status": "open: pre-existing; owner 16 Nov 'fix all for v0.6.73'",
    "found": "2026-11-16"
   }
  ]
