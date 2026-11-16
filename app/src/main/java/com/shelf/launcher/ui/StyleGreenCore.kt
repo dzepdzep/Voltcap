@@ -1109,12 +1109,16 @@ private fun GcRule(accent: Color) {
 
 @Composable
 private fun GcStat(label: String, value: String, accent: Color) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = accent.copy(alpha = 0.7f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
-        Spacer(Modifier.width(8.dp))
-        FullText(
-            value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
-        )
+    // (676t, RP Nova x1.3 r676x13: in the narrow panel label and value slid side by side ("PLAY TIME · NEV"). The value goes under
+    // its label when the two don't fit on one line - each whole; a value too long even for a line of its own still slides.)
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    androidx.compose.foundation.layout.FlowRow(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween,
+        itemVerticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, color = accent.copy(alpha = 0.7f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false,
+            modifier = Modifier.padding(end = 8.dp))
+        FullText(value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 
