@@ -47,7 +47,8 @@
    "what": "Pick the pixel-font option (A 62.5 % as is / B 62.5 % + readable floor for small text / C try 70 %) and a badge style (Classic / Top Clip / Hanging Bottom, compact badge yes/no)",
    "why": "v0.6.74 design approvals; evidence: pixel_font_before_after_emulator.pdf, canvas https://claude.ai/artifact/CsS6KEUxrbaLn8T6UmCsgq",
    "device": "none",
-   "urgent": false
+   "urgent": false,
+   "blocks": "v0.6.74 pixel font (H9) and badge styles (H10 / H11)"
   }
  ]
 }
