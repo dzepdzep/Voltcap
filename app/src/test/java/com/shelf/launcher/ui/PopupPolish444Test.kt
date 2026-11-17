@@ -25,7 +25,11 @@ class PopupPolish444Test {
     @Test fun bannerRoundKeysNameTheOneYouAreOn() {
         val s = src("GameWindowBanner.kt")
         assertTrue(s.contains("label = \"bannerTip\"") && s.contains("layout(0, 0) { p.place(size.roundToPx() - p.width"))
-        assertTrue("name lines close together once it shrinks", s.contains("lineHeight = 1.08.em"))
+        // (678f: 678e moved the name to WinFullText with an sp line height - StableFullText keeps an sp ratio (1.08) as it
+        // shrinks, an em one fell back to 1.2. The rule stays: the two name lines sit 1.08 apart at every size.)
+        assertTrue("name lines close together once it shrinks", s.contains("lineHeight = (32 * 1.08f).sp"))
+        assertTrue("an em line height would lose the 1.08 ratio in StableFullText", !s.contains("lineHeight = 1.08.em"))
+        assertTrue("StableFullText keeps an sp line height's ratio", src("FitText.kt").contains("val ratio = if (lineHeight.isSp && top > 0f) lineHeight.value / top else 1.2f"))
     }
 
     @Test fun cinemaCaptionsAreReadable() {

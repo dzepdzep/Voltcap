@@ -117,7 +117,7 @@
     {
      "gate": "CI unit tests + debug build (Verify Android update 310)",
      "state": "PENDING",
-     "evidence": "GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
+     "evidence": "RED on cc34a59 (678e): 1 source test (PopupPolish444Test, banner name line height pinned to the old em form) - fixed 678f, compiled + PASS in the cloud. Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
     },
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",

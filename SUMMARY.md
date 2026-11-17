@@ -1,3 +1,13 @@
+# Update 678f (17 Nov 2026, cloud scheduled run) - CI red on 678e fixed (test only, no app change)
+- "Verify Android update 310" failed on cc34a59 (678e), both runners, 1 of 2857 tests: PopupPolish444Test
+  .bannerRoundKeysNameTheOneYouAreOn looked for the literal `lineHeight = 1.08.em` on the banner's big name. 678e changed it on
+  purpose to `(32 * 1.08f).sp`: StableFullText keeps an sp line height's ratio as the name shrinks (an em one fell back to 1.2),
+  so the v0.6.66 rule (two name lines close together) still holds. The test now checks the sp form, that the em form is gone,
+  and that FitText's StableFullText derives the ratio from an sp line height - same rule, read from the new code.
+- Compiled in the cloud (:app:testDebugUnitTest, 7m33s) - PopupPolish444Test + GameWindowBannerFullText678eTest PASS; static
+  checks PASS (TRUNCATE 224). No emulator trial started (allowed from ~00:45 UTC; this push is earlier).
+- Files: app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt; trackers.
+
 # Update 678e (16 Nov 2026, cloud scheduled run) - rule 11: the banner game window shows its text whole
 - Banner page game window (Settings > Game window > Style = Banner): console / year line, the story card's name, Full details
   line, performance summary + rows, options rows + their notes, the big name (when no logo), the saves chip and achievement

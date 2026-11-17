@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-16 ~23:45 UTC, update 678e (cloud run: rule 11 - banner game window FullText, GameWindowBannerFullText678eTest;
+Updated: 2026-11-17 ~00:35 UTC, update 678f (cloud run: CI red on 678e = PopupPolish444Test read the old em line
+height of the banner name; test reads the new sp form (same 1.08 rule); compiled + PASS in the cloud; no trial started).
+Before: 2026-11-16 ~23:45 UTC, update 678e (cloud run: rule 11 - banner game window FullText, GameWindowBannerFullText678eTest;
 TRUNCATE 236 -> 224; popclip gate for the Banner style queued as HW-12; no trial started - next allowed from ~00:45).
 Before: 2026-11-16 ~22:40 UTC, update 678d (cloud run: emulator trial 43961010406 on 678c READ - VERDICT PASS, first fully
 green trial; e529c touch walk made page-aware + game with an achievement set (selftest 179/179); no trial started).
@@ -38,6 +40,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678f): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678f push (678e cc34a59 was RED on
+  PopupPolish444Test only - fixed 678f; if still red: first item). START the emulator trial (head commit "[emulator-qa]",
+  allowed now - last one 678c ~21:45) and read it the run after (expectations: 678d item below). Then rule 11 filler:
+  SaveExplorer (13) or SettingsDialog (17), one per run. Lesson: before changing a line, grep app/src/test for its literal
+  text (source tests pin exact strings).
 - FIRST (678e): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678e push (if red: first item). From ~00:45 UTC
   START the emulator trial (head commit "[emulator-qa]") and read it the run after (expectations: 678d item below). If the
   trial can run a second popup style within the job time, add BANNER to its popclip STYLES (covers HW-12's geometry on the

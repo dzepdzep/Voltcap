@@ -130,3 +130,8 @@
 - BOOTSTRAP OK (a3b685e); lock free (none since 22:22), taken 23:18. CI: Verify 310 GREEN on a3b685e (678d). Effort env: medium.
 - Rule 11: banner game window text shown whole (12 "…" -> 1 marked), GameWindowBannerFullText678eTest PASS, compiled after a
   Maven 429 retry; HW-12 queued (popclip, Banner style). No trial started (3 h rule, from ~00:45). Lock released.
+
+## 2026-11-17 ~00:18-00:35 UTC - cloud run 678f
+- BOOTSTRAP OK (cc34a59); lock free (none since 23:39), taken 00:18. CI: Verify 310 RED on cc34a59 (678e) - one source test
+  (PopupPolish444Test) pinned the banner name's old em line height; test updated to the new sp form (same rule), compiled +
+  PASS in the cloud. No trial (3 h rule, from ~00:45). Effort env: medium. Lock released.
