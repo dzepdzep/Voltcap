@@ -190,3 +190,7 @@
 - BOOTSTRAP OK 2fa4c92; lock free -> taken. Verify 310 GREEN on 2fa4c92 (678l).
 - H12 first step: Achievements page opens on the new-unlocks stage instead of scrolling past it; Robolectric test fails on the
   old code, passes now; HW-20 queued. Lock released.
+
+## 2026-11-17 ~08:18-08:40 UTC - cloud run 678n
+- BOOTSTRAP OK a6cdfc7; lock free -> taken. Verify 310 RED on a6cdfc7 (678m): AchCompact529Test stale source pin.
+- Pin updated to 678m's two new focus lines; compiled + 10/10 PASS in the cloud. Lock released.

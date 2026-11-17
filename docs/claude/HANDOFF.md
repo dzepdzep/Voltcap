@@ -1,5 +1,9 @@
 # VoltCap handoff (read first, update last)
 
+Updated: 2026-11-17 ~08:35 UTC, update 678n (cloud run): Verify 310 was RED on a6cdfc7 (678m) - AchCompact529Test pinned the old
+firstFocus line that 678m changed on purpose; the pin now checks both new lines (8/8 + 2/2 PASS in the cloud). NEXT: check Verify
+310 on the 678n push (if red: fix first), then priority 5 (H13 Thor dual-screen reading -> docs/claude/THOR_DUAL_SCREEN.md).
+Lesson (again): before changing a source line, grep app/src/test for its literal - 678m missed AchCompact529Test.
 Updated: 2026-11-17 ~07:50 UTC, update 678m (cloud run): Verify 310 GREEN on 2fa4c92 (678l); priority 4 (H12) first step done -
 the Achievements page opened its focus on the first row and scrolled past the new unlocks; it now opens on the new-unlocks stage
 (AchNewUnlocksOnOpen678mTest FAILED on old code, PASS now). HW-20 verifies. NEXT: check Verify 310 on the 678m push (if red:

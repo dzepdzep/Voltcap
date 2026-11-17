@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678m · 2026-11-17 07:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 2fa4c92 (678l) · effort: medium
+**1. LATEST UPDATE** - 678n · 2026-11-17 08:35 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on a6cdfc7 (678m, 1 stale test) - fixed here; this push pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
+**2. WHAT CLAUDE JUST FIXED** - The automatic build check went red after the last run's Achievements page fix: an older test still expected the page to always open on the first achievement. That test now checks the new behaviour (new unlocks first, otherwise the first achievement) without loosening anything; both achievement tests pass here, and the full check runs again on this push.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.

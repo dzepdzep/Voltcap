@@ -1,3 +1,14 @@
+# Update 678n (17 Nov 2026, cloud scheduled run) - CI red on 678m fixed (stale source pin)
+- Verify 310 on a6cdfc7 (678m) was RED on one test: AchCompact529Test.controlsAreOneBarWithFoldedPanels (2876 tests, 1 failed,
+  both runners). It pinned the old literal `val firstFocus = Modifier.initialFocus()` that 678m deliberately changed (with new
+  unlocks waiting the new-unlocks stage takes the opening focus).
+- Fix (test only, no app change): the pin now asserts both new exact lines - `val firstFocus = if (opensOnStage) Modifier else
+  Modifier.initialFocus()` and `val stageOpen = if (opensOnStage) Modifier.initialFocus() else Modifier` - so the rule "first
+  achievement opens focused when nothing is new" stays checked, plus the stage branch. No assertion removed or loosened.
+- Checked in the cloud: compileDebugUnitTestKotlin OK; AchCompact529Test 8/8 + AchNewUnlocksOnOpen678mTest 2/2 PASS; static
+  checks PASS (TRUNCATE 179). Full suite: CI on this push. Hardware: none needed (HW-20 unchanged).
+- Files: app/src/test/java/com/shelf/launcher/ui/AchCompact529Test.kt; trackers.
+
 # Update 678m (17 Nov 2026, cloud scheduled run) - H12: the Achievements page opens on the new unlocks
 - Cause (owner 17 Nov: "Recently Unlocked is skipped - it auto-scrolls to the list"): the per-game Achievements page
   (AchievementListDialog) gave its opening focus to the first achievement row (Modifier.initialFocus), and focusing that row
