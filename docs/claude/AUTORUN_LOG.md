@@ -232,3 +232,7 @@
 ## 2026-11-17 ~20:00-20:20 UTC - live session (owner v0.6.74 priorities)
 - Priorities recorded (HANDOFF top, backlog 000). 680a D356 Channel progress pill: badge lane OVERLAY band; BadgeOverlay680aTest
   3/3, BadgeLane676Test, CubeDockFit679eTest PASS in the cloud; static checks PASS. HW-24 queued. Lock released.
+
+## 2026-11-17 ~20:18-20:40 UTC - cloud run 680b
+- CI GREEN on 79c11a5. Priority 5 (D357): badgecheck skips carousel-trimmed badges / stacked-behind covers; real collisions still
+  FAIL. TestBadgeCheckCarousel680b 6/6, QA selftest 203/203, static PASS. Confirmation rides HW-24. Lock released.

@@ -53,6 +53,8 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Device: KONKR (where k679p13 found it), x1.0 + x1.3; L1 QA app only. Build: the CI QA APK of the 680a commit or later.
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CHAN" OWN (+ off) -> popclip.py + badgecheck (no "PROGRESS covers text"),
   and the screenshots: the pill above the plate, nothing cut, the plate still one line and sliding (D350).
+- Also (680b, D357, no extra device time): run badgecheck.py (680b or later) over the same session's CUBE x1.0 and Tiles / Classic
+  dumps - the cover-flow side covers and the half-off carousel tile must no longer FAIL; any remaining FAIL is a real collision.
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

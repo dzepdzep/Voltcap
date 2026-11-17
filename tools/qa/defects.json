@@ -4062,7 +4062,7 @@
    "title": "badgecheck flags badges of tiles a carousel has scrolled partly off-screen and of cover-flow covers stacked behind the focused one (Cube x1.0, Classic / Tiles rows) - the same on every run since 677c; checker strictness, not a drawing fault - teach badgecheck to skip a tile whose own box is off-screen / covered",
    "rule": "R27",
    "severity": "low",
-   "status": "open (QA tooling)",
+   "status": "fixed in QA tooling 680b (badgecheck: a carousel-trimmed tile's badges are not cut, covers stacked behind a larger one are NOT TESTED; real collisions still FAIL; selftest TestBadgeCheckCarousel680b) - confirm on the next device run's dumps (HW-24)",
    "found": "2026-11-17"
   }
  ]

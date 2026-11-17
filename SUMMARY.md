@@ -1,3 +1,13 @@
+# Update 680b (17 Nov 2026, cloud run) - badgecheck: carousel-trimmed and stacked-behind tiles are not badge faults (D357)
+- tools/qa/tools/badgecheck.py: a tile a carousel scrolled partly off the screen (shown box trimmed on one side, or laid out past
+  the screen edge) is "clipped": its badges trimmed with it are not "cut" / "off the screen"; their gap is measured at the tile's
+  own scale, so a real collision still FAILs. A tile more than a fifth under a larger tile (cover-flow side covers behind the
+  focused one) is NOT TESTED (never PASS); the front tile is graded as before. A badge cut inside a whole tile still FAILs.
+- Selftest: TestBadgeCheckCarousel680b (6 cases; the 3 skip cases fail on the old checker); full QA selftest 203/203 OK; static
+  checks PASS. No app code changed (nothing to compile).
+- Files: tools/qa/tools/badgecheck.py, tools/qa/selftest/test_qa.py, tools/qa/defects.json, trackers. Nothing to copy into app/.
+- Confirmation on real device dumps: rides along HW-24 (KONKR), no extra device time.
+
 # Update 680a (17 Nov 2026, live) - Channel progress pill clear of the name plate (D356); v0.6.74 priorities
 - BadgeLane: new BadgeKind.OVERLAY - a band at the tile's bottom drawn over it from outside; planBadges places it first and every
   badge (console included) keeps clear; BadgeLane.overlayBottom set by badgeTile(lane, overlayBottom); LocalBadgeOverlayBottom read

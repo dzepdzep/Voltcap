@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 680a · 2026-11-17 20:15 UTC · commit `this update (being pushed)` · CI: Verify 310 on 26212b5: in progress at push time · effort: high
+**1. LATEST UPDATE** - 680b · 2026-11-17 20:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 79c11a5 · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Channel: the achievement count no longer reaches into the game's name strip - the strip now counts as reserved space for every badge on that tile. Your v0.6.74 priority list is now the first thing every hourly run reads.
+**2. WHAT CLAUDE JUST FIXED** - The badge checker used to flag badges on game tiles that a carousel had scrolled half off the screen, and on the side covers sitting behind the focused cover in the Cube cover flow. Those were never real problems, so the checker now skips them, while two badges that actually run into each other still fail.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: pixel font 62.5 % + the 7 layouts (branch); then: badge styles (branch); badgecheck D357
+**5. WORKING ON NEXT** - now: pixel font 62.5 % + the 7 layouts (branch, waits for your OK on the comparison); then: badge styles (branch); profile picture corner
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 

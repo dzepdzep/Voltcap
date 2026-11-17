@@ -20,6 +20,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**17 Nov 20:35 UTC, 680b (cloud):** priority 5 / D357 done in QA tooling - badgecheck no longer fails badges of a tile a
+carousel scrolled partly off-screen (measured at the tile's scale; a badge cut inside a whole tile still FAILs) nor of covers
+stacked behind a larger one (NOT TESTED, never PASS); real collisions still FAIL. Selftest TestBadgeCheckCarousel680b (6, 3 fail
+on the old checker), full QA selftest 203/203, static checks PASS. Confirmation on real dumps rides along HW-24. CI GREEN on
+79c11a5. NEXT: check Verify 310 on the 680b push (red -> fix first); items 2-3 (pixel font / badge styles) stay on their
+live-session branches pending the owner's comparison OK; then 6 profile picture corner (statuscheck guard - look for a cloud-
+testable gap), 4 window polish (H16), 7 achievements animations (H12).
+
 **17 Nov 20:10 Berlin (679a-c):** owner B1. Pixel font B on `claude/v0674-pixel-font` (PixelType, 9.5 sp minimum) - waits for the owner's OK on pixel_font_final_emulator.pdf before merging into the dev line. Badges: build per docs/claude/BADGE_STYLES_PLAN.md on `claude/v0674-badges` (Classic + compact ladder first, idle test first). Emulator review mode: `gh workflow run emulator-qa-trial.yml --ref <branch> -f review_layouts="..."`.
 **17 Nov 19:50 UTC, 679d (cloud):** rule 11 / D353 - Terminal home path, "Directory of" header and preview lines shown whole (FullText, one size; focused root / systems lines slide). TerminalFullText679dTest; NOT compiled in the cloud (Maven 429) - CI first compile. HW-22 queued (KONKR). CI GREEN on e4669b9. NEXT: check Verify 310 on the 679d push (red -> fix first); then D354 Pocket Quest "Play game" wrap / status pill cut (H16, emulator e679r13) if it doesn't touch the pixel-font branch's files, else rule 11 filler (static TRUNCATE 171); pixel font / badges stay on their live-session branches.
 **17 Nov 18:55 UTC, 679c (cloud):** H7 / D347 fixed in code - the Console hub category title keeps clear of the Hub's profile row (HubCategoryClear679cTest 4/4 PASS in the cloud; HW-21 on the RP Classic, batched with HW-18). CI GREEN on f3d8362. NEXT: check Verify 310 on the 679c push (red -> fix first); H9 pixel font / H10-H11 badges are owner-decided but live on claude/v0674-pixel-font and claude/v0674-badges (live-session branches - the cloud run never pushes there; continue only on this line if the owner moves them here); then H16 worst popups (Night, Bar) after H9; H12 achievement animations.

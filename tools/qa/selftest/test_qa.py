@@ -2309,6 +2309,61 @@ class TestBadgeCheck676a(unittest.TestCase):
         self.assertEqual(one.returncode, 3, one.stdout)
 
 
+class TestBadgeCheckCarousel680b(unittest.TestCase):
+    """680b (D357): a tile a carousel scrolled partly off the screen and cover-flow covers stacked behind the focused one are
+    not badge faults (the same findings on every run since 677c); real collisions on those tiles / the front tile still FAIL."""
+    _run = TestBadgeCheck676a._run
+
+    def _half_off(self, progress_full):
+        # Tiles row: the last tile scrolled half off the right edge (screen 1280 wide) - tile and badges trimmed by the row
+        return [{"nodes": [], "badgeTiles": [{"lane": "a", "full": [1180, 100, 200, 260], "shown": [1180, 100, 100, 260]}],
+                 "badges": [
+                     {"kind": "CONSOLE", "lane": "a", "full": [1186, 106, 152, 26], "shown": [1186, 106, 94, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "a", "full": progress_full, "shown": [1186, progress_full[1], 94, 22], "placed": True}]}]
+
+    def test_a_tile_scrolled_half_off_is_not_a_cut(self):
+        r = self._run(self._half_off([1186, 150, 74, 22]))
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_a_real_collision_on_a_half_off_tile_still_fails(self):
+        r = self._run(self._half_off([1186, 120, 74, 22]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("overlap", r.stdout)
+
+    def test_a_badge_cut_inside_its_whole_tile_still_fails(self):
+        # the tile is whole; only the badge is trimmed - a real cut
+        w = [{"nodes": [], "badgeTiles": [{"lane": "a", "full": [100, 100, 200, 260], "shown": [100, 100, 200, 260]}],
+              "badges": [{"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
+                         {"kind": "PROGRESS", "lane": "a", "full": [216, 150, 74, 22], "shown": [216, 150, 74, 22], "placed": True}]}]
+        self.assertEqual(self._run(w).returncode, 1)
+
+    def _flow(self, front_progress):
+        # Cube cover flow x1.0: the focused cover (f) drawn over the side cover (s) stacked behind it
+        return [{"nodes": [], "badgeTiles": [
+                    {"lane": "s", "full": [300, 140, 300, 440], "shown": [300, 140, 300, 440]},
+                    {"lane": "f", "full": [440, 100, 400, 520], "shown": [440, 100, 400, 520]}],
+                 "badges": [
+                     {"kind": "CONSOLE", "lane": "s", "full": [306, 146, 152, 26], "shown": [306, 146, 152, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "s", "full": [400, 150, 74, 22], "shown": [400, 150, 74, 22], "placed": True},
+                     {"kind": "CONSOLE", "lane": "f", "full": [446, 106, 152, 26], "shown": [446, 106, 152, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "f", "full": front_progress, "shown": front_progress, "placed": True}],
+                 "texts": [{"text": "Focused game", "full": [450, 140, 300, 30], "shown": [450, 140, 300, 30], "placed": True}]}]
+
+    def test_a_cover_stacked_behind_is_not_graded(self):
+        r = self._run(self._flow([760, 106, 74, 22]))
+        self.assertEqual(r.returncode, 0, r.stdout)  # the front cover PASS; the side cover's overlapping pair is not graded
+
+    def test_the_front_cover_still_fails_a_real_collision(self):
+        r = self._run(self._flow([560, 110, 74, 22]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("f", r.stdout)
+
+    def test_only_stacked_covers_is_not_a_pass(self):
+        w = self._flow([760, 106, 74, 22])
+        w[0]["badges"] = [b for b in w[0]["badges"] if b["lane"] == "s"]
+        self.assertEqual(self._run(w).returncode, 3)
+
+
 class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
     """676d (D334): QA scripts must never navigate into the owner's Voltcap - target confirmed, the QA app kept in front by
     the launch-block file (QaVariant.harnessActive), a layout switch checked before keys, keys only while the QA app has focus."""
