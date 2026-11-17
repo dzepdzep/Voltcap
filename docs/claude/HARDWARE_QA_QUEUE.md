@@ -125,7 +125,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   row, console heading, tiles and the info bar (name / console · saves · place / date) whole at x1.0 and x1.3, two ▼ steps
   (homecut PASS). NOT TESTED: the "Not connected" / problem text, Browse saves, touch.
 
-### HW-12 Banner game window text shown whole (678e, rule 11) - DONE on the KONKR except one rule question (corner X before Play)
+### HW-12 Banner game window text shown whole (678e, rule 11) - DONE on the KONKR (x1.0 + x1.3)
 - Device(s): RP Nova or KONKR (any USB handheld; batch with HW-1 / HW-9 in the same session). Level L1 (QA app only).
 - Build: commit of update 678e on claude/qa-0672-repair; QA build = assembleDebug of that commit.
 - Why not emulator: R26 needs the popup gate on hardware; the emulator trial runs the layouts' OWN style only, not Banner.
@@ -138,6 +138,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   (qa-0.6.73-678o-ci): kb678o10 x1.0 + kb678o13 x1.3, SHELF + COVERDETAILS: open / geometry / visual / focus / buttons / settle /
   readability / glyphs / rapid PASS; hierarchy FAIL on both - the window's corner X ("Close") reads before Play. Owner / rule
   decision (owner_actions): treat a corner close as chrome (like the Back hint) or move it.
+- Owner 17 Nov (D351): keep the X in the corner - a separate corner-close control, not part of the action order; Play stays the
+  first action and the first focus. popclip.py (678p) leaves a Back / Close off Play's row out of the first-action order; the
+  kb678o10 / kb678o13 runs re-graded: SHELF + COVERDETAILS Banner all categories PASS at both scales.
 
 ### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - THOR DONE 16 Nov
 - Thor 16 Nov (L1, owner's HARDWARE TESTING AUTHORIZATION; supervised launch window 676n - qa_allow_app_launch, Clock only,
@@ -220,11 +223,12 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   re-run of all four on the newest build closes this request.
 - 17 Nov KONKR (USB, live session, QA build qa-0.6.73-678n-ci = 678n): x1.0 k678n10 52 / 53 PASS - TV room rapid A B A B left the
   window open (D333, cause traced, HW-5); x1.3 k678n13 52 / 53 PASS - Channel: the achievement count under the focused name's
-  second line (readability) -> fixed in 678o (D350) and re-gated on qa-0.6.73-678o2-ci: kc678o13 Channel + Twin icons PASS.
+  second line (readability) -> 678o fix (D350) passed kc678o13 but made Compose never idle on Channel (CI robo tests) -
+  reverted in 678q: Channel x1.3 count under a two-line name is a known v0.6.74 item.
   Arcade, Side, Library, Spot, Bar, Pocket ribbon PASS at both scales (the k674 FAILs are gone). Owner review sheet:
   "C:\Users\User\Claude outputs\live678n\KONKR_popups_678n_review.pdf" (both scales, every layout). Flip 2: unavailable.
 
-### HW-2 Record crate x1.3 vertical menu - verification checklist - IN PROGRESS (KONKR: all PASS except rapid A/B 9 / 10)
+### HW-2 Record crate x1.3 vertical menu - verification checklist - DONE on the KONKR 17 Nov (all items PASS after the D333 fix)
 - Device(s): Flip 2 + KONKR (x1.0 and x1.3).
 - Build: latest dev commit.
 - Why not emulator: owner's checklist is about real D-pad / focus timing on the handhelds.
@@ -234,6 +238,7 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   x1.3 (vertical menu): every key one size in every step (PASS), PLAY -> SLEEVE NOTES -> INSPECT -> MORE one press each (PASS),
   MORE opens its page and B comes back with the focus on MORE (PASS), B closes (PASS), nothing clipped (popup gates k678n10 /
   k678n13 CRATE all PASS); rapid A B A B at 250 ms: 9 / 10 closed at x1.0 and at x1.3, no launch - FAIL (D333 / HW-5 cause).
+- After the D333 fix (qa-0.6.73-678p-ci, k678p_crate): every item PASS at x1.0 and x1.3, rapid 10 / 10 at each scale.
 
 ### HW-3 Flip 2 charging sparkle - reproduce first - BLOCKED - DEVICE UNAVAILABLE
 - Device(s): Flip 2. Why not emulator: OEM charging switch (`input_suspend`) behaviour.
@@ -249,7 +254,7 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - 17 Nov k678n13 (qa-0.6.73-678n-ci, x1.3): CUBE all popup-gate categories PASS - the first A opened the window (no "first A
   opened nothing"). NOT TESTED: the L2 / R2 fact width on its own, vqa onepress.
 
-### HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) - OPEN - cause traced 17 Nov (D333), fix not written yet
+### HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) - DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR)
 - Device(s): KONKR + Flip 2. 674k gates (f674k, k674m) had no rapid FAIL; keep watching in HW-1 runs before closing.
 - 17 Nov KONKR: TV room k678n10 (1 / 1), then crate678.sh 10-round runs: Record crate x1.0 1 / 10, x1.3 1 / 10, TV x1.0 1 / 10
   left the window open (no launch ever). Every failing round's VoltcapQA trace is the same: A opens; B closes (fly-back); the
@@ -257,6 +262,8 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   opened a frame later; the last B reaches NO window and not the home (no winkey / key / "home B" line) - it falls in the swap
   between the closing dialog and the reopened one. Proposed fix (cloud): reopen in place (keep the same dialog window and replay
   its opening) so no key can fall between two windows; regression = crate678.sh 10 rounds on Crate + TV, x1.0 + x1.3.
+- 678p (reopen in place, qa-0.6.73-678p-ci, crate678.sh k678p_*): Record crate x1.0 10/10 + x1.3 10/10, TV room x1.0 10/10 + x1.3
+  10/10, Cardboard box x1.0 10/10, Card binder x1.0 10/10 closed - 60 / 60, no launch (before: ~1 in 10 left open).
 
 ### HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) - OPEN
 - Device(s): KONKR (x1.3, where k674n read dy +3 px) + Flip 2 x1.0. Build: 675e or later (QA app).

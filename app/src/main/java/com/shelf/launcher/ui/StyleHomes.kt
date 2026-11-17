@@ -1040,10 +1040,7 @@ internal fun StyleArt(
     ring: Color = ShelfTheme.accent,
     outline: Dp = 2.dp,
     /** Update 389: the highlight's strength 0..1, read while drawing (a followed row: it fades with the row's glide). Null: full. */
-    focusAlpha: (() -> Float)? = null,
-    /** 678o: the tile's badge lane from the caller, so content it draws over this art (the Channel grid's name plate) joins
-     *  the same lane (BadgeLane.kt laneContentAt). Null: the art's own lane, as before. */
-    badgeLane: BadgeLane? = null
+    focusAlpha: (() -> Float)? = null
 ) {
     // (Update 332: the games rolling in after "Who's playing?" — Rollout; nothing while it isn't running.)
     @Suppress("NAME_SHADOWING") val modifier = modifier.rolloutItem()
@@ -1058,8 +1055,7 @@ internal fun StyleArt(
     if (square || wide) {
         val url = if (wide) c.wide(g) else cover ?: c.wide(g)
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
-        val ownLane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
-        val lane = badgeLane ?: ownLane
+        val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
         Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue)).badgeTile(lane)) {
             when {
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
@@ -1099,8 +1095,7 @@ internal fun StyleArt(
     // Free-standing media get the pool of light under them, never a frame round their slot.
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
-    val ownLane = rememberBadgeLane() // (676a: BadgeLane.kt)
-    val lane = badgeLane ?: ownLane
+    val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
     Box((if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))).badgeTile(lane)) {
         when {
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }

@@ -17,10 +17,10 @@
   },
   {
    "what": "Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say \"devices ready\"",
-   "why": "left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6), the TV / Crate rapid A/B fix re-check (HW-5) once it is written",
+   "why": "left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6)",
    "device": "RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73",
    "urgent": false,
-   "blocks": "v0.6.73 RC (HW-5 re-check)"
+   "blocks": "nothing for v0.6.73 (KONKR covered it)"
   },
   {
    "what": "Pause or retire the old PC task \"VoltCap hourly backlog run\"",
@@ -49,13 +49,6 @@
    "device": "none",
    "urgent": false,
    "blocks": "nothing"
-  },
-  {
-   "what": "Banner popup style: may the round X in the top corner stay where it is (counted as window chrome, like the B Back hint), or should it move?",
-   "why": "the popup check wants Play first in reading order and counts the corner X as an action (D351); everything else in Banner passes on the KONKR",
-   "device": "none (answer: keep X / move X)",
-   "urgent": false,
-   "blocks": "the Banner hierarchy line only"
   }
  ]
 }

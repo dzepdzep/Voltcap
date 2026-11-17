@@ -3910,7 +3910,7 @@
    "title": "KONKR x1.0 full popup gate k673i (673e2, the backlog's 'KONKR x1.0 full gate'): 51 / 53 PASS. FAIL: Cinema Play smaller than its round Details (hierarchy); TV room rapid A B A B left the window open once; 17 Nov: TV + Record crate ~1 in 10 rapid rounds on the KONKR",
    "rule": "R26",
    "severity": "low",
-   "status": "open: cause traced 17 Nov (live KONKR session) - the TV room (k678n10 x1.0; crate678.sh k678tv 1/10) and Record crate (k678c2: x1.0 1/10, x1.3 1/10) leave the window open in about 1 of 10 rapid A B A B rounds, never a launch. Every failing round's VoltcapQA trace: A opens, B closes, the second A lands on the closing window ('win reopen on press'), it finishes closing with reopen=true and a new window opens a frame later; the last B reaches no window and not the home (no winkey / key / 'home B' line) - it falls in the swap between the two dialogs. Proposed fix: reopen in place (same dialog window, opening replayed). Cinema part: see D332",
+   "status": "verified: 678p a window that reaches the end of its close with an A pending opens again in place (same dialog, opening replayed, Play guard restarted - GamePopup.takeReopenInPlace, ReopenInPlace678pTest); KONKR qa-0.6.73-678p-ci crate678.sh: Record crate 20/20, TV room 20/20 (x1.0 + x1.3), Cardboard box 10/10, Card binder 10/10 closed, no launch. (Before: ~1 in 10 left open; trace in 678o.) Cinema part: see D332",
    "found": "2026-11-15 k673i"
   },
   {
@@ -3998,7 +3998,7 @@
    "title": "Channel grid x1.3: the focused channel's name wraps to two lines and its plate covers the achievement count ('48/120' and 'Shadow Of The Colossus' drawn over each other) - KONKR k678n13 readability FAIL",
    "rule": "R27",
    "severity": "medium",
-   "status": "verified: 678o the name plate joins the tile's badge lane as CONTENT (StyleArt badgeLane, laneContentAt), ChanNameLane678oTest; KONKR kc678o13 x1.3 Channel PASS (qa-0.6.73-678o2-ci)",
+   "status": "open (v0.6.74): the 678o fix (name plate as lane CONTENT) made Compose never idle on Channel - CI Verify 310 on 91b1ac3: EndlessFillLitRoboTestShard3 / EndlessOnceRoboTest CHAN AppNotIdleException (a layout loop, CPU on the device too). Reverted in 678q (Channel back to v0.6.72's drawing); the KONKR kc678o13 PASS was on the looping build. Next: a non-reporting fix (keep the plate one line or move the count) with a Robolectric idle test first",
    "found": "2026-11-17 k678n13"
   },
   {
@@ -4006,7 +4006,7 @@
    "title": "Banner game window: the corner close X reads before Play (popclip hierarchy 'Close comes before Play') - SHELF + COVERDETAILS, x1.0 + x1.3, KONKR",
    "rule": "R26",
    "severity": "low",
-   "status": "open (owner / rule decision): a corner close is window chrome (as the Back hint, which the More-last check already leaves out) - or move the X",
+   "status": "decision (owner 17 Nov): keep the corner X - window chrome, not part of the action order; Play stays first action and first focus. popclip hierarchy (678p) leaves a Back / Close off Play's row out; Banner re-graded PASS x1.0 + x1.3",
    "found": "2026-11-17 kb678o10"
   },
   {

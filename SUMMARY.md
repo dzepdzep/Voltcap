@@ -1,3 +1,13 @@
+# Update 678q (17 Nov 2026, live session) - Channel name-plate change reverted (layout loop); D333 / HW-2 / HW-12 records
+- CI Verify 310 on the RC prep commit 91b1ac3: 16 failures, all Channel - EndlessFillLitRoboTestShard3 / EndlessOnceRoboTest
+  "Compose did not get idle" (a measure / layout loop). Cause: 678o's Channel fix (the focused name plate reported to the tile's
+  badge lane as CONTENT, StyleArt badgeLane). Reverted: StyleConsoleHomes.kt + StyleHomes.kt back to 678n (= v0.6.72 drawing on
+  Channel); ChanNameLane678oTest removed. D350 back to open for v0.6.74 (fix needs an idle test first). Not compiled-tested here
+  beyond the revert (the cloud Gradle daemon died on the heavy robo run) - CI on this push decides.
+- Records: D333 verified (KONKR 678p: Record crate 20/20, TV 20/20, Cardboard box 10/10, Card binder 10/10, no launch); HW-2
+  Record crate checklist DONE; HW-12 Banner DONE (owner: keep the corner X, D351).
+- Files: ui/StyleConsoleHomes.kt, ui/StyleHomes.kt (revert), app/src/test/.../ChanNameLane678oTest.kt (deleted); trackers.
+
 # Update 678p (17 Nov 2026, live session, owner present) - D333 rapid A/B fix (reopen in place); Banner corner X decision
 - Owner 17 Nov: keep Banner's X in the top corner (D351) - a separate corner-close control, not part of the action order; Play
   stays the first primary action and the first focus. popclip.py hierarchy now leaves a Back / Close OFF Play's row out of the

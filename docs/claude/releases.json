@@ -182,8 +182,8 @@
     },
     {
      "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
-     "state": "FAIL",
-     "evidence": "Only rapid A/B left (9/10, D333). KONKR 17 Nov, crate678.sh k678c2 (qa-0.6.73-678o-ci), x1.0 + x1.3: one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, nothing clipped (popup gates PASS); rapid A B A B 9/10 closed at each scale, no launch (D333 cause: the last B falls between the closing and the reopened window)"
+     "state": "PASS",
+     "evidence": "KONKR 17 Nov after the D333 fix (qa-0.6.73-678p-ci, crate678.sh k678p_crate): x1.0 + x1.3 one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, rapid A B A B 10/10 at each scale, no launch; nothing clipped (popup gates). Before the fix: rapid 9/10 (k678c2)."
     },
     {
      "gate": "Owner visual review of the new menus and x1.3 fixes",
@@ -299,6 +299,15 @@
      "emulator": "no",
      "device": "full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED",
      "owner": "owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674"
+    },
+    {
+     "what": "Pixel-font layouts at x1.3: visual polish - Pocket Ribbon, Pocket Classic, Night first (owner review of the KONKR sheet, 17 Nov)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "KONKR x1.3 sheet (k678n13) shows the need",
+     "owner": "requested 17 Nov - v0.6.74, does not delay v0.6.73"
     }
    ],
    "gates": [
