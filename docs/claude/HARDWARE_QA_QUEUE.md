@@ -59,6 +59,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Tests: pop529.sh run <tag> off <53 layouts> OWN, then x1.3; popclip.py, badgecheck, homecut, statuscheck.
 - Result:
 
+### HW-20 Achievements page opens on the new unlocks (678m, H12) - OPEN
+- Device(s): KONKR or RP Nova (batch with HW-12..HW-16 in the same session). Level L1 (QA app only).
+- Build: the 678m commit on claude/qa-0672-repair (or newer).
+- Why not emulator: the trial has no RetroAchievements account, so no real new unlocks; the page's real height at the
+  owner's font scale is the point.
+- Tests: a game with fresh unlocks (QA app: play one unlock, or a test-hook pending set) -> open its Achievements page at off
+  and font=1.3,density=1.15: NEW UNLOCKS stage in view on open with the focus ring on it, ▼ reaches the controls then the
+  first achievement one press each, ▲ back; a game with nothing new still opens on its first achievement (whole); touch
+  scroll works; reduced motion unchanged. Ask the owner which screen "Recently Unlocked" meant if it is not this one.
+- Result:
+
 ### HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) - OPEN (after the cloud investigation)
 - Device(s): AYN Thor (3140972f), USB. Level L1 for the QA app; harmless apps only (no ROMs / games that touch saves).
 - Tests: dumpsys activity / window per display before + after a launch from the QA app; Recents; screen recording of both displays.

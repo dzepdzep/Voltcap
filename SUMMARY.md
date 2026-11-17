@@ -1,3 +1,21 @@
+# Update 678m (17 Nov 2026, cloud scheduled run) - H12: the Achievements page opens on the new unlocks
+- Cause (owner 17 Nov: "Recently Unlocked is skipped - it auto-scrolls to the list"): the per-game Achievements page
+  (AchievementListDialog) gave its opening focus to the first achievement row (Modifier.initialFocus), and focusing that row
+  scrolls the page body until the row is in view - past the new-unlocks stage at the top (NEW UNLOCKS, the badges that just
+  played). With 40 achievements on a 640 x 427 dp screen the stage was scrolled fully out (0 of 13 px of its label shown).
+  It is the only open-time scroll on an Achievements screen: the Achievements hub and Settings › RetroAchievements
+  ("Recently unlocked" card) request no focus on open.
+- Fix: with new unlocks waiting, the page opens on the stage itself (shelfFocusable, "New unlocks" for screen readers) - it is
+  in view, the controller has the focus on open, ▼ goes on to the controls and the list; without any it opens on the first
+  achievement as before. If the stage leaves while focused (after the 100 % celebration) the first achievement takes the
+  focus. Decided once per opening (achOpensOnNewUnlocks). Touch unchanged. Animations: next H12 step (not started).
+- Test: AchNewUnlocksOnOpen678mTest (Robolectric, 640 x 427 dp, 40 achievements, 3 new): FAILED on the old code ("shown 0.0px
+  of 13.0px"), PASS now (2/2); AchFirstRowRoboTest 87/87 PASS (first row still whole when nothing is new). Compiled in the
+  cloud. Static checks PASS (TRUNCATE 179, unchanged).
+- Interpretation to confirm: "Recently Unlocked" read as the new-unlocks stage at the top of a game's Achievements page; if
+  the owner meant another screen it is noted in HW-20.
+- Hardware: HW-20 (NOT TESTED on a handheld). Files: ui/AchievementListDialog.kt, test AchNewUnlocksOnOpen678mTest.kt; trackers.
+
 # Update 678l (17 Nov 2026, cloud scheduled run) - H6: the popup gate makes its own test-game library
 - Cause (RP Classic j677c10 "no game matches 'Shadow of the Colossus'" / "'ActRaiser'"): `pop529.sh run` only turned the QA
   fixture library on (voltcap_test_fixture_roms = the QA app's own files/roms); the stand-in files themselves came from an

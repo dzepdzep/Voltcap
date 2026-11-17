@@ -22,6 +22,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.LaunchedEffect
 import com.shelf.launcher.data.ra.RaMatchInfo
 import androidx.compose.material3.Text
@@ -130,6 +132,13 @@ fun AchievementListDialog(
     }
     var stageDone by remember { mutableStateOf(false) }
     var celebrate by remember { mutableStateOf(false) }
+    // (678m, owner 17 Nov H12 "Recently Unlocked is skipped - it auto-scrolls to the list": the page gave its opening focus to
+    // the first achievement, and focusing that row scrolled the body past the new-unlocks stage above it. With new unlocks
+    // waiting the page opens on the stage itself - it is in view, a controller has the focus there and ▼ goes on to the
+    // controls and the list; without any the first achievement takes the focus as before. Decided once per opening.)
+    val opensOnStage = remember(seenKey, achievements.isNotEmpty()) { achOpensOnNewUnlocks(stageIds, achievements) }
+    val stageFocus = remember { FocusRequester() }
+    var stageHasFocus by remember { mutableStateOf(false) }
     androidx.compose.runtime.DisposableEffect(seenKey) {
         onDispose { if (seenKey != null) com.shelf.launcher.data.AchievementSeen.markViewed(context, seenKey) }
     }
@@ -202,7 +211,12 @@ fun AchievementListDialog(
                     val stage = achievements.filter { it.id in stageIds && it.isUnlocked }.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER)
                         .map { StageBadge(it.id, RaBadges.url(it.badgeName), it.title ?: "Achievement", it.points) }
                     if (stage.isNotEmpty() && !stageDone) {
-                        NewUnlockStage(stage, unlockedCount, achievements.size) {
+                        val stageOpen = if (opensOnStage) Modifier.initialFocus() else Modifier
+                        NewUnlockStage(stage, unlockedCount, achievements.size,
+                            modifier = Modifier.focusRequester(stageFocus).then(stageOpen)
+                                .onFocusChanged { stageHasFocus = it.isFocused }
+                                .shelfFocusable(RoundedCornerShape(com.shelf.launcher.ui.theme.Ds.rLarge))
+                                .semantics { contentDescription = if (stage.size == 1) "New unlock" else "New unlocks" }) {
                             com.shelf.launcher.data.AchievementSeen.markAnimated(context, seenKey, stage.map { it.id })
                             if (com.shelf.launcher.data.Features.completionCelebration.value &&
                                 com.shelf.launcher.data.AchievementSeen.takeCompletion(context, seenKey)) celebrate = true
@@ -312,7 +326,12 @@ fun AchievementListDialog(
                     // The badges get their own area (the achievement theme's backdrop), with room for the
                     // unlock and pick animations to rise out of their slots.
                     // (The list opens on its first achievement - not on a control.)
-                    val firstFocus = Modifier.initialFocus()
+                    val firstFocus = if (opensOnStage) Modifier else Modifier.initialFocus()
+                    // (678m: the stage leaves with the focus on it - after the 100 % celebration - the first achievement takes it.)
+                    val firstId = visible.firstOrNull()?.id
+                    LaunchedEffect(stageDone) {
+                        if (stageDone && stageHasFocus && firstId != null) { kotlinx.coroutines.delay(60); runCatching { rowFocus[firstId]?.requestFocus() } }
+                    }
                     if (wall) AchievementArea {
                         BadgeWall(
                             items = visible.map { a ->
@@ -656,3 +675,7 @@ private enum class AchievementFilter(
     /** Only the missables still to get (not unlocked, and not marked "I missed this"). */
     MISSABLE_LEFT("Missables to get", "No missables left to get — none can slip away now.", { it.isMissable && !it.isUnlocked })
 }
+
+/** 678m (H12): the Achievements page opens on its new-unlocks stage (not the first row) when unlocks are waiting to play. */
+internal fun achOpensOnNewUnlocks(stageIds: Set<Int>, achievements: List<RaAchievementDetail>): Boolean =
+    stageIds.isNotEmpty() && achievements.any { it.id in stageIds && it.isUnlocked }

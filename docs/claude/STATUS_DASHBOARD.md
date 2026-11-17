@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678l · 2026-11-17 06:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 9280921 (678k) · effort: medium
+**1. LATEST UPDATE** - 678m · 2026-11-17 07:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 2fa4c92 (678l) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
+**2. WHAT CLAUDE JUST FIXED** - Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
+- **App** (678m): Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
 - **QA tools** (678l): Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
 - **App** (678k): The automatic tests passed on the development line with the v0.6.73 fixes merged in. The Console Hub, Resume and Channel homes no longer end long game names (like 'Advance Wars (Rev 1) (No Glitch)') or the category name in '...': they wrap, shrink a little or slide so they can be read whole. A short check on the RP Classic at Larger text was added to the next handheld session.
 - **Docs** (live-17nov): Your requests of 17 Nov are now in the backlog and the requirements list, in your order. The RP Classic fixes (status-bar points never squashed, one profile picture, Storage numbers kept together) passed on the RP Classic and RP Nova at both text sizes and wait on a branch for v0.6.73. The full 53-layout Nova run found no real layout breakage from the app-wide 'whole words' change - its failures were the checker reading hidden measuring copies of the clock (fixed) - but that change still needs your decision. Both handhelds were restored and are safe to disconnect.
-- **App** (678h): The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Achievements page: keep Recently Unlocked in view on open; then: Thor dual-screen investigation (cloud reading); pixel font audit
+**5. WORKING ON NEXT** - now: Thor dual-screen investigation (cloud reading); then: Achievements page animations; pixel font audit
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
 
@@ -184,6 +184,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
+| HW-20 Achievements page opens on the new unlocks (678m, H12) | OPEN |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
 | HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
@@ -201,7 +202,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 16 of 18.
+Open hardware requests: 17 of 19.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

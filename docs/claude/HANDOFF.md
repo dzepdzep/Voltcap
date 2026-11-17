@@ -1,6 +1,10 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~06:45 UTC, update 678l (cloud run): Verify 310 GREEN on 9280921 (678k); priority 3 (H6) done in tooling -
+Updated: 2026-11-17 ~07:50 UTC, update 678m (cloud run): Verify 310 GREEN on 2fa4c92 (678l); priority 4 (H12) first step done -
+the Achievements page opened its focus on the first row and scrolled past the new unlocks; it now opens on the new-unlocks stage
+(AchNewUnlocksOnOpen678mTest FAILED on old code, PASS now). HW-20 verifies. NEXT: check Verify 310 on the 678m push (if red:
+fix first), then priority 5 (H13 Thor dual-screen reading -> docs/claude/THOR_DUAL_SCREEN.md); H12 animations after that.
+Before: 2026-11-17 ~06:45 UTC, update 678l (cloud run): Verify 310 GREEN on 9280921 (678k); priority 3 (H6) done in tooling -
 pop529 setup makes its own stand-in library (tools/qa/device/standins.sh, run-as fallback, INFRA stop), selftest 190/190;
 HW-18 verifies on the Classic. NEXT: check Verify 310 on the 678l push (if red: fix first), then priority 4 (H12 Achievements).
 Before: 2026-11-17 ~05:45 UTC, update 678k (cloud run): priority 1 done - Verify 310 GREEN on the merge b76e3ef (gate PASS);
@@ -70,7 +74,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
      THIS dev line + a test; note whether the facet already fixed it (676y "Hub ticker rows unbounded").
   3. DONE 678l in tooling (HW-18 verifies). H6 (QA tooling): why pop529 setup finds no fixture game on the RP Classic (files/roms empty after
      voltcap_test_fixture_roms; "no game matches") - read TestHooks fixture code; fix + selftest; unblocks HW-18.
-  4. H12 Achievements page: find what scrolls past "Recently Unlocked" on open (initial scroll / focus request / async load);
+  4. FIRST STEP DONE 678m (HW-20 verifies; animations still open). H12 Achievements page: find what scrolls past "Recently Unlocked" on open (initial scroll / focus request / async load);
      plan + first fix with a Robolectric test; animations after that (reduced motion kept). v0.6.74.
   5. H13 Thor dual-screen (cloud reading): CompanionActivity / SecondScreen Presentation lifecycle, launch flags / display
      targeting in GameLauncher, onStop / onPause handling - write findings to docs/claude/THOR_DUAL_SCREEN.md; HW-19 verifies.

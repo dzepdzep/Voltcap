@@ -276,7 +276,8 @@
      "what": "Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay",
      "kind": "app",
      "impl": false,
-     "unit": false,
+     "note": "partial - 678m: opens on the new unlocks (no scroll past them, code + unit test); animations not started",
+     "unit": "AchNewUnlocksOnOpen678mTest PASS (Robolectric, cloud)",
      "emulator": "no",
      "device": "not run",
      "owner": "requested 17 Nov"

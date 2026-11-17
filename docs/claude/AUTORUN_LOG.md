@@ -185,3 +185,8 @@
 - BOOTSTRAP OK 9280921; lock free -> taken. Verify 310 GREEN on 9280921 (678k + HW-17).
 - H6: pop529 setup now makes its stand-in library (standins.sh, run-as fallback, INFRA stop) + selftest (190/190); HW-18
   unblocked in tooling. Lock released.
+
+## 2026-11-17 ~07:19-07:55 UTC - cloud run 678m
+- BOOTSTRAP OK 2fa4c92; lock free -> taken. Verify 310 GREEN on 2fa4c92 (678l).
+- H12 first step: Achievements page opens on the new-unlocks stage instead of scrolling past it; Robolectric test fails on the
+  old code, passes now; HW-20 queued. Lock released.
