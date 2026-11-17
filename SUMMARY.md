@@ -1,23 +1,30 @@
-# Update 678o (17 Nov 2026, live session - KONKR connected, owner present) - KONKR hardware gates; Banner touch boxes
-- Lock: live session took docs/claude/AUTORUN_LOCK.md (b7924fc). QA build qa-0.6.73-678n-ci (CI 44054144657, pinned key
-  4d133dde, app code = 678n af269aa) installed on the KONKR GT78 (BW0306N230000845, USB) - the 15 Nov QA app had the old key, so
-  only the QA app was replaced (owner rule 16 Nov); the owner's Voltcap untouched (versionCode 79, 15 Nov). First-run prompts of
-  the fresh QA app (extra art packs: Not now; battery note; Inspect / Wobble: the focused Inspect) answered in the QA app only.
-- Found on hardware (kb678n10, Banner style x1.0): the Banner window's save-sync chip ("Save sync is not set up", 18 dp) and its
-  L1 / R1 hints (17 dp) are tap targets under the gate's 24 dp. Fixed: each has a touch box at least 24 dp tall, the drawn pill
-  unchanged inside it (the 676x rule for status lines). BannerTouch678oTest (fails on 678n: no heightIn in either function).
-- New QA tool: tools/qa/device/text678.sh - Settings (search "theme", Theme / Achievements / Categories pages), Save Vault
-  (fixture), category screen (long name) and a game's Achievements list at x1.0 + x1.3 by test hooks, screenshot + QaClip dump
-  each (graded with homecut.py); QA app only, no Back / Home key, snapshot restored.
-- New QA hook (HW-20, isolated QA app only): `--ei voltcap_test_achnew N` with `--ez voltcap_test_achlist true` - the focused
-  game's N newest unlocks count as new once more (AchievementSeen.qaMarkNew) before its Achievements page opens, so 678m's
-  "opens on the new unlocks" is checkable on a handheld without a real unlock. AchNewHook678oTest.
-- Checked in the cloud: compiled; BannerTouch678oTest 2/2, AchNewHook678oTest 2/2, AchNewUnlocksOnOpen678mTest 2/2,
-  AchCompact529Test 8/8, GameWindowBannerFullText678eTest 1/1 PASS; static checks PASS (TRUNCATE 179); QA selftest 190/190.
-- Hardware results: see the end of this session's report (HARDWARE_QA_QUEUE.md HW-1 / HW-12 and the dashboard).
-- Files: app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt; ui/TestHooks.kt, ui/AchievementListDialog.kt,
-  ui/LauncherScreen.kt (one call), data/AchievementSeen.kt (the QA hook); app/src/test/.../BannerTouch678oTest.kt,
-  AchNewHook678oTest.kt; tools/qa/device/text678.sh; tools/qa/builds.json (qa-0.6.73-678n-ci).
+# Update 678o (17 Nov 2026, live session - KONKR connected, owner present) - KONKR hardware gates; Banner + Channel fixes; QA tools
+- Lock taken by the live session (b7924fc). QA builds (ledger): qa-0.6.73-678n-ci (CI 44054144657, app = 678n), qa-0.6.73-678o-ci
+  (2f02390), qa-0.6.73-678o2-ci (94fb3d8), pinned key 4d133dde. KONKR GT78 (BW0306N230000845, USB, Level 1 QA app only): the
+  15 Nov QA app had the old key - only the QA app was replaced (owner rule 16 Nov), its covers / art copied back; the owner's
+  Voltcap untouched (versionCode 79, 15 Nov); the fresh QA app's first-run prompts answered in the QA app only (art packs: Not
+  now; battery note; Inspect). Device restored: owner's Voltcap home in front (same window), font 1.0, size / density as found.
+- Full popup gates, all 53 layouts (OWN): x1.0 k678n10 52/53 - TV room rapid A B A B left the window open (D333); x1.3 k678n13
+  52/53 - Channel: the achievement count under the focused name's second line (D350). The k674 FAILs (Arcade, Side, Library R2,
+  Spot START) pass at both scales. Badges (strict) x1.0 233/282: scaled / turned / scrolled tiles + Twin icons spacing 4 dp (D352).
+- Fixed + verified on the KONKR: Banner window saves chip + L1 / R1 hints 24 dp touch boxes (D349; kb678o10 / kb678o13 geometry
+  PASS, BannerTouch678oTest); Channel name plate joins the tile's badge lane (D350; kc678o13 PASS, ChanNameLane678oTest).
+  Banner's remaining FAIL: the corner X reads before Play (D351, owner / rule decision).
+- D333 traced (crate678.sh, 10 rounds): Record crate 1/10 at x1.0 and at x1.3, TV 1/10 - the second A reopens the closing window
+  and the last B falls between the closing and the reopened dialog (no winkey / key / home B line). Fix proposal: reopen in place.
+- HW-20 verified (new QA hook `voltcap_test_achnew N`, AchievementSeen.qaMarkNew, QA app only): the page opens on NEW UNLOCKS
+  with the focus, one press each to the controls and the list, x1.0 + x1.3; nothing new -> first achievement. HW-13 / HW-14 /
+  HW-16 text pages (text678.sh + homecut): 32/34 PASS - the 2 FAILs are the known D346 'PlayStation' word breaks at x1.3
+  (deferred to v0.6.74). HW-8 nav bar hidden in 12/12 states. HW-2 Record crate checklist all PASS except rapid A/B (9/10).
+- New QA tools: device/text678.sh (rule-11 pages by hooks), device/crate678.sh + tools/crate678.py (Record crate checklist /
+  rapid trace for any layout); selftest 196/196. Owner review sheet: Claude outputs\live678n\KONKR_popups_678n_review.pdf.
+- Checked in the cloud: compiled; BannerTouch678oTest 2/2, AchNewHook678oTest 2/2, ChanNameLane678oTest 2/2, BadgeLane676Test
+  6/6, AchNewUnlocksOnOpen678mTest 2/2, AchCompact529Test 8/8, GameWindowBannerFullText678eTest 1/1; static checks PASS
+  (TRUNCATE 179). CI Verify 310 GREEN on 2f02390 and a019b99; 94fb3d8 was running at handover.
+- Files: ui/GameWindowBanner.kt, ui/StyleHomes.kt (StyleArt badgeLane), ui/StyleConsoleHomes.kt (ChanTile), ui/TestHooks.kt,
+  ui/AchievementListDialog.kt, ui/LauncherScreen.kt (one call), data/AchievementSeen.kt; tests BannerTouch678oTest,
+  AchNewHook678oTest, ChanNameLane678oTest; tools/qa/device/text678.sh, crate678.sh; tools/qa/tools/crate678.py;
+  tools/qa/selftest/test_qa.py; tools/qa/builds.json; tools/qa/defects.json (D333, D349-D352); trackers.
 
 # Update 678n (17 Nov 2026, cloud scheduled run) - CI red on 678m fixed (stale source pin)
 - Verify 310 on a6cdfc7 (678m) was RED on one test: AchCompact529Test.controlsAreOneBarWithFoldedPanels (2876 tests, 1 failed,

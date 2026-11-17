@@ -1419,6 +1419,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 2f02390 - clean (CI run 44060317421, push [qa-apk])",
    "note": "live session 17 Nov: KONKR Banner re-gate (HW-12 + the touch-box fix), text678.sh pages (HW-13/14/16/20), nav bar (HW-8)"
+  },
+  {
+   "id": "qa-0.6.73-678o2-ci",
+   "apk_sha256": "c2f7aa983e768e820ab98eef857391d2f2df96defa3c607d4145256f5e054b40",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair 94fb3d8 (678o: + Channel name plate in the badge lane)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 94fb3d8 - clean (CI run 44074005664, push [qa-apk])",
+   "note": "live session 17 Nov: KONKR Channel re-gate x1.3 + x1.0 (the k678n13 readability FAIL), nav bar (HW-8)"
   }
  ]
 }

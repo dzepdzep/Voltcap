@@ -172,8 +172,8 @@
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
-     "state": "PENDING",
-     "evidence": "RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build."
+     "state": "FAIL",
+     "evidence": "Only TV room rapid A/B left (D333, cause traced 17 Nov, fix next). KONKR GT78 17 Nov (live session, USB), QA build qa-0.6.73-678n-ci (678n, CI 44054144657): x1.0 k678n10 52/53 PASS - TV room rapid A B A B left the window open (D333: cause traced, ~1 in 10 rounds also on Record crate); x1.3 k678n13 52/53 - Channel count under a two-line name, fixed in 678o (D350) and PASS on qa-0.6.73-678o2-ci (kc678o13). The k674 KONKR FAILs (Arcade, Side, Library R2, Spot START) PASS at both scales. Earlier: RP Nova 676f x1.3 53/53 + badges 79/79. Owner review sheet (every layout, both scales): Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
@@ -182,13 +182,13 @@
     },
     {
      "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
-     "state": "PENDING",
-     "evidence": "hardware request HW-2"
+     "state": "FAIL",
+     "evidence": "Only rapid A/B left (9/10, D333). KONKR 17 Nov, crate678.sh k678c2 (qa-0.6.73-678o-ci), x1.0 + x1.3: one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, nothing clipped (popup gates PASS); rapid A B A B 9/10 closed at each scale, no launch (D333 cause: the last B falls between the closing and the reopened window)"
     },
     {
      "gate": "Owner visual review of the new menus and x1.3 fixes",
      "state": "PENDING",
-     "evidence": "screenshots come from the hardware session"
+     "evidence": "KONKR sheet ready 17 Nov: every layout's window as opened + its More page at x1.0 and x1.3 (Claude outputs\\live678n\\KONKR_popups_678n_review.pdf, sent in the chat)"
     },
     {
      "gate": "Signed release build, frozen RC, secret scan (main tree on the PC)",

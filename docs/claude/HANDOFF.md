@@ -1,5 +1,12 @@
 # VoltCap handoff (read first, update last)
 
+Updated: 2026-11-17 ~11:55 UTC, update 678o (LIVE session, KONKR by USB, owner present): KONKR full popup gates on the newest build -
+x1.0 52/53 (TV rapid A/B, D333), x1.3 52/53 -> Channel fixed (D350) and re-gated PASS; Banner touch boxes fixed (D349, verified);
+HW-20 / HW-8 verified, HW-2 all PASS except rapid A/B 9/10, text pages 32/34 (D346 known). D333 cause traced: the last B falls
+between the closing and the reopened dialog. NEXT (cloud): 1) check Verify 310 on 94fb3d8 (if red: fix first); 2) D333 fix -
+reopen the closing window in place instead of close + new dialog (GameWindow / GamePopup), unit test, then HW-5 re-check with
+crate678.sh 10 rounds on CRATE + TV at x1.0 + x1.3 (needs the KONKR); 3) D352 Twin icons badge gap; 4) the earlier priority 5
+(H13 Thor dual-screen reading -> docs/claude/THOR_DUAL_SCREEN.md). D351 waits for the owner.
 Updated: 2026-11-17 ~08:35 UTC, update 678n (cloud run): Verify 310 was RED on a6cdfc7 (678m) - AchCompact529Test pinned the old
 firstFocus line that 678m changed on purpose; the pin now checks both new lines (8/8 + 2/2 PASS in the cloud). NEXT: check Verify
 310 on the 678n push (if red: fix first), then priority 5 (H13 Thor dual-screen reading -> docs/claude/THOR_DUAL_SCREEN.md).

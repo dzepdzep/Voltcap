@@ -28,6 +28,9 @@ fg() { f=$(dumpsys window | grep mCurrentFocus | tail -1)
   case "$f" in *com.shelf.launcher.qa*) return 0;; esac
   log "ABORT focus=$f - nothing pressed"; am force-stop $P; ev_end $OUT; echo DONE >> $L; exit 2; }
 k() { fg; input keyevent KEYCODE_$1; sleep ${2:-0.8}; }
+# (as popclip.sh, update 478: "Who's playing?" comes up again after a restart - closed with B (Keep Player) whenever the app's
+# own mark says PICKER, before the first key of a scale; logged.)
+nopicker() { for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; log "profile picker closed with B"; done; }
 # shot NAME: a screenshot and the QaClip dump of the same moment (a request file the QA app reads - 523w: world-readable).
 shot() { fg; screencap -p $OUT/$1.png; rm -f $F/qa_clip/${TAG}_$1.json; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req
   i=0; while [ $i -lt 25 ] && [ ! -s $F/qa_clip/${TAG}_$1.json ]; do sleep 0.3; i=$((i+1)); done
@@ -40,6 +43,7 @@ for SC in $SCALES; do
   case $SC in off) S=X10;; *) S=X13;; esac
   A --es voltcap_test_scale "$SC"; sleep 2
   A --es voltcap_test_layout CLASSIC --ez voltcap_test_preview true --es voltcap_test_game "Shadow of the Colossus"; sleep 4
+  nopicker
   log "== $S ($SC)"
   # HW-14: Settings search (each result's label + section path), then three pages
   A --es voltcap_test_settings Home --es voltcap_test_settings_search theme; sleep 3; shot ${S}_SETSEARCH

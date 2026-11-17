@@ -3907,10 +3907,10 @@
   },
   {
    "id": "D333",
-   "title": "KONKR x1.0 full popup gate k673i (673e2, the backlog's 'KONKR x1.0 full gate'): 51 / 53 PASS. FAIL: Cinema Play smaller than its round Details (hierarchy); TV room rapid A B A B left the window open once",
+   "title": "KONKR x1.0 full popup gate k673i (673e2, the backlog's 'KONKR x1.0 full gate'): 51 / 53 PASS. FAIL: Cinema Play smaller than its round Details (hierarchy); TV room rapid A B A B left the window open once; 17 Nov: TV + Record crate ~1 in 10 rapid rounds on the KONKR",
    "rule": "R26",
    "severity": "low",
-   "status": "open: Cinema with D332; TV rapid - re-run to see if it is the intermittent D319 kind",
+   "status": "open: cause traced 17 Nov (live KONKR session) - the TV room (k678n10 x1.0; crate678.sh k678tv 1/10) and Record crate (k678c2: x1.0 1/10, x1.3 1/10) leave the window open in about 1 of 10 rapid A B A B rounds, never a launch. Every failing round's VoltcapQA trace: A opens, B closes, the second A lands on the closing window ('win reopen on press'), it finishes closing with reopen=true and a new window opens a frame later; the last B reaches no window and not the home (no winkey / key / 'home B' line) - it falls in the swap between the two dialogs. Proposed fix: reopen in place (same dialog window, opening replayed). Cinema part: see D332",
    "found": "2026-11-15 k673i"
   },
   {
@@ -3984,6 +3984,38 @@
    "severity": "high",
    "status": "open: pre-existing; owner 16 Nov 'fix all for v0.6.73'",
    "found": "2026-11-16"
+  },
+  {
+   "id": "D349",
+   "title": "Banner game window: the saves chip ('Save sync is not set up', 18 dp) and the L1 / R1 hints (17 dp) are tap targets under the 24 dp touch gate - KONKR x1.0 kb678n10 COVERDETAILS geometry FAIL",
+   "rule": "R26",
+   "severity": "medium",
+   "status": "verified: 678o 24 dp touch boxes (drawn pills unchanged), BannerTouch678oTest; KONKR kb678o10 x1.0 + kb678o13 x1.3 geometry PASS (qa-0.6.73-678o-ci)",
+   "found": "2026-11-17 kb678n10"
+  },
+  {
+   "id": "D350",
+   "title": "Channel grid x1.3: the focused channel's name wraps to two lines and its plate covers the achievement count ('48/120' and 'Shadow Of The Colossus' drawn over each other) - KONKR k678n13 readability FAIL",
+   "rule": "R27",
+   "severity": "medium",
+   "status": "verified: 678o the name plate joins the tile's badge lane as CONTENT (StyleArt badgeLane, laneContentAt), ChanNameLane678oTest; KONKR kc678o13 x1.3 Channel PASS (qa-0.6.73-678o2-ci)",
+   "found": "2026-11-17 k678n13"
+  },
+  {
+   "id": "D351",
+   "title": "Banner game window: the corner close X reads before Play (popclip hierarchy 'Close comes before Play') - SHELF + COVERDETAILS, x1.0 + x1.3, KONKR",
+   "rule": "R26",
+   "severity": "low",
+   "status": "open (owner / rule decision): a corner close is window chrome (as the Back hint, which the More-last check already leaves out) - or move the X",
+   "found": "2026-11-17 kb678o10"
+  },
+  {
+   "id": "D352",
+   "title": "Twin icons: console and progress badges closer than the lane's 6 dp - 4 dp on the small tile (x1.0, k678n10) and 4.7 dp on the big card (x1.3, kc678o13), KONKR",
+   "rule": "R27",
+   "severity": "low",
+   "status": "open: badges do not overlap; spacing under the lane's own rule - check BadgeLane gap on Twin icons tiles",
+   "found": "2026-11-17 k678n10"
   }
  ]
 }

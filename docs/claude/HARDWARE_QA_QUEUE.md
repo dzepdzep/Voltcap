@@ -59,7 +59,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Tests: pop529.sh run <tag> off <53 layouts> OWN, then x1.3; popclip.py, badgecheck, homecut, statuscheck.
 - Result:
 
-### HW-20 Achievements page opens on the new unlocks (678m, H12) - OPEN
+### HW-20 Achievements page opens on the new unlocks (678m, H12) - DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED
 - Device(s): KONKR or RP Nova (batch with HW-12..HW-16 in the same session). Level L1 (QA app only).
 - Build: the 678m commit on claude/qa-0672-repair (or newer).
 - Why not emulator: the trial has no RetroAchievements account, so no real new unlocks; the page's real height at the
@@ -68,14 +68,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   and font=1.3,density=1.15: NEW UNLOCKS stage in view on open with the focus ring on it, ▼ reaches the controls then the
   first achievement one press each, ▲ back; a game with nothing new still opens on its first achievement (whole); touch
   scroll works; reduced motion unchanged. Ask the owner which screen "Recently Unlocked" meant if it is not this one.
-- Result:
+- Result: DONE 17 Nov (live session, KONKR GT78 USB, QA build qa-0.6.73-678o-ci) - text678.sh k678t, new QA hook
+  `--ei voltcap_test_achnew 2` (678o): nothing new -> opens on its first achievement (whole), ▼ / ▲ one press each; two marked
+  new -> opens on NEW UNLOCKS with the focus ring on the stage, ▼ "View ▾", ▼ the first achievement, ▲ back - one press each,
+  x1.0 and x1.3; page text whole (homecut). NOT TESTED: touch scroll, reduced motion, a real RetroAchievements unlock.
 
 ### HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) - OPEN (after the cloud investigation)
 - Device(s): AYN Thor (3140972f), USB. Level L1 for the QA app; harmless apps only (no ROMs / games that touch saves).
 - Tests: dumpsys activity / window per display before + after a launch from the QA app; Recents; screen recording of both displays.
 - Result:
 
-### HW-16 Category screen text shown whole (678j, rule 11) - OPEN
+### HW-16 Category screen text shown whole (678j, rule 11) - IN PROGRESS (KONKR grid look done; Slides / Stage NOT TESTED)
 - Device(s): RP Nova or KONKR (batch with HW-15 / HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
 - Build: commit of update 678j on claude/qa-0672-repair; QA build = assembleDebug of that commit.
 - Why not emulator: the trial does not open the category screen's Slides / Stage / card looks or the slide editor; long
@@ -84,6 +87,10 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   category) and one with a logo: Slides (logo box name two lines, name line, last-played line on), Stage (centred name in
   the logo box, name line in the editor), card look (name two lines + game count): whole (wrap / shrink / slide), boxes keep
   their sizes, CATSHELL unchanged (L2 / R2 swaps without a reload); touch + controller.
+- Result: 17 Nov (KONKR, qa-0.6.73-678o-ci, text678.sh k678t): the category screen's default grid look, x1.0 PASS (long names
+  wrap or slide: "Nintendo Entertainment System", "Sega Mega Drive / Genesis"); x1.3 FAIL only on 'PlayStation' / 'PlayStation 2'
+  / '3' / 'Portable' broken inside the word - the known D346 word breaks the owner deferred to v0.6.74 (whole words). NOT TESTED:
+  Slides / Stage / card looks, the slide editor, a custom category without a logo, touch.
 
 ### HW-15 Save-sync prompts text shown whole (678i, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (batch with HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
@@ -92,8 +99,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Tests: at off and font=1.3,density=1.15 in the QA app: the sync toast (title + detail, two lines each), the Drive card
   status line, a game row with a long name, the sync log (time column + two-line entries, a "›" entry still opens) and the
   conflict list's long game names: whole (wrap / shrink / slide), rows keep their heights; touch + controller.
+- Result: NOT TESTED 17 Nov - the QA app on the KONKR has no Google Drive sign-in (the QA OAuth client is an owner action).
 
-### HW-14 Settings text shown whole (678h, rule 11) - OPEN
+### HW-14 Settings text shown whole (678h, rule 11) - IN PROGRESS (KONKR: search + 3 pages PASS; sub-pages NOT TESTED)
 - Device(s): RP Nova or KONKR (batch with HW-13 / HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only).
 - Build: commit of update 678h on claude/qa-0672-repair; QA build = assembleDebug of that commit.
 - Why not emulator: the trial does not open Settings pages; long titles / theme names need a real screen width and font scale.
@@ -102,25 +110,34 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   under the picker whole; Scene picker tab captions whole; Artwork > ScreenScraper look-up lines whole; Music > custom track
   name whole; RetroAchievements cards (game name, console line, latest unlock, stat tiles) whole. Rows keep their heights
   while D-pad focus moves; touch + controller.
-- Result:
+- Result: 17 Nov (KONKR, qa-0.6.73-678o-ci, text678.sh k678t, homecut on the page dumps): Settings search "theme" (labels +
+  section paths), the Theme page (and two ▼), Achievements and Categories pages - every text whole at x1.0 and x1.3. NOT TESTED:
+  theme captions grid, Scene picker tabs, ScreenScraper look-up lines, Music custom track, RetroAchievements cards (no account).
 
-### HW-13 Save Vault text shown whole (678g, rule 11) - OPEN
+### HW-13 Save Vault text shown whole (678g, rule 11) - IN PROGRESS (KONKR fixture view PASS; "Not connected" NOT TESTED)
 - Device(s): RP Nova or KONKR (batch with HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only, no real saves).
 - Build: commit of update 678g on claude/qa-0672-repair; QA build = assembleDebug of that commit.
 - Why not emulator: the trial does not open the Save Vault; a long name / place needs a real screen width and font scale.
 - Tests: open Saves (QA app, Drive not connected and with the vault fixture) at off and font=1.3,density=1.15: header name +
   count line whole, "Not connected" + problem text whole, save rows one line each (a long one slides), info bar name /
   state / date whole, Browse saves label whole; rows keep their heights (no jump while moving D-pad focus); touch + controller.
-- Result:
+- Result: 17 Nov (KONKR, qa-0.6.73-678o-ci, text678.sh k678t, vault fixture, display only): header + count line, the button
+  row, console heading, tiles and the info bar (name / console · saves · place / date) whole at x1.0 and x1.3, two ▼ steps
+  (homecut PASS). NOT TESTED: the "Not connected" / problem text, Browse saves, touch.
 
-### HW-12 Banner game window text shown whole (678e, rule 11) - OPEN
+### HW-12 Banner game window text shown whole (678e, rule 11) - DONE on the KONKR except one rule question (corner X before Play)
 - Device(s): RP Nova or KONKR (any USB handheld; batch with HW-1 / HW-9 in the same session). Level L1 (QA app only).
 - Build: commit of update 678e on claude/qa-0672-repair; QA build = assembleDebug of that commit.
 - Why not emulator: R26 needs the popup gate on hardware; the emulator trial runs the layouts' OWN style only, not Banner.
 - Tests: popclip.sh <tag> "SHELF COVERDETAILS" "BANNER" "<game with a long name + story>" at off and font=1.3,density=1.15,
   then popclip.py (all six grades PASS); look at the Story page (More pill on a cut story), Options rows, achievement rows
   (opened = whole description) and the saves chip. Popup style restored by the snapshot.
-- Result:
+- Result: 17 Nov (KONKR, live session). Before (qa-0.6.73-678n-ci, kb678n10 x1.0): COVERDETAILS geometry FAIL - the saves chip
+  ("Save sync is not set up", 18 dp) and the L1 / R1 hints (17 dp) are tap targets under 24 dp; SHELF INFRA (the fresh QA app's
+  first-run prompts took the first A). Fixed in 678o (24 dp touch boxes, drawn pills unchanged, BannerTouch678oTest). After
+  (qa-0.6.73-678o-ci): kb678o10 x1.0 + kb678o13 x1.3, SHELF + COVERDETAILS: open / geometry / visual / focus / buttons / settle /
+  readability / glyphs / rapid PASS; hierarchy FAIL on both - the window's corner X ("Close") reads before Play. Owner / rule
+  decision (owner_actions): treat a corner close as chrome (like the Back hint) or move it.
 
 ### HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) - THOR DONE 16 Nov
 - Thor 16 Nov (L1, owner's HARDWARE TESTING AUTHORIZATION; supervised launch window 676n - qa_allow_app_launch, Clock only,
@@ -169,20 +186,30 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   never where the owner's Voltcap is the home app). PASS = SecondaryHomeHandle0 / NavigationBar0 not visible in every Voltcap state
   with Hide nav bar on; with the test hook off, the bar follows the device's own rules.
 - Nova 16 Nov: before (675r) pill in 12/12 Voltcap states; after (676) 0/14. Pending on the next build: re-run the same.
+- KONKR 17 Nov (qa-0.6.73-678o2-ci, navbar676 k678nav, gesture navigation): NavigationBar0 / SecondaryHomeHandle0 not visible in
+  12 / 12 Voltcap states (startup, popup open / moved / closed, R1, START, L2 / R2, back from another app, setting on again); the
+  setting off (test hook) asks for the bar and gesture mode draws none (device rule). Swipe NOT TESTED (the owner's Voltcap is the
+  home app). KONKR PASS.
 - Thor 16 Nov (676n): 13/13 steps no pill (NavigationBar0 / SecondaryHomeHandle0 hidden); swipe NOT TESTED (owner's Voltcap is
   home). Thor's own hide_nav_bar=1 keeps the bar hidden with the app's setting off too (device rule, not ours). The script's
   guard first aborted on the Thor (D341, DroidDeck's window on another display) - fixed 676o.
 
-### HW-9 Badge lane on small screens (676a) - IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open)
+### HW-9 Badge lane on small screens (676a) - IN PROGRESS (Nova PASS; KONKR run 17 Nov - one spacing finding; RP Classic open)
 - KONKR, RP Classic, Nova at x1.0 + x1.3: pop529 "CUBE GRID TILES CLASSIC SHELF STACKS" then `badgecheck.py <run>/qa_clip` (R27).
 - Nova x1.3 676: collisions 25/25 PASS; Grid chip text was clipped inside its pill (pre-existing) - fixed in 676c, text check needs
   the 676c build's dumps (needW / boxW).
+- KONKR 17 Nov (qa-0.6.73-678n-ci, all 53 layouts' dumps of k678n10): strict badgecheck 233 / 282 PASS. The 49 FAILs: scaled /
+  turned / scrolled tiles the checker reads as cut (Cube side covers, Consoles' turned side card, Hero tiles / Dashboard scaled
+  tiles, Panels' tile scrolled off the edge - the kind listed for review on the Nova) and two real ones: Twin icons - console
+  and progress badges 4 dp apart on the small tile at x1.0 and 4.7 dp on the big card at x1.3 (kc678o13; rule 6 dp, D352);
+  Magazine - the console badge over '2 games' in one transient step. Channel x1.3 (the count under a two-line name) fixed in
+  678o (D350) and PASS on the KONKR (kc678o13).
 
 ### HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs - DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS)
 - Device: RP Nova d3641c41 (via the owner's laptop) or any 4:3 / 640x480 dp handheld. After the fixes in HANDOFF "FIRST".
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CRATE POCKET_RIBBON STORAGE CUBE" OWN, then popclip.py.
 
-### HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) - IN PROGRESS
+### HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) - KONKR DONE 17 Nov (52 / 53 + 53 / 53 after the Channel fix); Flip 2 unavailable
 - Device(s): Flip 2, KONKR.
 - Build: c7ad53a7 (674n code = cf629e2e) - QA build installed on both 15 Nov 21:24.
 - Why not emulator: the 53-layout gate's PASS needs real GPU / panel / controller; emulator evidence does not count.
@@ -191,13 +218,22 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - Result so far: Flip 2 x1.3 f674k (674k) 52/53 - Bar ◀; Flip 2 x1.0 f674o (674n) 52/53 - Side status line; KONKR x1.0 k674m (674k)
   51/53 - Arcade, Side; KONKR x1.3 k674n (674n) 51/53 - Library R2, Spot START. All five fixed in code since (674m-675e): a full
   re-run of all four on the newest build closes this request.
+- 17 Nov KONKR (USB, live session, QA build qa-0.6.73-678n-ci = 678n): x1.0 k678n10 52 / 53 PASS - TV room rapid A B A B left the
+  window open (D333, cause traced, HW-5); x1.3 k678n13 52 / 53 PASS - Channel: the achievement count under the focused name's
+  second line (readability) -> fixed in 678o (D350) and re-gated on qa-0.6.73-678o2-ci: kc678o13 Channel + Twin icons PASS.
+  Arcade, Side, Library, Spot, Bar, Pocket ribbon PASS at both scales (the k674 FAILs are gone). Owner review sheet:
+  "C:\Users\User\Claude outputs\live678n\KONKR_popups_678n_review.pdf" (both scales, every layout). Flip 2: unavailable.
 
-### HW-2 Record crate x1.3 vertical menu - verification checklist - OPEN
+### HW-2 Record crate x1.3 vertical menu - verification checklist - IN PROGRESS (KONKR: all PASS except rapid A/B 9 / 10)
 - Device(s): Flip 2 + KONKR (x1.0 and x1.3).
 - Build: latest dev commit.
 - Why not emulator: owner's checklist is about real D-pad / focus timing on the handhelds.
 - Tests: every action incl. MORE reachable by D-pad; MORE once, last, no dots; More open / close restores focus; rapid A/B
   reliable; nothing clipped at x1.0 / x1.3; menu never changes size while navigating. (Visual design APPROVED by the owner 15 Nov.)
+- 17 Nov KONKR (qa-0.6.73-678o-ci, new tools/qa/device/crate678.sh + tools/qa/tools/crate678.py, run k678c2): x1.0 (one row) and
+  x1.3 (vertical menu): every key one size in every step (PASS), PLAY -> SLEEVE NOTES -> INSPECT -> MORE one press each (PASS),
+  MORE opens its page and B comes back with the focus on MORE (PASS), B closes (PASS), nothing clipped (popup gates k678n10 /
+  k678n13 CRATE all PASS); rapid A B A B at 250 ms: 9 / 10 closed at x1.0 and at x1.3, no launch - FAIL (D333 / HW-5 cause).
 
 ### HW-3 Flip 2 charging sparkle - reproduce first - BLOCKED - DEVICE UNAVAILABLE
 - Device(s): Flip 2. Why not emulator: OEM charging switch (`input_suspend`) behaviour.
@@ -208,11 +244,19 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   logcat + battery state + whether the sparkle shows more than once). Only if it loops: apply the patch to a QA build and one
   supervised test with production's limit off (owner's step). If it does not loop: close the patch as not needed.
 
-### HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px - OPEN
+### HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px - DONE (popup gate) / onepress NOT TESTED
 - Device(s): KONKR. Build: latest. Tests: popclip gate CUBE at x1.3 + onepress.
+- 17 Nov k678n13 (qa-0.6.73-678n-ci, x1.3): CUBE all popup-gate categories PASS - the first A opened the window (no "first A
+  opened nothing"). NOT TESTED: the L2 / R2 fact width on its own, vqa onepress.
 
-### HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) - OPEN (watch)
+### HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) - OPEN - cause traced 17 Nov (D333), fix not written yet
 - Device(s): KONKR + Flip 2. 674k gates (f674k, k674m) had no rapid FAIL; keep watching in HW-1 runs before closing.
+- 17 Nov KONKR: TV room k678n10 (1 / 1), then crate678.sh 10-round runs: Record crate x1.0 1 / 10, x1.3 1 / 10, TV x1.0 1 / 10
+  left the window open (no launch ever). Every failing round's VoltcapQA trace is the same: A opens; B closes (fly-back); the
+  second A lands on the closing window ("win reopen on press"); the window finishes closing with reopen=true and a new window is
+  opened a frame later; the last B reaches NO window and not the home (no winkey / key / "home B" line) - it falls in the swap
+  between the closing dialog and the reopened one. Proposed fix (cloud): reopen in place (keep the same dialog window and replay
+  its opening) so no key can fall between two windows; regression = crate678.sh 10 rounds on Crate + TV, x1.0 + x1.3.
 
 ### HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) - OPEN
 - Device(s): KONKR (x1.3, where k674n read dy +3 px) + Flip 2 x1.0. Build: 675e or later (QA app).

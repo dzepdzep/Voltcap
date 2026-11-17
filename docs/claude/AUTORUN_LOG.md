@@ -194,3 +194,8 @@
 ## 2026-11-17 ~08:18-08:40 UTC - cloud run 678n
 - BOOTSTRAP OK a6cdfc7; lock free -> taken. Verify 310 RED on a6cdfc7 (678m): AchCompact529Test stale source pin.
 - Pin updated to 678m's two new focus lines; compiled + 10/10 PASS in the cloud. Lock released.
+
+## 2026-11-17 ~09:16-11:55 UTC - live session 678o (owner present, KONKR by USB)
+- Lock taken (b7924fc). QA builds 678n-ci / 678o-ci / 678o2-ci installed on the KONKR (QA app only; old-key QA app replaced).
+- Gates: x1.0 52/53 (TV rapid), x1.3 52/53 (Channel -> fixed 678o, PASS); Banner touch fixed + verified; D333 traced;
+  HW-20 / HW-8 verified; HW-2 / HW-13 / HW-14 / HW-16 partly. Device restored (owner's home in front). Lock released.

@@ -2,12 +2,12 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678n · 2026-11-17 08:35 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on a6cdfc7 (678m, 1 stale test) - fixed here; this push pending · effort: medium
+**1. LATEST UPDATE** - 678o · 2026-11-17 11:50 UTC · commit `94fb3d8` · CI: Verify 310 GREEN on 2f02390 + a019b99 (678o); 94fb3d8 running at handover · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic build check went red after the last run's Achievements page fix: an older test still expected the page to always open on the first achievement. That test now checks the new behaviour (new unlocks first, otherwise the first achievement) without loosening anything; both achievement tests pass here, and the full check runs again on this push.
+**2. WHAT CLAUDE JUST FIXED** - Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
 
 **3. LAST 24 HOURS** (most important first)
-- **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
+- **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
 - **App** (678m): Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
 - **QA tools** (678l): Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
 - **App** (678k): The automatic tests passed on the development line with the v0.6.73 fixes merged in. The Console Hub, Resume and Channel homes no longer end long game names (like 'Advance Wars (Rev 1) (No Glitch)') or the category name in '...': they wrap, shrink a little or slide so they can be read whole. A short check on the RP Classic at Larger text was added to the next handheld session.
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Thor dual-screen investigation (cloud reading); then: Achievements page animations; pixel font audit
+**5. WORKING ON NEXT** - now: TV / Record crate rapid A/B fix (reopen in place, D333); then: owner: Banner corner X (D351); Twin icons badge spacing (D352)
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 13 app fixes fully verified · 6 gates left (next: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: BLOCKED** · 0 of 13 app fixes fully verified · 6 gates left (blocking: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -49,7 +49,7 @@ work. Emulator results never count as handheld verification. Release status is d
 <!-- GEN:release -->
 **Current stable:** v0.6.72 (5b01ef39, 2026-11-14) - Latest stable release (main). Save Sync 529 not included.
 
-### v0.6.73 - **TESTING**
+### v0.6.73 - **BLOCKED**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner.
 - Release window: UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO
 - App fixes and features: 13 (13 implemented, 0 fully verified, 6 implemented but not yet tested on a handheld, 4 need your look or decision)
@@ -78,10 +78,10 @@ work. Emulator results never count as handheld verification. Release status is d
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PASS | run 44017399771 (678j, 9d7605f): success (verdict step passes only on PASS; EMULATOR evidence only, pre-merge tree). run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
 | Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) | PASS | 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR. |
 | Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line | PASS | merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push |
-| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
+| Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | FAIL | Only TV room rapid A/B left (D333, cause traced 17 Nov, fix next). KONKR GT78 17 Nov (live session, USB), QA build qa-0.6.73-678n-ci (678n, CI 44054144657): x1.0 k678n10 52/53 PASS - TV room rapid A B A B left the window open (D333: cause traced, ~1 in 10 rounds also on Record crate); x1.3 k678n13 52/53 - Channel count under a two-line name, fixed in 678o (D350) and PASS on qa-0.6.73-678o2-ci (kc678o13). The k674 KONKR FAILs (Arcade, Side, Library R2, Spot START) PASS at both scales. Earlier: RP Nova 676f x1.3 53/53 + badges 79/79. Owner review sheet (every layout, both scales): Claude outputs\live678n\KONKR_popups_678n_review.pdf |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
-| Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
-| Owner visual review of the new menus and x1.3 fixes | PENDING | screenshots come from the hardware session |
+| Record crate checklist (focus after More, rapid A/B, no size change) | FAIL | Only rapid A/B left (9/10, D333). KONKR 17 Nov, crate678.sh k678c2 (qa-0.6.73-678o-ci), x1.0 + x1.3: one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, nothing clipped (popup gates PASS); rapid A B A B 9/10 closed at each scale, no launch (D333 cause: the last B falls between the closing and the reopened window) |
+| Owner visual review of the new menus and x1.3 fixes | PENDING | KONKR sheet ready 17 Nov: every layout's window as opened + its More page at x1.0 and x1.3 (Claude outputs\live678n\KONKR_popups_678n_review.pdf, sent in the chat) |
 | Signed release build, frozen RC, secret scan (main tree on the PC) | NOT STARTED | after the gates above; signing keys live only on the PC |
 | Upgrade install over the real Voltcap on one handheld + smoke test | NOT STARTED | needs the owner's GO (production app) |
 | Owner GO to merge to main and publish | NOT STARTED | never automatic |
@@ -90,7 +90,7 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (FAIL); Record crate checklist (focus after More, rapid A/B, no size change) (FAIL); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
@@ -128,11 +128,12 @@ Merging, the production install and publishing always wait for your explicit GO.
 |---|---|---|---|---|---|
 | 1 | Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready | you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison | screenshots (when Claude posts them) | no | v0.6.74 badge redesign only |
 | 2 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
-| 3 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
+| 3 | Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say "devices ready" | left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6), the TV / Crate rapid A/B fix re-check (HW-5) once it is written | RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73 | no | v0.6.73 RC (HW-5 re-check) |
 | 4 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
-| 5 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
+| 5 | Look at the new menus and x1.3 fixes - the KONKR sheet is ready (KONKR_popups_678n_review.pdf, every layout at x1.0 + x1.3) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
 | 6 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
 | 7 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 8 | Banner popup style: may the round X in the top corner stay where it is (counted as window chrome, like the B Back hint), or should it move? | the popup check wants Play first in reading order and counts the corner X as an action (D351); everything else in Banner passes on the KONKR | none (answer: keep X / move X) | no | the Banner hierarchy line only |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -184,30 +185,29 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
-| HW-20 Achievements page opens on the new unlocks (678m, H12) | OPEN |
+| HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
-| HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
+| HW-16 Category screen text shown whole (678j, rule 11) | IN PROGRESS (KONKR grid look done; Slides / Stage NOT TESTED) |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
-| HW-14 Settings text shown whole (678h, rule 11) | OPEN |
-| HW-13 Save Vault text shown whole (678g, rule 11) | OPEN |
-| HW-12 Banner game window text shown whole (678e, rule 11) | OPEN |
+| HW-14 Settings text shown whole (678h, rule 11) | IN PROGRESS (KONKR: search + 3 pages PASS; sub-pages NOT TESTED) |
+| HW-13 Save Vault text shown whole (678g, rule 11) | IN PROGRESS (KONKR fixture view PASS; "Not connected" NOT TESTED) |
+| HW-12 Banner game window text shown whole (678e, rule 11) | DONE on the KONKR except one rule question (corner X before Play) |
 | HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
-| HW-9 Badge lane on small screens (676a) | IN PROGRESS (Nova PASS on 676f x1.0 + x1.3; KONKR / RP Classic open) |
+| HW-9 Badge lane on small screens (676a) | IN PROGRESS (Nova PASS; KONKR run 17 Nov - one spacing finding; RP Classic open) |
 | HW-7 RP Nova x1.3 re-test of the 4 Nova FAILs | DONE (n675r13 + n676x13: all four PASS; x1.0 n675r10 4/4 PASS) |
-| HW-1 Full popup gates on 674n (x1.0 + x1.3, both handhelds) | IN PROGRESS |
-| HW-2 Record crate x1.3 vertical menu - verification checklist | OPEN |
+| HW-2 Record crate x1.3 vertical menu - verification checklist | IN PROGRESS (KONKR: all PASS except rapid A/B 9 / 10) |
 | HW-3 Flip 2 charging sparkle - reproduce first | BLOCKED - DEVICE UNAVAILABLE |
-| HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px | OPEN |
-| HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | OPEN (watch) |
+| HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px | DONE (popup gate) / onepress NOT TESTED |
+| HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | OPEN - cause traced 17 Nov (D333), fix not written yet |
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 17 of 19.
+Open hardware requests: 13 of 18.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
 <!-- GEN:areas -->
-_Evidence file: docs/claude/progress.json (2026-11-16 (live session, from repo + Project evidence)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
+_Evidence file: docs/claude/progress.json (2026-11-17 (live session, KONKR gates)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
 
 **Home layouts (popup gate)**
 - Total: 53
@@ -217,8 +217,8 @@ _Evidence file: docs/claude/progress.json (2026-11-16 (live session, from repo +
 - Real-device verified: 48 (90 %)
 - Owner approved: 0 (0 %)
 - Released: 53 (older state, v0.6.72)
-- Remaining / blocked: 5 layouts fixed since their last FAIL (Bar, Side, Arcade, Library, Spot) - re-test HW-1 / HW-6; owner visual review of all 53
-- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like; every graded check PASS at x1.0 + x1.3 in run 43961010406, 678c). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d)
+- Remaining / blocked: TV room rapid A/B (D333, cause traced - fix next); owner visual review of all 53 (KONKR sheet ready 17 Nov); Flip 2 unavailable
+- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like; every graded check PASS at x1.0 + x1.3 in run 43961010406, 678c). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d); 17 Nov KONKR newest build: x1.0 k678n10 52/53 (TV rapid), x1.3 k678n13 52/53 (Channel - fixed 678o, kc678o13 PASS) - device count kept until the TV fix is re-gated
 
 **Native popup pages**
 - Total: 53
