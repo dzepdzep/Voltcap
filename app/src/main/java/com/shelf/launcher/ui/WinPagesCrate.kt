@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -179,6 +180,7 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
     val t = rememberNativeTrophies(ctx)
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
+    val big = bigPageText()
     Column(modifier) {
         // The order key: a rubber stamp on the sleeve (A steps it), with the count beside it.
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -218,13 +220,20 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
                                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.fillMaxSize())
                                 }
                                 Spacer(Modifier.width(8.dp))
-                                Text(ach.title ?: "Untitled", color = ink.copy(alpha = if (earned) 1f else 0.6f), fontSize = 13.sp,
-                                    fontFamily = FontFamily.Serif, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, lineHeight = 16.sp,
-                                    modifier = Modifier.weight(1f, fill = false))
-                                // The dotted leader to the running time (the points).
-                                Canvas(Modifier.weight(1f).height(10.dp).padding(horizontal = 4.dp)) {
-                                    drawLine(ink.copy(alpha = 0.35f), Offset(0f, size.height * 0.7f), Offset(size.width, size.height * 0.7f), 1.dp.toPx(),
-                                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx())))
+                                // The dotted leader to the running time (the points), drawn under the title's line: the title has the
+                                // whole width and the leader shows where the title ends, as on a printed tracklist.
+                                // (681cr, CI AchFirstRowRoboTest CRATE x1.3: a title beside a leader with the same weight had half the line
+                                // - "Defeat / the first / colossus" in three lines, and the first track was cut at the page's foot.)
+                                val ground = if (on) ink.copy(alpha = 0.07f).compositeOver(paper) else paper
+                                Box(Modifier.weight(1f), contentAlignment = Alignment.BottomStart) {
+                                    Canvas(Modifier.matchParentSize()) {
+                                        val y = size.height - 5.dp.toPx()
+                                        drawLine(ink.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width - 4.dp.toPx(), y), 1.dp.toPx(),
+                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx())))
+                                    }
+                                    Text(ach.title ?: "Untitled", color = ink.copy(alpha = if (earned) 1f else 0.6f), fontSize = 13.sp,
+                                        fontFamily = FontFamily.Serif, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, lineHeight = 16.sp,
+                                        modifier = Modifier.background(ground).padding(end = 6.dp))
                                 }
                                 Text(ach.points?.let { "$it pts" } ?: "—", color = ink.copy(alpha = if (earned) 0.85f else 0.5f), fontSize = 11.sp,
                                     fontFamily = FontFamily.Serif, fontWeight = FontWeight.Bold)
@@ -233,7 +242,9 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
                             ach.description?.let { d ->
                                 if (opened) Text(d, color = ink.copy(alpha = 0.8f), fontSize = 11.sp, fontStyle = FontStyle.Italic, fontFamily = FontFamily.Serif,
                                     lineHeight = 15.sp, modifier = Modifier.padding(start = 60.dp))
-                                else WinFullText(d, color = ink.copy(alpha = 0.62f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp,
+                                // (681cr: with large text a closed track keeps its words to one line - shrinking readably, then sliding;
+                                // A shows them all - so the first track is whole when the tracklist opens on a short sleeve.)
+                                else WinFullText(d, color = ink.copy(alpha = 0.62f), fontSize = 11.sp, maxLines = if (big) 1 else 2, lineHeight = 14.sp,
                                     modifier = Modifier.padding(start = 60.dp))
                             }
                             if (opened) {
