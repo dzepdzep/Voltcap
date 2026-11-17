@@ -2626,6 +2626,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 }
                 progress[g.stableKey] = RaGameProgress(NumPossibleAchievements = n, PossibleScore = 95, NumAchieved = earned, ScoreAchieved = earned * 6)
                 android.util.Log.e("VoltcapQA", "achfix n=$n game=${g.name}") // (QA scripts pick a game per set size)
+                // (P2 681b: and one with some earned and some not - the native pages' review needs both sides of a list.)
+                if (earned in 1 until n) android.util.Log.e("VoltcapQA", "achmix n=$n earned=$earned game=${g.name}")
             }
         }
         // (Batch 523t: and, three games in four, details as a scraper gives them - year, studio, genre, a story of a few

@@ -37,4 +37,18 @@ class NativePages681aTest {
         val c = src("WinPagesCrate.kt")
         assertEquals(1, c.split("ctx.pageFor(").size - 1)
     }
+
+    @Test fun destructiveRowsAskFirst() {
+        val c = NativeConfirm()
+        assertFalse(c.press(3, destructive = true)); assertEquals(3, c.armed)   // first press arms
+        assertTrue(c.press(3, destructive = true)); assertEquals(null, c.armed) // second press does it
+        assertFalse(c.press(4, destructive = true)); c.leave(4); assertEquals(null, c.armed) // moving off disarms
+        assertTrue(c.press(1, destructive = false))                              // an ordinary row acts at once
+    }
+
+    @Test fun crateInsertIsAHandledSheet() {
+        val c = src("WinPagesCrate.kt")
+        assertTrue(c.contains("rotationZ = tilt") && c.contains("shadowElevation = 5.dp.toPx()") && c.contains("CRATE_INSERT_PAPER"))
+        assertTrue(CRATE_INSERT_PULL_TILT < CRATE_INSERT_REST_TILT && CRATE_INSERT_REST_TILT < 0f)
+    }
 }

@@ -87,7 +87,9 @@ internal fun NativePages(
     label: String,
     tabs: List<WinPage> = nativeTabs(ctx.pages),
     move: (dir: Int) -> ContentTransform,
-    content: @Composable (page: WinPage, live: Boolean) -> Unit
+    /** (681b) In the page change's scope: a layout can drive its own motion from `transition` (the crate's insert tilts as it is
+     *  pulled out, then settles). */
+    content: @Composable androidx.compose.animation.AnimatedVisibilityScope.(page: WinPage, live: Boolean) -> Unit
 ) {
     val anim = rememberAnimationsEnabled()
     AnimatedContent(
@@ -100,7 +102,7 @@ internal fun NativePages(
         modifier = modifier.nativeBumpers(ctx, tabs),
         label = label
     ) { p ->
-        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) { content(p, p == ctx.page) }
+        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) { this@AnimatedContent.content(p, p == ctx.page) }
     }
 }
 
@@ -170,3 +172,20 @@ internal fun Modifier.nativeScroll(ink: Color): Modifier {
 @Composable
 internal fun rememberOpenTrophy(ctx: WinSceneCtx): androidx.compose.runtime.MutableState<Int?> =
     remember(ctx.g.stableKey) { mutableStateOf<Int?>(null) }
+
+/**
+ * (681b, owner 17 Nov: "show destructive-option confirmations") A row that removes something asks first: the first press arms
+ * it (the row says so - its layout draws [armed]), a second press does it; moving off the row disarms it. One row at a time.
+ */
+internal class NativeConfirm {
+    var armed by mutableStateOf<Int?>(null)
+    /** True when [i]'s press should run now (it was armed); otherwise arms it. Pure on its state. */
+    fun press(i: Int, destructive: Boolean): Boolean {
+        if (!destructive) { armed = null; return true }
+        return if (armed == i) { armed = null; true } else { armed = i; false }
+    }
+    fun leave(i: Int) { if (armed == i) armed = null }
+}
+
+@Composable
+internal fun rememberNativeConfirm(ctx: WinSceneCtx): NativeConfirm = remember(ctx.g.stableKey) { NativeConfirm() }

@@ -9,6 +9,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -75,14 +79,47 @@ internal fun crateMove(dir: Int): ContentTransform =
     (slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> w * dir / 2 } + fadeIn(tween(140, delayMillis = 70))) togetherWith
         (slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> -w * dir / 6 } + fadeOut(tween(90)))
 
-/** One of the crate's pages (not Info - the sleeve draws that). [live] false: the copy on its way out. */
+/** The inner sleeve's paper - a whiter stock than the sleeve's board, so the insert reads as a separate printed sheet. */
+internal val CRATE_INSERT_PAPER = Color(0xFFF8F3E8)
+
+/** The insert's lean while it is being pulled (deg) and once it lies on the sleeve - a sheet in the hand, never squared off. */
+internal const val CRATE_INSERT_PULL_TILT = -3.5f
+internal const val CRATE_INSERT_REST_TILT = -0.7f
+
+/**
+ * One of the crate's pages (not Info - the sleeve draws that). [live] false: the copy on its way out.
+ * (681b, owner 17 Nov: "the pages should feel like printed inserts being handled, not generic panels") - each page is printed
+ * on an INSERT: a sheet of whiter stock lying on the sleeve's back with its own shadow, leaning a little as if just put down,
+ * a dog-eared corner, the press's rule across its head; it leans more while it is pulled in or out.
+ */
 @Composable
-internal fun CratePage(ctx: WinSceneCtx, p: WinPage, live: Boolean, paper: Color, ink: Color, red: Color, modifier: Modifier) {
-    when (p) {
-        WinPage.DETAILS -> CrateLinerNotes(ctx, live, ink, red, modifier)
-        WinPage.TROPHIES -> CrateTracklist(ctx, live, paper, ink, red, modifier)
-        WinPage.OPTIONS -> CratePressingNotes(ctx, live, ink, red, modifier)
-        else -> ctx.pageFor(p, modifier, live) // (Performance: the shared page - not a page of this sleeve yet)
+internal fun androidx.compose.animation.AnimatedVisibilityScope.CratePage(ctx: WinSceneCtx, p: WinPage, live: Boolean, paper: Color, ink: Color, red: Color, modifier: Modifier) {
+    val tilt by transition.animateFloat(transitionSpec = { tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing) }, label = "crateTilt") {
+        if (it == androidx.compose.animation.EnterExitState.Visible) CRATE_INSERT_REST_TILT else CRATE_INSERT_PULL_TILT
+    }
+    Box(modifier.padding(horizontal = 2.dp, vertical = 3.dp).graphicsLayer {
+        rotationZ = tilt
+        shadowElevation = 5.dp.toPx(); shape = androidx.compose.ui.graphics.RectangleShape; clip = false
+    }.background(CRATE_INSERT_PAPER).drawBehind {
+        // The press's rule across the head and the paper's faint laid lines.
+        drawRect(red, size = androidx.compose.ui.geometry.Size(size.width, 3.dp.toPx()))
+        var y = 14.dp.toPx(); val step = 9.dp.toPx()
+        while (y < size.height) { drawLine(ink.copy(alpha = 0.035f), Offset(0f, y), Offset(size.width, y), 1f); y += step }
+    }.drawWithContent {
+        drawContent()
+        // The dog-eared corner: the corner folded over, its back a shade darker.
+        val f = 14.dp.toPx()
+        val fold = androidx.compose.ui.graphics.Path().apply { moveTo(size.width - f, size.height); lineTo(size.width, size.height - f); lineTo(size.width - f, size.height - f); close() }
+        drawPath(androidx.compose.ui.graphics.Path().apply { moveTo(size.width - f, size.height); lineTo(size.width, size.height); lineTo(size.width, size.height - f); close() }, paper)
+        drawPath(fold, Color(0xFFE2D8C4))
+        drawPath(fold, ink.copy(alpha = 0.25f), style = androidx.compose.ui.graphics.drawscope.Stroke(1f))
+    }.padding(start = 8.dp, end = 8.dp, top = 9.dp, bottom = 6.dp)) {
+        when (p) {
+            WinPage.DETAILS -> CrateLinerNotes(ctx, live, ink, red, Modifier.fillMaxSize())
+            WinPage.TROPHIES -> CrateTracklist(ctx, live, paper, ink, red, Modifier.fillMaxSize())
+            WinPage.OPTIONS -> CratePressingNotes(ctx, live, ink, red, Modifier.fillMaxSize())
+            else -> ctx.pageFor(p, Modifier.fillMaxSize(), live) // (Performance: the shared page - not a page of this sleeve yet)
+        }
     }
 }
 
@@ -219,9 +256,12 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
 @Composable
 private fun CratePressingNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red: Color, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
+    val confirm = rememberNativeConfirm(ctx)
     Column(modifier.nativeScroll(ink), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         ctx.options.forEachIndexed { i, o ->
-            NativeItem(onClick = o.onClick, Modifier.fillMaxWidth(), focus = if (i == 0) focus else null, live = live) { on ->
+            NativeItem(onClick = { if (confirm.press(i, o.destructive)) o.onClick() }, Modifier.fillMaxWidth(), focus = if (i == 0) focus else null, live = live) { on ->
+                androidx.compose.runtime.LaunchedEffect(on) { if (!on) confirm.leave(i) }
+                val armed = confirm.armed == i
                 Row(Modifier.fillMaxWidth().background(if (on) ink.copy(alpha = 0.07f) else Color.Transparent).padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     // The sticker: a printed round with its number (a warning mark for the ones that remove something).
@@ -233,6 +273,9 @@ private fun CratePressingNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red:
                         WinFullText(o.label, color = if (o.destructive) red else ink, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Serif, lineHeight = 18.sp)
                         o.sub?.let { WinFullText(it, color = ink.copy(alpha = 0.65f), fontSize = 11.sp, maxLines = 2, fontFamily = FontFamily.Serif, lineHeight = 14.sp) }
+                        // (681b: the confirmation - printed in the sleeve's red under the line, as a warning sticker reads.)
+                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Serif, lineHeight = 14.sp, modifier = Modifier.padding(top = 2.dp).border(1.dp, red).padding(horizontal = 4.dp, vertical = 1.dp))
                     }
                     if (on) Text("▸", color = red, fontSize = 14.sp, fontWeight = FontWeight.Black)
                 }

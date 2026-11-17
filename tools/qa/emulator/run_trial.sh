@@ -87,7 +87,7 @@ timeout 30 adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | t
 if [ -z "$PID" ]; then note "LAUNCH: FAILED (no process; see crash_log.txt / launch_log.txt) - every check BLOCKED"; exit 0; fi
 note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt") (FATAL: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log.txt"); processes: $(grep -o 'Process: [^,]*' "$OUT/crash_log.txt" | sort -u | tr '\n' ' '))"
 adb shell mkdir -p /data/local/tmp
-for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
+for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh p2review.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
 # 529p: preconditions before each sequence - emulator there, the QA app in front with nothing over its home (one visible
 # QA window: an in-app dialog is a second window with the same title), not on the profile picker. A failed precondition stops
 # the run: its sequence and every later one are NOT TESTED, with a screenshot of what was in front.
@@ -145,6 +145,24 @@ run_pop() { # tag scale layouts
 }
 # (679a, owner 17 Nov H9 pixel-font before / after: review mode - workflow_dispatch input review_layouts runs only those
 # layouts at x1.3 then x1.0 (screens for a side-by-side, graded as usual) and stops. Empty: the standard trial below.)
+# (P2 681b: review_layouts "P2:CRATE ..." - the native pages' review walk (tools/qa/device/p2review.sh) at x1.3 then x1.0:
+# a shot per page and its focused row, a track opened, the long list scrolled, a destructive row armed, the walk recorded.)
+p2run() { # tag scale layouts
+  timeout 60 adb shell "cd /data/local/tmp && setsid sh p2review.sh run $1 '$2' '$3' > /dev/null 2>&1 < /dev/null &"
+  if waitdone /sdcard/pc/$1 $1 900; then note "P2 review $1 ($2: $3): run finished"; else note "P2 review $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
+  [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after $1 - nothing pulled"; offline_why; return; }
+  timeout 60 adb shell "cd /data/local/tmp && sh p2review.sh restore $1"
+  timeout 240 adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1
+  { echo '```'; echo "$1 log:"; timeout 30 adb shell cat /sdcard/pc/$1/log.txt 2>&1 | tail -40; echo '```'; } | tee -a "$S"
+}
+case "${QA_REVIEW_LAYOUTS:-}" in P2:*)
+  P2L=${QA_REVIEW_LAYOUTS#P2:}
+  precheck p2r13 || finish
+  p2run p2r13 "font=1.3,density=1.15" "$P2L"
+  precheck p2r10 || finish
+  p2run p2r10 off "$P2L"
+  finish ;;
+esac
 if [ -n "${QA_REVIEW_LAYOUTS:-}" ]; then
   QA_WAIT=900
   precheck e679r13 || finish
