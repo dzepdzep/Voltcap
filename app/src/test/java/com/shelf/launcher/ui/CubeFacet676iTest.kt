@@ -137,7 +137,7 @@ class StatusFit677Test {
     }
 }
 
-/** 677h: a line break inside a word ("1 / 0", "Neve / r") is found; breaks at spaces and CJK breaks are not. */
+/** 677h: a line break inside a word ("1 / 0", "Neve / r") is found; breaks at spaces and CJK breaks are not (QA detection). */
 class WholeWords677hTest {
     @Test fun brokenWords() {
         assertTrue(brokenWordAt("6 / 10", intArrayOf(5)))          // "6 / 1" | "0"
@@ -147,14 +147,5 @@ class WholeWords677hTest {
         assertTrue(!brokenWordAt("スーパーマリオ", intArrayOf(3)))      // Japanese breaks between characters
         assertTrue(!brokenWordAt("Well-known", intArrayOf(5)))     // after a hyphen
     }
-    @Test fun wired() {
-        val f = listOf("src/main/java/com/shelf/launcher/ui/FitText.kt", "app/src/main/java/com/shelf/launcher/ui/FitText.kt").map { File(it) }.first { it.exists() }.readText()
-        assertTrue(f.contains("autoSize = if (autoFit) WholeWordsAutoSize(fitMin(fontSize), fontSize) else null"))
-        assertTrue(f.contains("while (s > bottom && !whole(s, lines))"))
-        assertTrue(f.contains("if (!r.hasVisualOverflow) { if (firstFit.isNaN() && s >= bottom) firstFit = s; if (!brokenWord(r)) break }"))
-        assertTrue(f.contains("s = maxOf(wordFloor, s - 1f)"))
-        // (677i: words kept whole down to half the size, never under 8 sp)
-        org.junit.Assert.assertEquals(8f, wordMin(androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp)).value, 0.01f)
-        org.junit.Assert.assertEquals(10f, wordMin(androidx.compose.ui.unit.TextUnit(20f, androidx.compose.ui.unit.TextUnitType.Sp)).value, 0.01f)
-    }
+    // (677l: the fitters that keep words whole moved to v0.6.74 - branch claude/whole-words-v0674 keeps their wiring test.)
 }

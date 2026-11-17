@@ -65,27 +65,20 @@ internal fun FitText(
         val h = if (maxHeight > 0) minOf(maxHeight, parentH) else parentH
         val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio) {
             fun styled(s: Float) = style.copy(fontSize = s.sp, lineHeight = (s * lineHeightRatio).sp, fontWeight = fontWeight ?: style.fontWeight)
-            fun layout(s: Float, lines: Int) = measurer.measure(
-                text, styled(s), overflow = TextOverflow.Clip, maxLines = lines,
-                constraints = Constraints(maxWidth = w, maxHeight = h)
-            )
             fun fits(s: Float, lines: Int): Boolean {
                 if (w <= 0 || w == Constraints.Infinity) return true
-                return !layout(s, lines).hasVisualOverflow
-            }
-            // (677h: whole and with every word in one piece - "Neve / r", "1 / 0" read as other words.)
-            fun whole(s: Float, lines: Int): Boolean {
-                if (w <= 0 || w == Constraints.Infinity) return true
-                val r = layout(s, lines); return !r.hasVisualOverflow && !brokenWord(r)
+                val r = measurer.measure(
+                    text, styled(s), overflow = TextOverflow.Clip, maxLines = lines,
+                    constraints = Constraints(maxWidth = w, maxHeight = h)
+                )
+                return !r.hasVisualOverflow
             }
             val top = maxSize.value
             val bottom = minOf(minSize.value, top)
             var s = top
             var lines = maxLines
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
-            while (s > bottom && !whole(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
-            // (677h: a word that breaks even at the smallest readable size: back to the largest size it fits at.)
-            if (!whole(s, lines) && fits(s, lines)) { var b = top; while (b > s && !fits(b, lines)) b = maxOf(s, b * 0.94f - 0.1f); s = b }
+            while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
             if (!fits(s, lines)) lines = maxLines + 1
             Triple(s, lines, slideWhenCut && !fits(s, lines))
         }
@@ -183,7 +176,7 @@ internal fun FullText(
     else Text(
         text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
         lineHeight = lineHeight, textAlign = textAlign, style = style, maxLines = maxLines, overflow = TextOverflow.Clip,
-        autoSize = if (autoFit) WholeWordsAutoSize(fitMin(fontSize), fontSize) else null,
+        autoSize = if (autoFit) androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(fontSize), maxFontSize = fontSize) else null,
         onTextLayout = {
             if (it.hasVisualOverflow) {
                 slideAt = cw[0].coerceAtLeast(0)
@@ -252,25 +245,17 @@ internal fun StableFullText(
         // the smallest readable size and slid sideways in Pocket Quest, Cover details, Resume and Bubbles although the room
         // under it was free. Where the height allows, one more line is used before the text slides.)
         val fit = remember(text, w, h, top, bottom, maxLines, fontWeight, base, ratio, letterSpacing) {
-            fun lay(s: Float, lines: Int) = measurer.measure(
+            fun over(s: Float, lines: Int) = measurer.measure(
                 // (Update 470: the theme's own letter spacing when none is given — copy(letterSpacing = Unspecified) measured
                 // the name without it, narrower than the Text draws it: "fits in 3 lines" here, 4 on screen, and it slid.)
                 text, base.copy(fontSize = s.sp, lineHeight = (s * ratio).sp, fontWeight = fontWeight ?: base.fontWeight,
                     letterSpacing = if (letterSpacing.isSpecified) letterSpacing else base.letterSpacing),
                 overflow = TextOverflow.Clip, maxLines = lines, constraints = Constraints(maxWidth = w, maxHeight = h)
-            )
-            fun over(s: Float, lines: Int) = lay(s, lines).hasVisualOverflow
+            ).hasVisualOverflow
             var s = top
-            var firstFit = Float.NaN
-            val wordFloor = minOf(wordMin(fontSize).value, bottom)
-            while (w > 0 && w != Constraints.Infinity) {
-                // (677h: the first size that fits with no word broken across lines; where every readable size breaks a word,
-                // the largest size that fits, as before.)
-                val r = lay(s, maxLines)
-                if (!r.hasVisualOverflow) { if (firstFit.isNaN() && s >= bottom) firstFit = s; if (!brokenWord(r)) break }
-                // (677i: below the readable minimum only to keep words whole - wordMin)
-                if (s <= wordFloor) { s = if (!firstFit.isNaN()) firstFit else bottom; break }
-                s = maxOf(wordFloor, s - 1f)
+            while (s > bottom && w > 0 && w != Constraints.Infinity) {
+                if (!over(s, maxLines)) break
+                s = maxOf(bottom, s - 1f)
             }
             val lines = if (maxLines in 2..3 && w > 0 && w != Constraints.Infinity && over(s, maxLines) && !over(s, maxLines + 1)) maxLines + 1 else maxLines
             s to lines
@@ -325,9 +310,9 @@ internal fun WholeWordsText(
     }
 }
 
-
 /**
- * 677h (owner, RP Classic: Storage Boxes "6 / 1 0", "Neve / r play / ed"): a line break inside a word - the two characters
+ * 677h (owner, RP Classic: Storage Boxes "6 / 1 0", "Neve / r play / ed"): a line break inside a word (677l: detection only on
+ * the v0.6.73 line - QaClip "brokenWord"; the fitters keeping words whole moved to v0.6.74, branch claude/whole-words-v0674) - the two characters
  * either side of a line end are letters or digits of a script that separates its words with spaces. Chinese, Japanese,
  * Korean, Thai and their neighbours break between characters by design and never count.
  */
@@ -346,35 +331,4 @@ private fun wordChar(c: Char): Boolean {
         Character.UnicodeScript.KHMER, Character.UnicodeScript.MYANMAR, Character.UnicodeScript.TIBETAN -> false
         else -> true
     }
-}
-
-/**
- * 677i: how far a text may shrink to keep its words whole - half its size, never under 8 sp (RP Classic c677i, Hub "ActRaiser 2"
- * still broke at [fitMin] in a small coverless card). Only for that: a text that merely doesn't fit stops at [fitMin] and slides.
- */
-internal fun wordMin(size: TextUnit): TextUnit =
-    if (size.isSp) kotlin.math.max(size.value * 0.5f, kotlin.math.min(size.value, 8f)).sp else size * 0.5f
-
-/**
- * 677h: [FullText]'s auto size - the largest size from [max] down at which the text fits AND no word is broken across lines
- * ([brokenWord]) - down to [min] (the readable minimum), and on to [wordMin] (677i) only to keep words whole; where every size
- * breaks a word (one word wider than the box), the largest size that fits, as TextAutoSize.StepBased chose before. Decided in
- * the layout pass itself (no frame drawn at a size that changes).
- */
-internal class WholeWordsAutoSize(private val min: TextUnit, private val max: TextUnit) : androidx.compose.foundation.text.TextAutoSize {
-    override fun androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope.getFontSize(
-        constraints: Constraints, text: androidx.compose.ui.text.AnnotatedString
-    ): TextUnit {
-        val top = max.value; val bottom = kotlin.math.min(min.value, top); val floor = kotlin.math.min(wordMin(max).value, bottom)
-        var s = top; var firstFit = Float.NaN
-        while (true) {
-            val r = performLayout(constraints, text, s.sp)
-            if (!r.hasVisualOverflow) { if (firstFit.isNaN() && s >= bottom) firstFit = s; if (!brokenWord(r)) return s.sp }
-            if (s <= floor) break
-            s = kotlin.math.max(floor, s - 0.5f)
-        }
-        return (if (firstFit.isNaN()) bottom else firstFit).sp
-    }
-    override fun equals(other: Any?) = other is WholeWordsAutoSize && other.min == min && other.max == max
-    override fun hashCode() = 31 * min.hashCode() + max.hashCode()
 }

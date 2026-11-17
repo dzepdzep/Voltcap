@@ -1,3 +1,15 @@
+# Update 677l (17 Nov 2026) - owner decision: whole words move to v0.6.74; candidate keeps the localized fixes
+- Owner 17 Nov: "Move the global whole-word text-fitting change to v0.6.74 ... Keep the localized status-bar, duplicate-profile
+  and Storage Boxes fixes in v0.6.73". FitText.kt back to its 677h form (FitText / FullText StepBased / StableFullText as
+  before); kept: the broken-word DETECTION helpers (QaClip "brokenWord", homecut), the Storage facts (677e/h/i), the Hub bar
+  cards' title / subtitle (677j), the status-bar probes / LCD ghost fix (677k). WholeWords677hTest keeps only the detection test.
+- Whole-word work preserved unchanged on branch `claude/whole-words-v0674` (= 3b65c9f, before this revert) and on
+  `claude/v0674-screen-shortcut`.
+- homecut's word-break check stays strict; pre-existing word breaks (D346) go in an --allow file with the reason "deferred to
+  v0.6.74 by the owner, 17 Nov" for the v0.6.73 focused checks, never silently.
+- Checked: StatusFit677Test, WholeWords677hTest, Batch478Test PASS (cloud compile); static checks PASS; selftest OK.
+  Hardware: NOT TESTED on this build (HW-17 focused re-check).
+
 # Update 676v-z2 (16 Nov 2026 evening, live) - app-wide trimmed line heights, height cuts, names clear of badges, same-row badges (review)
 - Owner: "hold v0.6.73" for the height-cut class (D342). 676v Theme: every Material style LineHeightStyle(Center, Trim.Both).
   676x status lines keep a 24 dp touch box (SceneControl), progress chip full form asks 4 dp more. 676y Cube arrows as icons,
