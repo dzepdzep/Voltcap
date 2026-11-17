@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 680b · 2026-11-17 20:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 79c11a5 · effort: medium
+**1. LATEST UPDATE** - 681a · 2026-11-17 21:15 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 79c11a5; P2 branch: unit + Robolectric focus tests PASS in the cloud · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The badge checker used to flag badges on game tiles that a carousel had scrolled half off the screen, and on the side covers sitting behind the focused cover in the Cube cover flow. Those were never real problems, so the checker now skips them, while two badges that actually run into each other still fail.
+**2. WHAT CLAUDE JUST FIXED** - Started the big one: every home layout getting its own Details, Achievements and Options pages. A shared kit now handles the data and the controls (bumpers, focus, sounds, touch size, scrolling) while each layout keeps its own look. Record crate is the first new one: its pages are the sleeve's printed matter - liner notes, a tracklist of your achievements (side A yours, side B still to get) and pressing notes for the options. It is on its own branch and waits for your look at the screenshots.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (680a): Channel: the achievement count no longer reaches into the game's name strip - the strip now counts as reserved space for every badge on that tile. Your v0.6.74 priority list is now the first thing every hourly run reads.
+- **App** (681a): Started the big one: every home layout getting its own Details, Achievements and Options pages. A shared kit now handles the data and the controls (bumpers, focus, sounds, touch size, scrolling) while each layout keeps its own look. Record crate is the first new one: its pages are the sleeve's printed matter - liner notes, a tracklist of your achievements (side A yours, side B still to get) and pressing notes for the options. It is on its own branch and waits for your look at the screenshots.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: pixel font 62.5 % + the 7 layouts (branch, waits for your OK on the comparison); then: badge styles (branch); profile picture corner
+**5. WORKING ON NEXT** - now: P2 batch 1: Classic, Console hub, Resume, TV room; then: pixel font 62.5 % + the 7 layouts; badge styles
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 

@@ -236,3 +236,8 @@
 ## 2026-11-17 ~20:18-20:40 UTC - cloud run 680b
 - CI GREEN on 79c11a5. Priority 5 (D357): badgecheck skips carousel-trimmed badges / stacked-behind covers; real collisions still
   FAIL. TestBadgeCheckCarousel680b 6/6, QA selftest 203/203, static PASS. Confirmation rides HW-24. Lock released.
+
+## 2026-11-17 ~20:30-21:15 UTC - live session (owner: start P2 now)
+- Branch claude/v0674-native-pages: NativePageKit.kt + Record crate's own pages (681a), NativePages681aTest, WinFocusRoboTest
+  CRATE (both) + ShelfTextRoboTest PASS in the cloud; emulator review 44173674038 (Info + Liner notes x1.0 / x1.3). Tracker
+  docs/claude/NATIVE_PAGES_P2.md. HANDOFF / backlog: P2 alternates with the v0.6.74 list.
