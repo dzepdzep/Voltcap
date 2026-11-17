@@ -1,2 +1,2 @@
-holder: none
-since: 2026-11-17T04:28:12Z
+holder: live-session 17 Nov owner requests 2026-11-17T04:29:57Z
+since: 2026-11-17T04:29:57Z
