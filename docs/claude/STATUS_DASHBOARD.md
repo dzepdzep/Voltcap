@@ -2,7 +2,7 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 679b · 2026-11-17 17:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 77e4138 · effort: medium
+**1. LATEST UPDATE** - 679b · 2026-11-17 17:45 UTC · commit `84a60737` · CI: Verify 310 GREEN on 77e4138 · effort: medium
 
 **2. WHAT CLAUDE JUST FIXED** - Investigated (by reading the code, no Thor) why Android's own home appears on the Thor's lower screen when a game runs on top. Likeliest cause: Android games or apps started from the app drawer or dock never get Voltcap's lower-screen page (library games do), and 'Leave the other screen as is' actually hides Voltcap's screen; Voltcap is not registered as the lower screen's home, so Android fills it with its own launcher. Four fix options are written up for your pick; the Thor check needs you to start the game yourself while I only read.
 
@@ -26,7 +26,7 @@
 
 **5. WORKING ON NEXT** - now: owner: pick the pixel-font option, a badge style and a Thor lower-screen fix; then: worst popup typography: Night, Bar (H16); Console Hub name over 'All games' at density 1.4 (H7)
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
 
 **7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
@@ -131,8 +131,7 @@ Merging, the production install and publishing always wait for your explicit GO.
 | 4 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
 | 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
 | 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
-| 7 | Pick the pixel-font option (A 62.5 % as is / B 62.5 % + readable floor for small text / C try 70 %) and a badge style (Classic / Top Clip / Hanging Bottom, compact badge yes/no) | v0.6.74 design approvals; evidence: pixel_font_before_after_emulator.pdf, canvas https://claude.ai/artifact/CsS6KEUxrbaLn8T6UmCsgq | none | no | v0.6.74 pixel font (H9) and badge styles (H10 / H11) |
-| 8 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
+| 7 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
