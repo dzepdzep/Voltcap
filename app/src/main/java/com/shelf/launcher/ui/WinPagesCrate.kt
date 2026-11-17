@@ -104,7 +104,8 @@ private fun CrateLinerNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red: Co
             }
         }
         // The pressing note: how long and when you last played, as the sleeve's small print.
-        val pressing = listOfNotNull("Played " + ctx.played, ctx.last?.let { "last spun $it" },
+        // (681a emulator review e679r10: "Played Never played" - an unplayed record says so once.)
+        val pressing = listOfNotNull(if (ctx.playtime == null) "Not spun yet" else "Played " + ctx.played, ctx.last?.let { "last spun $it" },
             if (ctx.total > 0) "${ctx.earned} of ${ctx.total} tracks" else null)
         Spacer(Modifier.height(6.dp))
         Text(pressing.joinToString("  ·  "), color = ink.copy(alpha = 0.72f), fontSize = 11.sp, fontStyle = FontStyle.Italic,
