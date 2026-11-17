@@ -47,10 +47,15 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
-### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - BLOCKED (QA fixture)
+### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - OPEN (tooling fixed 678l, needs the Classic)
 - Device(s): RP Classic. Level L1.
 - Why: j677c10 stopped at setup "no game matches 'Shadow of the Colossus'" / "'ActRaiser'": the fixture library does not load
   there (files/roms empty after setup). Cloud first: find why voltcap_test_fixture_roms / names=real don't take on the Classic.
+- 678l (cloud): cause found - pop529 setup never made the stand-in files (they came from an earlier fixroms500 / qasetup521 run;
+  the Classic's QA app was freshly installed). Setup now runs tools/qa/device/standins.sh (run-as fallback) and logs
+  "standins=N via=..."; first check in the run log that N >= 30, then the game hook matches. Push standins.sh with pop529.sh.
+  Commit: the 678l commit on claude/qa-0672-repair (or newer). Why not the emulator: the trial already makes its own library;
+  the Classic's own storage / run-as behaviour is what failed.
 - Tests: pop529.sh run <tag> off <53 layouts> OWN, then x1.3; popclip.py, badgecheck, homecut, statuscheck.
 - Result:
 

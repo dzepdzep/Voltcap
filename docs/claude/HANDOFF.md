@@ -1,6 +1,9 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~05:45 UTC, update 678k (cloud run): priority 1 done - Verify 310 GREEN on the merge b76e3ef (gate PASS);
+Updated: 2026-11-17 ~06:45 UTC, update 678l (cloud run): Verify 310 GREEN on 9280921 (678k); priority 3 (H6) done in tooling -
+pop529 setup makes its own stand-in library (tools/qa/device/standins.sh, run-as fallback, INFRA stop), selftest 190/190;
+HW-18 verifies on the Classic. NEXT: check Verify 310 on the 678l push (if red: fix first), then priority 4 (H12 Achievements).
+Before: 2026-11-17 ~05:45 UTC, update 678k (cloud run): priority 1 done - Verify 310 GREEN on the merge b76e3ef (gate PASS);
 priority 2 (H8) done in code - console homes slide long names instead of "…", ConsoleHubFullText678kTest compiled + PASS;
 handheld check added to HW-17. NEXT: check Verify 310 on the 678k push (if red: fix first), then priority 3 (H6 fixture).
 Before: Updated: 2026-11-17 ~05:15 UTC, live session: owner decisions - whole words to v0.6.74 (branch claude/whole-words-v0674),
@@ -65,7 +68,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   2. DONE 678k in code (HW-17 verifies). H8 (cloud, small, v0.6.73-relevant): on the candidate code, find the Console Hub focused-card title ("... (No Glitc…") and
      the Achievements card ticker ("Class Dismisse"): any TextOverflow.Ellipsis / maxLines clip left -> FullText (rule 11) on
      THIS dev line + a test; note whether the facet already fixed it (676y "Hub ticker rows unbounded").
-  3. H6 (QA tooling): why pop529 setup finds no fixture game on the RP Classic (files/roms empty after
+  3. DONE 678l in tooling (HW-18 verifies). H6 (QA tooling): why pop529 setup finds no fixture game on the RP Classic (files/roms empty after
      voltcap_test_fixture_roms; "no game matches") - read TestHooks fixture code; fix + selftest; unblocks HW-18.
   4. H12 Achievements page: find what scrolls past "Recently Unlocked" on open (initial scroll / focus request / async load);
      plan + first fix with a Robolectric test; animations after that (reduced motion kept). v0.6.74.

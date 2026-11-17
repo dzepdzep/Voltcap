@@ -2,13 +2,13 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - live-17nov-c · 2026-11-17 05:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b76e3ef (tested build); 668577b (678k) pending · effort: high
+**1. LATEST UPDATE** - 678l · 2026-11-17 06:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 9280921 (678k) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The v0.6.73 fixes passed their focused checks on the RP Classic and RP Nova at normal and large text: the RetroAchievements points are never squeezed, the profile picture shows once, Storage numbers stay together, and the ten game windows that failed last night all pass now. Two older checker findings remain for you to look at (stacked side covers in the Cube cover flow, and the RP Classic's invisible gesture area), and the newest Hub name fix from the hourly run still needs a short look on a handheld.
+**2. WHAT CLAUDE JUST FIXED** - Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
-- **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
+- **QA tools** (678l): Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
 - **App** (678k): The automatic tests passed on the development line with the v0.6.73 fixes merged in. The Console Hub, Resume and Channel homes no longer end long game names (like 'Advance Wars (Rev 1) (No Glitch)') or the category name in '...': they wrap, shrink a little or slide so they can be read whole. A short check on the RP Classic at Larger text was added to the next handheld session.
 - **Docs** (live-17nov): Your requests of 17 Nov are now in the backlog and the requirements list, in your order. The RP Classic fixes (status-bar points never squashed, one profile picture, Storage numbers kept together) passed on the RP Classic and RP Nova at both text sizes and wait on a branch for v0.6.73. The full 53-layout Nova run found no real layout breakage from the app-wide 'whole words' change - its failures were the checker reading hidden measuring copies of the clock (fixed) - but that change still needs your decision. Both handhelds were restored and are safe to disconnect.
 - **App** (678h): The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: v0.6.73: remaining release gates (KONKR / owner review / signed build) - owner; then: short handheld look at 678k (Hub names); fix the RP Classic test-game setup
+**5. WORKING ON NEXT** - now: Achievements page: keep Recently Unlocked in view on open; then: Thor dual-screen investigation (cloud reading); pixel font audit
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
 
@@ -183,7 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
-| HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | BLOCKED (QA fixture) |
+| HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
 | HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |

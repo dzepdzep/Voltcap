@@ -180,3 +180,8 @@
 - CI GREEN on b76e3ef; its CI QA APK installed on RP Classic + Nova (L1). status677 / navbar676 / pop529 (10 layouts, x1.3)
   graded: see releases.json gate "Focused handheld re-check" (PASS with listed findings). Both handhelds restored, QA app
   stopped, Classic back on the owner's Voltcap home; owner told safe to disconnect. Lock taken 05:36, released.
+
+## 2026-11-17 ~06:19-06:45 UTC - cloud run 678l
+- BOOTSTRAP OK 9280921; lock free -> taken. Verify 310 GREEN on 9280921 (678k + HW-17).
+- H6: pop529 setup now makes its stand-in library (standins.sh, run-as fallback, INFRA stop) + selftest (190/190); HW-18
+  unblocked in tooling. Lock released.

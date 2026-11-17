@@ -1499,6 +1499,61 @@ class TestPopclipScript(unittest.TestCase):
         self.assertIn("not Voltcap in front after the first A", sh)
         self.assertIn("break 2", sh)
 
+    def test_setup_makes_its_own_standin_library_678l(self):
+        # 678l (H6): the RP Classic's freshly installed QA app had an empty files/roms - pop529.sh only turned the fixture
+        # library on, the files came from an earlier fixroms500 / qasetup521 run - so setup stopped "no game matches 'Shadow
+        # of the Colossus'". standins.sh makes them every run (as the app via run-as when the shell is refused, 529t), and
+        # pop529 stops as INFRA before anything is graded when the library is still empty.
+        import subprocess, tempfile, shutil
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        si = os.path.join(dev, "standins.sh")
+        pop = open(os.path.join(dev, "pop529.sh"), encoding="utf-8").read()
+        run = pop[pop.index("run)"):pop.index("restore)")]
+        self.assertIn("standins.sh", run)
+        self.assertLess(run.index("standins.sh"), run.index("voltcap_test_fixture_roms true"))  # files before the rescan
+        self.assertIn("STOP INFRA: QA fixture library empty", run)
+        self.assertIn("standins.sh", open(os.path.join(dev, "qasetup521.sh"), encoding="utf-8").read())
+        src = open(si, encoding="utf-8").read()
+        self.assertIn("P=com.shelf.launcher.qa;", src)                   # the QA app only, never the owner's Voltcap
+        self.assertNotIn("com.shelf.launcher/", src); self.assertNotRegex(src, r"com\.shelf\.launcher[^.]")
+        tmp = tempfile.mkdtemp()
+        try:
+            def go(root, path=None):
+                env = dict(os.environ, QA_STANDIN_ROOT=root)
+                if path: env["PATH"] = path + os.pathsep + env["PATH"]
+                return subprocess.run(["sh", si], capture_output=True, text=True, env=env)
+            # 1. shell route: every name made, the popup gate's default game among them; re-running keeps existing files
+            root = os.path.join(tmp, "roms")
+            os.makedirs(os.path.join(root, "ps2"))
+            open(os.path.join(root, "ps2", "Shadow of the Colossus (USA).iso"), "w").write("real stand-in")
+            r = go(root)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("via=shell", r.stdout)
+            files = [os.path.join(d, f) for d, _, fs in os.walk(root) for f in fs]
+            self.assertEqual(r.stdout.strip(), "standins=%d via=shell" % len(files))
+            self.assertGreaterEqual(len(files), 30)
+            self.assertTrue(os.path.isfile(os.path.join(root, "snes", "ActRaiser (USA).sfc")))
+            self.assertEqual(open(os.path.join(root, "ps2", "Shadow of the Colossus (USA).iso")).read(), "real stand-in")
+            self.assertEqual(go(root).stdout.strip(), "standins=%d via=shell" % len(files))
+            # 2. the shell is refused the app's folder (mkdir fails) -> made as the app (run-as), named in the line
+            fb = os.path.join(tmp, "bin"); os.makedirs(fb)
+            real_mkdir = shutil.which("mkdir")
+            open(os.path.join(fb, "mkdir"), "w").write('#!/bin/sh\n[ -n "$AS_APP" ] || exit 1\nexec %s "$@"\n' % real_mkdir)
+            open(os.path.join(fb, "run-as"), "w").write(
+                '#!/bin/sh\n[ "$1" = com.shelf.launcher.qa ] || exit 9\nshift\nAS_APP=1 exec "$@"\n')
+            for f in ("mkdir", "run-as"): os.chmod(os.path.join(fb, f), 0o755)
+            root2 = os.path.join(tmp, "roms2")
+            r = go(root2, fb)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertRegex(r.stdout, r"^standins=\d+ via=run-as$")
+            self.assertTrue(os.path.isfile(os.path.join(root2, "ps2", "Shadow of the Colossus (USA).iso")))
+            # 3. both refused -> standins=0 via=none, exit 1 (pop529 then stops as INFRA)
+            open(os.path.join(fb, "run-as"), "w").write('#!/bin/sh\nexit 1\n')
+            r = go(os.path.join(tmp, "roms3"), fb)
+            self.assertEqual((r.returncode, r.stdout.strip()), (1, "standins=0 via=none"))
+        finally:
+            shutil.rmtree(tmp)
+
 
 class TestLineEndings(unittest.TestCase):
     """Update 396: device shell scripts (and the QA python) must be LF in the working tree: Android sh fails on a CR."""

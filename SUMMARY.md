@@ -1,3 +1,19 @@
+# Update 678l (17 Nov 2026, cloud scheduled run) - H6: the popup gate makes its own test-game library
+- Cause (RP Classic j677c10 "no game matches 'Shadow of the Colossus'" / "'ActRaiser'"): `pop529.sh run` only turned the QA
+  fixture library on (voltcap_test_fixture_roms = the QA app's own files/roms); the stand-in files themselves came from an
+  earlier fixroms500.sh / qasetup521.sh run on that device. The Classic's freshly installed QA app had an empty folder, so
+  every game name missed. The app code (TestHooks.fromIntent) was right - no Kotlin change.
+- Fix: tools/qa/device/standins.sh (one list of 32 empty stand-ins incl. Shadow of the Colossus + ActRaiser, existing files
+  kept; made as the QA app via run-as when the shell is refused the app's Android/data folder, as the emulator trial since
+  529t; prints "standins=N via=shell|run-as|none"). pop529.sh setup runs it before the rescan and stops "STOP INFRA: QA
+  fixture library empty" before grading anything when N = 0; qasetup521.sh uses the same list; popclip.sh's no-match stop
+  names the fixture-roms count. QA app only (com.shelf.launcher.qa hard-coded; run-as refuses other packages in the test).
+- Test: TestPopclipScript.test_setup_makes_its_own_standin_library_678l (runs standins.sh on the host: shell route +
+  idempotent, run-as fallback with a refused mkdir, both refused -> exit 1; pop529 order + INFRA stop). Selftest 190/190;
+  static checks PASS. CI on 9280921 (678k + HW-17 docs) GREEN.
+- Hardware: HW-18 now unblocked in tooling, NOT TESTED on the Classic (needs the device).
+- Files: tools/qa/device/standins.sh (new), pop529.sh, qasetup521.sh, popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
 # Update 678k (17 Nov 2026, cloud scheduled run) - H8: console homes never end a name in "…"
 - CI on the merged dev line (b76e3ef = facet 677l fixes merged): Verify 310 GREEN (run 44021029263) -> releases.json gate PASS.
   Emulator trial on 678j (44017399771, pre-merge tree): success. EMULATOR evidence only.

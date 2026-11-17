@@ -99,7 +99,7 @@ pid=$(pidof $P); for i in 1 2 3 4 5 6 7 8; do grep -q " $pid\$" $F/voltcap_qa_sc
 for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
 [ -n "$GAME" ] && { logcat -c; A --es voltcap_test_game "$GAME"; sleep 3; echo "$GAME" > $OUT/game.txt
   # (Update 469: the hook logs which game it found — a run on the wrong game is stopped, not graded.)
-  logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME'" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
+  logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME' (fixture roms: $(find $F/roms -type f 2>/dev/null | wc -l | tr -d ' '))" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
   logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed 's/.*VoltcapTest: //' >> $OUT/log.txt
   ev_note $OUT "game_match=$(logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed "s/.*-> //;s/https[^ ]*//g")"; }
 touch $F/qa_nolaunch
