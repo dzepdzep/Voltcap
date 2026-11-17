@@ -1,3 +1,16 @@
+# Update 681p (17 Nov 2026, cloud run) - Pocket Quest window: "Play game" stays on one line at x1.3 (D354, H16)
+- Cause (emulator e679r13, POCKET x1.3 beside the pulled-out disc, window ~294 dp): one-line "Play game" missed two keys to a
+  view by ~10 dp, so the uniform row took its two-line keys (674c) - "Play / game" on two lines.
+- WinScenesStyled.kt (PocketQuestPanel, large text only): keys via PqSceneKey (side padding 6 dp, panel 10 dp); pqKeyTextSize
+  picks the largest key size of 12 / 11.5 / 11 / 10.5 / 10 sp at which every word stays on one line with two whole keys in view
+  (else 12 sp and the old two-line fallback). WinScenesMore.kt: KeyRow / UniformKeyRow / uniformRowPick take
+  twoLineOnlyWhenAlone (default false = every other layout unchanged): two-line keys only where one-line keys show one at a time.
+- Tests (cloud, compiled): PqPlayKeyOneLine681pTest 5/5 (the Robolectric row at the emulator's width failed with 2 lines before),
+  TwoLineKeys674Test 5/5, UniformKeys673Test 7/7 (status-line pin follows the new call), AchFirstRowRoboTest POCKET* 3/3; static PASS.
+- Not done: the home status pill ("n 2  Pla" is the sliding PlayStation 2 in a narrow pill - rule 11 slide; owner's look on HW-24).
+- Files: app/.../ui/WinScenesStyled.kt, ui/WinScenesMore.kt, test PqPlayKeyOneLine681pTest.kt, UniformKeys673Test.kt, trackers.
+  PC copy: src_copy/ui/WinScenesStyled.kt, src_copy/ui/WinScenesMore.kt. Hardware: HW-24 (KONKR) NOT TESTED.
+
 # Update 681e (17 Nov 2026, cloud run) - statuscheck grades where the profile picture sits (v0.6.74 item 6)
 - tools/qa/tools/statuscheck.py: new place_avatars - per visible profile picture: FAIL when it is not wholly on the screen, when
   the status bar's picture ("bar") is outside every status cluster on screen, or when any visible text lies over it (> 2 px both

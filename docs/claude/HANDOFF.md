@@ -47,6 +47,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**17 Nov 23:55 UTC, 681p (cloud, v0.6.74 turn - live session was on the P2 branch < 1 h ago):** item 4 window polish (H16) -
+D354 Pocket Quest "Play game" wrap fixed in code (one-line keys while two show, key words 12 -> readable 10 sp at large text;
+twoLineOnlyWhenAlone opt-in, other layouts unchanged). PqPlayKeyOneLine681pTest 5/5 + related PASS in the cloud. The status
+pill part of D354 is the rule-11 slide in a narrow pill - owner look on HW-24. Dev CI GREEN on c342492.
+NEXT: check Verify 310 on the 681p push (red -> fix first); next run = P2 turn if the live session left the P2 branch (> 1 h
+since its last commit), else v0.6.74 item 7 H12 achievements animations / more H16 windows (Bar labels cramped, Night
+ACHIEVED / RELEASED) if they don't touch the pixel-font branch's files.
+
 **17 Nov 22:35 UTC, 681e (cloud, v0.6.74 turn of the alternation):** item 6 (profile picture) - the cloud-testable gap closed in
 QA tooling: statuscheck.py now grades each profile picture's place ("avatar place"): wholly on screen, the status bar's picture
 inside the status bar, no text over any picture (its own initial excluded); the corner is reported as evidence (layout pictures
