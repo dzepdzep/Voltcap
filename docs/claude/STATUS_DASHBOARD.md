@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678g · 2026-11-17 01:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on ad80646 (678f); this push's result pending · effort: medium
+**1. LATEST UPDATE** - 678h · 2026-11-17 02:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on a5b76b5 (678g); emulator trial on 678g VERDICT PASS; this push's result pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Saves screen (Save Vault) no longer cuts text off with '...': the header, the 'not connected' message, each save's name and place, the last-sync line, the game's info bar and the Browse saves button now wrap, shrink a little or slide so they can be read whole, without changing the row heights. A new emulator test run was started on this update.
+**2. WHAT CLAUDE JUST FIXED** - The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
+- **App** (678h): The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
 - **App** (678g): The Saves screen (Save Vault) no longer cuts text off with '...': the header, the 'not connected' message, each save's name and place, the last-sync line, the game's info bar and the Browse saves button now wrap, shrink a little or slide so they can be read whole, without changing the row heights. A new emulator test run was started on this update.
 - **CI / build** (678f): The automatic build check turned red after the last update: one old test still expected the banner window's game name to be set up the old way. The app was fine - the name keeps its tight line spacing in the new, text-fitting form - so the test now checks that same rule in the new code. No app change.
-- **QA tools** (678d): The emulator test run started last hour passed every check for the first time (game window on two layouts, normal and large text). Its separate screen-tap test still tapped nothing: the test game had no achievements, so the window had one page fewer than the script assumed. The script now recognises each page from what is on it and picks a game that has achievements. No app change.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: read the emulator run started on this update; then: show the settings screen's text in full; finish the v0.6.73 hardware checks (KONKR / Nova, incl. the banner window and Saves screen checks)
+**5. WORKING ON NEXT** - now: check CI on this update (its new test and Settings change were not compiled in the cloud); then: next screen with cut text (rule 11); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves and Settings checks)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-14 Settings text shown whole (678h, rule 11) | OPEN |
 | HW-13 Save Vault text shown whole (678g, rule 11) | OPEN |
 | HW-12 Banner game window text shown whole (678e, rule 11) | OPEN |
 | HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) | IN PROGRESS |
@@ -184,7 +185,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 12 of 13.
+Open hardware requests: 13 of 14.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

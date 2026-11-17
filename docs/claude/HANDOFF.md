@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~01:45 UTC, update 678g (cloud run: rule 11 - Save Vault FullText, SaveExplorerFullText678gTest;
+Updated: 2026-11-17 ~02:50 UTC, update 678h (cloud run: rule 11 - Settings FullText, SettingsDialogFullText678hTest;
+TRUNCATE 211 -> 194; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-14 queued; trial on 678g READ: PASS).
+Before: 2026-11-17 ~01:45 UTC, update 678g (cloud run: rule 11 - Save Vault FullText, SaveExplorerFullText678gTest;
 TRUNCATE 224 -> 211; test classpath Maven 429 so CI is the test's first run; HW-13 queued; emulator trial STARTED on this commit).
 Before: 2026-11-17 ~00:35 UTC, update 678f (cloud run: CI red on 678e = PopupPolish444Test read the old em line
 height of the banner name; test reads the new sp form (same 1.08 rule); compiled + PASS in the cloud; no trial started).
@@ -42,6 +44,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678h): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678h push - FIRST compile of the SettingsDialog
+  FullText change + SettingsDialogFullText678hTest (cloud hit Maven 429). If red: fix it first. Then rule 11 filler: the next
+  file in static_checks TRUNCATE (grep app/src/test for each literal first). Emulator trial allowed again from ~04:45 UTC.
+- DONE 678h: Settings text shown whole; emulator trial on 678g READ - VERDICT PASS, e529c taps as expected (SUMMARY "Update 678h").
 - FIRST (678g): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678g push (SaveExplorerFullText678gTest runs
   there first; if red: first item). READ the emulator trial started on 678g ("[emulator-qa]", ~01:45 UTC; next allowed from
   ~04:45): e529a/e529b must stay PASS; e529c touch log should show "tap '*achievement 1*' at x,y" / "tap 'game settings*'"

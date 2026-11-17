@@ -1,3 +1,20 @@
+# Update 678h (17 Nov 2026, cloud scheduled run) - rule 11: Settings show their text whole
+- Settings: the page and group titles, search results (label + section path), the theme strip line, theme captions and
+  scene-picker tab captions, the ScreenScraper look-up lines (progress head, per-kind found / saved), the custom music
+  name and the RetroAchievements cards (game names, console + unlock count, latest unlock, stat tile values) go through
+  FullText (wraps, shrinks to a readable size, then slides). Rows keep their heights (reserve = false); the theme caption
+  keeps its two lines of room through FullText's reserved height (was minLines = 2) and its 1.182 em spacing.
+  17 "…" uses removed (static TRUNCATE 211 -> 194).
+- Test: SettingsDialogFullText678hTest (fails on the 678g sources: 17 Ellipsis, no FullText). NOT compiled in the cloud:
+  Maven 429 on both tries (protobuf-bom, kotlin-build-tools-impl); assertions checked against the source by a script; CI
+  is its first compile + run. Static checks PASS.
+- Emulator trial 43996079494 on 678g (a5b76b5) READ: VERDICT PASS - e529a / e529b popup gate PASS 2/2; e529c touch walk
+  used 'Okami (USA)' (a set of 10) and tapped '*achievement 1*' / 'game settings*' at both scales (678d expectations met).
+  EMULATOR evidence only. No trial started on this commit (next allowed from ~04:45 UTC).
+- CI on 678g (a5b76b5): Verify 310 GREEN.
+- Hardware: HW-14 queued (Settings pages at x1.0 / x1.3; batch with HW-12 / HW-13).
+- Files: app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt, test SettingsDialogFullText678hTest.kt; trackers.
+
 # Update 678g (17 Nov 2026, cloud scheduled run) - rule 11: the Save Vault shows its text whole
 - Save Vault (Saves screen): the header name and its count line, "Not connected to Google Drive" and the connect problem,
   the console counts, each save row's title and place, the last-sync line, the game info bar (name, state line, date and

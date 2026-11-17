@@ -32,6 +32,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-14 Settings text shown whole (678h, rule 11) - OPEN
+- Device(s): RP Nova or KONKR (batch with HW-13 / HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only).
+- Build: commit of update 678h on claude/qa-0672-repair; QA build = assembleDebug of that commit.
+- Why not emulator: the trial does not open Settings pages; long titles / theme names need a real screen width and font scale.
+- Tests: at off and font=1.3,density=1.15 in the QA app: Settings search (type "theme") - each result label + section path
+  whole; a group page title + a sub-page title whole; Themes: theme captions (two lines, grid rows even) + the strip line
+  under the picker whole; Scene picker tab captions whole; Artwork > ScreenScraper look-up lines whole; Music > custom track
+  name whole; RetroAchievements cards (game name, console line, latest unlock, stat tiles) whole. Rows keep their heights
+  while D-pad focus moves; touch + controller.
+- Result:
+
 ### HW-13 Save Vault text shown whole (678g, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (batch with HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only, no real saves).
 - Build: commit of update 678g on claude/qa-0672-repair; QA build = assembleDebug of that commit.

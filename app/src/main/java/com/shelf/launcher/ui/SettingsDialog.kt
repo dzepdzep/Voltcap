@@ -2946,7 +2946,7 @@ internal fun CollapsibleSection(title: String, startExpanded: Boolean = false, c
             ) {
                 Text("‹", color = ShelfTheme.accent, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(10.dp))
-                Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold, reserve = false)
             }
             if (VoltUi.on) VoltageLine(Modifier.fillMaxWidth().padding(horizontal = 6.dp))
             Column(Modifier.fillMaxWidth().padding(top = 6.dp)) { content() }
@@ -2995,10 +2995,10 @@ private fun SettingsSearchResults(query: String, onPick: (SettingsIndex.E) -> Un
                 Modifier.fillMaxWidth().voltSurface(shape, alpha = 0.7f).shelfClickable(shape) { onPick(e) }
                     .padding(horizontal = 14.dp, vertical = 9.dp)
             ) {
-                Text(e.label, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
+                FullText(e.label, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, reserve = false)
+                FullText(
                     listOfNotNull(e.section, e.subpage, e.foldTitle?.takeIf { it != e.label && it != e.subpage }).distinct().joinToString(" › "),
-                    color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis
+                    color = ShelfTheme.textMuted, fontSize = 11.sp, reserve = false
                 )
             }
         }
@@ -3149,12 +3149,11 @@ private fun ThemeSwatches(current: AppTheme, onSelect: (AppTheme) -> Unit) {
             ) {
                 ThemeBadge(shown, 20.dp)
                 Spacer(Modifier.width(6.dp))
-                Text(
+                FullText(
                     shown.label + " · " + shown.group.label +
                         (if (!shown.recolorable) " · ⊘ own colours" else if (shown.mostlyOwnColors) " · ◐ mostly own colours" else "") +
                         if (shown != current) "   A: use it" else "",
-                    color = Color.White, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false
                 )
             }
         }
@@ -3249,7 +3248,7 @@ private fun ThemeSwatches(current: AppTheme, onSelect: (AppTheme) -> Unit) {
             ) {
                 Text("‹", color = ShelfTheme.accent, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(8.dp))
-                Text(openGroup.label, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(openGroup.label, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, reserve = false)
             }
             // B goes back to the groups first.
             androidx.activity.compose.BackHandler { ThemeBrowserMemory.group = null }
@@ -3354,12 +3353,11 @@ private fun ThemeTile(theme: AppTheme, selected: Boolean, onFocus: (AppTheme?) -
             }
         }
         Spacer(Modifier.height(4.dp))
-        Text(
+        FullText(
             theme.label,
             color = if (selected) ShelfTheme.accent else ShelfTheme.textMuted,
-            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = 2, minLines = 2,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            fontSize = 11.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em), maxLines = 2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }
@@ -3416,10 +3414,10 @@ private fun ScenePickerTile(label: String, selected: Boolean, theme: AppTheme?, 
             }
         }
         Spacer(Modifier.height(4.dp))
-        Text(
+        FullText(
             label,
             color = if (selected) ShelfTheme.accent else ShelfTheme.textMuted,
-            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            fontSize = 11.sp, maxLines = 2, reserve = false,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
@@ -3569,15 +3567,15 @@ private fun RealMediaReport() {
         val head = if (running) {
             "Looking up" + (R.console?.let { " $it" } ?: "") + " — ${R.done} / $total games" + (R.game?.let { " · $it" } ?: "")
         } else "Finished — ${R.done} / $total games looked up"
-        Text(head, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(head, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
         if (running) TaskProgressLine(R.done, total)
         Spacer(Modifier.height(6.dp))
         val found = R.found; val none = R.none
         R.KINDS.forEach { (label, name) ->
             val f = found[label] ?: 0; val n = none[label] ?: 0
-            if (f > 0 || n > 0) Text(
+            if (f > 0 || n > 0) FullText(
                 "$name: $f found" + (if (n > 0) ", $n none on ScreenScraper" else ""),
-                color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                color = ShelfTheme.textMuted, fontSize = 12.sp, reserve = false
             )
         }
         if (R.unknown > 0) Text("${R.unknown} game" + (if (R.unknown == 1) "" else "s") + " not on ScreenScraper (or no sure match)", color = ShelfTheme.textMuted, fontSize = 12.sp)
@@ -3595,7 +3593,7 @@ private fun RealMediaReport() {
         Text("In your library: ${lib.scanned} of ${lib.games} games have real media", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         R.KINDS.forEach { (label, name) ->
             val h = lib.have[label] ?: 0
-            if (h > 0) Text("$name: $h · ${lib.saved[label] ?: 0} saved on the device", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (h > 0) FullText("$name: $h · ${lib.saved[label] ?: 0} saved on the device", color = ShelfTheme.textMuted, fontSize = 12.sp, reserve = false)
         }
     }
     ChipFlow {
@@ -5102,9 +5100,9 @@ private fun BackgroundMusicCard(appearance: AppearanceSettings, onChange: (Appea
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("Your track", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                    Text(
+                    FullText(
                         appearance.musicCustomName.ifBlank { "None picked yet" },
-                        color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        color = ShelfTheme.textMuted, fontSize = 11.sp, reserve = false
                     )
                 }
                 Chip("Choose…", accent = false) { pick.launch(arrayOf("audio/*")) }
@@ -5365,10 +5363,10 @@ private fun UnlockGameRow(unlocks: List<RaRecentAchievement>, onClick: (() -> Un
             else Box(Modifier.size(38.dp).clip(uiRounded(8.dp)).background(ShelfTheme.accent.copy(alpha = 0.2f)))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(first.GameTitle ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                    fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(listOfNotNull(first.ConsoleName, "${unlocks.size} unlocked").joinToString("  ·  "), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                    maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(first.GameTitle ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+                FullText(listOfNotNull(first.ConsoleName, "${unlocks.size} unlocked").joinToString("  ·  "), color = ShelfTheme.textMuted, fontSize = 11.sp,
+                    maxLines = 2, reserve = false)
             }
             Text("${unlocks.sumOf { it.Points ?: 0 }} pts", color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
@@ -5380,7 +5378,7 @@ private fun UnlockGameRow(unlocks: List<RaRecentAchievement>, onClick: (() -> Un
             }
             if (unlocks.size > 8) Text("+${unlocks.size - 8}", color = ShelfTheme.textMuted, fontSize = 11.sp)
             Spacer(Modifier.weight(1f))
-            Text(unlocks.first().Title ?: "", color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+            FullText(unlocks.first().Title ?: "", color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false,
                 modifier = Modifier.weight(2f, fill = false))
         }
     }
@@ -5395,7 +5393,7 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
             .background(ShelfTheme.colors.surfaceRaised)
             .padding(12.dp)
     ) {
-        Text(value, color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(value, color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold, reserve = false)
         Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp)
     }
 }
@@ -5423,8 +5421,8 @@ private fun ProgressRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(entry.Title ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                    fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                FullText(entry.Title ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false,
                     modifier = Modifier.weight(1f, fill = false))
                 if (award != null) {
                     Spacer(Modifier.width(6.dp))
@@ -5475,8 +5473,8 @@ private fun AwardRow(entry: RaCompletionEntry, onClick: (() -> Unit)? = null) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(entry.Title ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FullText(entry.Title ?: "Game", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
             Text(entry.ConsoleName ?: "", color = ShelfTheme.textMuted, fontSize = 11.sp)
         }
         Box(
