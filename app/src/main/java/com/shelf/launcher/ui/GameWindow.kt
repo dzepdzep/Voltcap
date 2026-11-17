@@ -2589,6 +2589,8 @@ private fun SceneBody(
                 WinPage.PERF -> WindowPerformance(look, lf, m)
             }
         },
+        // (P2 / 681a: a layout drawing its own pages lays the game's options out in its own way - NativePageKit.)
+        options = options,
         pages = buildSet {
             add(WinPage.MAIN); add(WinPage.DETAILS)
             if (list.isNotEmpty() && LocalSceneLayout.current?.let { crossTrophiesOn(it) } != true) add(WinPage.TROPHIES)
@@ -2996,7 +2998,7 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
 }
 
 /** Update 132: the achievements page's order ([Features.TrophyOrder]); ties keep the set's own order. */
-private fun trophyOrder(all: List<com.shelf.launcher.data.RaAchievementDetail>, order: Features.TrophyOrder): List<com.shelf.launcher.data.RaAchievementDetail> {
+internal fun trophyOrder(all: List<com.shelf.launcher.data.RaAchievementDetail>, order: Features.TrophyOrder): List<com.shelf.launcher.data.RaAchievementDetail> {
     val set = all.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER)
     fun earnedAt(a: com.shelf.launcher.data.RaAchievementDetail) = a.dateEarnedHardcore ?: a.dateEarned ?: ""
     return when (order) {

@@ -572,7 +572,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
     // (529t, owner P3: with a pickup the sleeve itself comes out of the crate as it stands there (PickupOverlay, the home's own
     // picture), comes forward and turns over: this, its back, turns in from edge-on once it is here; closing, the other way.)
     val flip = LocalSceneOrigin.current != null
-    Box(Modifier.size(side).pickupFlipTarget(flip).graphicsLayer {
+    // (P2 / 681a: L1 / R1 turn the sleeve's pages wherever the D-pad is - NativePageKit.nativeBumpers.)
+    Box(Modifier.size(side).nativeBumpers(ctx).pickupFlipTarget(flip).graphicsLayer {
         if (flip) {
             val k = ctx.reveal()
             // (Edge-on until the front has turned away - drawn, not hidden: its first drawing (art, text) is done before it
@@ -603,7 +604,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("SIDE A", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                    // (P2 / 681a: the sleeve's other printed matter names its page here - LINER NOTES, TRACKLIST, PRESSING NOTES.)
+                    Text(cratePageName(ctx.page), color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                     // (672c, KONKR x1.3 k673b: the name kept three lines' height for a two-line name - the sleeve's keys then had no
                     // room for More's rows. A window's own name takes the lines it needs.)
                     StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Black, lineHeight = 21.sp, reserve = false)
@@ -616,7 +618,10 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val regionH = maxHeight
             Column(Modifier.fillMaxSize()) {
-            if (ctx.page == WinPage.MAIN) {
+            // (P2 / 681a: Info and the sleeve's own pages share the room under the rule - NativePages carries one to the next, the
+            // paper inner sleeve sliding out sideways (WinPagesCrate.kt); the keys stay below.)
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "cratePage", move = ::crateMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) {
                 // The facts as the track list.
                 // (672a, Flip 2 x1.3 popup gate f672e: with More open the keys left the list 2 px - the top of one row, "1. Console",
                 // and no whole one. Under one whole row's room the list gives its room away (as SceneFactsBody since 467): the
@@ -631,7 +636,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 // (675r, RP Nova x1.3 n675d: with More open the list had less than one whole row and drew none, but kept its
                 // weight - an empty band between the rule and PLAY. fill = false: a list that shows no row takes no room; the keys
                 // stand under the rule and the sleeve's own paper is left below them.)
-                Column(Modifier.weight(1f, fill = false).layout { m, c ->
+                Column(Modifier.layout { m, c ->
                     val minRow = if (rowH > 0) rowH else guess
                     if (c.hasBoundedHeight && c.maxHeight < minRow) layout(c.minWidth, c.minHeight) {}
                     else {
@@ -649,7 +654,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
+            } else CratePage(ctx, pg, pageLive, paper, ink, red, Modifier.fillMaxSize())
+            }
             Spacer(Modifier.height(8.dp))
             // (672a, f672e hierarchy: PLAY 218 px wide beside SLEEVE NOTES 378 px - the sleeve's long word made Play the smaller
             // key. Play is as wide as Sleeve notes now, its word centred - as far as the two still share their row: KONKR x1.3

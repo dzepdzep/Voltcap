@@ -307,7 +307,9 @@ internal class WinSceneCtx(
     /** Popup motion work: open a page as its button does (B comes back onto that button). */
     val open: (WinPage) -> Unit = setPage,
     /** Popup motion work: the pages this window has as pages (L1 / R1 walk only these; the others open a list or a menu). */
-    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS)
+    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS),
+    /** P2 (681a): the game's options, for a layout that lays its Options page out its own way (NativePageKit). */
+    val options: List<WinOption> = emptyList()
 ) {
     val played: String get() = stylePlaytime(playtime, lastPlayed != null)
     val last: String? get() = lastPlayed?.let { lastPlayedLabel(it) }

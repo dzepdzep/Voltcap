@@ -20,7 +20,8 @@ class Batch675rTest {
         val body = s.substring(s.indexOf("internal fun RecordSleeve("), s.indexOf("internal fun crateKeysVertical("))
         assertTrue(body.contains("(if (ctx.page == WinPage.MAIN) 46.dp else 0.dp) + statusRoom"))
         // a list that shows no whole row takes no room (no empty band)
-        assertTrue(body.contains("Column(Modifier.weight(1f, fill = false).layout { m, c ->"))
+        // (P2 / 681a: the facts list is Info's page inside NativePages - the page area keeps fill = false on Info.)
+        assertTrue(body.contains("NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN)") && body.contains("Column(Modifier.layout { m, c ->"))
         assertTrue(!body.contains("Column(Modifier.weight(1f).layout { m, c ->"))
     }
 
