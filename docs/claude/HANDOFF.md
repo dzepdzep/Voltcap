@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
 
+**17 Nov 17:20 Berlin: v0.6.73 PUBLISHED** (main a4012212, assets = frozen rc1, KONKR production 0.6.73 upgraded before publication). Dev branch now holds the 0.6.73 pins + RC sums + records -> next PR to main (docs / tooling only). v0.6.74 work may resume on this branch: H9 pixel font before / after, H16 worst popups, H10 / H11 badge mockups, D352, H12 animations, H13 Thor (cloud).
+
 **17 Nov 15:25 (678r, live):** owner handoff merged (matrix H16 53-window polish, H17 Channel; queue: Thor + RP Classic NOT with the owner - never poll / wake). RC is now **eadd00f** (be8865c + Channel D350 one-line sliding name plate; FitText extraLine, default unchanged). CI GREEN push + PR #21; heavy robo 280/280 incl. CHAN x1.3; KONKR Channel x1.3 + x1.0 PASS on qa-0.6.73-678r-ci. WAITING FOR GO. Do not push app changes to this branch while it is the RC head - v0.6.74 work (H9 pixel font before / after, H16 polish, H10 / H11 badge mockups, H12 animations, H13 Thor cloud reading) goes on a v0674 branch.
 Updated: 2026-11-17 ~13:40 UTC, updates 678p-q (LIVE session, owner present): D333 fixed (reopen in place) and verified on the KONKR
 (60/60 rapid rounds); D351 owner decision (corner X = chrome, popclip changed); v0.6.73 RC prepared - version 0.6.73 / 80, RC commit

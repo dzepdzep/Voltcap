@@ -1,3 +1,10 @@
+# v0.6.73 PUBLISHED (17 Nov 2026 16:15 UTC, owner GO + option 2)
+- PR #21 merged (main a4012212, via the owner-authorized bridge check 678s); PC main fast-forwarded from a verified bundle.
+- Signed release + compat frozen as rc1, scanned, signer = v0.6.72; KONKR real Voltcap upgraded 79 -> 80 from the frozen file
+  BEFORE publication (data kept, home / library / achievements shown, no crash); release.ps1 published byte-identical assets.
+- Files: tools/adb_mcp/production_pins.json (0.6.73 + compat), release_candidates/SHA256SUMS.txt (rc1), docs (RC record,
+  releases.json, dashboard). These reach main with the next PR.
+
 # Update 678s (17 Nov 2026, live session) - CI: bridge check for main's legacy required name (owner-authorized)
 - main's branch protection requires "Source-check without Discord SDK (not a release)"; since 673e that job is a two-image
   matrix reporting "... - ubuntu-24.04" / "... - ubuntu-latest", so PR #21 stayed blocked with every check green.

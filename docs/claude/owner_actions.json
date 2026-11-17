@@ -2,13 +2,6 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
-   "what": "GO given 17 Nov 15:22 Berlin (reply '1': GO v0.6.73, upgrade test on the KONKR) - release steps running",
-   "why": "RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR",
-   "device": "none to answer; the upgrade test needs one handheld with your real Voltcap (you pick which)",
-   "urgent": false,
-   "blocks": "v0.6.73 release"
-  },
-  {
    "what": "Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready",
    "why": "you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison",
    "device": "screenshots (when Claude posts them)",

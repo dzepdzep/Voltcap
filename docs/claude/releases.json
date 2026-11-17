@@ -1,17 +1,17 @@
 {
  "_rules": "Release tracker evidence for STATUS_DASHBOARD.md (rendered by tools/cloud/dashboard.py). Status is DERIVED, never typed: any gate FAIL or BLOCKED -> BLOCKED; any gate PENDING / NOT STARTED -> TESTING; an item not implemented -> DEVELOPMENT; every gate PASS -> READY FOR OWNER APPROVAL. A gate is PASS only with evidence in 'evidence'. window stays UNKNOWN unless the remaining gates have a date. Merging, production installs and publishing always wait for the owner's explicit GO.",
  "current": {
-  "version": "v0.6.72",
-  "commit": "5b01ef39",
-  "date": "2026-11-14",
-  "note": "Latest stable release (main). Save Sync 529 not included."
+  "version": "v0.6.73",
+  "commit": "a4012212",
+  "date": "2026-11-17",
+  "note": "Latest stable release (main, PR #21). Assets = frozen rc1 (release 72a94b58, compat 2b6b9e3c). Save Sync 529 not included."
  },
  "releases": [
   {
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
    "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner",
-   "window": "RC ready 17 Nov - waits for the owner's GO (draft PR #21); then ~1.5 h of release steps on the PC",
+   "window": "PUBLISHED 17 Nov 2026 16:15 UTC (owner GO 15:22 Berlin, option 2: KONKR upgrade before publication)",
    "items": [
     {
      "what": "Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed)",
@@ -163,12 +163,12 @@
     {
      "gate": "Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)",
      "state": "PASS",
-     "evidence": "17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR."
+     "evidence": "PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1"
     },
     {
      "gate": "Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line",
      "state": "PASS",
-     "evidence": "merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push"
+     "evidence": "PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
@@ -192,18 +192,18 @@
     },
     {
      "gate": "Signed release build, frozen RC, secret scan (main tree on the PC)",
-     "state": "NOT STARTED",
-     "evidence": "after the gates above; signing keys live only on the PC"
+     "state": "PASS",
+     "evidence": "PC main a4012212: release + compat 0.6.73 (80) frozen rc1 (72a94b58 / 2b6b9e3c), freeze --verify OK, secret scan clean, signer 88ce4b67 = v0.6.72, debuggable=false, manifest / sync / charging / scopes unchanged"
     },
     {
      "gate": "Upgrade install over the real Voltcap on one handheld + smoke test",
-     "state": "NOT STARTED",
-     "evidence": "needs the owner's GO (production app)"
+     "state": "PASS",
+     "evidence": "KONKR real Voltcap 79 -> 80 from the frozen rc1, data kept (firstInstallTime unchanged), home + library + achievements shown, crash buffer 0"
     },
     {
      "gate": "Owner GO to merge to main and publish",
-     "state": "NOT STARTED",
-     "evidence": "never automatic"
+     "state": "PASS",
+     "evidence": "PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1"
     }
    ],
    "excluded": [

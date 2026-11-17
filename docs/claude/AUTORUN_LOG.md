@@ -207,3 +207,6 @@
 
 ## 17 Nov 15:25 UTC+1 live 678r
 - Owner handoff merged; Channel D350 fixed without the lane (FitText extraLine); CI GREEN eadd00f; KONKR Channel x1.0 + x1.3 PASS; RC = eadd00f; waiting for GO. Lock released.
+
+## 17 Nov 17:20 Berlin live - v0.6.73 PUBLISHED
+- Bridge check, PR #21 merged, signed rc1 frozen + scanned, KONKR production upgrade before publish (option 2), published byte-identical. Lock released.
