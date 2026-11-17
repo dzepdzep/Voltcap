@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 679b · 2026-11-17 17:45 UTC · commit `84a60737` · CI: Verify 310 GREEN on 77e4138 · effort: medium
+**1. LATEST UPDATE** - 679c · 2026-11-17 18:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on f3d8362 · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Investigated (by reading the code, no Thor) why Android's own home appears on the Thor's lower screen when a game runs on top. Likeliest cause: Android games or apps started from the app drawer or dock never get Voltcap's lower-screen page (library games do), and 'Leave the other screen as is' actually hides Voltcap's screen; Voltcap is not registered as the lower screen's home, so Android fills it with its own launcher. Four fix options are written up for your pick; the Thor check needs you to start the game yourself while I only read.
+**2. WHAT CLAUDE JUST FIXED** - On the Console hub at the extra-large display size, the category name ('All games') sat on top of your profile name and score. It now moves just below that row when the two would meet, and stays exactly where it was at normal and larger text. Checked by a new automatic test; the handheld check on the RP Classic is queued with its other open check.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: owner: pick the pixel-font option, a badge style and a Thor lower-screen fix; then: worst popup typography: Night, Bar (H16); Console Hub name over 'All games' at density 1.4 (H7)
+**5. WORKING ON NEXT** - now: check CI on this push; then: owner-decided pixel font and badge work (on their own branches); worst game-window polish: Night, Bar (after the pixel font)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
 
@@ -182,6 +182,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) | OPEN (batch with HW-18) |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (cloud reading done 679b) |
@@ -200,7 +201,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 11 of 18.
+Open hardware requests: 12 of 19.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

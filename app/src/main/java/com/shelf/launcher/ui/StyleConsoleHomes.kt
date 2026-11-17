@@ -269,7 +269,8 @@ internal fun StyleConsoleHub(c: StyleCtx, modifier: Modifier) {
         val small = ((maxHeight * 0.17f).coerceIn(52.dp, 118.dp) * GameSize.scale(com.shelf.launcher.data.HomeLayout.HUB)).coerceAtMost(maxHeight * 0.3f)
         val big = small * 1.7f
         val cardH = (maxHeight * 0.17f).coerceIn(50.dp, 92.dp)
-        Row(Modifier.fillMaxWidth().align(Alignment.TopStart).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HUB, "top"), "Profile, icons & clock"), verticalAlignment = Alignment.CenterVertically) {
+        // (679c, H7 / D347: the category title keeps clear of this row - at density 1.4 it lay over the profile name / score.)
+        Row(Modifier.fillMaxWidth().align(Alignment.TopStart).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HUB, "top"), "Profile, icons & clock").then(if (topOff) Modifier else Modifier.keepPartsClear(PartRects.layoutId(com.shelf.launcher.data.HomeLayout.HUB, "top"))), verticalAlignment = Alignment.CenterVertically) {
             ConsoleProfile(c)
             Spacer(Modifier.weight(1f))
             if (icons.isNotEmpty()) {

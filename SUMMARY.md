@@ -1,3 +1,16 @@
+# Update 679c (17 Nov 2026, cloud run) - Console hub: category title no longer over the profile row at density 1.4 (H7 / D347)
+- At display density 1.4 (RP Classic stress, c677h / c677js) the floating category title ("All games") sat on the Hub's profile
+  name / score: its fixed spot (categoryPartSpot HUB, a fifth of the way down) falls inside the Hub's own top row when the screen
+  is short in dp. The Hub's profile / icons / clock row now registers its bounds (Modifier.keepPartsClear ->
+  PartRects.rootPx, root px) and the title, while you haven't moved it, keeps clear of it exactly like it already did of parts
+  you placed (update 258: just below, 6 dp apart). Where they don't meet (x1.0 / x1.3) nothing moves. No layout loop: the row
+  never reads the title's place. Category changes don't move it (the row doesn't change with the category).
+- Test: HubCategoryClear679cTest (4 tests; does not compile on the 679b sources) - compiled + PASS in the cloud (4/4), with
+  ConsoleHubFullText678kTest 1/1. Static checks PASS.
+- Files: app/.../ui/HomeEdit.kt (PartRects.rootPx / layoutId / layoutIds / inLayer, keepPartsClear, MovableWidget lookup),
+  ui/StyleConsoleHomes.kt (Hub top row), ui/LauncherScreen.kt (category keepClearOf), test, trackers.
+- NOT TESTED: no handheld - HW-21 (RP Classic, batched with HW-18). Edit Home placement of the title unchanged (stored spots win).
+
 # Update 679b (17 Nov 2026, cloud run) - Thor lower screen showing Android Home: cloud reading (H13)
 - New docs/claude/THOR_DUAL_SCREEN.md: what Voltcap puts on the Thor's lower screen in each state and six code paths that leave
   Android's own home there while a game runs on top. Likeliest: apps started from the app drawer / dock / shortcuts

@@ -216,3 +216,6 @@
 
 ## 17 Nov 17:45 UTC cloud run - 679b
 - H13 Thor dual-screen cloud reading -> docs/claude/THOR_DUAL_SCREEN.md (options A-D for the owner); HW-19 now owner-driven L2. App code unchanged. CI GREEN 77e4138. Lock released.
+
+## 17 Nov 18:55 UTC cloud run - 679c
+- H7 / D347: Console hub category title keeps clear of the Hub's profile row at density 1.4 (HubCategoryClear679cTest 4/4 PASS, cloud compile after one Maven 429 retry). HW-21 queued (RP Classic). CI GREEN f3d8362. Lock released.

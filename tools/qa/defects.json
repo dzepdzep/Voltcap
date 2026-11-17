@@ -4016,6 +4016,14 @@
    "severity": "low",
    "status": "open: badges do not overlap; spacing under the lane's own rule - check BadgeLane gap on Twin icons tiles",
    "found": "2026-11-17 k678n10"
+  },
+  {
+   "id": "D347",
+   "title": "Console hub at display density 1.4: the floating category title (All games) lay over the profile name / score row - RP Classic, stress density only (x1.0 / x1.3 fine)",
+   "rule": "R18",
+   "severity": "low",
+   "status": "fixed in code 679c (the title keeps clear of the Hub's own top row, HubCategoryClear679cTest); handheld NOT TESTED (HW-21)",
+   "found": "2026-11-17 c677h"
   }
  ]
 }

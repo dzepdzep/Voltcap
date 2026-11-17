@@ -4894,7 +4894,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                     overlayLayout == com.shelf.launcher.data.HomeLayout.TV) 0f else 1f) to
                                     (0.18f + idx * 0.17f).coerceAtMost(1f), fixedWidth = w,
                             // (Update 258, #120: the category name steps out of the way of a part you put on its spot.)
-                            keepClearOf = if (part == HomeWidgets.CATEGORY) partsHere.filter { it != part }.map { HomeWidgets.overlayId(overlayLayout, it) } else emptyList(),
+                            // (679c, H7 / D347: and of the layout's own rows - the Console hub's profile / score row at density 1.4.)
+                            keepClearOf = if (part == HomeWidgets.CATEGORY) partsHere.filter { it != part }.map { HomeWidgets.overlayId(overlayLayout, it) } + PartRects.layoutIds(overlayLayout) else emptyList(),
                             // (Update 359, D67: a big logo you placed never covers the row's name line.)
                             clearOfDock = part == HomeWidgets.LOGO || part == HomeWidgets.LOGO_SGDB || part == HomeWidgets.LOGO_RA
                         ) {

@@ -597,7 +597,10 @@ internal fun BoxScope.MovableWidget(
     val h = with(density) { size.height.toDp() }
     // (Update 258: not moved yet, and its spot is taken by a part you placed there — just above or below that part.)
     val clearOf = if (keepClearOf.isEmpty() || stored != null || nestedAt != null || size == IntSize.Zero) null
-        else PartRects.clearSpot(defaultFrac ?: defaultFractions(defaultAlign), zone, w, h, keepClearOf.mapNotNull { PartRects.at[it] })
+        else PartRects.clearSpot(defaultFrac ?: defaultFractions(defaultAlign), zone, w, h, keepClearOf.mapNotNull { k ->
+            // (679c, H7 / D347: a layout's own region, root px -> this layer's dp; not until the layer's place is known.)
+            PartRects.at[k] ?: PartRects.rootPx[k]?.let { r -> origin?.let { o -> PartRects.inLayer(r, o, density.density) } }
+        })
     // Where it is now: the stored fractions, or (first time in edit mode) its normal corner.
     val centreFrac = if (defaultCentre != null && stored == null && size != IntSize.Zero) with(density) {
         val o = origin ?: androidx.compose.ui.geometry.Offset.Zero
@@ -1532,6 +1535,23 @@ internal object PartRects {
     val at = mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>()
 
     /**
+     * 679c (H7 / D347, Console hub at display density 1.4): regions a LAYOUT draws itself (its own profile / clock row…),
+     * root px, keyed by [layoutId]. The category title steps out of their way like it does for a part you placed: at 1.4 the
+     * Hub's fixed spot (a fifth of the way down) fell inside the profile / score row and the two lay over each other.
+     * Written by [keepPartsClear] only; the layout never reads the title's place back (no layout loop).
+     */
+    val rootPx = mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>()
+
+    fun layoutId(layout: com.shelf.launcher.data.HomeLayout, name: String): String = "layout:${layout.name}:$name"
+
+    /** The ids [layout] has registered now (reads state). */
+    fun layoutIds(layout: com.shelf.launcher.data.HomeLayout): List<String> = "layout:${layout.name}:".let { p -> rootPx.keys.filter { it.startsWith(p) }.sorted() }
+
+    /** A root-px region in the coordinates of a parts layer that starts at [originPx] (root px): dp, as [at] holds them. */
+    fun inLayer(r: androidx.compose.ui.geometry.Rect, originPx: androidx.compose.ui.geometry.Offset, density: Float): androidx.compose.ui.geometry.Rect =
+        androidx.compose.ui.geometry.Rect((r.left - originPx.x) / density, (r.top - originPx.y) / density, (r.right - originPx.x) / density, (r.bottom - originPx.y) / density)
+
+    /**
      * Where a [w]×[h] part wanting [want] goes so it covers none of [others]: [want] if it's clear; else straight above or
      * below what it would cover (6 dp apart), the nearer one that's clear and inside [zone]; else [want] after all.
      */
@@ -1549,6 +1569,19 @@ internal object PartRects {
             .filter { it >= top && it + h.value <= bottom && hits(it).isEmpty() }
             .minByOrNull { abs(it - p.y.value) } ?: return want
         return zone.fractionOf(p.x, y.dp, w, h)
+    }
+}
+
+/**
+ * 679c (H7 / D347): a layout's own region the floating category title keeps clear of while it hasn't been moved
+ * ([PartRects.rootPx]). Written only when it changed; gone with the layout.
+ */
+@Composable
+internal fun Modifier.keepPartsClear(id: String): Modifier {
+    androidx.compose.runtime.DisposableEffect(id) { onDispose { PartRects.rootPx.remove(id) } }
+    return this.onGloballyPositioned { c ->
+        val r = c.boundsInRoot()
+        if (PartRects.rootPx[id] != r) PartRects.rootPx[id] = r
     }
 }
 
