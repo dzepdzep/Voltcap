@@ -1,6 +1,10 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~04:45 UTC, live session (owner at work, devices disconnected after it): owner's consolidated requests of
+Updated: 2026-11-17 ~05:15 UTC, live session: owner decisions - whole words to v0.6.74 (branch claude/whole-words-v0674),
+same-row badge direction approved but keep both badges visible (compact variant / adaptive spacing, comparison first). The
+v0.6.73 candidate fixes (facet 677l = status bar, one profile picture, Storage facts, Cube facet, line heights, home cuts) are
+MERGED into this dev line; CI on the merge decides; focused handheld re-check HW-17.
+Before: 2026-11-17 ~04:45 UTC, live session (owner at work, devices disconnected after it): owner's consolidated requests of
 17 Nov recorded - matrix section H (H1-H15), backlog section 00, releases.json v0.6.73 / v0.6.74 items + gates, owner actions,
 HW-17..HW-19. Candidate fixes for v0.6.73 live on `claude/cube-statusbar-facet` (677d-k; NOT merged into this dev line).
 Before: 2026-11-17 ~04:40 UTC, update 678j (cloud run: rule 11 - category screen FullText, PlatformBrowserFullText678jTest;
@@ -53,10 +57,8 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 ## Next (in order; skip what needs hardware - queue it instead)
 - OWNER PRIORITIES 17 Nov (backlog section 00 - this order wins over the rule 11 filler below; one item per run, smallest safe
   step first; notify the owner only for hardware, a design decision or a release GO; never a new scheduled task):
-  1. v0.6.73 candidate (`claude/cube-statusbar-facet`, 677k = 3b65c9f): read "Verify Android update 310" + the QA-app run on
-     677k (`gh run list -R dzepdzep/Voltcap -b claude/cube-statusbar-facet`). Record the result in releases.json (gate
-     "Candidate fixes ... merged") and the matrix H1-H4. If red, report it in the dashboard (the branch is a live-session branch:
-     do not push to it from a scheduled run).
+  1. v0.6.73: read "Verify Android update 310" on the merge commit (facet 677l merged into this line, 17 Nov). If red: fix it
+     here first. Then record CI in releases.json. The facet branch is done - work on this line only.
   2. H8 (cloud, small, v0.6.73-relevant): on the candidate code, find the Console Hub focused-card title ("... (No Glitc…") and
      the Achievements card ticker ("Class Dismisse"): any TextOverflow.Ellipsis / maxLines clip left -> FullText (rule 11) on
      THIS dev line + a test; note whether the facet already fixed it (676y "Hub ticker rows unbounded").
@@ -68,8 +70,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
      targeting in GameLauncher, onStop / onPause handling - write findings to docs/claude/THOR_DUAL_SCREEN.md; HW-19 verifies.
   6. H9 pixel font audit (branch `claude/pixel-font-small`): list every pixel-font use + sizes; emulator screenshots may PREVIEW
      only (never evidence). H10 / H11 badge mockups (static images) for the owner's choice.
-  - Owner decision pending (owner_actions): H4 whole words keep / move; same-row badge look. Do NOT merge the facet branch into
-    this dev line until the owner decides H4 (if "move": merge without 677i/677j).
+  - Owner decisions 17 Nov: H4 whole words -> v0.6.74 (work stays on claude/whole-words-v0674; bring it to this line only
+    when v0.6.73 is released, then a full gate). H10 badges: direction approved, keep BOTH badges visible - design a compact
+    badge variant / adaptive spacing on claude/badge-same-row, make a side-by-side comparison (images) for the owner; no
+    implementation approval yet.
   - Owner 17 Nov: the real Voltcap may be used / updated for testing in live sessions (matrix H15; CLAUDE.md L3 safeguards).
 - FIRST (678j): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678j push (if red: fix it first). READ the
   emulator trial started on 678j ("[emulator-qa]", ~04:40 UTC; next allowed from ~07:40): e529a / e529b popup gate must stay

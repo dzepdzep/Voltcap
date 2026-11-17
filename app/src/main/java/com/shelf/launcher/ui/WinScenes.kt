@@ -381,7 +381,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             .then(if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier)
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
-            .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
+            // (676x, Nova x1.3 v676x13: with trimmed line heights (676v) a status line ("Save sync is not set up") had only
+            // its words' height - 39 px, under the touch gate's 24 dp. A status line is a tap target: 24 dp at least.)
+            .then(if (maxOf(minTouch, if (a.status) 24.dp else 0.dp) > 0.dp) Modifier.heightIn(min = maxOf(minTouch, if (a.status) 24.dp else 0.dp)) else Modifier)
             .clickable(enabled = !a.inert, interactionSource = source, indication = null) { WinClickProbe.clicks++; sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }

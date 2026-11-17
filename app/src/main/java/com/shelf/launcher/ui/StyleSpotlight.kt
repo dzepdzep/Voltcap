@@ -775,9 +775,13 @@ private fun SpotMenuTiles(c: StyleCtx, pulse: Float, compact: Boolean) {
 /** What the buttons do, along the bottom: the button, then its word. Each one is also a button (tap, or ▼ then A). */
 @Composable
 private fun SpotHints(hints: List<SpotHint>, compact: Boolean) {
-    Row(
+    // (676o, RP Nova x1.0 f676x10: five hints in one Row - "OPTIONS" was cut (127 px in 123) and "MENU" squeezed to nothing,
+    // rule 11. A hint that doesn't fit whole goes onto a second line; the order - and so ◀ ▶ along them - stays the same.)
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    androidx.compose.foundation.layout.FlowRow(
         Modifier.fillMaxWidth().padding(start = 4.dp, bottom = if (compact) 2.dp else 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 26.dp), verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 26.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically
     ) {
         hints.forEachIndexed { i, h ->
             val on = StyleNav.on(StyleNav.Zone.BAR, i)

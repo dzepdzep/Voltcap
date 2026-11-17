@@ -369,9 +369,14 @@ private fun ArcadeAttract(g: Game, detail: Boolean) {
     val titles = LocalTitleOptions.current
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF14104A), Color(0xFF05040F)))).padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        // (676r, D340 - RP Nova: "SHA…" on the far machines' tubes and the console cut on the near one; rule 11: whole, sliding
+        // when even the smallest size doesn't fit.)
+        // (676y, D342 - Nova x1.3: the console line under the name ran off the tube's foot. The name fits in what the console
+        // line leaves.)
         FitText(titles.display(g.name).uppercase(), Color(0xFFFFE15A), maxSize = if (detail) 20.sp else 10.sp, minSize = 6.sp, maxLines = 3,
-            fontWeight = FontWeight.Black, textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont(), shadow = Shadow(Color(0xFFFF3D7F), Offset(2f, 2f), 0f)))
-        if (detail) Text(titles.console(g.platform).uppercase(), color = Color(0xFF7FDBFF), fontSize = 9.sp, fontFamily = pocketFont(), maxLines = 1)
+            fontWeight = FontWeight.Black, textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont(), shadow = Shadow(Color(0xFFFF3D7F), Offset(2f, 2f), 0f)),
+            slideWhenCut = true, modifier = Modifier.weight(1f, fill = false))
+        if (detail) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
     }
 }
 
@@ -398,7 +403,7 @@ private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Bool
                 titles.display(g.name).uppercase(), Color.White, maxSize = if (detail) 22.sp else 10.sp, minSize = 5.sp, maxLines = 2,
                 fontWeight = FontWeight.Black, textAlign = TextAlign.Center,
                 style = uiFontStyle().copy(fontStyle = FontStyle.Italic, shadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(0f, 2f), 6f)),
-                lineHeightRatio = 1.05f
+                lineHeightRatio = 1.05f, slideWhenCut = true
             )
         }
     }

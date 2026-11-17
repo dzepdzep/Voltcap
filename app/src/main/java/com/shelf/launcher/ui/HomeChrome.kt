@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -166,6 +167,11 @@ internal fun StatusBar(
     minimal: Boolean = false
 ) {
     if (QaTrace.on) androidx.compose.runtime.SideEffect { QaTrace.count("StatusBar") } // (Update 496, QA only: charging-light check)
+    // (677d, QA only: the bar's conditional pieces on demand - TestHooks.statusFake; null in every normal build / session.)
+    val fake = TestHooks.statusFake.value
+    val notificationCount = fake?.get("notes") ?: notificationCount
+    val trophyCount = fake?.get("trophy") ?: trophyCount
+    val raProfile = fake?.get("points")?.let { p -> (raProfile ?: com.shelf.launcher.data.RaUserProfile()).copy(TotalPoints = p) } ?: raProfile
     com.shelf.launcher.Breadcrumbs.mark("StatusBar")
     val look = animatedLook(if (lookLayout != null) statusLookFor(lookLayout, paleBehind) else look0)
     val ink = look.ink
@@ -175,7 +181,13 @@ internal fun StatusBar(
     val bar by StatusBarPrefs.state(context).collectAsState()
     val clockText = rememberClockText(bar.clock, bar.hours, bar.showDate)
     val wifiConnected = rememberWifiConnected()
-    val accessories = rememberAccessories(bar.accessories)
+    val accessories = rememberAccessories(bar.accessories).let { real ->
+        val n = fake?.get("pads") ?: 0
+        if (n <= 0) real else real + List(n) { i ->
+            com.shelf.launcher.device.accessories.Accessory("qa$i", "QA pad $i", com.shelf.launcher.device.accessories.AccessoryKind.CONTROLLER,
+                com.shelf.launcher.device.accessories.AccessoryTransport.BLUETOOTH, null)
+        }
+    }
     var showDevices by remember { mutableStateOf(false) }
     // Narrow screens: the clock and the first accessory keep their place, RA points go first.
     val widthDp = LocalConfiguration.current.screenWidthDp
@@ -194,13 +206,18 @@ internal fun StatusBar(
         androidx.compose.animation.core.tween(400), label = "taskLine"
     )
     // The clock, battery, icons and your picture (update 334: grouped and put together the layout's way).
-    val cluster: @Composable () -> Unit = {
+    // (677f, owner 16 Nov - RP Classic: "RA points squashed when another element appears". The cluster's last group - the
+    // points and the picture - got what the groups before it left: a notification count or a pad chip squeezed "12345" into
+    // a sliver. Now every piece keeps its measured size (StatusFit measures the whole cluster unsqueezed) and, when the
+    // cluster doesn't fit, it is composed again more compactly, step by step - [level]: 1 no separators and tighter gaps,
+    // 2 no battery %, 3 no search icon / pad chips, 4 no Wi-Fi icon, 5 (last resort) no points - in the same frame, no jump.)
+    val cluster: @Composable (Int) -> Unit = { level ->
             // Compact, like Android's own: small icons, narrow gaps. The bell only shows when there's something, with how many.
             // Update 202: the clock, battery, icons and profile are moved / resized / taken off in Edit Home (each layout its own).
             // Update 334: grouped — time · devices · actions · system · you — and put together the layout's way (StatusLooks):
             // one box, a box per group, a readout, a label, a ruled line or nothing, with what the look puts between groups.
             // Narrow screens: tighter, no separators, the percentage left to the gauge.
-            val compact = widthDp < 520
+            val compact = widthDp < 520 || level >= 1
             val gap = if (compact) (look.gap - 2.dp).coerceAtLeast(3.dp) else look.gap
             val segmented = look.backing == BarBacking.SEGMENTS
             val sep = look.sep.takeUnless { compact || segmented }
@@ -219,8 +236,8 @@ internal fun StatusBar(
                 Row(Modifier.statusSegment(look), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap), content = content)
             }
             Row(
-                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons")
-                    .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look).then(pieceH)
+                Modifier.editablePart(LayoutParts.id(HomeEditState.layout, "status"), "Clock, battery & icons").statusClusterTag()
+                    .then(if (ClipBackdrop.on) Modifier.videoTextScrim() else Modifier).statusContainer(look, atBottom).then(pieceH)
                     .onGloballyPositioned { onCluster(it.boundsInRoot()) },
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -232,21 +249,24 @@ internal fun StatusBar(
                     if (clockShown) Box(contentAlignment = Alignment.CenterEnd) {
                         val t = look.cased(clockText!!)
                         // An LCD's unlit segments behind the digits.
-                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)))
+                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)),
+                            // (677k: the unlit LCD digits are decoration - not read out, not a second clock for statuscheck, Nova j677x13 Arcade / Discs)
+                            modifier = Modifier.clearAndSetSemantics { })
                         FullText(t, color = ink, fontSize = look.clockSize, lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, style = textStyle)
                     }
                 }
                 Sep()
             }
             // Controllers and other devices.
-            if (accessories.isNotEmpty() && !minimal) {
+            if (accessories.isNotEmpty() && !minimal && level < 3) {
                 Group { AccessoryChips(accessories, maxChips, ink) { showDevices = true } }
                 Sep()
             }
             // Search, the trophy from the last game, notifications.
-            if (!minimal) Group {
-                Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
-                if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
+            val actionsShown = !minimal && (level < 3 || (trophyCount > 0 && level < 6) || notificationCount > 0)
+            if (actionsShown) Group {
+                if (level < 3) Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
+                if (trophyCount > 0 && level < 6) ReturnTrophy(trophyCount, onTrophy) // (677f: level 6 - the last game's trophy chip)
                 if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(look.iconSize))
                     Text(
@@ -256,15 +276,15 @@ internal fun StatusBar(
                     )
                 }
             }
-            if (!minimal) Sep()
+            if (actionsShown) Sep()
             // Wi-Fi and the battery.
             Group {
-                if (!minimal) Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
+                if (!minimal && level < 4) Icon(if (wifiConnected) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ink, modifier = Modifier.size(look.iconSize))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     // Volt looks: a little charge gauge (HomeExtras.kt) — update 334: in the bar's ink unless it's really low.
                     if (voltGauge) VoltBattery(battery.percent, battery.charging, LowBatteryColor, ink, fill = if (look.plainBattery) ink else null)
                     else PlainBattery(battery.percent, battery.charging, ink, look.iconSize)
-                    if (bar.showPercent && !(compact && voltGauge)) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
+                    if (bar.showPercent && !(compact && voltGauge) && level < 2) FullText("${battery.percent}%", color = ink, fontSize = small, lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.weight, maxLines = 1, style = textStyle)
                 }
             }
             if (!minimal) Sep()
@@ -272,9 +292,10 @@ internal fun StatusBar(
             // bar never looks empty.
             val avatarUrl = profilePictureUrl(RaBadges.mediaUrl(raProfile?.UserPic))
             if (!minimal) Group {
-                if (raProfile != null && widthDp >= 600) raProfile.TotalPoints?.let { points ->
+                // (677g: not when the layout shows the profile itself - its points are there, OwnProfile.)
+                if (raProfile != null && widthDp >= 600 && level < 5 && OwnProfile.count == 0) raProfile.TotalPoints?.let { points ->
                     Text(
-                        "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        "$points", color = barAccent, fontSize = 13.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
                         // (0.6.17: a dark edge — in the theme's colour over a picture of the same colour it disappeared.
                         //  Update 334: not on a box of its own, where it's on the box's colour.)
                         style = if (look.boxed || segmented || ink.luminance() < 0.5f) textStyle else textStyle.merge(
@@ -287,11 +308,13 @@ internal fun StatusBar(
                         )
                     )
                 }
-                val pic = Modifier.size(look.avatarSize)
+                val pic = Modifier.avatarTag("bar").size(look.avatarSize)
                     .then(if (look.ring != null) Modifier.border(2.dp, look.ring, look.avatarShape()).padding(3.dp) else Modifier)
                     .clip(look.avatarShape()).tapOnly(onProfileClick)
                 // (Update 358: not while Tile home's Switch style shows the profiles top-left — the same picture twice.)
-                if (TileSwitch.hideBarAvatar) Unit
+                // (677g, owner 16 Nov: "my avatar twice in Console Hub" - nor while the layout draws the profile itself: Console
+                // hub / Resume / Spotlight's ConsoleProfile, Channel grid's corner. Its tap opens the profile there instead.)
+                if (TileSwitch.hideBarAvatar || OwnProfile.count > 0) Unit
                 else if (avatarUrl != null) {
                     AsyncImage(model = avatarUrl, contentDescription = raProfile?.User, contentScale = ContentScale.Crop, modifier = pic)
                 } else {
@@ -327,7 +350,7 @@ internal fun StatusBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         if (menuSlot < 0) Spacer(Modifier.width(44.dp).height(28.dp).onGloballyPositioned { onMenuSlot(it.boundsInRoot()) })
-        if (look.left) { cluster(); Spacer(Modifier.width(14.dp)) }
+        if (look.left) { StatusFit(cluster); Spacer(Modifier.width(14.dp)) }
         // Optional mini music player, top left (Appearance setting).
         // It gives way to the icons on the right: the clock, battery and the profile picture keep their
         // corner and the player shrinks into what's left (it used to push the profile off the screen).
@@ -372,12 +395,44 @@ internal fun StatusBar(
             }
         }
         // (Update 339: in the top right corner, or the top left for a look that wants it — StatusLook.left.)
-        if (!look.left) cluster()
+        if (!look.left) StatusFit(cluster)
     }
     if (showDevices) ConnectedDevicesDialog { showDevices = false }
 }
 
 internal val LowBatteryColor = Color(0xFFFF6B6B)
+
+/** 677f: the most compact [StatusBar] cluster level (see the cluster's head). */
+private const val STATUS_LEVELS = 7
+
+/**
+ * 677f: the status cluster at its own full size - never squeezed. Each level is first measured as a silent probe (never placed,
+ * no semantics for TalkBack; the QA dump marks them placed=false - RP Classic c677an: the probes' pictures were read as
+ * duplicates), the
+ * first that fits is composed for real and placed (677k: the probes carry [StatusProbeTag]; QaClip leaves them out - Nova
+ * j677x13 readcheck read the probes' unplaced clock as "a full row dropped it" on 6 layouts), in the same measure pass (nothing drawn first and changed later). The last
+ * level is used whatever it measures.
+ */
+@Composable
+private fun StatusFit(content: @Composable (Int) -> Unit) {
+    androidx.compose.ui.layout.SubcomposeLayout { c ->
+        val loose = c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity)
+        var level = 0
+        while (level < STATUS_LEVELS - 1) {
+            val lv = level
+            val w = subcompose("probe$lv") {
+                androidx.compose.foundation.layout.Box(Modifier.clearAndSetSemantics { statusProbe = true }) { content(lv) }
+            }.maxOfOrNull { it.measure(loose).width } ?: 0
+            if (w <= c.maxWidth) break
+            level++
+        }
+        val chosen = level
+        val ps = subcompose("real") { content(chosen) }.map { it.measure(loose) }
+        val w = ps.maxOfOrNull { it.width } ?: 0
+        val h = ps.maxOfOrNull { it.height } ?: 0
+        layout(w.coerceAtMost(c.maxWidth).coerceAtLeast(c.minWidth), h) { ps.forEach { it.place(0, 0) } }
+    }
+}
 
 /**
  * Update 493: the plain status-bar battery. Not charging: as before. Charging: the bars for the real level with a soft

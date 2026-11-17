@@ -453,20 +453,38 @@ private fun HubMenu(modifier: Modifier, tint: Color, section: Int, on: Boolean, 
             }
         }
         Spacer(Modifier.height(14.dp))
-        Text(
-            if (on) "▲ ▼ Choose   Ⓐ Open" else "Ⓑ Menu",
-            color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(start = 6.dp)
-        )
+        // (676n, Thor x1.3 t676n_x13: the one-line hint was cut to "▲ ▼ Choose Ⓐ" in the menu's width - rule 11. Its two
+        // halves now go onto two lines when they don't fit side by side, each whole.)
+        @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.padding(start = 6.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            for (part in if (on) listOf("▲ ▼ Choose", "Ⓐ Open") else listOf("Ⓑ Menu"))
+                // (676q, Thor x1.3 t676o_x13: with the theme's 24 sp line height the second line ran 21 px off the screen.)
+                Text(part, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 1, softWrap = false)
+        }
     }
 }
 
 // ---- Library ----
 
+/** 676n: the least height the cover flow keeps before the name and its info line give up their second reserved line. */
+private val CUBE_COVERS_MIN = 110.dp
+
 @Composable
 private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) {
     val live by rememberUpdatedState(c)
     val titles = LocalTitleOptions.current
-    Column(modifier) {
+    // (676n, Thor x1.3 t676n_x13: the name's two reserved lines, the info line's two and the hints' second row left the cover
+    // flow a 25 dp strip. Where the panel is that short the name and the info line keep ONE line each - shrinking, then
+    // sliding, never cut (FullText, rule 11) - and still reserve that line, so nothing jumps between games (Update 460).)
+    val nameStyle = nameTextStyle(NameBackdrop.SHADOW)
+    val fixed = reservedLinesHeight(17.sp, fontWeight = FontWeight.Bold, style = nameStyle) + 8.dp + 30.dp + 4.dp +
+        reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameStyle, lines = 2) + reservedLinesHeight(12.sp, lines = 2) +
+        8.dp + maxOf(19.dp, reservedLinesHeight(12.sp, lineHeight = 15.sp)) * 2 + 4.dp + 8.dp
+    BoxWithConstraints(modifier) {
+    val lines = if (maxHeight - fixed < CUBE_COVERS_MIN) 1 else 2
+    Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Game Library", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW))
             Spacer(Modifier.weight(1f))
@@ -481,14 +499,17 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
             HubCoverFlow(c, tint, zone == CubeHub.GAMES, Modifier.fillMaxWidth().weight(1f))
             val g = c.game
             if (g != null) {
-                Text(
+                if (lines == 1) FullText(
+                    titles.display(g.name), Color.White, 19.sp, Modifier.fillMaxWidth().riseOnChange(g.stableKey, floor = 0.5f, ms = 180),
+                    maxLines = 1, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, style = nameStyle
+                ) else Text(
                     // (Update 424, rule 11: at 1280×720 "Pokemon Silver Version (G…" — the name now shrinks a step, then wraps.)
                     titles.display(g.name), color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 2,
                     autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = fitMin(15.sp), maxFontSize = 19.sp),
-                    textAlign = TextAlign.Center, style = nameTextStyle(NameBackdrop.SHADOW),
+                    textAlign = TextAlign.Center, style = nameStyle,
                     // (Update 460, owner: the cover flow jumped up and down with one- or two-line names — the name and the line
                     // under it always keep two lines' height now.)
-                    modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameTextStyle(NameBackdrop.SHADOW), lines = 2))
+                    modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(19.sp, fontWeight = FontWeight.Bold, style = nameStyle, lines = 2))
                         .riseOnChange(g.stableKey, floor = 0.5f, ms = 180)
                 )
                 val meta = c.state.metadata[g.stableKey]
@@ -498,9 +519,17 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
                     meta?.genres?.firstOrNull()?.let { add(it) }
                     add(stylePlaytime(c.playtime(g), c.lastPlayed(g) != null))
                 }.joinToString("  ·  ")
-                Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(12.sp, lines = 2)))
+                if (lines == 1) FullText(line, Color.White.copy(alpha = 0.72f), 12.sp, Modifier.fillMaxWidth(), maxLines = 1, textAlign = TextAlign.Center)
+                else Text(line, color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, maxLines = 2, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().heightIn(min = reservedLinesHeight(12.sp, lines = 2)))
                 Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                // (676m, owner 16 Nov - Thor x1.3: "Y Achievements" was squeezed to "Achieve" at the panel's edge. The hints keep
+                // their size and right edge; a hint that doesn't fit whole goes to a second line, never cut - rule 11.)
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     HubHint("A", "Open") { live.actions.open() }
                     HubHint("X", "Favourite") { live.game?.let { live.actions.favorite(it) } }
                     HubHint("Y", "Achievements") { live.game?.let { live.actions.achievements(it) } }
@@ -508,13 +537,14 @@ private fun HubLibrary(c: StyleCtx, tint: Color, zone: Int, modifier: Modifier) 
             }
         }
     }
+    }
 }
 
 @Composable
 private fun HubHint(button: String, label: String, onTap: () -> Unit) {
     val tap by rememberUpdatedState(onTap)
     Row(
-        Modifier.padding(start = 12.dp).pointerInput(Unit) { detectTapGestures { tap() } },
+        Modifier.pointerInput(Unit) { detectTapGestures { tap() } },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(Modifier.size(19.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.92f)), contentAlignment = Alignment.Center) {
@@ -522,7 +552,7 @@ private fun HubHint(button: String, label: String, onTap: () -> Unit) {
             InkGlyph(button, Color(0xFF1A1530), 11.dp) // (Batch 521: centred by its ink - CenteredLine still sat it low)
         }
         Spacer(Modifier.width(5.dp))
-        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1)
+        Text(label, color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, lineHeight = 15.sp, maxLines = 1, softWrap = false)
     }
 }
 

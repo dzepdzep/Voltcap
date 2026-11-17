@@ -164,3 +164,9 @@
   dump), homecut 50/53 (3 new word-break findings), statuscheck 97/99 (LCD ghost digits) -> 677k on the facet branch (QA dump
   skips the probes; ghost digits not read out). RP Classic full gate INFRA (fixture). Both handhelds restored (diff=0), QA app
   stopped, production untouched; owner told they are safe to disconnect. Lock released.
+
+## 2026-11-17 ~04:55-05:20 UTC - live session (owner decisions)
+- Lock taken (free since 04:31). Owner: whole words -> v0.6.74; keep H1-H3 for v0.6.73; badge direction approved, both badges
+  visible. facet 677l (FitText back to 677h, detection kept; whole words preserved on claude/whole-words-v0674 = 3b65c9f) merged
+  into this line (conflicts only SUMMARY / HW queue, resolved by keeping both). Compiled + 7 focused classes PASS, static
+  checks PASS, selftest OK. Trackers updated. Lock released.

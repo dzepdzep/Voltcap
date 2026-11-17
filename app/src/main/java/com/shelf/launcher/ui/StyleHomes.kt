@@ -1190,7 +1190,8 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
     // (676a, RP Nova x1.3 Grid n676x13: "6/10 · 60%" was cut inside its own pill - the full form was estimated at its words +
     // 66 dp and needs its words + the bar (34) + the tick (9) + its padding (14) + its margin (10) = + 67 dp, so on a 116 dp
     // card the "%" was clipped. The full form only where it fits with that real width and a little room; else the compact one.)
-    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 4.dp > chipW)
+    // (676x, Nova x1.3 Blades v676x13: the full form chosen with 2 dp too little - "%" cut by 5 px. A little more room asked.)
+    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 8.dp > chipW)
     val word = if (mastered) "" else if (!compact) "$count · $pct%" else if (wordW(count) + 24.dp <= chipW) count else "$pct%"
     val need = if (mastered) (if (compact) 14.dp else 16.dp + wordW("MASTERED")) else wordW(word) + (if (compact) 0.dp else 42.dp)
     val tight = need + 24.dp > chipW
@@ -1234,12 +1235,33 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
 internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f), lane: BadgeLane? = LocalBadgeLane.current) {
-    Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+        // (676z, Nova x1.3 badge review: a narrow coverless card broke its name inside a word - "Coloss / us". The size steps
+        // down until the longest word fits on a line (to the readable minimum; past it the name slides - FullText).)
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val style = androidx.compose.material3.LocalTextStyle.current
+        val avail = constraints.maxWidth
+        val size = remember(name, avail, style) {
+            val longest = name.split(' ').maxByOrNull { it.length }.orEmpty()
+            var sp = 12f
+            while (sp > fitMin(12.sp).value && avail > 0 &&
+                measurer.measure(longest, style.copy(fontSize = sp.sp), maxLines = 1, softWrap = false).size.width > avail) sp -= 0.5f
+            sp.sp
+        }
+        // (676z, Nova badge review + badgecheck "covers text": the console badge sat over the plate's first line on ~20 layouts
+        // (Bar, Chan, Cross, Hero tiles, Library, Cube, Twin...). On a card with a badge lane the plate leaves the console's
+        // band free - the same sums as ConsoleBadge (tile x 0.13, 11..20 dp) x (pill 1.15 + margins 0.6), at its corner.)
+        val tileW = maxWidth + 12.dp
+        val consoleCorner = badgeCornerOr(Alignment.TopStart)
+        val band = if (lane != null && com.shelf.launcher.data.Features.consoleBadges.state.value && tileW >= 44.dp)
+            (tileW * 0.13f).coerceIn(11.dp, 20.dp) * (BadgeLogos.ART_PILL + 0.6f) - 6.dp else 0.dp
+        val atTop = consoleCorner == Alignment.TopStart || consoleCorner == Alignment.TopEnd || consoleCorner == Alignment.TopCenter
         FullText(
-            name, color = color, fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+            name, color = color, fontSize = size, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
             textAlign = TextAlign.Center, maxLines = 4,
             // (676e: in the band the card's badges leave free - BadgeLane.kt laneContent)
-            modifier = Modifier.laneContent(lane, 6.dp)
+            modifier = Modifier.padding(top = if (atTop) band.coerceAtLeast(0.dp) else 0.dp, bottom = if (!atTop) band.coerceAtLeast(0.dp) else 0.dp)
+                .laneContent(lane, 6.dp, shiftY = if (atTop) band.coerceAtLeast(0.dp) else 0.dp)
         )
     }
 }

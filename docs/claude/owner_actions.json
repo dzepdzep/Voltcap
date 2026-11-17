@@ -2,18 +2,11 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
-   "what": "Same-row badges: approve the look or ask for an alternative to the 72 % minimum",
-   "why": "design decision - the style stays out of every release until you approve it",
-   "device": "screenshots (badges_before_after_nova)",
+   "what": "Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready",
+   "why": "you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison",
+   "device": "screenshots (when Claude posts them)",
    "urgent": false,
-   "blocks": "v0.6.74 badge work"
-  },
-  {
-   "what": "Decide on the app-wide 'whole words' text change: keep it in v0.6.73 or move it to v0.6.74 (full RP Nova results are in the dashboard)",
-   "why": "you asked to review the full 53-layout results before it is approved; nothing else in v0.6.73 waits on it if you move it",
-   "device": "none (read the results)",
-   "urgent": false,
-   "blocks": "that one v0.6.73 item"
+   "blocks": "v0.6.74 badge redesign only"
   },
   {
    "what": "Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way?",

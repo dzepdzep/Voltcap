@@ -245,6 +245,11 @@ internal object TestHooks {
     val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
     /** Update 493: `--es voltcap_test_battery "40|true"` — the status bar shows that level / charging state (this session only); `off` ends it. */
     val battery = mutableStateOf<BatteryInfo?>(null)
+    /**
+     * 677d (owner 16 Nov, RP Classic: "RA points squashed when another status-bar element appears"): `--es voltcap_test_status
+     * "points=123456,notes=12,trophy=3,pads=2"` - the status bar shows those (isolated QA app, this session only); `off` ends it.
+     */
+    val statusFake = mutableStateOf<Map<String, Int>?>(null)
 
     /** Update 431: the test tuner profile for [spec] (Result.success(null) = "off"), or null when it doesn't parse. */
     internal fun tuneProfile(spec: String): Result<com.shelf.launcher.device.tune.TuneProfile?>? {
@@ -388,6 +393,12 @@ internal object TestHooks {
         }
         // 529j: same-build A/B for the category strips (`voltcap_test_chipglide legacy|new`: the old instant window / hard end
         // fades) and the Night menu's bar layers (`voltcap_test_nmlayers legacy|new`). Isolated QA app only, session only.
+        intent?.getStringExtra("voltcap_test_status")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) {
+                statusFake.value = if (v == "off") null else v.split(',').mapNotNull { kv -> kv.split('=').takeIf { it.size == 2 }?.let { it[0].trim() to (it[1].trim().toIntOrNull() ?: return@mapNotNull null) } }.toMap()
+                android.util.Log.e("VoltcapQA", "status fake ${statusFake.value}")
+            }
+        }
         intent?.getStringExtra("voltcap_test_chipglide")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) { ChipGlide.legacy = v == "legacy"; GlidingChips.legacyFade = v == "legacy"; LivePivot.legacy = v == "legacy" }
             android.util.Log.e("VoltcapQA", "chipglide $v")

@@ -10,7 +10,7 @@
   {
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
-   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) and, if approved, whole words (H4)",
+   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner",
    "window": "UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO",
    "items": [
     {
@@ -138,15 +138,6 @@
      "emulator": "no",
      "device": "PASS RP Classic + Nova x1.0 / x1.3",
      "owner": "requested 17 Nov - keep in v0.6.73"
-    },
-    {
-     "what": "Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting)",
-     "kind": "app",
-     "impl": true,
-     "unit": true,
-     "emulator": "no",
-     "device": "full Nova x1.3 (53 layouts): no layout regression found - 6 popup FAILs were the checker reading hidden measuring copies of the clock (fixed 677k), 3 new word-break findings; x1.0 full gate and RP Classic full gate NOT TESTED",
-     "owner": "NOT approved - owner reviews the full Nova results first; may move to v0.6.74"
     }
    ],
    "gates": [
@@ -161,14 +152,14 @@
      "evidence": "run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
     },
     {
-     "gate": "Focused re-check of 677k on RP Classic + Nova (statuscheck + homecut on the 6 status layouts, popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons)",
+     "gate": "Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)",
      "state": "PENDING",
-     "evidence": "HW-17; Nova j677x13 (677j) graded 17 Nov: popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (see matrix H1 / H4)"
+     "evidence": "HW-17. Not run on 677l / the merged build: NOT TESTED. Before: Nova j677x13 (677j, with whole words) popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (QA dump reading probes / LCD ghost digits, fixed 677k; word-break findings = pre-existing, deferred with whole words)"
     },
     {
      "gate": "Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line",
-     "state": "NOT STARTED",
-     "evidence": "facet = dev line at 0e23337 + 676m-677k; merge after the owner's decision on the whole-word item (H4) - isolate it if needed"
+     "state": "PASS",
+     "evidence": "merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
@@ -289,6 +280,15 @@
      "emulator": "no",
      "device": "not run",
      "owner": "requested 17 Nov"
+    },
+    {
+     "what": "Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED",
+     "owner": "owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674"
     }
    ],
    "gates": [

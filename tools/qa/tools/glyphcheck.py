@@ -213,7 +213,10 @@ def candidates(dump):
         ox, oy = win['at'][0], win['at'][1]
         # (Batch 522: windows are listed bottom to top - a glyph of a window under a later one (a popup / page dialog over
         # the home) is not what the screen shows there: left out.)
-        above = [w['at'] for w in wins[wi + 1:] if len(w.get('at', [])) == 4 and (w.get('nodes') or w.get('texts'))]
+        # (676s, RP Nova f676x10 Spotlight page: the dump listed the focused popup FIRST and the home under it second - the home's
+        # legend glyphs, hidden by the window, were measured on the window's pixels. The focused window is on top of the others.)
+        above = [w['at'] for j, w in enumerate(wins) if w is not win and (j > wi or (w.get('focus') and not win.get('focus')))
+                 and len(w.get('at', [])) == 4 and (w.get('nodes') or w.get('texts'))]
 
         def covered(b):
             cx, cy = b[0] + b[2] / 2.0, b[1] + b[3] / 2.0

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
@@ -112,8 +113,11 @@ internal fun ConsoleProfile(c: StyleCtx, ink: Color = Color.White) {
     val profile = c.state.raProfile
     val name = profile?.User ?: c.state.raUsername ?: "Player"
     val avatar = profilePictureUrl(RaBadges.mediaUrl(profile?.UserPic))
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.size(34.dp).clip(CircleShape).background(ink.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
+    // (677g: the bar leaves its own picture out while this one shows - one picture of you on the screen; a tap opens the profile.)
+    OwnProfile.Mark()
+    val open by rememberUpdatedState(c.actions.profile)
+    Row(Modifier.pointerInput(Unit) { detectTapGestures { open() } }, verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.avatarTag("console").size(34.dp).clip(CircleShape).background(ink.copy(alpha = 0.18f)), contentAlignment = Alignment.Center) {
             if (avatar != null) AsyncImage(avatar, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             else Icon(Icons.Filled.Person, null, tint = ink.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
         }
@@ -190,7 +194,9 @@ private fun NextAchievementsTicker(list: List<com.shelf.launcher.data.RaAchievem
     ) {
         val shown = list + list // drawn twice so it goes round without a gap
         Column(
-            Modifier.fillMaxWidth().padding(start = 46.dp, end = 8.dp)
+            // (676y, D342 - Nova x1.3 Resume / Hub: the ticker's rows past the box were squeezed by its height - "4 Q" in 11 px,
+            // the rest 0 px - and slid in squashed. The list keeps every row its full height; the box clips what is outside.)
+            Modifier.fillMaxWidth().wrapContentHeight(align = Alignment.Top, unbounded = true).padding(start = 46.dp, end = 8.dp)
                 .graphicsLayer {
                     val ms = if (moving) (now.longValue - started).coerceAtLeast(0L) / 1_000_000L else 0L
                     val rowPx = rowDp.toPx()
@@ -233,8 +239,10 @@ private fun WideCard(modifier: Modifier, on: Boolean, spec: CardSpec, index: Int
             Icon(spec.icon, null, tint = spec.tint, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Column {
-                FitText(spec.title, Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 1, fontWeight = FontWeight.Bold)
-                if (spec.sub != null) FitText(spec.sub, Color.White.copy(alpha = 0.78f), maxSize = 11.sp, minSize = 8.sp, maxLines = 1)
+                // (677i, RP Nova x1.3 narrow s677is: "Super Mario Sunshine" under Play was cut, 281 px in 224 - two lines, then a
+                // slide; never cut.)
+                FitText(spec.title, Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 1, fontWeight = FontWeight.Bold, slideWhenCut = true)
+                if (spec.sub != null) FitText(spec.sub, Color.White.copy(alpha = 0.78f), maxSize = 11.sp, minSize = 8.sp, maxLines = 2, slideWhenCut = true)
             }
         }
     }
@@ -690,6 +698,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
     val pal = chanColors()
     val ink = if (light) pal.ink else Color.White
     val avatar = profilePictureUrl(RaBadges.mediaUrl(c.state.raProfile?.UserPic))
+    if (avatar != null) OwnProfile.Mark() // (677g: its first button is your picture - the bar leaves its own out)
     val items = listOf(
         Icons.Filled.Person to c.actions.profile, Icons.Filled.Settings to c.actions.settings,
         Icons.Filled.Notifications to c.actions.notifications, Icons.Filled.Cloud to c.actions.cloud
@@ -716,7 +725,7 @@ private fun ChannelCorner(c: StyleCtx, light: Boolean) {
                     .pointerInput(i) { detectTapGestures { StyleNav.tapped(StyleNav.Zone.TOP, i); act() } },
                 contentAlignment = Alignment.Center
             ) {
-                if (i == 0 && avatar != null) AsyncImage(avatar, "Profile", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape))
+                if (i == 0 && avatar != null) AsyncImage(avatar, "Profile", contentScale = ContentScale.Crop, modifier = Modifier.avatarTag("channel").fillMaxSize().padding(2.dp).clip(CircleShape))
                 else Icon(icon, null, tint = if (on) ShelfTheme.accent else ink.copy(alpha = 0.85f), modifier = Modifier.size(19.dp))
             }
         }

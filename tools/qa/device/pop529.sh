@@ -21,8 +21,11 @@ run)
   A --es voltcap_test_artfix "delay=0"; sleep 3
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
-  log "setup done scale=$SC game=$GAME layouts=$(echo $LAYS | wc -w) styles=$STYLES"
-  POP_EXTRA=1 QA_CONTENT="real-covers scale=$SC" setsid sh $D/popclip.sh "$TAG" "$LAYS" "$STYLES" "$GAME" > /dev/null 2>&1 < /dev/null &
+  # (677p: QA_PREF="key=value" - one QA-app setting for this run, e.g. ui_font=PIXEL for the pixel-font review; the snapshot
+  # saved above puts it back on restore.)
+  [ -n "$QA_PREF" ] && { A --es voltcap_test_pref "$QA_PREF"; sleep 3; log "pref $QA_PREF"; }
+  log "setup done scale=$SC game=$GAME layouts=$(echo $LAYS | wc -w) styles=$STYLES pref=${QA_PREF:-none}"
+  POP_EXTRA=1 QA_CONTENT="real-covers scale=$SC pref=${QA_PREF:-none}" setsid sh $D/popclip.sh "$TAG" "$LAYS" "$STYLES" "$GAME" > /dev/null 2>&1 < /dev/null &
   log "popclip started" ;;
 restore)
   A --es voltcap_test_scale off --es voltcap_test_fixture off --es voltcap_test_artfix off; sleep 1.5

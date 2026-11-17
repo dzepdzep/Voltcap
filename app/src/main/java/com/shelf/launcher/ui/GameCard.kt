@@ -1284,14 +1284,11 @@ private fun AchievementBadge(
                         tint = ShelfTheme.accent, modifier = Modifier.size(12.dp)
                     )
                     Spacer(Modifier.width(5.dp))
-                    Text(
+                    // (676r, D340 - RP Nova x1.3 Classic: "6/10 · 60% · 4 re…": shrink, then slide - rule 11, no "…".)
+                    FullText(
                         com.shelf.launcher.data.achievementProgress(earned, possible) +
                             (com.shelf.launcher.data.remainingNote(earned, possible)?.let { "  ·  $it" } ?: ""),
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        Color.White.copy(alpha = 0.85f), 11.sp, Modifier.weight(1f, fill = false), maxLines = 1, fontWeight = FontWeight.SemiBold
                     )
                 }
                 Spacer(Modifier.height(3.dp))

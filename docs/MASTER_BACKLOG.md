@@ -16,13 +16,15 @@ Statuses:
 ## 00. Owner priorities 17 Nov 2026 (consolidated request; newest - this order wins)
 Each line points at its matrix row (docs/REQUIREMENTS_MATRIX.md section H); no item is repeated elsewhere - older lines that
 cover the same thing are marked "-> H<n>".
-1. **v0.6.73 as soon as genuinely safe.** Keep: status-bar points (H1), one profile picture (H2), Storage facts (H3), nav-bar
+1. **v0.6.73 as soon as genuinely safe.** (Owner decisions 17 Nov ~05:40: whole words (H4) -> v0.6.74, branch
+   claude/whole-words-v0674; H1-H3 merged into the dev line (677l); focused handheld checks only (HW-17), honest NOT TESTED.) Keep: status-bar points (H1), one profile picture (H2), Storage facts (H3), nav-bar
    + badge-lane fixes (676a-f, already in releases.json), line heights + whole words (H4) ONLY if the full 53-layout results
    show no unacceptable regressions - the owner reviews the Nova results first; otherwise isolate H4 to v0.6.74 rather than
    delay the rest. RP Classic: targeted PASS != full gate (H6 fixture issue, fix separately). Same-row badges stay out (H10).
    No merge / production install / release without the owner's GO.
 2. **Pixel font smaller (H9)** - audit usage, shared typography only, 60-65 % comparisons, before / after for approval. v0.6.74.
-3. **Badges (H10, H11)** - same-row branch continues; alternatives to the 72 % minimum; optional Top Clip / Hanging Bottom
+3. **Badges (H10, H11)** - direction APPROVED 17 Nov; do NOT hide the achievement badge below 72 % - try a compact badge
+   variant / adaptive spacing so both stay visible; show the final comparison before implementation approval; same-row branch continues; alternatives to the 72 % minimum; optional Top Clip / Hanging Bottom
    styles with mockups first; Classic default; per-layout override. v0.6.74+.
 4. **Status bar + Console Hub (H5, H7, H8, H14)** - permanent QA rules; adaptive rearrangement at extreme sizes; D347 / D348;
    keep the chosen Cube Facet design.

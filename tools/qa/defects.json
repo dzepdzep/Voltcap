@@ -3942,7 +3942,47 @@
    "title": "Cloud QA builds are signed with a debug key generated in the cloud workspace (SHA-256 4d133dde, SHA-1 16062d37): a new cloud environment may make a different key -> QA-app updates need an uninstall (its test data lost) and a Google OAuth registration for the QA app would stop matching",
    "rule": "infra",
    "severity": "medium",
-   "status": "open: owner decision - keep one QA debug key outside the workspace (e.g. a repo secret) or always build QA APKs on the PC",
+   "status": "fixed 676g: QA key restored from the repo secret VOLTCAP_QA_DEBUG_KEYSTORE_B64, CI signer checked against the pin (4d133dde)",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D338",
+   "title": "Thor x1.3 Cube: the menu hint was cut to '▲ ▼ Choose Ⓐ' (needW 435 > 363) and the cover flow shrank to a 25 dp strip (2-line name + 2-line info + 2-row hints)",
+   "rule": "R18",
+   "severity": "high",
+   "status": "fixed 676o (hint halves wrap; a short panel keeps one reserved line each, FullText shrink-then-slide) - hardware recheck pending",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D339",
+   "title": "Spotlight home hints: one Row of 5 - 'OPTIONS' cut (127 px in 123) and 'MENU' squeezed to 0 on the RP Nova x1.0; both 0 px at x1.3. The popup gate never graded home texts",
+   "rule": "R18",
+   "severity": "high",
+   "status": "fixed 676o (FlowRow, order kept) - hardware recheck pending",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D340",
+   "title": "Home-screen text cuts the popup gate never graded (new homecut.py, RP Nova f676x10 / f676x13): Arcade cabinet name 'SHA…'/'S…' and platform, Camera 'POCKET CAMERA' (x1.3), Circuit 'SETTINGS'/'DETAILS' (x1.3), Classic '6/10 · 60% · 4 re…' (x1.3), Crate 'Never played' (x1.3), Greencore 'SELECTED TITLE'/'DETAILS' (x1.3), Orbit info line (x1.3), Night 'PLAYSTATION 2' watermark (decoration? owner)",
+   "rule": "R18",
+   "severity": "high",
+   "status": "fixed 676r: Nova r676x13 / r676x10 homecut (width) 53/53 PASS, popup 53/53, badges 79/79 + 109/109",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D341",
+   "title": "navbar676.sh fgq aborted on the Thor with the QA app in front: the first mCurrentFocus line was DroidDeck's window on another display",
+   "rule": "infra",
+   "severity": "low",
+   "status": "fixed 676o: the guard reads Android's focused resumed activity (exact QA package); Thor t676n_nav2 ran 13/13 steps, no pill",
+   "found": "2026-11-16"
+  },
+  {
+   "id": "D342",
+   "title": "Home texts cut in HEIGHT (homecut 676u, box < 60 % of the line height) - RP Nova x1.3 r676x13: Arctic platform line, Blades 6 / 10, Bubbles name, Card binder facts + platform, Circuit LCD facts, Cross folder label, Cube category line, Memory card info, Resume achievement, Stacks clock, Storage pill name, Hub achievement, Greencore / Arcade / Crate platform names; x1.0: Arcade, Cross",
+   "rule": "R18",
+   "severity": "high",
+   "status": "open: pre-existing; owner 16 Nov 'fix all for v0.6.73'",
    "found": "2026-11-16"
   }
  ]

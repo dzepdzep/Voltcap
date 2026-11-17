@@ -48,7 +48,12 @@ internal fun FitText(
     style: TextStyle = uiFontStyle(),
     lineHeightRatio: Float = 1.18f,
     /** Extra limit on the height in px (0 = only what the parent allows). */
-    maxHeight: Int = 0
+    maxHeight: Int = 0,
+    /**
+     * 676r (D340, rule 11): where even the smallest size and an extra line don't fit, slide the whole text along one line
+     * (FullText's slow marquee) instead of ending it in "…". Off keeps the old last resort for the music players' lyrics.
+     */
+    slideWhenCut: Boolean = false
 ) {
     // Centred / end-aligned text fills the width, so it's placed the same way while it fades in and out
     // (it used to start at the left edge and then jump to the middle once the old line was gone).
@@ -75,9 +80,15 @@ internal fun FitText(
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
             while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
             if (!fits(s, lines)) lines = maxLines + 1
-            s to lines
+            Triple(s, lines, slideWhenCut && !fits(s, lines))
         }
-        Text(
+        @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+        // (676y: it slides at the size it shrank to - a far arcade machine's sign is a few px tall; at the full size its letters
+        // were cut in height.)
+        if (fit.third) FullTextMarquee(
+            text, color, fit.first.sp, if (wide) Modifier.fillMaxWidth() else Modifier, fontWeight, null, TextUnit.Unspecified,
+            (fit.first * lineHeightRatio).sp, textAlign, style
+        ) else Text(
             text, color = color,
             fontSize = fit.first.sp, lineHeight = (fit.first * lineHeightRatio).sp,
             fontWeight = fontWeight, textAlign = textAlign, style = style,
@@ -296,5 +307,28 @@ internal fun WholeWordsText(
         }
         val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
         Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign)
+    }
+}
+
+/**
+ * 677h (owner, RP Classic: Storage Boxes "6 / 1 0", "Neve / r play / ed"): a line break inside a word (677l: detection only on
+ * the v0.6.73 line - QaClip "brokenWord"; the fitters keeping words whole moved to v0.6.74, branch claude/whole-words-v0674) - the two characters
+ * either side of a line end are letters or digits of a script that separates its words with spaces. Chinese, Japanese,
+ * Korean, Thai and their neighbours break between characters by design and never count.
+ */
+internal fun brokenWord(r: androidx.compose.ui.text.TextLayoutResult): Boolean =
+    brokenWordAt(r.layoutInput.text.text, IntArray((r.lineCount - 1).coerceAtLeast(0)) { r.getLineEnd(it) })
+
+/** 677h: [brokenWord] on the text and the offsets its lines end at (all lines but the last). */
+internal fun brokenWordAt(t: String, lineEnds: IntArray): Boolean =
+    lineEnds.any { e -> e in 1 until t.length && wordChar(t[e - 1]) && wordChar(t[e]) }
+
+private fun wordChar(c: Char): Boolean {
+    if (!c.isLetterOrDigit()) return false
+    return when (Character.UnicodeScript.of(c.code)) {
+        Character.UnicodeScript.HAN, Character.UnicodeScript.HIRAGANA, Character.UnicodeScript.KATAKANA,
+        Character.UnicodeScript.HANGUL, Character.UnicodeScript.THAI, Character.UnicodeScript.LAO,
+        Character.UnicodeScript.KHMER, Character.UnicodeScript.MYANMAR, Character.UnicodeScript.TIBETAN -> false
+        else -> true
     }
 }

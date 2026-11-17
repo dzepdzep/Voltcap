@@ -2193,6 +2193,19 @@ class TestBadgeCheck676a(unittest.TestCase):
             {"kind": "PROGRESS", "lane": "a", "full": [216, 160, 101, 86], "shown": [216, 160, 82, 70], "placed": True}]))
         self.assertEqual(r.returncode, 0, r.stdout)
 
+    def test_a_badge_over_the_name_fails(self):
+        # 676z, Nova x1.3 Tiles: the console pill (bottom right) over the end of a coverless tile's name
+        name = {"text": "Colossus", "full": [110, 300, 150, 40], "shown": [110, 300, 150, 40], "placed": True}
+        win = self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [190, 310, 104, 30], "shown": [190, 310, 104, 30], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 106, 74, 22], "shown": [216, 106, 74, 22], "placed": True}])
+        win[0]["texts"] = [name]
+        r = self._run(win)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("covers text", r.stdout)
+        win[0]["texts"] = [dict(name, full=[110, 260, 150, 40], shown=[110, 260, 150, 40])]  # the name above the pill
+        self.assertEqual(self._run(win).returncode, 0)
+
     def test_cut_badge_fails(self):
         r = self._run(self._win([
             {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
@@ -2255,9 +2268,117 @@ class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
     def test_navbar_script_guards_keys_and_never_swipes_home_by_default(self):
         sh = self._src("navbar676.sh")
         self.assertIn("k() { fgq; input keyevent", sh)
+        # (676n: the guard reads the focused resumed activity - the first mCurrentFocus line can be another display's window.)
+        g = sh[sh.index("fgq() {"):sh.index("k() { fgq")]
+        self.assertIn('grep -m1 "ResumedActivity: "', g)
+        self.assertIn('*" $PKG/"*', g)
+        self.assertIn("exit 2", g)
         self.assertLess(sh.index("touch /sdcard/Android/data/$PKG/files/qa_nolaunch"), sh.index("k BUTTON_A"))
         self.assertIn('[ "$SWIPE" = 1 ]', sh)
         self.assertIn("packageName=com.shelf.launcher$", sh)
+
+
+class TestGlyphsUnderFocusedWindow676s(unittest.TestCase):
+    """676s: a glyph of an unfocused window under the focused one is not measured, whatever order the dump lists them in."""
+    def test_focused_window_listed_first_still_covers(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import glyphcheck
+        pop = {"at": [0, 0, 1280, 960], "focus": True, "nodes": [{"label": "Play"}], "texts": [], "glyphs": []}
+        home = {"at": [0, 0, 1280, 960], "focus": False, "nodes": [{"label": "OPEN"}], "texts": [],
+                "glyphs": [{"text": "A", "shown": [95, 887, 22, 22], "placed": True, "key": [81, 873, 48, 48]}]}
+        self.assertEqual(glyphcheck.candidates({"windows": [pop, home]}), [])
+        self.assertEqual(glyphcheck.candidates({"windows": [home, pop]}), [])
+        self.assertEqual(len(glyphcheck.candidates({"windows": [dict(home, focus=True)]})), 1)
+
+
+class TestStatusCheck677d(unittest.TestCase):
+    """677d: status-bar texts never squeezed / cut / over each other; one profile picture per screen."""
+    def _run(self, win):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": 2.0, "windows": [dict(win, focus=True)]}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "statuscheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def test_squashed_points_fail_whole_pass(self):
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50]}
+        pts = {"text": "123456", "full": [1100, 20, 40, 30], "shown": [1100, 20, 40, 30], "needW": 70, "boxW": 40, "textH": 30, "boxH": 30, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts]})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("squeezed", r.stdout)
+        ok = dict(pts, full=[1100, 20, 70, 30], shown=[1100, 20, 70, 30], boxW=70)
+        self.assertEqual(self._run({"statusBars": [bar], "avatars": [], "texts": [ok]}).returncode, 0)
+
+    def test_points_on_two_lines_and_initial_squeezed_away_fail(self):
+        bar = {"full": [41, 17, 1204, 141], "shown": [41, 17, 1204, 141]}
+        pts = {"text": "12345678", "full": [1095, 26, 138, 120], "shown": [1095, 26, 138, 120], "lines": 2, "textH": 120, "boxH": 120, "placed": True}
+        ini = {"text": "P", "full": [1233, 62, 0, 48], "shown": [0, 0, 0, 0], "needW": 26, "boxW": 0, "lines": 1, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts, ini]})
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("broken onto 2 lines", r.stdout); self.assertIn("squeezed to nothing", r.stdout)
+
+    def test_duplicate_avatar_fails(self):
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50]}
+        a2 = {"where": "console", "full": [20, 20, 68, 68], "shown": [20, 20, 68, 68]}
+        r = self._run({"statusBars": [], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("2 pictures", r.stdout)
+        self.assertEqual(self._run({"statusBars": [], "avatars": [a1], "texts": []}).returncode, 0)
+
+    def test_old_build_is_infra(self):
+        self.assertEqual(self._run({"avatars": [], "texts": []}).returncode, 2)
+
+    def test_unplaced_probes_ignored(self):
+        """677h (RP Classic c677an): StatusFit's unplaced probe levels are neither a duplicate picture nor a cut cluster."""
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50], "placed": True}
+        probe = {"full": [800, 10, 470, 50], "shown": [900, 10, 370, 50], "placed": False}
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50], "placed": True}
+        a2 = dict(a1, full=[1150, 10, 50, 50], shown=[1150, 10, 50, 50], placed=False)
+        r = self._run({"statusBars": [bar, probe], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 0, r.stdout)
+        r = self._run({"statusBars": [bar, dict(probe, placed=True)], "avatars": [a1, dict(a2, placed=True)], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout)
+
+
+class TestHomecut676o(unittest.TestCase):
+    """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
+    def _dump(self, texts, focus=True):
+        return {"windows": [{"focus": focus, "texts": texts}]}
+
+    def test_cuts_fail_and_whole_or_sliding_pass(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        opt = {"text": "OPTIONS", "needW": 127, "boxW": 123, "ovH": True, "placed": True}
+        menu = {"text": "MENU", "needW": 84, "boxW": 0, "ovH": True, "placed": True}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([opt, menu]))], ["OPTIONS", "MENU"])
+        whole = {"text": "OPEN", "needW": 78, "boxW": 78, "ovH": True, "placed": True}
+        slides = dict(opt, scroll=True)
+        unplaced = dict(opt, placed=False)
+        self.assertEqual(homecut.cut_texts(self._dump([whole, slides, unplaced])), [])
+        self.assertIsNone(homecut.cut_texts(self._dump([opt], focus=False)))  # nothing of the focused window: INFRA
+        import tempfile, json as _j
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "f676x10_SPOT_OWN_home.json"); _j.dump(self._dump([opt]), open(f, "w"))
+        self.assertEqual(homecut.layout_of(f), "SPOT_OWN")
+        r = homecut.check([f], {})
+        self.assertEqual(r[0].status, "FAIL")
+        self.assertEqual(homecut.check([f], {"SPOT_OWN": {"OPTIONS": "owner-approved decoration"}})[0].status, "PASS")
+
+    def test_height_cuts_fail_even_when_sliding(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        play = {"text": "PLAY", "needW": 103, "boxW": 103, "ovH": True, "placed": True, "scroll": True, "textH": 72, "boxH": 14}
+        digit = {"text": "12", "needW": 30, "boxW": 30, "ovH": False, "placed": True, "textH": 48, "boxH": 38}  # line padding only
+        hidden = {"text": "6:38", "needW": 80, "boxW": 80, "ovH": True, "placed": True, "textH": 74, "boxH": 0}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([play, digit, hidden]))], ["PLAY (height)"])
+        offscreen = dict(play, shown=[0, 0, 0, 0])
+        self.assertEqual(homecut.cut_texts(self._dump([offscreen])), [])
+
+    def test_word_broken_across_lines_fails(self):
+        """677h (owner, RP Classic Storage Boxes "6 / 1 0", "Neve / r"): a line break inside a word FAILs; whole words PASS."""
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        nev = {"text": "Never played", "lines": 3, "brokenWord": True, "placed": True, "textH": 90, "boxH": 90}
+        ok = dict(nev, text="Never played ok", lines=2, brokenWord=False)
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([nev, ok]))], ["Never played (word broken)"])
 
 
 class TestReadcheckUnplaced676f(unittest.TestCase):

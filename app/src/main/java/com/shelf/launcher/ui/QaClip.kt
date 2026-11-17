@@ -199,6 +199,7 @@ internal object QaClip {
             sb.append("\"texts\":[")
             var firstT = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 val words = c.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } ?: continue
                 if (words.isBlank()) continue
@@ -218,6 +219,8 @@ internal object QaClip {
                     sb.append("\"lines\":$lines,\"maxLines\":${tl.layoutInput.maxLines.let { if (it == Int.MAX_VALUE) -1 else it }},")
                     sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
                     sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
+                    // (677h: a line break inside a word - homecut.py fails it.)
+                    if (lines > 1) sb.append("\"brokenWord\":${brokenWord(tl)},")
                     // (676a: a one-line text's own width against its box - didOverflowWidth / Height also say yes for a 1 px rounding
                     // at scaled text, badgecheck.py needs the size of the shortfall.)
                     if (lines == 1) sb.append("\"needW\":${kotlin.math.ceil(tl.multiParagraph.intrinsics.maxIntrinsicWidth).toInt()},\"boxW\":${tl.size.width},")
@@ -232,6 +235,7 @@ internal object QaClip {
             sb.append("\"glyphs\":[")
             var firstG = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val g = n.config.getOrNull(Glyph) ?: continue
                 val b = n.boundsInWindow
                 if (!firstG) sb.append(','); firstG = false
@@ -248,6 +252,7 @@ internal object QaClip {
             var firstB = true
             val tiles = ArrayList<String>()
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 c.getOrNull(BadgeTileTag)?.let { id ->
                     val b = n.boundsInWindow; val p = n.positionInWindow
@@ -260,7 +265,19 @@ internal object QaClip {
                 sb.append("\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],")
                 sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
             }
-            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("]}")
+            // (677d: the status bar's cluster and every profile picture, for statuscheck.py; 677h: with "placed" - StatusFit's
+            // measured-only probes stay in this unmerged tree and are not on screen.)
+            val bars = ArrayList<String>(); val avatars = ArrayList<String>()
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
+                val c = n.config
+                fun box(): String { val b = n.boundsInWindow; val p = n.positionInWindow
+                    return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}" }
+                if (c.getOrNull(StatusClusterTag) == true) bars += "{${box()}}"
+                c.getOrNull(AvatarTag)?.let { w -> avatars += "{\"where\":\"$w\",${box()}}" }
+            }
+            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("],\"statusBars\":[").append(bars.joinToString(","))
+                .append("],\"avatars\":[").append(avatars.joinToString(",")).append("]}")
         }
         sb.append("],")
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)
@@ -285,6 +302,13 @@ internal object QaClip {
     }
 
     /** Update 477: the node and every layout above it placed (drawn) in the last layout pass. */
+    /** 677k: inside a StatusFit probe (measured, never placed - HomeChrome StatusFit). */
+    private fun inProbe(n: SemanticsNode): Boolean {
+        var p: SemanticsNode? = n
+        while (p != null) { if (p.config.getOrNull(StatusProbeTag) == true) return true; p = p.parent }
+        return false
+    }
+
     private fun placed(n: SemanticsNode): Boolean {
         var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
         while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }

@@ -108,6 +108,28 @@ def check_dump(path, gap_dp=6.0):
                     if g < need:
                         what = "overlap" if g < 0 else "too close"
                         bad.append(f"{bs[i]['kind']} / {bs[j]['kind']} {what}: {g / dens:.1f} dp apart (min {gap_dp:g} dp)")
+            # (676z, Nova x1.3 Tiles badge review: the console pill sat over the end of a coverless tile's name - a text under a
+            # badge that is not the badge's own was never checked. A text of this tile whose centre is outside every badge but
+            # whose box runs under one by more than 2 px both ways is covered.)
+            tl = tiles.get(lane)
+            if tl is not None:
+                tx0, ty0, tx1, ty1 = rect(tl["shown"])
+                for tt in w.get("texts", []):
+                    ts = tt.get("shown") or tt.get("full")
+                    if tt.get("placed", True) is False or not ts or ts[2] <= 0 or ts[3] <= 0:
+                        continue
+                    sx, sy, sw_, sh_ = ts
+                    cx, cy = sx + sw_ / 2, sy + sh_ / 2
+                    if not (tx0 <= cx <= tx1 and ty0 <= cy <= ty1):
+                        continue
+                    if any(rect(b.get("_t", b["full"]))[0] <= cx <= rect(b.get("_t", b["full"]))[2] and
+                           rect(b.get("_t", b["full"]))[1] <= cy <= rect(b.get("_t", b["full"]))[3] for b in bs):
+                        continue  # a badge's own words
+                    for b in bs:
+                        bx0, by0, bx1, by1 = rect(b.get("_t", b["full"]))
+                        ox = min(bx1, sx + sw_) - max(bx0, sx); oy = min(by1, sy + sh_) - max(by0, sy)
+                        if ox > 2 and oy > 2:
+                            bad.append(f"{b['kind']} covers text {tt.get('text', '')[:30]!r} ({ox}x{oy} px)")
             if len(bs) < 2 and not bad:
                 continue
             out.append(qalib.Result(tag, qalib.FAIL if bad else (qalib.INFRA if infra else qalib.PASS), "; ".join(bad or infra),

@@ -185,6 +185,54 @@
 - Checks: test logic replayed in Python against build.gradle.kts (both lookups hit the intended blocks); static checks PASS.
   NOT compiled in the cloud (Maven Central 429 twice) - CI on this push is the first compile + run.
 
+# Update 677l (17 Nov 2026) - owner decision: whole words move to v0.6.74; candidate keeps the localized fixes
+- Owner 17 Nov: "Move the global whole-word text-fitting change to v0.6.74 ... Keep the localized status-bar, duplicate-profile
+  and Storage Boxes fixes in v0.6.73". FitText.kt back to its 677h form (FitText / FullText StepBased / StableFullText as
+  before); kept: the broken-word DETECTION helpers (QaClip "brokenWord", homecut), the Storage facts (677e/h/i), the Hub bar
+  cards' title / subtitle (677j), the status-bar probes / LCD ghost fix (677k). WholeWords677hTest keeps only the detection test.
+- Whole-word work preserved unchanged on branch `claude/whole-words-v0674` (= 3b65c9f, before this revert) and on
+  `claude/v0674-screen-shortcut`.
+- homecut's word-break check stays strict; pre-existing word breaks (D346) go in an --allow file with the reason "deferred to
+  v0.6.74 by the owner, 17 Nov" for the v0.6.73 focused checks, never silently.
+- Checked: StatusFit677Test, WholeWords677hTest, Batch478Test PASS (cloud compile); static checks PASS; selftest OK.
+  Hardware: NOT TESTED on this build (HW-17 focused re-check).
+
+# Update 676v-z2 (16 Nov 2026 evening, live) - app-wide trimmed line heights, height cuts, names clear of badges, same-row badges (review)
+- Owner: "hold v0.6.73" for the height-cut class (D342). 676v Theme: every Material style LineHeightStyle(Center, Trim.Both).
+  676x status lines keep a 24 dp touch box (SceneControl), progress chip full form asks 4 dp more. 676y Cube arrows as icons,
+  Memory card name 1 line when tight, FitText slides at its fitted size, arcade tube name leaves the console line room, bubble names
+  FitText, Resume / Hub ticker rows unbounded, app folders draw the apps icon. 676z coverless name plates leave the console's band
+  (lane shiftY), names never split inside a word, Tiles name above a bottom console pill; badgecheck fails a badge over a tile's
+  text (found ~20 layouts). 676z2 Tiles name is lane content (laneContentAt); app icon on the logo path too.
+- QA tools: homecut.py (width + height cuts, off-screen skipped), glyphcheck focused window on top, navbar guard; selftests OK.
+- Nova gates, candidate claude/cube-statusbar-facet: 676z x1.3 popup 52/53 (Twin desk dump missing - flake, PASS on rerun),
+  badges 86/94 (Tiles count over raised name -> 676z2), homecut 52/53 (Cross -> 676z2); 676z x1.0 popup 53/53, badges 142/142,
+  homecut 52/53 (Cross). 676z2 recheck Tiles / Cross / Twin desk x1.3 + x1.0: all PASS (x1.3 Tiles badges NOT TESTED: the count
+  is left out on the coverless tile - no room). Before/after shots: line_height_before_after_x13, badges_before_after_nova.
+- 676w (owner request): badge lane same row, one common scale down to 0.72, else the latest badge left out - branch
+  claude/badge-same-row, Nova Cube/Grid/Tiles/Classic/Shelf/Stacks x1.0 + x1.3 all gates PASS; waiting for the owner's review.
+- Open: Storage boxes x1.3 facts column wraps letter by letter ("6 / 1 0") - not cut, poor reading; KONKR not connected.
+
+# Update 676n-r (16 Nov 2026, live session) - Thor real launches, Cube x1.3, home-text gate, D340 fixes
+- 676n supervised launch window (owner's HARDWARE TESTING AUTHORIZATION): ui/QaLaunchWindow.kt; TestHooks.interceptLaunch lets
+  the isolated QA app open a plain app ("vm.app" / "launcher.app") only when <files>/qa_allow_app_launch lists it, at most 15 min
+  ahead; games / ROMs / resume stay blocked. QaClip.appLaunchWindow. Test QaLaunchWindow676nTest.
+- Thor (L1, ~12 min): drawer "Open on screen" Bottom -> Clock on display 4, Top -> display 0; Android-game picker shown; nav
+  13/13 no pill; facet controller icon present (QA app hides the built-in pad by default). All restored (see HW-10 / HW-11).
+- 676o/q Cube x1.3 (D338): the left hint wraps in halves with a tight line height; a short library panel keeps one reserved line
+  for the name and the info line (FullText) so the cover flow keeps its room. Thor x1.3 + x1.0 checked on the Facet build.
+- 676o navbar676.sh guard reads the focused resumed activity (D341). 676p Spotlight hints FlowRow (D339).
+- 676p tools/qa/tools/homecut.py (+selftest): grades home-screen texts the popup gate never did. Nova f676x10 4 FAIL, f676x13 9 FAIL.
+- 676r (owner: fix all for v0.6.73; Night's word must fit): Arcade (FitText slideWhenCut, console FullText), Circuit / Greencore
+  buttons + label, Camera bar, Orbit info line (FullText), Crate facts (FlowRow), Classic achievement line (FullText, no "…"),
+  Night watermark (autoSize 120 -> 24 sp, width 90 %). Test HomeCuts676rTest.
+- Nova f676x10 (676f) graded: popup 52/53 (SPOT glyphs: home-legend glyphs measured under the window - checker issue, open),
+  badges 118/118.
+- Branches: claude/v0674-screen-shortcut (all of it) and claude/cube-statusbar-facet (v0.6.73 candidate: 676m..r cherry-picked).
+  builds.json: qa-0.6.73-676r-facet-ci (CI 43911642798, b2626e75). Nova full gates r676x13 / r676x10 running.
+- Compiled: unit tests named above + CategoryStable394Test, static checks PASS, QA selftests OK. Not tested: KONKR (not connected),
+  RP Classic, Odin.
+
 # Update 676l (16 Nov 2026, live session) - QA signing in CI, Cube facet + v0.6.74 drawer branches, full gate x1.3
 - QA APK signing (owner 3A, secret added by the owner): .github/workflows/qa-device-apk.yml - workflow_dispatch or a claude/* push
   with "[qa-apk]", never pull_request; the secret goes to one step, is checked against tools/qa/qa_signing.json, written to a temp
