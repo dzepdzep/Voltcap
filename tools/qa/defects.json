@@ -3984,6 +3984,54 @@
    "severity": "high",
    "status": "open: pre-existing; owner 16 Nov 'fix all for v0.6.73'",
    "found": "2026-11-16"
+  },
+  {
+   "id": "D343",
+   "title": "RA points squashed in the status bar (owner, RP Classic): the cluster Row gave its last group (points + profile picture) only the width the earlier pieces left - points broken onto two lines (RP Nova narrow s677n Cube '1234 / 5678'), the profile initial squeezed to 0 px (Classic layout)",
+   "rule": "R18",
+   "severity": "high",
+   "status": "fixed 677f-h (StatusFit: the cluster is measured at its own width, optional pieces drop in a fixed order - devices/search, Wi-Fi, %, points, trophy chip; never squeezed); statuscheck.py gate; RP Classic c677j + RP Nova s677i x1.0 / x1.3 / narrow PASS. Production (stable, Classic, Hub, Text size Larger + Size Large): not reproduced at that moment - pre-existing mechanism, not a 0.6.73 regression",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D344",
+   "title": "Profile picture twice in Console Hub / Resume / Spotlight / Channel (owner, RP Classic; also seen in the installed stable app): the layout draws the profile while the status bar keeps its own avatar; only Tile Switch hid it (Update 358)",
+   "rule": "R27",
+   "severity": "high",
+   "status": "fixed 677g (OwnProfile counter: the bar hides its avatar and points while a layout draws the profile; the layout's profile opens the profile on tap); statuscheck.py fails 2 visible pictures; Classic + Nova HUB x1.0 / x1.3 PASS. Pre-existing (stable 0.6.72), not a regression",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D345",
+   "title": "Storage Boxes facts broken letter by letter at x1.3 ('6 / 1 0', 'Neve / r / play / ed', 'Achieveme / nts') and the console line cut ('Nintendo' of 'Nintendo GameCube')",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed 677e / 677h (StorageFact: label + value as units, label fits down to 9 sp then slides; console line 2 lines then a slide); Nova + Classic x1.0 / x1.3 PASS, narrow stress slides. Pre-existing",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D346",
+   "title": "Words broken across lines anywhere (no gate): the shared fitters (FitText, FullText, StableFullText) accepted a mid-word break at sizes where a smaller readable one kept the word whole (Hub 'ActRaise / r', 'Aladdi / n')",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed 677i-j (whole words first, down to wordMin = half size >= 8 sp; QaClip brokenWord + homecut FAIL). Classic x1.0 / x1.3 PASS; density 1.4 stress: 'ActRaiser 2' still breaks in the smallest Hub card (one word wider than the card at 8 sp)",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D347",
+   "title": "Console Hub profile name / G score over the 'All games' chip at density 1.4 (stress, RP Classic c677h / c677js); x1.0 and x1.3 fine",
+   "rule": "R27",
+   "severity": "low",
+   "status": "open: pre-existing, stress scale only - proposed v0.6.74",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D348",
+   "title": "Installed stable app (production, read-only look, RP Classic Hub with Text size Larger): 'Advance Wars (Rev 1) (No Glitc...' ends in an ellipsis on the focused card; 'Class Dismisse' cut in the Achievements card ticker",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "open: seen in stable 0.6.72 only - to check on the candidate (676y Hub ticker rows unbounded may already cover the ticker)",
+   "found": "2026-11-17"
   }
  ]
 }

@@ -1,3 +1,30 @@
+# Update 677d-j (17 Nov 2026, live) - status bar never squeezes, one profile picture, Storage facts, whole words (owner: RP Classic bugs)
+- Root causes: (1) RA points squashed - the status cluster Row handed its last group (points + picture) only the width the
+  pieces before it left; nothing ever dropped, so the points broke onto two lines ("1234 / 5678") or the initial was squeezed
+  to 0 px (RP Nova narrowed s677n). (2) Two profile pictures - Console Hub / Resume / Spotlight (ConsoleProfile) and the Channel
+  corner draw the profile while the status bar kept its own; only Tile Switch hid it (Update 358). Both pre-existing (seen in
+  the installed stable app on the RP Classic, read-only); not 0.6.73 regressions.
+- 677d QA: StatusQa tags (status cluster, avatars), TestHooks voltcap_test_status (fake points / notes / trophy / pads, QA app
+  only), QaClip statusBars + avatars, tools/qa/tools/statuscheck.py (squeezed / 2 lines / cut / overlap / >1 picture), device
+  script status677.sh. 677f StatusFit: the cluster is measured at its own width; when it doesn't fit, optional pieces go in a
+  fixed order (devices + search, Wi-Fi, battery %, points, the last game's trophy chip) - never squeezed, same frame, each
+  layout's look kept. 677g OwnProfile: the bar hides its picture and points while a layout draws the profile (its profile
+  opens the profile on tap). 677h StatusFit's measured-only probes are never placed (QaClip "placed"; c677an read them as
+  duplicates). 677e/h Storage facts: label + value kept as units, label fits then slides, console line two lines then slides.
+- 677i/j whole words (global): FitText / FullText (WholeWordsAutoSize) / StableFullText pick the largest size that fits AND
+  keeps every word in one piece, down to wordMin (half size, >= 8 sp), else as before; QaClip "brokenWord", homecut FAILs a
+  word broken across lines. Hub bar cards' title / subtitle never cut. Batch478Test updated for the compact levels.
+- Evidence (QA app, L1): RP Classic c677j x1.0 + x1.3 (CLASSIC GRID CUBE HUB STORAGE TILES x points / notes / trophy / pads):
+  statuscheck 54/54, homecut 36/36 PASS; density 1.4 stress: status 36/36, homecut 15/18 ('ActRaiser 2' breaks in the smallest
+  Hub card - one word wider than it at 8 sp). RP Nova s677i x1.0 + x1.3: status 54/54, homecut 36/36. Before/after sheet:
+  status_storage_before_after_677h.png. Production (L2 + owner-approved settings change, restored): Hub with Text size Larger
+  + Size Large - no squash at that moment; two profile pictures confirmed; restored to Default / Roomy / Normal.
+- Open: D347 (Hub profile over "All games" at density 1.4), D348 (stable app ellipsis / ticker cut - check on candidate);
+  full 53-layout popup gate on 677j: RP Nova x1.3 running; RP Classic INFRA (fixture names don't match there).
+- Branches: claude/cube-statusbar-facet (v0.6.73 candidate) and claude/v0674-screen-shortcut. Files: ui/HomeChrome.kt,
+  StatusQa.kt, StatusLooks.kt, StyleConsoleHomes.kt, StyleStorageBoxes.kt, FitText.kt, QaClip.kt, TestHooks.kt; tools/qa
+  statuscheck.py, homecut.py, status677.sh, pop529.sh, selftests, defects D343-D348.
+
 # Update 676v-z2 (16 Nov 2026 evening, live) - app-wide trimmed line heights, height cuts, names clear of badges, same-row badges (review)
 - Owner: "hold v0.6.73" for the height-cut class (D342). 676v Theme: every Material style LineHeightStyle(Center, Trim.Both).
   676x status lines keep a 24 dp touch box (SceneControl), progress chip full form asks 4 dp more. 676y Cube arrows as icons,
