@@ -1,3 +1,14 @@
+# Update 679b (17 Nov 2026, cloud run) - Thor lower screen showing Android Home: cloud reading (H13)
+- New docs/claude/THOR_DUAL_SCREEN.md: what Voltcap puts on the Thor's lower screen in each state and six code paths that leave
+  Android's own home there while a game runs on top. Likeliest: apps started from the app drawer / dock / shortcuts
+  (launchApp -> launchAppOn) never start the lower-screen companion that library games get, and the second-screen
+  Presentation hides when Voltcap stops (update 326); layout "Game, leave the other screen" therefore shows Android Home too;
+  Voltcap declares no SECONDARY_HOME, so Home pressed while the lower screen has focus opens the system launcher there.
+- Fix options A-D written for the owner (owner_actions); nothing implemented. HW-19 rewritten: the isolated QA app blocks every
+  launch (TestHooks.interceptLaunch, update 500), so the device check is owner-driven Level 2 read-only.
+- Files: docs/claude/THOR_DUAL_SCREEN.md (new), trackers. App code unchanged. Static checks PASS. NOT TESTED: no Thor
+  (not with the owner) - every cause is a code path, not a reproduction.
+
 # Update 678t (17 Nov 2026, cloud run) - dashboard: a published release is no longer shown as "ready for approval"
 - After v0.6.73 was published the dashboard still derived it as READY FOR OWNER APPROVAL ("your approval needed: yes - now"),
   because release_status() never compared with releases.json 'current'. A scheduled run would also have taken that as the

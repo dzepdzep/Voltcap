@@ -75,9 +75,15 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   new -> opens on NEW UNLOCKS with the focus ring on the stage, ▼ "View ▾", ▼ the first achievement, ▲ back - one press each,
   x1.0 and x1.3; page text whole (homecut). NOT TESTED: touch scroll, reduced motion, a real RetroAchievements unlock.
 
-### HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) - OPEN (after the cloud investigation)
-- Device(s): AYN Thor (3140972f), USB. Level L1 for the QA app; harmless apps only (no ROMs / games that touch saves).
-- Tests: dumpsys activity / window per display before + after a launch from the QA app; Recents; screen recording of both displays.
+### HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) - OPEN (cloud reading done 679b)
+- Device(s): AYN Thor (3140972f), USB. Thor NOT with the owner since 17 Nov - never poll / wake; only when he says it is back.
+- Level: L2 PRODUCTION READ-ONLY. The isolated QA app blocks every launch (TestHooks.interceptLaunch, update 500), so it
+  cannot reproduce this; the OWNER starts the game / app in his real Voltcap himself, Claude only reads dumpsys (no input).
+- Why not emulator: two physical displays + the Thor's own secondary home; the emulator trial has one display.
+- Tests (docs/claude/THOR_DUAL_SCREEN.md "What HW-19 must capture"): (a) ROM game, layout "Game + info"; (b) Android game
+  (Dead Cells) from the app drawer / dock; (c) the same from its library entry with Play; (d) during (a) touch the lower screen,
+  then Home. After each: dumpsys activity "Display #1" resumed activity + dumpsys window focus. Expected per the reading:
+  (a) companion, (b) secondary home, (c) companion, (d) secondary home below while the game keeps running.
 - Result:
 
 ### HW-16 Category screen text shown whole (678j, rule 11) - IN PROGRESS (KONKR grid look done; Slides / Stage NOT TESTED)

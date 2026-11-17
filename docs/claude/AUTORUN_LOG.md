@@ -213,3 +213,6 @@
 
 ## 17 Nov 16:30 UTC cloud run - 678t
 - Dashboard: published v0.6.73 no longer derived as "ready for approval"; NEXT RELEASE now v0.6.74; tools/cloud/test_dashboard.py (fails on old code). CI GREEN e83aa58. Lock released.
+
+## 17 Nov 17:45 UTC cloud run - 679b
+- H13 Thor dual-screen cloud reading -> docs/claude/THOR_DUAL_SCREEN.md (options A-D for the owner); HW-19 now owner-driven L2. App code unchanged. CI GREEN 77e4138. Lock released.

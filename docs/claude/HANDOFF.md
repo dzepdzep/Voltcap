@@ -1,5 +1,7 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov 17:45 UTC, 679b (cloud):** H13 Thor dual-screen cloud reading DONE -> docs/claude/THOR_DUAL_SCREEN.md (6 code paths, options A-D for the owner; owner action added). HW-19 rewritten as owner-driven L2 read-only (the QA app blocks every launch). NEXT: check Verify 310 on the 679b push (red -> fix first); owner picks pending (H9 pixel font, H10/H11 badges, H13 fix) - do not implement those before the pick; then H16 worst popups (Night, Bar), H7 Hub density 1.4 (no evidence in the repo: reproduce with a Robolectric density-1.4 HUB layout test first).
+
 **17 Nov 16:35 UTC, 678t (cloud):** dashboard now derives a release equal to releases.json current as PUBLISHED (v0.6.73), NEXT RELEASE = v0.6.74; tools/cloud/test_dashboard.py. NEXT: check Verify 310 on the 678t push (red -> fix first), then v0.6.74: H9 pixel font before / after (branch claude/pixel-font-small), H16 worst popups, H10 / H11 badge mockups, D352 Twin icons badge gap, H12 animations, H13 Thor reading.
 
 
@@ -100,7 +102,7 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
      voltcap_test_fixture_roms; "no game matches") - read TestHooks fixture code; fix + selftest; unblocks HW-18.
   4. FIRST STEP DONE 678m (HW-20 verifies; animations still open). H12 Achievements page: find what scrolls past "Recently Unlocked" on open (initial scroll / focus request / async load);
      plan + first fix with a Robolectric test; animations after that (reduced motion kept). v0.6.74.
-  5. H13 Thor dual-screen (cloud reading): CompanionActivity / SecondScreen Presentation lifecycle, launch flags / display
+  5. DONE 679b (docs/claude/THOR_DUAL_SCREEN.md; owner picks a fix A-D). H13 Thor dual-screen (cloud reading): CompanionActivity / SecondScreen Presentation lifecycle, launch flags / display
      targeting in GameLauncher, onStop / onPause handling - write findings to docs/claude/THOR_DUAL_SCREEN.md; HW-19 verifies.
   6. H9 pixel font audit (branch `claude/pixel-font-small`): list every pixel-font use + sizes; emulator screenshots may PREVIEW
      only (never evidence). H10 / H11 badge mockups (static images) for the owner's choice.

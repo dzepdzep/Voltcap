@@ -49,6 +49,13 @@
    "device": "none",
    "urgent": false,
    "blocks": "v0.6.74 pixel font (H9) and badge styles (H10 / H11)"
+  },
+  {
+   "what": "Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended)",
+   "why": "cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet",
+   "device": "none (HW-19 later: you start the game, Claude only reads)",
+   "urgent": false,
+   "blocks": "v0.6.74 Thor dual-screen fix (H13)"
   }
  ]
 }
