@@ -239,21 +239,21 @@ fun SyncCornerNotice(
             }
             Spacer(Modifier.width(10.dp))
             Column {
-                Text(
+                FullText(
                     title,
                     color = androidx.compose.ui.graphics.Color.White,
-                    fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    reserve = false
                 )
                 if (detail != null) {
-                    Text(
+                    FullText(
                         detail,
                         color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                        fontSize = 11.sp,
                         maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        reserve = false
                     )
                 }
             }
@@ -356,9 +356,9 @@ fun SyncStatusDialog(
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Google Drive", color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                    Text(
-                        line, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    FullText(
+                        line, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2,
+                        reserve = false
                     )
                 }
                 CloseButton({ sounds?.play(UiSound.BACK); onDismiss() }, size = 28.dp)
@@ -381,9 +381,9 @@ fun SyncStatusDialog(
                 androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     SaveSyncBadge(status = all[gameKey], connected = true, onClick = onOpenGameSync)
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        gameName, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    FullText(
+                        gameName, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2,
+                        reserve = false, modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -399,10 +399,10 @@ fun SyncStatusDialog(
                             if (opens) Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)).shelfClickable(androidx.compose.foundation.shape.RoundedCornerShape(6.dp)) { showMoved = true }
                             else Modifier
                         ) {
-                            Text(syncAgo(e.at), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), modifier = Modifier.width(72.dp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                            Text(
-                                e.text + if (opens) "  ›" else "", color = if (opens) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2,
-                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            FullText(syncAgo(e.at), color = ShelfTheme.textMuted, fontSize = 11.sp, modifier = Modifier.width(72.dp), reserve = false)
+                            FullText(
+                                e.text + if (opens) "  ›" else "", color = if (opens) ShelfTheme.accent else ShelfTheme.colors.textPrimary, fontSize = 11.sp, maxLines = 2,
+                                reserve = false
                             )
                         }
                     }
@@ -494,10 +494,10 @@ private fun SyncMovedDialog(
                     if (cover != null) coil.compose.AsyncImage(cover, null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.width(10.dp))
-                Text(
+                FullText(
                     byKey[key]?.name?.let { gameDisplayName(it) } ?: key.substringAfterLast('/'),
-                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+                    reserve = false, modifier = Modifier.weight(1f)
                 )
                 Text(
                     (if (isDown) "↓ " else "↑ ") + "$n file${if (n == 1) "" else "s"}",

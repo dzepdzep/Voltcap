@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~02:50 UTC, update 678h (cloud run: rule 11 - Settings FullText, SettingsDialogFullText678hTest;
+Updated: 2026-11-17 ~03:40 UTC, update 678i (cloud run: rule 11 - save-sync prompts FullText, SyncPromptsFullText678iTest;
+TRUNCATE 194 -> 187; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-15 queued; CI GREEN on 678h).
+Before: 2026-11-17 ~02:50 UTC, update 678h (cloud run: rule 11 - Settings FullText, SettingsDialogFullText678hTest;
 TRUNCATE 211 -> 194; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-14 queued; trial on 678g READ: PASS).
 Before: 2026-11-17 ~01:45 UTC, update 678g (cloud run: rule 11 - Save Vault FullText, SaveExplorerFullText678gTest;
 TRUNCATE 224 -> 211; test classpath Maven 429 so CI is the test's first run; HW-13 queued; emulator trial STARTED on this commit).
@@ -44,6 +46,11 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678i): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678i push - FIRST compile of the SyncPrompts
+  FullText change + SyncPromptsFullText678iTest (cloud hit Maven 429). If red: fix it first. From ~04:45 UTC START the emulator
+  trial (head commit "[emulator-qa]") and read it the run after. Then rule 11 filler: PlatformBrowser (7) or StyleTerminal (8)
+  - grep app/src/test for each literal first.
+- DONE 678i: save-sync prompts text shown whole; CI GREEN on 678h (SUMMARY "Update 678i").
 - FIRST (678h): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678h push - FIRST compile of the SettingsDialog
   FullText change + SettingsDialogFullText678hTest (cloud hit Maven 429). If red: fix it first. Then rule 11 filler: the next
   file in static_checks TRUNCATE (grep app/src/test for each literal first). Emulator trial allowed again from ~04:45 UTC.

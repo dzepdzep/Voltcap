@@ -32,6 +32,14 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-15 Save-sync prompts text shown whole (678i, rule 11) - OPEN
+- Device(s): RP Nova or KONKR (batch with HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
+- Build: commit of update 678i on claude/qa-0672-repair; QA build = assembleDebug of that commit.
+- Why not emulator: the trial has no Google Drive sign-in, so the sync toast, Drive card, sync log and conflict list never show.
+- Tests: at off and font=1.3,density=1.15 in the QA app: the sync toast (title + detail, two lines each), the Drive card
+  status line, a game row with a long name, the sync log (time column + two-line entries, a "›" entry still opens) and the
+  conflict list's long game names: whole (wrap / shrink / slide), rows keep their heights; touch + controller.
+
 ### HW-14 Settings text shown whole (678h, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (batch with HW-13 / HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only).
 - Build: commit of update 678h on claude/qa-0672-repair; QA build = assembleDebug of that commit.

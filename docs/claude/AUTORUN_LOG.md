@@ -146,3 +146,8 @@
   VERDICT PASS (e529c taps as expected). Effort env: medium.
 - Rule 11: Settings text shown whole (17 "…" removed, TRUNCATE 211 -> 194), SettingsDialogFullText678hTest; Maven 429 on both
   compile tries - not compiled here, CI is the first compile. HW-14 queued. No trial started. Lock released.
+
+## 2026-11-17 ~03:18-03:40 UTC - cloud run 678i
+- BOOTSTRAP OK (d2185d5); lock free (none since 02:26), taken 03:18. CI: Verify 310 GREEN on d2185d5 (678h). Effort env: medium.
+- Rule 11: save-sync prompts text shown whole (7 "…" removed, TRUNCATE 194 -> 187), SyncPromptsFullText678iTest; Maven 429 on
+  both compile tries - not compiled here, CI is the first compile. HW-15 queued. No trial started. Lock released.

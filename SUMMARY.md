@@ -1,3 +1,15 @@
+# Update 678i (17 Nov 2026, cloud scheduled run) - rule 11: save-sync prompts show their text whole
+- Save sync prompts: the sync toast's title and detail, the Google Drive card's status line, the game row's name, the sync
+  log's time and entry lines and the conflict list's game names go through FullText (wrap to their old line count, shrink
+  to a readable size, then slide) with no reserved height, so rows keep their heights. 7 "…" uses removed (static TRUNCATE
+  194 -> 187).
+- Test: SyncPromptsFullText678iTest (fails on the 678h sources: 7 Ellipsis, no FullText). NOT compiled in the cloud: Maven 429
+  on both tries (jakarta.activation-api, fus-statistics-gradle-plugin); assertions checked against the source by a script;
+  CI is its first compile + run. Static checks PASS.
+- CI on 678h (d2185d5): Verify 310 GREEN (the Settings change + its test compiled and passed there).
+- Hardware: HW-15 queued (sync prompts at x1.0 / x1.3; batch with HW-12..14). No emulator trial started (next from ~04:45 UTC).
+- Files: app/src/main/java/com/shelf/launcher/ui/SyncPrompts.kt, test SyncPromptsFullText678iTest.kt; trackers.
+
 # Update 678h (17 Nov 2026, cloud scheduled run) - rule 11: Settings show their text whole
 - Settings: the page and group titles, search results (label + section path), the theme strip line, theme captions and
   scene-picker tab captions, the ScreenScraper look-up lines (progress head, per-kind found / saved), the custom music

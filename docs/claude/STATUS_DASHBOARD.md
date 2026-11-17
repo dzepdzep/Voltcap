@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678h · 2026-11-17 02:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on a5b76b5 (678g); emulator trial on 678g VERDICT PASS; this push's result pending · effort: medium
+**1. LATEST UPDATE** - 678i · 2026-11-17 03:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on d2185d5 (678h); this push's result pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
+**2. WHAT CLAUDE JUST FIXED** - The save-sync messages no longer cut text off with '...': the sync pop-up's title and detail, the Google Drive status line, game names, the sync history and the conflict list now wrap, shrink a little or slide so they can be read whole, without changing row heights.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: check CI on this update (its new test and Settings change were not compiled in the cloud); then: next screen with cut text (rule 11); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves and Settings checks)
+**5. WORKING ON NEXT** - now: check CI on this update (its change and new test were not compiled in the cloud); then: start the emulator test run (allowed from ~04:45 UTC); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves, Settings and sync checks)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
 | HW-14 Settings text shown whole (678h, rule 11) | OPEN |
 | HW-13 Save Vault text shown whole (678g, rule 11) | OPEN |
 | HW-12 Banner game window text shown whole (678e, rule 11) | OPEN |
@@ -185,7 +186,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 13 of 14.
+Open hardware requests: 14 of 15.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
