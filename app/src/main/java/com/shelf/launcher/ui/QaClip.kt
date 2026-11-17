@@ -203,6 +203,7 @@ internal object QaClip {
             sb.append("\"texts\":[")
             var firstT = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 val words = c.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } ?: continue
                 if (words.isBlank()) continue
@@ -238,6 +239,7 @@ internal object QaClip {
             sb.append("\"glyphs\":[")
             var firstG = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val g = n.config.getOrNull(Glyph) ?: continue
                 val b = n.boundsInWindow
                 if (!firstG) sb.append(','); firstG = false
@@ -254,6 +256,7 @@ internal object QaClip {
             var firstB = true
             val tiles = ArrayList<String>()
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 c.getOrNull(BadgeTileTag)?.let { id ->
                     val b = n.boundsInWindow; val p = n.positionInWindow
@@ -270,6 +273,7 @@ internal object QaClip {
             // measured-only probes stay in this unmerged tree and are not on screen.)
             val bars = ArrayList<String>(); val avatars = ArrayList<String>()
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 fun box(): String { val b = n.boundsInWindow; val p = n.positionInWindow
                     return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}" }
@@ -302,6 +306,13 @@ internal object QaClip {
     }
 
     /** Update 477: the node and every layout above it placed (drawn) in the last layout pass. */
+    /** 677k: inside a StatusFit probe (measured, never placed - HomeChrome StatusFit). */
+    private fun inProbe(n: SemanticsNode): Boolean {
+        var p: SemanticsNode? = n
+        while (p != null) { if (p.config.getOrNull(StatusProbeTag) == true) return true; p = p.parent }
+        return false
+    }
+
     private fun placed(n: SemanticsNode): Boolean {
         var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
         while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }
