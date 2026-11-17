@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678p-q · 2026-11-17 13:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on be8865c (push + PR #21) · effort: high
+**1. LATEST UPDATE** - 678r · 2026-11-17 14:25 UTC · commit `eadd00f`
 
-**2. WHAT CLAUDE JUST FIXED** - Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
+**2. WHAT CLAUDE JUST FIXED** - Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 
 **3. LAST 24 HOURS** (most important first)
+- **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
 - **App** (678m): Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
 - **QA tools** (678l): Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
-- **App** (678k): The automatic tests passed on the development line with the v0.6.73 fixes merged in. The Console Hub, Resume and Channel homes no longer end long game names (like 'Advance Wars (Rev 1) (No Glitch)') or the category name in '...': they wrap, shrink a little or slide so they can be read whole. A short check on the RP Classic at Larger text was added to the next handheld session.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: owner GO for v0.6.73 (PR #21); then: Channel x1.3 name over the count (D350, with an idle test); Twin icons badge spacing (D352)
+**5. WORKING ON NEXT** - now: owner GO for v0.6.73 (PR #21); then: pixel font ~60-65 % before / after for approval (H9); worst popup typography: Pocket Classic, Pocket Ribbon, Night, Pocket, Bar (H16)
 
 **6. WHAT YOU NEED TO DO** - GO for v0.6.73 (or NO-GO): merge draft PR #21, build + freeze the signed RC on the PC, upgrade test on one handheld, publish (RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR)
 
@@ -207,7 +207,7 @@ Open hardware requests: 11 of 18.
 
 ## Progress by area (generated)
 <!-- GEN:areas -->
-_Evidence file: docs/claude/progress.json (2026-11-17 (live session, KONKR gates)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
+_Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
 
 **Home layouts (popup gate)**
 - Total: 53
@@ -217,8 +217,8 @@ _Evidence file: docs/claude/progress.json (2026-11-17 (live session, KONKR gates
 - Real-device verified: 48 (90 %)
 - Owner approved: 0 (0 %)
 - Released: 53 (older state, v0.6.72)
-- Remaining / blocked: TV room rapid A/B (D333, cause traced - fix next); owner visual review of all 53 (KONKR sheet ready 17 Nov); Flip 2 unavailable
-- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like; every graded check PASS at x1.0 + x1.3 in run 43961010406, 678c). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d); 17 Nov KONKR newest build: x1.0 k678n10 52/53 (TV rapid), x1.3 k678n13 52/53 (Channel - fixed 678o, kc678o13 PASS) - device count kept until the TV fix is re-gated
+- Remaining / blocked: owner visual polish pass of all 53 (H16, v0.6.74; KONKR sheet 17 Nov); Flip 2 / Thor / RP Classic unavailable
+- Source: device = popup gate PASS on both handhelds at both scales: f674k + f674o (Flip 2), k674m + k674n (KONKR), builds 674k / 674n. emulator = COVERDETAILS + SHELF (KONKR-like; every graded check PASS at x1.0 + x1.3 in run 43961010406, 678c). unit: per-layout test coverage not counted yet.; newest build 8bd5e4a: RP Nova x1.0 53/53 (n675c), x1.3 49/53 (n675d); 17 Nov KONKR newest build: x1.0 k678n10 52/53 (TV rapid), x1.3 k678n13 52/53 (Channel - fixed 678o, kc678o13 PASS) - device count kept until the TV fix is re-gated; RC build qa-0.6.73-rc-91b1ac3 x1.0 krc10 53/53 (TV rapid fixed, D333); Channel x1.3 fixed 678r (kc678r13 + kc678r10 PASS) - device count kept at the last full two-scale gate
 
 **Native popup pages**
 - Total: 53
