@@ -22,6 +22,11 @@
       "name": "KONKR (GT78)",
       "model": "GT78_VN",
       "serial": "BW0306N230000845"
+    },
+    {
+      "name": "Retroid Pocket Nova",
+      "model": "Retroid_Pocket_Nova",
+      "serial": "d3641c41"
     }
   ]
 }

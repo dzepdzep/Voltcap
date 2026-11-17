@@ -419,7 +419,9 @@ internal fun PocketRibbonBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                         .pointerInput(Unit) { detectTapGestures { ribbonStart(live) } }
                 ) {
                     Canvas(Modifier.fillMaxSize()) { drawRoundRect(accent, cornerRadius = CornerRadius(uPx * 3f)) }
-                    PocketText(this@PocketScreen, if (PocketNav.ribbonGames) "START" else "OPEN", -cx, 0f, 40f, 12f, 7f, Color.White, font, TextAlign.Center)
+                    // (674m, glyph gate f674j: the capitals sat 3 px (7.5 %) high - the line box keeps room for descenders capitals don't
+                    // have. Their ink centred in the tab.)
+                    PocketText(this@PocketScreen, if (PocketNav.ribbonGames) "START" else "OPEN", -cx, 0.9f, 40f, 12f, 7f, Color.White, font, TextAlign.Center)
                 }
             }
             // The scroll bar: ◀, the track with where you are, ▶.

@@ -42,7 +42,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.ui.theme.ShelfTheme
@@ -105,10 +104,10 @@ private fun Modifier.headerTap(onClick: (() -> Unit)?): Modifier {
 /** "CONTINUE PLAYING · TODAY", or "NEW · NOT PLAYED YET". */
 @Composable
 internal fun ContinueLine(lastPlayedAt: Long?, compact: Boolean = false) {
-    Text(
+    FullText(
         if (lastPlayedAt != null) "CONTINUE PLAYING  ·  " + lastPlayedLabel(lastPlayedAt).uppercase() else "NEW  ·  NOT PLAYED YET",
-        color = ShelfTheme.accent, fontSize = headerSizes(compact).continueSp.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(headerSizes(compact).continueSp.sp), maxFontSize = headerSizes(compact).continueSp.sp), fontWeight = FontWeight.Bold,
-        letterSpacing = 1.4.sp, maxLines = 2, overflow = TextOverflow.Ellipsis
+        color = ShelfTheme.accent, fontSize = headerSizes(compact).continueSp.sp, fontWeight = FontWeight.Bold,
+        letterSpacing = 1.4.sp, maxLines = 2, reserve = false
     )
 }
 
@@ -128,9 +127,9 @@ internal fun HeaderStatBox(stat: HeaderStat, selected: Boolean, compact: Boolean
             .headerTap(onClick)
             .padding(horizontal = z.statPadH.dp, vertical = z.statPadV.dp)
     ) {
-        Text(stat.label, color = Color.White.copy(alpha = 0.62f), fontSize = z.statLabel.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(z.statLabel.sp), maxFontSize = z.statLabel.sp), fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+        FullText(stat.label, color = Color.White.copy(alpha = 0.62f), fontSize = z.statLabel.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp, reserve = false)
         Spacer(Modifier.height(if (z === DenseSizes) 1.dp else 2.dp))
-        Text(stat.value, color = stat.valueColor, fontSize = z.statValue.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(z.statValue.sp), maxFontSize = z.statValue.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+        FullText(stat.value, color = stat.valueColor, fontSize = z.statValue.sp, fontWeight = FontWeight.Bold, reserve = false)
         val p = stat.progress
         if (p != null) {
             Box(Modifier.padding(top = (z.statPadV + 1).dp).fillMaxWidth().height(2.dp).clip(uiRounded(1.dp)).background(Color.White.copy(alpha = 0.15f))) {
@@ -161,7 +160,7 @@ internal fun PlayPill(label: String, selected: Boolean, compact: Boolean, onClic
     ) {
         Icon(Icons.Filled.PlayArrow, contentDescription = null, tint = onAccentColor(), modifier = Modifier.size(z.playIcon.dp))
         Spacer(Modifier.width(if (z === DenseSizes) 6.dp else 8.dp))
-        Text(label, color = onAccentColor(), fontSize = z.playText.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(z.playText.sp), maxFontSize = z.playText.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(label, color = onAccentColor(), fontSize = z.playText.sp, fontWeight = FontWeight.Bold, reserve = false)
     }
 }
 
@@ -289,9 +288,9 @@ internal fun ShowcaseHeader(
             when (only) {
                 HomeWidgets.H_TITLE -> if (title != null) Column {
                     // The category above the title goes with it when it is moved.
-                    if (tight && !category.isNullOrBlank()) Text(
+                    if (tight && !category.isNullOrBlank()) FullText(
                         category.uppercase(), color = ShelfTheme.accent, fontSize = 8.5.sp, fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.4.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        letterSpacing = 1.4.sp, autoFit = false, reserve = false,
                         style = uiFontStyle().merge(TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 1f), 4f)))
                     )
                     titlePart()
@@ -320,9 +319,9 @@ internal fun ShowcaseHeader(
                 Box(Modifier.weight(1f)) {
                     if (title != null) part(HomeWidgets.H_TITLE, Modifier.fillMaxWidth()) {
                         Column {
-                            if (tight && !category.isNullOrBlank()) Text(
+                            if (tight && !category.isNullOrBlank()) FullText(
                                 category.uppercase(), color = ShelfTheme.accent, fontSize = 8.5.sp, fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.4.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                letterSpacing = 1.4.sp, autoFit = false, reserve = false,
                                 style = uiFontStyle().merge(TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.7f), Offset(0f, 1f), 4f)))
                             )
                             titlePart()

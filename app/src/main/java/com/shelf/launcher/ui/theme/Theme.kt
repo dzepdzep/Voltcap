@@ -266,6 +266,19 @@ fun ShelfLauncherTheme(
                 labelLarge = normal.labelLarge.lab(), labelMedium = normal.labelMedium.lab(), labelSmall = normal.labelSmall.lab()
             )
         } else normal
+    }.let { t ->
+        // 676v (D342, owner 16 Nov "hold v0.6.73 for it"): Material's styles keep a fixed 24 sp line height. A small text in a
+        // snug box laid its letters in the middle of that tall line and lost their top or bottom (Card binder facts, Blades
+        // 6 / 10, Circuit, Stacks... at x1.3). Trim.Both drops the line's extra room above its first line and below its last:
+        // a one-line text is as tall as its letters, a paragraph keeps its spacing between lines.
+        fun androidx.compose.ui.text.TextStyle.trim() = copy(lineHeightStyle = TRIMMED_LINES)
+        t.copy(
+            displayLarge = t.displayLarge.trim(), displayMedium = t.displayMedium.trim(), displaySmall = t.displaySmall.trim(),
+            headlineLarge = t.headlineLarge.trim(), headlineMedium = t.headlineMedium.trim(), headlineSmall = t.headlineSmall.trim(),
+            titleLarge = t.titleLarge.trim(), titleMedium = t.titleMedium.trim(), titleSmall = t.titleSmall.trim(),
+            bodyLarge = t.bodyLarge.trim(), bodyMedium = t.bodyMedium.trim(), bodySmall = t.bodySmall.trim(),
+            labelLarge = t.labelLarge.trim(), labelMedium = t.labelMedium.trim(), labelSmall = t.labelSmall.trim()
+        )
     }
 
     // (QA pass 2, D22: the same colours as one stable State, for draw-time readers — see LocalShelfColorsLive.)
@@ -391,3 +404,8 @@ internal fun describeColorOrigin(
     }
     return ColorOrigin(bg, acc, note)
 }
+
+/** 676v (D342): every type style's lines - centred in their line height, the room above the first and below the last trimmed. */
+internal val TRIMMED_LINES = androidx.compose.ui.text.style.LineHeightStyle(
+    androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center, androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+)

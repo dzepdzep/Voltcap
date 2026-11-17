@@ -9,6 +9,8 @@
 #             human = 250 ms between keys   bOpening = A, B 120 ms later   bOpen = A, B 900 ms later
 #             bClosing = A, B at 900 ms, A again 150 ms later (while it flies back), B 150 ms after that
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=${2:-COVERDETAILS STACKS SHELF TILES CASEFLOW}; N=${3:-6}
+# (672d: GAME=… picks the game - the popup gate's fixture runs use "Shadow of the Colossus"; the default stays Mario Kart 64.)
+GAME=${GAME:-Mario Kart 64}
 O=$F/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 focus() { dumpsys window | grep mCurrentFocus | tail -1; }
@@ -27,14 +29,14 @@ esac; }
 echo "start $(date +%T) $(getprop ro.product.model) real=$(pidof com.shelf.launcher) qa=$(dumpsys package $P | grep -m1 versionName)" >> $L
 A --ez voltcap_test_nolaunch true; sleep 3; A --ez voltcap_test_preview true; sleep 1
 for LY in $LAYS; do
-  A --es voltcap_test_layout $LY --es voltcap_test_game "Mario Kart 64"; sleep 3.5
+  A --es voltcap_test_layout $LY --es voltcap_test_game "$GAME"; sleep 3.5
   picker && { guard; input keyevent 97; sleep 1.5; echo "$LY picker dismissed before the rounds" >> $L; }
   H=$(wins)
   for S in ${SEQS:-batch fast human bOpening bOpen bClosing retro}; do
     r=""; for i in $(seq 1 $N); do
       # every round from the same home state: the layout and Mario Kart 64 asked for again (a B that fell on the home screen
       # opens the category screen, and the next A would pick a category instead of opening the window)
-      A --es voltcap_test_layout $LY --es voltcap_test_game "Mario Kart 64"; sleep 2.2
+      A --es voltcap_test_layout $LY --es voltcap_test_game "$GAME"; sleep 2.2
       guard; [ "$(wins)" != "$H" ] && { echo "$LY $S $i not clean before ($(wins) windows)" >> $L; input keyevent 97; sleep 1.5; }
       logcat -c; seq_ $S; sleep 2.5
       W=$(wins); pk=no; picker && pk=yes

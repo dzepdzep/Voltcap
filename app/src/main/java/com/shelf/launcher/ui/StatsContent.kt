@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Game
@@ -224,10 +223,10 @@ private fun Tile(label: String, value: String, modifier: Modifier) {
         Spacer(Modifier.height(2.dp))
         // Long values ("12.5 h" is fine, anything wordier) get smaller instead
         // of being cut off — "under a minute" used to show as just "under a".
-        Text(
+        FullText(
             value, color = ShelfTheme.colors.textPrimary,
-            fontSize = if (value.length > 7) 16.sp else 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (value.length > 7) 16.sp else 20.sp), maxFontSize = if (value.length > 7) 16.sp else 20.sp),
-            fontWeight = FontWeight.Bold, maxLines = 2, softWrap = true, overflow = TextOverflow.Ellipsis
+            fontSize = if (value.length > 7) 16.sp else 20.sp,
+            fontWeight = FontWeight.Bold, maxLines = 2, reserve = false
         )
     }
 }
@@ -254,7 +253,7 @@ private fun WeekBars(weeks: List<Pair<String, Long>>) {
             Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.Bottom, horizontalAlignment = Alignment.CenterHorizontally) {
                 // (Update 224, #02: last week's time shows too, to compare with this week's.)
                 if (ms > 0 && (i >= weeks.lastIndex - 1 || i == best)) {
-                    Text(PlaytimeStore.format(ms), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    FullText(PlaytimeStore.format(ms), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, reserve = false)
                     Spacer(Modifier.height(2.dp))
                 }
                 Box(
@@ -277,12 +276,11 @@ private fun WeekBars(weeks: List<Pair<String, Long>>) {
         weeks.forEachIndexed { i, (label, _) ->
             // (Update 224, #02: "This week" / "Last week" by name, in their bars' colours.)
             val text = when (i) { weeks.lastIndex -> "This week"; weeks.lastIndex - 1 -> "Last week"; else -> label }
-            Text(
+            FullText(
                 text,
                 color = when (i) { weeks.lastIndex -> ShelfTheme.accent; weeks.lastIndex - 1 -> ShelfTheme.colors.textPrimary; else -> ShelfTheme.textMuted },
                 fontWeight = if (i >= weeks.lastIndex - 1) androidx.compose.ui.text.font.FontWeight.Bold else null,
-                fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(8.sp), maxFontSize = 10.sp),
-                maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                fontSize = 10.sp, maxLines = 2, reserve = false, modifier = Modifier.weight(1f)
             )
         }
     }
@@ -292,7 +290,7 @@ private fun WeekBars(weeks: List<Pair<String, Long>>) {
 @Composable
 private fun BarLine(name: String, ms: Long, max: Long) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(170.dp))
+        FullText(name, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, maxLines = 2, reserve = false, modifier = Modifier.width(170.dp))
         Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.08f))) {
             Box(
                 Modifier
@@ -303,6 +301,6 @@ private fun BarLine(name: String, ms: Long, max: Long) {
             )
         }
         Spacer(Modifier.width(10.dp))
-        Text(PlaytimeStore.format(ms), color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(PlaytimeStore.format(ms), color = ShelfTheme.textMuted, fontSize = 12.sp, reserve = false)
     }
 }

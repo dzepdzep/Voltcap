@@ -1,0 +1,93 @@
+name: QA app for handhelds (signed with the pinned QA key)
+
+# 676h (owner 16 Nov, decision 3A): the isolated QA app (com.shelf.launcher.qa) for real handhelds, signed with ONE stable key so
+# it updates the installed QA app in place (its settings and test data kept). The key is the repository secret
+# VOLTCAP_QA_DEBUG_KEYSTORE_B64 (the owner added it); it is never committed, never printed and never reaches Claude's cloud
+# environment - the cloud sessions build unsigned-for-devices and download this workflow's artifact instead.
+# Safety:
+#  - runs ONLY on workflow_dispatch or a push to a claude/* branch whose head commit message contains "[qa-apk]" - never on
+#    pull_request / pull_request_target, so no fork or outside contribution can reach the secret;
+#  - the secret is handed to ONE step through env, written with umask 077, checked against the pinned public fingerprint
+#    (tools/qa/qa_signing.json) and deleted when the job ends; GitHub masks it in logs, and no step echoes it;
+#  - debug variant only (package com.shelf.launcher.qa): the job fails if the APK is not the QA app or not signed with the pin.
+#    The owner's Voltcap (com.shelf.launcher) is never built or signed here.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-device-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build + sign the QA app (pinned key)
+    if: github.repository == 'dzepdzep/Voltcap' && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[qa-apk]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact commit (no stored credentials)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Configure JDK
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android 36
+        run: |
+          SDKM=$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | head -1)
+          test -n "$SDKM"
+          "$SDKM" --install "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@ac638b010cf58a27ee6c972d7336334ccaf61c96 # v4.4.1
+        with:
+          cache-read-only: true
+      - name: Restore the pinned QA key (never printed)
+        env:
+          VOLTCAP_QA_DEBUG_KEYSTORE_B64: ${{ secrets.VOLTCAP_QA_DEBUG_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VOLTCAP_QA_DEBUG_KEYSTORE_B64:-}" ]; then echo "::error::the repository secret VOLTCAP_QA_DEBUG_KEYSTORE_B64 is missing"; exit 1; fi
+          bash tools/cloud/qa_key.sh restore
+          # (the runner's Android user folder isn't always ~/.android: Gradle is told the key's path - build.gradle.kts)
+          install -m 600 "$HOME/.android/debug.keystore" "$RUNNER_TEMP/qa-debug.keystore"
+      - name: Build (debug = com.shelf.launcher.qa, Discord SDK stub)
+        timeout-minutes: 25
+        env:
+          VOLTCAP_QA_KEYSTORE_PATH: ${{ runner.temp }}/qa-debug.keystore
+        run: |
+          for i in 1 2; do
+            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug -x lintVitalAnalyzeDebug && exit 0
+            echo "build attempt $i failed"; sleep 20
+          done
+          exit 1
+      - name: Remove the key from the runner
+        if: always()
+        run: rm -f "$HOME/.android/debug.keystore" "$HOME/.android/debug.keystore".* "$RUNNER_TEMP/qa-debug.keystore"
+      - name: Check it is the QA app, signed with the pinned key
+        run: |
+          set -euo pipefail
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)
+          "$BT/aapt" dump badging "$APK" | grep -q "package: name='com.shelf.launcher.qa'"
+          PIN=$(python3 -c "import json;print(json.load(open('tools/qa/qa_signing.json'))['cert_sha256'])")
+          # (public certificate fingerprints only; the first signer's SHA-256, whatever the label's exact wording)
+          "$BT/apksigner" verify --verbose --print-certs "$APK" > signer.txt 2>&1 || { cat signer.txt; exit 1; }
+          grep -iE "certificate SHA-256 digest" signer.txt | head -2
+          GOT=$(grep -iE "certificate SHA-256 digest" signer.txt | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')
+          if [ "$GOT" != "$PIN" ]; then echo "::error::signed with ${GOT:0:8}..., the QA app needs ${PIN:0:8}..."; exit 1; fi
+          echo "QA app, signer ${GOT:0:8}... (pinned) - updates the installed QA app in place"
+          mkdir -p qa-device-apk
+          cp "$APK" "qa-device-apk/voltcap-qa-${GITHUB_SHA::7}.apk"
+          sha256sum qa-device-apk/*.apk | tee qa-device-apk/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: qa-device-apk-${{ github.sha }}
+          path: qa-device-apk
+          retention-days: 14

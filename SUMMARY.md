@@ -1,3 +1,1034 @@
+# Update 678s (17 Nov 2026, live session) - CI: bridge check for main's legacy required name (owner-authorized)
+- main's branch protection requires "Source-check without Discord SDK (not a release)"; since 673e that job is a two-image
+  matrix reporting "... - ubuntu-24.04" / "... - ubuntu-latest", so PR #21 stayed blocked with every check green.
+- Owner authorized (17 Nov 16:09 Berlin) a bridge, no protection change: job verify-gate in verify-update-310.yml carries the
+  legacy name, needs: verify, if: always(), and passes only when needs.verify.result == success (both images); failure,
+  cancelled or skipped fail it. Shell logic checked for all five results; GitHub evidence (ordering + result) in the RC doc.
+- Files: .github/workflows/verify-update-310.yml. App code unchanged (app tree = eadd00f).
+
+# Update 678r (17 Nov 2026, live session) - Channel name plate stays one line (D350, no lane loop); owner handoff merged
+- Owner handoff 17 Nov 14:45 (v0.6.73 finish + v0.6.74 polish) merged without duplicates: matrix H16 (visual polish of all 53
+  game windows, priority Pocket Classic / Pocket Ribbon / Night / Pocket / Bar), H17 (Channel D350, listed by the owner as a
+  v0.6.73 item), H13 cloud-only; releases.json v0.6.74 polish item widened; HARDWARE_QA_QUEUE: Thor + RP Classic not with the
+  owner (never poll / wake), KONKR only if already connected, no new full sweep. H9 pixel font, H10 / H11 badges, H12
+  Recently Unlocked, Save Sync 529, Flip 2 charging, native pages already recorded - unchanged.
+- D350 retry without the badge lane: FitText gets extraLine (default true = old behaviour); the Channel grid's focused name plate
+  passes extraLine = false, so a long name at Larger text slides on one line (basicMarquee; rests with HomeIdle) instead of
+  growing a second line over the achievement count. Nothing is reported to the lane (678o's never-idle loop can't recur).
+- Tests: ChanPlateOneLine678rTest (source pins); EndlessOnceRoboTest gains CHAN n=12 x1.3 (the long names, must idle).
+- Files: app/src/main/java/com/shelf/launcher/ui/FitText.kt, ui/StyleConsoleHomes.kt; tests above; docs listed.
+- CI: Verify 310 GREEN on eadd00f (push + PR #21); heavy robo EndlessOnceRoboTest 280/280 (cloud). KONKR (L1, QA app, qa-0.6.73-678r-ci):
+  Channel x1.3 kc678r13 + x1.0 kc678r10 popup gate PASS; restored (font 1.0, density 240, snapshot diff=0). RC moves to eadd00f.
+- NOT TESTED: Thor / RP Classic (not with the owner).
+
+# Update 678q (17 Nov 2026, live session) - Channel name-plate change reverted (layout loop); D333 / HW-2 / HW-12 records
+- CI Verify 310 on the RC prep commit 91b1ac3: 16 failures, all Channel - EndlessFillLitRoboTestShard3 / EndlessOnceRoboTest
+  "Compose did not get idle" (a measure / layout loop). Cause: 678o's Channel fix (the focused name plate reported to the tile's
+  badge lane as CONTENT, StyleArt badgeLane). Reverted: StyleConsoleHomes.kt + StyleHomes.kt back to 678n (= v0.6.72 drawing on
+  Channel); ChanNameLane678oTest removed. D350 back to open for v0.6.74 (fix needs an idle test first). Not compiled-tested here
+  beyond the revert (the cloud Gradle daemon died on the heavy robo run) - CI on this push decides.
+- Records: D333 verified (KONKR 678p: Record crate 20/20, TV 20/20, Cardboard box 10/10, Card binder 10/10, no launch); HW-2
+  Record crate checklist DONE; HW-12 Banner DONE (owner: keep the corner X, D351).
+- Files: ui/StyleConsoleHomes.kt, ui/StyleHomes.kt (revert), app/src/test/.../ChanNameLane678oTest.kt (deleted); trackers.
+
+# Update 678p (17 Nov 2026, live session, owner present) - D333 rapid A/B fix (reopen in place); Banner corner X decision
+- Owner 17 Nov: keep Banner's X in the top corner (D351) - a separate corner-close control, not part of the action order; Play
+  stays the first primary action and the first focus. popclip.py hierarchy now leaves a Back / Close OFF Play's row out of the
+  first-action order (the test the "Back is a hint off the action row" note already used); a Close in Play's row before Play
+  still FAILs. Selftest test_hierarchy_corner_close_is_chrome_678p; 197/197.
+- D333 (traced 678o: the last B of a rapid A B A B fell between the closing dialog and the new one opened a frame later): a game
+  window that reaches the end of its close with an A pending now opens again IN PLACE - same dialog window, nothing handed back,
+  its opening effects replayed (openSeq), its Play guard restarted (GamePopup.takeReopenInPlace). Both close paths: the scene /
+  pickup trip (TV room, Record crate, Card binder, cases, sprites) and the Inspect piece. The old hand-over (reopenGame) stays
+  for windows that close at once. ReopenInPlace678pTest (fails on 678o); PopupNativeStorageTest pin follows the new effect key.
+- Checked in the cloud: compiled; ReopenInPlace678pTest 4/4, PopupReopen453Test 5/5, PlayWhileClosing412Test 1/1,
+  PopupNativeStorageTest 9/9, BoxRapidB0672Test 2/2, PopupPolish444Test 4/4; static checks PASS. Hardware: HW-5 re-check with
+  crate678.sh (10 rounds, CRATE + TV + BOX + CARDS, x1.0 + x1.3) on the QA build of this commit.
+- Owner 17 Nov: pixel-font layouts at x1.3 (Pocket Ribbon, Pocket Classic, Night) need visual polish - v0.6.74, not a v0.6.73 blocker.
+- Files: ui/GameWindow.kt; tools/qa/tools/popclip.py; tools/qa/selftest/test_qa.py; app/src/test/.../ReopenInPlace678pTest.kt,
+  PopupNativeStorageTest.kt.
+
+# Update 678o (17 Nov 2026, live session - KONKR connected, owner present) - KONKR hardware gates; Banner + Channel fixes; QA tools
+- Lock taken by the live session (b7924fc). QA builds (ledger): qa-0.6.73-678n-ci (CI 44054144657, app = 678n), qa-0.6.73-678o-ci
+  (2f02390), qa-0.6.73-678o2-ci (94fb3d8), pinned key 4d133dde. KONKR GT78 (BW0306N230000845, USB, Level 1 QA app only): the
+  15 Nov QA app had the old key - only the QA app was replaced (owner rule 16 Nov), its covers / art copied back; the owner's
+  Voltcap untouched (versionCode 79, 15 Nov); the fresh QA app's first-run prompts answered in the QA app only (art packs: Not
+  now; battery note; Inspect). Device restored: owner's Voltcap home in front (same window), font 1.0, size / density as found.
+- Full popup gates, all 53 layouts (OWN): x1.0 k678n10 52/53 - TV room rapid A B A B left the window open (D333); x1.3 k678n13
+  52/53 - Channel: the achievement count under the focused name's second line (D350). The k674 FAILs (Arcade, Side, Library R2,
+  Spot START) pass at both scales. Badges (strict) x1.0 233/282: scaled / turned / scrolled tiles + Twin icons spacing 4 dp (D352).
+- Fixed + verified on the KONKR: Banner window saves chip + L1 / R1 hints 24 dp touch boxes (D349; kb678o10 / kb678o13 geometry
+  PASS, BannerTouch678oTest); Channel name plate joins the tile's badge lane (D350; kc678o13 PASS, ChanNameLane678oTest).
+  Banner's remaining FAIL: the corner X reads before Play (D351, owner / rule decision).
+- D333 traced (crate678.sh, 10 rounds): Record crate 1/10 at x1.0 and at x1.3, TV 1/10 - the second A reopens the closing window
+  and the last B falls between the closing and the reopened dialog (no winkey / key / home B line). Fix proposal: reopen in place.
+- HW-20 verified (new QA hook `voltcap_test_achnew N`, AchievementSeen.qaMarkNew, QA app only): the page opens on NEW UNLOCKS
+  with the focus, one press each to the controls and the list, x1.0 + x1.3; nothing new -> first achievement. HW-13 / HW-14 /
+  HW-16 text pages (text678.sh + homecut): 32/34 PASS - the 2 FAILs are the known D346 'PlayStation' word breaks at x1.3
+  (deferred to v0.6.74). HW-8 nav bar hidden in 12/12 states. HW-2 Record crate checklist all PASS except rapid A/B (9/10).
+- New QA tools: device/text678.sh (rule-11 pages by hooks), device/crate678.sh + tools/crate678.py (Record crate checklist /
+  rapid trace for any layout); selftest 196/196. Owner review sheet: Claude outputs\live678n\KONKR_popups_678n_review.pdf.
+- Checked in the cloud: compiled; BannerTouch678oTest 2/2, AchNewHook678oTest 2/2, ChanNameLane678oTest 2/2, BadgeLane676Test
+  6/6, AchNewUnlocksOnOpen678mTest 2/2, AchCompact529Test 8/8, GameWindowBannerFullText678eTest 1/1; static checks PASS
+  (TRUNCATE 179). CI Verify 310 GREEN on 2f02390 and a019b99; 94fb3d8 was running at handover.
+- Files: ui/GameWindowBanner.kt, ui/StyleHomes.kt (StyleArt badgeLane), ui/StyleConsoleHomes.kt (ChanTile), ui/TestHooks.kt,
+  ui/AchievementListDialog.kt, ui/LauncherScreen.kt (one call), data/AchievementSeen.kt; tests BannerTouch678oTest,
+  AchNewHook678oTest, ChanNameLane678oTest; tools/qa/device/text678.sh, crate678.sh; tools/qa/tools/crate678.py;
+  tools/qa/selftest/test_qa.py; tools/qa/builds.json; tools/qa/defects.json (D333, D349-D352); trackers.
+
+# Update 678n (17 Nov 2026, cloud scheduled run) - CI red on 678m fixed (stale source pin)
+- Verify 310 on a6cdfc7 (678m) was RED on one test: AchCompact529Test.controlsAreOneBarWithFoldedPanels (2876 tests, 1 failed,
+  both runners). It pinned the old literal `val firstFocus = Modifier.initialFocus()` that 678m deliberately changed (with new
+  unlocks waiting the new-unlocks stage takes the opening focus).
+- Fix (test only, no app change): the pin now asserts both new exact lines - `val firstFocus = if (opensOnStage) Modifier else
+  Modifier.initialFocus()` and `val stageOpen = if (opensOnStage) Modifier.initialFocus() else Modifier` - so the rule "first
+  achievement opens focused when nothing is new" stays checked, plus the stage branch. No assertion removed or loosened.
+- Checked in the cloud: compileDebugUnitTestKotlin OK; AchCompact529Test 8/8 + AchNewUnlocksOnOpen678mTest 2/2 PASS; static
+  checks PASS (TRUNCATE 179). Full suite: CI on this push. Hardware: none needed (HW-20 unchanged).
+- Files: app/src/test/java/com/shelf/launcher/ui/AchCompact529Test.kt; trackers.
+
+# Update 678m (17 Nov 2026, cloud scheduled run) - H12: the Achievements page opens on the new unlocks
+- Cause (owner 17 Nov: "Recently Unlocked is skipped - it auto-scrolls to the list"): the per-game Achievements page
+  (AchievementListDialog) gave its opening focus to the first achievement row (Modifier.initialFocus), and focusing that row
+  scrolls the page body until the row is in view - past the new-unlocks stage at the top (NEW UNLOCKS, the badges that just
+  played). With 40 achievements on a 640 x 427 dp screen the stage was scrolled fully out (0 of 13 px of its label shown).
+  It is the only open-time scroll on an Achievements screen: the Achievements hub and Settings › RetroAchievements
+  ("Recently unlocked" card) request no focus on open.
+- Fix: with new unlocks waiting, the page opens on the stage itself (shelfFocusable, "New unlocks" for screen readers) - it is
+  in view, the controller has the focus on open, ▼ goes on to the controls and the list; without any it opens on the first
+  achievement as before. If the stage leaves while focused (after the 100 % celebration) the first achievement takes the
+  focus. Decided once per opening (achOpensOnNewUnlocks). Touch unchanged. Animations: next H12 step (not started).
+- Test: AchNewUnlocksOnOpen678mTest (Robolectric, 640 x 427 dp, 40 achievements, 3 new): FAILED on the old code ("shown 0.0px
+  of 13.0px"), PASS now (2/2); AchFirstRowRoboTest 87/87 PASS (first row still whole when nothing is new). Compiled in the
+  cloud. Static checks PASS (TRUNCATE 179, unchanged).
+- Interpretation to confirm: "Recently Unlocked" read as the new-unlocks stage at the top of a game's Achievements page; if
+  the owner meant another screen it is noted in HW-20.
+- Hardware: HW-20 (NOT TESTED on a handheld). Files: ui/AchievementListDialog.kt, test AchNewUnlocksOnOpen678mTest.kt; trackers.
+
+# Update 678l (17 Nov 2026, cloud scheduled run) - H6: the popup gate makes its own test-game library
+- Cause (RP Classic j677c10 "no game matches 'Shadow of the Colossus'" / "'ActRaiser'"): `pop529.sh run` only turned the QA
+  fixture library on (voltcap_test_fixture_roms = the QA app's own files/roms); the stand-in files themselves came from an
+  earlier fixroms500.sh / qasetup521.sh run on that device. The Classic's freshly installed QA app had an empty folder, so
+  every game name missed. The app code (TestHooks.fromIntent) was right - no Kotlin change.
+- Fix: tools/qa/device/standins.sh (one list of 32 empty stand-ins incl. Shadow of the Colossus + ActRaiser, existing files
+  kept; made as the QA app via run-as when the shell is refused the app's Android/data folder, as the emulator trial since
+  529t; prints "standins=N via=shell|run-as|none"). pop529.sh setup runs it before the rescan and stops "STOP INFRA: QA
+  fixture library empty" before grading anything when N = 0; qasetup521.sh uses the same list; popclip.sh's no-match stop
+  names the fixture-roms count. QA app only (com.shelf.launcher.qa hard-coded; run-as refuses other packages in the test).
+- Test: TestPopclipScript.test_setup_makes_its_own_standin_library_678l (runs standins.sh on the host: shell route +
+  idempotent, run-as fallback with a refused mkdir, both refused -> exit 1; pop529 order + INFRA stop). Selftest 190/190;
+  static checks PASS. CI on 9280921 (678k + HW-17 docs) GREEN.
+- Hardware: HW-18 now unblocked in tooling, NOT TESTED on the Classic (needs the device).
+- Files: tools/qa/device/standins.sh (new), pop529.sh, qasetup521.sh, popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
+# Update 678k (17 Nov 2026, cloud scheduled run) - H8: console homes never end a name in "…"
+- CI on the merged dev line (b76e3ef = facet 677l fixes merged): Verify 310 GREEN (run 44021029263) -> releases.json gate PASS.
+  Emulator trial on 678j (44017399771, pre-merge tree): success. EMULATOR evidence only.
+- H8 (owner 17 Nov, installed v0.6.72 at Larger text: "Advance Wars (Rev 1) (No Glitc…" on the focused Hub card, "Class
+  Dismisse" in the Achievements ticker): the Continue card name is already 2 lines + slide on this line (677i, merged); the
+  Hub tile title, Channel tile title and Channel category label (StyleConsoleHomes) now take FitText's slide instead of its
+  "…" last resort (slideWhenCut = true; same sizes and line counts). The ticker rows are FullText at full height since 676y
+  (the squeezed rows are the likely "Class Dismisse" cause) - not changed. Static TRUNCATE 179.
+- Test: ConsoleHubFullText678kTest (fails on the 678j sources: 4 FitText without slideWhenCut). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin, after one Maven 429 retry) and PASS, with CubeFacet676iTest + Batch480Test (pin the file).
+- Hardware: added to HW-17 (RP Classic Larger text, Console Hub long name). NOT TESTED on a handheld.
+- Files: app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt, test ConsoleHubFullText678kTest.kt; trackers.
+
+# Live session 17 Nov 2026 (~02:00-04:50 UTC) - RP Classic status bar / profile picture / Storage fixes (branch), owner requests recorded
+- Code is on `claude/cube-statusbar-facet` (v0.6.73 candidate, 677d-k) and `claude/v0674-screen-shortcut`, NOT on this dev line:
+  status bar StatusFit (points never squashed; items drop in a fixed order), OwnProfile (one profile picture), Storage facts,
+  app-wide whole words (FitText / FullText / StableFullText, wordMin 8 sp) - awaiting the owner's decision -, QA tools
+  statuscheck.py, homecut word-break check, QaClip statusBars / avatars / placed / probe skip. Full notes: that branch's SUMMARY
+  "Update 677d-j"; defects D343-D348 there.
+- Evidence (L1): RP Classic c677j + RP Nova s677i x1.0 / x1.3: status 54/54, homecut 36/36; Nova full x1.3 j677x13 (677j):
+  popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (probes / LCD ghost -> 677k; 3 new word-break findings).
+  RP Classic full gate INFRA (fixture). Production (owner-approved): Hub settings changed and restored.
+- This dev line: docs only - matrix H, backlog 00, releases.json, owner actions, HW-17..19, handoff.
+
+# Update 678j (17 Nov 2026, cloud scheduled run) - rule 11: the category screen shows its text whole
+- Category screen (PlatformBrowser): the Slides logo box name (when there is no logo picture), the slide's name line and
+  last-played line, the Stage logo box name + name line, and the card's name + game count go through FullText (same line
+  count and readable shrink as before, then slides) with no reserved height, so the boxes keep their sizes. 7 "…" uses
+  removed (static TRUNCATE 187 -> 180).
+- Test: PlatformBrowserFullText678jTest (fails on the 678i sources: 7 Ellipsis, no FullText). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin) and PASS, with CategoryLooks527Test (7/7, pins the same file). Static checks PASS.
+- CI on 678i (60e9c04): Verify 310 GREEN (the sync prompts change + its test compiled and passed there).
+- Emulator trial STARTED on this commit ("[emulator-qa]"; last real trial 01:30 UTC on 678g). Read it next run.
+- Hardware: HW-16 queued (category screen Slides / Stage / cards at x1.0 / x1.3; batch with HW-12..15).
+- Files: app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt, test PlatformBrowserFullText678jTest.kt; trackers.
+
+# Update 678i (17 Nov 2026, cloud scheduled run) - rule 11: save-sync prompts show their text whole
+- Save sync prompts: the sync toast's title and detail, the Google Drive card's status line, the game row's name, the sync
+  log's time and entry lines and the conflict list's game names go through FullText (wrap to their old line count, shrink
+  to a readable size, then slide) with no reserved height, so rows keep their heights. 7 "…" uses removed (static TRUNCATE
+  194 -> 187).
+- Test: SyncPromptsFullText678iTest (fails on the 678h sources: 7 Ellipsis, no FullText). NOT compiled in the cloud: Maven 429
+  on both tries (jakarta.activation-api, fus-statistics-gradle-plugin); assertions checked against the source by a script;
+  CI is its first compile + run. Static checks PASS.
+- CI on 678h (d2185d5): Verify 310 GREEN (the Settings change + its test compiled and passed there).
+- Hardware: HW-15 queued (sync prompts at x1.0 / x1.3; batch with HW-12..14). No emulator trial started (next from ~04:45 UTC).
+- Files: app/src/main/java/com/shelf/launcher/ui/SyncPrompts.kt, test SyncPromptsFullText678iTest.kt; trackers.
+
+# Update 678h (17 Nov 2026, cloud scheduled run) - rule 11: Settings show their text whole
+- Settings: the page and group titles, search results (label + section path), the theme strip line, theme captions and
+  scene-picker tab captions, the ScreenScraper look-up lines (progress head, per-kind found / saved), the custom music
+  name and the RetroAchievements cards (game names, console + unlock count, latest unlock, stat tile values) go through
+  FullText (wraps, shrinks to a readable size, then slides). Rows keep their heights (reserve = false); the theme caption
+  keeps its two lines of room through FullText's reserved height (was minLines = 2) and its 1.182 em spacing.
+  17 "…" uses removed (static TRUNCATE 211 -> 194).
+- Test: SettingsDialogFullText678hTest (fails on the 678g sources: 17 Ellipsis, no FullText). NOT compiled in the cloud:
+  Maven 429 on both tries (protobuf-bom, kotlin-build-tools-impl); assertions checked against the source by a script; CI
+  is its first compile + run. Static checks PASS.
+- Emulator trial 43996079494 on 678g (a5b76b5) READ: VERDICT PASS - e529a / e529b popup gate PASS 2/2; e529c touch walk
+  used 'Okami (USA)' (a set of 10) and tapped '*achievement 1*' / 'game settings*' at both scales (678d expectations met).
+  EMULATOR evidence only. No trial started on this commit (next allowed from ~04:45 UTC).
+- CI on 678g (a5b76b5): Verify 310 GREEN.
+- Hardware: HW-14 queued (Settings pages at x1.0 / x1.3; batch with HW-12 / HW-13).
+- Files: app/src/main/java/com/shelf/launcher/ui/SettingsDialog.kt, test SettingsDialogFullText678hTest.kt; trackers.
+
+# Update 678g (17 Nov 2026, cloud scheduled run) - rule 11: the Save Vault shows its text whole
+- Save Vault (Saves screen): the header name and its count line, "Not connected to Google Drive" and the connect problem,
+  the console counts, each save row's title and place, the last-sync line, the game info bar (name, state line, date and
+  its label) and the Browse saves button go through FullText (wraps, shrinks to a readable size, then slides) with no
+  reserved height, so the rows keep their heights. 13 "…" uses removed (static TRUNCATE 224 -> 211).
+- Test: SaveExplorerFullText678gTest (fails on the 678f sources: 13 Ellipsis, no FullText). Main Kotlin compiled in the cloud
+  (:app:compileDebugKotlin OK); the unit-test classpath hit Maven 429 twice (Robolectric resources) - the test was NOT run
+  here (its assertions checked against the source by a script); CI is its first run. Static checks PASS.
+- Not a popup file; the vault page on hardware: queued in HW-13 (batch with HW-12). Emulator trial STARTED on this commit.
+- CI on 678f (ad80646): Verify 310 GREEN.
+- Files: app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt, test SaveExplorerFullText678gTest.kt; trackers.
+
+# Update 678f (17 Nov 2026, cloud scheduled run) - CI red on 678e fixed (test only, no app change)
+- "Verify Android update 310" failed on cc34a59 (678e), both runners, 1 of 2857 tests: PopupPolish444Test
+  .bannerRoundKeysNameTheOneYouAreOn looked for the literal `lineHeight = 1.08.em` on the banner's big name. 678e changed it on
+  purpose to `(32 * 1.08f).sp`: StableFullText keeps an sp line height's ratio as the name shrinks (an em one fell back to 1.2),
+  so the v0.6.66 rule (two name lines close together) still holds. The test now checks the sp form, that the em form is gone,
+  and that FitText's StableFullText derives the ratio from an sp line height - same rule, read from the new code.
+- Compiled in the cloud (:app:testDebugUnitTest, 7m33s) - PopupPolish444Test + GameWindowBannerFullText678eTest PASS; static
+  checks PASS (TRUNCATE 224). No emulator trial started (allowed from ~00:45 UTC; this push is earlier).
+- Files: app/src/test/java/com/shelf/launcher/ui/PopupPolish444Test.kt; trackers.
+
+# Update 678e (16 Nov 2026, cloud scheduled run) - rule 11: the banner game window shows its text whole
+- Banner page game window (Settings > Game window > Style = Banner): console / year line, the story card's name, Full details
+  line, performance summary + rows, options rows + their notes, the big name (when no logo), the saves chip and achievement
+  titles / closed descriptions go through WinFullText (wraps, shrinks to a readable size, then slides; no reserved height,
+  so heights stay as before). The big name's StepBased autoSize is replaced by FullText's fit, with its 1.08 line spacing kept.
+- An opened achievement shows its whole description (it stopped at 6 lines); RetroAchievements comments show whole (6 lines).
+- The one cut left is the closed story (5 lines): marked qa-ok, and its More pill now shows whenever the text is really cut
+  (before: only past 260 characters, so a shorter story could be cut with no way to the rest in sight).
+- Static TRUNCATE 236 -> 224. Test: GameWindowBannerFullText678eTest (fails on the 678d sources). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin OK after a Maven 429 retry) and the test PASS; static checks PASS.
+- Popup file (R26): needs the popclip gate with the Banner style - queued as HW-12 (emulator trial runs the OWN style only).
+- Files: ui/GameWindowBanner.kt, test GameWindowBannerFullText678eTest.kt; trackers.
+
+# Update 678d (16 Nov 2026, cloud scheduled run) - QA tool only - first fully green emulator trial; touch walk page-aware
+- Emulator trial 43961010406 (678c, 88e3457) READ: VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, every
+  graded check on COVERDETAILS and SHELF PASS, FATAL 0, owner snapshot restored diff=0. First fully green trial (678a's
+  regex-free reads). EMULATOR evidence only, 2 of 53 layouts.
+- Same run, e529c touch walk: both taps "no shown control". Not a read problem this time - the game ("Shadow of the Colossus")
+  had no achievement set (the art fixture leaves one game in four without), so its window had Main / Details / Options: R1 R1
+  reached Options (dumped as "t_trophies") and the next R1 wrapped to Main ("t_options").
+- shelfpages529.sh: touchp names each page by what its dump holds (achievement row / Game settings), counts its R1 presses and
+  goes back with as many L1 (logs if it is not back on the main page); a game without a set logs the achievement tap NOT TESTED
+  instead of a miss. run clears logcat before the art fixture and swaps a game the fixture logs "achfix n=0" for the first
+  game with a set of 10 (achgame, grep -F only), logged and recorded in the setup line.
+- Test: TestPopclipScript.test_shelfpages_touch_walk_names_pages_by_their_dumps (3-page and 4-page windows, wrap-around, the
+  game swap, CR in logcat); fails on 678c's script. Selftest 179/179 PASS; static checks PASS. No app code changed (no compile).
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; trackers (releases.json emulator gate PASS with run).
+
+# Update 678c (16 Nov 2026, cloud scheduled run) - rule 11: year recap shown whole
+- Year recap (top games, monthly bar labels, the game shelf names + play times, stat tiles, facts, achievement and completion
+  rows): 9 TextOverflow.Ellipsis uses -> FullText (wraps, shrinks to a readable size, then slides). reserve = false everywhere
+  so heights stay as they were; the old StepBased autoSize is replaced by FullText's own fit. Static TRUNCATE 245 -> 236.
+- Test: YearRecapFullText678cTest (fails on the 678b sources). Compiled in the cloud (:app:compileDebugUnitTestKotlin OK after
+  one Maven 429 retry) and the test PASS; static checks PASS. Not tested on a handheld (look only - no HW request: same
+  FullText as 675l-677d). GameWindowBanner (12) left for a later run: it is a popup file and needs the popclip gate (R26).
+- Emulator trial started on this commit ("[emulator-qa]") - first trial with 678a / 678b's regex-free label reads.
+- Files: ui/YearRecapDialog.kt, test YearRecapFullText678cTest.kt; trackers.
+
+# Update 678b (16 Nov 2026, cloud scheduled run) - QA tool only - touch-walk taps read labels without the device's regex
+- shelfpages529.sh (emulator job e529c, TOUCH=1): its two taps (first achievement row, Game settings) still handed regex
+  labels to the device's grep -oiE - the same reader that missed Play / Details / More in 678a; trial 43929836268 logged "tap:
+  no shown control" for both. ctl now takes a shell glob ("*achievement 1*", "game settings*"), lower-cases with tr, cuts
+  label / full / shown out with parameter expansion and compares with case (old rule kept: case-blind, the label matches or
+  ends in a non-letter + the pattern); tapj skips zero-size keys in the shell (was grep -vE) and its log names the asked
+  control (it printed a coordinate after set --).
+- Test: TestPopclipScript.test_shelfpages_taps_read_labels_without_the_devices_regex - runs ctl / tapj with a stand-in grep that
+  reads nothing for -E; fails on 678a's script. One older test follows the new ctl. Selftest 178/178 PASS; static checks PASS.
+  No app code changed. EMULATOR tooling only; next emulator trial allowed from ~21:35 UTC (not started this run).
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; trackers.
+
+# Update 678a (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads labels without the device's regex
+- Emulator trial 43929836268 (677d, c45d0ab) read: SHELF PASS at x1.0 and x1.3; COVERDETAILS fails only "buttons" (x1.3 More
+  step, x1.0 Details page). The new log lines settle the cause: the device's grep -iE read no Play key in 9 of 9 probes (the
+  window counted as up only through the app's popupAgeMs), "Details read: plain 1, pattern 0" and "More: none read (plain More
+  keys 1)" - fixed-string and pattern reads of the same file at the same moment. The pulled dumps hold Play / Details / More
+  as plain ASCII controls.
+- popclip.sh: ctl (tapat / seek), pc (up) and the main-dump Details / More checks no longer hand a label to a regex. ctl splits
+  the word list itself, cuts label / full / shown out with shell parameter expansion, lower-cases with tr A-Z a-z and compares
+  with case (same rule: the label is the word or ends in a non-letter + the word, case-blind). tapat's zero-size filter is a
+  shell compare too. Old and new ctl give identical output on all 128 reads of the trial's dumps (glibc grep, dash + bash).
+- Test: TestPopclipScript.test_labels_are_read_without_the_devices_regex - runs ctl / pc / tapat with a stand-in grep that
+  reads nothing for -E (the device's behaviour); fails on 677d's popclip.sh. Two older tests follow the new ctl. Selftest
+  178/178 PASS; static checks PASS. No app code changed. EMULATOR tooling only; next trial allowed from ~21:35 UTC.
+- Not changed: shelfpages529.sh (e529c touch walk) still uses grep -oiE for its own regex taps ("tap: no shown control
+  '...achievement 1...'" in this trial) - candidate for the same treatment next.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
+# Update 677d (16 Nov 2026, cloud scheduled run) - rule 11: play header + Stats page shown whole; cloud run starts on the dev branch
+- Play header (continue line, the stat chips' label + value, the Play button, the category above the title in both title
+  placements) and the Stats page (summary tiles, weekly bar times + labels, per-game bar names + times): 11 TextOverflow.Ellipsis
+  uses -> FullText (wraps, shrinks to a readable size, then slides). reserve = false everywhere so heights stay as they were; the
+  category line keeps its fixed size (autoFit = false). Static TRUNCATE 256 -> 245.
+- Test: PlayHeaderStatsFullText677dTest (fails on the 677c sources). Compiled in the cloud (:app:compileDebugUnitTestKotlin OK)
+  and the test PASS; static checks PASS. Not tested on a handheld (look only - no HW request: same FullText as 675l-677a).
+- Owner request (live, 16 Nov): hourly runs kept reporting "the working copy is main". Cause: the cloud environment pre-clones
+  the repo at /home/claude/voltcap on main (detached HEAD) before the run; the prompt's `git clone -b claude/qa-0672-repair ...
+  /home/claude/voltcap` then cannot write there, so every run started on main and had to improvise. New tools/cloud/start_run.sh:
+  checks the repo + origin, stops on uncommitted work, fetches the dev branch explicitly (the pre-clone only knows main),
+  checks it out (or creates it tracking origin), fast-forwards only (ahead / diverged = BLOCKED, never reset / stash / force),
+  verifies branch == origin's head, prints "BOOTSTRAP OK <branch> <sha>". The scheduled task's prompt now runs it from
+  origin's copy (git show) and checks the branch again before the lock, every commit and every push.
+- Files: ui/PlayHeader.kt, ui/StatsContent.kt, test PlayHeaderStatsFullText677dTest.kt, tools/cloud/start_run.sh,
+  docs/claude/CLOUD_DEVELOPMENT.md; trackers.
+
+# Update 677c (16 Nov 2026, cloud scheduled run) - QA tool only - popup gate reads its own probe; app's window age counts
+- Emulator trial 43887216747 (677a): e529b SHELF "first A opened nothing" and e529a COVERDETAILS "first A opened late", yet the
+  probes copied right after those reads (probeA / probeB) hold the window's Play key AND the app's own popupAgeMs (2188 / 2708 ms,
+  i.e. the window was up ~0.6 s after A); the same file read 1 Play key when the log line was written. The second A then landed
+  on the open window (e529b SHELF main = home again, so Details / More / Play steps all missed).
+- popclip.sh up(): each probe asks for a file of its own name (${TAG}_probe_N), waits for it, hands it on as ${TAG}_probe.json
+  for the steps that read it; the window also counts as up when the app's dump says popupAgeMs (logged: "up by the app's own
+  popupAgeMs ..." - the grader's open check still reads the dumps itself, so a window without Play still FAILs). UPREAD keeps
+  what each read saw and is logged beside "opened late / nothing". "no Details action" / "More: none read" now also log the
+  plain fixed-string count vs the pattern count (e529a main held Details + More while the device's pattern read none).
+- Also checked: the e529a dumps' density 1.5 / fontScale 1.0 is the system's; x1.3 is Voltcap's own drawing scale
+  (voltcap_test_scale), so that is not a missing scale.
+- Test: TestPopclipScript.test_up_reads_its_own_probe_and_trusts_the_apps_window_age runs up() against a stand-in for
+  QaClip (fails on 677b's popclip.sh); selftest 177/177 PASS; static checks PASS. No app code changed. EMULATOR-only tooling;
+  next trial ("[emulator-qa]") allowed from ~17:50 UTC - the next run starts it.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py; trackers.
+
+# Update 677b (16 Nov 2026, cloud run) - CI red fixed: QaIsolation521Test found the wrong debug block
+- CI "Verify Android update 310" was RED on 0cc6739 (676h) and 0e23337 (676l): 1 of 2114 tests,
+  QaIsolation521Test.qaBuildsAreSignedWithTheDebugKeyNotTheReleaseKey ("release key only with the owner opt-out"). Cause: 676h
+  added `getByName("debug") { }` inside `signingConfigs { }` (pinned QA key from VOLTCAP_QA_KEYSTORE_PATH); the test's
+  first-match text lookup landed there instead of the debug BUILD TYPE. The app/Gradle file is right; the test now looks inside
+  `buildTypes {` and also asserts that the QA-key block only re-points the debug signing config and never names the release key.
+- Emulator trial 43887216747 (677a) read: x1.0 COVERDETAILS PASS on every check (first full row); x1.0 SHELF first A opened
+  nothing; x1.3 COVERDETAILS opened late + More / Details steps missing, SHELF Details page missing. EMULATOR evidence only.
+- Files: app/src/test/java/com/shelf/launcher/data/QaIsolation521Test.kt; trackers.
+- Checks: test logic replayed in Python against build.gradle.kts (both lookups hit the intended blocks); static checks PASS.
+  NOT compiled in the cloud (Maven Central 429 twice) - CI on this push is the first compile + run.
+
+# Update 677l (17 Nov 2026) - owner decision: whole words move to v0.6.74; candidate keeps the localized fixes
+- Owner 17 Nov: "Move the global whole-word text-fitting change to v0.6.74 ... Keep the localized status-bar, duplicate-profile
+  and Storage Boxes fixes in v0.6.73". FitText.kt back to its 677h form (FitText / FullText StepBased / StableFullText as
+  before); kept: the broken-word DETECTION helpers (QaClip "brokenWord", homecut), the Storage facts (677e/h/i), the Hub bar
+  cards' title / subtitle (677j), the status-bar probes / LCD ghost fix (677k). WholeWords677hTest keeps only the detection test.
+- Whole-word work preserved unchanged on branch `claude/whole-words-v0674` (= 3b65c9f, before this revert) and on
+  `claude/v0674-screen-shortcut`.
+- homecut's word-break check stays strict; pre-existing word breaks (D346) go in an --allow file with the reason "deferred to
+  v0.6.74 by the owner, 17 Nov" for the v0.6.73 focused checks, never silently.
+- Checked: StatusFit677Test, WholeWords677hTest, Batch478Test PASS (cloud compile); static checks PASS; selftest OK.
+  Hardware: NOT TESTED on this build (HW-17 focused re-check).
+
+# Update 676v-z2 (16 Nov 2026 evening, live) - app-wide trimmed line heights, height cuts, names clear of badges, same-row badges (review)
+- Owner: "hold v0.6.73" for the height-cut class (D342). 676v Theme: every Material style LineHeightStyle(Center, Trim.Both).
+  676x status lines keep a 24 dp touch box (SceneControl), progress chip full form asks 4 dp more. 676y Cube arrows as icons,
+  Memory card name 1 line when tight, FitText slides at its fitted size, arcade tube name leaves the console line room, bubble names
+  FitText, Resume / Hub ticker rows unbounded, app folders draw the apps icon. 676z coverless name plates leave the console's band
+  (lane shiftY), names never split inside a word, Tiles name above a bottom console pill; badgecheck fails a badge over a tile's
+  text (found ~20 layouts). 676z2 Tiles name is lane content (laneContentAt); app icon on the logo path too.
+- QA tools: homecut.py (width + height cuts, off-screen skipped), glyphcheck focused window on top, navbar guard; selftests OK.
+- Nova gates, candidate claude/cube-statusbar-facet: 676z x1.3 popup 52/53 (Twin desk dump missing - flake, PASS on rerun),
+  badges 86/94 (Tiles count over raised name -> 676z2), homecut 52/53 (Cross -> 676z2); 676z x1.0 popup 53/53, badges 142/142,
+  homecut 52/53 (Cross). 676z2 recheck Tiles / Cross / Twin desk x1.3 + x1.0: all PASS (x1.3 Tiles badges NOT TESTED: the count
+  is left out on the coverless tile - no room). Before/after shots: line_height_before_after_x13, badges_before_after_nova.
+- 676w (owner request): badge lane same row, one common scale down to 0.72, else the latest badge left out - branch
+  claude/badge-same-row, Nova Cube/Grid/Tiles/Classic/Shelf/Stacks x1.0 + x1.3 all gates PASS; waiting for the owner's review.
+- Open: Storage boxes x1.3 facts column wraps letter by letter ("6 / 1 0") - not cut, poor reading; KONKR not connected.
+
+# Update 676n-r (16 Nov 2026, live session) - Thor real launches, Cube x1.3, home-text gate, D340 fixes
+- 676n supervised launch window (owner's HARDWARE TESTING AUTHORIZATION): ui/QaLaunchWindow.kt; TestHooks.interceptLaunch lets
+  the isolated QA app open a plain app ("vm.app" / "launcher.app") only when <files>/qa_allow_app_launch lists it, at most 15 min
+  ahead; games / ROMs / resume stay blocked. QaClip.appLaunchWindow. Test QaLaunchWindow676nTest.
+- Thor (L1, ~12 min): drawer "Open on screen" Bottom -> Clock on display 4, Top -> display 0; Android-game picker shown; nav
+  13/13 no pill; facet controller icon present (QA app hides the built-in pad by default). All restored (see HW-10 / HW-11).
+- 676o/q Cube x1.3 (D338): the left hint wraps in halves with a tight line height; a short library panel keeps one reserved line
+  for the name and the info line (FullText) so the cover flow keeps its room. Thor x1.3 + x1.0 checked on the Facet build.
+- 676o navbar676.sh guard reads the focused resumed activity (D341). 676p Spotlight hints FlowRow (D339).
+- 676p tools/qa/tools/homecut.py (+selftest): grades home-screen texts the popup gate never did. Nova f676x10 4 FAIL, f676x13 9 FAIL.
+- 676r (owner: fix all for v0.6.73; Night's word must fit): Arcade (FitText slideWhenCut, console FullText), Circuit / Greencore
+  buttons + label, Camera bar, Orbit info line (FullText), Crate facts (FlowRow), Classic achievement line (FullText, no "…"),
+  Night watermark (autoSize 120 -> 24 sp, width 90 %). Test HomeCuts676rTest.
+- Nova f676x10 (676f) graded: popup 52/53 (SPOT glyphs: home-legend glyphs measured under the window - checker issue, open),
+  badges 118/118.
+- Branches: claude/v0674-screen-shortcut (all of it) and claude/cube-statusbar-facet (v0.6.73 candidate: 676m..r cherry-picked).
+  builds.json: qa-0.6.73-676r-facet-ci (CI 43911642798, b2626e75). Nova full gates r676x13 / r676x10 running.
+- Compiled: unit tests named above + CategoryStable394Test, static checks PASS, QA selftests OK. Not tested: KONKR (not connected),
+  RP Classic, Odin.
+
+# Update 676l (16 Nov 2026, live session) - QA signing in CI, Cube facet + v0.6.74 drawer branches, full gate x1.3
+- QA APK signing (owner 3A, secret added by the owner): .github/workflows/qa-device-apk.yml - workflow_dispatch or a claude/* push
+  with "[qa-apk]", never pull_request; the secret goes to one step, is checked against tools/qa/qa_signing.json, written to a temp
+  file named to Gradle by VOLTCAP_QA_KEYSTORE_PATH (build.gradle.kts, debug only), removed after the build; the job fails unless the
+  APK is com.shelf.launcher.qa with certificate 4d133dde. (First run: the runner's Android folder wasn't ~/.android - Gradle made a
+  fresh key 73469334; the check caught it; fixed with the explicit path.) Three CI APKs verified here: all 4d133dde. In-place
+  update proven on the Thor: firstInstallTime unchanged, data kept (no first-run questions again).
+- Cube facet (owner option C): branch claude/cube-statusbar-facet - shown on the Thor top screen x1.0 + x1.3, waiting for approval.
+- v0.6.74 "Open on screen": branch claude/v0674-screen-shortcut - see HW-10; a QA build logs the chosen screen before its block.
+- Full gate, build 676f, Nova x1.3: popup 53/53, badges 79/79 PASS (676k). x1.0 running. KONKR not connected.
+- Owner: Nova touch vibration - the PC guard refused the settings write (Batch 521); the owner can switch it off in Settings.
+
+# Update 676k (16 Nov 2026, live session) - QA tool only - badgecheck reads scaled tiles and unplaced texts right
+- Full 53-layout gate on build 676f, RP Nova x1.3 (f676x13): popup gate 53/53 PASS; owner snapshot restored diff=0, fatal=0.
+- Its badge gate first read 44 FAIL: an unfocused tile drawn at its own scale (Pocket ribbon 0.81) - "full" is the laid-out size,
+  "shown" the scaled one - read as cut badges and too-close gaps; and Twin icons' count, which the lane had left out (not placed),
+  read as cut text on the console badge (the screenshot shows the badge and the name only). badgecheck: the same shrink both ways
+  is the tile's scale (gap measured at that scale), only an uneven shrink is a cut; unplaced texts are skipped. Graded again:
+  79/79 PASS. Selftests keep failing real overlaps / cuts / too-close fixtures (+2 new: a scaled tile passes, an unplaced text passes).
+
+# Update 677a (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: session card + status note shown whole
+- The post-game session card (game name, play time, achievement count, completion line, milestone) and the status-bar session
+  note cut long text with "…". Now FullText (wrap -> readable shrink -> slide), reserve = false so a short name keeps today's
+  card height; the note slides inside its 320 dp. TRUNCATE 262 -> 256 (static_checks).
+- Test: SessionSummaryFullText677aTest (fails on 676g: 6 Ellipsis, no FullText) + NotificationsFullText675mTest PASS; app +
+  tests compiled in the cloud (compileDebugUnitTestKotlin). static_checks PASS. Files: ui/SessionSummary.kt, the test.
+- Emulator trial started on this commit ("[emulator-qa]") - first trial on the 675o dump-read fix.
+- NOT TESTED on hardware: look of the card / note (HW-7 extended, KONKR).
+
+# Update 676g (16 Nov 2026, live session) - QA tool only - readcheck: an unplaced text is not drawn
+- n676f13 graded FAIL only because readcheck counted the left-out count ('6/10', "placed": false in the dump) as drawn over the name;
+  the screenshot shows the name alone. readcheck.overlaps skips texts with an explicit "placed": false (older dumps graded as before).
+  Proof it is not a loosening: the same checker still FAILs n676d13 / n676e13, where the count was really drawn over the name.
+- RP Nova 676f, graded with it: x1.3 CUBE / TILES / GRID popup 3/3 PASS + badge gate 17/17; x1.0 CUBE 1/1 + 10/10. QA selftest OK
+  (+TestReadcheckUnplaced676f). Evidence: C:\VoltcapQA\runs\n676f.tar, shots\cube_badge_ba_676f.jpg.
+
+# Update 676f (16 Nov 2026, live session) - same branch, NOT released - name plate as lane content (replaces 676e's offset)
+- n676e13 (676e, x1.3): Cube still "'Shadow Of The Colossus' and '6/10' drawn over each other": the Nova x1.3 Cube tile is 162 x 224
+  px, console 29 + stacked count 86 px leave 73 px for a 168 px (4-line) plate - 676e only moved a plate that fitted. 676f: the
+  coverless plate joins the lane as fixed CONTENT (BadgeKind.CONTENT, measured where it is drawn); the badges after the console keep
+  clear of it (beside, stacked, other corners) or, with no room, are left out - not placed at all (676e left an alpha-0 copy).
+  The count is still in the game's line under the row. 676e's freeBand / offset removed. x1.0 n676e10: popup 1/1, badges 10/10 PASS.
+- Tests: BadgeContent676eTest (2: stacks clear of a short plate; the Nova tile leaves the count out), BadgeLane676Test PASS.
+
+# Update 676e (16 Nov 2026, live session) - same branch, NOT released - coverless name plate clear of the badges
+- RP Nova x1.3 n676d13 (build 676d): Grid PASS (676c chip text fixed: "6/10 · 60%" needs 62 px, has 62); Cube readability FAIL
+  "'Shadow Of The Colossus' and '6/10' drawn over each other" - the lane's stacked count landed on a coverless card's name plate.
+  Fix: BadgeLane.freeBand + Modifier.laneContent - the plate's text is placed in the middle of the band the shown badges leave
+  free, in the same layout pass as the badges (no jump); a plate taller than the band stays centred. StyleNamePlate gets the lane.
+- n676d10 (x1.0): popup 3/3 PASS, badge gate 26/26 PASS. nav676d: pill hidden in every state (swipe step skipped, by design).
+  D334 on hardware: 6 system Back presses at the QA app's root - the guard fired 5x, focus never left the QA app.
+- Tests: BadgeFreeBand676eTest, BadgeLane676Test, Batch675rTest, QaHarnessBack676Test PASS. Files: ui/BadgeLane.kt, ui/StyleHomes.kt.
+- Planned (v0.6.74, owner 16 Nov): per-item "Open on screen" shortcut - docs/claude/SCREEN_SHORTCUT_PLAN.md (audit + plan).
+- Owner 16 Nov: replacing an incompatible QA app (uninstall com.shelf.launcher.qa only) is always allowed; the Thor is in use by the
+  owner today - its nav-bar check stays queued (HW-8).
+
+# Update 676d (16 Nov 2026, live session) - same branch, NOT released - D334 QA safety, QA levels, stable QA key, Cube status-bar options
+- D334 (owner: "finish D334 first"): the QA harness could put the owner's Voltcap in front. App side: MainActivity's Back at the
+  home's root called moveTaskToBack whenever Voltcap isn't the default home - always so for the QA app, so a script's B showed
+  the home app (the owner's Voltcap). Now the isolated QA app stays in front while a QA script runs (its launch-block file
+  qa_nolaunch, QaVariant.harnessActive / backAtRootLeaves); the owner's Voltcap and the QA app by hand behave as before.
+  Script side: popclip.sh confirms device + package (pm path, serial logged) and writes the block file before its first key;
+  after each layout switch it checks the app's own "homeLayout" (new in qaViewState + QaClip) and skips the layout (NOT TESTED,
+  nothing pressed) when the switch didn't take; navbar676.sh: target check, keys only with the QA app focused (fgq), swipe
+  only with SWIPE=1 and never where the owner's Voltcap is home.
+- CLAUDE.md: "Hardware QA levels" (owner 16 Nov): L1 QA app, L2 production read-only, L3 production modification (approval,
+  backup + rollback + certificate check); an accidental switch is never permission; evidence labelled QA / PRODUCTION; the cloud
+  task never reaches devices. HARDWARE_QA_QUEUE.md: every request states its level.
+- QA signing key (owner 3A): the key the QA app is installed with (4d133dde) pinned in tools/qa/qa_signing.json;
+  tools/cloud/qa_key.sh restore / check (never prints the key); setup_android.sh restores it from VOLTCAP_QA_DEBUG_KEYSTORE_B64;
+  private copy on the owner's laptop C:\VoltcapQA\keys\; docs/claude/QA_SIGNING_KEY.md (where kept, checks, recovery). The
+  GitHub secret and the cloud environment variable need the owner (the proxy can't set secrets).
+- Tests: QaHarnessBack676Test, NavBar676Test, BadgeLane676Test, Batch675rTest PASS; QA selftest OK (+TestHarnessNeverReachesTheOwnersApp676d);
+  static_checks PASS. Files: MainActivity.kt, data/QaVariant.kt, LauncherViewModel.kt (qaViewState layout), ui/QaClip.kt,
+  tools/qa/device/popclip.sh, navbar676.sh, tools/cloud/qa_key.sh, setup_android.sh, tools/qa/qa_signing.json, CLAUDE.md, docs.
+- Cube status bar: four options shown to the owner (current / one capsule / floating / cube facet) - nothing changed yet.
+
+# Update 676 (16 Nov 2026, live session) - same branch, NOT released - Hide navigation bar root cause, global badge lane, Storage title
+- 676b HIDE NAVIGATION BAR (owner P0): root cause found and reproduced on the RP Nova (gesture nav, its own hide_nav_bar = 1).
+  Android's NavigationBar0 was hidden (no surface); the white pill was SystemUI's SecondaryHomeHandle0 (NAVIGATION_BAR_PANEL),
+  shown exactly while Voltcap's focused window asked for the navigation bar hidden: QA app asking hidden -> handle visible,
+  asking shown (test hook voltcap_test_navshown) -> handle gone, back -> visible again. Update 155 knew this quirk, but
+  `GestureHint.systemOwnsNav` was `by lazy { isRetroid && RootShell.available }`: tied to the root service (irrelevant to the
+  firmware quirk) and decided once per process - a home app starting before the vendor service is up (boot, backup / crash
+  restart) kept "false" for the whole run, every window asked, the pill stayed until Voltcap restarted (RootShell's own
+  lazy look-up had the same bug, fixed in Update 360). The isolated QA app never uses root: always in that state.
+  Fix: systemOwnsNav = the Retroid firmware alone; whether the device hides the bar = deviceNavHidden (already observed, no
+  root). aynHandle no longer lazy. The polling safety net (navStuck every 1.5 s / 15 s for the whole run) is gone; a bar
+  that comes back for real is answered from SystemBars.watchKeyboard's inset-animation end (event-driven, once per time).
+  One policy for every window: GestureHint.windowHidesNav -> SystemBars.apply (activity, all popups via
+  ImmersiveDialogWindow, second screen, the small activities). Status bar handling unchanged and independent.
+- 676a BADGE LANE (owner): ui/BadgeLane.kt - every corner badge on a game's picture reports its measured pill to its tile's
+  lane during measure; placement resolves them in the same frame (no jump): console keeps its corner, the count / NEW /
+  score stack 6 dp clear on their own side, then other corners, never cut, never off the tile; a tile too small for both
+  leaves the later badge out (reported). Wired: ConsoleBadge, GameProgressChip, MetacriticChip, GameCard (trophy pill, NEW
+  pill), TileHome (count pill), GridHome, StyleHomes (StyleArt both branches), StyleCaseStacks (3 tiles). Styles untouched.
+  QaClip dumps "badges" / "badgeTiles" (actual laid-out bounds); tools/qa/tools/badgecheck.py (R27) fails < 6 dp / cut.
+- 675s Storage (RP Nova x1.3 n675r13 still FAIL): the 426 x 1 px title was the record header's 22 dp coverless sprite drawing
+  the name plate (StorageSprite), not the flying copy (675r's clearAndSetSemantics stays - harmless). spriteShowsName >= 48 dp.
+- n675r13 (x1.3, build 675r): CRATE, POCKET_RIBBON, CUBE PASS; STORAGE FAIL (fixed here, re-test pending).
+- Tests: BadgeLane676Test (6), NavBar676Test (3), Batch675rTest (4), NavBar449Test, CrateVertical674Test, CompactX13Fixes672Test
+  = 28/28 PASS; QA selftest OK (+TestBadgeCheck676a); static_checks PASS.
+- Files: ui/BadgeLane.kt (new), ui/ConsoleBadge.kt, ui/StyleHomes.kt, ui/GameCard.kt, ui/TileHome.kt, ui/GridHome.kt,
+  ui/StyleCaseStacks.kt, ui/QaClip.kt, ui/StyleStorageBoxes.kt, ui/SystemBars.kt, data/GestureHint.kt, MainActivity.kt;
+  tests BadgeLane676Test, NavBar676Test, Batch675rTest; tools/qa/tools/badgecheck.py, selftest; tools/qa/builds.json.
+- NOT TESTED on hardware yet: everything above on the fresh QA build (Nova next; KONKR / RP Classic / AYN queued).
+
+# Update 675r (16 Nov 2026, live session) - same branch, NOT released - the four RP Nova x1.3 popup FAILs (n675d)
+- RP Nova (640 x 480 dp) x1.3 gate n675d on QA build 8bd5e4a: 49/53; x1.0 n675c 53/53, pickups 14/14. The four FAILs fixed:
+  - Record crate (visible): with More open, its status line ("Not installed" etc.) was not counted in `crateVisibleKeys`, so a
+    third key left the facts less than one row, and the facts column kept its weight - an empty band. The status line's
+    measured height (guess 30 dp before the first frame) is now reserved; the facts column is `weight(1f, fill = false)`.
+    Nova numbers: 185 dp region -> 2 keys + 2 whole fact rows (was 3 keys + empty band). Vertical menu design unchanged.
+  - Pocket ribbon (visible): inline fact labels had a fixed 78 dp column with softWrap = false, so CONSOLE / TROPHIES were cut
+    at x1.3. Label column = widest label measured (min 78 dp, max 45 % of the row); a label wider than that wraps.
+  - Storage boxes (hidden duplicate title): PickupOverlay's landed copy (alpha 0) stayed in semantics as a 426 x 1 px title -
+    `clearAndSetSemantics {}` on the flying copy. Nothing visible changes.
+  - Cube ("first A opened nothing"): at x1.3 Cube's home is its category cube (hint "Ⓐ Open", no game drawn, hasRow false);
+    its A opens the category's games as designed, the next A opens the window. Not an app bug: the gate now enters the games
+    first on that screen only (popclip.sh, logged), as it already does for Green Core's home menu. Gate assertions unchanged.
+- Tests: Batch675rTest (3, fail on the old code), QA selftest TestCubeCategoryHome675r; neighbours CrateVertical674Test,
+  CompactX13Fixes672Test, Batch674n/o, Pickup*, StorageFlight529Test, PopupNativeStorageTest, TwoLineKeys674Test - 61/61 PASS.
+  static_checks PASS, QA selftest OK, cloud compileDebugUnitTestKotlin OK.
+- Files: ui/WinScenesMore.kt, ui/WinSceneStorageFlight.kt, test ui/Batch675rTest.kt, tools/qa/device/popclip.sh,
+  tools/qa/selftest/test_qa.py.
+- NOT TESTED on hardware yet: targeted RP Nova re-test (x1.3 + x1.0: CRATE POCKET_RIBBON STORAGE CUBE) on the fresh QA build.
+
+# Update 675o (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial read; device-side dump reads in ASCII
+- Read emulator run 43833359452 (675m commit 1990deb4, swangle_indirect): the start-up fixes (675k) worked - all three
+  preconditions HOME / 1 QA window, and the trial GRADED for the first time with no infra failure. VERDICT FAIL:
+  e529b (x1.0) SHELF PASS on all 11 checks, COVERDETAILS open FAIL ("first A opened nothing"); e529a (x1.3) COVERDETAILS
+  10/11 (rapid), SHELF 9/11 (More step missing, rapid). e529c: achievement / Game settings taps "no shown control".
+- Cause (from the artifacts): the device's grep still missed controls that were in the dumps - e529b's probeA / probeB (copied
+  right after the failed read) hold Play / Details / More; e529a's SHELF main holds More - and again only the dumps holding
+  "Full story on Details ›" (dumps with only "·" read fine). The two rapid FAILs follow from it: the POP_EXTRA A's window
+  was up but read as "A opened nothing", so the rapid A B A B's first A pressed its Play (launch blocked, counted).
+  Not reproducible with glibc toybox here; the emulator's toybox / bionic regex is the suspect.
+- Fix (QA tools only, no app code): popclip.sh / shelfpages529.sh `jl` hands grep plain ASCII (the More glyphs' own last
+  bytes kept apart: ⋯ = ~12, • = ~~3; every other non-ASCII byte = ~); MOREW = (More|~12|~~3~~3~~3) replaces the multibyte
+  patterns. POP_EXTRA: a window that opens late is re-probed 1.5 s later ("extra: A opened late", closed with B) so the rapid
+  presses start from the home. New diagnostics: "More: none read in the main dump (N controls read)", "read: Play keys probe
+  X, home Y" after a first A that opened nothing. Grader unchanged; no assertion weakened.
+- Test: selftest test_dump_reads_are_plain_ascii_and_find_the_round_more_keys (fails on 675m: no ASCII fold, multibyte More
+  pattern); selftest 164/164 PASS; static checks PASS.
+- CI: Verify 310 green on a1945934. Flake seen on 0e0b1dc1 (docs-only lock commit): EndlessOnceRoboTest [BOX n=12 x1]
+  "performMeasureAndLayout called during measure layout", ubuntu-latest only; green on the next push - watch.
+- Not tested: on the emulator (next "[emulator-qa]" allowed from ~11:42 UTC) or a handheld.
+- Files: tools/qa/device/popclip.sh, tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; docs (matrix G14,
+  HANDOFF, HARDWARE_QA_QUEUE, AUTORUN_LOG, run_reports.jsonl, releases.json, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
+# Update 675m (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: notifications panel shown whole
+- Notifications panel (R1 / pull-down): app name, notification title, notification text, background-task label, date and
+  the charge-limit pill used TextOverflow.Ellipsis (6). Now FullText (wrap to the same line count, shrink to fitMin, then
+  slide), reserve = false so rows keep today's height. Same sizes, colours, weights, focus and dismiss (D26) unchanged.
+  TRUNCATE count 268 -> 262.
+- Test: NotificationsFullText675mTest (fails on the 675l sources: Ellipsis present) 2/2 PASS in the cloud; app + tests
+  compiled (compileDebugUnitTestKotlin, after one Maven 429 retry). Static checks PASS.
+- Not tested: on a handheld (HW-7 extended, look only). Emulator trial re-run on this commit ("[emulator-qa]").
+- Files: app/src/main/java/com/shelf/launcher/ui/NotificationsPanel.kt,
+  app/src/test/java/com/shelf/launcher/ui/NotificationsFullText675mTest.kt; docs (matrix P13, HANDOFF, HARDWARE_QA_QUEUE HW-7,
+  AUTORUN_LOG, run_reports.jsonl, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
+# Update 675l (16 Nov 2026, cloud scheduled run) - same branch, NOT released - rule 11: Spotify names shown whole
+- Spotify screen (9) and player (4): every track / artist / album / playlist / heading Text with TextOverflow.Ellipsis is now
+  FullText (wrap up to the same line count, shrink to fitMin, then slide), reserve = false so rows keep today's height. Same
+  sizes, colours, weights; no player design change. TRUNCATE count 281 -> 268.
+- Test: SpotifyFullText675lTest (fails on the 675k sources: Ellipsis present, no FullText) 2/2 PASS + NowPlayingTruncate79Test
+  PASS in the cloud; app + tests compiled (compileDebugUnitTestKotlin). Static checks PASS.
+- Not tested: on a handheld (HW-7 in the queue, look only). Emulator trial not re-run (3 h rule, from ~08:45 UTC).
+- Files: app/src/main/java/com/shelf/launcher/ui/spotify/{SpotifyScreen.kt,SpotifyPlayer.kt},
+  app/src/test/java/com/shelf/launcher/ui/SpotifyFullText675lTest.kt; docs (matrix P13, HANDOFF, HARDWARE_QA_QUEUE HW-7,
+  AUTORUN_LOG, run_reports.jsonl, STATUS_DASHBOARD.md, AUTORUN_LOCK.md).
+
+# Update 675k (16 Nov 2026, cloud scheduled run) - same branch, NOT released - emulator trial preconditions
+- Read emulator run 43811840328 (675i commit, swangle_indirect): VERDICT NOT TESTED - precondition e529a failed
+  (focus = Pixel Launcher, screen PICKER, qa_windows=3). precondition_e529a.png: "Pixel Launcher isn't responding" over the
+  QA app's picker, and under it the Inspect / Wobble first-start question (InspectChoice.kt, shown 9 s after every start
+  until answered - never answered on a fresh emulator; it also explains earlier "not HOME / 2 QA windows" preconditions).
+- Fix (QA only): run_trial.sh sets hide_error_dialogs on the throwaway emulator and precheck closes another app's ANR
+  dialog (CLOSE_SYSTEM_DIALOGS, then ENTER; counted as a try, logged). The QA hook `voltcap_test_firstrun_done` also marks
+  the Inspect question answered, mode unchanged (default Inspect). Hooks are QA-app only (enabled(context)).
+- Tests: EmulatorHarness529Test +2 (fail on the old hook / script) - 4/4 PASS in the cloud; app + tests compiled
+  (compileDebugUnitTestKotlin). Static checks PASS, QA selftest 163/163.
+- Not tested: the trial itself (next one allowed from ~08:45 UTC, 3 h after 675i's). No handheld needed.
+- Files: app/src/main/java/com/shelf/launcher/ui/TestHooks.kt, app/src/test/java/com/shelf/launcher/ui/EmulatorHarness529Test.kt,
+  tools/qa/emulator/run_trial.sh, docs/REQUIREMENTS_MATRIX.md, docs/claude/{HANDOFF.md,AUTORUN_LOG.md,run_reports.jsonl,
+  releases.json,STATUS_DASHBOARD.md,AUTORUN_LOCK.md}.
+
+# Update 675j (16 Nov 2026, morning) - live session - v0.6.73 without the Flip 2; effort setting
+- Owner 16 Nov: proceed to v0.6.73 with the KONKR and the other handhelds connected today; the Flip 2's 15 Nov popup gates are
+  HISTORICAL evidence (older builds 674k / 674n), never treated as verification of the newest build; the gap is listed under
+  risks; the release is not blocked on the Flip 2. Hardware session for today written into HARDWARE_QA_QUEUE (waits for
+  "devices ready").
+- Charging: the 674i patch stays off the dev line; HW-3 now starts with a read-only reproduction - the owner saw one 78 -> 80 %
+  cycle with one sparkle, the 15 Nov log showed fast toggling at 79-80 %. Patch only if the loop reproduces.
+- dashboard.py: gate state HISTORICAL (never blocks, shown as a risk); release risks listed.
+- `.claude/settings.json` "effortLevel": "high" (the task editor has no Effort control). Not yet verified for scheduled runs:
+  each run logs $CLAUDE_EFFORT.
+- Files: .claude/settings.json, tools/cloud/dashboard.py, docs/claude/{releases.json,owner_actions.json,HARDWARE_QA_QUEUE.md,
+  CLOUD_DEVELOPMENT.md,HANDOFF.md,STATUS_DASHBOARD.md,run_reports.jsonl,AUTORUN_LOG.md}. No app code.
+
+# Update 675i (16 Nov 2026, morning) - live session - charging fix postponed; grader crash fixed
+- Owner 16 Nov: the Flip 2 is unavailable - the charging-loop fix (674i) moves to v0.6.74 or later. It is taken OFF the dev
+  line: device/ChargeLimiter.kt is byte-identical to v0.6.72 again and ChargeLoop674Test is removed with it. Kept whole on
+  branch `claude/charge-loop-674i` (tip 32e7112 = dev line with the fix) and in docs/claude/patches/charge-loop-674i.patch
+  (checked: re-applies cleanly). Its hardware test: BLOCKED - DEVICE UNAVAILABLE (not failed; never run).
+- Release tracker: v0.6.73 TESTING (7 app fixes, charging fix listed as left out on purpose); KONKR and Flip 2 popup gates are
+  separate gates; owner choice added: wait for the Flip 2 or accept its 15 Nov gates. v0.6.74 holds the charging fix.
+  Hardware queue: session A (KONKR, whenever the PC is on) and session B (Flip 2, when it is back).
+- QA tool bug found by the emulator run 43809583379: popclip.py unpacked glyphcheck.candidates() into 3 values after 675e made
+  it return 4 - every popup grade with a glyph crashed (emulator AND handheld grading). Fixed; selftest
+  TestGlyphCandidatesCallers675i fails on the old popclip.py. QA selftest 163/163.
+- Files: app/src/main/java/com/shelf/launcher/device/ChargeLimiter.kt (= v0.6.72), app/src/test/.../ChargeLoop674Test.kt
+  (removed), docs/claude/patches/charge-loop-674i.patch, tools/qa/tools/popclip.py, tools/qa/selftest/test_qa.py,
+  tools/cloud/dashboard.py, docs/claude/{releases.json,owner_actions.json,HARDWARE_QA_QUEUE.md,STATUS_DASHBOARD.md,HANDOFF.md,
+  AUTORUN_LOG.md,run_reports.jsonl}, docs/REQUIREMENTS_MATRIX.md.
+
+# Update 675h (16 Nov 2026, morning, cloud run) - same branch, NOT released - emulator trial: shelfpages529.sh reads dumps like popclip
+- shelfpages529.sh (emulator job e529c, TOUCH=1 taps on the first achievement row / Game settings) still read each QaClip dump
+  with one grep over its single long line and took "has a size" as "written" - the read pattern 675d fixed in popclip.sh
+  (controls in the dump that the device's grep missed). Now: ctl reads through jl (one node per line); shot waits up to 8 s
+  more until the dump reads whole (closing brace) and logs "dump unreadable" / "dump missing". No limit or assertion changed.
+- Test: selftest test_shelfpages_dump_reads_go_one_node_per_line (runs ctl / dr on a long-line dump with "Full story on
+  Details ›" + a half-written dump; fails on the old script). Selftest 162/162, static checks PASS. No app code (no compile).
+- Pushed with "[emulator-qa]" (last trial 01:31, 3 h rule met): the trial on this commit is the first on the 675d+ scripts.
+- Files: tools/qa/device/shelfpages529.sh, tools/qa/selftest/test_qa.py; docs (HANDOFF, matrix G14, AUTORUN_LOG, dashboard,
+  run_reports.jsonl). Nothing to copy into src_copy / project_copy. EMULATOR evidence only; no handheld needed.
+
+# Update 675g (16 Nov 2026, early morning) - live session - owner summary + release tracker
+- STATUS_DASHBOARD.md now opens with a generated OWNER SUMMARY (latest update, what was just fixed in plain words, the five most
+  important changes of the last 24 h by kind, progress bars implemented / handheld-verified / approved, next work, what the owner
+  must do or NONE, next release) and a generated RELEASE TRACKER (v0.6.73: items, handheld evidence, approvals, gates, why it
+  cannot ship); owner actions are generated too. The detailed tables follow unchanged.
+- New evidence files: docs/claude/run_reports.jsonl (one plain-English line per run, seeded 674l-675g), releases.json (release
+  status DERIVED from gates: DEVELOPMENT / BLOCKED / TESTING / READY FOR OWNER APPROVAL), owner_actions.json.
+- v0.6.73 today: BLOCKED (charge-loop fix needs the owner's test-or-hold-back decision); 8 app fixes implemented, 0 fully
+  verified; gates left: handheld popup gates on the newest build, Record crate checklist, emulator re-run, owner visual review,
+  signed RC, upgrade install, GO. main fast-forwards to the dev branch (41 ahead, 0 behind).
+- Scheduled task prompt: writes the run report line (incl. $CLAUDE_EFFORT), keeps releases.json / owner_actions.json current,
+  release-ready protocol ("VOLTCAP vX — READY FOR RELEASE APPROVAL", never merge / install / publish without GO).
+- Effort check: the cloud host passes CLAUDE_EFFORT=medium (Opus 5.5's default per the Claude Code docs); a task's effort is
+  set in its own editor (model selector > Effort) - not settable from the scheduling tool. Runs now log their effort.
+- Files: tools/cloud/dashboard.py, docs/claude/{STATUS_DASHBOARD.md,run_reports.jsonl,releases.json,owner_actions.json,
+  progress.json,CLOUD_DEVELOPMENT.md,HANDOFF.md,AUTORUN_LOG.md}. No app code.
+
+# Update 675f (16 Nov 2026, morning) - live session - status dashboard
+- docs/claude/STATUS_DASHBOARD.md (owner request 16 Nov): phone view - at a glance, overall counts, owner actions, hardware
+  queue, progress by area, phone report, links. Generated sections come from `python3 tools/cloud/dashboard.py`
+  (matrix Status column by its LEADING word, the 13 Nov A-F rows by status word / owner / hardware phrases, HW-<n> headers,
+  docs/claude/progress.json for per-area evidence); `--check` exits 1 when stale. UNKNOWN stays UNKNOWN; percentages only of
+  counted rows.
+- HARDWARE_QA_QUEUE: one batched session (Flip 2 + KONKR, ~2 h) closes HW-1, HW-2, HW-4, HW-5, HW-6.
+- Scheduled task prompt: -Xmx4g (was -Xmx5g; the shell's cgroup is ~5.8 GB, 675a), reads + regenerates the dashboard each run,
+  short reports for routine runs, the phone format only after milestones, "HARDWARE QA NEEDED" first when a device is needed.
+- Files: docs/claude/STATUS_DASHBOARD.md, docs/claude/progress.json, tools/cloud/dashboard.py, docs/claude/HARDWARE_QA_QUEUE.md,
+  docs/claude/CLOUD_DEVELOPMENT.md, docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md. No app code.
+
+# Update 675e (16 Nov 2026, night, cloud run) - same branch, NOT released - glyphcheck measures GlyphPill glyphs in their key
+- D-674o-1 (KONKR x1.3 k674n, Spot START dy +3 px): the ink is centred, but GlyphPill's 12 % white pill sat over a backdrop shape
+  of nearly its colour, so glyphcheck's walk ran past the pill's edge. Fix (QA tooling + a QA-only mark, threshold unchanged):
+  GlyphPill marks its pill with QaClip.GlyphKey while QA traces are on (nothing on screen changes); the QaClip dump gives each
+  glyph the box of its nearest marked ancestor as "key"; glyphcheck measures such a glyph's ink (screenshot pixels of the
+  glyph's own box against the key's inside colour) against that box - same limits max(1.5 px, 5 %); an ink box outside its key
+  FAILs; glyphs without a key keep the walk.
+- Checks (cloud): QA selftest 161/161 (new GlyphKey675e: the walk fails the scene, the key PASSes it, a 3 px drop still FAILs,
+  an ink box outside its key FAILs, window offset applied); static checks PASS. Kotlin NOT compiled here (Maven Central 429
+  twice, one retry) - QaGlyphKey675eTest (new Robolectric: GlyphPill's pill found for START, 18 dp high, holds the ink; no key
+  for a loose glyph; no mark without QA traces) runs in CI "Verify Android update 310" on this push.
+- Hardware: HW-6 (re-measure Spot START on KONKR x1.3 / Flip 2 with 675e). Not on hardware yet.
+- Files: app/src/main/java/com/shelf/launcher/ui/QaClip.kt, ui/HomeChrome.kt (GlyphPill), test ui/QaGlyphKey675eTest.kt (new),
+  tools/qa/tools/glyphcheck.py, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md,
+  docs/claude/HARDWARE_QA_QUEUE.md, docs/claude/AUTORUN_LOG.md.
+
+# Update 675d (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: dump reads one node per line
+- Emulator run 43786748164 (ddca9b66) read: the first A opened the window every time now (no probeA / probeB kept; 675c's late
+  path never triggered). Left: e529a SHELF "no Details action" + More step missing + "extra: A opened nothing"; e529b COVERDETAILS
+  "no Details action", no More step, Play only after a D-pad press - each time with Turn over / Details / More / Play shown in
+  the pulled dump, and the same tapat / ctl lines match those files on the PC. The two failing main dumps are exactly the two
+  that also hold "Full story on Details ›" on their one 10-13 KB line (the two passing ones do not) - the device's grep did
+  not see controls that were in the file.
+- Fix (QA tooling, no check loosened): popclip.sh reads every dump through jl (one node per line: tr '{' '\n') - ctl / tapat /
+  seek, pc (up), the Details / More checks and Green Core's menu check - so one odd node or the line's length cannot hide the
+  rest; dw waits until the dump reads whole (last byte the closing brace) and logs "dump unreadable" apart from "dump missing".
+  Root cause on the device (toybox grep vs that line) not proven - the next trial shows whether the symptom is gone.
+- Not changed: e529b COVERDETAILS "rapid A B A B left a window open" and e529c's precondition (2 QA windows) - read on the next
+  trial after this fix (the rapid step's `up` reads the same way); HW-5 watches rapid on hardware.
+- Checks (cloud): QA selftest 158/158 (new test_dump_reads_go_one_node_per_line - fails on the 675c script); static checks PASS.
+  No Kotlin change (no compile needed). Emulator trial not started (last "[emulator-qa]" 01:31, 3 h rule) - next run.
+- Files: tools/qa/device/popclip.sh, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md,
+  docs/claude/AUTORUN_LOG.md.
+
+# Update 675c (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: first-A evidence
+- Emulator run 43780985909 (750b669c) artifact read: e529a (font=1.3, density=1.15) "first A opened nothing" on COVERDETAILS and
+  SHELF, yet the firstA screenshot (taken right after the failed probe) shows the popup up. The dumps' fontScale 1.0 is not a
+  stale root: the test scale is drawn by WithTestScale only, resources keep 1.0 (e529b dumps say 1.0 as well). The second A then
+  pressed the open window's Play (launch blocked: 1), so the main step dumped the home only. The probe itself was deleted, so
+  whether the window was late or missing from QaWalk's roots could not be told.
+- Evidence (no gate loosened): a QaClip dump now carries "popupAgeMs" (the app's own game window up, and for how long:
+  GamePopup.openedAt) and "roots" (every Compose root QaWalk knows, attached / shown / focus). popclip.sh keeps a failed first-A
+  probe (<n>_probeA) and asks once more 1.5 s later (<n>_probeB): up then = "first A opened late" - the open gate still FAILs
+  (popclip.py: "opened the window late"), but no second A lands on the open window's Play; not up = "first A opened nothing" as
+  before. On hardware the first probe sees the window, so nothing changes there.
+- Checks (cloud): QA selftest 157/157 (new test_first_a_late_is_kept_apart_and_still_fails_open); QaClipDiag675cTest 2/2,
+  QaClipWriteWhole675bTest 2/2; static checks PASS; compileDebugUnitTestKotlin OK. Emulator trial on this push ("[emulator-qa]");
+  EMULATOR evidence only.
+- Files: ui/QaClip.kt, ui/QaWalk.kt, ui/GameWindow.kt (GamePopup.openedAt), test QaClipDiag675cTest.kt (new),
+  tools/qa/device/popclip.sh, tools/qa/tools/popclip.py, tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md,
+  docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md.
+
+# Update 675b (16 Nov 2026, night, cloud run) - same branch, NOT released - emulator trial: QA waits for the dumps
+- Emulator run 43762702001 (swangle_indirect, 960x640) read: the COVERDETAILS "first A opened nothing" screenshot SHOWS the popup
+  open; e529b "no Details action" with Details on screen and "More reached with 1 D-pad press". Cause: the QaClip dump (asked
+  for by qa_clip_req, polled every 250 ms) came after the script's fixed sleep (0.9 s probe / 1.1 s shot) on the software-rendered
+  emulator, so the script read no file, judged "no popup" and pressed A again on the open popup (the follow-on SHELF "More step
+  missing" and "rapid: started 1 launch" came from those extra presses).
+- Fix (QA tooling, condition-based, no check loosened): popclip.sh `dw` waits for the dump file after the unchanged minimum sleep
+  (up to 8 s more, "dump missing: <name>" logged if it never comes) in up / shot / Green Core's probe; shelfpages529.sh's shot the
+  same. QaClip.writeWhole writes the dump beside the target and renames it into place, so a file that exists is whole. On
+  hardware the dumps came inside the old sleeps, so runs there are unchanged in timing.
+- CI: Verify 310 green on 7dbcab0c (675a, both runners, heavy task ran, lowest free memory 6.4 GB) - G11 1 green push of several.
+- Checks (cloud): QA selftest 156/156 (new test_waits_for_the_dump_not_only_a_fixed_sleep); QaClipWriteWhole675bTest 2/2;
+  static checks PASS; compileDebugUnitTestKotlin OK. Emulator trial started on this push ("[emulator-qa]"); EMULATOR evidence only.
+- Files: ui/QaClip.kt, test QaClipWriteWhole675bTest.kt (new), tools/qa/device/popclip.sh, tools/qa/device/shelfpages529.sh,
+  tools/qa/selftest/test_qa.py, docs/REQUIREMENTS_MATRIX.md, docs/claude/HANDOFF.md, docs/claude/AUTORUN_LOG.md.
+
+# Update 675a (15 Nov 2026, night, cloud run) - same branch, NOT released - CI memory (G11)
+- CI red on c0760eb (and c7ad53a7): the watchdog stopped the unit tests at ~1,120 with the test worker at 9.4 GB inside
+  EndlessFillLitRoboTest. Measured in the cloud: the growth is NATIVE memory (NMT: the JVM itself ~0.5 GB, heap ~100 MB after a
+  full GC, while the worker's RSS passed 2.7 GB on the 10 Case flow rows alone, +~250 MB a row; System.gc / reflections off /
+  warm-ahead off / MALLOC_ARENA_MAX did not give it back). No GC returns it, and Gradle's forkEvery counts classes, so it could
+  not recycle the worker inside that one class of ~500 rows.
+- Fix: EndlessFillLitRoboTest's rows split into 6 shard classes (EndlessFillLitRoboTestShard0..5, whole layouts round robin -
+  same rows, frames and assertion; EndlessFillLitShardsTest checks every row runs exactly once). New task
+  :app:testDebugHeavyRoboUnitTest runs the heavy classes (the shards + EndlessOnceRoboTest) with a fresh JVM per class;
+  testDebugUnitTest excludes them and is finalized by it (skipped with --tests). Shared JVM settings in voltcapTestJvm();
+  the progress log is appended by the heavy task. Watchdog thresholds unchanged.
+- Found by the fresh JVM: CASEFLOW n=1 crashed in LookStyles.spinePick ("Reading a state that was created after the snapshot was
+  taken") - LookStyles' disc / case / spine states were made by the first Case flow case drawn, inside a snapshot. They are made
+  at start now (Features.warmUiStores, called by Features.init, the Update 200 pattern); the shard test's @Before runs the app's
+  start steps (warmUiStores + Packs, which MainActivity already inits at start) - Packs.version was the next one, made by the
+  warm-ahead thread mid-frame.
+  App behaviour unchanged otherwise. Not checked on hardware (a cold-start race; nothing to look at).
+- Cloud: shell commands run in a ~5.8 GB memory cgroup (a -Xmx5g compile was OOM-killed at 5.9 GB) - CLOUD_DEVELOPMENT.md
+  now says -Xmx4g (compile 4m35s warm).
+- Checks (cloud): static checks PASS; EndlessFillLitShardsTest PASS; heavy task: shards 0-2, 4, 5 PASS (70-80 rows each),
+  EndlessOnceRoboTest 279/279 PASS, shard 3 80/80 PASS three runs in a row after the Packs warm-up; per-JVM peak RSS 0.7-3.3 GB
+  (one JVM used to carry all of them). Full suite + both runners: CI on push.
+- Files: app/build.gradle.kts, data/Features.kt, ui/LookStyles.kt, test EndlessFillLitRoboTest.kt, EndlessFillLitShardsTest.kt
+  (new), docs/claude/CLOUD_DEVELOPMENT.md, HANDOFF.md, AUTORUN_LOG.md, docs/REQUIREMENTS_MATRIX.md.
+
+# Update 674o (15 Nov 2026, late evening) - same branch, NOT released - cloud migration
+- Owner request 15 Nov: VoltCap development moves to Claude Code cloud sessions + a cloud scheduled task; the PC is for handheld QA.
+  New: docs/claude/CLOUD_DEVELOPMENT.md (how to work, lock, never-list), docs/claude/HANDOFF.md (read first / update last),
+  docs/claude/HARDWARE_QA_QUEUE.md (HW requests), docs/claude/AUTORUN_LOG.md, docs/claude/AUTORUN_LOCK.md, tools/cloud/setup_android.sh.
+- Build: VOLTCAP_CLOUD=1 uses the same Discord stub as CI (the Discord .aar is local-only); the release guard still refuses it.
+  -PvoltcapEmulatorAbi=true adds x86_64 to the stub build only (never a handheld or release build).
+- Emulator trial (emulator-qa-trial.yml): the emulator crashed ~90 s into every trial since 14 Nov (ARM build through ARM
+  translation, 320x640 AVD forced to 960x640, host renderer errors). Now: one x86_64 build job, the AVD at 960x640 (-skin, no
+  size override), a renderer matrix (swiftshader_indirect / swangle_indirect / guest), the emulator's crash data kept, and a
+  verdict step that fails unless every graded gate is PASS (verdict.txt from grade_trial.py; NOT TESTED / INFRA / FAIL stay red).
+- Handheld gates on 674n (c2cdfc81, registered in builds.json): Flip 2 x1.0 f674o 52/53 (FAIL Side status line 51 px < 24 dp);
+  KONKR x1.3 k674n 51/53 (FAIL Library R2 6 px high; Spot START dy +3 px). Devices restored (diff=0, fatal=0).
+- Fixes: Side menu keeps 2 dp free for pixel rounding (status line back to >= 24 dp); Library L2 / R2 hints draw with InkGlyph
+  (ink centred; size still follows the font scale). Spot START: the ink is centred in its pill - glyphcheck walked past the pill
+  edge into a backdrop shape of nearly the same colour; logged as D-674o-1 (checker), threshold unchanged.
+- Tests: Batch674oTest (new), Batch674nTest follows the rounding slack. QA selftest 155/155 (cloud). Unit tests: CI on push.
+- Files: app/build.gradle.kts, ui/WinScenesHomes2.kt, ui/StyleLibrary.kt, .github/workflows/emulator-qa-trial.yml,
+  tools/qa/emulator/run_trial.sh, tools/qa/emulator/grade_trial.py, tools/qa/builds.json, tools/cloud/setup_android.sh, docs/claude/*.
+
+# Update 674n (15 Nov 2026, evening) - same branch, NOT released
+- Full gates on 674k graded (new checker, 0 NOT TESTED): Flip 2 x1.3 f674k 52 / 53 PASS (was 42 at f674f; FAIL: Bar home '◀'
+  5.5 px off centre); KONKR x1.0 k674m 51 / 53 PASS (was 40; FAIL: Arcade pointer glyph - fixed in 674m, not yet on hardware;
+  Side menu "Save sync" cut 13 px at the drawer's bottom). (x1.3 is the app's own test scale; the manifest's font_scale is the
+  system's and reads 1.0 either way.) Next: Flip 2 x1.0 f674o and KONKR x1.3 k674n on 674n.
+- Side menu: the fit counted the status line as a 30 dp row and the gaps as 2 dp, but KeyColumn draws 4 dp gaps and the status
+  line under the keys - 1 dp short, so the list scrolled and its "whole rows" were whole by the wrong sums. The sums now match
+  (actions only, 4 dp gaps, 24 dp per status line) and the picture gives up height down to 44 dp (was 64) before any key scrolls.
+- Bar home: the category tab's ◀ ▶ are drawn triangles centred in their own square (the font's triangle has uneven side bearings),
+  "Previous / Next category" for TalkBack, tap steps as before.
+- Tests: Batch674nTest (new), Batch488Test follows the new fit. testDebugUnitTest PASS, static checks PASS. Not yet on hardware.
+- Files: ui/WinScenesHomes2.kt, ui/StyleIconBar.kt, test Batch674nTest.kt, Batch488Test.kt.
+
+# Update 674m (15 Nov 2026, evening) - same branch, NOT released
+- Glyph centring (glyph gate f674j): Arcade's menu pointer drawn alone in its box with a gap after it ("▶ " carried its own space -
+  the arrow 16 % left of the box's middle; unlit lines keep an unseen arrow, cleared from semantics so line names are just the
+  words); Pocket ribbon's START tab text moved 0.9 units down (capitals sat 3 px high in a line box sized for descenders).
+- Not yet on hardware (next gates). Library R2 / Spot START / Bar ◀ home glyphs: still open.
+
+# Update 674l (15 Nov 2026, evening) - same branch, NOT released
+- Owner decisions 15 Nov: Record crate x1.3 vertical menu VISUALLY APPROVED (keep it; finish its verification checklist); Flip 2
+  charge-loop fix may be tested with the QA app only - BLOCKED: production Voltcap's own limit is on and toggles input_suspend
+  every 1-2 s at 79-80 % (recorded 20:20, 24.5 C, steady); the QA app would fight it over the same switch, a clean test needs
+  production's limit off (the owner keeps production settings). Nothing changed on the Flip 2's charging.
+- QA checker: the pixel compare now reads the popup's other keys too (POPUP_KEY_WORDS: Options, Achievements, Inspect, Save sync,
+  ...) - with More open a uniform row shows those and the compare reported "no window action buttons" (NOT TESTED) on 4-14 layouts
+  per full gate. Re-grade: f674j 4 -> 0 NOT TESTED, k674j 14 -> 0; it found a real defect at once (Wii channel More page).
+- Wii channel (CHAN): the bottom keys are one row of identical Wii keys - Channels, Start (no longer stretched), then a worded MORE /
+  LESS with the stack icon (the round ••• is gone); the More page one row of identical keys instead of a wrapping grid that broke
+  "Achievemen / ts" and cut its second row. Hierarchy529Test follows the 15 Nov brief.
+- docs/REQUIREMENTS_MATRIX.md: the living requirements matrix (programme rows P1-P15, this session G1-G12, 529 rows carried).
+- Scheduled task "VoltCap hourly backlog run" created (owner's request): hourly on the PC, lock file Claude outputs\AUTORUN_LOCK.txt,
+  log in the Project doc claude/AUTORUN_LOG.md.
+- Checks: testDebugUnitTest PASS, QA selftest 151 / 155 (4 = VM ffmpeg). Full gates on 674k (f674k Flip 2 x1.3, k674m KONKR x1.0)
+  running; Wii change not yet on hardware.
+
+# Update 674k (15 Nov 2026, evening) - same branch, NOT released
+- Full gates: Flip 2 x1.0 f674j (674i) 46 / 53 PASS (FAIL: Arcade main glyph, Pocket ribbon home START glyph, Side status line
+  38 px); KONKR x1.3 k674j (674i) 33 / 53 PASS (FAIL Airy / Dash / File select - fixed in 674j, Cards rapid once, Library R2 and
+  Spot START home glyphs); KONKR x1.0 k674g (674f) 40 / 53. NOT TESTED rows = the pixel compare (uniform rows not recognised).
+- KONKR x1.3 recheck on 674j: k674k Airy, Dashboard, Crate PASS; File select main PASS, More state TIME still 0 px -> 674k.
+- 674k: File select on a tight file puts its round tools beside the buttons; Side's status line its own 24 dp form (it was one of
+  the drawer's fitted rows). popclip.sh: back up to a vertical menu's first key before walking down to MORE - k674l: Record crate
+  "More reached walking down the menu" (3 presses); screenshots main / More sent to the owner for review.
+- Backlog (docs/MASTER_BACKLOG.md 0a) updated with the 674 items.
+
+# Update 674j (15 Nov 2026, evening, after the owner's power cut) - same branch, NOT released
+- Power cut ~18:55: the PC went offline mid-run. The KONKR finished its x1.0 gate on its own (k674g, 674f build: 40 / 53 PASS;
+  FAIL Arcade main glyph, Crate rapid once, File select More story - fixed in 674h); the Flip 2's stopped at 41 / 53 on the
+  "Use USB for" dialog after the USB came back (f674g, INFRA - redone as f674j). Both restored diff=0; worktree intact.
+- x1.3 recheck on 674i (6 layouts): Flip 2 f674i 6 / 6 PASS; KONKR k674i 2 / 6 before 674j.
+- geomcheck: a node is matched to its text entry by the semantics id first - long stories marked as giving way (File select,
+  Library) never matched by label (labels shortened to ~60 characters, text entries 80). QA selftest 151 / 155 (4 = this VM's ffmpeg).
+- 674j, KONKR x1.3: Airy with More open on a tight panel - the facts one sliding line, every fact on it; Dashboard under 400 dp
+  without the art band; File select's meta one sliding line on a tight file. Airy477Test follows.
+- Open: Record crate's MORE in the vertical menu not reached by popclip (walking down) - to debug on hardware.
+
+# Update 674h / 674i (15 Nov 2026, evening) - same branch, NOT released
+- 674h, D332 x1.3: Dashboard's art strip a 16 % band on a short window (the three stat widgets were 0-1 px); File select on a tight
+  panel writes the name smaller (two lines, slides) and its buttons 42 dp, its story gives way by design.
+- 674i, owner report (Flip 2): the charging sparkle replayed every few seconds while plugged in. Read-only check on the Flip 2:
+  input_suspend 0 / 1 every 1-2 s, usb online 0 / 1 with it, battery_status charging -> discharging -> not charging -> charging
+  every ~3 s at 80 %, ChargeLimitService restarted each time - the cable never dropped; Voltcap's 80 % limit paused through
+  input_suspend, Android then reported "not plugged", the check released the pause, the charger came back as a new plug-in (the
+  system's sparkle - not drawn by Voltcap) and was suspended again. ChargeLimiter.wantPause: while Voltcap itself holds the input
+  suspended, "not plugged" is not an unplug - the pause holds until under 77 %; the service keeps running then. ChargeLoop674Test
+  (fails on the old rule). NOT on any device: the real Voltcap on the Flip 2 runs the limiter; a charging change needs the
+  owner's approval (install / test).
+
+# Update 674g (15 Nov 2026, evening) - same branch, NOT released
+- Full x1.3 gates on 674f (53 layouts, OWN style): Flip 2 f674f 42 / 53 PASS, 4 FAIL (Bar home glyph, Circuit More status line,
+  Dashboard More squeeze, File select squeeze), 7 NOT TESTED (visual "no window action buttons to compare" - the pixel compare
+  doesn't recognise the uniform rows yet); KONKR k674f 32 / 53 PASS, 8 FAIL (Airy More, Circuit More, Cube first A + L2/R2 fact,
+  Dashboard, File select, Library More story + R2 glyph, Spot START glyph, TV rapid once), 13 NOT TESTED (same visual compare).
+  Record crate PASS on both.
+- 674g: Record crate's vertical menu without the scroll fade (it hid the last key's lower edge - read as cut) and the track list's
+  view ends on a whole row; Circuit's pinout gives way before the keys and the status line under them; Library's story marked as
+  giving way by design; Airy with More open on a tight panel uses its small round keys. popclip.sh walks DOWN to a MORE kept under
+  a vertical menu's visible keys (Crate: "More not on screen").
+
+# Update 674e / 674f (15 Nov 2026, evening) - same branch, NOT released - IN PROGRESS
+- CI: afa71561 green (both runners). 60fd7c4e failed on ubuntu-24.04 only: the test worker grew to 9.6 GB (native memory outside
+  the 2 GB heap) and the watchdog stopped it; ubuntu-latest ran 2,813 / 0 failures. app/build.gradle.kts: forkEvery 400 - a fresh
+  test worker every 400 tests (D325).
+- Record crate at x1.3 (owner decision 15 Nov, option A): where two sleeve keys can't share the row, the actions are a deliberate
+  vertical menu - identical keys the sleeve's width, even gaps, Play first, MORE last, whole keys only (2-3 at a time, measured
+  from the room under the sleeve's rule so the track list keeps two rows), the D-pad scrolling the stack; x1.0 keeps its row.
+  crateKeysVertical / crateVisibleKeys, CrateVertical674Test. No other row turns vertical. Owner review pending (screenshot).
+- D332: Airy tight panel (x1.3 KONKR, Flip 2 with More): smaller name / console / LCD, closer gaps; with More open on the KONKR
+  one sliding name line and no LCD. Blades' standing name centred in its strip (it ran off the top of the screen). Blades' facts:
+  80 % type, then a narrower cover, then no cover when even that overflows. Orbit: no "LAST —" row for a game never played.
+- Uniform groups: Night's commands one height; Rental shop tag one row of identical punched keys, Play first and no longer
+  stretched across the tag (two-line words on a narrow tag; ShopTag673Test updated); Terminal / Camera rows identical; Magazine's
+  page keys a vertical menu (its callouts keep their own size - as wide as the column they outranked the starburst Play); Cinema's
+  page keys a row. BANNER / CLASSIC / SHARED / ROW_* checked: already uniform groups (673g); BANNER's round shortcuts one group.
+- Terminal: the TROPHY line may take two lines (cut at one on the KONKR x1.3).
+- Hardware x1.3 (qa-0.6.73-674e, 9 layouts): Flip 2 f674e 8 / 9 (Magazine hierarchy - fixed in 674f), KONKR k674e 6 / 9 (Airy More,
+  Blades facts, Terminal trophy line - fixed in 674f). Crate's vertical menu PASS on both.
+- Unit tests 2,818 / 0.
+
+# Update 674 (15 Nov 2026) - same branch, NOT released - IN PROGRESS
+- 673h (finishing 673g's local edits): Case flow's pills, Memory card's choices and Cinema's round keys are uniform groups;
+  Cinema's Play is as tall as the round keys. Cinema's edit compiles (missing `heightIn` import). Batch478Test's Cinema check now
+  asks for the owner's one uniform row (it asked for 478's wrapping), Airy477Test for the uniform pill row.
+- 673g4 gates graded (evidence bound to qa-0.6.73-673g4): Flip 2 x1.0 f673l 11 / 16 PASS, 1 FAIL (Side: the "Save sync is not
+  set up" line 38 px tall, under the 24 dp touch size), 4 NOT TESTED; KONKR x1.3 k673k 7 / 16 PASS, 4 FAIL (Crate / Pocket: Details
+  scrolled out of the row so never tapped; Cube: first A opened nothing + contrast / L2-R2 facts 0 px; File select: D332 squeeze),
+  5 NOT TESTED ("Play tap not recorded": the walk to MORE left the row scrolled to its end).
+  (Grading note: extract run tars outside the PC mount - the Cowork VM mount drops mtimes and the evidence check then calls
+  every file stale.)
+- 674a: the status lines under the vertical menus (ListKey's status form, SceneStatusLine) are 24 dp at least - they open
+  Save sync's setup when tapped. popclip.sh: `seek` walks the D-pad to a key the scrolling row keeps out of view - Details
+  (right) and Play (left, after the walk to MORE), logged "reached with N D-pad presses".
+- 674b, owner button brief (D331), next groups: Blades' page-blade keys (were a wrapping FlowRow) and its main command list
+  (one height for every command, Play by its bigger word); Storage's sheet keys (FlowRow -> UniformKeyRow; beside the name at
+  x1.3 they take half the line - AchFirstRowRoboTest caught the full-width row starving the sheet); Wii channel's keys (were a
+  free sideways scroll); Orbit's narrow key row; Airy's round shortcuts and its More pills (each in identical cells, one row);
+  Bubble's list (the Start plate as large as the other keys); Panels' list (one fitted height, Play no longer taller).
+- Not yet: Rental shop tag (its D320 grid keeps the longest words whole on a narrow tag at x1.3 - goes with the narrow x1.3
+  arrangement review), Night, Magazine callouts, Terminal, Camera, Card turn-over checks, the BANNER / CLASSIC / SHARED / ROW_*
+  popup styles.
+- 674a / 674b hardware (qa-0.6.73-674b, x1.3, 15 layouts): KONKR k674a 6 / 15 PASS, Flip 2 f674b 7 / 15 PASS. Regressions found
+  and fixed in 674c: Panels' words cut in its new one-height rows (own line height), Case flow's tools line squeezing the title
+  box (beside the pills on a short window), Cinema's Play squeezed to 35 px on the KONKR (on a window under 440 dp Play is the
+  first key of the round keys' row, its white plate filling the same cell - also D333's "Play smaller than Details"), Crate /
+  Pocket Details never tapped (the seek now uses the layout's own Details word - Sleeve notes, Status). Known items still open:
+  D332 Airy More squeeze, File select squeeze, Blades' standing name running off the top of the screen under a page blade
+  (screenshot f674b BLADES page), Orbit / Blades facts value cut at KONKR x1.3; Cube first-A / contrast (k674a).
+- 674c, item 4 (narrow x1.3 - one key at a time): UniformKeyRow takes two-line keys where the one-line row would scroll and the
+  two-line row shows more keys at once (uniformRowPick; a key's width = its longest word or ~62 % of its one-line width). Only
+  where every key really grows a second line at that width (a single-line drawing keeps the group at the one-line width - no
+  word is ever cut); `twoLine = false` for Storage's keys on its name line (AchFirstRowRoboTest). TwoLineKeys674Test.
+  Needs the owner's visual review.
+- 674c hardware (qa-0.6.73-674c, x1.3): Flip 2 f674c 10 / 15 PASS (FAIL only the known D332 Airy More squeeze and Blades'
+  standing name), KONKR k674c 7 / 15 (Crate / Pocket / Cube / Case flow / Panels now pass; Cinema drew the other pages' body and
+  keys on its main page where Play went into the row - fixed in 674d; Airy, Blades, Orbit facts as D332). The two-line keys show
+  two keys at a time on Discover (Resume); Record crate's sleeve still holds only one key at x1.3 even with two-line words (SLEEVE
+  NOTES at half the sleeve is still too wide) - a vertical stack there is a design choice for the owner.
+- 674d: Cinema's other-pages branch only off the main page; its page keys a uniform row. KONKR x1.3 k674d Cinema PASS
+  (qa-0.6.73-674d).
+- Checked: compileDebugKotlin, testDebugUnitTest PASS (674c: all, incl. TwoLineKeys674Test), static_checks PASS, QA selftest 151 / 155 (the 4 FramesPy /
+  screen-script failures are this VM's ffmpeg, unrelated). QA build qa-0.6.73-674b on Flip 2 and KONKR (isolated QA app; real
+  Voltcap unchanged). Hardware gates k674a / f674a (x1.3, 15 layouts) - see the next entry.
+
+# Update 673g (15 Nov 2026) - same branch, NOT released - IN PROGRESS
+- Owner brief 15 Nov "FINAL GLOBAL BUTTON & MENU DESIGN SYSTEM" (D331): one shared, layout-aware system for the popups' key groups.
+  - Every key of a group the same width (the widest word's) and height (the tallest key's), its icon and word centred, drawn in
+    the layout's own look (SceneKey / WinButton / the vertical menus' list keys); a lit key keeps its size.
+  - Horizontal groups are ONE row: sharing the row's width where they fit; where not, whole keys between ‹ › that scroll a key
+    at a time to the key the D-pad is on (or follow a finger and settle on whole keys) - never wrapped, never cut, never smaller
+    than the text asks; one key is never stretched across a row. Vertical menus (Cross, Side, the plain window's column) are
+    stacks of identical keys.
+  - MORE is a worded key (stack icon), never three dots, always last; status lines (Save sync is not set up, the performance
+    summary) stand under the keys as lines of their own, still a D-pad stop that opens what they are about.
+  - Applied through KeyRow (27 scene windows), PageBars (the shelf / Twin / tile families' pages), the TV room's strip, the
+    plain window and the shared expanded page. Specialised scenes (Storage tabs, Box, Cards, Case flow, Memory card, Magazine,
+    Night, Panels, Shop, Blades, Cinema, the other popup styles) are next, guided by the new audit.
+  - QA: geomcheck 'warn-uniform' audits every key group (sizes side by side / stacked, three dots, MORE twice / not last, a
+    status line drawn as a key); popclip walks the D-pad to an off-screen MORE. Before: 49 / 53 layouts (Flip 2 x1.3) and
+    45 / 53 (KONKR x1.0) had such a group.
+- Full gates on the 673e2 build (before the button system): KONKR x1.0 k673i 51 / 53 (D333: Cinema hierarchy, TV rapid once);
+  Flip 2 x1.3 f673j 45 / 53 (D332: More-state squeezes in Airy / Dashboard / File select / Pocket ribbon, Circuit overlap,
+  Blades page name, Cinema hierarchy, Icon bar home glyph).
+
+# Update 673f (15 Nov 2026) - same branch, NOT released
+- Native pages for Disc station (owner directive 14 Nov: layout-aware pages instead of the generic ones): the deck's pages are
+  its tracks on the LCD - Info 01, Details 02, Achievements 03, Options 04 ("DISC 1 · TRACK 02 ... DETAILS"); the panel, tray and
+  keys stay, the track scrolls on the display (forward up, back down) and the LCD grows to the page's list; L1 / R1 skip a track.
+  Unit tests (DiscTracks673Test, the bumper walk of WinFocusRoboTest) pass; KONKR x1.0 k673j shows track 02 with the details.
+
+# Update 673e (15 Nov 2026) - same branch, NOT released
+- Disc station's LCD at x1.3 (D328, Flip 2 gate f673g): its lines kept the theme's 24 sp line height round 9-10 sp readouts and
+  the name kept three lines' height for a two-line name, so the facts never had room (an empty line in their place) and with
+  More open the 'Full story on Details' cue was laid out 0 px high. The readouts get their own line heights, the name the lines
+  it needs (rule 478), the cue a 12 sp line: with Less the LCD now shows CONSOLE / YEAR / MADE BY / GENRE, with More the cue.
+- Every window's story cue (SceneFactsBody): left out where its line doesn't fit, never laid out squeezed; it stands at the
+  window's end whether the facts show or have given way (it moved between More and Less).
+- Popup checker (D329): rows that were measured but never placed (a facts box giving way by design) are not graded as drawn -
+  they were reported as a sliver of a line and as a fact with its value cut. The 0 px cue stays a FAIL (self-test, real dump).
+- CI (D325): the hosted runner was lost a third time in the unit tests (6308b2a4) - the step's timeout never fired and 673b's
+  annotations died with it. tools/ci/watchdog.py now runs the tests: a status line a minute (memory, load, the test in flight),
+  and before the machine runs out of memory or at 35 min, public annotations (why, tests in flight, biggest processes) and the
+  tests stopped. assembleDebug has its own step; the job runs on ubuntu-24.04 and ubuntu-latest side by side until the cause
+  is known (the ubuntu-latest label is moving to Ubuntu 26).
+- Gates (x1.3, isolated QA app, QA snapshot restored diff=0): f673h Flip 2 9/9 PASS (673e build); 673e2 (this commit's tree):
+  f673i Flip 2 7/7, k673h KONKR 9/9 PASS - Disc station, Coverflow details and 12 other windows that show facts. Unit tests
+  (Windows) 2798 / 0 (one flaky failure on the first run, D330, passed on the re-run); QA self-tests 153 (the 4 that need a
+  device screen / ffmpeg fail in the VM as before); static checks strict PASS.
+- Owner: tested Save Sync during the session and reports it worked.
+
+# Update 673d (15 Nov 2026) - same branch, NOT released
+- Disc station at x1.3 on the KONKR with More open (D327, found by the first KONKR x1.3 gate of Disc station, k673f): the keys
+  wrapped to rows that took the deck panel - the LCD's title squeezed to nothing, its readouts cut. The keys take at most 45 % of
+  the panel and scroll past it (the D-pad brings the key it is on into view); where they fit nothing changes.
+- Gates: 673d build - KONKR x1.3 k673g Disc station PASS (was FAIL on 673c, k673f); Flip 2 x1.3 f673g Coverflow details PASS,
+  Disc station FAIL (D328, the LCD's story cue squeezed with More open - 673e). 673c build - Flip 2 x1.0 f673f Disc station +
+  Coverflow details PASS, KONKR x1.3 k673f Coverflow details PASS. testDebugUnitTest 2795 / 0 failures.
+
+# Update 673c (15 Nov 2026) - same branch, NOT released
+- Disc station's lifted disc keeps the station's light sheen (D326): it lost it as it left the tray and got it back as it landed, so
+  its colours changed at both ends. The sheen is drawn over the lifted disc's label, turning and squeezing with it. Flip 2 x1.0
+  pkf673o: the same look before, during and after the lift and the landing.
+- Storage boxes and File select checked with Inspect pressed in their open window (Flip 2 x1.0 pkf673n): the window re-lays out
+  beside the piece, by update 330's design - D323 stays open for those windows until their frames are checked.
+
+# Update 673b (15 Nov 2026) - same branch, NOT released
+- Disc station (owner design 14 Nov: "the disc stays seated for ordinary info panels; the real disc lifts and returns for Inspect /
+  Zoom"): A opens the deck's panel beside the player with the disc still turning in its tray - before, every A lifted a copy of the
+  disc and turned it over. Inspect (a key on the panel now) lifts the tray's own disc where it stands: from the angle the tray had
+  turned it to, upright as it rises, a little toward you; B puts it back into the tray at the tray's angle then and the window goes.
+  The piece asked for there is the disc itself (`forcedPieceOf`), not a case round it.
+- Coverflow details (owner design: "the case stays anchored for the side info panel; the actual case is pulled and rotated for
+  Inspect, then restored"): the big case is the game window's origin now (it was none: Inspect grew a second case out of nothing
+  beside the case still standing there). Inspect pulls that case forward - starting turned, tilted and sized as it stood (Spine
+  depth) - and turns it; B puts it back as it stood. The side panel keeps its own entrance and never grows out of the case.
+- Both (`inspectsInPlace`): the panel stays where it is while the piece is lifted. Before, Inspect pressed in an open window sent
+  the window's parts to InspectLayout's side, where they faded in again from nothing (D323). The object's home copy goes only once
+  the lifted piece has been drawn in the game window - its own surface (Flip 2: the tray stood empty ~80 ms, D324). Disc station's
+  disc rises toward the deck's open side, its right edge where the tray's was (KONKR x1.3: the panel overlaps the deck's edge on
+  that narrow screen and its edge was drawn over the lifted disc).
+- QA: `--es voltcap_test_wininspect on` presses the open window's Inspect as its key does; pickup529.sh THEN=inspect records the
+  piece's trip out and back. A request file written by adb's shell user could not be read by the app on the KONKR (Android 12).
+- CI: the Verify job hung twice in the unit tests (7f7a74d2: runner lost after 53 min; 9c9f41ac: still running after 40) and its log
+  needs a signed-in download (D325). Every test's start and end now goes to app/build/test-progress.log; the workflow names any test
+  that never ended, failed ones and the slowest as public annotations (tools/ci/test_progress.py) and bounds the test step at 40 min.
+  A Linux reproduction in the cloud workspace stopped at Maven Central (HTTP 429 / 404 through the proxy).
+- Tests: Inspect673Test (8), testDebugUnitTest 2794 / 0 failures (Windows; progress log 2794 started = 2794 ended); QA self-test +1.
+- Hardware (673b QA builds, isolated QA app, fixture library, launches blocked, restored diff=0 after each run): Flip 2 x1.0
+  pkf673k and KONKR x1.3 pkk673k - Disc station and Coverflow details: A leaves the object in place, Inspect lifts it and B returns
+  it, no frame with neither copy (tray brightness per frame). Known for the owner's review: the tray's disc has the station's light
+  sheen and the lifted disc is drawn without it, so its colours change as it leaves and lands; with Inspect pressed the Inspect key
+  leaves the panel, which re-centres by half a row.
+
+# Update 673a (15 Nov 2026) - same branch (repair/0.6.72-windows-tests, pushed as claude/qa-0672-repair), NOT released
+- Rental shop at x1.3: the tag's punched keys cut their words - KONKR "CATALOGU" / "ACHIEVEME", Flip 2 "CATALOGUE" (D320). Beside
+  the held case (672b) the tag is narrower and kept three equal keys across. Each key's word is now measured at its own size
+  (`tagKeyNeeds`) and a longer word takes two cells of the tag's grid (`tagKeyGrid`): order kept, columns aligned; with every word
+  fitting its cell the block is exactly as before. A word wider than the whole tag gets a second line (its key grows), never a
+  hidden one.
+- QA checker (D321): that cut was only an "unconfirmed" warning - the text's box (41 px) is not its own height (108 px), the rule
+  kept for auto-sized texts. Two or more lines in a box that can't hold all but half of the last line now FAIL ("a whole line out
+  of its box"). Run over the 793 dumps of the 0672 / 0673 gates: only these two keys are reported.
+- Found by the KONKR pickup recordings (pkk673d_10 / _13, 672d build). The same recordings: Case flow and Rental shop on the
+  KONKR at x1.0 and x1.3 - one object out and back, no frame gap over 29 ms during the trips.
+- Measured, open (D322): about 0.10-0.14 s from A to the first visible motion in every pickup window on the KONKR (60 Hz) - the
+  window's first frame takes ~63 ms to compose, then the flight waits for its target's place. The same in 0.6.71 (Storage, pk529t7).
+- Tests: ShopTag673Test (8); QA self-test +1 (real dumps: k673c FAIL, k672h PASS); testDebugUnitTest 2786 / 0 failures.
+- Hardware (673a QA build 2b2570c2, isolated QA app, restored diff=0): KONKR x1.3 k673e Rental shop PASS, Flip 2 x1.3 f673e
+  Rental shop PASS, both with the stricter checker. KONKR x1.3: three rows of keys, the last under the key column's scroll fade
+  (the "not set up" line below it scrolls in); Flip 2 x1.3: two rows.
+
+# Updates 672a-d (15 Nov 2026) - the v0.6.73 line on branch repair/0.6.72-windows-tests (pushed as claude/qa-0672-repair), NOT released
+- 672a, the x1.3 items v0.6.72 shipped with (Flip 2 gate f672c / f672e, 4 FAIL rows):
+  - TV room, Details page: three equal keys gave "Full details" a third of the strip - cut even at the smallest size the keys
+    shrink to. `TvControls` asks each key for its word's width at the keys' own size (`tvKeyNeeds`, `tvKeyRows`): equal keys
+    while every word fits its third (the look as before), else widths by word, else Play | Back over a whole-width Full details.
+  - Record crate, More open: the track list kept a 2 px strip under four rows of keys. Under one whole row's room it gives its
+    room away (as SceneFactsBody since 467); and it no longer repeats the console and year printed under the name.
+  - Record crate, hierarchy: PLAY (218 px) beside SLEEVE NOTES (378 px). Play is as wide as Sleeve notes (`SceneKey(minWidth)`)
+    as far as both still share their row (`crateKeyMin`; KONKR x1.3 k673a: a Play alone on its row pushed the ••• off the sleeve).
+  - Storage boxes / Case flow, hierarchy: checker errors, app unchanged. Page tabs are left out of the Details comparison (Play was
+    measured against the INFO tab); rows are read by vertical centre (`popclip.reading_first`: Case flow's round keys with their
+    word under them are taller than Play and start higher on the same line). Self-tests on the real f672e dumps.
+  - Cardboard box at x1.3 on the KONKR (k673a, found by this pass): beside the case the insert sheet is ~300 dp tall and the Saves
+    line showed 20 of its 54 px. A short sheet with large text gives its margins and gaps to the words (`tight`).
+- 672b, the two remaining physical pickups decided by the owner (14 Nov):
+  - Case flow: the case itself lifts out of the flow, turns edge-on at the window's place and the window turns in; B turns it back
+    and lands it in exactly its slot (the Record crate / Card binder trip, `sleeveFlip`). The case at home no longer also comes
+    forward behind the window (it is away). Home's picture of it: `LocalPickupSnapshot`.
+  - Rental shop: the shelf's own case comes off the board and is held beside the tag (`RentalTag`, a sprite trip like Console
+    stack's), its slot left empty, shelf labels where they were; B puts it back in the same slot. The tag's veil is lighter so the
+    shelf stays in view. Without a trip (motion off) the tag alone, as before - never a second copy of a case still on the shelf.
+- 672c (KONKR x1.3 gates k673a / k673b):
+  - Record crate with More open: Save sync, Inspect, the save line and ••• were not drawn at all (FlowRow drops what doesn't fit) -
+    More could not be closed by touch. The name keeps only the lines it needs (`reserve = false`); the keys are measured before the
+    track list and scroll on a sleeve too small for them.
+  - Cardboard box: the story box (24 px, a D-pad stop under the touch size) gives its room away under one line.
+  - The achievement chip on a tiny card (Cube menu Classic: "80%" cut by the card's edge): words chosen by their measured width
+    at the drawn size, less margin when needed, the bar alone on a card too narrow for any word.
+- 672d: Cardboard box - the gap above the Saves line stays 8 dp (Flip 2 x1.3 f673c: at 4 dp the tilted sheet's round Save sync
+  sticker crossed the line by 3 px).
+- Emulator trial workflow: "[emulator-qa]" in the head commit message is enough again (the paths filter skipped the RC commits).
+- QA tools: rapid515.sh takes GAME=… (the gate's fixture game).
+- Tests: CompactX13Fixes672Test (7), Pickups672Test (7); QA self-tests +3 (popclip on real dumps); testDebugUnitTest 2778 / 0.
+- Hardware (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after every run):
+  - Flip 2 x1.3: f673a 10/10 PASS (was 6/10 on RC2), f673c 10/11 (Box overlap -> 672d), f673d Box / Crate / TV 3/3 PASS.
+  - Flip 2 x1.0: f673b 11/11 PASS (incl. Rental shop and Case flow with their pickups).
+  - KONKR x1.3 (first gate on this line): k673a 7/10 -> k673b 9/11 -> k673c 10/11 (Box rapid A B A B left the window open once).
+    Box rapid on 672c / 672d, KONKR x1.3: r673c 16/16 closed, r673d 40/40 closed (retro, human, B while open, B while closing).
+  - Pickup frames, Flip 2 x1.0 / x1.3 (pkf673b_10 / _13): Case flow and Rental shop - one object all the way out and back.
+
 # v0.6.72 release candidate (14 Nov 2026) - branch repair/0.6.72-windows-tests, NOT released
 - Owner instruction 14 Nov: ship v0.6.72 as a safe incremental release; the new Save Sync stays out until real Google Drive
   cross-device tests prove it. This commit takes it out cleanly: every Save Sync 529 / 529c change (fix/save-sync 29011eff..2992f7eb,

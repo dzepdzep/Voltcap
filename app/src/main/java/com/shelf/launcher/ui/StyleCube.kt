@@ -25,6 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.ArrowLeft
+import androidx.compose.material.icons.filled.ArrowRight
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
@@ -773,7 +777,14 @@ private fun CubePill(label: String, icon: ImageVector?, on: Boolean, tint: Color
             Icon(icon, null, tint = Color.White, modifier = Modifier.size(if (small) 13.dp else 16.dp))
             Spacer(Modifier.width(6.dp))
         }
-        FullText(label, color = Color.White, fontSize = if (small) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        // (676y, D342 - Nova x1.3: the ◀ / ▶ / ▲ / ▼ glyphs come from a fallback font taller than the line - half of the
+        // arrow was cut. The arrows are drawn as icons, the same size whatever the font.)
+        val arrow = when (label) {
+            "◀" -> Icons.Filled.ArrowLeft; "▶" -> Icons.Filled.ArrowRight; "▲" -> Icons.Filled.ArrowDropUp; "▼" -> Icons.Filled.ArrowDropDown
+            else -> null
+        }
+        if (arrow != null) Icon(arrow, label, tint = Color.White, modifier = Modifier.size(if (small) 18.dp else 22.dp))
+        else FullText(label, color = Color.White, fontSize = if (small) 12.sp else 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 

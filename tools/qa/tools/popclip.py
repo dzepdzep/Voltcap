@@ -126,6 +126,23 @@ def page_tabs(acts, pb, tol):
     return strip if len(strip) >= 3 else []
 
 
+def reading_first(items, tol):
+    """The first of [items] ((label, box) pairs) in reading order: the top row - every control whose vertical centre is within
+    [tol] of the highest centre - then the leftmost in it. (672a, Flip 2 x1.3 f672e: Case flow's round Inspect / More keys, a
+    circle with its word under it, are 165 px tall beside Play's 135 and start 15 px higher on the same centre line; the old
+    top-edge buckets put More on a row above Play.) None for no items. Pure."""
+    if not items: return None
+    cy = lambda lb: lb[1][1] + lb[1][3] / 2
+    top = min(cy(it) for it in items)
+    return min([it for it in items if cy(it) - top <= tol], key=lambda lb: lb[1][0])
+
+
+def off_row(bb, pb):
+    """A control box [bb] off Play's [pb] action row: its centre a whole Play height away, or drawn under 3/4 of Play's height
+    (a hint / corner control). Pure."""
+    return abs((bb[1] + bb[3] / 2) - (pb[1] + pb[3] / 2)) > pb[3] or bb[3] < 0.75 * pb[3]
+
+
 def hierarchy(main, home):
     """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
     home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
@@ -146,9 +163,17 @@ def hierarchy(main, home):
     # OPTIONS over the PLAY line - is navigation between pages, not an action placed before Play (mlast529 / 529c false FAIL).)
     tabs = page_tabs(ctl, pb, tol)
     if tabs: notes.append("page tabs above the actions (" + ", ".join(l for l, _ in tabs) + ")")
-    first = min([a for a in acts if a not in tabs] or acts, key=lambda lb: (lb[1][1] // tol, lb[1][0]))
+    # (678p, owner 17 Nov, D351 - "keep the Banner X in the top corner: a separate corner-close control, not part of the main
+    # action ordering; Play stays the first primary action and the first focus": a Back / Close off Play's row - the same test
+    # as the "Back is a hint off the action row" note below - is window chrome, left out of the first-action order as the
+    # More-last check already leaves it out. A Close IN the action row before Play still FAILs.)
+    chrome = [(l, b) for l, b in acts if BACK_RE.match(l) and off_row(b, pb)]
+    if chrome: notes.append("corner close as chrome (" + ", ".join(l for l, _ in chrome) + ")")
+    first = reading_first([a for a in acts if a not in tabs and a not in chrome] or acts, tol)
     if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
-    det = [(l, b) for l, b in ctl if DET_RE.match(l)]
+    # (672a, Flip 2 x1.3 f672e: Storage boxes' INFO page tab - 117 px tall with large text - was taken for the Details key and
+    # Play's row (103 px) failed against it. A page tab is navigation; Play is measured against the Details action.)
+    det = [(l, b) for l, b in ctl if DET_RE.match(l) and (l, b) not in tabs]
     if det:
         # (A key's width follows its word - "Turn over" is wider than "Play" on the Game shelf (f529a): only a Play drawn
         # lower than Details, or at most 60 % of its area, is a demoted Play.)
@@ -167,7 +192,7 @@ def hierarchy(main, home):
     back = [(l, b) for l, b in ctl if BACK_RE.match(l)]
     if back:
         bb = back[0][1]
-        notes.append("Back is a hint off the action row" if abs((bb[1] + bb[3] / 2) - (pb[1] + pb[3] / 2)) > pb[3] or bb[3] < 0.75 * pb[3] else "Back sits in the action row")
+        notes.append("Back is a hint off the action row" if off_row(bb, pb) else "Back sits in the action row")
     return (qalib.FAIL, "; ".join(probs + notes)[:400]) if probs else (qalib.PASS, "; ".join(notes) or "Play first")
 
 
@@ -194,6 +219,8 @@ def grade(run, n):
     # (Whole log lines: "CLASSIC_OWN …" must not match "POCKET_CLASSIC_OWN …".)
     loglines = set(open(lp, encoding="utf-8").read().splitlines()) if os.path.exists(lp) else set()
     first_a = f"{n} first A opened nothing" in loglines
+    # (675c: up only at the second probe, 1.5 s after the first one ~2.8 s after A - opened, but late: the open gate fails.)
+    late_a = f"{n} first A opened late" in loglines
     closed_ok = d["closed"] is not None and len(acts(d["closed"])) <= len(home_act)
     # A layout whose home screen shows its own Play key (Pocket's "A Play Game", Card binder's "A Play"): A plays from there
     # and opens no popup — the popup isn't reachable by A, so nothing about it was tested.
@@ -202,6 +229,7 @@ def grade(run, n):
     if not opened and home_act and d["home"] is not None:
         return {k: (qalib.NOT_TESTED, f"A plays from the home screen's own key ({home_act[0]}): no popup opened by A") for k in CATS}
     out["open"] = (qalib.FAIL, "the first A opened nothing (a second A did)") if opened and first_a else \
+        (qalib.FAIL, "the first A opened the window late (not up at the probe, up 1.5 s later)") if opened and late_a else \
         (qalib.PASS, "opened, B closed") if opened and closed_ok else \
         (qalib.FAIL, ("did not open (no Play / Continue)" if not opened else "still open after B B")) if d["closed"] is not None or not opened else \
         (qalib.INFRA, "no closed-step dump")
@@ -276,8 +304,10 @@ def grade(run, n):
             img = Image.open(png[s]).convert("RGB")
         except Exception:
             continue
-        for text, box, ink in glyphcheck.candidates(d[s]):
-            r = glyphcheck.check(img, box, ink, text)
+        # (675i: candidates() returns the GlyphPill key box too since 675e - unpacking three values crashed every grade,
+        # emulator run 43809583379 "too many values to unpack". The key box is passed on, as glyphcheck's own main does.)
+        for text, box, ink, key in glyphcheck.candidates(d[s]):
+            r = glyphcheck.check(img, box, ink, text, key)
             seen += 1
             if r["verdict"] == "FAIL":
                 gl.append(f"{s} '{text}' off centre dx={r['dx']} dy={r['dy']} px ({r['dxPct']}% / {r['dyPct']}%)")

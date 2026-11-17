@@ -25,6 +25,10 @@ internal object QaClip {
     val Ring = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaRing") { a, b -> a == true || b == true }
     /** Batch 521b: a controller glyph drawn by InkGlyph (its text); dumped under "glyphs" for tools/qa/tools/glyphcheck.py. */
     val Glyph = androidx.compose.ui.semantics.SemanticsPropertyKey<String>("QaGlyph") { a, _ -> a }
+    /** 675e (D-674o-1): the circle / pill a glyph sits in (GlyphPill) - set only while [QaTrace.on]. Its box goes into the
+     *  glyph's dump entry as "key", so glyphcheck measures the ink against the key's own laid-out box instead of walking the
+     *  screenshot to its edge (a 12 % white pill over a backdrop shape of nearly the same colour has no edge to find). */
+    val GlyphKey = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaGlyphKey") { a, b -> a == true || b == true }
     /** Update 467: a scene drawn tilted (the rental tag): its children's boxes overlap by the tilt. */
     val Tilted = androidx.compose.ui.semantics.SemanticsPropertyKey<Boolean>("QaTilted") { a, b -> a == true || b == true }
 
@@ -92,11 +96,30 @@ internal object QaClip {
         if (!QaTrace.on) return
         val dir = java.io.File(context.getExternalFilesDir(null), "qa_clip").apply { mkdirs() }
         main.postDelayed({
-            runCatching { java.io.File(dir, tag.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json").writeText(dump(context)) }
+            runCatching { writeWhole(java.io.File(dir, tag.replace(Regex("[^A-Za-z0-9_.-]"), "_") + ".json"), dump(context)) }
                 .onFailure { QaTrace.event("clip", "error ${it.javaClass.simpleName} ${it.message}") }
             QaTrace.event("clip", "done $tag")
         }, delayMs)
     }
+
+    /**
+     * 675b: the dump appears whole or not at all - written beside the target and renamed into place. The QA scripts wait for
+     * the file itself (a slow, software-rendered emulator wrote it after their fixed sleep and they read a missing or
+     * half-written file: "first A opened nothing" with the popup on screen, emulator run 43762702001).
+     */
+    fun writeWhole(target: java.io.File, text: String) {
+        val part = java.io.File(target.parentFile, target.name + ".part")
+        part.writeText(text)
+        target.delete()
+        if (!part.renameTo(target)) { target.writeText(text); part.delete() }
+    }
+
+    /** 675c: how long the app's own game window has been up (ms), or null when none is. */
+    fun popupAge(open: Boolean, openedAt: Long, now: Long): Long? = if (open && openedAt > 0L) (now - openedAt).coerceAtLeast(0L) else null
+
+    /** 675c: one known Compose root, as listed in a dump's "roots". */
+    fun rootJson(id: String, attached: Boolean, shown: Boolean, focus: Boolean): String =
+        "{\"id\":\"${esc(id)}\",\"attached\":$attached,\"shown\":$shown,\"focus\":$focus}"
 
     private fun paged(n: SemanticsNode): Boolean {
         var p = n.parent
@@ -176,6 +199,7 @@ internal object QaClip {
             sb.append("\"texts\":[")
             var firstT = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
                 val words = c.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text } ?: continue
                 if (words.isBlank()) continue
@@ -195,6 +219,11 @@ internal object QaClip {
                     sb.append("\"lines\":$lines,\"maxLines\":${tl.layoutInput.maxLines.let { if (it == Int.MAX_VALUE) -1 else it }},")
                     sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
                     sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
+                    // (677h: a line break inside a word - homecut.py fails it.)
+                    if (lines > 1) sb.append("\"brokenWord\":${brokenWord(tl)},")
+                    // (676a: a one-line text's own width against its box - didOverflowWidth / Height also say yes for a 1 px rounding
+                    // at scaled text, badgecheck.py needs the size of the shortfall.)
+                    if (lines == 1) sb.append("\"needW\":${kotlin.math.ceil(tl.multiParagraph.intrinsics.maxIntrinsicWidth).toInt()},\"boxW\":${tl.size.width},")
                 }
                 // (Update 477, D266: a text a full FlowRow / Column dropped is measured but never placed — its box is the last
                 // one it had, so 'full' and 'shown' look fine while nothing is drawn (Airy's chips with More open, k477e).)
@@ -206,30 +235,93 @@ internal object QaClip {
             sb.append("\"glyphs\":[")
             var firstG = true
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val g = n.config.getOrNull(Glyph) ?: continue
                 val b = n.boundsInWindow
                 if (!firstG) sb.append(','); firstG = false
-                sb.append("{\"text\":\"${esc(g)}\",\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
+                sb.append("{\"text\":\"${esc(g)}\",\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}")
+                // (675e, D-674o-1: the key the glyph sits in, when its layout marks it - the nearest marked ancestor, a few levels up.)
+                glyphKeyOf(n)?.let { k -> sb.append(",\"key\":[${k.left.toInt()},${k.top.toInt()},${(k.right - k.left).toInt()},${(k.bottom - k.top).toInt()}]") }
+                sb.append('}')
             }
-            sb.append("]}")
+            sb.append("],")
+            // (676a: every corner badge on a game's picture - kind, its tile's lane, its drawn pill as laid out (full) and as
+            // shown (clipped) - and every lane's tile, for badgecheck.py: two badges of one tile closer than 6 dp, or one cut by
+            // its tile, fail.)
+            sb.append("\"badges\":[")
+            var firstB = true
+            val tiles = ArrayList<String>()
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
+                val c = n.config
+                c.getOrNull(BadgeTileTag)?.let { id ->
+                    val b = n.boundsInWindow; val p = n.positionInWindow
+                    tiles += "{\"lane\":\"$id\",\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}]}"
+                }
+                val tag = c.getOrNull(BadgeTag) ?: continue
+                val b = n.boundsInWindow; val p = n.positionInWindow
+                if (!firstB) sb.append(','); firstB = false
+                sb.append("{\"kind\":\"${tag.substringBefore('#')}\",\"lane\":\"${tag.substringAfter('#')}\",")
+                sb.append("\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],")
+                sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
+            }
+            // (677d: the status bar's cluster and every profile picture, for statuscheck.py; 677h: with "placed" - StatusFit's
+            // measured-only probes stay in this unmerged tree and are not on screen.)
+            val bars = ArrayList<String>(); val avatars = ArrayList<String>()
+            for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
+                if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
+                val c = n.config
+                fun box(): String { val b = n.boundsInWindow; val p = n.positionInWindow
+                    return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}" }
+                if (c.getOrNull(StatusClusterTag) == true) bars += "{${box()}}"
+                c.getOrNull(AvatarTag)?.let { w -> avatars += "{\"where\":\"$w\",${box()}}" }
+            }
+            sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("],\"statusBars\":[").append(bars.joinToString(","))
+                .append("],\"avatars\":[").append(avatars.joinToString(",")).append("]}")
         }
         sb.append("],")
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)
         val vmFocus = runCatching { TestHooks.viewState?.invoke()?.optString("focus") }.getOrNull()?.takeIf { it.isNotEmpty() }
         sb.append("\"focusedGame\":${vmFocus?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
+        // (676d: the home layout on screen - popclip.sh checks a layout switch took before its first key.)
+        val vmLayout = runCatching { TestHooks.viewState?.invoke()?.optString("layout") }.getOrNull()?.takeIf { it.isNotEmpty() }
+        sb.append("\"homeLayout\":${vmLayout?.let { "\"" + esc(it) + "\"" } ?: "null"},")
         sb.append("\"originKey\":${GameOrigin.key?.takeIf { it != GameOrigin.FOCUSED }?.let { "\"" + esc(it.takeLast(120)) + "\"" } ?: "null"},")
         sb.append("\"origin\":${GameOrigin.rect?.let { "[${it.left.toInt()},${it.top.toInt()},${it.width.toInt()},${it.height.toInt()}]" } ?: "null"},")
         sb.append("\"popupGame\":${GamePopup.game?.let { "\"" + esc(it.stableKey.takeLast(120)) + "\"" } ?: "null"},")
         sb.append("\"popupName\":${GamePopup.game?.let { "\"" + esc(it.name.take(120)) + "\"" } ?: "null"},")
+        // (675c, emulator run 43780985909: e529a's first-A probe saw the home window only while the screenshot taken right
+        // after showed the popup. These two fields tell the cases apart in the next dump: the app's own popup is up (and for
+        // how long), and every Compose root it knows with its state - a missing root vs one not attached / not shown yet.)
+        sb.append("\"popupAgeMs\":${popupAge(GamePopup.game != null, GamePopup.openedAt, android.os.SystemClock.uptimeMillis()) ?: "null"},")
+        sb.append("\"roots\":[${QaWalk.allRoots().joinToString(",") { r ->
+            rootJson(System.identityHashCode(r.view).toString(16), r.view.isAttachedToWindow, r.view.isShown, r.view.hasWindowFocus())
+        }}],")
         sb.append("\"images\":${QaArt.json()}}")
         return sb.toString()
     }
 
     /** Update 477: the node and every layout above it placed (drawn) in the last layout pass. */
+    /** 677k: inside a StatusFit probe (measured, never placed - HomeChrome StatusFit). */
+    private fun inProbe(n: SemanticsNode): Boolean {
+        var p: SemanticsNode? = n
+        while (p != null) { if (p.config.getOrNull(StatusProbeTag) == true) return true; p = p.parent }
+        return false
+    }
+
     private fun placed(n: SemanticsNode): Boolean {
         var li: androidx.compose.ui.layout.LayoutInfo? = n.layoutInfo
         while (li != null) { if (!li.isPlaced) return false; li = li.parentInfo }
         return true
+    }
+
+    /** 675e (D-674o-1): the box (in the window) of the key [n] (a glyph) sits in - the nearest ancestor marked [GlyphKey],
+     *  at most 3 levels up (GlyphPill's Box holds the InkGlyph directly); null when the layout marks none. */
+    internal fun glyphKeyOf(n: SemanticsNode): androidx.compose.ui.geometry.Rect? {
+        var p: SemanticsNode? = n.parent
+        var up = 0
+        while (p != null && up < 3) { if (p.config.getOrNull(GlyphKey) == true) return p.boundsInWindow; p = p.parent; up++ }
+        return null
     }
 
     /** Update 474: inside a part marked as giving way by design (it may shrink to nothing when the room is short). */

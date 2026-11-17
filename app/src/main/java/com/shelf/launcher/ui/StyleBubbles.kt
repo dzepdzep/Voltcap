@@ -596,7 +596,10 @@ private fun BubbleArt(c: StyleCtx, g: Game, on: Boolean, dPx: Float, i: Int, clo
             val cv = c.cover(g)
             if (g.sourceType == com.shelf.launcher.data.SourceType.APP) AppIconArt(g.packageName, wide = false, modifier = Modifier.fillMaxSize())
             else if (cv != null) AsyncImage(rememberStyleArtRequest(cv, trim = true), g.name, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            else Text(LocalTitleOptions.current.display(g.name), color = Color.White, fontSize = 11.sp, textAlign = TextAlign.Center, maxLines = 3, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+            // (676y, D342 - Nova x1.3: a coverless bubble broke its name inside a word and cut the lines ("Shado / w Of"). It fits
+            // in the bubble - smaller, then sliding - never cut (rule 11).)
+            else FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 11.sp, minSize = 7.sp, maxLines = 3, textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.Center).padding(8.dp), slideWhenCut = true)
         }
         // The gloss: a bright cap, a rim, a darker lower edge.
         Canvas(Modifier.fillMaxSize()) {

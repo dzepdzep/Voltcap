@@ -14,6 +14,28 @@ class EmulatorHarness529Test {
         assertTrue("gated by the QA hooks", line.contains("enabled(context)"))
     }
 
+    /** 675k (run 43811840328): the hook also answers the Inspect / Wobble question, without changing the mode. */
+    @Test fun firstRunHookAnswersTheInspectQuestion() {
+        val s = file("app/src/main/java/com/shelf/launcher/ui/TestHooks.kt")
+        val i = s.indexOf("getBooleanExtra(\"voltcap_test_firstrun_done\""); val j = s.indexOf("firstrun done (QA hook)", i)
+        assertTrue(i > 0 && j > i)
+        val block = s.substring(i, j)
+        assertTrue("marks the question answered", block.contains("Features.inspectModeAsked.value = true"))
+        assertTrue("never picks a mode for the owner", !block.contains("inspectMode.value ="))
+        // The dialog's own gate is still "asked" - the hook's flag is what keeps it off the emulator's home.
+        val c = file("app/src/main/java/com/shelf/launcher/ui/InspectChoice.kt")
+        assertTrue(c.contains("!Features.inspectModeAsked.value"))
+    }
+
+    /** 675k (run 43811840328): another app's ANR dialog over the picker is closed, not counted as the QA app's state. */
+    @Test fun trialClosesForeignAnrDialogs() {
+        val s = file("tools/qa/emulator/run_trial.sh")
+        assertTrue(s.contains("settings put global hide_error_dialogs 1"))
+        val pre = s.indexOf("precheck() {"); val anr = s.indexOf("CLOSE_SYSTEM_DIALOGS", pre)
+        assertTrue("closed inside precheck's loop", anr > pre && anr < s.indexOf("PRECONDITION \$1 FAILED", pre))
+        assertTrue("bounded: counts as a try", s.substring(anr, s.indexOf("continue", anr)).contains("tries=\$((tries + 1))"))
+    }
+
     @Test fun trialChecksPreconditionsBeforeEverySequence() {
         val s = file("tools/qa/emulator/run_trial.sh")
         assertTrue(s.contains("voltcap_test_firstrun_done true") && s.contains("am force-stop \$P"))

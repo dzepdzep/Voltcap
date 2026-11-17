@@ -30,4 +30,18 @@ object QaVariant {
     val isolatedNow: Boolean get() = known ?: (if (android.os.Build.VERSION.SDK_INT >= 28)
         runCatching { android.app.Application.getProcessName() }.getOrNull()?.substringBefore(':')?.let { isolatedPackage(it) }
         else null)?.also { known = it } ?: false
+
+    /**
+     * 676d (D334b): a QA script is driving this isolated QA app - the launch-block file qaguard.sh / popclip.sh / navbar676.sh
+     * write while they run. Never true in the owner's Voltcap (another package).
+     */
+    fun harnessActive(context: Context): Boolean = isolated(context) &&
+        runCatching { java.io.File(context.getExternalFilesDir(null), "qa_nolaunch").exists() }.getOrDefault(false)
+
+    /**
+     * 676d (D334b, RP Nova n676c13): what Back on the home screen does when it isn't handled inside it. The owner's Voltcap and
+     * the QA app used by hand: to the background unless it is the home app (as before). The QA app while a script drives it:
+     * nothing - moving it back showed the default home, the OWNER's Voltcap, and the script's next keys were aimed at it.
+     */
+    internal fun backAtRootLeaves(isDefaultHome: Boolean, harness: Boolean): Boolean = !isDefaultHome && !harness
 }

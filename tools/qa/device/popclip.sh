@@ -13,6 +13,12 @@ OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; rm -f $F/qa_clip/${TAG}_*
 ev_start $OUT $TAG "layouts=$LAYS" "styles=$STYLES" "game=$GAME" "content=${QA_CONTENT:-default}" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 . $(dirname $0)/qaguard.sh
+# (676d, D334: the target confirmed before anything is pressed - this device, the QA package, installed; logged in the run. And
+# the launch-block file first: while it exists the QA app's Back at its root stays in front (QaVariant.harnessActive) - a B
+# there had closed it and Android showed the OWNER's Voltcap, the home app.)
+pm path $P > /dev/null 2>&1 || { echo "STOP: $P not installed - nothing pressed" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
+touch $F/qa_nolaunch
+echo "target: serial=$(getprop ro.serialno) model=$(getprop ro.product.model) package=$P $(dumpsys package $P | grep -m1 versionName | tr -d ' ')" >> $OUT/log.txt
 # (523p: a key or a tap only while a QA app window has the focus - a crash dialog's buttons lead into Settings' App info,
 # GT78 523. A dialog / other window: the QA app is stopped and the run ends; nothing else is pressed.)
 fg() { for w in 1 2 3 4 5 6; do f=$(dumpsys window | grep mCurrentFocus | tail -1); case "$f" in *Application*) break;; *com.shelf.launcher.qa*) return 0;; *=null*) echo "ABORT no window has the focus (asleep?) - not woken (owner rule)" >> $OUT/log.txt 2>/dev/null; exit 2;; esac; sleep 0.5; done
@@ -26,19 +32,63 @@ k() { fg; input keyevent KEYCODE_$1; sleep ${2:-0.7}; }
 PLAYW="(Play|Continue|Resume|Start|Start game|Continue game|Play Game|Press Start|Power on|Run|Play it!|Continue!|Rent & Play|Rent & Continue|Rent & Resume)"
 DETW="(Details|Full details|Information|Info|Game info|Contents|Status|Sleeve notes|Card text|Turn over|Summary|The story|Type NFO|Catalogue card)"
 # (Counted against the home step: a layout whose home screen has its own Play button — Custom — is not "a popup up".)
-pc() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$PLAYW"'","kind":"control"' $1 2>/dev/null | wc -l; }
-up() { rm -f $F/qa_clip/${TAG}_probe.json; echo "${TAG}_probe" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 0.9; [ $(pc $F/qa_clip/${TAG}_probe.json) -gt $(pc $F/qa_clip/${TAG}_${n}_home.json) ]; }
+# jl FILE: the dump one node per line. (675d, emulator run 43786748164: the device's grep missed controls that were in the dump
+# - "no Details action" / More step missing / "A opened nothing" with Play, Details and More on screen - on exactly the dumps
+# whose one 10-13 KB line also held "Full story on Details ›"; the same files matched on the PC. Short per-node lines keep one
+# odd node or the line's length from hiding every other node from the device's regex.)
+# (675o, emulator run 43833359452 on 1990deb4: the misses go on with jl - e529b's probe held Play, Details and More (copied
+# right after the failed read: probeA / probeB) and e529a's SHELF main held More, yet the device's grep read none of them -
+# and again exactly the dumps that hold "Full story on Details ›"; "·" alone never did it. The PC's grep and toybox on
+# glibc read the same files. jl now hands grep plain ASCII: the bytes of the round More glyphs are kept apart first
+# (⋯ = ~12, • = ~~3 - their own last bytes) and every other non-ASCII byte becomes ~. MOREW is the More key in that form.)
+jl() { tr '{' '\n' < "$1" 2>/dev/null | tr '\213\257\242' '123' | tr '\200-\377' '~'; }
+MOREW="(More|~12|~~3~~3~~3)"
+pc() { ctl "$PLAYW" $1 | wc -l; }
+age() { jl $1 | grep -o '"popupAgeMs":[0-9a-z]*' | head -1 | sed 's/.*://'; }
+# dw FILE: wait for the app's own dump. (675b, emulator run 43762702001: the software-rendered emulator wrote the dumps after
+# the fixed sleep - the probe read no file, so a popup that was up counted as "first A opened nothing" / "no Details action"
+# and A was pressed again on it. The fixed sleep stays the minimum; then up to 8 s more for the file, which QaClip writes
+# whole (renamed into place). A dump that never comes is logged - the step then fails / stays NOT TESTED as before.)
+# (675d: and until the file READS whole - its last byte the JSON's closing brace - not only until it shows a size.)
+dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
+dw() { i=0; while ! dr "$1" && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
+  dr "$1" || { [ -s "$1" ] && echo "dump unreadable: ${1##*/}" >> $OUT/log.txt || echo "dump missing: ${1##*/}" >> $OUT/log.txt; }; }
+# (677c, emulator run 43887216747: e529b SHELF logged "first A opened nothing" and e529a COVERDETAILS "opened late" although
+# the probes kept right after the read (probeA) hold the window's Play key and the app's own "popupAgeMs" (2188 / 2708 ms -
+# up ~0.6 s after A); the same file read 1 Play key when the log line was written. Every probe now has a name of its own
+# (no read can meet an older probe or one being replaced), is copied to ${TAG}_probe.json for the steps that read it, and
+# the window counts as up when the app itself says so (popupAgeMs) even if the Play key was not read - said in the log
+# (the grader's open check reads the dumps itself). UPREAD keeps what each read saw, logged with "opened late / nothing".)
+PN=0
+up() { PN=$((PN + 1)); pf=$F/qa_clip/${TAG}_probe_$PN.json; rm -f $pf; echo "${TAG}_probe_$PN" > $F/qa_clip_req; chmod 666 $F/qa_clip_req
+  sleep 0.9; dw $pf; rm -f $F/qa_clip/${TAG}_probe.json; cp $pf $F/qa_clip/${TAG}_probe.json 2>/dev/null; rm -f $pf
+  pa=$(pc $F/qa_clip/${TAG}_probe.json); ph=$(pc $F/qa_clip/${TAG}_${n}_home.json); pg=$(age $F/qa_clip/${TAG}_probe.json)
+  UPREAD="probe $PN: Play keys $pa, home $ph, popupAgeMs $pg, $(wc -c < $F/qa_clip/${TAG}_probe.json 2>/dev/null) bytes"
+  [ "${pa:-0}" -gt "${ph:-0}" ] && return 0
+  case "$pg" in [0-9]*) echo "${n:-?} up by the app's own popupAgeMs $pg (Play key not read: $UPREAD)" >> $OUT/log.txt; return 0;; esac
+  return 1; }
 # tapat LABEL_RE STEP: tap the middle of the shown part of the first control whose label ends in LABEL_RE (false if none shows).
 # (The popup's own control: one that the home step didn't have — Custom's home has a Play button of its own.)
-ctl() { grep -oiE '"label":"([^"]*[^A-Za-z])?'"$1"'","kind":"control","full":\[[0-9,-]*\],"shown":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $2 2>/dev/null; }
+# (678a, emulator run 43929836268 on c45d0ab: with the probe and the dumps whole and plain ASCII, the device's grep -iE still
+# read no Play in ANY probe (Play keys 0 in 9 of 9 reads while popupAgeMs said the window was up), "Details read: plain 1,
+# pattern 0" and "More: none read (plain More keys 1)" - the same file, the same moment; the dumps hold "Play" / "Details" /
+# "More" as plain controls. No regex reads a label any more: ctl splits the word list "(A|B|C)" itself, cuts each control
+# line's label / full / shown out with the shell's own ${x#..} / ${x%%..}, lower-cases with tr and compares with case (the
+# label IS a word, or ends in a non-letter + the word - the old rule, still case-blind). pc = ctl "$PLAYW" | wc -l.)
+ctl() { ws=$(printf '%s\n' "$1" | sed 's/^(//;s/)$//' | tr '|' '\n' | tr A-Z a-z); jl $2 | while IFS= read -r ln; do case "$ln" in '"label":"'*'","kind":"control","full":['*'],"shown":['*) ;; *) continue;; esac; lb=${ln#'"label":"'}; lb=${lb%%'"'*}; r=${ln#*'"full":['}; fu=${r%%']'*}; r=${ln#*'"shown":['}; sw=${r%%']'*}; case "$fu,$sw" in *[!0-9,-]*) continue;; esac; lo=$(printf '%s' "$lb" | tr A-Z a-z); printf '%s\n' "$ws" | while IFS= read -r w; do case "$lo" in "$w"|*[!a-z]"$w") printf '"label":"%s","kind":"control","full":[%s],"shown":[%s]\n' "$lb" "$fu" "$sw"; break;; esac; done; done; }
 tapat() {
   ctl "$1" $F/qa_clip/${TAG}_${n}_home.json > $F/qa_tap_home.txt
   [ "$2" = probe ] && src=$F/qa_clip/${TAG}_probe.json || src=$F/qa_clip/${TAG}_${n}_$2.json
-  r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | grep -vE '"shown":\[[0-9-]*,[0-9-]*,0,|"shown":\[[0-9-]*,[0-9-]*,[0-9]*,0\]' | head -1 | sed 's/.*"shown":\[//;s/\]//')
+  r=$(ctl "$1" $src | grep -vxF -f $F/qa_tap_home.txt | while IFS= read -r ln; do sw=${ln##*'"shown":['}; sw=${sw%']'}; set -- $(echo $sw | tr ',' ' '); [ "${3:-0}" -gt 0 ] && [ "${4:-0}" -gt 0 ] && { echo "$sw"; break; }; done)
   [ -n "$r" ] || return 1
   fg; set -- $(echo $r | tr ',' ' '); input tap $(( $1 + $3 / 2 )) $(( $2 + $4 / 2 ))
 }
-shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; }
+# seek LABEL_RE DIR: walk the D-pad DIR (DPAD_RIGHT / DPAD_LEFT) until a key matching LABEL_RE shows in the probe, then tap it;
+# sk = the presses it took. (674a: a uniform row that scrolls (673g) keeps Details / More / Play out of view until the D-pad
+# brings them in - k673k Crate / Pocket "Details shown but its tapped page is missing", f673l / k673k "Play tap not recorded"
+# after the walk to More had scrolled the row to its end.)
+seek() { sk=0; while :; do tapat "$1" probe && return 0; [ $sk -ge 7 ] && return 1; k $2 0.45; sk=$((sk + 1)); up; done; }
+shot() { screencap -p $OUT/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_$1.json; }
 # (Owner, 12 Nov: never wake a device - an asleep display stops the run instead.)
 dumpsys power | grep -q "mWakefulness=Awake" || { echo "STOP: display asleep - not woken" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 3; }
 # (Update 469, D210: a fresh Voltcap opens on "Who's playing?" — its first A picks the profile, so the first combo of every
@@ -49,7 +99,7 @@ pid=$(pidof $P); for i in 1 2 3 4 5 6 7 8; do grep -q " $pid\$" $F/voltcap_qa_sc
 for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "profile picker closed with B" >> $OUT/log.txt; done
 [ -n "$GAME" ] && { logcat -c; A --es voltcap_test_game "$GAME"; sleep 3; echo "$GAME" > $OUT/game.txt
   # (Update 469: the hook logs which game it found — a run on the wrong game is stopped, not graded.)
-  logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME'" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
+  logcat -d -s VoltcapTest | grep -q "game '.*' -> NO MATCH" && { echo "STOP: no game matches '$GAME' (fixture roms: $(find $F/roms -type f 2>/dev/null | wc -l | tr -d ' '))" >> $OUT/log.txt; echo DONE >> $OUT/log.txt; exit 1; }
   logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed 's/.*VoltcapTest: //' >> $OUT/log.txt
   ev_note $OUT "game_match=$(logcat -d -s VoltcapTest | grep "game '" | tail -1 | sed "s/.*-> //;s/https[^ ]*//g")"; }
 touch $F/qa_nolaunch
@@ -61,6 +111,16 @@ for lay in $LAYS; do
   # next layouts were SAVED: the KONKR ended on File select, the Odin on Art library after the 469 runs.)
   A --ez voltcap_test_preview true
   A --es voltcap_test_layout $lay; sleep 3.5
+  # (676d, D334b, RP Nova n676c13: just after an install the QA app was still on its first-start scan, the layout asked for
+  # never came, and the keys meant for it went to whatever was on screen. The app's own dump says which layout it shows
+  # ("homeLayout"); asked once more if it is another; still another: this layout is left out (NOT TESTED), nothing pressed.)
+  rm -f $F/qa_clip/${TAG}_lay.json; echo "${TAG}_lay" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_lay.json
+  if jl $F/qa_clip/${TAG}_lay.json | grep -q '"homeLayout"' && ! jl $F/qa_clip/${TAG}_lay.json | grep -q "\"homeLayout\":\"$lay\""; then
+    A --ez voltcap_test_preview true; A --es voltcap_test_layout $lay; sleep 5
+    rm -f $F/qa_clip/${TAG}_lay.json; echo "${TAG}_lay" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_lay.json
+    jl $F/qa_clip/${TAG}_lay.json | grep -q "\"homeLayout\":\"$lay\"" || {
+      echo "$lay: SKIPPED - the app shows $(jl $F/qa_clip/${TAG}_lay.json | grep -o '"homeLayout":"[A-Z_0-9]*"') after two asks; no key pressed (NOT TESTED)" >> $OUT/log.txt; continue; }
+  fi
   # (Update 469: Card binder and Pocket Quest play on A by default (cards_a_plays / pq_a_plays) — their window opens on A only
   # with that option off, so it is switched off for the sweep; the caller's voltcap_test_snapshot restore puts the owner's
   # value back. Before, these combos were "A plays" = NOT TESTED.)
@@ -69,8 +129,8 @@ for lay in $LAYS; do
     # (Green Core's home is its own menu — GAMES / SYSTEMS / ... — A enters the games first; the first combo logged "first
     # A opened nothing" for it.)
     # (Only when it is on that menu — its "SAVE VAULT" entry in the dump; Green Core keeps the games view it was left on.)
-    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
-      grep -q '"label":"SAVE VAULT"' $F/qa_clip/${TAG}_gc.json 2>/dev/null && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
+    GREENCORE) rm -f $F/qa_clip/${TAG}_gc.json; echo "${TAG}_gc" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_gc.json
+      jl $F/qa_clip/${TAG}_gc.json | grep -q '"label":"SAVE VAULT"' && { k BUTTON_A 1.5; echo "$lay: A entered GAMES (its home menu)" >> $OUT/log.txt; };; esac
   for st in $STYLES; do
     n=${lay}_$st
     # (Update 475: the run's game again before every combination — after a combination whose window misbehaved (Blades'
@@ -86,13 +146,31 @@ for lay in $LAYS; do
     # first layout picked a profile there and the gate failed "open" (TV / Arcade / Classic, o478C / o478E). Closed with B
     # whenever the app's own mark says PICKER, right before the home shot, and logged.)
     for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; echo "$lay: profile picker closed with B" >> $OUT/log.txt; done
+    # (675r, RP Nova x1.3 n675d: Cube's home there is the category cube - "1 game · you're here", an Open key, the hint "Ⓐ Open" -
+    # and no game drawn ("hasRow":false). Its A opens the category's games, as its hint says; the next A opens the window. The
+    # gate read that as "first A opened nothing". As for Green Core's home menu: only on that screen, A enters the games
+    # first and it is logged; on Cube's menu home (x1.0) the game is drawn and nothing changes.)
+    if [ $lay = CUBE ]; then rm -f $F/qa_clip/${TAG}_cube.json; echo "${TAG}_cube" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1; dw $F/qa_clip/${TAG}_cube.json
+      if jl $F/qa_clip/${TAG}_cube.json | grep -q '"hasRow":false' && jl $F/qa_clip/${TAG}_cube.json | grep -q '"label":"Open"'; then
+        k BUTTON_A 1.8; echo "$n: A entered the category's games (Cube's category cube home, hint: A Open)" >> $OUT/log.txt; fi; fi
     # The home screen before the popup (what "closed" must come back to).
     shot ${n}_home
     # Controller: A opens the popup.
     logcat -c; k BUTTON_A 1.9
     # (A first A that opened nothing is recorded — the gate fails "open" on it — and A is pressed once more to go on.)
-    up || { if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
-      else echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+    # (675c, emulator run 43780985909: e529a's probe saw no popup while the firstA screenshot taken just after showed it, and
+    # the second A then pressed the open window's Play. The failed probe is kept (${n}_probeA) and the app is asked once more
+    # 1.5 s later (${n}_probeB, both carry the app's own popupAgeMs and its known windows): up then = "first A opened late"
+    # - still a FAIL of the open gate, but no second A on the open window. Not up = "first A opened nothing", as before.)
+    up || { cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeA.json 2>/dev/null; R1=$UPREAD
+      if [ $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked') -gt 0 ]; then echo "$n A plays" >> $OUT/log.txt
+      elif sleep 1.5 && up; then cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeB.json 2>/dev/null
+        echo "$n first A opened late" >> $OUT/log.txt; echo "$n read: $R1" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+      else cp $F/qa_clip/${TAG}_probe.json $F/qa_clip/${TAG}_${n}_probeB.json 2>/dev/null
+        echo "$n first A opened nothing" >> $OUT/log.txt; screencap -p $OUT/${n}_firstA.png
+        # (675o: what the device's grep read - Play keys in the probe / the home - to set beside the copied probes.)
+        echo "$n read: Play keys probe $(pc $F/qa_clip/${TAG}_probe.json), home $(pc $F/qa_clip/${TAG}_${n}_home.json)" >> $OUT/log.txt
+        echo "$n read: $R1 / $UPREAD" >> $OUT/log.txt
         # (Update 469: a crash left the system's "has stopped" dialog / launcher in front and the next keys went to App info
         # and Android Settings — never press on outside Voltcap.)
         case "$(dumpsys activity activities | grep -m1 -E 'topResumedActivity|mResumedActivity')" in *com.shelf.launcher*) ;;
@@ -104,21 +182,42 @@ for lay in $LAYS; do
     # (Update 469: "Details" itself first — Storage's tabs are INFO / DETAILS / …, and the list's "Info" matched INFO, the tab
     # already open: "a tap on Details changed nothing". The other words only where no Details key is there.)
     if tapat "(Details|Full details)" main || tapat "$DETW" main; then sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
-    else echo "$n no Details action" >> $OUT/log.txt; fi
+    # (674c: the layout's own word for Details too - Record crate's "Sleeve notes", Pocket's "Status" (k674a).)
+    elif [ -n "$(ctl "$DETW" $F/qa_clip/${TAG}_${n}_main.json)" ] && up && seek "$DETW" DPAD_RIGHT; then
+      echo "$n Details reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; sleep 1.4; shot ${n}_page; k BUTTON_B 1.0
+    else echo "$n no Details action" >> $OUT/log.txt
+      # (677c: e529a COVERDETAILS / SHELF main held "Details" / "Turn over" keys on screen - what the device read, plainly
+      # (fixed strings) and through the key pattern, to set beside the pulled dump.)
+      echo "$n Details read: plain $(jl $F/qa_clip/${TAG}_${n}_main.json | grep -cF -e '"label":"Details","kind":"control"' -e '"label":"Turn over","kind":"control"'), pattern $(ctl "$DETW" $F/qa_clip/${TAG}_${n}_main.json | wc -l), home $(wc -l < $F/qa_tap_home.txt 2>/dev/null)" >> $OUT/log.txt; fi
     # More (where the window has one, or the About text's More): a tap, then B.
     # (Update 529b: the round key's label is "•••" - mlast529 found it missed on 9 of 10 layouts.)
-    if grep -qiE '"label":"[^"]*(More|⋯|•••)","kind":"control"' $F/qa_clip/${TAG}_${n}_main.json 2>/dev/null; then
+    if [ -n "$(ctl "$MOREW" $F/qa_clip/${TAG}_${n}_main.json)" ]; then
       up || { k BUTTON_A 1.9; up; }
       # (Where the window is NOW — the probe's dump: a window can sit elsewhere after a page or More changed its height.)
-      if tapat "(More|⋯|•••)" probe; then sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
+      # (673g, owner brief 15 Nov: a key row that doesn't fit scrolls a whole key at a time and MORE is its last key - off
+      # screen at first on a narrow window. The D-pad walks right until the row brings it into view, as a player would.)
+      mr=0; found=0
+      while :; do
+        if tapat "$MOREW" probe; then found=1; break; fi
+        [ $mr -ge 7 ] && break
+        k DPAD_RIGHT 0.45; mr=$((mr + 1)); up
+      done
+      # (674g: a vertical menu - Record crate at x1.3 - keeps MORE under its visible keys: the D-pad walks down to it.)
+      # (674k: the walk right can leave the stack (KONKR k674i / k674k: "More not on screen") - back up to its first key, then down.)
+      if [ $found = 0 ]; then for i in 1 2 3 4 5 6; do k DPAD_UP 0.35; done; up
+        if seek "$MOREW" DPAD_DOWN; then found=1; mr=$sk; echo "$n More reached walking down the menu" >> $OUT/log.txt; fi; fi
+      if [ $found = 1 ]; then [ $mr -gt 0 ] && echo "$n More reached with $mr D-pad presses (the row scrolled)" >> $OUT/log.txt
+        sleep 1.3; shot ${n}_more; k BUTTON_B 0.9
       else echo "$n More not on screen" >> $OUT/log.txt; fi
+    # (675o: a main dump the device read without a More key is said so - before, the step was silently missing.)
+    else echo "$n More: none read in the main dump ($(jl $F/qa_clip/${TAG}_${n}_main.json | grep -c '"kind":"control"') controls read; plain More keys $(jl $F/qa_clip/${TAG}_${n}_main.json | grep -cF '"label":"More","kind":"control"'))" >> $OUT/log.txt
     fi
     # A tap on Play must ask for the launch — blocked (qa_nolaunch), so it shows in the log and nothing starts.
     # (Update 489b, D287: only when the running build confirms the block — qaguard.sh; else the tap is skipped.)
     if qa_guard 2>> $OUT/log.txt; then
       up || { k BUTTON_A 1.9; up; }
       logcat -c
-      if tapat "$PLAYW" probe; then sleep 1.3
+      if tapat "$PLAYW" probe || { seek "$PLAYW" DPAD_LEFT && echo "$n Play reached with $sk D-pad presses (the row scrolled)" >> $OUT/log.txt; }; then sleep 1.3
         echo "blocked=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" > $OUT/${n}_play.txt
         # (Update 469: which game it asked for — the key after "LAUNCH blocked <where>"; popclip.py checks it is the run's game.)
         logcat -d -s VoltcapQA | grep 'LAUNCH blocked' | sed 's/.*LAUNCH blocked [^ ]* \(.*\) popup=.*/key=\1/;s/https[^ ]*//g' >> $OUT/${n}_play.txt
@@ -133,6 +232,10 @@ for lay in $LAYS; do
     if [ -n "$POP_EXTRA" ]; then
       k BUTTON_A 1.6
       if up; then k BUTTON_R1 1.1; shot ${n}_r1; k BUTTON_L1 1.1; shot ${n}_l1; k BUTTON_B 1.0; up && k BUTTON_B 1.2; up && k BUTTON_B 1.2
+      # (675o, e529a: "extra: A opened nothing", then the rapid A B A B started a launch - its first A met the window that had
+      # opened after all. Asked once more 1.5 s later, as the first A is: up then = "extra: A opened late", closed with B, so
+      # the rapid presses start from the home as their check says. Still nothing = "A opened nothing", as before.)
+      elif sleep 1.5 && up; then echo "$n extra: A opened late" >> $OUT/log.txt; k BUTTON_B 1.2; up && k BUTTON_B 1.2
       else echo "$n extra: A opened nothing" >> $OUT/log.txt; fi
       logcat -c
       for i in 1 2; do fg; input keyevent KEYCODE_BUTTON_A; sleep 0.25; fg; input keyevent KEYCODE_BUTTON_B; sleep 0.25; done; sleep 1.6
@@ -150,6 +253,6 @@ done
 # Switching it off here let a later hand-made tap start a game.)
 A --ez voltcap_test_preview false
 echo "launch blocked: $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/log.txt
-mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_gc.json $F/qa_tap_home.txt
+mkdir -p $OUT/qa_clip; cp $F/qa_clip/${TAG}_* $OUT/qa_clip/ 2>/dev/null; rm -f $OUT/qa_clip/${TAG}_probe.json $OUT/qa_clip/${TAG}_probe_*.json $OUT/qa_clip/${TAG}_gc.json $OUT/qa_clip/*.part $F/qa_tap_home.txt
 ev_end $OUT
 echo DONE >> $OUT/log.txt

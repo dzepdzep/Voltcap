@@ -280,7 +280,10 @@ private fun LibraryHint(text: String, compact: Boolean, onTap: () -> Unit) {
             .padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {
-        Text(text, color = Color.White.copy(alpha = 0.85f), fontSize = if (compact) 10.sp else 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+        // (674o, KONKR x1.3 k674n: "R2" sat 6 px high in its chip - a Text's line box keeps room for descenders under capitals.
+        // The shared InkGlyph centres the letters' own ink; the size still follows the font scale (sp -> dp here).)
+        val ts = with(androidx.compose.ui.platform.LocalDensity.current) { (if (compact) 10.sp else 11.sp).toDp() }
+        InkGlyph(text, Color.White.copy(alpha = 0.85f), ts)
     }
 }
 

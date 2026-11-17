@@ -6,6 +6,8 @@
     { "file": "Voltcap-0.6.70.apk", "versionCode": 77, "sha256": "c842251c145820de58f2e5d828a1705fd6d5795519af2dfa56ea5aa7ceccfde8" },
     { "file": "Voltcap-0.6.70-compat.apk", "versionCode": 77, "sha256": "f295b1db532d11e8b827f3fa2bc66d31e6ba910cb477269b6a0b6cd0ea62ff91" },
     { "file": "Voltcap-0.6.71.apk", "versionCode": 78, "sha256": "4ec2ed4065ff2d3009fa977a63e6a161e0fbf832145dac8162fb0e801dea4962" },
-    { "file": "Voltcap-0.6.71-compat.apk", "versionCode": 78, "sha256": "63b8dc5fb4e9092684fe8800ea39c3147a1061fe2660f0154cb2ed8f95362606" }
+    { "file": "Voltcap-0.6.71-compat.apk", "versionCode": 78, "sha256": "63b8dc5fb4e9092684fe8800ea39c3147a1061fe2660f0154cb2ed8f95362606" },
+    { "file": "Voltcap-0.6.72.apk", "versionCode": 79, "sha256": "683d00798d40daafb04d49f392bd5334a565343ba31770248dd46dba8b15935b" },
+    { "file": "Voltcap-0.6.72-compat.apk", "versionCode": 79, "sha256": "8c431fae31b7643f6a92aa16f05f23d2c5f755da411fb0ab892666e623aae905" }
   ]
 }

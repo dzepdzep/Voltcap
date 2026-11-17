@@ -132,8 +132,8 @@ internal fun SpotifyPlayerBar(
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(item.name ?: "Unknown track", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(item.artistLine(), color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    com.shelf.launcher.ui.FullText(item.name ?: "Unknown track", color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+                    com.shelf.launcher.ui.FullText(item.artistLine(), color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
                 }
             }
             RoundControl(Icons.Filled.SkipPrevious, "Previous") { controls.previous() }
@@ -197,10 +197,10 @@ internal fun SpotifyFullPlayer(
                 modifier = Modifier.size(200.dp).clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.08f))
             )
             Spacer(Modifier.height(12.dp))
-            Text(item.name ?: "Unknown track", color = Color.White, fontSize = 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(22.sp), maxFontSize = 22.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
+            com.shelf.launcher.ui.FullText(item.name ?: "Unknown track", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+            com.shelf.launcher.ui.FullText(
                 listOf(item.artistLine(), item.album?.name.orEmpty()).filter { it.isNotBlank() }.joinToString(" • "),
-                color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, maxLines = 2, reserve = false
             )
             Spacer(Modifier.height(10.dp))
             val duration = item.duration_ms ?: 0L

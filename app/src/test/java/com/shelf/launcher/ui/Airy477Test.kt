@@ -37,7 +37,8 @@ class Airy477Test {
     @Test fun moreKeysAreAPillRowNotTheWellOrASecondRowOfRoundKeys() {
         val s = src("WinScenes.kt")
         val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
-        assertTrue(airy.contains("secondary.forEach { a -> AiryPill(a, accent) }"))
+        // (674b: the pill row is one UniformKeyRow - the owner's button brief of 15 Nov)
+        assertTrue(airy.contains("UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) }"))
         assertTrue(!airy.contains("small = true"))
     }
 
@@ -67,7 +68,9 @@ class Airy477Test {
         assertEquals(listOf("Played 1 h"), airyFactLines(listOf("Played 1 h")))
         val s = src("WinScenes.kt").replace("\r\n", "\n")
         val airy = s.substring(s.indexOf("private fun AiryPanel"), s.indexOf("internal fun airySplit"))
-        assertTrue(airy.contains("airyFactLines(facts).forEach { FullText(it"))
+        // (674j: the lines from airyFactLines - joined into one sliding line on a tight panel with More open, every fact on it.)
+        assertTrue(airy.contains("val lines = airyFactLines(facts)"))
+        assertTrue(airy.contains("lines.forEach { FullText(it"))
         // q0672k3: no chips row left that a two-line name can push a fact out of.
         assertTrue(!airy.contains("facts.forEach {"))
     }

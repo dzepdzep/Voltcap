@@ -458,16 +458,15 @@ internal fun SaveExplorerDialog(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
-                        Text(
+                        // (Update 678g, rule 11: the header's name and count line are shown whole - FullText wraps, shrinks, then slides.)
+                        FullText(
                             com.shelf.launcher.data.SAVES_NAME, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp,
-                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp),
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                            reserve = false
                         )
-                        if (connected) Text(
+                        if (connected) FullText(
                             "${all.size} game${if (all.size == 1) "" else "s"} with saves · " + (if (byName) "A–Z" else "last played first") +
                                 if (byConsole && consoles.size > 1) " · L1 / R1 console" else "",
-                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, maxLines = 2, reserve = false
                         )
                     }
                     VoltHelpButton(VoltTopic.SAVE_VAULT)
@@ -509,17 +508,16 @@ internal fun SaveExplorerDialog(
                             tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(40.dp)
                         )
                         Spacer(Modifier.height(10.dp))
-                        Text(
+                        FullText(
                             "Not connected to Google Drive", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold,
-                            autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp),
-                            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, reserve = false
                         )
                         val problem = connectProblem
                         if (problem != null) {
                             Spacer(Modifier.height(6.dp))
-                            Text(
-                                problem, color = Color(0xFFFFB4A0), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 5, overflow = TextOverflow.Ellipsis,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            FullText(
+                                problem, color = Color(0xFFFFB4A0), fontSize = 12.sp, lineHeight = 16.sp, maxLines = 5,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, reserve = false
                             )
                         }
                         Spacer(Modifier.height(14.dp))
@@ -674,7 +672,7 @@ private fun ConsoleHeader(name: String, platform: String, count: Int, current: B
                 modifier = Modifier.weight(1f, fill = false)
             )
             Spacer(Modifier.width(8.dp))
-            Text("$count", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText("$count", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, reserve = false)
         }
         Spacer(Modifier.height(5.dp))
         Box(
@@ -1414,8 +1412,9 @@ private fun CapsuleSaveRow(item: com.shelf.launcher.data.SaveCapsules.SaveItem) 
         )
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.title, color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis) // (Update 151: one line each: two of each never fit the 38 dp row and were cut through)
-            Text(item.where, color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            // (Update 151: one line each: two of each never fit the 38 dp row and were cut through. 678g, rule 11: a long one slides.)
+            FullText(item.title, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, reserve = false)
+            FullText(item.where, color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, reserve = false)
         }
         if (item.modified > 0) Text(fmt.format(java.util.Date(item.modified)), color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, modifier = Modifier.padding(start = 6.dp)) // (Update 151: one line)
     }
@@ -1486,7 +1485,7 @@ private fun SaveVaultSyncRow(onSyncNow: () -> Unit) {
     }
     if (st.connected && st.lastSyncAt > 0) {
         val ago = android.text.format.DateUtils.getRelativeTimeSpanString(st.lastSyncAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS)
-        Text("Last sync $ago" + (st.lastResult?.let { " · $it" } ?: ""), color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText("Last sync $ago" + (st.lastResult?.let { " · $it" } ?: ""), color = Color.White.copy(alpha = 0.55f), fontSize = 11.sp, maxLines = 2, reserve = false)
     }
 }
 
@@ -1518,8 +1517,9 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(gameDisplayName(game.name), color = Color.White, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(
+            // (Update 678g, rule 11: the info bar's name, state line, date and label are shown whole.)
+            FullText(gameDisplayName(game.name), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+            FullText(
                 com.shelf.launcher.data.ConsoleNames.display(game.platform) + " · " +
                     (capsule?.saves?.size?.takeIf { it > 0 }?.let { n -> "$n save${if (n == 1) "" else "s"} · " } ?: "") + if (elsewhere != null) "on Google Drive, from $elsewhere" else if (!synced) "on this device" else when (st.state) {
                     SyncState.SYNCED -> "safe on Google Drive"
@@ -1531,20 +1531,18 @@ private fun SaveInfoBar(game: Game, st: GameSyncStatus, capsule: com.shelf.launc
                     SyncState.ERROR -> st.message ?: "last sync failed"
                     SyncState.PENDING -> "waiting to sync"
                 },
-                color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 2, reserve = false
             )
         }
         // Update 151: kept to one line each and narrow enough to leave the game's name room on a small screen.
         Column(Modifier.padding(start = 10.dp).widthIn(max = 200.dp), horizontalAlignment = Alignment.End) {
-            Text(
+            FullText(
                 if (last > 0) "${fmt.format(java.util.Date(last))} ${time.format(java.util.Date(last))}" else "Never",
-                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                maxLines = 1, overflow = TextOverflow.Ellipsis
+                color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, reserve = false
             )
-            Text(
+            FullText(
                 line?.label ?: "Last saved",
-                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, reserve = false
             )
         }
     }
@@ -1611,7 +1609,7 @@ internal fun BrowseSavesButton(onClick: () -> Unit, modifier: Modifier = Modifie
         )
         if (!compact) {
             Spacer(Modifier.width(8.dp))
-            Text("Browse saves", color = onAccentColor(), fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText("Browse saves", color = onAccentColor(), fontSize = 13.sp, fontWeight = FontWeight.Bold, reserve = false)
         }
     }
 }

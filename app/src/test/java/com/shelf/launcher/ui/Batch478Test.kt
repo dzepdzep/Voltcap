@@ -54,11 +54,14 @@ class Batch478Test {
     }
 
     // R26 (o477T3A): Cinema's round keys sat in a sideways-scrolling row — one half under the edge, 18 px wide.
-    @Test fun cinemaKeysWrapInsteadOfScrolling() {
+    // (674a: the owner's button brief of 15 Nov replaces 478's wrapping: one UniformKeyRow - identical cells, whole keys at a
+    // time between its arrows, never a free half-hidden scroll, never wrapped.)
+    @Test fun cinemaKeysAreOneUniformRowNeverAFreeScroll() {
         val s = src("WinScenesHomes.kt")
-        val c = s.substring(s.indexOf("internal fun CinemaPremiere"), s.indexOf("internal fun CinemaPremiere") + 9800) // (506: the premiere mark added ~400 characters)
+        val c = s.substring(s.indexOf("internal fun CinemaPremiere"), s.indexOf("internal fun CinemaPremiere") + 12500) // (506: the premiere mark added ~400 characters; 674a: the uniform row's notes ~700)
         assertFalse(c.contains("Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp))"))
-        assertTrue(c.contains("FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp))"))
+        assertFalse(c.contains("FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp))"))
+        assertTrue(c.contains("UniformKeyRow(first + rest + back, 8.dp)"))  // (674c: Play first in the row on a short window)
     }
 
     // o478D: a long name's 2nd line pushed the Blades guide's Back under the blade; Cinema's empty story was a 18 px stop.
@@ -105,9 +108,10 @@ class Batch478Test {
         assertTrue(a.contains("Features.StatusMode.FOLLOW -> homeLayout.statusFollowsMinimal()"))
         val h = src("HomeChrome.kt")
         // Minimal keeps the clock and the battery; search, Wi-Fi, devices, profile and progress go.
-        assertTrue(h.contains("if (accessories.isNotEmpty() && !minimal)"))
-        assertTrue(h.contains("if (!minimal) Group {\n                Icon(Icons.Filled.Search"))
-        assertTrue(h.contains("if (!minimal) Icon(if (wifiConnected)"))
+        // (677f: also the compact levels of StatusFit - level 3 drops devices and search, 4 Wi-Fi.)
+        assertTrue(h.contains("if (accessories.isNotEmpty() && !minimal && level < 3)"))
+        assertTrue(h.contains("val actionsShown = !minimal && (") && h.contains("if (actionsShown) Group {\n                if (level < 3) Icon(Icons.Filled.Search"))
+        assertTrue(h.contains("if (!minimal && level < 4) Icon(if (wifiConnected)"))
         assertTrue(h.contains("if (progress.isNotEmpty() && !minimal"))
         assertTrue(src("LauncherScreen.kt").contains("minimal = state.appearance.statusMinimal"))
         assertTrue(src("SettingsDialog.kt").contains("arrayOf(\"Follow layout\", \"Always\", \"Minimal\", \"Hidden\")"))

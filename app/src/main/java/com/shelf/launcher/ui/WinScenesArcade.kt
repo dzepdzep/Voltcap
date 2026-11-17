@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -184,7 +185,12 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
                 .padding(horizontal = 6.dp, vertical = if (a.primary) (if (compact) 3.dp else 6.dp) else (if (compact) 1.dp else 2.dp)),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(if (on) "▶ " else "  ", color = if (on) Color(0xFF1A1300) else ArcPink, fontSize = size, style = TextStyle(fontFamily = font))
+            // (674m, glyph gate f674j: "▶ " put its own trailing space in the arrow's box - the arrow's ink 16 % left of the box's
+            // middle. The arrow alone in its box, then a gap; on the other lines the same arrow unseen keeps the words in line, and
+            // it is no part of a line's name (accessibility, QA).)
+            Text("▶", color = if (on) Color(0xFF1A1300) else Color.Transparent, fontSize = size, style = TextStyle(fontFamily = font),
+                modifier = Modifier.clearAndSetSemantics {})
+            Spacer(Modifier.width(6.dp))
             Text(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
                 fontSize = size, maxLines = 2,
                 style = TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f)))

@@ -30,8 +30,14 @@ class QaIsolation521Test {
         val debugQa = gradle.substringAfter("if (debugIsQa) getByName(\"debug\") {").substringBefore("\n        }")
         assertTrue(debugQa.contains("signingConfig = signingConfigs.getByName(\"debug\")"))
         assertTrue(debugQa.contains("applicationIdSuffix = \".qa\""))
-        val debug = gradle.substringAfter("getByName(\"debug\") {").substringBefore("\n        }")
+        // (677b: the debug BUILD TYPE block - since 676h signingConfigs { } also has a getByName("debug") { } (the pinned QA
+        // key from VOLTCAP_QA_KEYSTORE_PATH), which the old first-match lookup found instead.)
+        val debug = gradle.substringAfter("buildTypes {").substringAfter("getByName(\"debug\") {").substringBefore("\n        }")
         assertTrue("release key only with the owner opt-out", debug.contains("if (debugIsProduction) signingConfigs.findByName(\"release\")"))
+        // The pinned QA key override only re-points the debug signing config; it never names the release key.
+        val qaKey = gradle.substringAfter("System.getenv(\"VOLTCAP_QA_KEYSTORE_PATH\")").substringBefore("\n        }\n")
+        assertTrue("QA key block found", qaKey.contains("getByName(\"debug\")"))
+        assertTrue("QA key block never touches the release key", !qaKey.contains("release") && !qaKey.contains("keystoreProps"))
     }
 
     @Test fun builtApksAreVerifiedAndDeletedWhenWrong() {

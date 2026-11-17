@@ -383,7 +383,11 @@ private fun MemCardHeader(c: StyleCtx, refs: List<Ps2SaveRef>?, height: Dp) {
                     FullText(l1, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                     if (l2 != null) FullText(l2, color = McYellow, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                 } else {
-                    FullText(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.End, style = outline)
+                    // (676y, D342 - Nova x1.3: a two-line name left the info line under it cut at the header's foot. Where the
+                    // header can't hold both, the name keeps one line - shrinking, then sliding (rule 11).)
+                    val nameLines = if (height - 12.dp >= reservedLinesHeight(18.sp, 20.sp, FontWeight.Bold, style = outline, lines = 2) +
+                        reservedLinesHeight(12.sp, style = outline)) 2 else 1
+                    FullText(titles.display(g.name), color = McYellow, fontSize = 18.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold, maxLines = nameLines, textAlign = TextAlign.End, style = outline)
                 }
                 val bits = listOfNotNull(
                     titles.console(g.platform).takeIf { it.isNotBlank() },
@@ -706,27 +710,25 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
         ) { ctx.pageBody(Modifier.fillMaxSize()) }
         // The choices along the bottom, then the hints.
         Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            androidx.compose.foundation.layout.FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalArrangement = Arrangement.spacedBy(4.dp),
-                itemVerticalAlignment = Alignment.CenterVertically
-            ) {
-                (ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()).forEach { a ->
+            // (673g, owner brief 15 Nov: the choices one row of identical choices - each word's glow the same size - scrolling
+            // a whole choice at a time where they don't fit; the save status stays its own line under them.)
+            UniformKeyRow(ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList(), 6.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         val glow by animateFloatAsState(if (on) 1f else 0f, tween(180), label = "mcWord")
                         Box(
-                            Modifier.drawBehind {
+                            Modifier.uniformFill().drawBehind {
                                 if (glow > 0.01f) drawRoundRect(
                                     Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.55f * glow), Color(0xFF9CC2FF).copy(alpha = 0.35f * glow))),
                                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f)
                                 )
-                            }.padding(horizontal = 14.dp, vertical = 6.dp)
+                            }.padding(horizontal = 14.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(a.label, color = if (on) Color.White else Color.White.copy(alpha = 0.86f), fontSize = if (a.primary) 20.sp else 17.sp,
                                 fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal, maxLines = 1,
                                 style = TextStyle(shadow = if (on) Shadow(Color(0xFF2E63E6).copy(alpha = 0.9f), Offset.Zero, 12f) else McShadow))
                         }
                     }
-                }
             }
             if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 0.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 ctx.chips.forEach { a ->

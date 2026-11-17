@@ -54,7 +54,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.NowPlaying
@@ -154,13 +153,13 @@ fun NotificationsPanel(
                     val (done, total) = progress
                     Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        FullText(
                             label,
                             color = ShelfTheme.colors.textPrimary,
-                            fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                            reserve = false,
                             modifier = Modifier.weight(1f)
                         )
                         Spacer(Modifier.width(8.dp))
@@ -333,13 +332,13 @@ private fun NotificationGroup(
                 )
             }
             Spacer(Modifier.width(7.dp))
-            Text(
+            FullText(
                 first.appLabel,
                 color = ShelfTheme.colors.textPrimary,
-                fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                reserve = false,
                 modifier = Modifier.weight(1f)
             )
             if (group.any { it.isMessage }) {
@@ -372,26 +371,26 @@ private fun NotificationGroup(
             ) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        FullText(
                             notification.title ?: first.appLabel,
                             color = ShelfTheme.colors.textPrimary,
-                            fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
+                            reserve = false,
                             modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(timeAgo(notification.postedAt), color = ShelfTheme.textMuted, fontSize = 10.sp)
                     }
                     notification.text?.takeIf { it.isNotBlank() }?.let {
-                        Text(
+                        FullText(
                             it,
                             color = ShelfTheme.textMuted,
-                            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                            fontSize = 11.sp,
                             lineHeight = androidx.compose.ui.unit.TextUnit(1.273f, androidx.compose.ui.unit.TextUnitType.Em),
                             maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            reserve = false
                         )
                     }
                 }
@@ -509,7 +508,7 @@ private fun QuickSheetHeader(onClose: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(time, color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.width(8.dp))
-        Text(date, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), modifier = Modifier.weight(1f), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        FullText(date, color = ShelfTheme.textMuted, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 1, reserve = false)
         Icon(if (wifi) Icons.Filled.Wifi else Icons.Filled.WifiOff, null, tint = ShelfTheme.colors.textPrimary, modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(6.dp))
         Icon(
@@ -522,8 +521,8 @@ private fun QuickSheetHeader(onClose: () -> Unit) {
         val limit by com.shelf.launcher.device.ChargeLimiter.status.collectAsState()
         if (limit == com.shelf.launcher.device.ChargeLimiter.Status.LIMITING || limit == com.shelf.launcher.device.ChargeLimiter.Status.PAUSED) {
             Spacer(Modifier.width(6.dp))
-            Text(
-                limit.label, color = ShelfTheme.accent, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            FullText(
+                limit.label, color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false,
                 modifier = Modifier.clip(uiRounded(50)).background(ShelfTheme.accent.copy(alpha = 0.14f)).padding(horizontal = 6.dp, vertical = 1.dp)
             )
         }

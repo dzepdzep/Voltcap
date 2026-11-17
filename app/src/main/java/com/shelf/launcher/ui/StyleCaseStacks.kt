@@ -578,22 +578,24 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
     if (caseLook && !spines && Features.stacks3d.state.value) {
         // Update 151: a real 3D case (the carousels' case drawing: its cover on the front, its spine on the side), turned a
         // little so its spine shows (Cases in 3D; off: the flat case below).
-        Box(modifier.gameOrigin(k, on).rolloutItem()) {
+        val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
+        Box(modifier.gameOrigin(k, on).rolloutItem().badgeTile(lane)) {
             Case3D(
                 // Update 158: facing you straight on by default; turned (its spine showing) with "Turned like the others".
                 g, c.cover(g), c.state.physicalMedia[k], if (PickedFacing.faces) 0f else STACKS_CASE_YAW, case3dAspect(g, false),
                 Modifier.fillMaxSize().awardShine(k, focused), frame = focused, frameColor = accent
             )
             // (Update 202: no badge over a case front printed with its console's band — it showed twice.)
-            ConsoleBadge(g.platform, packageName = g.packageName, onCase = MediaCovers.used(g.platform) != null)
-            StacksProgress(c, g, on)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = MediaCovers.used(g.platform) != null, lane = lane)
+            StacksProgress(c, g, on, lane)
         }
     } else if (caseLook && !spines && caseMarker(g.platform) != null) {
         // (Update 485, KONKR: the game's own scans also when the library hasn't handed them in yet — HomeScans, as Case3D
         // reads them — so a picked cover far off the box's shape can give way to the box scan, CaseArt.)
         val scans = c.state.physicalMedia[k] ?: HomeScans.of(k)
         val scan = typedArtFor(CardArtType.CASE, scans, c.state.screenshots[k], g.platform)
-        Box(modifier.gameOrigin(k, on).rolloutItem()) {
+        val lane = rememberBadgeLane() // (676a)
+        Box(modifier.gameOrigin(k, on).rolloutItem().badgeTile(lane)) {
             MediaFocus(on) {
                 CaseArt(
                     // (Update 173: an app without art: its icon in the case.)
@@ -604,8 +606,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                 )
             }
             // (Update 202: the case's printed band shows the console already.)
-            ConsoleBadge(g.platform, packageName = g.packageName, onCase = true)
-            StacksProgress(c, g, on)
+            ConsoleBadge(g.platform, packageName = g.packageName, onCase = true, lane = lane)
+            StacksProgress(c, g, on, lane)
         }
     } else if (caseLook) {
         // No case for its console (or the Spines look, whose spines are the stacks already): the plain cover.
@@ -618,10 +620,11 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
         val a = CoverAspects.of(cover) ?: boxA
         val w = if (a >= boxA) maxWidth else maxHeight * a
         val h = if (a >= boxA) maxWidth / a else maxHeight
+        val lane = rememberBadgeLane() // (676a)
         Box(
             Modifier.size(w, h).gameOrigin(k, on)
                 .then(if (focused) Modifier.styleFocus(true, corner, 0.75f, accent) else Modifier)
-                .clip(uiRounded(corner)).background(placeholderBrush(g.hue))
+                .clip(uiRounded(corner)).background(placeholderBrush(g.hue)).badgeTile(lane)
         ) {
             if (cover != null) AsyncImage(
                 // (Update 202: its file's flat strips trimmed first — TrimMargins.kt — so the shape noted is the art's own.)
@@ -633,8 +636,8 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
                 LocalTitleOptions.current.display(g.name), color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp,
                 textAlign = TextAlign.Center, maxLines = 4, modifier = Modifier.align(Alignment.Center).padding(8.dp)
             )
-            ConsoleBadge(g.platform, packageName = g.packageName)
-            StacksProgress(c, g, on)
+            ConsoleBadge(g.platform, packageName = g.packageName, lane = lane)
+            StacksProgress(c, g, on, lane)
         }
         }
     } else {
@@ -646,11 +649,11 @@ internal fun StacksFront(c: StyleCtx, g: Game, focused: Boolean, modifier: Modif
 
 /** The achievement chip on the game you're on (as StyleArt shows it on the other layouts' cards). */
 @Composable
-private fun androidx.compose.foundation.layout.BoxScope.StacksProgress(c: StyleCtx, g: Game, on: Boolean) {
+private fun androidx.compose.foundation.layout.BoxScope.StacksProgress(c: StyleCtx, g: Game, on: Boolean, lane: BadgeLane?) {
     val look = LocalCardLook.current
     val at = if (on && look.achievementsOnCards) achChipAlign(look.trophyCorner) else null
     val p = if (at != null) c.progress(g) else null
-    if (at != null && p != null) GameProgressChip(p.first, p.second, Modifier.align(at))
+    if (at != null && p != null) GameProgressChip(p.first, p.second, Modifier.align(at), at = at, lane = lane)
 }
 
 /**

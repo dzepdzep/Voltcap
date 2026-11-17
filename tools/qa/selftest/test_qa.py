@@ -998,6 +998,19 @@ class TestPopupGate(unittest.TestCase):
         none = {"windows": [{"focus": True, "nodes": [n for n in d["windows"][0]["nodes"] if n["label"] != "Play"]}]}
         self.assertEqual(popclip.hierarchy(none, None)[0], "FAIL")
 
+    def test_hierarchy_corner_close_is_chrome_678p(self):
+        # 678p (owner 17 Nov, D351): Banner's round X in the top corner stays - a corner close is window chrome, not an action
+        # before Play (KONKR kb678o10 boxes); a Close in Play's own row before it still FAILs.
+        import popclip
+        def dump(nodes):
+            return {"windows": [{"focus": True, "nodes": [{"label": l, "kind": "control", "full": b, "shown": b} for l, b in nodes]}]}
+        banner = [("Close", [36, 18, 50, 50]), ("Play", [31, 215, 189, 69]), ("GAME INFO", [583, 358, 157, 51])]
+        st, why = popclip.hierarchy(dump(banner), None)
+        self.assertEqual(st, "PASS", why); self.assertIn("corner close as chrome", why)
+        in_row = [("Close", [10, 215, 150, 69]), ("Play", [200, 215, 189, 69]), ("GAME INFO", [583, 358, 157, 51])]
+        st, why = popclip.hierarchy(dump(in_row), None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("'Close' comes before Play", why)
+
     def test_hierarchy_page_tabs_above_play_are_not_actions(self):
         # Update 529c: Storage boxes' tabs (INFO / DETAILS / ACHIEVEMENTS / OPTIONS) above the PLAY line passed as navigation (real
         # Flip 2 dump mlast529c); one Details key above Play is still an action before Play.
@@ -1009,6 +1022,43 @@ class TestPopupGate(unittest.TestCase):
         self.assertEqual(popclip.page_tabs([("Details", [100, 200, 120, 50]), play], play[1], 30), [])
         tabs = [("INFO", [100, 200, 90, 50]), ("DETAILS", [200, 200, 90, 50]), ("OPTIONS", [300, 200, 90, 50])]
         self.assertEqual(len(popclip.page_tabs(tabs + [play], play[1], 30)), 3)
+
+    def test_hierarchy_page_tab_is_not_the_details_key_672(self):
+        # 672a: Flip 2 x1.3 (f672e) - Storage boxes' INFO page tab (166x117) is taller than the PLAY row (569x103); a tab is
+        # navigation, so Play is measured against SUMMARY, the Details action of that window. A real Details key still counts.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_storage_tabs_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "PASS", why); self.assertIn("page tabs", why); self.assertIn("SUMMARY", why)
+        small = json.loads(json.dumps(d))
+        for w in small["windows"]:
+            for n in w.get("nodes") or []:
+                if n.get("label") == "\u25b6/PLAY": n["shown"] = [785, 381, 150, 60]
+        st, why = popclip.hierarchy(small, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("smaller than SUMMARY", why)
+
+    def test_hierarchy_round_keys_share_plays_row_672(self):
+        # 672a: Flip 2 x1.3 (f672e) - Case flow's round Inspect / More (circle + word under it, 165 px) start 15 px above
+        # Play (135 px) on the same centre line: Play is first. A More a whole row above Play still comes before it.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_caseflow_roundkeys_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "PASS", why)
+        up = json.loads(json.dumps(d))
+        for w in up["windows"]:
+            for n in w.get("nodes") or []:
+                if n.get("label") == "More More": n["shown"] = [758, 560, 124, 165]
+        st, why = popclip.hierarchy(up, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("comes before Play", why)
+        self.assertEqual(popclip.reading_first([("More", [758, 726, 124, 165]), ("Play", [93, 741, 235, 135])], 67)[0], "Play")
+        self.assertIsNone(popclip.reading_first([], 30))
+
+    def test_hierarchy_narrow_play_beside_a_long_details_word_still_fails_672(self):
+        # 672a: the genuine defect of the same run - Record crate's PLAY (218x82) beside SLEEVE NOTES (378x81) - stays caught.
+        import popclip
+        d = json.load(open(os.path.join(HERE, "fixtures", "clip_crate_narrow_play_x13_672.json"), encoding="utf-8"))
+        st, why = popclip.hierarchy(d, None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("smaller than SLEEVE NOTES", why)
 
     def test_glyph_in_a_see_through_pill_is_measured_against_the_pill(self):
         # Update 529c: Spotlight's SELECT key - a see-through pill over a dark picture - read 40 px off centre (the walk ran through
@@ -1124,11 +1174,398 @@ class TestPopclipScript(unittest.TestCase):
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
         self.assertIn('tapat "(Details|Full details)" main || tapat "$DETW" main', sh)
 
+    def test_waits_for_the_dump_not_only_a_fixed_sleep(self):
+        # 675b (emulator run 43762702001): the dump came after the fixed sleep - "first A opened nothing" with the popup up.
+        # Every dump read waits for the file after the (unchanged) minimum sleep, and a dump that never comes is logged.
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        sh = open(os.path.join(dev, "popclip.sh"), encoding="utf-8").read()
+        # (677c: the probe has a name of its own per read - waited for the same way, then handed on as ${TAG}_probe.json.)
+        self.assertIn('pf=$F/qa_clip/${TAG}_probe_$PN.json', sh)
+        self.assertIn('sleep 0.9; dw $pf;', sh)
+        self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_$1.json;', sh)
+        self.assertIn('sleep 1.1; dw $F/qa_clip/${TAG}_gc.json', sh)
+        self.assertIn('dump missing', sh)
+        self.assertLess(sh.index("dw() {"), sh.index("up() {"))
+        sp = open(os.path.join(dev, "shelfpages529.sh"), encoding="utf-8").read()
+        self.assertIn('[ ! -s $F/qa_clip/${TAG}_$1.json ]', sp)
+
+    def test_dump_reads_go_one_node_per_line(self):
+        # 675d (emulator run 43786748164): on exactly the dumps whose single long line also held "Full story on Details ›" the
+        # device's grep found no Details / More / Play control that was in the file. Every read of a dump in popclip.sh goes
+        # through jl (one node per line), and dw waits until the dump reads whole (closing brace), not only for a size.
+        import subprocess, json, tempfile
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+        for l in code:
+            if "qa_clip/" in l and "grep" in l:
+                self.assertIn("jl ", l, l)                         # no grep reads a dump's one long line directly
+        # (678a: ctl reads labels without a regex - see test_labels_are_read_without_the_devices_regex; pc goes through ctl.)
+        self.assertIn("jl $2 | while IFS= read -r ln; do", sh)      # ctl (tapat / seek)
+        self.assertIn('pc() { ctl "$PLAYW" $1 | wc -l; }', sh)        # pc (up)
+        self.assertIn('dump unreadable', sh)
+        defs = "\n".join(l for l in code if l.startswith(("PLAYW=", "DETW=", "jl()", "pc()", "ctl()", "dr()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            node("Full story on Details ›", "text", [10, 10, 100, 20]), node("Play", "control", [365, 464, 247, 56]),
+            node("Turn over", "control", [622, 464, 247, 56]), node("More", "control", [1136, 464, 247, 56])]}], "images": {}}
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write('{"screen":[960,640],"windows":[{"nodes":[{"label":"Play","kind":"control"'); half = f.name
+        try:
+            out = subprocess.run(["sh", "-c", defs + '\nctl "$DETW" "$1"; echo pc=$(pc "$1"); dr "$1" && echo whole; dr "$2" || echo half',
+                                  "x", path, half], capture_output=True, text=True).stdout
+        finally:
+            os.unlink(path); os.unlink(half)
+        self.assertIn('"label":"Turn over","kind":"control","full":[622,464,247,56],"shown":[622,464,247,56]', out)
+        self.assertNotIn("Full story", out)
+        self.assertIn("pc=1", out); self.assertIn("whole", out); self.assertIn("half", out)
+
+    def test_shelfpages_dump_reads_go_one_node_per_line(self):
+        # 675h: shelfpages529.sh (emulator job e529c, TOUCH=1) read its dumps the way popclip.sh did before 675d - one grep over
+        # the dump's single long line, and "a size" as the dump being there. Its taps (first achievement row, Game settings)
+        # now read the dump through jl and every shot waits for a whole dump ("dump unreadable" logged otherwise).
+        import subprocess, json, tempfile
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        code = [l for l in sp.splitlines() if not l.lstrip().startswith("#")]
+        for l in code:
+            if "grep" in l and ("qa_clip/" in l or l.startswith("ctl()")):
+                self.assertTrue("jl " in l or l.startswith("tapj()"), l)
+        self.assertIn("jl $2 | while IFS= read -r ln; do", sp)    # (678b: ctl reads labels without a regex)
+        self.assertIn("dump unreadable", sp)
+        self.assertLess(sp.index("jl() {"), sp.index("ctl() {"))
+        defs = "\n".join(l for l in code if l.startswith(("jl()", "dr()", "ctl()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            node("Full story on Details \u203a", "text", [10, 10, 100, 20]),
+            node("Shadow of the Colossus achievement 1, Unlocked", "control", [40, 120, 600, 48]),
+            node("Game settings for this game", "control", [40, 300, 600, 48])]}], "images": {}}
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+            f.write('{"windows":[{"nodes":[{"label":"Game settings","kind":"control"'); half = f.name
+        try:
+            out = subprocess.run(["sh", "-c", defs + '\nctl "*achievement 1*" "$1"; ctl "game settings*" "$1"; '
+                                  'dr "$1" && echo whole; dr "$2" || echo half', "x", path, half],
+                                 capture_output=True, text=True).stdout
+        finally:
+            os.unlink(path); os.unlink(half)
+        self.assertIn('"label":"Shadow of the Colossus achievement 1, Unlocked","kind":"control","full":[40,120,600,48],"shown":[40,120,600,48]', out)
+        self.assertIn('"label":"Game settings for this game","kind":"control","full":[40,300,600,48],"shown":[40,300,600,48]', out)
+        self.assertNotIn("Full story", out)
+        self.assertIn("whole", out); self.assertIn("half", out)
+
+    def test_shelfpages_taps_read_labels_without_the_devices_regex(self):
+        # 678b: shelfpages529.sh (e529c touch walk) still handed its labels to the device's grep -oiE, which read no label
+        # that fixed-string reads found (678a); the trial logged "tap: no shown control" for both taps. ctl now takes a shell
+        # glob (case-blind; the label matches it or ends in a non-letter + it) and tapj skips zero-size keys in the shell. Run
+        # here with a grep that reads nothing for -E (the device), both taps land on the shown middle of the right control.
+        import subprocess, json, tempfile, shutil
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        lines = sp.splitlines()
+        code = [l for l in lines if not l.lstrip().startswith("#")]
+        for l in code:
+            if l.startswith(("ctl()", "tapj()")) or "tapj " in l:
+                self.assertNotRegex(l, r"grep -[a-zA-Z]*E", l)
+                self.assertNotIn("[^", l, l)                       # no regex classes handed to the taps
+        defs = [l for l in lines if l.startswith(("jl()", "ctl()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapj()")); defs += lines[i:i + 3]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            {"label": "Full story on Details \u203a", "kind": "text", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9]},
+            node("Achievement 1, hidden", [40, 60, 600, 0]),           # zero height: never tapped
+            node("Shadow of the Colossus achievement 1, Unlocked", [40, 120, 600, 48]),
+            node("Agame settings", [9, 9, 9, 9]),                     # not a word boundary
+            node("GAME SETTINGS for this game", [40, 300, 600, 48])]}], "images": {}}
+        tmp = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(tmp, "bin")); os.makedirs(os.path.join(tmp, "qa_clip"))
+            real = shutil.which("grep")
+            with open(os.path.join(tmp, "bin", "grep"), "w") as f:
+                f.write('#!/bin/sh\nfor a in "$@"; do case "$a" in -*E*) case "$a" in --*) ;; *) exit 1;; esac;; esac; done\n'
+                        'exec ' + real + ' "$@"\n')
+            os.chmod(os.path.join(tmp, "bin", "grep"), 0o755)
+            for step in ("t_trophies", "t_options"):
+                open(os.path.join(tmp, "qa_clip", "T_" + step + ".json"), "w", encoding="utf-8").write(
+                    json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+            env = dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"])
+            cmd = ("\n".join(defs) + '\ngate() { :; }; log() { echo "log $*"; }; input() { echo "tap $2 $3"; }\n'
+                   'F=$1; TAG=T; tapj "*achievement 1*" t_trophies; tapj "game settings*" t_options; '
+                   'tapj "nothing here*" t_options || echo missed; echo ego=$(echo x | grep -E x | wc -l)')
+            out = subprocess.run(["sh", "-c", cmd, "x", tmp], capture_output=True, text=True, env=env).stdout
+        finally:
+            shutil.rmtree(tmp)
+        self.assertIn("ego=0", out)
+        self.assertIn("tap 340 144", out)                          # the shown achievement row, not the zero-size one
+        self.assertIn("tap 340 324", out)                          # GAME SETTINGS (case-blind), not "Agame settings"
+        self.assertIn("log tap '*achievement 1*' at 340,144", out)  # the log names the asked control, not a coordinate
+        self.assertIn("missed", out); self.assertIn("no shown control 'nothing here*'", out)
+        self.assertNotIn("tap 13 13", out)
+
+    def test_shelfpages_touch_walk_names_pages_by_their_dumps(self):
+        # 678d (emulator run 43961010406 on 678c): both e529c taps logged "no shown control" although the reads were right -
+        # the game had no achievement set, its window had Main / Details / Options, R1 R1 reached Options and the next R1
+        # wrapped to Main. touchp names each page by its dump, goes back with as many L1 as it pressed R1, and logs the
+        # achievement tap NOT TESTED on a game without a set; achgame swaps a game the art fixture logs n=0 for a set of 10.
+        import subprocess, json, tempfile, shutil
+        sp = open(os.path.join(os.path.dirname(HERE), "device", "shelfpages529.sh"), encoding="utf-8").read()
+        lines = sp.splitlines()
+        defs = [l for l in lines if l.startswith(("jl()", "ctl()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapj()")); defs += lines[i:i + 3]
+        i = next(k for k, l in enumerate(lines) if l.startswith("has()"))
+        j = next(k for k, l in enumerate(lines) if k > i and l.endswith("GM=$g; }; }"))
+        defs += [l for l in lines[i:j + 1] if not l.lstrip().startswith("#")]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        page = lambda *ns: {"screen": [960, 640], "windows": [{"id": "a", "nodes": list(ns)}], "images": {}}
+        main = page(node("Play", [10, 10, 100, 40]), node("Turn over", [10, 60, 100, 40]))
+        det = page(node("Play", [10, 10, 100, 40]), node("Full details", [10, 60, 100, 40]))
+        tro = page(node("QA achievement 1 of game 2", [40, 120, 600, 48]))
+        opt = page(node("Add to favorites", [40, 100, 600, 40]), node("Game settings/Sync, second screen", [40, 200, 600, 60]))
+        mock = ('gate() { :; }; log() { echo "log $*"; }; input() { echo "tap $2 $3"; }; sleep() { :; }\n'
+                'P=0; k() { case $1 in BUTTON_R1) P=$(( (P + 1) % NP ));; BUTTON_L1) P=$(( (P + NP - 1) % NP ));; esac; }\n'
+                'shot() { cp $D/p$P.json $F/qa_clip/${TAG}_$1.json; }\n'
+                'logcat() { printf "%s\\n" "E VoltcapQA: achfix n=0 game=Shadow Of The Colossus (USA)" '
+                '"E VoltcapQA: achfix n=1 game=Okami (USA)" "E VoltcapQA: achfix n=10 game=Super Metroid (USA)\r"; }\n')
+        outs = {}
+        for name, pages in (("noset", [main, det, opt]), ("set", [main, det, tro, opt])):
+            tmp = tempfile.mkdtemp()
+            try:
+                os.makedirs(os.path.join(tmp, "qa_clip")); os.makedirs(os.path.join(tmp, "pg"))
+                for n, pg in enumerate(pages):
+                    open(os.path.join(tmp, "pg", "p%d.json" % n), "w", encoding="utf-8").write(
+                        json.dumps(pg, separators=(",", ":")))
+                cmd = ("\n".join(defs) + "\n" + mock + 'F=$1; D=$1/pg; TAG=T; NP=%d; touchp X; echo "end page $P"; '
+                       'achgame; echo "GM=$GM"; GM="Okami"; achgame; echo "GM2=$GM"' % len(pages))
+                outs[name] = subprocess.run(["sh", "-c", cmd, "x", tmp], capture_output=True, text=True).stdout
+            finally:
+                shutil.rmtree(tmp)
+        a, b = outs["noset"], outs["set"]
+        self.assertIn("has no Achievements page", a); self.assertIn("NOT TESTED", a)
+        self.assertNotIn("no shown control", a)
+        self.assertIn("tap 340 230", a)                              # Game settings tapped on the real Options page
+        self.assertIn("end page 0", a); self.assertNotIn("not back on the main page", a)
+        self.assertIn("tap 340 144", b); self.assertIn("tap 340 230", b)   # set: achievement row, then Game settings
+        self.assertIn("end page 0", b); self.assertNotIn("NOT TESTED", b); self.assertNotIn("not back", b)
+        self.assertIn("GM=Super Metroid (USA)", a)                   # n=0 game swapped for a set of 10 (no \r kept)
+        self.assertIn("GM2=Okami", a)                                # a game with a set stays
+
+    def test_dump_reads_are_plain_ascii_and_find_the_round_more_keys(self):
+        # 675o (emulator run 43833359452): with jl the device's grep still read no Play in e529b's probe and no More in e529a's
+        # SHELF main although both files held them - again only the dumps holding "Full story on Details \u203a". jl hands grep
+        # plain ASCII (the More glyphs' own last bytes kept apart), MOREW finds More / \u22ef / \u2022\u2022\u2022 in that
+        # form and no other key that ends in a non-ASCII mark (a "+N \u203a" chip is not More).
+        import subprocess, json, tempfile
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        for name in ("popclip.sh", "shelfpages529.sh"):
+            sh = open(os.path.join(dev, name), encoding="utf-8").read()
+            self.assertIn("tr '\\200-\\377' '~'", sh, name)
+        sh = open(os.path.join(dev, "popclip.sh"), encoding="utf-8").read()
+        code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
+        self.assertFalse([l for l in code if any(ch in l for ch in "\u22ef\u2022")])   # no multibyte pattern left
+        defs = "\n".join(l for l in code if l.startswith(("PLAYW=", "DETW=", "MOREW=", "jl()", "pc()", "ctl()")))
+        node = lambda label, kind, box: {"label": label, "kind": kind, "full": box, "shown": box, "focused": False, "id": 1}
+        def run(nodes, cmd):
+            d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": nodes}], "images": {}}
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as f:
+                f.write(json.dumps(d, ensure_ascii=False, separators=(",", ":"))); path = f.name
+            try:
+                return subprocess.run(["sh", "-c", defs + "\n" + cmd, "x", path], capture_output=True, text=True).stdout
+            finally:
+                os.unlink(path)
+        story = node("Full story on Details \u203a", "text", [10, 10, 100, 20])
+        out = run([story, node("Play", "control", [365, 464, 247, 56]), node("PlayStation 2 \u00b7 2000", "text", [1, 1, 9, 9]),
+                   node("+N \u203a", "control", [5, 5, 40, 40]), node("\u22ef", "control", [700, 464, 60, 56])],
+                  'echo pc=$(pc "$1"); ctl "$MOREW" "$1"; jl "$1" | LC_ALL=C grep -c "[^ -~]"')
+        self.assertIn("pc=1", out)
+        self.assertIn('"label":"~12","kind":"control","full":[700,464,60,56],"shown":[700,464,60,56]', out)
+        self.assertNotIn("+N", out)
+        self.assertTrue(out.rstrip().endswith("\n0"), out)              # nothing but ASCII reaches grep
+        out = run([story, node("\u2022\u2022\u2022", "control", [700, 464, 60, 56])], 'ctl "$MOREW" "$1"')
+        self.assertIn('"label":"~~3~~3~~3","kind":"control","full":[700,464,60,56]', out)
+        out = run([story, node("More", "control", [1136, 464, 247, 56])],
+                  """jl "$1" | grep -qiE '"label":"[^"]*'"$MOREW"'","kind":"control"' && echo more""")
+        self.assertIn("more", out)
+        # A late window on the POP_EXTRA A is closed before the rapid presses (e529a: their first A met it and launched);
+        # "opened nothing" stays its own exact log line (popclip.py matches whole lines).
+        ex = sh[sh.index('if [ -n "$POP_EXTRA" ]; then'):sh.index('_rapid.txt')]
+        late = ex[ex.index("elif sleep 1.5 && up; then"):ex.index('echo "$n extra: A opened nothing"')]
+        self.assertIn("extra: A opened late", late); self.assertIn("k BUTTON_B", late); self.assertNotIn("BUTTON_A", late)
+        self.assertLess(ex.index('echo "$n extra: A opened late"'), ex.index("for i in 1 2; do fg; input keyevent KEYCODE_BUTTON_A"))
+        self.assertIn('echo "$n first A opened nothing" >> $OUT/log.txt', sh)
+        self.assertIn('More: none read in the main dump', sh)
+
+    def test_first_a_late_is_kept_apart_and_still_fails_open(self):
+        # 675c (emulator run 43780985909): e529a's probe missed a popup the next screenshot showed, and the second A pressed
+        # its Play. The failed probe is kept, the app is asked once more; up then = "opened late" (open FAIL, no second A).
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        self.assertIn('${TAG}_${n}_probeA.json', sh)
+        self.assertIn('elif sleep 1.5 && up; then', sh)
+        self.assertIn('first A opened late', sh)
+        late = sh[sh.index('elif sleep 1.5 && up; then'):sh.index('first A opened nothing" >> $OUT/log.txt')]
+        self.assertNotIn("k BUTTON_A", late)                        # no second A on a window that is up
+        import popclip
+        d = TestPopupGate().run_dir(before=False)
+        with open(os.path.join(d, "log.txt"), "a") as f:
+            f.write("CASEFLOW_OWN first A opened late\n")
+        g = popclip.grade(d, "CASEFLOW_OWN")["open"]
+        self.assertEqual(g[0], "FAIL", g); self.assertIn("late", g[1])
+
+    def test_labels_are_read_without_the_devices_regex(self):
+        # 678a (emulator run 43929836268 on c45d0ab): the probe and main dumps were whole and plain ASCII, yet the device's
+        # grep -iE read no Play in 9 of 9 probes, "Details read: plain 1, pattern 0" and "More: none read (plain More keys 1)"
+        # on the same file at the same moment. ctl / pc / the Details and More checks no longer hand a label to a regex: run
+        # here with a grep that matches nothing for -E (the device's behaviour), they still find Play, Details, Turn over and
+        # More, keep the old rules (case-blind; the label is the word or ends in a non-letter + the word; "Played" is not
+        # Play; zero-size keys are not tapped) and print the same line the old grep -o did.
+        import subprocess, json, tempfile, shutil
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        lines = sh.splitlines()
+        code = [l for l in lines if not l.lstrip().startswith("#")]
+        for l in code:                                             # no label pattern goes through grep -E any more
+            if '"label":' in l and "grep" in l:
+                self.assertNotRegex(l, r"grep -[a-zA-Z]*E", l)
+        defs = [l for l in lines if l.startswith(("PLAYW=", "DETW=", "MOREW=", "jl()", "ctl()", "pc()"))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("tapat()"))
+        j = next(k for k in range(i, len(lines)) if lines[k] == "}"); defs += lines[i:j + 1]
+        node = lambda label, box: {"label": label, "kind": "control", "full": box, "shown": box, "focused": False, "id": 1}
+        d = {"screen": [960, 640], "windows": [{"id": "a", "nodes": [
+            {"label": "Full story on Details \u203a", "kind": "text", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9]},
+            node("Played", [5, 5, 50, 20]), node("PLAY", [510, 318, 393, 48]), node("Sleeve: Turn over", [510, 375, 393, 48]),
+            node("Details", [0, 0, 0, 0]), node("Details", [510, 432, 393, 48]), node("\u2022\u2022\u2022", [700, 464, 60, 56]),
+            node("Ammore", [9, 9, 9, 9])]}], "images": {}}
+        tmp = tempfile.mkdtemp()
+        try:
+            os.makedirs(os.path.join(tmp, "bin")); os.makedirs(os.path.join(tmp, "qa_clip"))
+            real = shutil.which("grep")
+            with open(os.path.join(tmp, "bin", "grep"), "w") as f:   # the device: -E patterns read nothing; -F works
+                f.write('#!/bin/sh\nfor a in "$@"; do case "$a" in -*E*) case "$a" in --*) ;; *) exit 1;; esac;; esac; done\n'
+                        'exec ' + real + ' "$@"\n')
+            os.chmod(os.path.join(tmp, "bin", "grep"), 0o755)
+            path = os.path.join(tmp, "qa_clip", "T_X_main.json")
+            open(path, "w", encoding="utf-8").write(json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+            open(os.path.join(tmp, "qa_clip", "T_X_home.json"), "w").write('{"windows":[{"nodes":[]}]}')
+            env = dict(os.environ, PATH=os.path.join(tmp, "bin") + os.pathsep + os.environ["PATH"])
+            cmd = ("\n".join(defs) + '\nfg() { :; }; input() { echo "tap $2 $3"; }\n'
+                   'echo pc=$(pc "$1"); ctl "$DETW" "$1"; ctl "$MOREW" "$1"; echo d=$(ctl "(Details|Full details)" "$1" | wc -l)\n'
+                   'F=$2; TAG=T; n=X; tapat "(Details|Full details)" main; tapat "$PLAYW" main; '
+                   'echo ego=$(echo x | grep -E x | wc -l)')
+            out = subprocess.run(["sh", "-c", cmd, "x", path, tmp], capture_output=True, text=True, env=env).stdout
+        finally:
+            shutil.rmtree(tmp)
+        self.assertIn("ego=0", out)                                # the stand-in grep really reads nothing for -E
+        self.assertIn("pc=1", out)                                 # PLAY (case-blind), not "Played"
+        self.assertIn('"label":"Sleeve: Turn over","kind":"control","full":[510,375,393,48],"shown":[510,375,393,48]', out)
+        self.assertIn('"label":"Details","kind":"control","full":[510,432,393,48],"shown":[510,432,393,48]', out)
+        self.assertIn('"label":"~~3~~3~~3","kind":"control","full":[700,464,60,56],"shown":[700,464,60,56]', out)
+        self.assertNotIn("Ammore", out); self.assertNotIn("Full story", out)
+        self.assertIn("d=2", out)                                  # both Details keys read ...
+        self.assertIn("tap 706 456", out)                          # ... the zero-size one is never tapped
+        self.assertIn("tap 706 342", out)                          # Play
+
+    def test_up_reads_its_own_probe_and_trusts_the_apps_window_age(self):
+        # 677c (emulator run 43887216747): "first A opened nothing" / "opened late" while the probe kept right after the read
+        # held Play and the app's popupAgeMs. up() asks for a probe of its own name each time, hands it on as ${TAG}_probe.json,
+        # counts the window as up on the app's popupAgeMs too (logged), and keeps what it read in UPREAD.
+        import subprocess, json, tempfile, shutil
+        sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
+        lines = sh.splitlines()
+        defs = [l for l in lines if l.startswith(("PLAYW=", "jl()", "ctl()", "pc()", "age()", "dr()", "PN="))]
+        i = next(k for k, l in enumerate(lines) if l.startswith("dw()")); defs += lines[i:i + 2]
+        i = next(k for k, l in enumerate(lines) if l.startswith("up()"))
+        j = next(k for k in range(i, len(lines)) if lines[k].strip() == "return 1; }"); defs += lines[i:j + 1]
+        self.assertIn('${TAG}_probe_$PN', "\n".join(defs))
+        node = lambda label: {"label": label, "kind": "control", "full": [1, 1, 9, 9], "shown": [1, 1, 9, 9], "id": 1}
+        dump = lambda labels, age: json.dumps({"screen": [960, 640], "windows": [{"id": "a", "nodes": [node(x) for x in labels]}],
+                                               "popupAgeMs": age, "images": []}, separators=(",", ":"))
+        # A stand-in for QaClip: answers each request with the dump queued for it, written whole (.part, renamed).
+        app = ('while [ ! -e "$F/stop" ]; do if [ -s "$F/qa_clip_req" ]; then t=$(cat "$F/qa_clip_req"); rm -f "$F/qa_clip_req"; '
+               'cp "$F/next.json" "$F/qa_clip/$t.json.part"; mv "$F/qa_clip/$t.json.part" "$F/qa_clip/$t.json"; fi; sleep 0.1; done')
+        def run(answer, stale=None):
+            d = tempfile.mkdtemp()
+            try:
+                os.makedirs(os.path.join(d, "qa_clip"))
+                open(os.path.join(d, "qa_clip", "T_X_home.json"), "w").write(dump(["Settings"], None))
+                open(os.path.join(d, "next.json"), "w").write(answer)
+                if stale is not None:          # an older probe under the shared name must not be what up() reads
+                    open(os.path.join(d, "qa_clip", "T_probe.json"), "w").write(stale)
+                script = "\n".join(defs) + f'\nF={d}; OUT={d}; TAG=T; n=X\n( {app} ) &\nif up; then echo UP; else echo DOWN; fi\n' \
+                    'echo "$UPREAD"; touch $F/stop; wait\nls $F/qa_clip'
+                r = subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=30)
+                log = open(os.path.join(d, "log.txt")).read() if os.path.exists(os.path.join(d, "log.txt")) else ""
+                return r.stdout, log
+            finally:
+                shutil.rmtree(d, ignore_errors=True)
+        out, log = run(dump(["Play", "More"], 812), stale=dump(["Settings"], None))
+        self.assertIn("UP", out.split()); self.assertIn("Play keys 1, home 0, popupAgeMs 812", out)
+        self.assertIn("T_probe.json", out); self.assertNotIn("T_probe_1.json", out)   # handed on, own file removed
+        out, log = run(dump(["Turn over"], 2188))                                         # Play not read, app says up
+        self.assertIn("UP", out.split()); self.assertIn("up by the app's own popupAgeMs 2188", log)
+        out, log = run(dump(["Settings"], None))                                          # nothing open: still down
+        self.assertIn("DOWN", out.split()); self.assertIn("popupAgeMs null", out)
+        # The first read is logged beside "opened late" / "opened nothing"; the Details / More misses log what was read.
+        self.assertIn('echo "$n read: $R1" >> $OUT/log.txt', sh)
+        self.assertIn("Details read: plain", sh); self.assertIn("plain More keys", sh)
+
     def test_stops_outside_voltcap(self):
         # Update 469 (D220): a crash left Android's "has stopped" dialog in front and the sweep's keys went to App info.
         sh = open(os.path.join(os.path.dirname(HERE), "device", "popclip.sh"), encoding="utf-8").read()
         self.assertIn("not Voltcap in front after the first A", sh)
         self.assertIn("break 2", sh)
+
+    def test_setup_makes_its_own_standin_library_678l(self):
+        # 678l (H6): the RP Classic's freshly installed QA app had an empty files/roms - pop529.sh only turned the fixture
+        # library on, the files came from an earlier fixroms500 / qasetup521 run - so setup stopped "no game matches 'Shadow
+        # of the Colossus'". standins.sh makes them every run (as the app via run-as when the shell is refused, 529t), and
+        # pop529 stops as INFRA before anything is graded when the library is still empty.
+        import subprocess, tempfile, shutil
+        dev = os.path.join(os.path.dirname(HERE), "device")
+        si = os.path.join(dev, "standins.sh")
+        pop = open(os.path.join(dev, "pop529.sh"), encoding="utf-8").read()
+        run = pop[pop.index("run)"):pop.index("restore)")]
+        self.assertIn("standins.sh", run)
+        self.assertLess(run.index("standins.sh"), run.index("voltcap_test_fixture_roms true"))  # files before the rescan
+        self.assertIn("STOP INFRA: QA fixture library empty", run)
+        self.assertIn("standins.sh", open(os.path.join(dev, "qasetup521.sh"), encoding="utf-8").read())
+        src = open(si, encoding="utf-8").read()
+        self.assertIn("P=com.shelf.launcher.qa;", src)                   # the QA app only, never the owner's Voltcap
+        self.assertNotIn("com.shelf.launcher/", src); self.assertNotRegex(src, r"com\.shelf\.launcher[^.]")
+        tmp = tempfile.mkdtemp()
+        try:
+            def go(root, path=None):
+                env = dict(os.environ, QA_STANDIN_ROOT=root)
+                if path: env["PATH"] = path + os.pathsep + env["PATH"]
+                return subprocess.run(["sh", si], capture_output=True, text=True, env=env)
+            # 1. shell route: every name made, the popup gate's default game among them; re-running keeps existing files
+            root = os.path.join(tmp, "roms")
+            os.makedirs(os.path.join(root, "ps2"))
+            open(os.path.join(root, "ps2", "Shadow of the Colossus (USA).iso"), "w").write("real stand-in")
+            r = go(root)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertIn("via=shell", r.stdout)
+            files = [os.path.join(d, f) for d, _, fs in os.walk(root) for f in fs]
+            self.assertEqual(r.stdout.strip(), "standins=%d via=shell" % len(files))
+            self.assertGreaterEqual(len(files), 30)
+            self.assertTrue(os.path.isfile(os.path.join(root, "snes", "ActRaiser (USA).sfc")))
+            self.assertEqual(open(os.path.join(root, "ps2", "Shadow of the Colossus (USA).iso")).read(), "real stand-in")
+            self.assertEqual(go(root).stdout.strip(), "standins=%d via=shell" % len(files))
+            # 2. the shell is refused the app's folder (mkdir fails) -> made as the app (run-as), named in the line
+            fb = os.path.join(tmp, "bin"); os.makedirs(fb)
+            real_mkdir = shutil.which("mkdir")
+            open(os.path.join(fb, "mkdir"), "w").write('#!/bin/sh\n[ -n "$AS_APP" ] || exit 1\nexec %s "$@"\n' % real_mkdir)
+            open(os.path.join(fb, "run-as"), "w").write(
+                '#!/bin/sh\n[ "$1" = com.shelf.launcher.qa ] || exit 9\nshift\nAS_APP=1 exec "$@"\n')
+            for f in ("mkdir", "run-as"): os.chmod(os.path.join(fb, f), 0o755)
+            root2 = os.path.join(tmp, "roms2")
+            r = go(root2, fb)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertRegex(r.stdout, r"^standins=\d+ via=run-as$")
+            self.assertTrue(os.path.isfile(os.path.join(root2, "ps2", "Shadow of the Colossus (USA).iso")))
+            # 3. both refused -> standins=0 via=none, exit 1 (pop529 then stops as INFRA)
+            open(os.path.join(fb, "run-as"), "w").write('#!/bin/sh\nexit 1\n')
+            r = go(os.path.join(tmp, "roms3"), fb)
+            self.assertEqual((r.returncode, r.stdout.strip()), (1, "standins=0 via=none"))
+        finally:
+            shutil.rmtree(tmp)
 
 
 class TestLineEndings(unittest.TestCase):
@@ -1201,6 +1638,34 @@ class TestQa474(unittest.TestCase):
         self.assertEqual(st["text"][0], "FAIL")
         st = self.clip(self.text_dump(ellipsis=True, maxLines=3, lines=2, textH=56, boxH=56))   # a short text: trusted ellipsis
         self.assertEqual(st["text"][0], "FAIL")
+
+    def test_two_lines_in_a_one_line_box_is_a_cut_673(self):
+        # 673a, D321: Rental shop's CATALOGUE CARD on two lines in a key one line high - its box (41 px) is not its text's height
+        # (108), so it was only an unconfirmed warning. A whole line out of the box is a cut; a box holding all but half a line
+        # stays a warning (an auto-sized text reports its unshrunk layout).
+        st = self.clip(self.text_dump(text="CATALOGUE CARD", len=14, ovH=True, maxLines=2, lines=2, textH=108, boxH=41))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("a whole line out of its box", st[1])
+        st = self.clip(self.text_dump(text="CATALOGUE CARD", len=14, ovH=True, maxLines=2, lines=2, textH=108, boxH=90))
+        self.assertEqual(st["text"][0], "PASS"); self.assertIn("warn-text-unconfirmed", st)
+        # The real dumps: KONKR x1.3, 672c build (k673c) - the gate passed it; the same tag at v0.6.72 (k672h), words whole.
+        st = self.clip(self.fx("shop_tag_keys_cut_x13_673.json"))["text"]
+        self.assertEqual(st[0], "FAIL"); self.assertIn("CATALOGUE CARD", st[1]); self.assertIn("ACHIEVEMENTS", st[1])
+        self.assertEqual(self.clip(self.fx("shop_tag_keys_whole_672.json"))["text"][0], "PASS")
+
+    def test_unplaced_rows_are_not_judged_as_drawn_673(self):
+        # 673e, D329: Disc station's facts box gives way by design at x1.3 with More open (Flip 2, f673g) - its rows are measured,
+        # never placed, their nodes stacked at the box's corner. They were graded "a scrolling box shows only part of a line"
+        # and the name in capitals paired with 'PlayStation 2' under it. Not drawn: left out. The cue laid out 0 px high is
+        # placed - still a FAIL.
+        d = self.fx("disc_lcd_more_unplaced_x13_673.json")
+        st = self.clip(d)
+        self.assertEqual(st["clip"][0], "PASS"); self.assertEqual(st["facts"][0], "PASS")
+        self.assertEqual(st["squeezed"][0], "FAIL"); self.assertIn("Full story on Details", st["squeezed"][1])
+        # The same rows placed: still caught (the checks themselves unchanged).
+        for w in d["windows"]:
+            for t in w["texts"]: t["placed"] = True
+        st = self.clip(d)
+        self.assertEqual(st["clip"][0], "FAIL"); self.assertIn("only part of a line", st["clip"][1])
 
     def test_narrow_column_breaking_words_is_a_warning(self):
         """Update 475, D253: Cross's details page on the KONKR — 63 characters on 7 lines, 92 px wide."""
@@ -1554,6 +2019,49 @@ class TestLaunchGuard(unittest.TestCase):
         self.assertIn("touch $F/qa_nolaunch\ncat $R", s)
 
 
+class GlyphKey675e(unittest.TestCase):
+    """675e (D-674o-1): KONKR x1.3 k674n - Spot START read dy +3 px: its 12 % white pill sat over a backdrop shape of nearly the
+    pill's colour, so the walk ran past the pill's bottom edge. A glyph whose dump entry carries "key" (GlyphPill's own box) is
+    measured against that box; the limits stay max(1.5 px, 5 %)."""
+    def _scene(self, oy):
+        from PIL import Image, ImageDraw
+        img = Image.new("RGB", (120, 80), (20, 20, 30)); d = ImageDraw.Draw(img)
+        # the backdrop shape right under the pill, 3 px off the pill's colour (no edge the walk can see)
+        d.rectangle((0, 40, 119, 79), fill=(48, 48, 58))
+        kx, ky, kw, kh = 30, 24, 60, 24
+        d.rounded_rectangle((kx, ky, kx + kw - 1, ky + kh - 1), radius=12, fill=(51, 51, 61))
+        x0, y0 = 45, 31 + oy                       # "START" ink 30 x 10, centred when oy = 0
+        d.rectangle((x0, y0, x0 + 29, y0 + 9), fill=(240, 240, 240))
+        g = {"text": "START", "shown": [x0 - 1, y0 - 1, 32, 12], "placed": True}
+        return img, g, [kx, ky, kw, kh]
+
+    def test_centred_glyph_passes_against_its_key_where_the_walk_failed(self):
+        import glyphcheck
+        img, g, key = self._scene(0)
+        b = tuple(g["shown"])
+        old = glyphcheck.check(img, b, True, "START")   # the walk alone (no key) runs past the pill
+        self.assertNotEqual(old["verdict"], "PASS", old)
+        dump = {"windows": [{"at": [0, 0], "nodes": [], "texts": [], "glyphs": [dict(g, key=key)]}]}
+        (text, box, ink, k), = glyphcheck.candidates(dump)
+        self.assertEqual(k, tuple(key))
+        r = glyphcheck.check(img, box, ink, text, k)
+        self.assertEqual(r["verdict"], "PASS", r); self.assertEqual(r["shape"], key)
+
+    def test_off_centre_glyph_in_its_key_still_fails(self):
+        import glyphcheck
+        img, g, key = self._scene(3)
+        r = glyphcheck.check(img, tuple(g["shown"]), True, "START", tuple(key))
+        self.assertEqual(r["verdict"], "FAIL", r); self.assertAlmostEqual(r["dy"], 3, delta=0.6)
+
+    def test_glyph_outside_its_key_fails_and_window_offset_applies(self):
+        import glyphcheck
+        img, g, key = self._scene(0)
+        r = glyphcheck.check(img, tuple(g["shown"]), True, "START", (0, 0, 20, 20))
+        self.assertEqual(r["verdict"], "FAIL", r)
+        dump = {"windows": [{"at": [5, 7], "nodes": [], "texts": [], "glyphs": [dict(g, key=key)]}]}
+        self.assertEqual(glyphcheck.candidates(dump)[0][3], (35, 31, 60, 24))
+
+
 class GlyphCheck521(unittest.TestCase):
     """Batch 521b: glyphcheck finds a letter that sits off the middle of its circle (and passes a centred one)."""
     def _scene(self, offsets):
@@ -1572,7 +2080,7 @@ class GlyphCheck521(unittest.TestCase):
     def test_centred_and_off(self):
         import glyphcheck
         img, dump = self._scene([(0, 0), (0, 4), (4, 0)])
-        res = [glyphcheck.check(img, tuple(b), ink) for _, b, ink in glyphcheck.candidates(dump)]
+        res = [glyphcheck.check(img, tuple(b), ink) for _, b, ink, _k in glyphcheck.candidates(dump)]
         self.assertEqual([r["verdict"] for r in res], ["PASS", "FAIL", "FAIL"])
         self.assertAlmostEqual(res[1]["dy"], 4, delta=1)
 
@@ -1591,7 +2099,7 @@ class GlyphCheck521(unittest.TestCase):
         dump = {"windows": [
             {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "L2", "shown": [10, 10, 20, 20]}], "glyphs": [{"text": "A", "shown": [40, 10, 12, 14]}]},
             {"at": [0, 0, 300, 200], "nodes": [{}], "texts": [{"text": "R1", "shown": [60, 10, 20, 20]}], "glyphs": []}]}
-        self.assertEqual([t for t, _, _ in glyphcheck.candidates(dump)], ["R1"])
+        self.assertEqual([c[0] for c in glyphcheck.candidates(dump)], ["R1"])
 
     def test_covered_and_oversized(self):
         """Batch 522: a glyph in the dump with no ink on the screenshot (under a popup) is HIDDEN; a letter on a big card is not
@@ -1602,6 +2110,430 @@ class GlyphCheck521(unittest.TestCase):
         self.assertEqual(glyphcheck.check(img, (30, 30, 12, 14), True)["verdict"], "HIDDEN")
         d = ImageDraw.Draw(img); d.rectangle((40, 40, 260, 160), fill=(80, 80, 92)); d.rectangle((60, 60, 69, 71), fill=(255, 255, 255))
         self.assertEqual(glyphcheck.check(img, (59, 59, 12, 14), True)["verdict"], "NO-SHAPE")
+
+
+
+class TestCiProgress673(unittest.TestCase):
+    """673b: tools/ci/test_progress.py names a unit test that never ended (CI's Verify job hung twice, its log private)."""
+    def test_unfinished_failed_and_slow_tests_are_named(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import test_progress
+        lines = ["START a.B.t1 100", "END a.B.t1 SUCCESS 25000", "START a.B.t2 200", "START a.C.t3 300", "END a.C.t3 FAILURE 10", "junk"]
+        open_, timed, failed = test_progress.parse(lines)
+        self.assertEqual(open_, [("a.B.t2", 200)])
+        self.assertEqual(failed, ["a.C.t3"])
+        self.assertEqual(timed[0], ("a.B.t1", 25000))
+        self.assertEqual(test_progress.esc("a%b\nc"), "a%25b%0Ac")
+
+
+
+class TestCiWatchdog673(unittest.TestCase):
+    """673e (D325): tools/ci/watchdog.py stops the unit tests before the runner starves and names why (CI lost its runner 3x)."""
+    def mod(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import watchdog
+        return watchdog
+
+    def test_progress_counts_and_the_test_in_flight(self):
+        w = self.mod()
+        s, e, run = w.progress(["START a.B.t1 100", "END a.B.t1 SUCCESS 9", "START a.C.t2 200", "junk", "END x"])
+        self.assertEqual((s, e), (2, 2)); self.assertEqual(run, {"a.C.t2": 200})
+
+    def test_stops_under_the_memory_floor_or_at_the_limit_only(self):
+        w = self.mod()
+        self.assertIsNone(w.decide(4000, 60, 1500, 2100))
+        self.assertIsNone(w.decide(None, 60, 1500, 2100))          # no /proc/meminfo: only the time limit
+        self.assertIn("under 1500 MB", w.decide(1200, 60, 1500, 2100))
+        self.assertIn("after 35 min", w.decide(4000, 2100, 1500, 2100))
+
+    def test_process_roles_not_classpaths(self):
+        w = self.mod()
+        self.assertEqual(w.label("/usr/lib/jvm/bin/java -cp a.jar:b.jar worker.org.gradle.process.internal.worker.GradleWorkerMain 'Gradle Test Executor 1'"), "Gradle worker (tests)")
+        self.assertEqual(w.label("java -Xmx4g org.gradle.launcher.daemon.bootstrap.GradleDaemon 9.5"), "Gradle daemon")
+        self.assertEqual(w.label("/usr/bin/python3 x.py"), "python3")
+
+    def test_a_command_past_its_limit_is_stopped_and_named(self):
+        import subprocess
+        prog = os.path.join(tempfile.mkdtemp(), "p.log")
+        with open(prog, "w") as fh: fh.write("START a.C.slow 1\n")
+        r = subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "ci", "watchdog.py"), "--progress", prog, "--limit-min", "0.02",
+                            "--poll", "0.2", "--", sys.executable, "-c", "import time; time.sleep(60)"], capture_output=True, text=True, timeout=40)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("::error title=Unit tests stopped by the watchdog::", r.stdout); self.assertIn("a.C.slow", r.stdout)
+        r = subprocess.run([sys.executable, os.path.join(HERE, "..", "..", "ci", "watchdog.py"), "--progress", prog, "--poll", "0.2", "--",
+                            sys.executable, "-c", "import sys; sys.exit(3)"], capture_output=True, text=True, timeout=40)
+        self.assertEqual(r.returncode, 3); self.assertNotIn("::error", r.stdout)
+
+
+class TestUniformAudit673(unittest.TestCase):
+    """673g (owner brief 15 Nov): the uniform-button audit finds uneven key groups, three dots, a status line drawn as a key."""
+    def test_the_disc_station_keys_before_the_uniform_system(self):
+        import geomcheck
+        with open(os.path.join(FIX, "uniform_discs_more_before_673.json"), encoding="utf-8") as fh: d = json.load(fh)
+        r = " | ".join(geomcheck.uniform_audit(d["windows"]))
+        self.assertIn("three dots as a key", r); self.assertIn("of different sizes", r); self.assertIn("a status line drawn as a key", r)
+
+    def test_a_uniform_row_and_column_pass(self):
+        import geomcheck
+        key = lambda l, x, y, w=120, h=40: {"label": l, "kind": "control", "full": [x, y, w, h], "shown": [x, y, w, h]}
+        row = [key("Play", 10, 300), key("Details", 140, 300), key("Options", 270, 300), key("More", 400, 300)]
+        col = [key("Play", 10, 10, 200), key("Details", 10, 56, 200), key("Options", 10, 102, 200)]
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": row}]), [])
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": col}]), [])
+        bad = [key("Play", 10, 300, 90), key("More", 110, 300), key("Details", 240, 300)]
+        r = " | ".join(geomcheck.uniform_audit([{"nodes": bad}]))
+        self.assertIn("different sizes", r); self.assertIn("MORE not the last", r)
+        # the action "Save sync" is a key, its status line "Save sync is not set up" is not
+        self.assertEqual(geomcheck.uniform_audit([{"nodes": [key("Save sync", 10, 300), key("Play", 140, 300)]}]), [])
+        self.assertIn("status line", " ".join(geomcheck.uniform_audit([{"nodes": [key("Save sync is not set up", 10, 300), key("Play", 140, 300)]}])))
+
+class TestGlyphCandidatesCallers675i(unittest.TestCase):
+    """675i: popclip.py unpacked glyphcheck.candidates() into three names after 675e made it return four (the key box) -
+    every popup grade with a glyph crashed (emulator run 43809583379). Every caller must unpack what candidates() returns."""
+    def test_every_caller_unpacks_four(self):
+        import ast
+        tools = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools")
+        for name in ("popclip.py", "glyphcheck.py"):
+            tree = ast.parse(open(os.path.join(tools, name), encoding="utf-8").read())
+            for node in ast.walk(tree):
+                if isinstance(node, ast.For) and isinstance(node.iter, ast.Call):
+                    f = node.iter.func
+                    called = (getattr(f, "attr", None) or getattr(f, "id", None))
+                    if called == "enumerate" and node.iter.args and isinstance(node.iter.args[0], ast.Call):
+                        inner = node.iter.args[0].func
+                        if (getattr(inner, "attr", None) or getattr(inner, "id", None)) == "candidates":
+                            tgt = node.target.elts[1]
+                            self.assertEqual(len(tgt.elts), 4, f"{name}:{node.lineno}")
+                    elif called == "candidates":
+                        self.assertIsInstance(node.target, ast.Tuple, f"{name}:{node.lineno}")
+                        self.assertEqual(len(node.target.elts), 4, f"{name}:{node.lineno}")
+
+
+class TestCubeCategoryHome675r(unittest.TestCase):
+    """675r: Cube's x1.3 home on the RP Nova is its category cube (A = Open, no game drawn); the gate read the A that opens the
+    games as "first A opened nothing". popclip.sh enters the games first - only on that screen (hasRow false + an Open key)."""
+    def test_popclip_enters_cubes_games_only_on_the_category_cube(self):
+        sh = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "popclip.sh"), encoding="utf-8").read()
+        i = sh.index("if [ $lay = CUBE ]")
+        block = sh[i:i + 700]
+        self.assertIn('"hasRow":false', block)
+        self.assertIn('"label":"Open"', block)
+        self.assertIn("k BUTTON_A", block)
+        self.assertIn(">> $OUT/log.txt", block)
+        self.assertLess(i, sh.index('shot ${n}_home'))
+
+
+class TestBadgeCheck676a(unittest.TestCase):
+    """676a (QA rule R27): badgecheck.py fails badges of one tile closer than 6 dp or cut by their tile, from real bounds."""
+    def _run(self, windows, density=2.0):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": density, "windows": windows}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "badgecheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def _win(self, badges, tiles=None):
+        return [{"nodes": [], "badges": badges, "badgeTiles": tiles or [{"lane": "a", "full": [100, 100, 200, 260], "shown": [100, 100, 200, 260]}]}]
+
+    def test_overlap_fails(self):
+        # the Nova's Cube card before the lane: the PS2 wordmark pill and "6/10" over each other
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 110, 74, 22], "shown": [216, 110, 74, 22], "placed": True}]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("overlap", r.stdout)
+
+    def test_too_close_fails_and_clear_passes(self):
+        close = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 100, 26], "shown": [106, 106, 100, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 106, 74, 22], "shown": [216, 106, 74, 22], "placed": True}]))
+        self.assertEqual(close.returncode, 1, close.stdout)  # 10 px = 5 dp
+        ok = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 144, 74, 22], "shown": [216, 144, 74, 22], "placed": True}]))
+        self.assertEqual(ok.returncode, 0, ok.stdout)  # stacked 12 px = 6 dp under it
+
+    def test_a_scaled_tile_is_not_a_cut(self):
+        # Pocket ribbon x1.3: an unfocused tile drawn at 0.81 - both sides shrink alike; the gap is measured at that scale
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 227, 45], "shown": [106, 106, 184, 36], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 160, 101, 86], "shown": [216, 160, 82, 70], "placed": True}]))
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_a_badge_over_the_name_fails(self):
+        # 676z, Nova x1.3 Tiles: the console pill (bottom right) over the end of a coverless tile's name
+        name = {"text": "Colossus", "full": [110, 300, 150, 40], "shown": [110, 300, 150, 40], "placed": True}
+        win = self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [190, 310, 104, 30], "shown": [190, 310, 104, 30], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 106, 74, 22], "shown": [216, 106, 74, 22], "placed": True}])
+        win[0]["texts"] = [name]
+        r = self._run(win)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("covers text", r.stdout)
+        win[0]["texts"] = [dict(name, full=[110, 260, 150, 40], shown=[110, 260, 150, 40])]  # the name above the pill
+        self.assertEqual(self._run(win).returncode, 0)
+
+    def test_cut_badge_fails(self):
+        r = self._run(self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [216, 150, 74, 22], "shown": [216, 150, 74, 22], "placed": True}]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("cut", r.stdout)
+
+    def test_text_cut_inside_a_pill_fails(self):
+        w = self._win([
+            {"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True},
+            {"kind": "PROGRESS", "lane": "a", "full": [106, 150, 180, 40], "shown": [106, 150, 180, 40], "placed": True}])
+        w[0]["texts"] = [{"text": "6/10 \u00b7 60%", "full": [200, 155, 80, 30], "lines": 1, "ovH": True, "ovW": False, "ellipsis": False,
+                          "needW": 92, "boxW": 80, "textH": 30, "boxH": 30}]
+        r = self._run(w)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("text cut", r.stdout)
+        # a 1 px rounding flagged by the layout (the Nova's whole "6/10") is not a cut
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": False, "ovW": True, "ellipsis": False,
+                          "needW": 41, "boxW": 40, "textH": 31, "boxH": 30}]
+        self.assertEqual(self._run(w).returncode, 0)
+        # a text the lane left out (not placed) is not drawn: never a cut
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": False, "ovW": True, "ellipsis": False,
+                          "needW": 60, "boxW": 40, "textH": 30, "boxH": 30, "placed": False}]
+        self.assertEqual(self._run(w).returncode, 0)
+        # an old dump with only the flags can't tell: INFRA, never PASS
+        w[0]["texts"] = [{"text": "6/10", "full": [200, 155, 40, 30], "lines": 1, "ovH": True, "ovW": False, "ellipsis": False}]
+        self.assertEqual(self._run(w).returncode, 2)
+
+    def test_old_build_is_infra_and_one_badge_not_tested(self):
+        old = self._run([{"nodes": []}])
+        self.assertEqual(old.returncode, 2, old.stdout)
+        one = self._run(self._win([{"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 152, 26], "placed": True}]))
+        self.assertEqual(one.returncode, 3, one.stdout)
+
+
+class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
+    """676d (D334): QA scripts must never navigate into the owner's Voltcap - target confirmed, the QA app kept in front by
+    the launch-block file (QaVariant.harnessActive), a layout switch checked before keys, keys only while the QA app has focus."""
+    def _src(self, name):
+        return open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", name), encoding="utf-8").read()
+
+    def test_popclip_confirms_target_and_blocks_before_any_key(self):
+        sh = self._src("popclip.sh")
+        first_key = sh.index("k BUTTON_B 1.5")
+        self.assertLess(sh.index("pm path $P"), first_key)
+        self.assertLess(sh.index("touch $F/qa_nolaunch"), first_key)
+        self.assertIn("target: serial=", sh)
+        # keys only through k(), which checks the focus first
+        self.assertIn("k() { fg; input keyevent", sh)
+        self.assertNotIn("\ninput keyevent", sh)
+
+    def test_popclip_checks_the_layout_switch_took(self):
+        sh = self._src("popclip.sh")
+        i = sh.index('A --es voltcap_test_layout $lay; sleep 3.5')
+        block = sh[i:i + 1500]
+        self.assertIn('"homeLayout"', block)
+        self.assertIn("no key pressed (NOT TESTED)", block)
+        self.assertIn("continue", block)
+
+    def test_navbar_script_guards_keys_and_never_swipes_home_by_default(self):
+        sh = self._src("navbar676.sh")
+        self.assertIn("k() { fgq; input keyevent", sh)
+        # (676n: the guard reads the focused resumed activity - the first mCurrentFocus line can be another display's window.)
+        g = sh[sh.index("fgq() {"):sh.index("k() { fgq")]
+        self.assertIn('grep -m1 "ResumedActivity: "', g)
+        self.assertIn('*" $PKG/"*', g)
+        self.assertIn("exit 2", g)
+        self.assertLess(sh.index("touch /sdcard/Android/data/$PKG/files/qa_nolaunch"), sh.index("k BUTTON_A"))
+        self.assertIn('[ "$SWIPE" = 1 ]', sh)
+        self.assertIn("packageName=com.shelf.launcher$", sh)
+
+
+class TestGlyphsUnderFocusedWindow676s(unittest.TestCase):
+    """676s: a glyph of an unfocused window under the focused one is not measured, whatever order the dump lists them in."""
+    def test_focused_window_listed_first_still_covers(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import glyphcheck
+        pop = {"at": [0, 0, 1280, 960], "focus": True, "nodes": [{"label": "Play"}], "texts": [], "glyphs": []}
+        home = {"at": [0, 0, 1280, 960], "focus": False, "nodes": [{"label": "OPEN"}], "texts": [],
+                "glyphs": [{"text": "A", "shown": [95, 887, 22, 22], "placed": True, "key": [81, 873, 48, 48]}]}
+        self.assertEqual(glyphcheck.candidates({"windows": [pop, home]}), [])
+        self.assertEqual(glyphcheck.candidates({"windows": [home, pop]}), [])
+        self.assertEqual(len(glyphcheck.candidates({"windows": [dict(home, focus=True)]})), 1)
+
+
+class TestStatusCheck677d(unittest.TestCase):
+    """677d: status-bar texts never squeezed / cut / over each other; one profile picture per screen."""
+    def _run(self, win):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": 2.0, "windows": [dict(win, focus=True)]}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "statuscheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def test_squashed_points_fail_whole_pass(self):
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50]}
+        pts = {"text": "123456", "full": [1100, 20, 40, 30], "shown": [1100, 20, 40, 30], "needW": 70, "boxW": 40, "textH": 30, "boxH": 30, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts]})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("squeezed", r.stdout)
+        ok = dict(pts, full=[1100, 20, 70, 30], shown=[1100, 20, 70, 30], boxW=70)
+        self.assertEqual(self._run({"statusBars": [bar], "avatars": [], "texts": [ok]}).returncode, 0)
+
+    def test_points_on_two_lines_and_initial_squeezed_away_fail(self):
+        bar = {"full": [41, 17, 1204, 141], "shown": [41, 17, 1204, 141]}
+        pts = {"text": "12345678", "full": [1095, 26, 138, 120], "shown": [1095, 26, 138, 120], "lines": 2, "textH": 120, "boxH": 120, "placed": True}
+        ini = {"text": "P", "full": [1233, 62, 0, 48], "shown": [0, 0, 0, 0], "needW": 26, "boxW": 0, "lines": 1, "placed": True}
+        r = self._run({"statusBars": [bar], "avatars": [], "texts": [pts, ini]})
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("broken onto 2 lines", r.stdout); self.assertIn("squeezed to nothing", r.stdout)
+
+    def test_duplicate_avatar_fails(self):
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50]}
+        a2 = {"where": "console", "full": [20, 20, 68, 68], "shown": [20, 20, 68, 68]}
+        r = self._run({"statusBars": [], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("2 pictures", r.stdout)
+        self.assertEqual(self._run({"statusBars": [], "avatars": [a1], "texts": []}).returncode, 0)
+
+    def test_old_build_is_infra(self):
+        self.assertEqual(self._run({"avatars": [], "texts": []}).returncode, 2)
+
+    def test_unplaced_probes_ignored(self):
+        """677h (RP Classic c677an): StatusFit's unplaced probe levels are neither a duplicate picture nor a cut cluster."""
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50], "placed": True}
+        probe = {"full": [800, 10, 470, 50], "shown": [900, 10, 370, 50], "placed": False}
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50], "placed": True}
+        a2 = dict(a1, full=[1150, 10, 50, 50], shown=[1150, 10, 50, 50], placed=False)
+        r = self._run({"statusBars": [bar, probe], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 0, r.stdout)
+        r = self._run({"statusBars": [bar, dict(probe, placed=True)], "avatars": [a1, dict(a2, placed=True)], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout)
+
+
+class TestHomecut676o(unittest.TestCase):
+    """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
+    def _dump(self, texts, focus=True):
+        return {"windows": [{"focus": focus, "texts": texts}]}
+
+    def test_cuts_fail_and_whole_or_sliding_pass(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        opt = {"text": "OPTIONS", "needW": 127, "boxW": 123, "ovH": True, "placed": True}
+        menu = {"text": "MENU", "needW": 84, "boxW": 0, "ovH": True, "placed": True}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([opt, menu]))], ["OPTIONS", "MENU"])
+        whole = {"text": "OPEN", "needW": 78, "boxW": 78, "ovH": True, "placed": True}
+        slides = dict(opt, scroll=True)
+        unplaced = dict(opt, placed=False)
+        self.assertEqual(homecut.cut_texts(self._dump([whole, slides, unplaced])), [])
+        self.assertIsNone(homecut.cut_texts(self._dump([opt], focus=False)))  # nothing of the focused window: INFRA
+        import tempfile, json as _j
+        d = tempfile.mkdtemp()
+        f = os.path.join(d, "f676x10_SPOT_OWN_home.json"); _j.dump(self._dump([opt]), open(f, "w"))
+        self.assertEqual(homecut.layout_of(f), "SPOT_OWN")
+        r = homecut.check([f], {})
+        self.assertEqual(r[0].status, "FAIL")
+        self.assertEqual(homecut.check([f], {"SPOT_OWN": {"OPTIONS": "owner-approved decoration"}})[0].status, "PASS")
+
+    def test_height_cuts_fail_even_when_sliding(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        play = {"text": "PLAY", "needW": 103, "boxW": 103, "ovH": True, "placed": True, "scroll": True, "textH": 72, "boxH": 14}
+        digit = {"text": "12", "needW": 30, "boxW": 30, "ovH": False, "placed": True, "textH": 48, "boxH": 38}  # line padding only
+        hidden = {"text": "6:38", "needW": 80, "boxW": 80, "ovH": True, "placed": True, "textH": 74, "boxH": 0}
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([play, digit, hidden]))], ["PLAY (height)"])
+        offscreen = dict(play, shown=[0, 0, 0, 0])
+        self.assertEqual(homecut.cut_texts(self._dump([offscreen])), [])
+
+    def test_word_broken_across_lines_fails(self):
+        """677h (owner, RP Classic Storage Boxes "6 / 1 0", "Neve / r"): a line break inside a word FAILs; whole words PASS."""
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        nev = {"text": "Never played", "lines": 3, "brokenWord": True, "placed": True, "textH": 90, "boxH": 90}
+        ok = dict(nev, text="Never played ok", lines=2, brokenWord=False)
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([nev, ok]))], ["Never played (word broken)"])
+
+
+class TestReadcheckUnplaced676f(unittest.TestCase):
+    """676f: an unplaced text (a badge the lane left out) is not drawn - it can't overlap; a placed one still FAILs."""
+    def test_unplaced_text_is_not_an_overlap(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import readcheck
+        base = {"text": "Shadow Of The Colossus", "full": [79, 448, 134, 168], "shown": [79, 448, 134, 168], "placed": True}
+        chip = {"text": "6/10", "full": [114, 470, 69, 72], "shown": [114, 470, 69, 72], "placed": False}
+        dump = {"windows": [{"id": "w", "nodes": [], "texts": [base, chip]}]}
+        self.assertEqual(readcheck.overlaps(dump), [])
+        chip["placed"] = True
+        self.assertTrue(readcheck.overlaps(dump))
+
+
+
+class TestCrateChecklist678o(unittest.TestCase):
+    """678o (HW-2, the owner's Record crate checklist): crate678.py grades one size for every key while the focus walks to MORE,
+    MORE opened and B back on MORE, the window closed, rapid A B A B left nothing open; crate678.sh keeps the QA guards."""
+    def _ctl(self, label, box, on=False):
+        return {"label": label, "kind": "control", "full": box, "shown": box, "focused": on}
+
+    def _write(self, d, name, ctls, age=1200):
+        with open(os.path.join(d, name + ".json"), "w") as f:
+            json.dump({"popupAgeMs": age, "windows": [{"id": "w", "focus": True, "nodes": ctls}]}, f)
+
+    def _run(self, d, more_w=222, back_on="MORE", left_open=False, opened=True):
+        game = self._ctl("Okami", [0, 0, 960, 640])
+        names = ["PLAY", "SLEEVE NOTES", "INSPECT", "MORE"]
+        self._write(d, "X10_home", [game], age=None)
+        for n in range(4):
+            ctls = [game, self._ctl("B Back", [646, 576, 109, 43])]
+            ctls += [self._ctl(k, [253 + i * 231, 281, more_w if (k == "MORE" and n == 2) else 222, 45], on=(i == n))
+                     for i, k in enumerate(names)]
+            self._write(d, f"X10_k{n}", ctls, age=1200 if opened else None)
+        self._write(d, "X10_moreopen", [game, self._ctl("OPTIONS", [253, 281, 222, 45], on=True)])
+        self._write(d, "X10_moreback", [game] + [self._ctl(k, [253 + i * 231, 281, 222, 45], on=(k == back_on))
+                                                 for i, k in enumerate(names)])
+        self._write(d, "X10_closed", [game], age=None)
+        with open(os.path.join(d, "rapid.txt"), "w") as f:
+            for r in range(1, 6):
+                f.write(f"X10 rapid{r} {'open' if (left_open and r == 3) else 'closed'}\n")
+            f.write("X10 launches=0\n")
+
+    def _grade(self, **kw):
+        import crate678
+        d = tempfile.mkdtemp()
+        try:
+            self._run(d, **kw)
+            return {r.name: r.status for r in crate678.grade(d, check_evidence=False)}
+        finally:
+            shutil.rmtree(d)
+
+    def test_uniform_walk_more_and_rapid_pass(self):
+        g = self._grade()
+        for c in ("keys", "walk", "more", "closed", "rapid"):
+            self.assertEqual(g[f"X10 {c}"], PASS, (c, g))
+        self.assertEqual(g["X13 (all)"], NOT_TESTED)
+
+    def test_a_key_changing_size_while_the_focus_moves_fails(self):
+        self.assertEqual(self._grade(more_w=240)["X10 keys"], FAIL)
+
+    def test_focus_not_back_on_more_fails(self):
+        self.assertEqual(self._grade(back_on="PLAY")["X10 more"], FAIL)
+
+    def test_a_window_left_open_by_rapid_presses_fails(self):
+        self.assertEqual(self._grade(left_open=True)["X10 rapid"], FAIL)
+
+    def test_a_window_that_never_opened_is_infra_not_a_verdict(self):
+        """k678c X10: "Who's playing?" took the first A - no window, the walk moved along the home's games."""
+        g = self._grade(opened=False)
+        for c in ("keys", "walk", "more"):
+            self.assertEqual(g[f"X10 {c}"], INFRA, (c, g))
+
+    def test_device_script_keeps_the_qa_guards(self):
+        with open(os.path.join(HERE, "..", "device", "crate678.sh"), encoding="utf-8") as f:
+            sh = f.read()
+        first_key = sh.index("k BUTTON_A 1.8")
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertLess(sh.index("pm path $P"), first_key)
+        self.assertLess(sh.index("touch $F/qa_nolaunch"), first_key)
+        self.assertIn("k() { fg; input keyevent", sh)
+        for ln in sh.splitlines():
+            if "input keyevent" in ln and "k() {" not in ln:
+                self.assertIn("fg; input keyevent", ln)  # every raw key behind the focus check
+        self.assertIn("voltcap_test_snapshot restore", sh)
+        self.assertIn("grep -q '^PICKER' $F/voltcap_qa_screen", sh)  # (k678c: the profile picker closed before the first A)
 
 
 if __name__ == "__main__":

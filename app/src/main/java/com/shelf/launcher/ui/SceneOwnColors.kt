@@ -48,8 +48,10 @@ internal fun crossWash(tint: Features.CrossTint, background: Color, accent: Colo
  */
 @Composable
 internal fun sceneVeilFor(scene: WinScene): Brush = when (scene) {
+    // (672b, owner 14 Nov: the shelf stays in view behind the tag - its labels where they were and the empty slot the case came
+    // out of - dimmed, not blacked out. The tag is opaque paper: its words read the same.)
     WinScene.SHOP_TAG -> shopColors(Features.rsWall.state.value).let { s ->
-        Brush.verticalGradient(listOf(s.wallBottom.copy(alpha = 0.7f), Color.Black.copy(alpha = 0.85f)))
+        Brush.verticalGradient(listOf(s.wallBottom.copy(alpha = 0.42f), Color.Black.copy(alpha = 0.66f)))
     }
     WinScene.BUBBLE_CARD -> bubbleWallInk(Features.bvWall.state.value).let { d ->
         Brush.verticalGradient(listOf(d.copy(alpha = 0.6f), lerp(d, Color.Black, 0.5f).copy(alpha = 0.8f)))

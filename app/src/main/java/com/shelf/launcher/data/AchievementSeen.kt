@@ -140,6 +140,21 @@ object AchievementSeen {
         }
     }
 
+    /**
+     * 678o (HW-20 QA, isolated QA app only - called by the `voltcap_test_achnew` hook, never by the app itself): [ids], already
+     * unlocked and seen, count as just earned once more - pending (the page's new-unlocks stage shows them, their animation
+     * plays once) and NEW - so the stage can be checked on a handheld without a real unlock. As [addFresh], without its
+     * already-seen filter.
+     */
+    fun qaMarkNew(context: Context, key: String, ids: Collection<Int>) {
+        if (ids.isEmpty()) return
+        val now = System.currentTimeMillis()
+        edit(context, key) { old ->
+            val r = old ?: Rec(seeded = true)
+            r.copy(pending = r.pending + ids, glow = r.glow + ids, seenAt = r.seenAt + ids.associateWith { now })
+        }
+    }
+
     /** IDs whose automatic unlock animation hasn't played yet. */
     fun pending(context: Context, key: String): Set<Int> = get(context, key)?.pending.orEmpty()
 

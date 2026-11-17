@@ -42,8 +42,10 @@ class AchCompact529Test {
         // The filter / order / view chips no longer stand open above the list, nor the help text, nor the Last session card.
         assertFalse(s.contains("Text(\"LAST SESSION\""))
         assertFalse(s.contains("Chip(if (autoComments) \"✓ Comments\" else \"Comments\""))
-        // The list opens on its first achievement.
-        assertTrue(s.contains("val firstFocus = Modifier.initialFocus()"))
+        // The list opens on its first achievement - unless new unlocks are waiting: then the new-unlocks stage takes the
+        // opening focus (678m, H12) and the first achievement gets it when the stage leaves.
+        assertTrue(s.contains("val firstFocus = if (opensOnStage) Modifier else Modifier.initialFocus()"))
+        assertTrue(s.contains("val stageOpen = if (opensOnStage) Modifier.initialFocus() else Modifier"))
     }
 
     @Test fun bClosesTheInnerThingFirst() {

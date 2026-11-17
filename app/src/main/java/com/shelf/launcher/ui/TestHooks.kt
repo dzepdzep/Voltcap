@@ -111,6 +111,11 @@ internal object TestHooks {
     val sort = mutableStateOf(false)
     /** Update 330 (phase 4): open the game window of the game you're on (`--ez voltcap_test_window true`) — never starts a game. */
     val window = mutableStateOf(false)
+    /**
+     * 678o (HW-20, isolated QA app only): `--ei voltcap_test_achnew N` with `--ez voltcap_test_achlist true` - the focused game's
+     * N newest unlocks count as new once more (AchievementSeen.qaMarkNew) just before its Achievements page opens.
+     */
+    @Volatile var achNew = 0
     /** Update 529 (achievements compact hotfix): `--ez voltcap_test_achlist true` - the per-game achievement list of the game you're on. */
     val achList = mutableStateOf(false)
     /** v0.6.66 (D123): `--ez voltcap_test_scenecover false` — the scene's colours from the cover off/on for this preview only. */
@@ -245,6 +250,11 @@ internal object TestHooks {
     val pose = mutableStateOf<Pair<Float, Boolean>?>(null)
     /** Update 493: `--es voltcap_test_battery "40|true"` — the status bar shows that level / charging state (this session only); `off` ends it. */
     val battery = mutableStateOf<BatteryInfo?>(null)
+    /**
+     * 677d (owner 16 Nov, RP Classic: "RA points squashed when another status-bar element appears"): `--es voltcap_test_status
+     * "points=123456,notes=12,trophy=3,pads=2"` - the status bar shows those (isolated QA app, this session only); `off` ends it.
+     */
+    val statusFake = mutableStateOf<Map<String, Int>?>(null)
 
     /** Update 431: the test tuner profile for [spec] (Result.success(null) = "off"), or null when it doesn't parse. */
     internal fun tuneProfile(spec: String): Result<com.shelf.launcher.device.tune.TuneProfile?>? {
@@ -271,6 +281,9 @@ internal object TestHooks {
     @Volatile var appProbe: ((String) -> String)? = null
     /** Update 452: `--es voltcap_test_winmore on` — the open game window's More opened (as its button does), for the More QA. */
     val winMore = mutableStateOf<Boolean?>(null)
+    /** 673b: `--es voltcap_test_wininspect on` — the open game window's Inspect pressed (as its key does), QA only. (A request file
+     *  written by adb's shell user could not be read by the app on the KONKR's Android 12 - pkk673j: never seen.) */
+    val winInspect = mutableStateOf<Boolean?>(null)
 
     /**
      * Update 451: the home screen's own state for QA snapshots — selected category (console or special list), the focused
@@ -302,6 +315,7 @@ internal object TestHooks {
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
+        intent?.getStringExtra("voltcap_test_wininspect")?.let { v -> if (enabled(context)) winInspect.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
         }
@@ -340,6 +354,7 @@ internal object TestHooks {
         val mc = intent?.getStringExtra("voltcap_test_metacritic")
         val so = intent?.getBooleanExtra("voltcap_test_sort", false) == true
         val wi = intent?.getBooleanExtra("voltcap_test_window", false) == true
+        intent?.getIntExtra("voltcap_test_achnew", 0)?.let { n -> if (n > 0 && com.shelf.launcher.data.QaVariant.isolated(context)) achNew = n }
         if (intent?.getBooleanExtra("voltcap_test_achlist", false) == true && enabled(context)) achList.value = true
         val rs = intent?.getStringExtra("voltcap_test_shortcuts")
         val ins = intent?.getStringExtra("voltcap_test_inspect")
@@ -384,6 +399,12 @@ internal object TestHooks {
         }
         // 529j: same-build A/B for the category strips (`voltcap_test_chipglide legacy|new`: the old instant window / hard end
         // fades) and the Night menu's bar layers (`voltcap_test_nmlayers legacy|new`). Isolated QA app only, session only.
+        intent?.getStringExtra("voltcap_test_status")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) {
+                statusFake.value = if (v == "off") null else v.split(',').mapNotNull { kv -> kv.split('=').takeIf { it.size == 2 }?.let { it[0].trim() to (it[1].trim().toIntOrNull() ?: return@mapNotNull null) } }.toMap()
+                android.util.Log.e("VoltcapQA", "status fake ${statusFake.value}")
+            }
+        }
         intent?.getStringExtra("voltcap_test_chipglide")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) { ChipGlide.legacy = v == "legacy"; GlidingChips.legacyFade = v == "legacy"; LivePivot.legacy = v == "legacy" }
             android.util.Log.e("VoltcapQA", "chipglide $v")
@@ -542,6 +563,10 @@ internal object TestHooks {
             com.shelf.launcher.data.FirstRun.markDone(app)
             com.shelf.launcher.data.BatterySaver.introSeen(app)
             if (com.shelf.launcher.data.Packs.choice(app) == null) com.shelf.launcher.data.Packs.setChoice(app, com.shelf.launcher.data.Packs.Choice.NONE)
+            // 675k (run 43811840328): the Inspect / Wobble question (InspectChoice.kt) comes up 9 s after every start until
+            // answered - on a fresh emulator it stood over the picker / home as a second QA window and failed the trial's
+            // preconditions. Marked answered with the mode left as it is (default Inspect); the handhelds answered it long ago.
+            if (!com.shelf.launcher.data.Features.inspectModeAsked.value) com.shelf.launcher.data.Features.inspectModeAsked.value = true
             android.util.Log.e("VoltcapQA", "firstrun done (QA hook)")
         }
         // Update 336: `--ei voltcap_test_setup <step>` — the first-start setup opened on that step (0 = Welcome).

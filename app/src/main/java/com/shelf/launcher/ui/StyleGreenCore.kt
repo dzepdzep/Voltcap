@@ -1092,16 +1092,14 @@ private fun GcButton(text: String, primary: Boolean, accent: Color, modifier: Mo
             .pointerInput(Unit) { detectTapGestures { tap() } },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text, color = if (primary) Color(0xFF03130A) else accent, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp, maxLines = 1, softWrap = false
-        )
+        // (676r, D340 - RP Nova x1.3: "DETAIL" cut in its fixed width: shrink, then slide - rule 11.)
+        FullText(text, if (primary) Color(0xFF03130A) else accent, 11.sp, maxLines = 1, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
     }
 }
 
 @Composable
 private fun GcLabel(text: String, accent: Color) {
-    Text(text, color = accent.copy(alpha = 0.7f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp, maxLines = 1, softWrap = false)
+    FullText(text, accent.copy(alpha = 0.7f), 9.sp, maxLines = 1, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp) // (676r, D340: "SELECTED TITL")
 }
 
 @Composable

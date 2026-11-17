@@ -647,6 +647,10 @@ private fun CoverBigCases(c: StyleCtx, g: Game, depth: com.shelf.launcher.data.F
                     // (Batch 523: the same object all the way - whole from the first frame, no fade from / into a second copy.)
                     alpha = if (p > 0.001f) 1f else 0f
                 }
+                // (673b, owner 14 Nov: "the actual case is pulled and rotated for Inspect, then restored": the big case is the
+                // game window's origin - Inspect's piece comes out of it, the case here hidden while it is out, back as it
+                // lands. The side panel itself never grows out of it (GameWindow).)
+                .gameOrigin(gm.stableKey, o === cur)
         ) {
             val restYaw = if (PickedFacing.faces) bigCaseYaw(depth) else PickedFacing.TURN
             Case3D(

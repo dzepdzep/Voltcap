@@ -1,0 +1,347 @@
+{
+ "_rules": "Release tracker evidence for STATUS_DASHBOARD.md (rendered by tools/cloud/dashboard.py). Status is DERIVED, never typed: any gate FAIL or BLOCKED -> BLOCKED; any gate PENDING / NOT STARTED -> TESTING; an item not implemented -> DEVELOPMENT; every gate PASS -> READY FOR OWNER APPROVAL. A gate is PASS only with evidence in 'evidence'. window stays UNKNOWN unless the remaining gates have a date. Merging, production installs and publishing always wait for the owner's explicit GO.",
+ "current": {
+  "version": "v0.6.72",
+  "commit": "5b01ef39",
+  "date": "2026-11-14",
+  "note": "Latest stable release (main). Save Sync 529 not included."
+ },
+ "releases": [
+  {
+   "version": "v0.6.73",
+   "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
+   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner",
+   "window": "RC ready 17 Nov - waits for the owner's GO (draft PR #21); then ~1.5 h of release steps on the PC",
+   "items": [
+    {
+     "what": "Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "2 layouts",
+     "device": "popup gate on 53 layouts: 48 pass everywhere, 5 fixed since and need a re-run",
+     "owner": "review needed (only the Record crate menu is approved)"
+    },
+    {
+     "what": "Record crate at x1.3: a vertical menu (WWE SvR 2011 style)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS Flip 2 + KONKR at x1.3 (15 Nov); owner's checklist (focus, rapid A/B, no size change) not run yet - KONKR session A",
+     "owner": "APPROVED 15 Nov"
+    },
+    {
+     "what": "Disc station: the disc stays in the tray for normal info, the real disc lifts out for Inspect; its own track pages for Details / Achievements / Options",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS KONKR x1.3, Flip 2 x1.0 / x1.3 (673d-f)",
+     "owner": "review needed"
+    },
+    {
+     "what": "x1.3 screen-fit fixes (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal, Rental shop, Cinema)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS in the latest full gates",
+     "owner": "review needed"
+    },
+    {
+     "what": "Wii channel buttons: one row of equal keys, worded MORE, More page without broken words",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS Flip 2 x1.0, KONKR x1.3 (674n build); x1.3 Flip 2 / x1.0 KONKR not run on that build",
+     "owner": "review needed"
+    },
+    {
+     "what": "Centred symbols on home hints (Arcade pointer, Pocket START, Bar arrows, Library L2 / R2, Spot START)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "Arcade, Pocket, Bar PASS; Library and Spot fixed after the last run - re-test needed",
+     "owner": "not needed"
+    },
+    {
+     "what": "Side menu: every key and the Save sync line fit the drawer without scrolling",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "fixed after the last run - re-test needed",
+     "owner": "not needed"
+    },
+    {
+     "what": "Test and CI reliability (test-runner memory, emulator trial, QA checkers)",
+     "kind": "ci",
+     "impl": true,
+     "unit": true,
+     "emulator": "-",
+     "device": "-",
+     "owner": "not needed"
+    },
+    {
+     "what": "Hide navigation bar: Retroid pill fixed at its root (676b); polling removed",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "RP Nova: pill 12/12 states before, 0/14 after (676, 676c, 676d); Thor / KONKR / RP Classic NOT TESTED (HW-8)",
+     "owner": "APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass)"
+    },
+    {
+     "what": "Global badge lane (676a/c/e/f): console / achievement / NEW / score never overlap, never cut, never over a coverless name",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "RP Nova 676f: x1.3 CUBE/TILES/GRID popup 3/3 + badges 17/17, x1.0 CUBE 1/1 + 10/10; 676d x1.0 GRID/CUBE/TILES 3/3 + 26/26; KONKR / RP Classic NOT TESTED (HW-9)",
+     "owner": "APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass)"
+    },
+    {
+     "what": "QA safety: harness can't reach the owner's Voltcap (D334), QA levels, pinned QA key",
+     "kind": "qa",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "D334 guard proven on the Nova (5 root Backs kept)",
+     "owner": "requested 16 Nov"
+    },
+    {
+     "what": "Status bar: RetroAchievements points never squashed or split; when space runs out, less important icons step aside first",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3 (c677j, s677i); full Nova x1.3: 2 checker readings of the LCD clock decoration, fixed 677k - re-check pending (HW-17)",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Profile picture shown once on Console Hub, Resume, Spotlight and Channel (the status bar hides its copy)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Storage Boxes facts kept whole ('6 / 10', 'Never played'), console name never cut",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Console homes (Hub, Resume, Channel): long game names and the category label slide instead of ending in '...' (Hub '(No Glitc...' at Larger text)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "NOT TESTED - HW-17 (RP Classic Larger text)",
+     "owner": "requested 17 Nov (H8)"
+    }
+   ],
+   "gates": [
+    {
+     "gate": "CI unit tests + debug build (Verify Android update 310)",
+     "state": "PASS",
+     "evidence": "GREEN on be8865c (RC: version 0.6.73 / 80) - push run + PR #21 run, 17 Nov; QA tooling checks PASS on PR #21"
+    },
+    {
+     "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
+     "state": "PASS",
+     "evidence": "run 44017399771 (678j, 9d7605f): success (verdict step passes only on PASS; EMULATOR evidence only, pre-merge tree). run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
+    },
+    {
+     "gate": "Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)",
+     "state": "PASS",
+     "evidence": "17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR."
+    },
+    {
+     "gate": "Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line",
+     "state": "PASS",
+     "evidence": "merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push"
+    },
+    {
+     "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
+     "state": "PASS",
+     "evidence": "KONKR GT78 17 Nov: RC QA build qa-0.6.73-rc-91b1ac3-ci (678p + version) full x1.0 gate krc10 53/53 PASS (TV rapid fixed, D333); final RC be8865c (Channel revert) krcq10 Channel / Twin icons / Record crate / TV / Card binder / Cardboard box 6/6 PASS; rapid A B A B 60/60 (678p). x1.3 full gate on 678n k678n13 52/53 - Channel two-line name over the count (D350) - fixed in 678r, KONKR 17 Nov 15:07: QA build qa-0.6.73-678r-ci (eadd00f, CI Verify 310 GREEN on push) Channel x1.3 kc678r13 popup gate PASS 1/1 (all 11 grades); name plate one line + sliding, 48/120 fully readable; restored (font 1.0, density 240, owner snapshot diff=0). Review sheet: Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
+    },
+    {
+     "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
+     "state": "HISTORICAL",
+     "evidence": "f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks"
+    },
+    {
+     "gate": "Record crate checklist (focus after More, rapid A/B, no size change)",
+     "state": "PASS",
+     "evidence": "KONKR 17 Nov after the D333 fix (qa-0.6.73-678p-ci, crate678.sh k678p_crate): x1.0 + x1.3 one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, rapid A B A B 10/10 at each scale, no launch; nothing clipped (popup gates). Before the fix: rapid 9/10 (k678c2)."
+    },
+    {
+     "gate": "Owner visual review of the new menus and x1.3 fixes",
+     "state": "PASS",
+     "evidence": "owner 17 Nov: reviewed the KONKR sheet - designs good; pixel-font x1.3 polish (Pocket Ribbon, Pocket Classic, Night) to v0.6.74, not a v0.6.73 blocker"
+    },
+    {
+     "gate": "Signed release build, frozen RC, secret scan (main tree on the PC)",
+     "state": "NOT STARTED",
+     "evidence": "after the gates above; signing keys live only on the PC"
+    },
+    {
+     "gate": "Upgrade install over the real Voltcap on one handheld + smoke test",
+     "state": "NOT STARTED",
+     "evidence": "needs the owner's GO (production app)"
+    },
+    {
+     "gate": "Owner GO to merge to main and publish",
+     "state": "NOT STARTED",
+     "evidence": "never automatic"
+    }
+   ],
+   "excluded": [
+    {
+     "what": "Flip 2 charging sparkle fix (charge-limit pause read as unplugging)",
+     "why": "owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device",
+     "kept": "branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72"
+    }
+   ],
+   "risks": [
+    "Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).",
+    "Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).",
+    "Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens."
+   ],
+   "candidates_owner_decision": []
+  },
+  {
+   "version": "v0.6.74",
+   "base": "after v0.6.73",
+   "scope": "Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval",
+   "window": "UNKNOWN - the Flip 2 is unavailable",
+   "items": [
+    {
+     "what": "Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging)",
+     "kind": "app",
+     "impl": false,
+     "unit": true,
+     "emulator": "no",
+     "device": "BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible?",
+     "owner": "test when the Flip 2 is back (production limit off for one supervised test)",
+     "note": "kept on claude/charge-loop-674i / docs/claude/patches/charge-loop-674i.patch, NOT on the dev line, never installed or tested. Evidence conflict to settle on the Flip 2: 15 Nov 20:20 log showed the switch toggling every 1-2 s at 79-80 %; the owner later saw 78 % -> charge -> 80 % with the sparkle only at 80 % (one cycle, not a loop). Apply the patch only if the loop reproduces."
+    },
+    {
+     "what": "Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore)",
+     "kind": "app",
+     "impl": false,
+     "unit": "on branch fix/save-sync (v0.6.71 base): 46 JVM tests + sims green on the PC 13 Nov; not on the dev line",
+     "emulator": "no",
+     "device": "Flip 2 dry run only (no Drive)",
+     "owner": "owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval"
+    },
+    {
+     "what": "Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "AYN Thor (QA app, branch claude/v0674-screen-shortcut 8dab0b2): All apps START menu shows the row; picker Top/Bottom/Where I open it/Follow default; chose Bottom -> launch path chose display 4 (Screen-2) target=SECOND source=APP; restored. Android-game picker, second-screen dock menu, single-screen Nova: NOT TESTED",
+     "owner": "requested 16 Nov"
+    },
+    {
+     "what": "Smaller pixel font (about 60-65 %, pixel font only), before / after for approval",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "not run",
+     "owner": "design approval needed"
+    },
+    {
+     "what": "Badges stay on one row and scale together; optional Top Clip / Hanging Bottom styles (Classic stays default)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "same-row branch PASS on Nova",
+     "owner": "not approved yet"
+    },
+    {
+     "what": "Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay",
+     "kind": "app",
+     "impl": false,
+     "note": "partial - 678m: opens on the new unlocks (no scroll past them, code + unit test); animations not started",
+     "unit": "AchNewUnlocksOnOpen678mTest PASS (Robolectric, cloud)",
+     "emulator": "no",
+     "device": "not run",
+     "owner": "requested 17 Nov"
+    },
+    {
+     "what": "AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "not run",
+     "owner": "requested 17 Nov"
+    },
+    {
+     "what": "Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED",
+     "owner": "owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674"
+    },
+    {
+     "what": "Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "KONKR x1.3 sheet (k678n13) shows the need",
+     "owner": "owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval"
+    }
+   ],
+   "gates": [
+    {
+     "gate": "Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)",
+     "state": "BLOCKED",
+     "evidence": "DEVICE UNAVAILABLE (owner 16 Nov)"
+    },
+    {
+     "gate": "Charging fix re-applied on the dev line",
+     "state": "NOT STARTED",
+     "evidence": "waits for the Flip 2"
+    },
+    {
+     "gate": "Flip 2 charging test (QA app, production limit off for one supervised test)",
+     "state": "BLOCKED",
+     "evidence": "DEVICE UNAVAILABLE (owner 16 Nov) - not a failure"
+    },
+    {
+     "gate": "Save Sync rebased onto the v0.6.73 dev line, compiled, full unit suite green",
+     "state": "NOT STARTED",
+     "evidence": "branch fix/save-sync only as a bundle (PC / project doc)"
+    },
+    {
+     "gate": "QA app registered with Google (Android OAuth client, package com.shelf.launcher.qa, cloud debug key SHA-1) + spare-account sign-in",
+     "state": "BLOCKED",
+     "evidence": "owner action (only the owner can)"
+    },
+    {
+     "gate": "Real Drive end-to-end on 2 handhelds, synthetic saves only: hand-over, simultaneous upload, half-sent multi-file save, restore, restart mid-game; real emulator saves never overwritten (read-only checksums before / after)",
+     "state": "NOT STARTED",
+     "evidence": "-"
+    }
+   ]
+  }
+ ]
+}

@@ -1055,17 +1055,20 @@ internal fun StyleArt(
     if (square || wide) {
         val url = if (wide) c.wide(g) else cover ?: c.wide(g)
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
-        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue))) {
+        val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
+        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue)).badgeTile(lane)) {
             when {
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                 url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
                 g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = wide, modifier = Modifier.fillMaxSize())
-                else -> StyleNamePlate(titles.display(g.name))
+                else -> StyleNamePlate(titles.display(g.name), lane = lane)
             }
             // Update 115: the console's badge.
-            ConsoleBadge(g.platform, packageName = g.packageName)
-            StyleProgressChip(c, g)
-            StyleMetacriticChip(c, g)
+            androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
+                ConsoleBadge(g.platform, packageName = g.packageName)
+                StyleProgressChip(c, g)
+                StyleMetacriticChip(c, g)
+            }
         }
         return
     }
@@ -1092,7 +1095,8 @@ internal fun StyleArt(
     // Free-standing media get the pool of light under them, never a frame round their slot.
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
-    Box(if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))) {
+    val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
+    Box((if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))).badgeTile(lane)) {
         when {
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(
@@ -1108,12 +1112,14 @@ internal fun StyleArt(
             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the card.)
             url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
             g.sourceType == com.shelf.launcher.data.SourceType.APP -> AppIconArt(g.packageName, wide = styleAspect(c.type) > 1f, modifier = Modifier.fillMaxSize())
-            else -> StyleNamePlate(titles.display(g.name))
+            else -> StyleNamePlate(titles.display(g.name), lane = lane)
         }
         // Update 115: the console's badge (update 141: on every look, cartridges, discs and cases too).
-        ConsoleBadge(g.platform, packageName = g.packageName)
-        StyleProgressChip(c, g)
-        StyleMetacriticChip(c, g)
+        androidx.compose.runtime.CompositionLocalProvider(LocalBadgeLane provides lane) {
+            ConsoleBadge(g.platform, packageName = g.packageName)
+            StyleProgressChip(c, g)
+            StyleMetacriticChip(c, g)
+        }
     }
 }
 
@@ -1125,7 +1131,8 @@ private fun androidx.compose.foundation.layout.BoxScope.StyleMetacriticChip(c: S
     val score = metacriticScore(c.state.metadata[g.stableKey], g) ?: return
     val look = LocalCardLook.current
     val clash = achChipAlign(look.trophyCorner) == Alignment.BottomEnd
-    MetacriticChip(score, Modifier.align(if (clash) Alignment.TopEnd else Alignment.BottomEnd).padding(6.dp))
+    val at = if (clash) Alignment.TopEnd else Alignment.BottomEnd
+    MetacriticChip(score, Modifier.align(at).padding(6.dp).laneBadge(LocalBadgeLane.current, BadgeKind.SCORE, at, 6.dp))
 }
 
 /**
@@ -1141,7 +1148,7 @@ private fun androidx.compose.foundation.layout.BoxScope.StyleProgressChip(c: Sty
     val at = achChipAlign(look.trophyCorner) ?: return
     if (g.stableKey != c.game?.stableKey || c.state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CIRCUIT) return
     val (earned, total) = c.progress(g) ?: return
-    GameProgressChip(earned, total, Modifier.align(at))
+    GameProgressChip(earned, total, Modifier.align(at), at = at)
 }
 
 /** Update 129: where the progress chip sits on a picture (R1 Achievements tile); null when it's off. */
@@ -1160,18 +1167,45 @@ internal fun achChipAlign(corner: com.shelf.launcher.data.CardCorner): Alignment
 
 /** Update 125: the small progress chip (bar, earned / total and share — or the mastered trophy), for any layout. */
 @Composable
-internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modifier) {
+internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modifier,
+    /** 676a: the corner [modifier] aligns it to, and the tile's badge lane (BadgeLane.kt): it keeps clear of the console badge. */
+    at: Alignment? = null, lane: BadgeLane? = LocalBadgeLane.current) {
+    val inLane = if (at != null) lane else null
     if (total <= 0) return
     val mastered = earned >= total
     val pct = (earned * 100f / total).roundToInt()
     // Update 136: on a narrow card the chip keeps to what fits — the trophy alone, or earned / total without the bar
     // (the word was cut to "MASTE" on the Dashboard's covers).
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
-    val compact = maxWidth < 112.dp
     val chipW = maxWidth
+    // (672c, KONKR x1.3 Cube menu Classic (k673a): on a 43 dp card "80%" at the larger text needed 46 dp with the chip's
+    // margins and was cut by the card's edge ("80⁹"). The words are measured at the size they are drawn (the text scale
+    // included); a chip that wouldn't fit keeps its words and gives up margin instead (2 + 4 dp a side, not 5 + 7); on a
+    // card too narrow even for that, the chip is the bar alone - the count is on the window and the game's line.)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val chipStyle = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+    fun wordW(t: String): androidx.compose.ui.unit.Dp = with(dens) { measurer.measure(t, chipStyle, maxLines = 1, softWrap = false).size.width.toDp() }
+    val count = "$earned/$total"
+    // (676a, RP Nova x1.3 Grid n676x13: "6/10 · 60%" was cut inside its own pill - the full form was estimated at its words +
+    // 66 dp and needs its words + the bar (34) + the tick (9) + its padding (14) + its margin (10) = + 67 dp, so on a 116 dp
+    // card the "%" was clipped. The full form only where it fits with that real width and a little room; else the compact one.)
+    // (676x, Nova x1.3 Blades v676x13: the full form chosen with 2 dp too little - "%" cut by 5 px. A little more room asked.)
+    val compact = maxWidth < 112.dp || (!mastered && wordW("$count · $pct%") + 67.dp + 8.dp > chipW)
+    val word = if (mastered) "" else if (!compact) "$count · $pct%" else if (wordW(count) + 24.dp <= chipW) count else "$pct%"
+    val need = if (mastered) (if (compact) 14.dp else 16.dp + wordW("MASTERED")) else wordW(word) + (if (compact) 0.dp else 42.dp)
+    val tight = need + 24.dp > chipW
+    val barOnly = !mastered && compact && need + 12.dp > chipW
+    if (barOnly) {
+        Box(Modifier.padding(horizontal = 4.dp, vertical = 5.dp).laneBadge(inLane, BadgeKind.PROGRESS, at ?: Alignment.TopEnd, 4.dp, 5.dp).width((chipW - 8.dp).coerceAtLeast(8.dp)).height(4.dp).clip(RoundedCornerShape(2.dp))
+            .background(Color.Black.copy(alpha = 0.62f))) {
+            Box(Modifier.fillMaxWidth(earned.toFloat() / total).fillMaxHeight().background(ShelfTheme.accent))
+        }
+        return@BoxWithConstraints
+    }
     Row(
-        Modifier.padding(5.dp).clip(RoundedCornerShape(50))
-            .background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = 7.dp, vertical = 3.dp),
+        Modifier.padding(if (tight) 2.dp else 5.dp).laneBadge(inLane, BadgeKind.PROGRESS, at ?: Alignment.TopEnd, if (tight) 2.dp else 5.dp)
+            .clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.62f)).padding(horizontal = if (tight) 4.dp else 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (mastered) {
@@ -1189,10 +1223,10 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
                 ProgressTick()
             }
             // (0.6.17: on the smallest pictures — Twin icons, Pocket Quest's strip — "107/155" was cut to "107/1": the
-            // share alone there, which always fits.)
-            val count = "$earned/$total"
-            val tiny = count.length * 6f > (chipW - 24.dp).value
-            Text(if (tiny) "$pct%" else if (compact) count else "$count · $pct%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+            // share alone there. 672c: chosen by the words' measured width above, not 6 dp a letter.)
+            // (676a: never clipped - a word that still ends up a hair too wide steps its size down, rule 11.)
+            Text(word, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false,
+                autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp))
         }
     }
     }
@@ -1200,11 +1234,34 @@ internal fun GameProgressChip(earned: Int, total: Int, modifier: Modifier = Modi
 
 /** The game's name in the middle of a card that has no picture yet. */
 @Composable
-internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f)) {
-    Box(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+internal fun StyleNamePlate(name: String, color: Color = Color.White.copy(alpha = 0.92f), lane: BadgeLane? = LocalBadgeLane.current) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize().padding(6.dp), contentAlignment = Alignment.Center) {
+        // (676z, Nova x1.3 badge review: a narrow coverless card broke its name inside a word - "Coloss / us". The size steps
+        // down until the longest word fits on a line (to the readable minimum; past it the name slides - FullText).)
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+        val style = androidx.compose.material3.LocalTextStyle.current
+        val avail = constraints.maxWidth
+        val size = remember(name, avail, style) {
+            val longest = name.split(' ').maxByOrNull { it.length }.orEmpty()
+            var sp = 12f
+            while (sp > fitMin(12.sp).value && avail > 0 &&
+                measurer.measure(longest, style.copy(fontSize = sp.sp), maxLines = 1, softWrap = false).size.width > avail) sp -= 0.5f
+            sp.sp
+        }
+        // (676z, Nova badge review + badgecheck "covers text": the console badge sat over the plate's first line on ~20 layouts
+        // (Bar, Chan, Cross, Hero tiles, Library, Cube, Twin...). On a card with a badge lane the plate leaves the console's
+        // band free - the same sums as ConsoleBadge (tile x 0.13, 11..20 dp) x (pill 1.15 + margins 0.6), at its corner.)
+        val tileW = maxWidth + 12.dp
+        val consoleCorner = badgeCornerOr(Alignment.TopStart)
+        val band = if (lane != null && com.shelf.launcher.data.Features.consoleBadges.state.value && tileW >= 44.dp)
+            (tileW * 0.13f).coerceIn(11.dp, 20.dp) * (BadgeLogos.ART_PILL + 0.6f) - 6.dp else 0.dp
+        val atTop = consoleCorner == Alignment.TopStart || consoleCorner == Alignment.TopEnd || consoleCorner == Alignment.TopCenter
         FullText(
-            name, color = color, fontSize = 12.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
-            textAlign = TextAlign.Center, maxLines = 4
+            name, color = color, fontSize = size, lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+            textAlign = TextAlign.Center, maxLines = 4,
+            // (676e: in the band the card's badges leave free - BadgeLane.kt laneContent)
+            modifier = Modifier.padding(top = if (atTop) band.coerceAtLeast(0.dp) else 0.dp, bottom = if (!atTop) band.coerceAtLeast(0.dp) else 0.dp)
+                .laneContent(lane, 6.dp, shiftY = if (atTop) band.coerceAtLeast(0.dp) else 0.dp)
         )
     }
 }
@@ -1391,8 +1448,8 @@ internal fun StyleHome(
         HomeLayout.CUBE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCube(c, modifier) }
         // Update 330: Memory card (StyleMemoryCard.kt).
         HomeLayout.MEMCARD -> StyleMemoryCard(c, modifier)
-        // Update 330: Case flow (StyleCaseFlow.kt).
-        HomeLayout.CASEFLOW -> StyleCaseFlow(c, modifier)
+        // Update 330: Case flow (StyleCaseFlow.kt). (672b: its window turns the case itself into the window - LocalPickupSnapshot.)
+        HomeLayout.CASEFLOW -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleCaseFlow(c, modifier) }
         // Update 330, phase 2 (StyleCardboardBox.kt, StyleStorageBoxes.kt, StyleFileSelect.kt).
         HomeLayout.BOX -> StyleCardboardBox(c, modifier)
         HomeLayout.STORAGE -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleStorageBoxes(c, modifier) }
@@ -1407,7 +1464,8 @@ internal fun StyleHome(
         HomeLayout.CAMERA -> StylePocketCamera(c, modifier)
         HomeLayout.PANELS -> StylePanels(c, modifier)
         HomeLayout.MAGAZINE -> StyleMagazine(c, modifier)
-        HomeLayout.SHOP -> StyleRentalShop(c, modifier)
+        // (672b: Rental shop's window takes the shelf's own case off the board - LocalPickupSnapshot.)
+        HomeLayout.SHOP -> androidx.compose.runtime.CompositionLocalProvider(LocalPickupSnapshot provides true) { StyleRentalShop(c, modifier) }
         HomeLayout.TERMINAL -> StyleTerminal(c, modifier)
         HomeLayout.CINEMA -> StyleCinema(c, modifier)
         HomeLayout.ARCTIC -> StyleArctic(c, modifier)

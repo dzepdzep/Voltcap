@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -167,24 +168,22 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
             // "Channels" key had gone, Start filled the bottom row alone and More sat above it as a full-width bar - before Play.
             // There the pair is now Wii-like again: a round ••• key on the left, a filled Start on the right; the bar is only kept
             // where Back is still a key.)
-            if (small.isNotEmpty() && back != null) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    WiiMidKey(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, Modifier.widthIn(min = 150.dp), compact)
-                }
-                Spacer(Modifier.height(if (compact) 4.dp else 6.dp))
-            }
-            // Two prominent keys along the bottom: Channels (back to the tile) and Start.
+            // (674l, owner brief 15 Nov, KONKR x1.3 k674j: Start was stretched across the bottom and More a round ••• key. The bottom
+            // keys are now ONE row of identical Wii keys - Channels (where it is a key; B goes back to the tile), Start, then a worded
+            // MORE / LESS (the stack icon, never three dots) last - that scrolls a key at a time where it doesn't fit.)
             // (Update 507: the key named the console maker's own menu; "Channels" says where B goes.)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (back != null) WiiBigKey(if (more) WinAction(back.label, back.icon, { setMore(false) }, back = true) else back, if (more) "Back" else "Channels", pal, Modifier.weight(1f), compact)
-                if (play != null) WiiBigKey(play, if (play.label.equals("Continue", true)) "Continue" else "Start", pal, Modifier.weight(1f), compact, primary = back == null)
-                // (Owner, 13 Nov: the round ••• is the last key of every popup - after Start, never before it.)
-                if (back == null && small.isNotEmpty()) WiiRoundMore(WinAction(if (more) "Less" else "More", I.MoreHoriz, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }), pal, compact)
+            val backKey = back?.let { if (more) WinAction(it.label, it.icon, { setMore(false) }, back = true) else it }
+            val moreAct = if (small.isNotEmpty()) WinAction(if (more) "Less" else "More", androidx.compose.material.icons.Icons.Filled.Layers, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }) else null
+            val row = listOfNotNull(backKey?.let { it to (if (more) "Back" else "Channels") },
+                play?.let { it to (if (it.label.equals("Continue", true)) "Continue" else "Start") }, moreAct?.let { it to it.label })
+            UniformKeyRow(row.map { it.first }, 12.dp) { a ->
+                val lab = row.first { it.first === a }.second
+                WiiBigKey(a, lab, pal, Modifier.uniformFill(), compact, primary = a === play)
             }
         } else {
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ctx.buttons.forEach { a -> WiiBigKey(a, a.label, pal, Modifier.widthIn(min = 140.dp), compact) }
-            }
+            // (674b, owner brief 15 Nov: identical keys in one row that scrolls a whole key at a time (UniformKeyRow) - was a free
+            // sideways scroll that could leave a key half under the edge.)
+            UniformKeyRow(ctx.buttons, 12.dp) { a -> WiiBigKey(a, a.label, pal, Modifier.uniformFill().widthIn(min = 140.dp), compact) }
         }
     }
 }
@@ -193,15 +192,13 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
 @Composable
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 private fun WiiMorePage(items: List<WinAction>, pal: WiiPalette, compact: Boolean, modifier: Modifier) {
-    val scroll = rememberScrollState()
-    androidx.compose.foundation.layout.FlowRow(
-        modifier.sceneFadeEdges(scroll).verticalScroll(scroll).padding(10.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
-        // (Four to a row from seven actions on — two rows of whole keys, never a third row cut by the well's edge.)
-        maxItemsInEachRow = if (items.size > 6) 4 else 3
-    ) {
-        items.forEach { a -> WiiMidKey(WinAction(wiiSmallLabel(a.label), a.icon, a.onClick, a.focus, urgent = a.urgent), pal, Modifier.weight(1f), compact, tall = true) }
+    // (674l, owner brief 15 Nov, KONKR x1.3 k674j: the wrapping grid gave keys of different sizes, cut the second row at the
+    // well's edge and broke "Achievements" mid-word. One row of identical keys in the well that scrolls a key at a time; a word
+    // takes two lines where the row is narrow - never broken (UniformKeyRow's two-line keys).)
+    Box(modifier.padding(10.dp), contentAlignment = Alignment.Center) {
+        UniformKeyRow(items.map { a -> WinAction(wiiSmallLabel(a.label), a.icon, a.onClick, a.focus, urgent = a.urgent) }, 8.dp) { a ->
+            WiiMidKey(a, pal, Modifier.uniformFill(), compact, tall = true)
+        }
     }
 }
 
@@ -214,11 +211,11 @@ private fun WiiMidKey(a: WinAction, pal: WiiPalette, modifier: Modifier, compact
             Icon(a.icon, null, tint = if (on) LocalWiiRim.current else pal.ink, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
             Text(a.label, color = pal.ink, fontSize = if (compact) 13.sp else 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
-        val m = Modifier.fillMaxWidth().clip(s)
+        val m = Modifier.uniformFill().fillMaxWidth().clip(s)
             .background(Brush.verticalGradient(if (on) listOf(if (pal.light) Color.White else pal.keyOn, pal.keyOn) else listOf(pal.key, pal.well)))
             .border(if (on) 3.dp else 1.5.dp, if (on) LocalWiiRim.current else if (a.urgent) LocalWiiRim.current.copy(alpha = 0.7f) else pal.edge, s)
             .padding(horizontal = 12.dp, vertical = if (tall) (if (compact) 6.dp else 10.dp) else (if (compact) 4.dp else 6.dp))
-        if (tall) Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) { body() }
+        if (tall) Column(m, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterVertically)) { body() }
         else Row(m, horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) { body() }
     }
 }

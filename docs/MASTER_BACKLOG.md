@@ -1,6 +1,6 @@
 # VoltCap master backlog — single source of remaining work
 
-Last reconciled **13 Nov 2026 (update 529c: section 0 and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
+Last reconciled **15 Nov 2026 (v0.6.72 released; updates 672a-d, 673a-c: section 0)**; before that **13 Nov 2026 (update 529c: section 0b and docs/REQUEST_COVERAGE_529.md)**; before that **11 Nov 2026 (v0.6.70 published; batch 523; base reconciliation batch 520)** against main `cc646b4` (v0.6.70, versionCode 77), the batch 505–519 evidence
 (project docs POPUP_BATCH_505–516, SECURITY_519_RELEASE), ROADMAP_070.md, REQUESTS_CHECKLIST.md, CARTS_468/469,
 E1E2_REFS_487.md and the code. Where an older document still says OPEN, the newer evidence listed here wins. ROADMAP_070.md and
 REQUESTS_CHECKLIST.md are history; update only this file.
@@ -13,7 +13,80 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
-## 0. Update 529 / 529b / 529c (13 Nov 2026) - newest; the full per-request view is docs/REQUEST_COVERAGE_529.md
+## 00. Owner priorities 17 Nov 2026 (consolidated request; newest - this order wins)
+Each line points at its matrix row (docs/REQUIREMENTS_MATRIX.md section H); no item is repeated elsewhere - older lines that
+cover the same thing are marked "-> H<n>".
+1. **v0.6.73 as soon as genuinely safe.** (Owner decisions 17 Nov ~05:40: whole words (H4) -> v0.6.74, branch
+   claude/whole-words-v0674; H1-H3 merged into the dev line (677l); focused handheld checks only (HW-17), honest NOT TESTED.) Keep: status-bar points (H1), one profile picture (H2), Storage facts (H3), nav-bar
+   + badge-lane fixes (676a-f, already in releases.json), line heights + whole words (H4) ONLY if the full 53-layout results
+   show no unacceptable regressions - the owner reviews the Nova results first; otherwise isolate H4 to v0.6.74 rather than
+   delay the rest. RP Classic: targeted PASS != full gate (H6 fixture issue, fix separately). Same-row badges stay out (H10).
+   No merge / production install / release without the owner's GO.
+2. **Pixel font smaller (H9)** - audit usage, shared typography only, 60-65 % comparisons, before / after for approval. v0.6.74.
+3. **Badges (H10, H11)** - direction APPROVED 17 Nov; do NOT hide the achievement badge below 72 % - try a compact badge
+   variant / adaptive spacing so both stay visible; show the final comparison before implementation approval; same-row branch continues; alternatives to the 72 % minimum; optional Top Clip / Hanging Bottom
+   styles with mockups first; Classic default; per-layout override. v0.6.74+.
+4. **Status bar + Console Hub (H5, H7, H8, H14)** - permanent QA rules; adaptive rearrangement at extreme sizes; D347 / D348;
+   keep the chosen Cube Facet design.
+5. **Achievements page (H12)** - Recently Unlocked visible on open, no auto-scroll past it; animation overhaul; recordings. v0.6.74.
+6. **Thor dual-screen (H13)** - cloud investigation (multi-display tasks, focus, lifecycle, Recents), hardware verification queued.
+7. **Other v0.6.74:** Save Sync 529 (P11 / A), Flip 2 charging loop (G10, HW-3), App Drawer Open on screen + second-screen dock
+   (HW-10), native popup pages (P2), pickup / return polish (P4), everything already in this backlog.
+8. **Autonomy:** the existing hourly cloud task only (no new scheduled tasks); highest-priority unblocked item each run; dashboard
+   says implemented / tested / owner-approved / released separately; v0.6.73 fixes kept apart from v0.6.74 experiments; notify
+   the owner only for hardware, a design decision or release authorization; no repeated multi-hour hardware gates when a focused
+   check is enough; verify the dev branch at start (never work on main); respect the lock.
+
+## 0. v0.6.72 released; updates 672a-d, 673a-g (15 Nov 2026) - newest
+
+**Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
+equal the release record; signer `88ce4b67…f344197` on both (re-checked from the GitHub downloads 15 Nov). Flip 2 real Voltcap
+0.6.72 (first install 2026-10-19 kept); KONKR real Voltcap still 0.6.69 (not upgraded: needs the owner's separate OK).
+**Development line for 0.6.73:** `repair/0.6.72-windows-tests` (worktree `int`), pushed as `claude/qa-0672-repair`: 91d3bf86 (v0.6.72
+production pins), c0e98022 (672a), 7f7a74d2 (pins file LF), 3deaca0d (672b/c), 45286cd6 (672d) + the docs commit.
+
+| Item | Status | Evidence / next |
+|---|---|---|
+| TV room "Full details" cut at x1.3 (D310) | DONE (672a) | f673a Flip 2 x1.3, k673c KONKR x1.3, f673b Flip 2 x1.0: PASS |
+| Record crate More: facts 2 px sliver (D311); repeated console / year (D315) | DONE (672a) | f673a / k673c PASS |
+| Play-size rule: Record crate (D312) | DONE (672a + 672c crateKeyMin) | f673a / f673d / k673c PASS |
+| Play-size rule: Storage tabs (D313), Case flow (D314) | CLOSED - checker errors (Play measured against a page tab; top-edge row buckets). App unchanged; popclip fixed, self-tests on the real dumps | the same app screens grade FAIL with the old checker, PASS with the new |
+| Record crate More at x1.3 on the KONKR: four keys and ••• not drawn (D316) | DONE (672c) | k673c PASS |
+| Cardboard box insert sheet at x1.3 on the KONKR: Saves line cut, story sliver (D317) | DONE (672a / c / d) | k673c geometry PASS, f673d PASS |
+| Cardboard box rapid A B A B (owner: keep the RC2 fix) | KEPT; one intermittent "left open" in gate k673c (D319, suspect) | not reproduced: r673c 16/16, r673d 40/40 closed (trace-recording rounds) - watch |
+| Cube menu Classic x1.3: achievement chip cut (D318) | DONE (672c) | KONKR x1.3 pkk673d_13: "80%" whole on the card |
+| Cube menu Classic x1.3: small game card | OPEN (design) | the docked cube's band + the info area at x1.3 leave the row ~60 dp on a 556 dp-wide screen; options: a left dock below 600 dp at large text, or a slimmer band - owner's pick |
+| **Physical pickups** | **14 / 14 move the real object (implemented; owner review pending)** | Case flow, Rental shop (672b); Disc station and Coverflow details Inspect lift (673b: A leaves the object in place, Inspect lifts it where it stands, B returns it - Flip 2 pkf673k, KONKR pkk673m). D326 (the lifted disc lacked the tray's sheen) fixed in 673c |
+| **Native popup pages** | **12 / 53 layouts** (6 scenes: Storage, Night, Tiles + Grid, Blades, shelf family x4, Twin x3) | 41 layouts still open Details / Achievements / Options on the shared page (recounted from NATIVE_PAGE_SCENES, 15 Nov) |
+| Emulator trial workflow did not run on the RC commits | FIXED (672a) | the paths filter skipped app-only commits; "[emulator-qa]" in the head commit message is enough now |
+| Production pins for 0.6.72 | DONE on the dev branch (91d3bf86 + LF 7f7a74d2) | reach main with the next PR |
+| Rental shop tag at x1.3: keys cut "CATALOGU" / "ACHIEVEME" (D320; narrower beside the held case since 672b) | DONE (673a) | k673e KONKR x1.3 PASS, f673e Flip 2 x1.3 PASS (stricter checker); KONKR: three key rows, the last under the scroll fade |
+| QA checker passed D320 (two lines in a one-line box only a warning) (D321) | FIXED (673a) | geomcheck: a whole line out of its box = FAIL; self-test on the real dumps; 0 other reports in 793 dumps |
+| Pickup windows: ~0.10-0.14 s from A to first motion on the KONKR (D322) | OPEN (P2 perf, measured) | shared by every pickup since 0.6.71; the window's first frame ~63 ms + the flight's target one more frame |
+| Inspect pressed in an open own window: parts faded in again, home place empty for frames (D323, D324) | DONE for Disc station / Coverflow details (673b); OPEN for the other Inspect-only windows | the in-place lift; the others still re-lay out (InspectLayout) - check on hardware |
+| Disc station with More open at x1.3 on the KONKR: keys took the deck, LCD title squeezed (D327) | DONE (673d) | k673g KONKR x1.3 PASS (k673f FAIL); keys at most 45 % of the panel, scrolling past it |
+| Disc station LCD at x1.3 on the Flip 2: facts never had room, the story cue laid out 0 px high with More open (D328) | DONE (673e) | f673h 9/9, f673i 7/7, k673h 9/9 PASS (x1.3); the LCD now shows CONSOLE / YEAR / MADE BY / GENRE |
+| Popup checker graded rows that were never placed (D329) | FIXED (673e) | geomcheck leaves out unplaced nodes; self-test on the f673g dump (the 0 px cue still FAILs) |
+| CI Verify lost its runner 3x in the unit tests (D325) | WATCHDOG + 24.04 / latest side by side (673e) | 673b's progress annotations died with the runner (6308b2a4, 15 Nov 11:01). tools/ci/watchdog.py stops the tests before the machine starves and names why; Windows: 2798 / 0 |
+| Unit test EndlessOnceRoboTest[BOX n=12 x1] failed once at its first frame (D330) | SUSPECT (flaky test clock) | re-run 2798 / 0; watch CI |
+| **Uniform button & menu system (owner brief 15 Nov, D331)** | **CODE DONE for every popup family (674a-j); hardware gates in progress; owner review pending** | 673g: KeyRow (27 windows), page bars, TV strip, plain window, shared page, Cross / Side, Box sheet, File select, Coverflow details. 674: Case flow, Memory card, Cinema (Play first in the row under 440 dp), Blades, Storage, Wii channel, Orbit, Airy, Bubble, Panels, Night, Rental shop tag (Play first, not stretched), Terminal, Camera, Magazine / Cinema pages; BANNER / CLASSIC / SHARED / ROW_* checked (already uniform). Two-line keys on narrow rows (item 4). Status lines >= 24 dp. Next: promote warn-uniform to FAIL once the full gates are clean |
+| Record crate x1.3: one key at a time (item 4) | OWNER DECISION 15 Nov: option A, vertical menu (674e-g) | identical keys, Play first, MORE last, whole keys only (2-3), track list keeps 2 whole rows, no fade, D-pad scroll; x1.0 keeps its row; no other menu turns vertical. Owner must approve from a real screenshot; popclip does not reach its MORE yet (debug) |
+| D332 x1.3 squeezes (Airy, Blades name / facts, Orbit, Circuit, Library, Dashboard, File select, Terminal) | FIXED in code (674e-j) | Flip 2 x1.3 f674i 6 / 6 PASS; KONKR x1.3 k674i before 674j 2 / 6 - re-gate on 674j |
+| Flip 2 charging sparkle replays while plugged in (owner report 15 Nov) | FIXED in code (674i, ChargeLoop674Test); NOT on any device | Voltcap's 80 % limit paused via input_suspend, Android said "not plugged", the pause was released and re-taken every 1-2 s (each a new plug-in). Needs the owner's approval for a real-app install / test (charging change) |
+| CI test worker 9.6 GB on ubuntu-24.04 (60fd7c4e, D325) | FIXED (674e forkEvery 400) | 9c11c496 green on both runners; return CI to one job after a few green runs |
+| Checker: pixel compare "no window action buttons to compare" on uniform rows | OPEN (QA tool) | 7-13 NOT TESTED rows per full gate |
+| Home glyph centring: Bar ◀, Library R2, Spot START, Arcade main ▶ | OPEN (small) | glyphs check, x1.3 / x1.0 |
+| Cube first A on the KONKR x1.3; Crate rapid once (KONKR x1.0); TV rapid once (D333) | OPEN / watch | |
+| Native pages: Disc station (673f) | DONE (code + unit tests; owner review pending) | the deck's tracks on its LCD (Info 01, Details 02, Achievements 03, Options 04), L1 / R1 skip; KONKR k673j / Flip 2 f673k screenshots. 13 / 53 layouts now draw their own pages |
+| Full popup gates on 673e2: KONKR x1.0 k673i 51 / 53 (D333), Flip 2 x1.3 f673j 45 / 53 (D332) | DONE (graded) | the More-state failures are re-checked after the uniform rows |
+| Save Sync (owner's own test, 15 Nov) | OWNER REPORTS IT WORKED | the owner tested Save Sync during this session and answered "worked" (which build / flow not stated); the Real Drive E2E line in 0b stays as written until the build is known |
+
+Gates on this line (isolated QA app, fixture library, launches blocked, QA snapshot restored diff=0 after each):
+f673h Flip 2 x1.3 9/9 (673e) · f673i Flip 2 x1.3 7/7 · k673h KONKR x1.3 9/9 (673e2) · k673g KONKR x1.3 DISCS PASS (673d) · f673g Flip 2 x1.3 COVERDETAILS PASS, DISCS FAIL (D328) · k673e KONKR x1.3 SHOP PASS · f673e Flip 2 x1.3 SHOP PASS (673a) · f673a Flip 2 x1.3 10/10 · f673b Flip 2 x1.0 11/11 · f673c Flip 2 x1.3 10/11 (Box overlap -> 672d) · f673d Flip 2 x1.3 3/3 ·
+k673a KONKR x1.3 7/10 · k673b 9/11 · k673c 10/11 (Box rapid once). Unit tests (Windows) 2798 / 0 failures (673e; one flaky failure on the first run, D330); static checks strict PASS (673e, same counts).
+Not run on this line yet: KONKR x1.0 full gate, RP Classic / Thor / Odin (not connected or not used: max two handhelds), emulator.
+
+## 0b. Update 529 / 529b / 529c (13 Nov 2026) - previous; the full per-request view is docs/REQUEST_COVERAGE_529.md
 
 | Item | Status | Evidence / next |
 |---|---|---|
@@ -110,6 +183,9 @@ Statuses:
 | Game shelf extraction / Coverflow pickup motion (523f) | owner's eye on the device |
 
 ## 3. Genuinely open and reproducible
+- **Status bar blocks (owner 16 Nov, new; status-bar fit -> H1 / H14):** the status bar's separate blocks look wrong - either one single block, or let each
+  layout draw the status bar its own way (it does not have to be the same fixed bar on every layout). Owner asked which layout he
+  saw it on: unknown yet. Design change -> owner's look approval needed; ask with a side-by-side before making it the default.
 
 | Item | Status / next step |
 |---|---|

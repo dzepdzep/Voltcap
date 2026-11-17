@@ -720,6 +720,7 @@ private fun HomeTile(
     // Cartridge / disc / box drawn as the real thing: it stands free in the tile's place (no square behind it, no
     // ring round the square — no empty bands next to the object); a light pool under the one you're on.
     val free = isFreeMedia(cardArtType, game.platform)
+    val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
     Box(
         modifier
             .size(tile)
@@ -796,6 +797,7 @@ private fun HomeTile(
                     .background(placeholderBrush(game.hue))
             )
             .pointerInput(game.stableKey) { detectTapGestures { tap() } }
+            .badgeTile(lane)
     ) {
         val pick = if (drawnMediaWanted(cardArtType, typedArtUrl, game.platform)) mediaFor(game.platform, mixed, asDisc, gameKey = game.stableKey) else null
         val box3d = if (cardArtType == CardArtType.CASE) caseMarker(game.platform) else null
@@ -838,13 +840,25 @@ private fun HomeTile(
             AppIconArt(game.packageName, wide = false, modifier = Modifier.fillMaxSize())
         } else {
             // No art yet: the name, so the tile still says which game it is.
+            // (676z, Nova x1.3 badge review: the console badge Auto puts in the bottom right covered the name's last line
+            // ("Co[PlayStation 2]ssus"). With the badge at the bottom the name stands above its pill - same corner sums as
+            // ConsoleBadge: (tile x 0.13, 11..20 dp) x (pill 1.15 + margins 0.6).)
+            val pillAt0 = achChipAlign(look.trophyCorner)
+            val consoleAt0 = badgeCornerOr(
+                if (pillAt0 == Alignment.TopStart || pillAt0 == Alignment.TopEnd || pillAt0 == Alignment.TopCenter) Alignment.BottomEnd else Alignment.TopStart
+            )
+            val consoleRoom = if (com.shelf.launcher.data.Features.consoleBadges.state.value &&
+                (consoleAt0 == Alignment.BottomEnd || consoleAt0 == Alignment.BottomStart || consoleAt0 == Alignment.BottomCenter))
+                (tile * 0.13f).coerceIn(11.dp, 20.dp) * (BadgeLogos.ART_PILL + 0.6f) else 0.dp
             FullText(
                 titles.display(game.name),
                 color = Color.White.copy(alpha = 0.92f),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 3,
-                modifier = Modifier.align(Alignment.BottomStart).padding(10.dp)
+                // (676z2: fixed content in the tile's lane - the count keeps clear of the name, never over it.)
+                modifier = Modifier.align(Alignment.BottomStart).padding(start = 10.dp, top = 10.dp, end = 10.dp, bottom = 10.dp + consoleRoom)
+                    .laneContentAt(lane, Alignment.BottomStart, 10.dp, 10.dp + consoleRoom)
             )
         }
         if (!focused && look.otherGames != com.shelf.launcher.data.OtherGamesLook.NORMAL) {
@@ -890,6 +904,7 @@ private fun HomeTile(
                 Modifier
                     .align(pillAt)
                     .padding(chipPad)
+                    .laneBadge(lane, BadgeKind.PROGRESS, pillAt, chipPad)
                     .height(chipH)
                     .widthIn(max = pillMax)
                     .clip(RoundedCornerShape(50))
@@ -921,7 +936,7 @@ private fun HomeTile(
         }
         // (Update 317aj, Toni: the console badges — R1 Console badges — on Tile home's tiles too, as on the Voltcap row:
         // the top left, or the top right when the achievement count has the top left. Not on a case printing its console.)
-        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null)
+        ConsoleBadge(game.platform, badgeAt, game.packageName, onCase = box3d != null, lane = lane)
     }
 }
 

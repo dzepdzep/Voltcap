@@ -20,8 +20,15 @@ concurrency:
 
 jobs:
   verify:
-    name: Source-check without Discord SDK (not a release)
-    runs-on: ubuntu-latest
+    name: Source-check without Discord SDK (not a release) - ${{ matrix.os }}
+    # (673e, D325: the hosted runner was lost three times in the unit tests since 15 Nov 07:57 - 7f7a74d2, 9c9f41ac, 6308b2a4 -
+    # while 21dd393c passed at 04:27; the ubuntu-latest label is moving to Ubuntu 26 since 19 Oct. Both images side by side until
+    # the cause is known: the same tests on 24.04 and on what ubuntu-latest gives now. Back to one job afterwards.)
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     steps:
       - name: Checkout exact commit
@@ -45,14 +52,44 @@ jobs:
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
       - name: Build and run JVM unit tests
-        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest :app:assembleDebug
+        # (673b: bounded below the job's 60 min - a hung test (7f7a74d2, 9c9f41ac) now ends the step and the next one names it.)
+        # (673e, D325: the step's timeout never fired - the runner itself was lost. tools/ci/watchdog.py stops the tests before
+        # the machine runs out of memory or at 35 min and says why in public annotations: memory, load, the test in flight,
+        # the biggest processes. assembleDebug has its own step now, after the tests.)
+        timeout-minutes: 40
+        run: python3 tools/ci/watchdog.py --progress app/build/test-progress.log --min-avail-mb 1500 --limit-min 35 -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest
+      - name: Name unfinished, failed and slow unit tests (public annotations)
+        if: always()
+        run: python3 tools/ci/test_progress.py app/build/test-progress.log
+      - name: Build the debug APK (stubbed Discord SDK)
+        timeout-minutes: 15
+        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:assembleDebug
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: update-310-test-results
+          name: update-310-test-results-${{ matrix.os }}
           path: |
             app/build/reports/tests
             app/build/test-results
           if-no-files-found: ignore
       # Do not upload the stubbed debug APK: it is not a valid user build.
+
+  # (678s, owner-authorized 17 Nov 16:09 Berlin: main's branch protection requires a check named exactly "Source-check without
+  # Discord SDK (not a release)". Since 673e the job above runs on two images and reports as "... - ubuntu-24.04" and
+  # "... - ubuntu-latest", so the required name never arrived. This bridge carries the legacy name and depends on BOTH image
+  # jobs: needs.verify.result is "success" only when every matrix job succeeded; failure, cancelled or skipped fail the bridge.
+  # if: always() makes it report (and fail) even when a matrix job failed, instead of being skipped. No dummy success.)
+  verify-gate:
+    name: Source-check without Discord SDK (not a release)
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Both Ubuntu verification jobs succeeded
+        env:
+          RESULT: ${{ needs.verify.result }}
+        run: |
+          echo "verify matrix (ubuntu-24.04 + ubuntu-latest) result: $RESULT"
+          if [ "$RESULT" != "success" ]; then echo "::error::verification jobs did not all succeed ($RESULT)"; exit 1; fi

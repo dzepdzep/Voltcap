@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,17 +56,46 @@ import coil.compose.AsyncImage
 
 private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else Color.White
 
-/** A column of keys (menus that run down the screen: Cross menu, Side menu); scrolls when it doesn't fit. */
+/**
+ * A column of keys (menus that run down the screen: Cross menu, Side menu); scrolls when it doesn't fit.
+ * (673g, owner brief 15 Nov - "Vertical menus, WWE SvR 2011 style": every item its own key of the same width and the same height
+ * - the tallest item's - edges in line, the gaps even; status lines (Save sync not set up) under the keys, not among them.)
+ */
 @Composable
 private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true, key: @Composable (WinAction) -> Unit) {
-    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) { keys.forEach { key(it) } }
+    val actions = keys.filterNot { it.status }
+    val status = keys.filter { it.status }
+    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        UniformKeyColumn(actions, 4.dp, fill = true, key = key)
+        if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
+    }
 }
 
-/** A full-width list row key (icon + word), lit as a band. */
+/**
+ * A full-width list row key (icon + word), lit as a band.
+ * (673g, owner brief 15 Nov: each item of a vertical menu is its own rectangular key - a faint fill and edge at rest, the band
+ * when lit - at the size its column gives every item; a status line (WinAction.status) is words only.)
+ */
 @Composable
 private fun ListKey(a: WinAction, ink: Color, lit: Color, litInk: Color, height: androidx.compose.ui.unit.Dp = 38.dp, font: FontFamily? = null) {
+    if (LocalKeyAsStatus.current) {
+        SceneControl(a, Modifier.fillMaxWidth()) { on ->
+            val c = if (a.urgent) Color(0xFFFF8A3D) else ink.copy(alpha = ink.alpha * 0.8f)
+            // (674a: a status line can be tapped (Save sync not set up opens its setup) - 24 dp at least, the touch gate's minimum; f673l Side.)
+            Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).background(if (on) lit.copy(alpha = 0.35f) else Color.Transparent).padding(horizontal = 12.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Icon(a.icon, null, tint = c, modifier = Modifier.size(14.dp)); Spacer(Modifier.width(8.dp))
+                Text(sceneLabel(a.label), color = c, fontSize = 12.sp, fontFamily = font, maxLines = 3)
+            }
+        }
+        return
+    }
+    val uniform = LocalUniformKey.current
+    val box = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
     SceneControl(a, Modifier.fillMaxWidth()) { on ->
-        Row(Modifier.fillMaxWidth().heightIn(min = height).background(if (on) lit else Color.Transparent).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().then(if (uniform) Modifier.fillMaxHeight() else Modifier).heightIn(min = height).clip(box)
+            .background(if (on) lit else ink.copy(alpha = 0.06f)).border(1.dp, if (on) lit else ink.copy(alpha = 0.16f), box)
+            .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(a.icon, null, tint = if (on) litInk else ink, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(12.dp))
             Text(sceneLabel(a.label), color = if (on) litInk else if (a.urgent) Color(0xFFFF8A3D) else ink, fontSize = if (a.primary) 16.sp else 14.sp,
@@ -168,7 +198,10 @@ internal fun DashCard(ctx: WinSceneCtx) {
         shadowElevation = 16.dp.toPx() * e
     }.background(surface).border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(12.dp))) {
         // Header strip with the art.
-        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.3f, 150.dp))) {
+        // (674h, D332 x1.3: on a short window (KONKR; Flip 2 with More open) the art took 30 % first and the three stat widgets
+        // were laid out 0-1 px high. There the strip is a band of 16 %; the stats keep their room.)
+        // (674j, KONKR x1.3 k674i with More open: still short of the stats' values - under 400 dp the band goes.)
+        if (ctx.maxH >= 400.dp) Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * (if (ctx.maxH < 440.dp) 0.16f else 0.3f), 150.dp))) {
             (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, surface))))
         }
@@ -207,6 +240,13 @@ internal fun DashCard(ctx: WinSceneCtx) {
 
 /** (Update 514) The drawer's name (two lines), its console line and the gap under them — what sits between picture and menu. */
 private val SIDE_DRAWER_TEXT = 84.dp
+/** (674n) What KeyColumn draws between keys, and the room one status line under them takes (24 dp touch size, one 12 sp line). */
+private val SIDE_KEY_GAP = 4.dp
+private val SIDE_STATUS_H = 24.dp
+private val SIDE_ROUNDING = 2.dp
+/** (674n, KONKR x1.0 window 360 dp: 6 keys + a status line need 228 dp - with the picture held at 64 dp they were 12 dp short and
+ *  the menu scrolled. The picture now gives up height down to 44 dp before any key scrolls.) */
+internal val SIDE_ART_MIN = 44.dp
 
 @Composable
 internal fun SideDrawer(ctx: WinSceneCtx) {
@@ -216,8 +256,14 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
     // Inspect sat under the drawer's edge. On a short screen the picture gives up height first, down to 64 dp, so every row
     // fits at its smallest readable height (30 dp); where there is room (the Thor) it keeps its whole 2.1 : 1.)
     val keys = sceneKeys(ctx)
-    val rowsNeed = 30.dp * keys.size + 2.dp * (keys.size - 1).coerceAtLeast(0)
-    val headerH = if (ctx.page != WinPage.MAIN) w / 2.1f else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(64.dp))
+    // (674n, KONKR x1.0 k674m: Save sync cut 13 px at the drawer's bottom - the fit counted the status line as a 30 dp row and
+    // the gaps as 2 dp, but KeyColumn draws 4 dp gaps and the status line under the keys; the list fell 1 dp short of fitting,
+    // scrolled, and its "whole rows" were whole only by the wrong sums. The sums now match what KeyColumn draws.)
+    val nAct = keys.count { !it.status }
+    val nStat = keys.size - nAct
+    val statusNeed = (SIDE_STATUS_H + SIDE_KEY_GAP) * nStat
+    val rowsNeed = 30.dp * nAct + SIDE_KEY_GAP * (nAct - 1).coerceAtLeast(0) + statusNeed + SIDE_ROUNDING
+    val headerH = if (ctx.page != WinPage.MAIN) w / 2.1f else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.align(Alignment.CenterStart).width(w).fillMaxHeight().graphicsLayer {
             translationX = -(1f - sceneEase(ctx.reveal())) * size.width
@@ -237,11 +283,24 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
             // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
             // when there is room, down to 30 dp when not, scrolling only below that.)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) {
-            val rowH = fitRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp)
+            // (674o, Flip 2 x1.0 f674o: the fit filled the room to the last dp and pixel rounding left the status line 51 px -
+            // under its 24 dp (54 px) touch size. 2 dp stay free for rounding.)
+            val rowRoom = maxHeight - statusNeed - SIDE_ROUNDING
+            val rowH = fitRowHeight(rowRoom, nAct, SIDE_KEY_GAP, 40.dp, 30.dp)
             // (Update 488b: with many rows (the Thor's 8) the list scrolls — then a whole number of rows fills the room, so
             // the last one shown is never cut, p488d: Back cut 13 px.)
-            val snapH = if (rowH == null) snapRowHeight(maxHeight, keys.size, 2.dp, 40.dp, 30.dp) else null
+            val snapH = if (rowH == null) snapRowHeight(maxHeight, nAct, SIDE_KEY_GAP, 40.dp, 30.dp) else null
             KeyColumn(keys, Modifier.fillMaxWidth(), scroll = rowH == null) { k ->
+                // (674k, Flip 2 x1.0 f674j: the drawer drew its status line as one of its rows, at the fitted height - 38 px, under
+                // the 24 dp touch size. A status line is words under the menu, at least 24 dp.)
+                if (LocalKeyAsStatus.current) SceneControl(k, Modifier.fillMaxWidth()) { on ->
+                    Row(Modifier.fillMaxWidth().heightIn(min = 24.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent).padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Icon(k.icon, null, tint = if (k.urgent) Color(0xFFFF8A3D) else Color.White.copy(alpha = 0.6f), modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(sceneLabel(k.label), color = if (k.urgent) Color(0xFFFF8A3D) else Color.White.copy(alpha = 0.7f), fontSize = 12.sp, maxLines = 3)
+                    }
+                } else
                 SceneControl(k, Modifier.fillMaxWidth()) { on ->
                     Row(Modifier.fillMaxWidth().height(rowH ?: snapH ?: 40.dp).background(if (on) a.copy(alpha = 0.18f) else Color.Transparent), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.width(4.dp).fillMaxHeight().background(if (on) a else Color.Transparent))
@@ -440,7 +499,9 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(6.dp))
             if (ctx.page == WinPage.MAIN) {
                 // Pins: the facts numbered like a chip's pinout.
-                Column(Modifier.heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
+                // (674g, x1.3 f674f / k674f with More open: the pinout took up to 45 % of the window first and the status line under
+                // the keys was cut (Flip 2) or 0 px (KONKR). The pinout gives way - it scrolls - and the keys and that line keep theirs.)
+                Column(Modifier.weight(1f, fill = false).heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
                     sceneFacts(ctx).forEachIndexed { i, (l, v) ->
                         Row(Modifier.padding(vertical = 1.dp)) {
                             Text("P%02d".format(i + 1), color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(36.dp))
@@ -503,7 +564,8 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
                 if (ctx.total > 0) Box(Modifier.padding(top = 6.dp).fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)).background(track)) {
                     Box(Modifier.fillMaxWidth(ctx.earned.toFloat() / ctx.total).fillMaxHeight().background(if (done) com.shelf.launcher.ui.theme.Ds.gold else green))
                 }
-                ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.padding(top = 8.dp)) }
+                // (674g, KONKR x1.3 k674f with More open: no room left for the story - it gives way by design (Details has it whole).)
+                ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.semantics { this[QaClip.GivesWay] = true }.padding(top = 8.dp)) }
             } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
         }
     }

@@ -424,16 +424,14 @@ private fun CoverActionColumn(ctx: WinSceneCtx, keys: List<WinAction>, a: Color,
     val status = keys.filter { k -> k !in more && ctx.chips.any { it.label == k.label } }
     val bars = keys.filter { it !in more && it !in status }
     val barH = if (compact) 28.dp else 32.dp
+    // (673g, owner brief 15 Nov - vertical menus, WWE SvR 2011 style: every action - More too, the last - a bar of the same width
+    // and height in one column; the save status a line of its own under them, not between the keys.)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (compact) 5.dp else 6.dp)) {
-        bars.forEach { k ->
+        UniformKeyColumn(bars + more, if (compact) 5.dp else 6.dp, fill = true) { k ->
             SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
                 size = 12.sp, pad = 12.dp, height = barH, lineHeight = 15.sp, wide = true)
         }
         status.forEach { k -> CoverStatusLine(k, a, ink, muted) }
-        more.forEach { k ->
-            SceneKey(k, Color.White.copy(alpha = 0.07f), a, ink, onColour(a), Color.White.copy(alpha = 0.16f), a, RoundedCornerShape(8.dp),
-                size = 12.sp, pad = 10.dp, height = barH, lineHeight = 15.sp)
-        }
     }
 }
 

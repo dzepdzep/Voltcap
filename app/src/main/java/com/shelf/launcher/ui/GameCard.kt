@@ -216,6 +216,7 @@ fun GameCard(
     val latestOnFocused = androidx.compose.runtime.rememberUpdatedState(onFocused)
     // Names of the other games aren't written anywhere — only the game you're
     // on gets its name, once, next to the row (GameDock).
+    val lane = rememberBadgeLane() // (676a: the card's badges never overlap - BadgeLane.kt)
     Box(
         modifier = Modifier
             .width(width)
@@ -293,6 +294,7 @@ fun GameCard(
             )
             .clip(cardShape)
             .background(placeholderBrush(game.hue)))
+            .badgeTile(lane)
     ) {
         // Unfocused cards show the portrait 600x900 grid; the focused card
         // swaps to the wide ~920x430 capsule so the banner isn't just the
@@ -575,7 +577,7 @@ fun GameCard(
             val corner = badgeCornerOr(if (badgeLow) Alignment.BottomStart else Alignment.TopStart)
             // (Update 202: not over a case — its printed band shows the console already; the corner stays free then.)
             val onCase = pick == null && box3d != null && !(look.spines && !focused && !banner && !pinnedWide)
-            ConsoleBadge(game.platform, corner, game.packageName, onCase = onCase)
+            ConsoleBadge(game.platform, corner, game.packageName, onCase = onCase, lane = lane)
             if (com.shelf.launcher.data.Features.consoleBadges.state.value && !(onCase && caseShowsConsole(game.platform))) corner else null
         }
         val badgeTop = badgeCorner == Alignment.TopStart
@@ -604,6 +606,7 @@ fun GameCard(
                 Modifier
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
+                    .laneBadge(lane, BadgeKind.NEW_UNLOCK, Alignment.TopEnd, 4.dp)
                     .clip(RoundedCornerShape(50))
                     .drawBehind { drawRect(liveColors.value.accent) }
                     .padding(horizontal = 5.dp, vertical = 2.dp),
@@ -651,6 +654,8 @@ fun GameCard(
                         // (Update 240, #32/#57: on a disc's strip, 2 dp in, and at most half the tile when the game's state
                         // shares the strip.)
                         .padding(if (discChips && trophyAlign == Alignment.BottomEnd) 2.dp else 4.dp)
+                        // (676a: clear of the console badge - BadgeLane.kt)
+                        .laneBadge(lane, BadgeKind.PROGRESS, trophyAlign, if (discChips && trophyAlign == Alignment.BottomEnd) 2.dp else 4.dp)
                         // (Update 211: never wider than the card — the text shrinks / ends with … instead of being cut off.)
                         .widthIn(max = (if (discChips && GameStates.byKey[game.stableKey] != null) width / 2 - 4.dp else width - 12.dp).coerceAtLeast(24.dp))
                         .clip(RoundedCornerShape(50))
@@ -1279,14 +1284,11 @@ private fun AchievementBadge(
                         tint = ShelfTheme.accent, modifier = Modifier.size(12.dp)
                     )
                     Spacer(Modifier.width(5.dp))
-                    Text(
+                    // (676r, D340 - RP Nova x1.3 Classic: "6/10 · 60% · 4 re…": shrink, then slide - rule 11, no "…".)
+                    FullText(
                         com.shelf.launcher.data.achievementProgress(earned, possible) +
                             (com.shelf.launcher.data.remainingNote(earned, possible)?.let { "  ·  $it" } ?: ""),
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        Color.White.copy(alpha = 0.85f), 11.sp, Modifier.weight(1f, fill = false), maxLines = 1, fontWeight = FontWeight.SemiBold
                     )
                 }
                 Spacer(Modifier.height(3.dp))

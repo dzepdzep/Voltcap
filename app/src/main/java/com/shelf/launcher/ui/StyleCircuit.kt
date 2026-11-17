@@ -411,8 +411,9 @@ private fun CircuitSwitch(c: StyleCtx, g: com.shelf.launcher.data.Game, ink: Col
                         .padding(vertical = 5.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(label, color = if (on) ink else Color.White.copy(alpha = 0.75f), fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                    // (676r, D340 - RP Nova x1.3: "SETTING" / "DETAIL" cut in their half of the row: shrink, then slide - rule 11.)
+                    FullText(label, if (on) ink else Color.White.copy(alpha = 0.75f), 10.sp, maxLines = 1, fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold)
                 }
             }
             Lcdb("SETTINGS", setOn, 1, Modifier.weight(1f)) { options(g) }

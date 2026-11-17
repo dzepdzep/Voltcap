@@ -1,0 +1,8 @@
+{
+ "_about": "676d (owner 16 Nov, decision 3A): the ONE key the isolated QA app (com.shelf.launcher.qa) is signed with, so every QA build updates the installed QA app in place (its settings kept) and a Google OAuth client registered for it keeps matching. Public certificate fingerprints only - the key itself is never in the repository (docs/claude/QA_SIGNING_KEY.md).",
+ "package": "com.shelf.launcher.qa",
+ "cert_sha256": "4d133dde91d791392b59885d3d522fe906cfda3275f9e2cf9076331288150055",
+ "cert_sha1": "16062d37e11160c3f70d1ebce3b43344f9c69b7b",
+ "alias": "androiddebugkey",
+ "since": "2026-11-16 (first QA build 8bd5e4a)"
+}

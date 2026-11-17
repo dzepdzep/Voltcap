@@ -165,6 +165,19 @@ def _label(n):
     return stripped or lab or "?"
 
 
+# (674l: the keys a popup's key group shows besides Play / Details / Back / More - with More open a scrolling uniform row shows
+# these, and the pixel compare found "no window action buttons" on 7-14 layouts per full gate (NOT TESTED). Status lines are
+# never keys (STATUS_WORDS).)
+POPUP_KEY_WORDS = re.compile(r"(?i)^(options|game options|achievements|inspect|save sync|sync( now)?|sleeve notes|track list|"
+                             r"catalogue card|manual|performance|perf|favou?rite|unfavou?rite|hide|share|zoom|edit|art|artwork|"
+                             r"rename|categories|category|profile|stats|statistics)$")
+
+
+def _is_popup_key(n):
+    lab = _label(n).strip()
+    return bool(POPUP_KEY_WORDS.match(lab)) and not STATUS_WORDS.search(lab)
+
+
 def _is_action(n):
     lab = _label(n)
     # ("Play" / "Continue" with more words after them — "Play on TV"; never "Played", a fact.)
@@ -173,6 +186,62 @@ def _is_action(n):
 
 def _key(n):
     return (_label(n), tuple(n.get("full") or ()))
+
+
+# (673g, owner brief 15 Nov - "Perfectly uniform console-game menus": every key in a group the same width and height, one MORE
+# (never MORE plus three dots) and last, status lines not drawn as keys.)
+STATUS_WORDS = re.compile(r"(not set up|^saves\b|synced|sync is|last sync|\bfps\b|\bwatts?\b)", re.I)
+
+
+def uniform_audit(wins, home=frozenset(), drawn=lambda n: True, tol=3):
+    """Key groups in the window's own controls that break the uniform-button rules: keys side by side (one row: the same
+    centre line) or stacked (each alone in its row, the same left edge) of different widths or heights; three dots as a key;
+    MORE more than once or not the last of its row; a status line drawn as a key in a row of keys. A list of findings."""
+    out = []
+    for w in wins:
+        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "control"
+               and len(n.get("full") or []) == 4 and n["full"][2] > 0 and n["full"][3] > 0 and (n.get("shown") or [0, 0, 0, 0])[2] >= 0]
+        if any(re.fullmatch(r"\s*(•••|\.\.\.|⋯)\s*", _label(n)) for n in ctl):
+            out.append("three dots as a key")
+        word = lambda n: re.sub(r"[^A-Za-z]", "", _label(n)).lower()
+        mores = [n for n in ctl if word(n) in ("more", "less")]
+        if len(mores) > 1:
+            out.append(f"MORE / LESS {len(mores)} times")
+        rows = []
+        for n in sorted(ctl, key=lambda n: n["full"][1] + n["full"][3] / 2):
+            cy = n["full"][1] + n["full"][3] / 2
+            for r in rows:
+                if abs(r[0] - cy) <= tol:
+                    r[1].append(n); break
+            else:
+                rows.append([cy, [n]])
+        alone = []
+        for _, grp in rows:
+            if len(grp) < 2:
+                alone += grp; continue
+            grp.sort(key=lambda n: n["full"][0])
+            ws = [n["full"][2] for n in grp]; hs = [n["full"][3] for n in grp]
+            if max(ws) - min(ws) > tol or max(hs) - min(hs) > tol:
+                out.append("keys side by side of different sizes: " + ", ".join(f"{_label(n)[:12]} {n['full'][2]}x{n['full'][3]}" for n in grp[:6]))
+            if any(m in grp for m in mores) and word(grp[-1]) not in ("more", "less"):
+                out.append(f"MORE not the last of its row ({_label(grp[-1])[:14]} after it)")
+            st = [n for n in grp if STATUS_WORDS.search(_label(n))]
+            if st:
+                out.append("a status line drawn as a key: " + _label(st[0])[:30])
+        cols = []
+        for n in sorted((n for n in alone if not STATUS_WORDS.search(_label(n))), key=lambda n: n["full"][0]):
+            for c in cols:
+                if abs(c[0] - n["full"][0]) <= tol:
+                    c[1].append(n); break
+            else:
+                cols.append([n["full"][0], [n]])
+        for _, grp in cols:
+            if len(grp) < 2:
+                continue
+            ws = [n["full"][2] for n in grp]; hs = [n["full"][3] for n in grp]
+            if max(ws) - min(ws) > tol or max(hs) - min(hs) > tol:
+                out.append("stacked keys of different sizes: " + ", ".join(f"{_label(n)[:12]} {n['full'][2]}x{n['full'][3]}" for n in grp[:6]))
+    return out
 
 
 def clip_evaluate(dump, limits=None, png=None, baseline=None):
@@ -184,7 +253,13 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # (Only the window that has the controller — the popup, a dialog — when one has it; the home screen behind a popup is
     # its own window and not what is being checked.)
     if any(w.get("focus") for w in wins): wins = [w for w in wins if w.get("focus")]
-    nodes = [(w, n) for w in wins for n in (w.get("nodes") or []) if _key(n) not in home]
+    # (673e, D329, Flip 2 x1.3 f673g: Disc station's facts box gives way by design (Update 467) - its rows measured, never
+    # placed, their nodes left at the box's corner with stale sizes; graded "a scrolling box shows only part of a line" and the
+    # name in capitals paired with a value under it. A node whose own text was not placed is not drawn: left out of these
+    # checks (readcheck's facts check owns a text that isn't shown).)
+    unplaced = {t.get("id") for w in wins for t in (w.get("texts") or []) if t.get("placed") is False and t.get("id") is not None}
+    drawn = lambda n: n.get("id") is None or n.get("id") not in unplaced
+    nodes = [(w, n) for w in wins for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n)]
     if not wins or not any(n.get("kind") == "control" for _, n in nodes):
         return [qalib.Result("clip dump", qalib.INFRA, "no windows / no controls in the dump: nothing was measured")]
     lim = dict(CLIP_DEFAULTS); lim.update(limits or {})
@@ -238,19 +313,19 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # its short rows (one or two lines) are all partly shown or hidden, none whole.
     tiny = []
     for w in wins:
-        rows = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("full") and n.get("shown")
+        rows = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("scroll") and n.get("full") and n.get("shown")
                 and n["full"][3] <= 48 * dens and n["full"][3] > 0]
         whole = [n for n in rows if n["shown"][3] >= n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
         part = [n for n in rows if 0 < n["shown"][3] < n["full"][3] - lim["clip_px"] and n["shown"][2] > 0]
         # (Only when the box itself is that small: the tallest thing it shows is under one of its rows — a long story
         # scrolling above a facts line, Cinema's, is a normal list.)
-        seen = max([n["shown"][3] for n in (w.get("nodes") or []) if _key(n) not in home and n.get("scroll") and n.get("shown")] or [0])
+        seen = max([n["shown"][3] for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("scroll") and n.get("shown")] or [0])
         if part and not whole and seen < min(n["full"][3] for n in part):
             tiny.append(f"a scrolling box shows only part of a line ({', '.join(_label(n) for n in part[:3])}: "
                         f"{max(n['shown'][3] for n in part):g} of {part[0]['full'][3]:g} px) and no whole one")
     cut.extend(tiny)
     for w in wins:
-        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "control" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        ctl = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "control" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
         for i in range(len(ctl)):
             for j in range(i + 1, len(ctl)):
                 a, b = ctl[i]["shown"], ctl[j]["shown"]
@@ -261,7 +336,7 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
                 if inside(a, b) or inside(b, a): continue
                 ovl.append(f"{_label(ctl[i])} and {_label(ctl[j])} overlap {ix:g}x{iy:g} px")
         # (Words drawn under / over a button that aren't its own: a text node crossing a control's box without being inside it.)
-        txt = [n for n in (w.get("nodes") or []) if _key(n) not in home and n.get("kind") == "text" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
+        txt = [n for n in (w.get("nodes") or []) if _key(n) not in home and drawn(n) and n.get("kind") == "text" and n.get("shown") and n["shown"][2] > 0 and n["shown"][3] > 0]
         for t in txt:
             a = t["shown"]
             for c in ctl:
@@ -293,11 +368,14 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
     # out of view: FAIL — unless it sits in a part marked as giving way by design (QaClip.GivesWay), then a warning.)
     squeezed, gave = [], []
     give = {(t.get("text", "")[:80], tuple(t.get("full") or [])) for w in wins for t in (w.get("texts") or []) if t.get("giveway")}
+    # (674i: a node's label is shortened (~60 characters) where its text entry keeps 80 - a long story marked as giving way
+    # never matched by label. The semantics id both carry decides first.)
+    give_ids = {t.get("id") for w in wins for t in (w.get("texts") or []) if t.get("giveway") and t.get("id") is not None}
     for w, n in nodes:
         f = n.get("full") or []
         if len(f) == 4 and f[2] > 0 and f[3] <= 1 and _label(n).strip():
             what = f"{_label(n)[:40]} ({n.get('kind')}) is {f[2]:g} x {f[3]:g} px"
-            (gave if (_label(n)[:80], tuple(f)) in give else squeezed).append(what)
+            (gave if (n.get("id") is not None and n.get("id") in give_ids) or (_label(n)[:80], tuple(f)) in give else squeezed).append(what)
     # (Update 474: each text's own layout — needs QaClip's "texts" (staging builds from update 474 on). Cut inside its own box
     # (didOverflowHeight: given less height than its lines, or stopped by maxLines), cut sideways (didOverflowWidth with no
     # wrap and no marquee), or ending in an ellipsis the text itself doesn't have (rule 11). Popup texts only: the home screen
@@ -322,6 +400,7 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         for t in w.get("texts") or []:
             f = t.get("full") or []
             if (t.get("text"), tuple(f)) in hometx or "lines" not in t: continue
+            if t.get("placed") is False: continue  # (673e, D329: not drawn - its layout a stale one; readcheck's facts check)
             if summary_ok and (t.get("len") or len(t.get("text") or "")) > 160 and (t.get("ellipsis") or t.get("ovH")):
                 tsum.append(f"'{(t.get('text') or '')[:30]}' shortened to {t.get('lines')} line(s) (the whole text: Details / More)")
                 continue
@@ -339,8 +418,15 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
             elif t.get("ovH") and not t.get("scroll"):
                 why = (f"stopped at maxLines {t.get('maxLines')}" if t.get("maxLines", -1) > 0 and t.get("lines") == t.get("maxLines")
                        else f"needs more than its {bh} px")
-                (sink if sink is not None else tcut if (trusted or tiny) else tunc).append(
-                    f"'{lab}' cut inside its own box ({why}; {t.get('lines')} line(s) shown" + ("" if trusted else f"; box {bh} of {th} px") + ")")
+                # (673a, D321: Rental shop's punched keys at 1.3x - CATALOGUE CARD laid out on two lines in a key one line high
+                # (box 41 of 108 px). Its box is not its text's own height, so this stayed an unconfirmed warning and the gate
+                # passed the cut word (k673b, k673c, f673c). Two or more lines in a box that can't hold all but half of the last
+                # one: a whole line is out of the box at any size - a cut. No such report in the 793 earlier dumps of 0672 / 0673.)
+                ln_ = t.get("lines") or 0
+                lost = not trusted and bool(th) and bh is not None and ln_ >= 2 and bh < (ln_ - 0.5) * th / ln_
+                (sink if sink is not None else tcut if (trusted or tiny or lost) else tunc).append(
+                    f"'{lab}' cut inside its own box ({why}; {t.get('lines')} line(s)" + ("" if trusted else f"; box {bh} of {th} px") +
+                    (", a whole line out of its box" if lost else "") + ")")
             elif t.get("ovW") and not t.get("scroll"):
                 (sink if sink is not None else tunc).append(f"'{lab}' may be cut sideways (reported, unconfirmed)")
     out = []
@@ -375,6 +461,10 @@ def clip_evaluate(dump, limits=None, png=None, baseline=None):
         out.append(qalib.Result("warn-text-unconfirmed", qalib.PASS, f"WARN: {len(tunc)} text overflow report(s) not confirmed by the layout (auto-sized text reports its unshrunk size; check the screenshot): " + "; ".join(tunc[:4])))
     if gave or tgave:
         out.append(qalib.Result("warn-gives-way", qalib.PASS, f"{len(gave) + len(tgave)} item(s) in a part that gives way by design: " + "; ".join((gave + tgave)[:4])))
+    # (673g: the uniform-button audit - a warning while the system rolls out across the 53 layouts.)
+    uni = uniform_audit(wins, home, drawn, lim["clip_px"] if lim.get("clip_px", 0) >= 2 else 3)
+    if uni:
+        out.append(qalib.Result("warn-uniform", qalib.PASS, "WARN: " + "; ".join(uni[:5]) + (f" (+{len(uni) - 5} more)" if len(uni) > 5 else "")))
     res("screen", off, "every control inside the screen")
     res("overlap", ovl, "no overlapping controls")
     # (Text boxes crossing a button: noted, not failed — a text box can be taller than its drawn lines, e.g. a clipped last
@@ -406,7 +496,7 @@ def pixel_check(dump, png, home=frozenset()):
     for w in dump.get("windows") or []:
         wx, wy = (w.get("at") or [0, 0])[:2]
         for n in w.get("nodes") or []:
-            if n.get("kind") != "control" or not _is_action(n) or _key(n) in home: continue
+            if n.get("kind") != "control" or not (_is_action(n) or _is_popup_key(n)) or _key(n) in home: continue
             f, sh_ = n.get("full"), n.get("shown")
             if not f or f[3] < 12 or f[2] < 12: continue
             if sh_ and (sh_[2] <= 0 or sh_[3] <= 0): continue  # wholly scrolled away: nothing drawn to read (clip judges it)

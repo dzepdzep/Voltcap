@@ -643,13 +643,13 @@ private fun SlidePart(el: SlideEl, tile: CategoryTile, art: TileArt) {
             val logo = art.logo
             if (logo != null) AsyncImage(model = logo, contentDescription = tile.label, contentScale = ContentScale.Fit, alignment = Alignment.CenterStart, modifier = Modifier.fillMaxSize())
             else Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-                Text(tile.label, color = Color.White, fontSize = 34.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(34.sp), maxFontSize = 34.sp), fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = androidx.compose.ui.unit.TextUnit(1.059f, androidx.compose.ui.unit.TextUnitType.Em))
+                FullText(tile.label, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = androidx.compose.ui.unit.TextUnit(1.059f, androidx.compose.ui.unit.TextUnitType.Em), reserve = false)
             }
         }
         // The RetroAchievements system icon is gone (update 81); the part stays so saved slide designs still load.
         SlideEl.ICON -> Unit
         SlideEl.NAME -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-            Text(tile.label, color = Color.White, fontSize = 22.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(22.sp), maxFontSize = 22.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            FullText(tile.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
         }
         SlideEl.COUNT -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
             Text(countText(tile), color = ShelfTheme.accent, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
@@ -669,7 +669,7 @@ private fun SlidePart(el: SlideEl, tile: CategoryTile, art: TileArt) {
                 AsyncImage(model = coverModel(cover), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)))
                 tile.lastPlayedTitle?.let {
                     Spacer(Modifier.height(4.dp))
-                    Text(it, color = Color.White, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(it, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
                 }
             }
         }
@@ -832,11 +832,11 @@ internal fun WallView(
                     ) {
                         val logo = art.logo
                         if (logo != null) AsyncImage(model = logo, contentDescription = t.label, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().padding(14.dp))
-                        else Text(t.label, color = Color.White, fontSize = 30.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(30.sp), maxFontSize = 30.sp), fontWeight = FontWeight.Black, textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(14.dp))
+                        else FullText(t.label, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.padding(14.dp), reserve = false)
                     }
                     // (Sprint 528: no logo picture - the logo box already writes the name; the small name line only in the editor)
                     if (art.logo != null || editing) Box(Modifier.offset(boxW * name.x, boxH * name.y).size(boxW * name.w, boxH * name.h).then(edit("NAME")), contentAlignment = Alignment.Center) {
-                        Text(t.label, color = Color.White, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        FullText(t.label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
                     }
                     Box(Modifier.offset(boxW * countRect.x, boxH * countRect.y).size(boxW * countRect.w, boxH * countRect.h).then(edit("COUNT")), contentAlignment = Alignment.Center) {
                         Text(countText(t), color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
@@ -1004,8 +1004,8 @@ private fun GridCard(tile: CategoryTile, tall: Boolean, selected: Boolean, grabb
         val logo = art.logo
         Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
             if (logo != null && Features.pbShowLogo.value) AsyncImage(model = logo, contentDescription = null, contentScale = ContentScale.Fit, alignment = Alignment.CenterStart, modifier = Modifier.height(26.dp).fillMaxWidth(0.8f))
-            if (Features.pbShowName.value) Text(tile.label, color = Color.White, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = androidx.compose.ui.unit.TextUnit(1.143f, androidx.compose.ui.unit.TextUnitType.Em))
-            if (Features.pbShowCount.value) Text(countText(tile), color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (Features.pbShowName.value) FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = androidx.compose.ui.unit.TextUnit(1.143f, androidx.compose.ui.unit.TextUnitType.Em), reserve = false)
+            if (Features.pbShowCount.value) FullText(countText(tile), color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, maxLines = 1, reserve = false)
         }
         if (grabbed) Text(
             "◀ ▶", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,

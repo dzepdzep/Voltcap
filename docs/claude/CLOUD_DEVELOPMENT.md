@@ -1,0 +1,88 @@
+# VoltCap cloud development (owner request 15 Nov 2026)
+
+The cloud (Claude Code cloud sessions + a cloud scheduled task) is VoltCap's primary development environment. The owner's
+Windows PC is used for physical handheld QA and occasional local work only. Nothing here needs the PC to be on.
+
+## Where work happens
+| What | Where |
+|---|---|
+| Development branch | `claude/qa-0672-repair` (GitHub `dzepdzep/voltcap`). Production baseline: `main` = v0.6.72 (5b01ef39). |
+| Pushes | fast-forward only to `claude/qa-0672-repair`. Never `main`, never force, never tags, never a release. |
+| Merges to main | only through a PR the owner merges himself (branch protection + CI stay as they are). |
+| Code edits | `app/src/...` directly in the cloud clone (the PC's `src_copy/` robocopy route is for the PC only). |
+| Handoff | `docs/claude/HANDOFF.md` (current state, next steps) - read it first, update it last. |
+| Requirements | `docs/REQUIREMENTS_MATRIX.md` (implemented / tested / approved / released / blocked). Never mark done on code alone. |
+| Backlog | `docs/MASTER_BACKLOG.md`; hardware-only work in `docs/claude/HARDWARE_QA_QUEUE.md`. |
+| Change log | `SUMMARY.md` (newest entry on top). |
+| Run log | `docs/claude/AUTORUN_LOG.md` (one short entry per scheduled run). |
+| Owner dashboard | `docs/claude/STATUS_DASHBOARD.md`, rebuilt every run by `python3 tools/cloud/dashboard.py` from: `docs/claude/run_reports.jsonl` (ONE line per run: update, utc, commit "(this commit)", kind app/ci/qa/docs, importance 1-3, plain = what changed in plain English for the owner (no IDs like G11 / D323), ci, effort = `$CLAUDE_EFFORT`, next = [now, then, then]), `progress.json` (per-area counts + source), `releases.json` (release items + gates; status is derived), `owner_actions.json` (urgent only when something is stuck on the owner now), the matrix and the hardware queue. |
+| Releases | When `releases.json`'s next release derives READY FOR OWNER APPROVAL: write `docs/claude/RELEASE_<version>_CANDIDATE.md` (changelog in plain English, QA results with run tags, known issues, risks) and start the run's summary with "VOLTCAP <version> — READY FOR RELEASE APPROVAL". Never merge, install production or publish without the owner's explicit GO. Propose a smaller release (move an item out of scope) only as an owner action, never by yourself. |
+
+## Run bootstrap (every scheduled run, before anything else)
+The cloud environment pre-clones the repo at `/home/claude/voltcap` on `main` (detached HEAD). Never `git clone` over it.
+```
+cd /home/claude/voltcap && git fetch -q origin +refs/heads/claude/qa-0672-repair:refs/remotes/origin/claude/qa-0672-repair \
+  && git show origin/claude/qa-0672-repair:tools/cloud/start_run.sh > /tmp/start_run.sh && bash /tmp/start_run.sh /home/claude/voltcap
+```
+`start_run.sh` switches to (or creates) `claude/qa-0672-repair` tracking origin, fast-forwards only, and prints
+`BOOTSTRAP OK <branch> <sha>`; on uncommitted work, unpushed or diverged commits it prints `BOOTSTRAP BLOCKED: <reason>`, changes
+nothing and the run stops and reports. Before the lock, every commit and every push:
+`test "$(git rev-parse --abbrev-ref HEAD)" = claude/qa-0672-repair`.
+
+## Toolchain in a cloud session
+```
+bash tools/cloud/setup_android.sh          # Android SDK (platform 36, build-tools 36, NDK 28, CMake) ~1 min, idempotent
+export ANDROID_HOME=$HOME/android-sdk VOLTCAP_CLOUD=1
+G="--no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx4g -Pkotlin.compiler.execution.strategy=in-process -PvoltcapCiWithoutDiscord=true"
+bash ./gradlew $G :app:compileDebugUnitTestKotlin                      # app + tests compile: ~7 min cold on 2 cores (verified 15 Nov)
+bash ./gradlew $G :app:testDebugUnitTest --tests 'com.shelf.launcher.ui.Batch674oTest'   # targeted tests: seconds once compiled
+bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug     # isolated QA app, Discord stub
+python3 tools/qa/tools/static_checks.py app/src/main/java/com/shelf/launcher
+python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
+```
+- `VOLTCAP_CLOUD=1` + `-PvoltcapCiWithoutDiscord=true` = the same Discord stub CI uses (the proprietary Discord `.aar` is a
+  local-only file and is never uploaded). The stub is refused for any release task.
+- No signing keys, `keystore.properties`, `screenscraper.properties`, `igdb.properties` or `voltcap_api.properties` exist in the
+  cloud and none are needed for debug / QA builds and tests. Never add them.
+- Maven Central can answer 429 through the cloud proxy: rerun with `--max-workers=2`; one retry, not a loop.
+- Heavy Robolectric classes (675a: EndlessFillLitRoboTestShard0..5, EndlessOnceRoboTest) run in their own task,
+  `:app:testDebugHeavyRoboUnitTest` (a fresh JVM per class); `testDebugUnitTest` runs it afterwards, except with `--tests`.
+  To run one of them: `./gradlew $G :app:testDebugHeavyRoboUnitTest --tests 'com.shelf.launcher.ui.EndlessOnceRoboTest'`.
+- Memory (675a, measured): shell commands run in a memory cgroup of ~5.8 GB (the OOM killer stopped a -Xmx5g compile at
+  5.9 GB); use -Xmx4g for the compile (4m53s warm) and -Xmx1500m for test-only runs. Earlier note: the container has ~8 GB. A 3 GB heap or a separate Kotlin daemon runs out ("Not enough memory to run compilation");
+  use the flags above. The full unit-test suite (1,900+ Robolectric tests) belongs to CI, not the cloud container.
+- No KVM in cloud sessions: no Android emulator there. Emulator QA runs in GitHub Actions (below).
+
+## Effort
+The task editor offers no Effort control for this task (owner screenshot 16 Nov). `.claude/settings.json` sets
+`"effortLevel": "high"` - the Claude Code docs' project-settings level, which applies to every model unless a session gets an
+explicit level (env var CLAUDE_CODE_EFFORT_LEVEL / --effort). Each run logs `$CLAUDE_EFFORT` in run_reports.jsonl; if runs keep
+saying medium, the host sets the level explicitly and the remaining lever is CLAUDE_CODE_EFFORT_LEVEL=high in the cloud
+environment's environment variables (claude.ai/code environment settings - the owner's step).
+
+## CI
+- `verify-update-310.yml` - unit tests + debug build on every push (mandatory gate; keep it green).
+- `emulator-qa-trial.yml` - emulator QA of the isolated QA app; runs on `workflow_dispatch` or a push whose head commit message
+  contains `[emulator-qa]`. Its last step fails unless every graded check is PASS. Emulator evidence is EMULATOR-only: it never
+  counts as handheld verification.
+
+## Scheduled cloud runs
+One cloud scheduled task runs the backlog loop (see the task's prompt). Each run:
+1. clone / fetch `claude/qa-0672-repair`; read `CLAUDE.md`, `docs/claude/HANDOFF.md`, the top of `SUMMARY.md`;
+2. take the lock (`docs/claude/AUTORUN_LOCK.md`, below) or stop;
+3. pick the next safe item that needs no hardware (`docs/MASTER_BACKLOG.md`, matrix rows marked OPEN / VERIFY);
+4. implement one coherent batch + its test; run the tests / checks it touches;
+5. commit, push fast-forward; check CI on the pushed commit;
+6. update matrix / backlog / handoff / SUMMARY / AUTORUN_LOG; add a hardware request when a change needs a handheld;
+7. release the lock (commit + push).
+
+## Lock (one writer at a time)
+`docs/claude/AUTORUN_LOCK.md` on `claude/qa-0672-repair` holds `holder:` and `since:` (UTC). A session takes it by committing
+its own holder line and pushing: git refuses a push that is not a fast-forward, so of two sessions only one can win - the loser
+fetches, sees the other holder and stops without changing anything. A lock older than 3 hours is stale and may be taken (say so
+in AUTORUN_LOG). A live session on the PC (hardware QA) takes the same lock. `holder: none` = free.
+
+## Never (cloud or PC)
+Modify the owner's production Voltcap (`com.shelf.launcher`), real game saves or emulator configurations; publish v0.6.73 or
+any release; upgrade KONKR production; merge to main; push secrets; force-push; run two writers at once; count emulator
+evidence as handheld evidence.

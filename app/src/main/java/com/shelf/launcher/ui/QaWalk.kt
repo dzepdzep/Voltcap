@@ -51,6 +51,9 @@ internal object QaWalk {
     fun afterKey(event: android.view.KeyEvent) {}
 
     fun liveRoots(): List<ViewRootForTest> = synchronized(roots) { roots.filter { it.view.isAttachedToWindow && it.view.isShown } }
+    /** 675c (QA): every Compose root still known (live or not) - QaClip lists them, so a dump tells "the popup's window was
+     *  never registered" from "registered but not attached / not shown yet". */
+    fun allRoots(): List<ViewRootForTest> = synchronized(roots) { roots.toList() }
     fun labelOf(n: SemanticsNode): String = label(n)
 
     private fun label(n: SemanticsNode): String {

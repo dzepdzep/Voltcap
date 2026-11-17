@@ -60,6 +60,8 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -181,15 +183,17 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                                 // bottom and Back was cut in half; shorter rows there keep the whole list on the blade.)
                                 // (Update 469, display size larger — KONKR at 280 dpi, a 366 dp screen: Back cut by 14 px again;
                                 // one more step there, rows still >= 24 dp.)
-                                Modifier.fillMaxWidth().height(if (a.primary) (if (h < 380.dp) 32.dp else if (h < 440.dp) 38.dp else 44.dp) else if (h < 380.dp) 25.dp else if (h < 440.dp) 29.dp else 36.dp).clip(RoundedCornerShape(3.dp))
+                                // (674b, owner brief 15 Nov - vertical menus: every command the same height; Play is told by its
+                                // bigger word and icon, no longer by a taller row. The heights keep the whole list on the KONKR's blade.)
+                                Modifier.fillMaxWidth().height(if (h < 380.dp) 27.dp else if (h < 440.dp) 31.dp else 38.dp).clip(RoundedCornerShape(3.dp))
                                     .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                     .padding(horizontal = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(a.icon, null, tint = if (on) p.ink else Color.White, modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
+                                Icon(a.icon, null, tint = if (on) p.ink else Color.White, modifier = Modifier.size(if (a.primary) 20.dp else 18.dp))
                                 Spacer(Modifier.width(10.dp))
                                 Text(a.label, color = if (on) p.ink else if (a.urgent) Color(0xFFFFC46B) else Color.White,
-                                    fontSize = if (a.primary) 18.sp else 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = if (a.primary) 17.sp else 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal,
                                     maxLines = 2)
                             }
                         }
@@ -214,20 +218,28 @@ internal fun BladeGuide(ctx: WinSceneCtx) {
                         // (Batch 522, popup sweep on the RP Classic: a tall, narrow column - the cover took its height's 0.72 as width,
                         // the whole column, and the facts beside it were laid out 0 px wide ("Played" not shown). The cover now
                         // leaves the facts at least 45 % of the column; it keeps its shape, a little shorter there.)
-                        val coverW = minOf(maxHeight * 0.72f, maxWidth * 0.55f)
+                        // (674e, KONKR x1.3 k674c: even at 80 % the genre wrapped beside the cover and its second line fell
+                        // under the column's foot ("KIND" shown, its value cut 30 of 66 px). Then the cover - same shape - takes
+                        // less of the row and the facts get the width.)
+                        // (674f, k674e: still cut beside the narrowed cover on the KONKR at x1.3 - a third step leaves the cover out
+                        // there; the blade's name and the page blades still show the game.)
+                        var coverStep by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableIntStateOf(0) }
+                        val coverW = minOf(maxHeight * 0.72f, maxWidth * (when (coverStep) { 0 -> 0.55f; 1 -> 0.36f; else -> 0f }))
                         Row(Modifier.fillMaxSize()) {
-                            Box(Modifier.size(coverW, coverW / 0.72f).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))
+                            if (coverW > 0.dp) Box(Modifier.size(coverW, coverW / 0.72f).clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.3f))
                                 .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(3.dp))) {
                                 if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                             }
-                            Spacer(Modifier.width(12.dp))
+                            if (coverW > 0.dp) Spacer(Modifier.width(12.dp))
                             // (Update 471, facts gate: beside the cover the facts ran past the column at rest — "KIND" shown, its
                             // value cut on the KONKR. When they don't fit, they step down in size (to 80 %), measured once more
                             // after each step; the column still scrolls if even that isn't enough.)
                             var viewH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
                             var factsH by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
                             var k by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableFloatStateOf(1f) }
-                            androidx.compose.runtime.LaunchedEffect(viewH, factsH, k) { if (viewH > 0 && factsH > viewH && k > 0.81f) k = (k - 0.05f).coerceAtLeast(0.8f) }
+                            androidx.compose.runtime.LaunchedEffect(viewH, factsH, k) {
+                                if (viewH > 0 && factsH > viewH) { if (k > 0.81f) k = (k - 0.05f).coerceAtLeast(0.8f) else if (coverStep < 2) coverStep++ }
+                            }
                             Column(Modifier.weight(1f).onSizeChanged { viewH = it.height }.then(fadeScroll())) {
                             Column(Modifier.onSizeChanged { factsH = it.height }) {
                                 @Composable
@@ -346,7 +358,10 @@ private fun BladeBody(p: BladePalette, modifier: Modifier) {
  */
 @Composable
 private fun BladeEdgeName(name: String, modifier: Modifier) {
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+    // (674e, D332 "Blades page name" - Flip 2 f674b: the turned box is wider than the strip; placed top-left, its centre - the
+    // turn's pivot - sat near the strip's top and half the name stood above the blade, off the screen. Centred, the turned name
+    // runs exactly the strip's length.)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
         val along = maxHeight; val across = maxWidth
         Box(Modifier.requiredSize(along, across).graphicsLayer { rotationZ = -90f }, contentAlignment = Alignment.CenterStart) {
             WinFullText(name.uppercase(), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2, letterSpacing = 1.sp,
@@ -372,13 +387,12 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
                 ctx.pageFor(pg, Modifier.fillMaxSize(), live)
             }
             Spacer(Modifier.height(8.dp))
-            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                ctx.buttons.forEach { a0 ->
-                    val a = if (live) a0 else a0.inert()
+            // (674b, owner brief 15 Nov: the page blade's keys one row of identical keys (UniformKeyRow) - was a wrapping FlowRow.)
+            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgKey")
                         Row(
-                            Modifier.heightIn(min = 32.dp).clip(RoundedCornerShape(3.dp))
+                            Modifier.uniformFill().heightIn(min = 32.dp).clip(RoundedCornerShape(3.dp))
                                 .background(Brush.horizontalGradient(listOf(Color.White.copy(alpha = 0.94f * k), lerp(p.glow, Color.White, 0.5f).copy(alpha = 0.86f * k))))
                                 .border(1.dp, Color.White.copy(alpha = 0.35f * (1f - k)), RoundedCornerShape(3.dp))
                                 .padding(horizontal = 12.dp, vertical = 4.dp),
@@ -389,7 +403,6 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
                             Text(a.label, color = if (on) p.ink else Color.White, fontSize = 15.sp, fontWeight = if (on || a.primary) FontWeight.Bold else FontWeight.Normal)
                         }
                     }
-                }
             }
         }
     }
@@ -466,7 +479,9 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                     rows.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Row(
-                                Modifier.height(if (a.primary) 50.dp else 34.dp).width(if (a.primary) 200.dp else 180.dp)
+                                // (674b, owner brief 15 Nov: every key of the list the same size - the white Start plate keeps its
+                                // squarer corners and centred word, no longer a bigger key.)
+                                Modifier.height(40.dp).width(190.dp)
                                     .clip(RoundedCornerShape(if (a.primary) 10.dp else 50.dp))
                                     .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFDDE5EE))))
                                     .border(if (on) 3.dp else 1.dp, if (on) blue else Color.White.copy(alpha = 0.6f), RoundedCornerShape(if (a.primary) 10.dp else 50.dp))
@@ -636,9 +651,12 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth().background(c0)) { ctx.pageBody(Modifier.fillMaxSize().padding(u * 2)) }
                     Spacer(Modifier.height(u * 2))
-                    ctx.buttons.forEach { a ->
+                    // (674e: the page's keys a stack of identical rows the window's width, at least 24 dp.)
+                    UniformKeyColumn(ctx.buttons, 0.dp, fill = true) { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text((if (on) "> " else "  ") + a.label.uppercase(), color = if (on) c0 else c1, fontFamily = font, fontSize = fs(5f), maxLines = 1)
+                            Box(Modifier.uniformFill().heightIn(min = 24.dp).background(if (on) c1 else Color.Transparent), contentAlignment = Alignment.CenterStart) {
+                                Text((if (on) "> " else "  ") + a.label.uppercase(), color = if (on) c0 else c1, fontFamily = font, fontSize = fs(5f), maxLines = 2)
+                            }
                         }
                     }
                 }
@@ -697,21 +715,25 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 // only scrolls when even that doesn't fit.)
                 androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.45f).fillMaxHeight()) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
-                val primaryH = if (short) 38.dp else 44.dp
-                val nPrimary = rows.count { it.primary }
-                val restH = fitRowHeight(maxHeight - primaryH * nPrimary - 2.dp * nPrimary, (rows.size - nPrimary).coerceAtLeast(1), 2.dp, if (short) 30.dp else 36.dp, 26.dp)
+                // (674b, owner brief 15 Nov - vertical menus: one height for every row, Play included (it was taller); shorter
+                // (down to 26 dp) when the column is short, scrolling only when even that doesn't fit.)
+                val restH = fitRowHeight(maxHeight, rows.size.coerceAtLeast(1), 2.dp, if (short) 32.dp else 38.dp, 26.dp)
+                val primaryH = restH ?: if (short) 32.dp else 38.dp
                 Column(Modifier.fillMaxSize().then(if (restH == null) fadeScroll() else Modifier), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     rows.forEach { a ->
                         SceneControl(a, Modifier.fillMaxWidth()) { on ->
                             Row(
                                 // (Update 467, popup gate: Back's last 3 dp were cut on the KONKR — short rows a little shorter.)
-                                Modifier.fillMaxWidth().height(if (a.primary) primaryH else restH ?: if (short) 30.dp else 36.dp)
+                                Modifier.fillMaxWidth().height(primaryH)
                                     .background(if (on) lerp(p.accent, Color.Black, 0.28f) else Color.Transparent).padding(horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(a.icon, null, tint = if (on) Color.White else ink.copy(alpha = 0.75f), modifier = Modifier.size(if (a.primary) 22.dp else 18.dp))
                                 Spacer(Modifier.width(12.dp))
-                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = if (a.primary) 18.sp else if (short) 14.sp else 15.sp,
+                                // (674c, Flip 2 x1.3 f674b: one fitted height for every row (83 px there) - the theme's 24 sp line at
+                                // 1.3x was taller than the row and every word was cut; the words get their own line height.)
+                                val fs = if (a.primary) 18.sp else if (short) 14.sp else 15.sp
+                                Text(a.label, color = if (on) Color.White else if (a.urgent) Color(0xFFC0700A) else ink, fontSize = fs, lineHeight = fs * 1.2f,
                                     fontWeight = if (a.primary || on) FontWeight.SemiBold else FontWeight.Normal, maxLines = 2)
                             }
                         }
@@ -854,6 +876,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                             for (col in listOf(callouts.take(half), callouts.drop(half))) {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     col.forEach { a ->
+                                        // (674f: the callouts keep their own size - the magazine's contents-box links; as wide as the column
+                                        // they outranked the starburst Play (f674e hierarchy).)
                                         SceneControl(a, Modifier) { on ->
                                             // (Update 470, rule 11: at font 1.3 on the KONKR "▸ ACHIEVEMENTS" broke into "▸ / ACHIEVEMENT / S" with
                                             // the S on a hidden third line — a callout now shrinks a step or two to fit its two lines.)
@@ -861,8 +885,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                             // the word steps down a size rather than break; see WholeWordsText.)
                                             val cs = if (compact) 12.sp else 14.sp
                                             val ink = if (a.urgent) st.accent else st.ink
-                                            Row(Modifier.then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
-                                                .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp), verticalAlignment = Alignment.Top) {
+                                            Row(Modifier.heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
+                                                .padding(horizontal = 10.dp, vertical = if (compact) 1.dp else 3.dp), verticalAlignment = Alignment.CenterVertically) {
                                                 Text("▸ ", color = ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = cs)
                                                 WholeWordsText(a.label.uppercase(), color = ink, fontSize = cs, fontWeight = FontWeight.Bold, fontFamily = st.head)
                                             }
@@ -876,9 +900,13 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 2)
                 } else {
                     Box(Modifier.weight(1f).fillMaxWidth().border(1.dp, st.ink.copy(alpha = 0.35f))) { ctx.pageBody(Modifier.fillMaxSize()) }
-                    ctx.buttons.forEach { a ->
+                    // (674e: the page's keys one vertical menu of identical keys - the page's width, 26 dp, the lit one ringed.)
+                    UniformKeyColumn(ctx.buttons, 2.dp, fill = true) { a ->
                         SceneControl(a, Modifier) { on ->
-                            Text("▸ " + a.label.uppercase(), color = if (on) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Box(Modifier.uniformFill().heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
+                                .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {
+                                Text("▸ " + a.label.uppercase(), color = if (on) st.accent else st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            }
                         }
                     }
                 }
@@ -900,13 +928,39 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
  */
 @Composable
 internal fun RentalTag(ctx: WinSceneCtx) {
+    // (672b, owner 14 Nov: "pull the actual case from its shelf; shelf labels stay; the empty slot shows; the case returns
+    // naturally." With a pickup (LocalSceneOrigin - GameWindow's shopFlight) the shelf's own case comes off the board as drawn
+    // (PickupOverlay) and is held beside the tag, its slot left empty; B puts it back in the same slot. The tag swings in beside
+    // it as before. Without a pickup (motion off) the tag alone, as before - never a second copy of a case still on the shelf.)
+    val origin = LocalSceneOrigin.current
+    if (origin == null) { RentalTagCard(ctx, minOf(ctx.maxW, 460.dp)); return }
+    val flight = remember { StorageFlightSlot() }
+    val rootAt = remember { androidx.compose.runtime.mutableStateOf<Offset?>(null) }
+    val aspect = sceneCaseAspect(ctx.g.platform)
+    val caseW = minOf(minOf(ctx.maxH * 0.62f, 260.dp) * aspect, ctx.maxW * 0.3f)
+    val gap = 18.dp
+    androidx.compose.runtime.CompositionLocalProvider(LocalStorageFlight provides flight) {
+        Box(Modifier.storageFlightRoot { if (rootAt.value != it) rootAt.value = it }) {
+            Row(Modifier.onGloballyPositioned { flight.panel = it }, verticalAlignment = Alignment.CenterVertically) {
+                SceneCase(ctx, Modifier.width(caseW).height(caseW / aspect).storageFlightSlot(true)
+                    .graphicsLayer { if (storageSlotHidden(true, ctx.reveal())) alpha = 0f })
+                Spacer(Modifier.width(gap))
+                RentalTagCard(ctx, minOf(ctx.maxW - caseW - gap, 460.dp))
+            }
+            PickupTarget(flight, rootAt.value, uniform = false) { SceneCase(ctx, Modifier.fillMaxSize()) }
+        }
+    }
+}
+
+/** The rental tag itself, [w] wide (RentalTag puts the held case beside it). */
+@Composable
+private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
     val yellow = Color(0xFFFFE14A); val ink = Color(0xFF1C1C1C)
     // (Update 505: the key you're on lit in the shop's own neon — the wall you picked (purple / teal / blue), or your accent when
     // this layout has its own colours — instead of always the purple wall's pink. The tag stays the shop's yellow paper.)
     val neon = sceneLit(com.shelf.launcher.data.HomeLayout.SHOP, shopColors(com.shelf.launcher.data.Features.rsWall.state.value).neon, ink)
     val onNeon = com.shelf.launcher.ui.theme.textOn(neon, ink)
     val stamp = legibleOn(neon, yellow)
-    val w = minOf(ctx.maxW, 460.dp)
     val h = minOf(ctx.maxH, 520.dp)
     // (Update 346: a short screen gets a short tag — one line of facts, the title on one line, a slimmer tear-off.)
     // (Update 469, D214: with larger text (1.3×) on a short screen — the KONKR — the title and facts grew and pushed BACK under
@@ -970,9 +1024,15 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                 // space the rows closer and make them 24 dp, still a whole touch size.)
                 Column(Modifier.weight(1f, fill = false).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(if (h < 440.dp) 2.dp else 4.dp)) {
                     @Composable
-                    fun key(a: WinAction, m: Modifier) {
+                    fun key(a: WinAction, m: Modifier, grow: Boolean = false) {
                         SceneControl(a, m) { on ->
-                            Row(Modifier.fillMaxWidth().height(if (a.primary) (if (h < 440.dp) 30.dp else 38.dp) else if (h < 440.dp) 24.dp else 30.dp).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
+                            // (673a: a word wider than the whole tag - only with very large text on a narrow tag - takes a second line
+                            // and its key grows to show it; every other key keeps its punched height.)
+                            // (674e, owner brief 15 Nov: every punched key the same size - one height, Play told by its bigger word;
+                            // in the tag's key row (UniformKeyRow) each fills the cell the row gives every key.)
+                            val kh = if (h < 440.dp) 30.dp else 36.dp
+                            val uni = LocalUniformKey.current
+                            Row(Modifier.fillMaxWidth().then(if (uni) Modifier.fillMaxHeight().heightIn(min = kh) else if (grow) Modifier.heightIn(min = kh) else Modifier.height(kh)).background(if (on) neon else ink).padding(horizontal = if (a.primary) 10.dp else 6.dp),
                                 verticalAlignment = Alignment.CenterVertically) {
                                 // (Narrow keys on a narrow tag: the words, no icon, so they read in full.)
                                 val tight = !a.primary && w < 340.dp
@@ -988,15 +1048,18 @@ internal fun RentalTag(ctx: WinSceneCtx) {
                         }
                     }
                     // Play across the tag; the others as a block of punched keys, two by two, so they all fit on the tag.
-                    ctx.buttons.filter { it.primary }.forEach { key(it, Modifier.fillMaxWidth()) }
+                    // (673a, D320: beside the held case (672b) the tag is narrower - at 1.3x on the KONKR its three-across keys cut
+                    // CATALOGUE CARD and ACHIEVEMENTS to "CATALOGU" / "ACHIEVEME", on the Flip 2 CATALOGUE CARD to "CATALOGUE". Each
+                    // key's word is measured at its own size: a word longer than its cell takes two cells of the same grid, so
+                    // every word reads whole; with every word fitting its cell the block is exactly as before.)
+                    val inner = w - 36.dp
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
+                    val innerPx = with(dens) { inner.roundToPx() }
+                    // (674e, owner brief 15 Nov: Play no longer stretched across the tag and the rest no longer a grid of cells -
+                    // one row of identical punched keys, Play first, that scrolls a key at a time; on a narrow tag a key's words
+                    // take two lines (UniformKeyRow's two-line keys) so every word stays whole - D320's concern.)
                     val rest = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
-                    val across = if (w >= 340.dp || short) 3 else 2
-                    rest.chunked(across).forEach { group ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            group.forEach { key(it, Modifier.weight(1f)) }
-                            repeat(across - group.size) { Spacer(Modifier.weight(1f)) }
-                        }
-                    }
+                    UniformKeyRow(ctx.buttons.filter { it.primary } + rest, 4.dp) { a -> key(a, Modifier) }
                     ctx.chips.forEach { a ->
                         SceneControl(a, Modifier) { on ->
                             Text(a.label.uppercase(), color = if (on) stamp else ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 2)
@@ -1014,6 +1077,43 @@ internal fun RentalTag(ctx: WinSceneCtx) {
             }
         }
     }
+}
+
+/**
+ * 673a: the width (px) each of the rental tag's keys needs for its whole word at the key's own [size] (Black, the tag's text
+ * style) plus [chrome] (its icon, its padding and 2 dp to spare) - the size asked for, never a shrunk one.
+ */
+@Composable
+private fun tagKeyNeeds(labels: List<String>, size: androidx.compose.ui.unit.TextUnit, chrome: androidx.compose.ui.unit.Dp): List<Int> {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val textStyle = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    return remember(labels, size, chrome, textStyle, density) {
+        val extra = with(density) { chrome.roundToPx() }
+        val style = textStyle.merge(androidx.compose.ui.text.TextStyle(fontSize = size, fontWeight = FontWeight.Black))
+        labels.map { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width + extra }
+    }
+}
+
+/**
+ * 673a (pure, ShopTag673Test): the rental tag's punched keys on its grid of [across] equal cells ([width] px, [gap] between),
+ * in their own order - rows of (key, cells), then (-1, cells left empty) where a row isn't full. Every word fitting its cell:
+ * the block as designed (one cell each). A longer word takes as many cells as it needs (two for CATALOGUE CARD at 1.3x beside
+ * the held case), starting a new row when its row is full; a word wider than the whole row has the row to itself.
+ */
+internal fun tagKeyGrid(need: List<Int>, width: Int, gap: Int, across: Int): List<List<Pair<Int, Int>>> {
+    if (need.isEmpty() || across < 1) return emptyList()
+    val cell = (width - gap * (across - 1)).toFloat() / across
+    fun cells(n: Int): Int { var c = 1; while (c < across && n > cell * c + gap * (c - 1)) c++; return c }
+    val rows = ArrayList<List<Pair<Int, Int>>>()
+    var row = ArrayList<Pair<Int, Int>>(); var used = 0
+    for (i in need.indices) {
+        val c = if (width <= 0) 1 else cells(need[i])
+        if (used + c > across) { if (used < across) row.add(-1 to across - used); rows.add(row); row = ArrayList(); used = 0 }
+        row.add(i to c); used += c
+    }
+    if (row.isNotEmpty()) { if (used < across) row.add(-1 to across - used); rows.add(row) }
+    return rows
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1080,7 +1180,9 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 line("SYSTEM", ctx.console); line("YEAR", ctx.year); line("MAKER", ctx.developer); line("PLAYED", ctx.played); line("LAST", ctx.last)
                 if (ctx.total > 0) {
                     val filled = ((ctx.earned.toFloat() / ctx.total) * 12).toInt().coerceIn(0, 12)
-                    Text("TROPHY".padEnd(9) + "[" + "#".repeat(filled) + ".".repeat(12 - filled) + "] ${ctx.earned}/${ctx.total}", style = style, maxLines = 1)
+                    // (674f, KONKR x1.3 k674e: the line was wider than the info column and cut at one line - its count goes under the
+                    // bar there, whole.)
+                    Text("TROPHY".padEnd(9) + "[" + "#".repeat(filled) + ".".repeat(12 - filled) + "] ${ctx.earned}/${ctx.total}", style = style, maxLines = 2)
                 }
                 if (ctx.page == WinPage.MAIN && !compact) ctx.summary?.let {
                     Spacer(Modifier.height(6.dp))
@@ -1091,11 +1193,12 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll())) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
-                rows.forEach { a ->
+                // (674e, owner brief 15 Nov - vertical menus: identical rows - a label that takes two lines makes every row that tall.)
+                UniformKeyColumn(rows, 0.dp, fill = true) { a ->
                     SceneControl(a, Modifier.fillMaxWidth()) { on ->
                         Text((if (on) "► " else "  ") + a.label.uppercase(), style = if (on) style.copy(color = tc.hiInk, shadow = null) else style.copy(color = if (a.urgent) tc.accent else tc.fg),
                             // (Update 467, popup gate: 2 dp rows were 20 dp tall — under the 24 dp touch size; 4 dp now.)
-                            maxLines = 2, modifier = Modifier.fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp, vertical = 4.dp))
+                            maxLines = 2, modifier = Modifier.uniformFill().fillMaxWidth().background(if (on) tc.hi else Color.Transparent).padding(horizontal = 4.dp, vertical = 4.dp))
                     }
                 }
                 if (ctx.page == WinPage.MAIN) ctx.chips.forEach { a ->

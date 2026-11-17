@@ -57,6 +57,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.focusable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.layout.layout
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -251,7 +252,13 @@ internal class WinAction(
      * Popup motion work: drawn only - a page on its way out, the game blade under a page blade. Not focusable, not clickable:
      * the D-pad can't wander onto something covered or leaving.
      */
-    val inert: Boolean = false
+    val inert: Boolean = false,
+    /**
+     * 673g (owner brief 15 Nov: "Informational messages ... must NOT be included among action buttons"): a status line - Save
+     * sync not set up, the performance summary. KeyRow draws it under the keys as a line of its own (still a D-pad stop that
+     * opens what it is about), never as a key.
+     */
+    val status: Boolean = false
 )
 
 /** Update 330: everything a layout's own window gets from GameWindow (see SceneBody there). */
@@ -374,7 +381,9 @@ internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp,
             .then(if (a.focus != null) Modifier.focusRequester(a.focus) else Modifier)
             // (Update 470, D212: [minTouch] makes the touch box taller than what is drawn — the drawn row stays its size,
             // centred in it, and only the room between rows grows. Rows touching edge to edge can't share room, so the gap is it.)
-            .then(if (minTouch > 0.dp) Modifier.heightIn(min = minTouch) else Modifier)
+            // (676x, Nova x1.3 v676x13: with trimmed line heights (676v) a status line ("Save sync is not set up") had only
+            // its words' height - 39 px, under the touch gate's 24 dp. A status line is a tap target: 24 dp at least.)
+            .then(if (maxOf(minTouch, if (a.status) 24.dp else 0.dp) > 0.dp) Modifier.heightIn(min = maxOf(minTouch, if (a.status) 24.dp else 0.dp)) else Modifier)
             .clickable(enabled = !a.inert, interactionSource = source, indication = null) { WinClickProbe.clicks++; sounds?.play(if (a.back) UiSound.BACK else UiSound.SELECT); a.onClick() },
         contentAlignment = Alignment.Center
     ) { content(focused) }
@@ -454,6 +463,10 @@ private val SheetRed = Color(0xFFB8322A)
 private fun BoxInsertSheet(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 560.dp)
     val mono = FontFamily.Monospace
+    // (672a, KONKR x1.3 popup gate k673a: beside the case the sheet is ~300 dp tall; with the text at x1.3 the Saves line under
+    // the stamps showed its top 20 px of 54 (the story had already given all its room). A short sheet with large text gives its
+    // paper margins and gaps to the words - the same words, the same size, every line whole.)
+    val tight = bigPageText() && ctx.maxH < 420.dp
     val accent = if (ctx.accent.luminance() > 0.6f) SheetRed else ctx.accent
     val scroll = rememberScrollState()
     Box(
@@ -476,7 +489,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     while (y < size.height) { drawLine(SheetRule.copy(alpha = 0.12f), Offset(0f, y), Offset(size.width, y), 1f); y += 22.dp.toPx() }
                     drawLine(SheetRed.copy(alpha = 0.35f), Offset(30.dp.toPx(), 0f), Offset(30.dp.toPx(), size.height), 1.5f)
                 }
-                .padding(start = 40.dp, end = 18.dp, top = 20.dp, bottom = 14.dp)
+                .padding(start = 40.dp, end = 18.dp, top = if (tight) 10.dp else 20.dp, bottom = if (tight) 8.dp else 14.dp)
         ) {
             // (Update 469, D222: the whole sheet was one scroll — on the KONKR Play / Contents / Back sat under the story and the
             // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
@@ -486,15 +499,23 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text(ctx.console.uppercase(), color = SheetMuted, fontSize = 11.sp, fontFamily = mono, maxLines = 1)
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(if (tight) 2.dp else 4.dp))
             // (Update 424, rule 11: the sheet scrolls, so its title, values and description are never cut with "…" — seen on the Thor
             // with "Role-playing (RPG), Turn-based strat…" and the description's last words.)
             // (Update 478, D271: shrinks to the readable minimum, then slides — a long name was cut at 3 lines.)
             WinFullText(ctx.name.uppercase(), color = SheetInk, fontSize = 20.sp, lineHeight = 23.sp, fontWeight = FontWeight.Black, fontFamily = mono, maxLines = 3)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(if (tight) 4.dp else 6.dp))
             Box(Modifier.fillMaxWidth().height(2.dp).background(SheetInk))
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false).sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus).sceneFadeEdges(scroll).verticalScroll(scroll)) {
+            Spacer(Modifier.height(if (tight) 5.dp else 8.dp))
+            // (672c, KONKR x1.3 k673b: with the Saves line whole the story box had 24 px - a sliver that was also a D-pad stop
+            // under the touch size. Under one line's room it gives its room away and is no stop; CONTENTS has the whole story.)
+            var middleRoom by remember { androidx.compose.runtime.mutableIntStateOf(Int.MAX_VALUE) }
+            val middleMin = with(androidx.compose.ui.platform.LocalDensity.current) { (16.sp.toPx() + 8.dp.toPx()).toInt() }
+            val middleGone = middleRoom < middleMin
+            Column(Modifier.weight(1f, fill = false).layout { m, c ->
+                if (c.hasBoundedHeight && middleRoom != c.maxHeight) middleRoom = c.maxHeight
+                if (c.hasBoundedHeight && c.maxHeight < middleMin) layout(0, 0) {} else { val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) } }
+            }.then(if (middleGone) Modifier else Modifier.sceneReadable(scroll, accent, onlyWhenScrolls = true, exitDown = ctx.playFocus)).sceneFadeEdges(scroll).verticalScroll(scroll)) {
             if (ctx.page == WinPage.MAIN) {
                 @Composable
                 fun line(label: String, value: String?) {
@@ -538,15 +559,16 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
             }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(if (tight) 6.dp else 12.dp))
             // The actions, stamped.
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                ctx.buttons.forEach { a ->
+            // (673g, owner brief 15 Nov: the stamps one row of identical stamps (UniformKeyRow) - Play shown by its icon and ink, not its
+            // size; a lit stamp still tilts, never grows; the round stickers after them as a group of their own.)
+            UniformKeyRow(ctx.buttons, 10.dp) { a ->
                     SceneControl(a, Modifier) { on ->
                         val tilt by animateFloatAsState(if (on) -2.5f else 0f, spring(dampingRatio = 0.5f), label = "stampTilt")
                         Box(
-                            Modifier.graphicsLayer { rotationZ = tilt; val s = if (on) 1.06f else 1f; scaleX = s; scaleY = s }
-                                .heightIn(min = if (a.primary) 44.dp else 38.dp)
+                            Modifier.uniformFill().graphicsLayer { rotationZ = tilt }
+                                .heightIn(min = 44.dp)
                                 .background(if (on) accent else Color.Transparent)
                                 .border(if (on) 3.dp else 2.dp, if (on) accent else SheetInk)
                                 .padding(horizontal = if (a.primary) 18.dp else 12.dp, vertical = 6.dp),
@@ -559,9 +581,10 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             }
                         }
                     }
-                }
-                // The small tools: round stickers, after the stamps.
-                if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            }
+            // The small tools: round stickers, a group of their own under the stamps.
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                ctx.tools.forEach { a ->
                     SceneControl(a, Modifier.size(38.dp)) { on ->
                         Box(
                             Modifier.fillMaxSize().graphicsLayer { val s = if (on) 1.12f else 1f; scaleX = s; scaleY = s }
@@ -573,6 +596,8 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 }
             }
             if (ctx.chips.isNotEmpty()) {
+                // (672d, Flip 2 x1.3 f673c: at 4 dp the tilted sheet's round Save sync sticker crossed the Saves line by 3 px - this
+                // gap stays whole; the margins above give the room.)
                 Spacer(Modifier.height(8.dp))
                 // (Update 470: a gap between the status lines — the sheet lies tilted, and two lines touching edge to edge
                 // crossed each other's box by up to 19 px on the Odin at font 1.3; 12 dp clears it.)
@@ -620,6 +645,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
     val h = minOf(ctx.maxH * 0.94f, 500.dp)
     val shape = RoundedCornerShape(28.dp)
     val yellow = Color(0xFFFFE04A)
+    // (674h, D332 x1.3: on the KONKR and the Flip 2 the name's three 26 sp lines and the 50 dp buttons left the inset - TIME and
+    // the story - 0 px. A tight file writes the name smaller (two lines; it slides) and its buttons a little lower.)
+    val tight = h < 420.dp
     Box(Modifier.size(w, h)) {
         // Its thickness.
         Box(Modifier.fillMaxSize().offset(0.dp, 9.dp).clip(shape).background(mixS(base, Color.Black, 0.5f)))
@@ -654,10 +682,13 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     }
                     if (!ctx.inspecting) Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f).fillMaxHeight()) {
-                        WinFullText(ctx.name.uppercase(), color = ink, fontSize = 26.sp, lineHeight = 29.sp, fontWeight = FontWeight.Black, maxLines = 3,
+                        WinFullText(ctx.name.uppercase(), color = ink, fontSize = if (tight) 20.sp else 26.sp, lineHeight = if (tight) 22.sp else 29.sp, fontWeight = FontWeight.Black, maxLines = if (tight) 2 else 3,
                             style = if (ink == Color.White) FsOutline else androidx.compose.material3.LocalTextStyle.current)
                         Spacer(Modifier.height(4.dp))
-                        Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
+                        // (674j, KONKR x1.3 k674i: the meta's second line left TIME no room - on a tight file it is one sliding line.)
+                        if (tight) WinFullText(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 1,
+                            fontWeight = FontWeight.SemiBold)
+                        else Text(listOfNotNull(ctx.year, ctx.developer, ctx.genres).joinToString("  ·  "), color = ink.copy(alpha = 0.9f), fontSize = 13.sp, maxLines = 2,
                             fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(8.dp))
                         // The inset panel: time played and the story.
@@ -678,8 +709,9 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                             }
                             ctx.summary?.let {
                                 Spacer(Modifier.height(8.dp))
+                                // (674h: the story gives way by design where the inset has no room left - Details has it whole.)
                                 Text(it, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, lineHeight = 16.sp,
-                                    maxLines = if (h > 420.dp) 5 else 3)
+                                    maxLines = if (h > 420.dp) 5 else 3, modifier = Modifier.semantics { this[QaClip.GivesWay] = true })
                             }
                         }
                     }
@@ -692,13 +724,16 @@ private fun FileCardBack(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.height(12.dp))
             // The fat buttons, then the round tools (on as many lines as they need).
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-                ctx.buttons.forEach { a ->
+            // (673g, owner brief 15 Nov: the fat buttons one row of identical buttons; a lit one keeps its size (its colour shows
+            // it); the round tools a group of their own under them.)
+            // (674k, KONKR x1.3 k674k with More open: the round tools' row under the buttons left TIME 0 px - on a tight file
+            // they stand beside the buttons, which share the rest of the row.)
+            StackOrRow(tight && ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty(), Modifier, 8.dp, { m -> Box(m) {
+            UniformKeyRow(ctx.buttons, 10.dp) { a ->
                     SceneControl(a, Modifier) { on ->
-                        val pop by animateFloatAsState(if (on) 1.1f else 1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMedium), label = "fsBtn")
                         Box(
-                            Modifier.graphicsLayer { scaleX = pop; scaleY = pop }
-                                .height(if (a.primary) 50.dp else 44.dp)
+                            Modifier.uniformFill()
+                                .height(if (tight) 42.dp else 50.dp)
                                 .clip(RoundedCornerShape(50)).background(if (on) yellow else mixS(base, Color.Black, 0.38f))
                                 .border(3.dp, if (on) Color.White else mixS(base, Color.White, 0.4f), RoundedCornerShape(50))
                                 .padding(horizontal = if (a.primary) 22.dp else 16.dp),
@@ -708,8 +743,10 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                                 fontWeight = FontWeight.Black, maxLines = 1, style = if (on) TextStyle() else FsOutline)
                         }
                     }
-                }
-                if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            }
+            } }) {
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(Modifier.padding(top = if (tight) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                ctx.tools.forEach { a ->
                     SceneControl(a, Modifier.size(42.dp)) { on ->
                         val pop by animateFloatAsState(if (on) 1.15f else 1f, spring(dampingRatio = 0.35f), label = "fsTool")
                         Box(
@@ -720,6 +757,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         ) { Icon(a.icon, a.label, tint = if (on) Color(0xFF2A2200) else Color.White, modifier = Modifier.size(21.dp)) }
                     }
                 }
+            }
             }
             if (ctx.chips.isNotEmpty()) {
                 Spacer(Modifier.height(6.dp))
@@ -1131,7 +1169,9 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
                     WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.fillMaxWidth())
                     Spacer(Modifier.height(2.dp)); tag()
                 }
-                Spacer(Modifier.width(10.dp)); StoragePageKeys(ctx, red, live)
+                // (674b: the uniform key row fills the width it is given - beside the name it gets half the line (it scrolls a
+                // whole key at a time when that is short), never the whole line from the name and the sheet.)
+                Spacer(Modifier.width(10.dp)); Box(Modifier.weight(1f)) { StoragePageKeys(ctx, red, live, twoLine = false) }
             } else {
                 WholeWordsText(ctx.name, color = RecInk, fontSize = 15.sp, fontWeight = FontWeight.Black, modifier = Modifier.weight(1f))
                 Spacer(Modifier.width(8.dp)); tag()
@@ -1158,12 +1198,11 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
 /** Storage's sheet keys: Play first, the page's own (Back is the hint under the window) - whole words, never cut. */
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            ctx.buttons.forEach { a0 ->
-                val a = a0.live(live)
+private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean, twoLine: Boolean = true) {
+        // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow) - was a wrapping FlowRow of keys of every width.)
+        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine) { a ->
                 SceneControl(a, Modifier) { on ->
-                    Box(Modifier.heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
+                    Box(Modifier.uniformFill().heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
                         contentAlignment = Alignment.CenterStart) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(if (on) "▶ " else "  ", color = red, fontSize = 13.sp, fontWeight = FontWeight.Black)
@@ -1171,8 +1210,14 @@ private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean) {
                         }
                     }
                 }
-            }
         }
+}
+
+/** 674c: [first] then [second] - beside each other ([row]; [first] takes the width left) or one under the other. */
+@Composable
+private fun StackOrRow(row: Boolean, modifier: Modifier, gap: Dp, first: @Composable (Modifier) -> Unit, second: @Composable () -> Unit) {
+    if (row) Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.CenterVertically) { first(Modifier.weight(1f)); second() }
+    else Column(modifier, verticalArrangement = Arrangement.spacedBy(gap)) { first(Modifier); second() }
 }
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
@@ -1235,8 +1280,21 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
     val accent = ctx.accent
     val onAccent = if (accent.luminance() > 0.5f) Color(0xFF111111) else Color.White
     val w = minOf(ctx.maxW, 760.dp)
+    // (672b, owner 14 Nov: with a pickup the flow's own case lifts out, comes forward and turns edge-on at this window's place
+    // (PickupOverlay); the window then turns in from edge-on - flipBackTurn - and back the other way on B.)
+    val flip = LocalSceneOrigin.current != null
     Column(
         Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+            .pickupFlipTarget(flip)
+            .graphicsLayer {
+                if (!flip) return@graphicsLayer
+                val t = flipBackTurn(ctx.reveal())
+                rotationY = -90f * t
+                cameraDistance = 14f * density
+                flatTextFor3d()
+                shadowElevation = 18.dp.toPx() * (1f - t)
+                shape = RoundedCornerShape(16.dp); clip = false
+            }
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
             .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
@@ -1347,13 +1405,17 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
         }
         Spacer(Modifier.height(12.dp))
         // Glossy pills, each with its reflection on the stage's floor.
-        FlowRow(Modifier.graphicsLayer {
+        // (673g, owner brief 15 Nov: the pills one row of identical pills (UniformKeyRow) - Play shown by its accent gloss, not its
+        // size; the round tools a group of their own under them.)
+        // (674c, KONKR x1.3 k674a: under the pills the tools' line left the title box part of one line - on a short window
+        // they stand beside the pill row, which shares the rest of the width.)
+        StackOrRow(ctx.page == WinPage.MAIN && ctx.maxH < 440.dp && ctx.tools.isNotEmpty(), Modifier.graphicsLayer {
             // (Update 505: they rise onto the stage after the picture; whole and in place from 0.75 of the reveal on.)
             val e = sceneEase(((ctx.reveal() - 0.3f) / 0.45f).coerceIn(0f, 1f))
             alpha = 0.25f + 0.75f * e
             translationY = (1f - e) * 14.dp.toPx()
-        }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(10.dp), itemVerticalAlignment = Alignment.CenterVertically) {
-            ctx.buttons.forEach { a ->
+        }, 10.dp, { m -> Box(m) {
+            UniformKeyRow(ctx.buttons, 8.dp) { a ->
                 SceneControl(a, Modifier) { on ->
                     // Update 487 (E7, owner-approved): Play is the glossy accent pill even while another key is lit (it looked
                     // like the glass keys), and the word on a lit pill is checked against its lighter top (white on lilac
@@ -1363,9 +1425,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                     val inkLit = com.shelf.launcher.ui.theme.textOn(top, onAccent).let { c ->
                         if (com.shelf.launcher.ui.theme.contrastRatio(c, accent) >= 4.5f) c else com.shelf.launcher.ui.theme.textOn(accent, onAccent)
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.uniformFill(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
-                            Modifier.height(if (a.primary) 46.dp else 40.dp).clip(RoundedCornerShape(50))
+                            Modifier.then(if (LocalUniformKey.current) Modifier.fillMaxWidth() else Modifier).height(46.dp).clip(RoundedCornerShape(50))
                                 .background(if (lit) Brush.verticalGradient(listOf(top, if (on) accent else mixS(accent, Color.Black, 0.12f))) else Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.05f))))
                                 .border(if (on && a.primary) 2.5.dp else 1.dp, if (on) Color.White.copy(alpha = if (a.primary) 0.95f else 0.6f) else if (lit) accent.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.18f), RoundedCornerShape(50))
                                 .padding(horizontal = if (a.primary) 24.dp else 16.dp),
@@ -1379,7 +1441,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                     }
                 }
             }
-            if (ctx.page == WinPage.MAIN) ctx.tools.forEach { a ->
+            } }) {
+            if (ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+              ctx.tools.forEach { a ->
                 // Update 487 (E7 tiny controls, owner-approved): the round tool keys keep their 40 dp look in a 48 dp touch
                 // box, and their word is written under them (where the pills' reflection is) — they were icon-only.
                 SceneControl(a, Modifier.widthIn(min = 48.dp)) { on ->
@@ -1395,6 +1459,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                             fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
                     }
                 }
+              }
             }
         }
         if (ctx.chips.isNotEmpty()) {
@@ -1542,9 +1607,9 @@ private fun OrbitTerminalNarrow(ctx: WinSceneCtx, acts: List<WinAction>, glow: C
             OdFlyingDisc(ctx, origin, clock, Modifier.size(discD))
             Box(Modifier.weight(1f).fillMaxHeight().graphicsLayer { val t = ((ctx.reveal() - 0.28f) / 0.54f).coerceIn(0f, 1f); alpha = t }) { OdConsole(ctx, glow, clock) }
         }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
-            acts.forEach { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
+        // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow), never wrapped.)
+        Box(Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
+            UniformKeyRow(acts, 8.dp) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
         }
     }
 }
@@ -1664,7 +1729,9 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
                 }
             }
             readout("TIME", ctx.played)
-            readout("LAST", ctx.last ?: "—")
+            // (674e, KONKR x1.3 k674c: "LAST —" for a game never played repeated TIME's "Never played" and took the row the genre
+            // needed at the readout's foot (cut 22 of 56 px). Shown when there is a last time.)
+            readout("LAST", ctx.last)
             readout("YEAR", ctx.year)
             readout("MAKER", ctx.developer)
             readout("KIND", ctx.genres)
@@ -1737,6 +1804,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     val (primaryTools, secondary) = airySplit(tools)
     val w = minOf(ctx.maxW * 0.92f, 860.dp)
     val h = minOf(ctx.maxH * 0.9f, 480.dp)
+    // (674e, D332 - x1.3: on the KONKR (a 334 dp panel) and with More open on the Flip 2 the name's two 28 sp lines, the console
+    // and the LCD left the two fact lines 0 px. A tight panel writes the name smaller, the LCD smaller and the gaps closer.)
+    val tight = h < 340.dp || (secondary.isNotEmpty() && h < 400.dp)
     Column(
         Modifier.size(w, h)
             .graphicsLayer { val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx() }
@@ -1757,13 +1827,14 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         Column(Modifier.weight(1f)) {
                             // (Update 477: two lines at most — it shrinks, then slides, never cut (a long name stopped at 3 lines,
                             // k477f); no reserved height, so a short name leaves the facts their room.)
-                            FullText(ctx.name, Color(0xFF2D3440), 28.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 31.sp, reserve = false)
-                            Text(ctx.console, color = accent, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            FullText(ctx.name, Color(0xFF2D3440), if (tight) 21.sp else 28.sp, maxLines = if (tight && secondary.isNotEmpty()) 1 else 2, fontWeight = FontWeight.Light, lineHeight = if (tight) 24.sp else 31.sp, reserve = false)
+                            Text(ctx.console, color = accent, fontSize = if (tight) 12.sp else 14.sp, lineHeight = if (tight) 15.sp else androidx.compose.ui.unit.TextUnit.Unspecified, fontWeight = FontWeight.SemiBold)
                         }
                         // (Update 477, D266: a little smaller with More open — the facts under it keep their room on the KONKR.)
-                        AiryLcd(ctx.cover, if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
+                        // (674f, KONKR x1.3 k674e with More open: one name line - it slides, rule 11 - and no LCD; the facts' second line had 0 px.)
+                        if (!(tight && secondary.isNotEmpty())) AiryLcd(ctx.cover, if (tight) Modifier.size(60.dp, 46.dp) else if (secondary.isEmpty()) Modifier.size(84.dp, 64.dp) else Modifier.size(74.dp, 56.dp))
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(if (tight) 4.dp else 10.dp))
                     // (Update 529i, KONKR q0672k2: a long maker and genre took the chips to a third row, which the FlowRow never
                     // placed - "★ 8 / 10" was gone, and with More open "Played" too. Played and ★ now share one chip, and with
                     // More open the facts are two plain lines (as Cover details' window), so every fact stays in view.
@@ -1771,7 +1842,10 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                     // Played / ★ chip was dropped, so the facts are the same two plain lines with More closed too.)
                     val facts = airyFacts(ctx.year, ctx.developer, ctx.genres, ctx.played, ctx.earned, ctx.total)
                     Column(verticalArrangement = Arrangement.spacedBy(if (secondary.isEmpty()) 4.dp else 2.dp)) {
-                        airyFactLines(facts).forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty()) 13.sp else 12.sp, maxLines = 1, reserve = false) }
+                        // (674j, KONKR x1.3 k674i with More open: no room for the second fact line - there the facts are one line
+                        // that slides (rule 11), every fact still on it.)
+                        val lines = airyFactLines(facts).let { if (tight && secondary.isNotEmpty()) listOf(it.joinToString("  ·  ")) else it }
+                        lines.forEach { FullText(it, Color(0xFF55606F), if (secondary.isEmpty() && !tight) 13.sp else 12.sp, maxLines = 1, reserve = false) }
                     }
                     // (Update 475, D247: the story takes the room the chips leave, in whole lines — on the KONKR, where the keys
                     // wrap to a second row, none fit and it gives way (Details has it); before, it was laid out with no height.)
@@ -1782,17 +1856,16 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                 } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
         }
-        Spacer(Modifier.height(if (secondary.isEmpty()) 14.dp else 10.dp))
+        Spacer(Modifier.height(if (tight) 6.dp else if (secondary.isEmpty()) 14.dp else 10.dp))
         // (Update 477, D266: the round keys always shown along the bottom; with More open the others in one compact row of
         // rounded pills under them — word beside the icon, so the row is short and the facts above keep their room (477a put
         // them in the panel's well: squeezed to 14 px on the KONKR; 477b as small round keys in the same row: it wrapped).)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            (ctx.buttons + primaryTools).forEach { a -> AiryKey(a, accent) }
-        }
-        if (secondary.isNotEmpty()) FlowRow(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            secondary.forEach { a -> AiryPill(a, accent) }
-        }
+        // (674b, owner brief 15 Nov: Airy keeps its round shortcuts, each in an identical cell of one row (UniformKeyRow) that
+        // scrolls a whole key at a time; the pills under them likewise - both were wrapping FlowRows.)
+        // (674g, KONKR x1.3 k674f with More open: still ~20 dp short for the facts' second line - the round keys take their small
+        // size there, Play's circle with them.)
+        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent, small = tight && secondary.isNotEmpty()) }
+        if (secondary.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) } }
         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             ctx.chips.forEach { a ->
                 SceneControl(a, Modifier) { on ->
@@ -1842,7 +1915,7 @@ private fun AiryKey(a: WinAction, accent: Color, small: Boolean = false) {
         val lift by animateFloatAsState(if (on) 1f else 0f, spring(dampingRatio = 0.6f), label = "ahBtn")
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.graphicsLayer { translationY = -lift * 4.dp.toPx() }) {
             Box(
-                Modifier.size(if (a.primary) 58.dp else if (small) 40.dp else 50.dp)
+                Modifier.size(if (a.primary) (if (small) 46.dp else 58.dp) else if (small) 40.dp else 50.dp)
                     .drawBehind { drawCircle(Color(0xFF1C3150).copy(alpha = 0.12f + 0.1f * lift), size.minDimension / 2f, Offset(size.width / 2f, size.height / 2f + 4f)) }
                     .clip(CircleShape).background(if (a.primary) accent else Color.White)
                     .border(if (on) 3.dp else 1.dp, if (on) accent.copy(alpha = if (a.primary) 0.5f else 1f) else Color(0xFFDDE5EF), CircleShape),
@@ -2034,7 +2107,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         }
                         Spacer(Modifier.width(4.dp))
                         Box(
-                            Modifier.weight(1f).height(if (a.primary) 32.dp else 26.dp).clip(slantShape(0.5f))
+                            // (674e, owner brief 15 Nov - vertical menus: every command the same height, Play told by its bigger word.)
+                            Modifier.weight(1f).height(28.dp).clip(slantShape(0.5f))
                                 .background(Color(col.top).copy(alpha = 0.85f))
                                 .drawBehind {
                                     if (pull > 0.001f) {
@@ -2049,7 +2123,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                             // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
                             // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
                             WinFullText(a.label.uppercase(), color = if (on) Color(0xFF0B1424) else if (a.urgent) Color(0xFFFFB74D) else Color.White,
-                                fontSize = if (a.primary) 17.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
+                                fontSize = if (a.primary) 16.sp else 13.sp, fontWeight = FontWeight.Black, maxLines = 1,
                                 style = androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic))
                         }
                     }

@@ -55,6 +55,32 @@ The owner owns the AYN Thor, ADB serial **3140972f**, and grants STANDING AUTHOR
   and other personal configurations. No factory reset, no uninstalling apps, no unrelated system changes. All installs go to the
   isolated QA app only (see "Never" above).
 - **Supersedes:** older `SUMMARY.md` / `COWORK_HANDOFF.md` notes that require separate Thor permission (e.g. update 369 rule, update 379 "no device use without your permission") are HISTORICAL and no longer apply. Their entries stay unedited.
+## Hardware QA levels (owner, 16 Nov 2026 - permanent; refines the section above, never loosens it)
+Every hardware step is one of three levels. Name the level in the plan before the step and in its evidence.
+- **LEVEL 1 - QA APP (default; autonomous on authorized USB devices):** development and automated regression testing in the
+  isolated QA app `com.shelf.launcher.qa` only. Personal data preserved, device restored afterwards (settings, font / display
+  scale, volume, the app in front). Every automated action first confirms the device serial and the target package; keys /
+  taps only while the QA app has the focus; the run aborts with nothing pressed when the QA app loses focus or exits
+  (popclip.sh `fg`, navbar676.sh `fgq`). While a script runs, its launch-block file keeps the QA app's Back at the root
+  from handing the screen to the home app (QaVariant.harnessActive, D334). No QA step may need the home gesture / Home key
+  where the owner's Voltcap is the home app.
+- **LEVEL 2 - PRODUCTION READ-ONLY (only when a test needs real installed behaviour):** observing `com.shelf.launcher` as it
+  already is - logcat, dumpsys (windows, insets, package, battery), its window state, screenshots of what is on screen,
+  non-destructive diagnostics (e.g. nav-bar or charging behaviour). No change to its settings, files, data, permissions or
+  installation; no key / touch input into it unless that exact input was declared in the plan as non-modifying (e.g. Home /
+  Back to look) - stop at once when a step would reach a setting, a dialog or anything that modifies. Never start, stop,
+  clear or kill it.
+- **LEVEL 3 - PRODUCTION MODIFICATION (only with the owner's explicit approval of that step):** installing / upgrading the
+  production app, changing its settings, modifying emulator configurations, accessing or restoring real saves, anything
+  destructive. Before an approved upgrade: a backup and rollback plan, and the installed signing certificate checked against
+  the release's (`install_production` and its pins only).
+- **An accidental switch to the production app is never permission to interact with it:** stop the run, press nothing, record
+  it as a defect (D334 is the example), restore the QA app in front with `am start` of the QA package only.
+- **Evidence is labelled** QA (the QA app, build id from tools/qa/builds.json) or PRODUCTION (read-only, Level 2) - never mixed;
+  QA evidence never stands in for a production check, nor emulator evidence for a device check.
+- **The cloud hourly task never assumes devices are connected and never reaches them remotely:** hardware work goes to
+  docs/claude/HARDWARE_QA_QUEUE.md for a live session with the owner's devices.
+
 ## Prompt workflow rule
 Large master prompts have been truncated. Work in shorter, complete stages. Read `COWORK_HANDOFF.md` and continue unfinished tasks. Never assume missing prompt sections are done. Avoid repeating successful QA. Task prompts are short; the next task is in `CURRENT_TASK.md`, unfinished priorities in `COWORK_HANDOFF.md`.
 
@@ -139,7 +165,10 @@ SUMMARY.md, README.md       running change log / feature overview (large: grep, 
 
 ## Build & checks
 - Toolchain: AGP 9.3.3 (built-in Kotlin, no kotlin-android plugin), Kotlin/Compose plugin 2.2.10, Gradle 9.5.0, compileSdk/targetSdk 36, minSdk 24, Java 17, NDK 28 (CMake bridge), Compose BOM 2026.02.01, Coil 2.7, Retrofit 2.11, WorkManager 2.10.1. Release = R8 + resource shrinking (`app/src/main/keepRules/rules.keep`; own classes kept for Gson).
-- I build in Android Studio on Windows (`gradlew.bat assembleDebug`) from `app/src` after copying. No Android SDK in Claude's cloud workspace; a type-check against the Android/Compose jars in `~/.gradle` caches is the usual substitute. Say clearly what was and wasn't compiled.
+- I build in Android Studio on Windows (`gradlew.bat assembleDebug`) from `app/src` after copying. **Cloud (primary since 15 Nov 2026):**
+  `docs/claude/CLOUD_DEVELOPMENT.md` - `bash tools/cloud/setup_android.sh`, `VOLTCAP_CLOUD=1`, `-PvoltcapCiWithoutDiscord=true`; edits go
+  straight into `app/` there; read `docs/claude/HANDOFF.md` first; hardware-only work goes to `docs/claude/HARDWARE_QA_QUEUE.md`.
+  Say clearly what was and wasn't compiled.
 - Shader change: `python tools/themes/gen.py` then `python tools/themes/check_uniforms.py` (details in `docs/claude/themes.md`). Nothing else for Kotlin-only changes.
 - Keep `MainMenu` and `GameDetailsOverlay` functions under the JVM method-size limit (split into sub-composables).
 - Theme names/art must be original (no trademarks, characters, logos).

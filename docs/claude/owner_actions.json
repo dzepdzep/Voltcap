@@ -1,0 +1,54 @@
+{
+ "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
+ "actions": [
+  {
+   "what": "GO given 17 Nov 15:22 Berlin (reply '1': GO v0.6.73, upgrade test on the KONKR) - release steps running",
+   "why": "RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR",
+   "device": "none to answer; the upgrade test needs one handheld with your real Voltcap (you pick which)",
+   "urgent": false,
+   "blocks": "v0.6.73 release"
+  },
+  {
+   "what": "Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready",
+   "why": "you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison",
+   "device": "screenshots (when Claude posts them)",
+   "urgent": false,
+   "blocks": "v0.6.74 badge redesign only"
+  },
+  {
+   "what": "Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way?",
+   "why": "your request of 16 Nov - a design change needs your pick before it becomes the default",
+   "device": "a screenshot helps",
+   "urgent": false,
+   "blocks": "that design change only"
+  },
+  {
+   "what": "Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say \"devices ready\"",
+   "why": "left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6)",
+   "device": "RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73",
+   "urgent": false,
+   "blocks": "nothing for v0.6.73 (KONKR covered it)"
+  },
+  {
+   "what": "Pause or retire the old PC task \"VoltCap hourly backlog run\"",
+   "why": "its PC copy is behind the cloud branch; its runs can't push (harmless, wasted)",
+   "device": "Claude app > scheduled tasks",
+   "urgent": false,
+   "blocks": "nothing"
+  },
+  {
+   "what": "Save Sync real-Drive test: sign the QA app in to a spare Google account",
+   "why": "last data-safety step before Save Sync 529 can ship (not in v0.6.73)",
+   "device": "Flip 2 + KONKR",
+   "urgent": false,
+   "blocks": "a later release"
+  },
+  {
+   "what": "Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push",
+   "why": "they change CI workflows, so they were not pushed automatically",
+   "device": "none",
+   "urgent": false,
+   "blocks": "nothing"
+  }
+ ]
+}

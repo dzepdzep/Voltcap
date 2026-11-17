@@ -55,6 +55,8 @@ class EndlessOnceRoboTest(private val layout: HomeLayout, private val n: Int, pr
             val layouts = HomeLayout.entries.filter { it.styleHome && endlessApplies(it) }
             for (l in layouts + HomeLayout.TILES) for (k in listOf(1, 2, 3, 4, 5, 12)) out += arrayOf<Any>(l, k, 1.0f)
             for (l in listOf(HomeLayout.NIGHT, HomeLayout.AIRY, HomeLayout.ARTLIB).filter { it in layouts }) out += arrayOf<Any>(l, 3, 1.3f)
+            // (678r, D350: Channel at Larger text with the long names - its one-line sliding name plate must let Compose idle.)
+            if (HomeLayout.CHAN in layouts) out += arrayOf<Any>(HomeLayout.CHAN, 12, 1.3f)
             return out
         }
     }

@@ -80,7 +80,10 @@ def overlaps(dump, baseline=None):
     out = []
     for w, own in own_texts(dump, baseline):
         ts = [t for t in own if len(t.get("shown") or []) == 4 and t["shown"][2] > 2 and t["shown"][3] > 2
-              and not t.get("scroll") and not t.get("giveway") and (t.get("text") or "").strip() and not _turned(t)]
+              and not t.get("scroll") and not t.get("giveway") and (t.get("text") or "").strip() and not _turned(t)
+              # (676f: a text its layout never placed is not drawn - BadgeLane leaves a badge with no room unplaced. QaClip
+              # marks it "placed": false; only an explicit false counts, older dumps without the field are graded as before.)
+              and t.get("placed", True) is not False]
         for i in range(len(ts)):
             for j in range(i + 1, len(ts)):
                 a, b = ts[i]["shown"], ts[j]["shown"]
