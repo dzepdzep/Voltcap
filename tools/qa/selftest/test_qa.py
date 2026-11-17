@@ -2449,5 +2449,72 @@ class TestReadcheckUnplaced676f(unittest.TestCase):
         self.assertTrue(readcheck.overlaps(dump))
 
 
+
+class TestCrateChecklist678o(unittest.TestCase):
+    """678o (HW-2, the owner's Record crate checklist): crate678.py grades one size for every key while the focus walks to MORE,
+    MORE opened and B back on MORE, the window closed, rapid A B A B left nothing open; crate678.sh keeps the QA guards."""
+    def _ctl(self, label, box, on=False):
+        return {"label": label, "kind": "control", "full": box, "shown": box, "focused": on}
+
+    def _write(self, d, name, ctls, age=1200):
+        with open(os.path.join(d, name + ".json"), "w") as f:
+            json.dump({"popupAgeMs": age, "windows": [{"id": "w", "focus": True, "nodes": ctls}]}, f)
+
+    def _run(self, d, more_w=222, back_on="MORE", left_open=False):
+        game = self._ctl("Okami", [0, 0, 960, 640])
+        names = ["PLAY", "SLEEVE NOTES", "INSPECT", "MORE"]
+        self._write(d, "X10_home", [game], age=None)
+        for n in range(4):
+            ctls = [game, self._ctl("B Back", [646, 576, 109, 43])]
+            ctls += [self._ctl(k, [253 + i * 231, 281, more_w if (k == "MORE" and n == 2) else 222, 45], on=(i == n))
+                     for i, k in enumerate(names)]
+            self._write(d, f"X10_k{n}", ctls)
+        self._write(d, "X10_moreopen", [game, self._ctl("OPTIONS", [253, 281, 222, 45], on=True)])
+        self._write(d, "X10_moreback", [game] + [self._ctl(k, [253 + i * 231, 281, 222, 45], on=(k == back_on))
+                                                 for i, k in enumerate(names)])
+        self._write(d, "X10_closed", [game], age=None)
+        with open(os.path.join(d, "rapid.txt"), "w") as f:
+            for r in range(1, 6):
+                f.write(f"X10 rapid{r} {'open' if (left_open and r == 3) else 'closed'}\n")
+            f.write("X10 launches=0\n")
+
+    def _grade(self, **kw):
+        import crate678
+        d = tempfile.mkdtemp()
+        try:
+            self._run(d, **kw)
+            return {r.name: r.status for r in crate678.grade(d, check_evidence=False)}
+        finally:
+            shutil.rmtree(d)
+
+    def test_uniform_walk_more_and_rapid_pass(self):
+        g = self._grade()
+        for c in ("keys", "walk", "more", "closed", "rapid"):
+            self.assertEqual(g[f"X10 {c}"], PASS, (c, g))
+        self.assertEqual(g["X13 (all)"], NOT_TESTED)
+
+    def test_a_key_changing_size_while_the_focus_moves_fails(self):
+        self.assertEqual(self._grade(more_w=240)["X10 keys"], FAIL)
+
+    def test_focus_not_back_on_more_fails(self):
+        self.assertEqual(self._grade(back_on="PLAY")["X10 more"], FAIL)
+
+    def test_a_window_left_open_by_rapid_presses_fails(self):
+        self.assertEqual(self._grade(left_open=True)["X10 rapid"], FAIL)
+
+    def test_device_script_keeps_the_qa_guards(self):
+        with open(os.path.join(HERE, "..", "device", "crate678.sh"), encoding="utf-8") as f:
+            sh = f.read()
+        first_key = sh.index("k BUTTON_A 1.8")
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertLess(sh.index("pm path $P"), first_key)
+        self.assertLess(sh.index("touch $F/qa_nolaunch"), first_key)
+        self.assertIn("k() { fg; input keyevent", sh)
+        for ln in sh.splitlines():
+            if "input keyevent" in ln and "k() {" not in ln:
+                self.assertIn("fg; input keyevent", ln)  # every raw key behind the focus check
+        self.assertIn("voltcap_test_snapshot restore", sh)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

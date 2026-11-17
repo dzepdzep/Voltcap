@@ -1408,6 +1408,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair b7924fc - clean (CI run 44054144657, workflow_dispatch qa-device-apk.yml; Verify 310 GREEN on af269aa run 44047294989)",
    "note": "live session 17 Nov (owner present): KONKR GT78 full popup gates x1.0 + x1.3 and the KONKR-eligible HW requests"
+  },
+  {
+   "id": "qa-0.6.73-678o-ci",
+   "apk_sha256": "bfd874ec7514ba67737afb075d58eca0420b98e53f28ff5682ce355fa515c802",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair 2f02390 (678o: Banner touch boxes + HW-20 QA hook voltcap_test_achnew)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair 2f02390 - clean (CI run 44060317421, push [qa-apk])",
+   "note": "live session 17 Nov: KONKR Banner re-gate (HW-12 + the touch-box fix), text678.sh pages (HW-13/14/16/20), nav bar (HW-8)"
   }
  ]
 }
