@@ -2460,7 +2460,7 @@ class TestCrateChecklist678o(unittest.TestCase):
         with open(os.path.join(d, name + ".json"), "w") as f:
             json.dump({"popupAgeMs": age, "windows": [{"id": "w", "focus": True, "nodes": ctls}]}, f)
 
-    def _run(self, d, more_w=222, back_on="MORE", left_open=False):
+    def _run(self, d, more_w=222, back_on="MORE", left_open=False, opened=True):
         game = self._ctl("Okami", [0, 0, 960, 640])
         names = ["PLAY", "SLEEVE NOTES", "INSPECT", "MORE"]
         self._write(d, "X10_home", [game], age=None)
@@ -2468,7 +2468,7 @@ class TestCrateChecklist678o(unittest.TestCase):
             ctls = [game, self._ctl("B Back", [646, 576, 109, 43])]
             ctls += [self._ctl(k, [253 + i * 231, 281, more_w if (k == "MORE" and n == 2) else 222, 45], on=(i == n))
                      for i, k in enumerate(names)]
-            self._write(d, f"X10_k{n}", ctls)
+            self._write(d, f"X10_k{n}", ctls, age=1200 if opened else None)
         self._write(d, "X10_moreopen", [game, self._ctl("OPTIONS", [253, 281, 222, 45], on=True)])
         self._write(d, "X10_moreback", [game] + [self._ctl(k, [253 + i * 231, 281, 222, 45], on=(k == back_on))
                                                  for i, k in enumerate(names)])
@@ -2502,6 +2502,12 @@ class TestCrateChecklist678o(unittest.TestCase):
     def test_a_window_left_open_by_rapid_presses_fails(self):
         self.assertEqual(self._grade(left_open=True)["X10 rapid"], FAIL)
 
+    def test_a_window_that_never_opened_is_infra_not_a_verdict(self):
+        """k678c X10: "Who's playing?" took the first A - no window, the walk moved along the home's games."""
+        g = self._grade(opened=False)
+        for c in ("keys", "walk", "more"):
+            self.assertEqual(g[f"X10 {c}"], INFRA, (c, g))
+
     def test_device_script_keeps_the_qa_guards(self):
         with open(os.path.join(HERE, "..", "device", "crate678.sh"), encoding="utf-8") as f:
             sh = f.read()
@@ -2514,6 +2520,7 @@ class TestCrateChecklist678o(unittest.TestCase):
             if "input keyevent" in ln and "k() {" not in ln:
                 self.assertIn("fg; input keyevent", ln)  # every raw key behind the focus check
         self.assertIn("voltcap_test_snapshot restore", sh)
+        self.assertIn("grep -q '^PICKER' $F/voltcap_qa_screen", sh)  # (k678c: the profile picker closed before the first A)
 
 
 if __name__ == "__main__":

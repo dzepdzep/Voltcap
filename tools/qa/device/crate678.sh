@@ -5,8 +5,10 @@
 # page and B closes it (the focus must come back to MORE); B closes the window; then 5 rounds of A B A B at 250 ms (nothing
 # started, nothing left open). Isolated QA app ONLY (com.shelf.launcher.qa): keys only while it has the focus (else the QA app
 # is stopped and the run ends, nothing pressed); launches blocked (qa_nolaunch); its settings snapshot saved and restored.
-#   sh crate678.sh TAG ["off font=1.3,density=1.15"]   -> /sdcard/pc/TAG/; grade: python3 tools/qa/tools/crate678.py RUN_DIR
-P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; SCALES=${2:-off font=1.3,density=1.15}
+#   sh crate678.sh TAG ["off font=1.3,density=1.15"] [LAYOUT=CRATE] [ROUNDS=10]   -> /sdcard/pc/TAG/
+#   grade: python3 tools/qa/tools/crate678.py RUN_DIR (another LAYOUT: its rapid rounds + walk; the checklist is Record crate's)
+# A round that leaves a window open keeps its VoltcapQA event log (<SC>_rapid<n>.log: the window's open / close / reopen events).
+P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; SCALES=${2:-off font=1.3,density=1.15}; LAY=${3:-CRATE}; ROUNDS=${4:-10}
 OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT; L=$OUT/log.txt; rm -f $F/qa_clip/${TAG}_*
 log() { echo "$(date +%T) $*" >> $L; }
 . "$(dirname "$0")/evidence.sh" 2>/dev/null || . /data/local/tmp/evidence.sh
@@ -14,7 +16,7 @@ A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 dumpsys power | grep -q "mWakefulness=Awake" || { log "STOP asleep - not woken"; echo DONE >> $L; exit 3; }
 dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && { log "STOP locked"; echo DONE >> $L; exit 3; }
 pm path $P > /dev/null 2>&1 || { log "STOP: $P not installed - nothing pressed"; echo DONE >> $L; exit 1; }
-ev_start $OUT $TAG "scales=$SCALES" "layout=CRATE" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
+ev_start $OUT $TAG "scales=$SCALES" "layout=$LAY" "rounds=$ROUNDS" "script_sha256=$(sha256sum "$0" | cut -d' ' -f1)"
 echo "target: serial=$(getprop ro.serialno) model=$(getprop ro.product.model) package=$P $(dumpsys package $P | grep -m1 versionName | tr -d ' ')" >> $L
 # (D334: the launch-block file before any key - the QA app's Back at its root stays in front, and Play starts nothing.)
 touch $F/qa_nolaunch $F/voltcap_test_hooks
@@ -31,6 +33,10 @@ shot() { fg; screencap -p $OUT/$1.png; dump $1; }
 focus_of() { sed 's/{"id":"/\n{"id":"/g' $OUT/$1.json 2>/dev/null | grep '"focus":true,"nodes"' | tr '{' '\n' | grep '"kind":"control"' \
   | grep '"focused":true' | grep -o '"label":"[^"]*"' | tail -1 | sed 's/"label":"//; s/"$//'; }
 isup() { dump $1; grep -qE '"popupAgeMs": *[0-9]' $OUT/$1.json 2>/dev/null; }
+# (as popclip.sh, update 478: "Who's playing?" comes up again after a restart - its A would pick a profile, not open the window
+# (k678c X10). Closed with B (Keep Player) whenever the app's own mark says PICKER, before the first key; logged.)
+nopicker() { for i in 1 2 3; do grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null || break; k BUTTON_B 1.5; log "$1 profile picker closed with B"; done; }
+home() { A --es voltcap_test_layout $LAY --ez voltcap_test_preview true --es voltcap_test_game "Shadow of the Colossus"; sleep 3; nopicker "$1"; sleep 1; }
 A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 4
 A --es voltcap_test_snapshot save; sleep 2
 A --es voltcap_test_artfix "delay=0"; sleep 3
@@ -38,8 +44,8 @@ A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
 for SC in $SCALES; do
   case $SC in off) S=X10; MV=DPAD_RIGHT;; *) S=X13; MV=DPAD_DOWN;; esac
   A --es voltcap_test_scale "$SC"; sleep 2
-  A --es voltcap_test_layout CRATE --ez voltcap_test_preview true --es voltcap_test_game "Shadow of the Colossus"; sleep 4
-  log "== $S ($SC) move=$MV"
+  home $S
+  log "== $S ($SC) layout=$LAY move=$MV"
   shot ${S}_home
   k BUTTON_A 1.8; shot ${S}_k0; log "${S}_k0 focus=$(focus_of ${S}_k0)"
   n=0; f=$(focus_of ${S}_k0)
@@ -54,19 +60,22 @@ for SC in $SCALES; do
   # B closes the window (once more only if it is still up)
   isup ${S}_probe1 && k BUTTON_B 1.4; isup ${S}_probe2 && { log "${S} a second B was needed"; k BUTTON_B 1.4; }
   shot ${S}_closed
-  # rapid A B A B at 250 ms, 5 rounds: nothing started (launches blocked + counted), nothing left open
-  logcat -c
-  r=1; while [ $r -le 5 ]; do
+  home $S
+  # rapid A B A B at 250 ms, ROUNDS rounds: nothing started (launches blocked + counted), nothing left open
+  lb=0; r=1; while [ $r -le $ROUNDS ]; do
+    logcat -c
     fg; input keyevent KEYCODE_BUTTON_A; sleep 0.25; fg; input keyevent KEYCODE_BUTTON_B; sleep 0.25
     fg; input keyevent KEYCODE_BUTTON_A; sleep 0.25; fg; input keyevent KEYCODE_BUTTON_B; sleep 1.6
-    if isup ${S}_rapid$r; then log "${S} rapid $r: a window was left open"; echo "${S} rapid$r open" >> $OUT/rapid.txt; k BUTTON_B 1.4
+    lb=$((lb + $(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')))
+    if isup ${S}_rapid$r; then log "${S} rapid $r: a window was left open"; echo "${S} rapid$r open" >> $OUT/rapid.txt
+      logcat -d -s VoltcapQA > $OUT/${S}_rapid$r.log; screencap -p $OUT/${S}_rapid$r.png; k BUTTON_B 1.4
     else echo "${S} rapid$r closed" >> $OUT/rapid.txt; fi
     # (the next round starts from the home as it was: the layout hook closes anything left - a B on the home opens the
     # category chooser - and puts the focus back on the game)
-    A --es voltcap_test_layout CRATE --ez voltcap_test_preview true --es voltcap_test_game "Shadow of the Colossus"; sleep 2.5
+    home $S
     r=$((r+1))
   done
-  echo "${S} launches=$(logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked')" >> $OUT/rapid.txt
+  echo "${S} launches=$lb" >> $OUT/rapid.txt
 done
 A --es voltcap_test_scale off --es voltcap_test_fixture off --es voltcap_test_artfix off; sleep 1.5
 A --ez voltcap_test_preview false; sleep 1; A --es voltcap_test_snapshot restore; sleep 3

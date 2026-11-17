@@ -73,7 +73,22 @@ def grade_scale(run, s, rapid_lines):
     if home is None or not steps:
         return [qalib.Result(f"{s} (all)", qalib.INFRA, "home or first window dump missing")]
     hl = {l for l, _, _ in controls(home)}
+    # (k678c X10: "Who's playing?" took the first A - the window never opened and the walk moved along the home's games.
+    # A window that did not open grades nothing: INFRA, never a key / walk verdict.)
+    if steps[0].get("popupAgeMs") is None:
+        why = "the window did not open (no popup in the first step) - nothing graded"
+        out += [qalib.Result(f"{s} {c}", qalib.INFRA, why) for c in ("keys", "walk", "more")]
+        steps = []
     # keys: one size within each step, and each key keeps its size across the steps
+    if steps:
+        out += grade_window(run, s, steps, hl)
+    out += grade_end(run, s, rapid_lines)
+    return out
+
+
+def grade_window(run, s, steps, hl):
+    """keys / walk / more for a window that opened (pure on the run's files)."""
+    out = []
     probs, sizes = [], {}
     for n, d in enumerate(steps):
         ks = keys(d, hl)
@@ -118,6 +133,12 @@ def grade_scale(run, s, rapid_lines):
         if not fb or not MORE.match(fb):
             mp.append(f"after B the focus is on {fb!r}, not MORE")
         out.append(qalib.Result(f"{s} more", qalib.FAIL if mp else qalib.PASS, "; ".join(mp) or f"page opened; B back on {fb}"))
+    return out
+
+
+def grade_end(run, s, rapid_lines):
+    """closed / rapid (pure on the run's files)."""
+    out = []
     # closed
     cl = load(run, f"{s}_closed")
     if cl is None:

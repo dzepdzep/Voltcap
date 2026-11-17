@@ -579,6 +579,7 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
     val sel = on && StyleNav.zone == StyleNav.Zone.GAMES
     val lift = styleLift(sel)
     val shape = RoundedCornerShape(16.dp)
+    val lane = rememberBadgeLane() // (678o: shared with the art below, so the name plate joins it - BadgeLane.kt)
     Box(
         modifier
             .graphicsLayer { val k = 1f + 0.04f * lift; scaleX = k; scaleY = k }
@@ -587,9 +588,14 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
             .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(if (chanOled()) Color(0xFF3A414C) else if (light) chanColors().edge else Color(0xFFB9C3D0), ShelfTheme.accent, 0.3f), shape)
             .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
     ) {
-        StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp)
+        StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp, badgeLane = lane)
+        // (678o, KONKR x1.3 k678n13 Channel readability FAIL: at Larger text the focused channel's name wraps to two lines and
+        // its plate rose over the achievement count. The plate is fixed CONTENT in the tile's lane: the count keeps clear of it
+        // (stacked, another corner) or, with no room, is left out - never under the name. Margins from the art's box, which
+        // sits 3 dp inside the tile.)
         if (Features.chanNames.state.value && on) Box(
-            Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(6.dp).riseOnEnter().clip(RoundedCornerShape(50))
+            Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(6.dp).laneContentAt(lane, Alignment.BottomStart, 3.dp, 3.dp)
+                .riseOnEnter().clip(RoundedCornerShape(50))
                 .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 3.dp)
         ) { FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, slideWhenCut = true) }
     }
