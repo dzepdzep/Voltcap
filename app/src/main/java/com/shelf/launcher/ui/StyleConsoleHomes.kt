@@ -239,8 +239,10 @@ private fun WideCard(modifier: Modifier, on: Boolean, spec: CardSpec, index: Int
             Icon(spec.icon, null, tint = spec.tint, modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(8.dp))
             Column {
-                FitText(spec.title, Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 1, fontWeight = FontWeight.Bold)
-                if (spec.sub != null) FitText(spec.sub, Color.White.copy(alpha = 0.78f), maxSize = 11.sp, minSize = 8.sp, maxLines = 1)
+                // (677i, RP Nova x1.3 narrow s677is: "Super Mario Sunshine" under Play was cut, 281 px in 224 - two lines, then a
+                // slide; never cut.)
+                FitText(spec.title, Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 1, fontWeight = FontWeight.Bold, slideWhenCut = true)
+                if (spec.sub != null) FitText(spec.sub, Color.White.copy(alpha = 0.78f), maxSize = 11.sp, minSize = 8.sp, maxLines = 2, slideWhenCut = true)
             }
         }
     }

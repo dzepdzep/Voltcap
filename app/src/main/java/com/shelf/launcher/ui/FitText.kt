@@ -262,13 +262,15 @@ internal fun StableFullText(
             fun over(s: Float, lines: Int) = lay(s, lines).hasVisualOverflow
             var s = top
             var firstFit = Float.NaN
+            val wordFloor = minOf(wordMin(fontSize).value, bottom)
             while (w > 0 && w != Constraints.Infinity) {
                 // (677h: the first size that fits with no word broken across lines; where every readable size breaks a word,
                 // the largest size that fits, as before.)
                 val r = lay(s, maxLines)
-                if (!r.hasVisualOverflow) { if (firstFit.isNaN()) firstFit = s; if (!brokenWord(r)) break }
-                if (s <= bottom) { if (!firstFit.isNaN()) s = firstFit; break }
-                s = maxOf(bottom, s - 1f)
+                if (!r.hasVisualOverflow) { if (firstFit.isNaN() && s >= bottom) firstFit = s; if (!brokenWord(r)) break }
+                // (677i: below the readable minimum only to keep words whole - wordMin)
+                if (s <= wordFloor) { s = if (!firstFit.isNaN()) firstFit else bottom; break }
+                s = maxOf(wordFloor, s - 1f)
             }
             val lines = if (maxLines in 2..3 && w > 0 && w != Constraints.Infinity && over(s, maxLines) && !over(s, maxLines + 1)) maxLines + 1 else maxLines
             s to lines
@@ -347,21 +349,29 @@ private fun wordChar(c: Char): Boolean {
 }
 
 /**
- * 677h: [FullText]'s auto size - the largest size from [max] down to [min] (half-sp steps) at which the text fits AND no word
- * is broken across lines ([brokenWord]); where every size breaks a word (one word wider than the box), the largest size that
- * fits, as TextAutoSize.StepBased chose before. Decided in the layout pass itself (no frame drawn at a size that changes).
+ * 677i: how far a text may shrink to keep its words whole - half its size, never under 8 sp (RP Classic c677i, Hub "ActRaiser 2"
+ * still broke at [fitMin] in a small coverless card). Only for that: a text that merely doesn't fit stops at [fitMin] and slides.
+ */
+internal fun wordMin(size: TextUnit): TextUnit =
+    if (size.isSp) kotlin.math.max(size.value * 0.5f, kotlin.math.min(size.value, 8f)).sp else size * 0.5f
+
+/**
+ * 677h: [FullText]'s auto size - the largest size from [max] down at which the text fits AND no word is broken across lines
+ * ([brokenWord]) - down to [min] (the readable minimum), and on to [wordMin] (677i) only to keep words whole; where every size
+ * breaks a word (one word wider than the box), the largest size that fits, as TextAutoSize.StepBased chose before. Decided in
+ * the layout pass itself (no frame drawn at a size that changes).
  */
 internal class WholeWordsAutoSize(private val min: TextUnit, private val max: TextUnit) : androidx.compose.foundation.text.TextAutoSize {
     override fun androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope.getFontSize(
         constraints: Constraints, text: androidx.compose.ui.text.AnnotatedString
     ): TextUnit {
-        val top = max.value; val bottom = kotlin.math.min(min.value, top)
+        val top = max.value; val bottom = kotlin.math.min(min.value, top); val floor = kotlin.math.min(wordMin(max).value, bottom)
         var s = top; var firstFit = Float.NaN
         while (true) {
             val r = performLayout(constraints, text, s.sp)
-            if (!r.hasVisualOverflow) { if (firstFit.isNaN()) firstFit = s; if (!brokenWord(r)) return s.sp }
-            if (s <= bottom) break
-            s = kotlin.math.max(bottom, s - 0.5f)
+            if (!r.hasVisualOverflow) { if (firstFit.isNaN() && s >= bottom) firstFit = s; if (!brokenWord(r)) return s.sp }
+            if (s <= floor) break
+            s = kotlin.math.max(floor, s - 0.5f)
         }
         return (if (firstFit.isNaN()) bottom else firstFit).sp
     }
