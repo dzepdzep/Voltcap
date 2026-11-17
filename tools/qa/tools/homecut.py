@@ -9,7 +9,7 @@ own layout reports an overflow (ovH) and its one-line width does not fit its box
 (boxW 0) included - unless it slides (scroll / marquee: the whole text is reachable) or gave way by design ("giveway").
 Allowed: an entry in --allow {"LAYOUT": ["text", ...]} for decoration the owner approved as cut on purpose (a watermark);
 each one must carry a reason there. 676u: a text whose box is under 60 % of its line height (textH) FAILs too - cut in
-height - sliding or not. No home dump with texts: INFRA. Exit code: qalib (0 = PASS only).
+height - sliding or not. 677h: a text broken across lines inside a word ("brokenWord", Latin-type scripts) FAILs. No home dump with texts: INFRA. Exit code: qalib (0 = PASS only).
 """
 import glob, json, os, sys
 
@@ -21,7 +21,7 @@ VCUT = 0.6  # a box under 60 % of the text's own line height cuts its letters (6
 
 
 def cut_texts(dump):
-    """(text, needW, boxW) for every cut text of the focused window; None when the dump carries no texts."""
+    """(text, message) for every cut text of the focused window; None when the dump carries no texts."""
     out, seen = [], False
     for w in dump.get("windows", []):
         if not w.get("focus"):
@@ -39,13 +39,18 @@ def cut_texts(dump):
             # one counts for sliding texts too. A box under 60 % of the text's line height cuts its letters; 0 px = not drawn.)
             th, bh = t.get("textH"), t.get("boxH")
             if th and bh is not None and 0 < bh < VCUT * th:
-                out.append((t.get("text", "") + " (height)", th, bh))
+                out.append((t.get("text", "") + " (height)", f"needs {th} px, has {bh}"))
+                continue
+            # (677h, owner RP Classic: Storage Boxes "6 / 1 0", "Neve / r"; s677h Hub "ActRaise / r": a line break inside a word
+            # reads as two other words - the shared fitters shrink first; one that still breaks FAILs.)
+            if t.get("brokenWord"):
+                out.append((t.get("text", "") + " (word broken)", f"broken inside a word across {t.get('lines')} lines"))
                 continue
             if t.get("scroll") or t.get("giveway") or not t.get("ovH"):
                 continue
             if nw is None or bw is None or nw <= bw + TOL:
                 continue
-            out.append((t.get("text", ""), nw, bw))
+            out.append((t.get("text", ""), f"needs {nw} px, has {bw}"))
     return out if seen else None
 
 
@@ -65,7 +70,7 @@ def check(files, allow):
         ok = set(allow.get(lay, {}).keys()) if isinstance(allow.get(lay), dict) else set(allow.get(lay, []))
         bad = [c for c in cuts if c[0] not in ok]
         res.append(qalib.Result(lay, qalib.FAIL if bad else qalib.PASS,
-                                "; ".join(f"{t!r} needs {nw} px, has {bw}" for t, nw, bw in bad) or
+                                "; ".join(f"{t!r} {m}" for t, m in bad) or
                                 (f"{len(cuts)} allowed decoration" if cuts else "every home text whole")))
     return res
 

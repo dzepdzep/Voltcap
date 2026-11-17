@@ -446,7 +446,8 @@ private fun StoragePreview(c: StyleCtx, modifier: Modifier) {
         }
         Spacer(Modifier.height(8.dp))
         FullText(titles.display(g.name), color = Color(0xFF1E2A3A), fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 18.sp)
-        Text(titles.console(g.platform), color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 1)
+        // (677h, s677h homecut: "Nintendo GameCube" was cut to "Nintendo" in the narrow box - two lines, then a slide.)
+        FullText(titles.console(g.platform), color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 2, lineHeight = 14.sp)
         Spacer(Modifier.height(6.dp))
         // (677e, owner 16 Nov - RP Nova x1.3: the facts broke letter by letter ("6 / 1 0", "Played / Never / played"). A value is
         // never broken inside: it stays on one line beside its label, or goes whole onto the line under it.)
@@ -484,7 +485,9 @@ internal fun StorageBoxesSettings() {
 @Composable
 private fun StorageFact(label: String, value: String) {
     androidx.compose.foundation.layout.FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color(0xFF4C5E76), fontSize = 12.sp, maxLines = 1, softWrap = false, modifier = Modifier.padding(end = 8.dp))
+        // (677h, RP Nova x1.3 narrow s677h: "Achievements" alone was wider than the box and cut to "Achieveme" - the label
+        // shrinks to a readable 9 sp first and slides as a last resort, never cut.)
+        FitText(label, color = Color(0xFF4C5E76), maxSize = 12.sp, minSize = 9.sp, maxLines = 1, modifier = Modifier.padding(end = 8.dp), slideWhenCut = true)
         FullText(value, color = Color(0xFF1E2A3A), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
