@@ -249,7 +249,9 @@ internal fun StatusBar(
                     if (clockShown) Box(contentAlignment = Alignment.CenterEnd) {
                         val t = look.cased(clockText!!)
                         // An LCD's unlit segments behind the digits.
-                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)))
+                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)),
+                            // (677k: the unlit LCD digits are decoration - not read out, not a second clock for statuscheck, Nova j677x13 Arcade / Discs)
+                            modifier = Modifier.clearAndSetSemantics { })
                         FullText(t, color = ink, fontSize = look.clockSize, lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, style = textStyle)
                     }
                 }
@@ -407,7 +409,8 @@ private const val STATUS_LEVELS = 7
  * 677f: the status cluster at its own full size - never squeezed. Each level is first measured as a silent probe (never placed,
  * no semantics for TalkBack; the QA dump marks them placed=false - RP Classic c677an: the probes' pictures were read as
  * duplicates), the
- * first that fits is composed for real and placed, in the same measure pass (nothing drawn first and changed later). The last
+ * first that fits is composed for real and placed (677k: the probes carry [StatusProbeTag]; QaClip leaves them out - Nova
+ * j677x13 readcheck read the probes' unplaced clock as "a full row dropped it" on 6 layouts), in the same measure pass (nothing drawn first and changed later). The last
  * level is used whatever it measures.
  */
 @Composable
@@ -418,7 +421,7 @@ private fun StatusFit(content: @Composable (Int) -> Unit) {
         while (level < STATUS_LEVELS - 1) {
             val lv = level
             val w = subcompose("probe$lv") {
-                androidx.compose.foundation.layout.Box(Modifier.clearAndSetSemantics { }) { content(lv) }
+                androidx.compose.foundation.layout.Box(Modifier.clearAndSetSemantics { statusProbe = true }) { content(lv) }
             }.maxOfOrNull { it.measure(loose).width } ?: 0
             if (w <= c.maxWidth) break
             level++
