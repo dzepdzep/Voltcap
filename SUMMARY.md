@@ -1,3 +1,16 @@
+# Update 678r (17 Nov 2026, live session) - Channel name plate stays one line (D350, no lane loop); owner handoff merged
+- Owner handoff 17 Nov 14:45 (v0.6.73 finish + v0.6.74 polish) merged without duplicates: matrix H16 (visual polish of all 53
+  game windows, priority Pocket Classic / Pocket Ribbon / Night / Pocket / Bar), H17 (Channel D350, listed by the owner as a
+  v0.6.73 item), H13 cloud-only; releases.json v0.6.74 polish item widened; HARDWARE_QA_QUEUE: Thor + RP Classic not with the
+  owner (never poll / wake), KONKR only if already connected, no new full sweep. H9 pixel font, H10 / H11 badges, H12
+  Recently Unlocked, Save Sync 529, Flip 2 charging, native pages already recorded - unchanged.
+- D350 retry without the badge lane: FitText gets extraLine (default true = old behaviour); the Channel grid's focused name plate
+  passes extraLine = false, so a long name at Larger text slides on one line (basicMarquee; rests with HomeIdle) instead of
+  growing a second line over the achievement count. Nothing is reported to the lane (678o's never-idle loop can't recur).
+- Tests: ChanPlateOneLine678rTest (source pins); EndlessOnceRoboTest gains CHAN n=12 x1.3 (the long names, must idle).
+- Files: app/src/main/java/com/shelf/launcher/ui/FitText.kt, ui/StyleConsoleHomes.kt; tests above; docs listed.
+- NOT TESTED: KONKR Channel x1.3 on this build (queued, short check if connected).
+
 # Update 678q (17 Nov 2026, live session) - Channel name-plate change reverted (layout loop); D333 / HW-2 / HW-12 records
 - CI Verify 310 on the RC prep commit 91b1ac3: 16 failures, all Channel - EndlessFillLitRoboTestShard3 / EndlessOnceRoboTest
   "Compose did not get idle" (a measure / layout loop). Cause: 678o's Channel fix (the focused name plate reported to the tile's

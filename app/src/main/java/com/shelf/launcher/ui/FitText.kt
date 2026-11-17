@@ -53,7 +53,12 @@ internal fun FitText(
      * 676r (D340, rule 11): where even the smallest size and an extra line don't fit, slide the whole text along one line
      * (FullText's slow marquee) instead of ending it in "…". Off keeps the old last resort for the music players' lyrics.
      */
-    slideWhenCut: Boolean = false
+    slideWhenCut: Boolean = false,
+    /**
+     * 678r (D350): false = never take the extra line - where the smallest size doesn't fit [maxLines], slide (needs
+     * [slideWhenCut]). For a plate of fixed height over art (the Channel grid's name), where a second line rose over the badges.
+     */
+    extraLine: Boolean = true
 ) {
     // Centred / end-aligned text fills the width, so it's placed the same way while it fades in and out
     // (it used to start at the left edge and then jump to the middle once the old line was gone).
@@ -63,7 +68,7 @@ internal fun FitText(
         val w = constraints.maxWidth
         val parentH = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
         val h = if (maxHeight > 0) minOf(maxHeight, parentH) else parentH
-        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio) {
+        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio, extraLine) {
             fun styled(s: Float) = style.copy(fontSize = s.sp, lineHeight = (s * lineHeightRatio).sp, fontWeight = fontWeight ?: style.fontWeight)
             fun fits(s: Float, lines: Int): Boolean {
                 if (w <= 0 || w == Constraints.Infinity) return true
@@ -79,7 +84,7 @@ internal fun FitText(
             var lines = maxLines
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
             while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
-            if (!fits(s, lines)) lines = maxLines + 1
+            if (extraLine && !fits(s, lines)) lines = maxLines + 1
             Triple(s, lines, slideWhenCut && !fits(s, lines))
         }
         @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)

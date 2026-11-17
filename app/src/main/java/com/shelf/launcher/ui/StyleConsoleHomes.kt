@@ -591,7 +591,12 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
         if (Features.chanNames.state.value && on) Box(
             Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(6.dp).riseOnEnter().clip(RoundedCornerShape(50))
                 .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 3.dp)
-        ) { FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, slideWhenCut = true) }
+        ) {
+            // (678r, D350, KONKR x1.3 k678n13: a long name took FitText's extra line and the two-line plate rose over the
+            // achievement count. The plate stays one line and slides the whole name instead - no lane reporting, which
+            // made Compose never idle in 678o.)
+            FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, slideWhenCut = true, extraLine = false)
+        }
     }
 }
 

@@ -301,13 +301,13 @@
      "owner": "owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674"
     },
     {
-     "what": "Pixel-font layouts at x1.3: visual polish - Pocket Ribbon, Pocket Classic, Night first (owner review of the KONKR sheet, 17 Nov)",
+     "what": "Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval",
      "kind": "app",
      "impl": false,
      "unit": false,
      "emulator": "no",
      "device": "KONKR x1.3 sheet (k678n13) shows the need",
-     "owner": "requested 17 Nov - v0.6.74, does not delay v0.6.73"
+     "owner": "owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval"
     }
    ],
    "gates": [

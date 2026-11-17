@@ -10,6 +10,8 @@ result never closes one.
 Never assume the PC or devices are connected. Never wake, connect, install to or change a device without the standing
 authorization in CLAUDE.md (USB only, QA app only).
 
+**Availability (owner 17 Nov 14:45 Berlin): the AYN Thor and the RP Classic are NOT with the owner - never connect, poll, wake or test them; their requests stay NOT TESTED. KONKR only if already connected (check once before device work). No new full 53-layout sweep without a reason; no long hardware runs during the owner's work session.**
+
 Devices: Flip 2 (Retroid Pocket Flip2, 2037b27d, 1920x1080 @ 360 dpi), KONKR (GT78, BW0306N230000845, 960x640 @ 240 dpi),
 RP Classic, AYN Thor (3140972f, two screens), Odin.
 
