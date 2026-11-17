@@ -183,6 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) | OPEN (batch with HW-18) |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (cloud reading done 679b) |
@@ -201,7 +202,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 11 of 18.
+Open hardware requests: 12 of 19.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

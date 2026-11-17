@@ -4018,14 +4018,14 @@
    "found": "2026-11-17 k678n10"
   },
   {
-<<<<<<< HEAD
    "id": "D347",
    "title": "Console hub at display density 1.4: the floating category title (All games) lay over the profile name / score row - RP Classic, stress density only (x1.0 / x1.3 fine)",
    "rule": "R18",
    "severity": "low",
    "status": "fixed in code 679c (the title keeps clear of the Hub's own top row, HubCategoryClear679cTest); handheld NOT TESTED (HW-21)",
    "found": "2026-11-17 c677h"
-=======
+  },
+  {
    "id": "D353",
    "title": "Terminal x1.3 home: 'Directory of C:\\GAMES\\PLAYST…' ends in '…' (termFit) and the focused listing line shows mid-slide ('►SUS -- SHADOW OF') - EMULATOR e679r13, 17 Nov",
    "rule": "R18",
@@ -4040,7 +4040,6 @@
    "severity": "medium",
    "status": "open (v0.6.74, H16 'Pocket: Play game wraps' - owner list); not pixel-font related",
    "found": "2026-11-17 emulator 44140115312"
->>>>>>> 6664bdad (679a-c records: pixel font B (branch), final emulator comparisons, D353 / D354, badge plan, owner action)
   }
  ]
 }
