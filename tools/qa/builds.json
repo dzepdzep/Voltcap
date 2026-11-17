@@ -1540,6 +1540,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet 016ce87 - clean (CI run 43988457826)",
    "note": "677i: whole words in the shared fitters, Storage facts label / console line, QaClip brokenWord"
+  },
+  {
+   "id": "qa-677j-ci",
+   "apk_sha256": "c65506871673aef1bbd49701d5ad63cd22cfb3911982773b1a14ae49dea10e75",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 5204b71",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 5204b71 - clean (CI run 43991918793)",
+   "note": "677j: words kept whole down to wordMin (half size, >= 8 sp); Hub bar cards never cut"
   }
  ]
 }
