@@ -1397,6 +1397,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet 4c208ff - clean (CI run 43922613406)",
    "note": "v0.6.73 candidate 676r + 676s (QA tools) + 676t Greencore facts wrap"
+  },
+  {
+   "id": "qa-0.6.73-678n-ci",
+   "apk_sha256": "a11d4d0568f574083d3e7bd151702a92bf149374aabf528dab9fe89b474290f3",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair b7924fc (app code = 678n af269aa; b7924fc only takes the live-session lock)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair b7924fc - clean (CI run 44054144657, workflow_dispatch qa-device-apk.yml; Verify 310 GREEN on af269aa run 44047294989)",
+   "note": "live session 17 Nov (owner present): KONKR GT78 full popup gates x1.0 + x1.3 and the KONKR-eligible HW requests"
   }
  ]
 }

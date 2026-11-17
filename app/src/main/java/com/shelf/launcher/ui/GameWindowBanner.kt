@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -955,6 +956,8 @@ private fun BannerRound(look: BannerLook, icon: ImageVector, label: String, size
 }
 
 /** Update 213: the game's save sync in the status line — an icon and short words, a tap / A opens it. */
+// (678o, KONKR kb678n10, Banner x1.0: the chip is a tap target and was 18 dp tall - under the touch gate's 24 dp (R26). As the
+// scenes' status lines (676x): the touch box is at least 24 dp tall and the drawn pill keeps its size, centred in it.)
 @Composable
 private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> Unit, modifier: Modifier) {
     val source = remember { MutableInteractionSource() }
@@ -963,20 +966,25 @@ private fun BannerSyncChip(look: BannerLook, sync: GameSyncView, onClick: () -> 
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
     val warn = Color(0xFFFFB74D)
     val shape = RoundedCornerShape(50)
-    Row(
-        modifier.styleFocus(focused, 12.dp, 0.7f, look.glow).clip(shape)
-            .background(if (focused) look.cardOn else if (sync.urgent) warn.copy(alpha = 0.18f) else Color.Transparent)
-            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
-            .padding(horizontal = 8.dp, vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Box(
+        modifier.heightIn(min = 24.dp)
+            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() },
+        contentAlignment = Alignment.Center
     ) {
-        val ink = if (sync.urgent) warn else look.muted
-        Icon(sync.icon, null, tint = ink, modifier = Modifier.size(14.dp))
-        Spacer(Modifier.width(5.dp))
-        WinFullText(
-            savesLabel(sync.text), color = if (focused) look.ink else ink, fontSize = 12.sp,
-            fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1
-        )
+        Row(
+            Modifier.styleFocus(focused, 12.dp, 0.7f, look.glow).clip(shape)
+                .background(if (focused) look.cardOn else if (sync.urgent) warn.copy(alpha = 0.18f) else Color.Transparent)
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val ink = if (sync.urgent) warn else look.muted
+            Icon(sync.icon, null, tint = ink, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(5.dp))
+            WinFullText(
+                savesLabel(sync.text), color = if (focused) look.ink else ink, fontSize = 12.sp,
+                fontWeight = if (sync.urgent) FontWeight.Bold else FontWeight.Normal, maxLines = 1
+            )
+        }
     }
 }
 
@@ -1016,15 +1024,22 @@ private fun BannerPill(look: BannerLook, text: String) {
 }
 
 /** "L1" / "R1" at the ends of the tabs (a tap does the same as the shoulder button). */
+// (678o, KONKR kb678n10, Banner x1.0: the hints are tap targets and were 17 dp tall - under the touch gate's 24 dp (R26). The
+// touch box is at least 24 dp tall (the tabs beside them are taller, so the row keeps its height); the drawn pill keeps its size.)
 @Composable
 private fun BannerHint(look: BannerLook, text: String, onClick: () -> Unit) {
     val shape = RoundedCornerShape(6.dp)
     Box(
-        Modifier.clip(shape).border(1.dp, look.muted.copy(alpha = 0.6f), shape)
+        Modifier.heightIn(min = 24.dp).clip(shape)
             .focusProperties { canFocus = false }
-            .clickable { onClick() }
-            .padding(horizontal = 7.dp, vertical = 2.dp)
-    ) { Text(text, color = look.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            Modifier.border(1.dp, look.muted.copy(alpha = 0.6f), shape)
+                .padding(horizontal = 7.dp, vertical = 2.dp)
+        ) { Text(text, color = look.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1) }
+    }
 }
 
 /** One tab's name; the shown one is bright with the marker under it, the D-pad's one gets the focus ring. */

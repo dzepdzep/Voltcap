@@ -1,3 +1,20 @@
+# Update 678o (17 Nov 2026, live session - KONKR connected, owner present) - KONKR hardware gates; Banner touch boxes
+- Lock: live session took docs/claude/AUTORUN_LOCK.md (b7924fc). QA build qa-0.6.73-678n-ci (CI 44054144657, pinned key
+  4d133dde, app code = 678n af269aa) installed on the KONKR GT78 (BW0306N230000845, USB) - the 15 Nov QA app had the old key, so
+  only the QA app was replaced (owner rule 16 Nov); the owner's Voltcap untouched (versionCode 79, 15 Nov). First-run prompts of
+  the fresh QA app (extra art packs: Not now; battery note; Inspect / Wobble: the focused Inspect) answered in the QA app only.
+- Found on hardware (kb678n10, Banner style x1.0): the Banner window's save-sync chip ("Save sync is not set up", 18 dp) and its
+  L1 / R1 hints (17 dp) are tap targets under the gate's 24 dp. Fixed: each has a touch box at least 24 dp tall, the drawn pill
+  unchanged inside it (the 676x rule for status lines). BannerTouch678oTest (fails on 678n: no heightIn in either function).
+- New QA tool: tools/qa/device/text678.sh - Settings (search "theme", Theme / Achievements / Categories pages), Save Vault
+  (fixture), category screen (long name) and a game's Achievements list at x1.0 + x1.3 by test hooks, screenshot + QaClip dump
+  each (graded with homecut.py); QA app only, no Back / Home key, snapshot restored.
+- Checked in the cloud: compileDebugKotlin OK (the change compiles); static checks PASS (TRUNCATE 179); QA selftest 190/190.
+  Unit test run blocked by the Maven proxy (test classpath) - CI is its first run.
+- Hardware results: see the end of this session's report (HARDWARE_QA_QUEUE.md HW-1 / HW-12 and the dashboard).
+- Files: app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt; app/src/test/java/com/shelf/launcher/ui/BannerTouch678oTest.kt;
+  tools/qa/device/text678.sh; tools/qa/builds.json (qa-0.6.73-678n-ci).
+
 # Update 678n (17 Nov 2026, cloud scheduled run) - CI red on 678m fixed (stale source pin)
 - Verify 310 on a6cdfc7 (678m) was RED on one test: AchCompact529Test.controlsAreOneBarWithFoldedPanels (2876 tests, 1 failed,
   both runners). It pinned the old literal `val firstFocus = Modifier.initialFocus()` that 678m deliberately changed (with new
