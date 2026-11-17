@@ -1,3 +1,13 @@
+# Update 679a-c live (17 Nov 2026; not the hourly task's 679c Console hub change) - pixel font decision B on claude/v0674-pixel-font; emulator review mode; badge plan
+- 679a: emulator trial review mode (workflow_dispatch review_layouts / qa_pref; x1.3 then x1.0; standard trial unchanged).
+  Follow-up: grade_trial.py still expects the standard e529 runs, so review-mode runs end red (evidence is fine).
+- 679b/c (branch claude/v0674-pixel-font, on top of 677p's 62.5 % font): ui/theme/PixelType.kt - drawn = max(62.5 %, min(size,
+  9.5 sp)), never larger than before; one shared pixel family; wired: PocketScope.sp, Theme 32-bit style, Pocket camera fs,
+  window scenes fs, Pocket Quest, Arcade, WinScenesStyled / Arcade, Terminal (pixel option), status bar (pixel looks), intro.
+  TestHooks: a QA layout switch starts Pocket classic on its home (the mismatched e679r10 shots). PixelType679bTest.
+- Emulator comparisons: runs 44127284640 (today), 44145199491 (final). Terminal / Pocket Quest findings are not pixel text:
+  D353, D354 (H16). Badges: docs/claude/BADGE_STYLES_PLAN.md, branch claude/v0674-badges created (no code yet).
+- NOT TESTED on a handheld. v0.6.73 untouched.
 # Update 679c (17 Nov 2026, cloud run) - Console hub: category title no longer over the profile row at density 1.4 (H7 / D347)
 - At display density 1.4 (RP Classic stress, c677h / c677js) the floating category title ("All games") sat on the Hub's profile
   name / score: its fixed spot (categoryPartSpot HUB, a fifth of the way down) falls inside the Hub's own top row when the screen

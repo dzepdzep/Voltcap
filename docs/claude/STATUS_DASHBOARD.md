@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 679c · 2026-11-17 18:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on f3d8362 · effort: medium
+**1. LATEST UPDATE** - 679b-c · 2026-11-17 19:10 UTC · commit `claude/v0674-pixel-font`
 
-**2. WHAT CLAUDE JUST FIXED** - On the Console hub at the extra-large display size, the category name ('All games') sat on top of your profile name and score. It now moves just below that row when the two would meet, and stays exactly where it was at normal and larger text. Checked by a new automatic test; the handheld check on the RP Classic is queued with its other open check.
+**2. WHAT CLAUDE JUST FIXED** - Pixel font decision B is built on the v0.6.74 pixel-font branch: pixel text draws at 62.5 %, but small labels never go below a comfortable size and never get bigger than today. Final emulator comparisons are ready. Pocket classic's mixed-up screenshots are fixed. Terminal and Pocket Quest problems are not pixel text and are logged for the popup polish. The badge plan is written; building the three styles comes next.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (679a): Pixel font before/after is ready for your review (emulator screenshots, 6 pixel layouts, both text sizes). The smaller font fixes the cut and cramped popups at larger text; at normal text the smallest labels get too small, so I propose a readable minimum for small text. Badge style previews (Classic, Top Clip, Hanging Bottom, plus a compact achievement badge) are on a canvas for your pick.
+- **App** (679b-c): Pixel font decision B is built on the v0.6.74 pixel-font branch: pixel text draws at 62.5 %, but small labels never go below a comfortable size and never get bigger than today. Final emulator comparisons are ready. Pocket classic's mixed-up screenshots are fixed. Terminal and Pocket Quest problems are not pixel text and are logged for the popup polish. The badge plan is written; building the three styles comes next.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,9 +24,9 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: check CI on this push; then: owner-decided pixel font and badge work (on their own branches); worst game-window polish: Night, Bar (after the pixel font)
+**5. WORKING ON NEXT** - now: owner: approve the final pixel-font sheets (or adjust the minimum); then: badges: Classic + compact ladder, then Top Clip / Hanging Bottom (docs/claude/BADGE_STYLES_PLAN.md); H16: Pocket Quest Play game wrap (D354), Terminal (D353), Night, Bar
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
 **7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
@@ -132,6 +132,7 @@ Merging, the production install and publishing always wait for your explicit GO.
 | 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
 | 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
 | 7 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
+| 8 | Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum | pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font | none | no | merging the pixel font into the v0.6.74 line |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -182,7 +183,6 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
-| HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) | OPEN (batch with HW-18) |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (cloud reading done 679b) |
@@ -201,7 +201,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 12 of 19.
+Open hardware requests: 11 of 18.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

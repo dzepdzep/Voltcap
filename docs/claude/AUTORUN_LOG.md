@@ -219,3 +219,5 @@
 
 ## 17 Nov 18:55 UTC cloud run - 679c
 - H7 / D347: Console hub category title keeps clear of the Hub's profile row at density 1.4 (HubCategoryClear679cTest 4/4 PASS, cloud compile after one Maven 429 retry). HW-21 queued (RP Classic). CI GREEN f3d8362. Lock released.
+## 17 Nov 20:10 Berlin live - 679a-c
+- Pixel font B built + emulator comparisons; D353 / D354 logged; badge plan; branches claude/v0674-pixel-font, claude/v0674-badges.

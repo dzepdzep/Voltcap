@@ -49,6 +49,13 @@
    "device": "none (HW-19 later: you start the game, Claude only reads)",
    "urgent": false,
    "blocks": "v0.6.74 Thor dual-screen fix (H13)"
+  },
+  {
+   "what": "Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum",
+   "why": "pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font",
+   "device": "none",
+   "urgent": false,
+   "blocks": "merging the pixel font into the v0.6.74 line"
   }
  ]
 }
