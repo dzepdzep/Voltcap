@@ -1430,6 +1430,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 94fb3d8 - clean (CI run 44074005664, push [qa-apk])",
    "note": "live session 17 Nov: KONKR Channel re-gate x1.3 + x1.0 (the k678n13 readability FAIL), nav bar (HW-8)"
+  },
+  {
+   "id": "qa-0.6.73-678p-ci",
+   "apk_sha256": "9147b0f2b3e57df789df7c19d5832ca87083bc96b275bcbe3128ddee473bc2ad",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair d5eeafb (678p: D333 reopen in place)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair d5eeafb - clean (CI run 44080772492, push [qa-apk])",
+   "note": "live session 17 Nov: HW-5 / D333 re-check (crate678.sh 10 rounds) + focused v0.6.73 release verification on the KONKR"
   }
  ]
 }
