@@ -1474,6 +1474,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair eadd00f - clean (CI run 44098184174, push [qa-apk])",
    "note": "678r: KONKR Channel x1.3 recheck (D350)"
+  },
+  {
+   "id": "qa-679c-e4669b9-ci",
+   "apk_sha256": "76c553860654efdab37adbee38558d4574f6d8d607f2e6466ecedbf67f414861",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair e4669b9",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair e4669b9 - clean (CI run 44153799854, workflow_dispatch)",
+   "note": "v0.6.74 dev line after 679c"
   }
  ]
 }
