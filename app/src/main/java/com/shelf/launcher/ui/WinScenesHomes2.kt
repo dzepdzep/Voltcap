@@ -439,7 +439,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
     // with larger text the card may take more of the screen and the keys are a little lower.)
     val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
     val h = minOf(ctx.maxH, if (big) 460.dp else 380.dp)
-    Row(Modifier.width(w).height(h).graphicsLayer {
+    Row(Modifier.width(w).height(h).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.12f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -453,12 +453,16 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
         }
         // The discover card.
+        // (P2 / 681e: the card's own pages - the discover feed, WinPagesDiscover.kt - in the room above the pills.)
         Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(Color(0xFF1B1E24).copy(alpha = 0.97f)).padding(14.dp)) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
-            Spacer(Modifier.weight(0.01f))
+            NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "discoverPage", move = ::discoverMove) { pg, pageLive ->
+                if (pg == WinPage.MAIN) Column {
+                    StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+                    Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
+                } else DiscoverPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
             // (529p, owner #15 pattern: the keys as pills that span the card in whole-word rows - PageBars - Play still the filled one.)
             PageBars(sceneKeys(ctx), 6.dp) { k ->
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,

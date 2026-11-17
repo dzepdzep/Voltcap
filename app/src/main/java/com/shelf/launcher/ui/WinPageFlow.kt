@@ -43,7 +43,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (P2 681c: Classic - the charged panel's readout, cells and switches, WinPagesVolt.kt.)
     WinScene.VOLT_PANEL,
     // (P2 681d: Console hub - the nameplate's engraving, service medals and switch panel, WinPagesHub.kt.)
-    WinScene.HUB_PLATE)
+    WinScene.HUB_PLATE,
+    // (P2 681e: Resume & discover - the discover feed's about cards, progress shelves and settings pills, WinPagesDiscover.kt.)
+    WinScene.DISCOVER_CARD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

@@ -79,4 +79,12 @@ class NativePages681aTest {
         assertTrue(src("WinSceneFamilies.kt").contains("HubPage(ctx, pg, pageLive, Modifier.fillMaxSize())"))
         assertEquals(5 to 0, hubMedalRow(5, 10)); assertEquals(9 to 11, hubMedalRow(20, 10)); assertEquals(0 to 0, hubMedalRow(0, 10))
     }
+
+    @Test fun discoverFeedHasItsOwnPages() {
+        assertTrue(nativePages(WinScene.DISCOVER_CARD))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.DISCOVER_CARD, p))
+        assertEquals("ABOUT THIS GAME", discoverPageName(WinPage.DETAILS)); assertEquals("PROGRESS", discoverPageName(WinPage.TROPHIES))
+        assertEquals(1, src("WinPagesDiscover.kt").split("ctx.pageFor(").size - 1)
+        assertTrue(src("WinScenesHomes2.kt").contains("DiscoverPage(ctx, pg, pageLive, Modifier.fillMaxSize())"))
+    }
 }
