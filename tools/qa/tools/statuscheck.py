@@ -31,6 +31,10 @@ def inside(pt, r):
 
 
 def visible(b):
+    # (677h, RP Classic c677an: StatusFit's measured-only probe levels stay in the unmerged semantics tree with a stale
+    # bounds - "placed": false - and are not on screen: neither a second picture nor a cut cluster.)
+    if b.get("placed", True) is False:
+        return False
     s = b.get("shown") or [0, 0, 0, 0]
     return s[2] > 0 and s[3] > 0
 

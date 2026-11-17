@@ -2133,6 +2133,17 @@ class TestStatusCheck677d(unittest.TestCase):
     def test_old_build_is_infra(self):
         self.assertEqual(self._run({"avatars": [], "texts": []}).returncode, 2)
 
+    def test_unplaced_probes_ignored(self):
+        """677h (RP Classic c677an): StatusFit's unplaced probe levels are neither a duplicate picture nor a cut cluster."""
+        bar = {"full": [900, 10, 370, 50], "shown": [900, 10, 370, 50], "placed": True}
+        probe = {"full": [800, 10, 470, 50], "shown": [900, 10, 370, 50], "placed": False}
+        a1 = {"where": "bar", "full": [1200, 10, 50, 50], "shown": [1200, 10, 50, 50], "placed": True}
+        a2 = dict(a1, full=[1150, 10, 50, 50], shown=[1150, 10, 50, 50], placed=False)
+        r = self._run({"statusBars": [bar, probe], "avatars": [a1, a2], "texts": []})
+        self.assertEqual(r.returncode, 0, r.stdout)
+        r = self._run({"statusBars": [bar, dict(probe, placed=True)], "avatars": [a1, dict(a2, placed=True)], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout)
+
 
 class TestHomecut676o(unittest.TestCase):
     """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
