@@ -74,3 +74,22 @@ jobs:
             app/build/test-results
           if-no-files-found: ignore
       # Do not upload the stubbed debug APK: it is not a valid user build.
+
+  # (678s, owner-authorized 17 Nov 16:09 Berlin: main's branch protection requires a check named exactly "Source-check without
+  # Discord SDK (not a release)". Since 673e the job above runs on two images and reports as "... - ubuntu-24.04" and
+  # "... - ubuntu-latest", so the required name never arrived. This bridge carries the legacy name and depends on BOTH image
+  # jobs: needs.verify.result is "success" only when every matrix job succeeded; failure, cancelled or skipped fail the bridge.
+  # if: always() makes it report (and fail) even when a matrix job failed, instead of being skipped. No dummy success.)
+  verify-gate:
+    name: Source-check without Discord SDK (not a release)
+    needs: verify
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Both Ubuntu verification jobs succeeded
+        env:
+          RESULT: ${{ needs.verify.result }}
+        run: |
+          echo "verify matrix (ubuntu-24.04 + ubuntu-latest) result: $RESULT"
+          if [ "$RESULT" != "success" ]; then echo "::error::verification jobs did not all succeed ($RESULT)"; exit 1; fi

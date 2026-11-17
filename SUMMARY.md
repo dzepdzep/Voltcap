@@ -1,3 +1,11 @@
+# Update 678s (17 Nov 2026, live session) - CI: bridge check for main's legacy required name (owner-authorized)
+- main's branch protection requires "Source-check without Discord SDK (not a release)"; since 673e that job is a two-image
+  matrix reporting "... - ubuntu-24.04" / "... - ubuntu-latest", so PR #21 stayed blocked with every check green.
+- Owner authorized (17 Nov 16:09 Berlin) a bridge, no protection change: job verify-gate in verify-update-310.yml carries the
+  legacy name, needs: verify, if: always(), and passes only when needs.verify.result == success (both images); failure,
+  cancelled or skipped fail it. Shell logic checked for all five results; GitHub evidence (ordering + result) in the RC doc.
+- Files: .github/workflows/verify-update-310.yml. App code unchanged (app tree = eadd00f).
+
 # Update 678r (17 Nov 2026, live session) - Channel name plate stays one line (D350, no lane loop); owner handoff merged
 - Owner handoff 17 Nov 14:45 (v0.6.73 finish + v0.6.74 polish) merged without duplicates: matrix H16 (visual polish of all 53
   game windows, priority Pocket Classic / Pocket Ribbon / Night / Pocket / Bar), H17 (Channel D350, listed by the owner as a
