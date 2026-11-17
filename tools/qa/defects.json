@@ -4040,6 +4040,30 @@
    "severity": "medium",
    "status": "open (v0.6.74, H16 'Pocket: Play game wraps' - owner list); not pixel-font related",
    "found": "2026-11-17 emulator 44140115312"
+  },
+  {
+   "id": "D355",
+   "title": "Cube category dock: the 'L2 · R2' turn row cut to half its height under 'N games' (KONKR 960x640, x1.3, k679p13 / k679s)",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed 679e (one line when the dock is short) - verified KONKR k679d x1.0 + x1.3 (status 12/12, home text 6/6)",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D356",
+   "title": "Channel home: the achievement progress pill reaches 5 px into the sliding name plate (KONKR x1.3, k679p13 badgecheck 'PROGRESS covers text')",
+   "rule": "R27",
+   "severity": "low",
+   "status": "open (v0.6.74)",
+   "found": "2026-11-17"
+  },
+  {
+   "id": "D357",
+   "title": "badgecheck flags badges of tiles a carousel has scrolled partly off-screen and of cover-flow covers stacked behind the focused one (Cube x1.0, Classic / Tiles rows) - the same on every run since 677c; checker strictness, not a drawing fault - teach badgecheck to skip a tile whose own box is off-screen / covered",
+   "rule": "R27",
+   "severity": "low",
+   "status": "open (QA tooling)",
+   "found": "2026-11-17"
   }
  ]
 }

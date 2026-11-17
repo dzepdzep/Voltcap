@@ -49,6 +49,18 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
+### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE
+- Device: KONKR GT78 (BW0306N230000845, USB), L1 QA app only; production Voltcap 0.6.73 untouched (home again at the end). Odin 2
+  Portal (b92036fb) connected but NOT used - the owner's own app (WWE 13 port) was in front.
+- Builds: qa-679c-e4669b9-ci (dev line e4669b9, CI 44153799854), qa-679e (branch claude/cube-dock-fit-679d e7cbfd2, CI 44158900949).
+- pop529 k679p13 x1.3 SPOT HUB CHAN STORAGE CUBE CLASSIC: popup gate 6/6 PASS; status 10/10; badges 4/5 (Channel D356); home text
+  5/6 -> Cube 'L2 · R2' cut (D355).
+- status677 k679s x1.0 + x1.3 (6 layouts x points / notes / trophy / pads, narrowest handheld): status bar + profile picture 72/72
+  PASS; home text 33/36 (Cube D355); badges: carousel / cover-flow findings (D357, checker). k679ss density 1.4 HUB + CUBE: status
+  12/12, home text 6/6.
+- 679e fix verified: k679d CUBE x1.0 + x1.3 status 12/12, home text 6/6 (before / after sheet konkr_cube_dock_679d.png).
+- NOT TESTED: Terminal 679d (HW-22, newer than the tested build), touch, x1.0 popup gate.
+
 ### HW-22 Terminal home: path, header and preview shown whole (679d, rule 11 / D353) - OPEN (batch with other KONKR requests)
 - Device(s): KONKR (GT78, BW0306N230000845), USB, only if already connected. Level L1 (QA app only).
 - Build: the 679d commit on claude/qa-0672-repair (or newer); "[qa-apk]" QA build + tools/qa/builds.json ledger entry first.
@@ -70,6 +82,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   category with L2 / R2 at 1.4 - the title stays put (CATSHELL rule 14); screenshot each.
 - Result:
 
+- KONKR 17 Nov evening (qa-679c-e4669b9-ci, status677 k679ss HUB + CUBE at font=1.3,density=1.4): status 12/12, home text 6/6 PASS - the category title clear of the profile row on the KONKR. RP Classic (the device it was found on) still NOT TESTED.
 ### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - OPEN (tooling fixed 678l, needs the Classic)
 - Device(s): RP Classic. Level L1.
 - Why: j677c10 stopped at setup "no game matches 'Shadow of the Colossus'" / "'ActRaiser'": the fixture library does not load
@@ -296,12 +309,13 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - 678p (reopen in place, qa-0.6.73-678p-ci, crate678.sh k678p_*): Record crate x1.0 10/10 + x1.3 10/10, TV room x1.0 10/10 + x1.3
   10/10, Cardboard box x1.0 10/10, Card binder x1.0 10/10 closed - 60 / 60, no launch (before: ~1 in 10 left open).
 
-### HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) - OPEN
+### HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) - KONKR PASS 17 Nov; Flip 2 NOT TESTED
 - Device(s): KONKR (x1.3, where k674n read dy +3 px) + Flip 2 x1.0. Build: 675e or later (QA app).
 - Why not emulator: the reading came from the KONKR's real panel and backdrop at x1.3; emulator evidence never closes it.
 - Tests: popclip / navclip on SPOTLIGHT home with QA traces; glyphcheck on the run folder - START / SELECT / A / X / Y must read
   source "InkGlyph+key" and PASS (limits unchanged, max(1.5 px, 5 %)); look at the crops of anything over 4 %.
 
+- Result 17 Nov evening (KONKR, QA build qa-679c-e4669b9-ci, pop529 k679p13 x1.3): SPOT popup gate all columns PASS incl. glyphs (START / SELECT / A / X / Y) - PASS on the KONKR; Flip 2 x1.0 NOT TESTED (device unavailable).
 ### HW-7 Spotify screen + player: long names shown whole (675l, rule 11) - OPEN
 - Device(s): KONKR (960x640, the narrowest), x1.0 + x1.3. Build: 675l or later (QA app). Only if the QA app is already signed
   in to Spotify or shows its lists without an account; never sign in with the owner's account for this.

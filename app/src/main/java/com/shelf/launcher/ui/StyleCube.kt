@@ -638,7 +638,7 @@ private fun CubeCaption(c: StyleCtx, extra: Boolean, tint: Color, portrait: Bool
 
 /**
  * (Update 239, #93: beside / under the docked cube — the category you're in, its count, how to turn it.)
- * 679d (KONKR x1.3, k679p13: the "L2 · R2" row was cut to half its height under "2 games" - the dock is 640 px tall): when the
+ * 679e (KONKR x1.3, k679p13: the "L2 · R2" row was cut to half its height under "2 games" - the dock is 640 px tall): when the
  * label doesn't fit its height, the count and the turn row share one line instead of being clipped; with room, unchanged.
  */
 @Composable

@@ -4,8 +4,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
 
-/** 679d (KONKR x1.3 k679p13): the Cube dock label never clips its "L2 · R2" row - it goes to one line when the height is short. */
-class CubeDockFit679dTest {
+/** 679e (KONKR x1.3 k679p13): the Cube dock label never clips its "L2 · R2" row - it goes to one line when the height is short. */
+class CubeDockFit679eTest {
     private fun src(name: String) = listOf("src/main/java/com/shelf/launcher/ui/$name", "app/src/main/java/com/shelf/launcher/ui/$name")
         .map { File(it) }.first { it.exists() }.readText()
 

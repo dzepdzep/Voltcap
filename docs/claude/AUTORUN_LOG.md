@@ -223,3 +223,8 @@
 - Pixel font B built + emulator comparisons; D353 / D354 logged; badge plan; branches claude/v0674-pixel-font, claude/v0674-badges.
 ## 17 Nov 19:50 UTC cloud run - 679d
 - Rule 11 / D353: Terminal home path / header / preview shown whole (TerminalFullText679dTest; cloud compile blocked by Maven 429 twice, CI decides). HW-22 queued (KONKR). CI GREEN e4669b9. Lock released.
+
+## 2026-11-17 ~19:00-19:50 UTC - live session (owner chose "A" after v0.6.73 was already published -> v0.6.74 hardware checks)
+- KONKR only (Odin 2 Portal had the owner's app in front - left alone). HW-23 results; 679e Cube dock fix made, verified on the
+  KONKR and merged here; D355-D357 recorded; HW-6 KONKR PASS; HW-21 KONKR evidence. KONKR restored (QA app stopped, home = the
+  owner's Voltcap). Lock released.
