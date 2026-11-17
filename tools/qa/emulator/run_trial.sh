@@ -134,14 +134,25 @@ finish() {
   else note "crash buffer at the end: NOT READ (emulator offline)"; fi
   python3 tools/qa/emulator/grade_trial.py "$OUT" "$APK" | tee -a "$S"; exit 0; }
 run_pop() { # tag scale layouts
-  timeout 300 adb shell "cd /data/local/tmp && sh pop529.sh run $1 '$2' '$3' OWN"
-  if waitdone /sdcard/pc/$1 $1 420; then note "popup gate $1 ($2: $3): run finished"; else note "popup gate $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
+  # (679a: QA_PREF passes one QA-app setting to pop529.sh, e.g. ui_font=PIXEL - empty: none, as before.)
+  timeout 300 adb shell "cd /data/local/tmp && QA_PREF='${QA_PREF:-}' sh pop529.sh run $1 '$2' '$3' OWN"
+  if waitdone /sdcard/pc/$1 $1 ${QA_WAIT:-420}; then note "popup gate $1 ($2: $3): run finished"; else note "popup gate $1 ($2): DID NOT FINISH (NOT TESTED)"; fi
   [ "$(timeout 10 adb get-state 2>/dev/null)" = device ] || { note "EMULATOR OFFLINE after $1 - nothing pulled"; offline_why; return; }
   timeout 60 adb shell "cd /data/local/tmp && sh pop529.sh restore $1"
   timeout 120 adb pull -a /sdcard/pc/$1 "$OUT/raw/" > /dev/null 2>&1; timeout 120 adb pull -a /sdcard/pc/${1}_w "$OUT/raw/" > /dev/null 2>&1
   # (First run 43517899154: the gate found no main screenshot - the run's own logs go into the summary now.)
   { echo '```'; echo "$1 log:"; timeout 30 adb shell cat /sdcard/pc/$1/log.txt /sdcard/pc/${1}_w/log.txt 2>&1 | tail -40; echo "files: $(adb shell ls /sdcard/pc/$1 2>&1 | tr '\n' ' ' | cut -c1-600)"; echo '```'; } | tee -a "$S"
 }
+# (679a, owner 17 Nov H9 pixel-font before / after: review mode - workflow_dispatch input review_layouts runs only those
+# layouts at x1.3 then x1.0 (screens for a side-by-side, graded as usual) and stops. Empty: the standard trial below.)
+if [ -n "${QA_REVIEW_LAYOUTS:-}" ]; then
+  QA_WAIT=900
+  precheck e679r13 || finish
+  run_pop e679r13 "font=1.3,density=1.15" "$QA_REVIEW_LAYOUTS"
+  precheck e679r10 || finish
+  run_pop e679r10 off "$QA_REVIEW_LAYOUTS"
+  finish
+fi
 precheck e529a || finish
 run_pop e529a "font=1.3,density=1.15" "COVERDETAILS SHELF"
 precheck e529b || finish
