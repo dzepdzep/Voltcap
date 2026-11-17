@@ -93,4 +93,15 @@ class NativePages681aTest {
         assertEquals("NEXT UP", discoverShelf(false, 0)); assertEquals(null, discoverShelf(false, 2))
         assertEquals("STILL TO GET", discoverShelf(false, 3)); assertEquals(null, discoverShelf(false, 4))
     }
+
+    @Test fun tvRoomHasATeletextService() {
+        assertEquals(100, ttxPageNo(WinPage.DETAILS)); assertEquals(200, ttxPageNo(WinPage.TROPHIES)); assertEquals(300, ttxPageNo(WinPage.OPTIONS))
+        assertEquals(listOf(WinPage.MAIN, WinPage.DETAILS, WinPage.OPTIONS), ttxFastext(setOf(WinPage.MAIN, WinPage.DETAILS, WinPage.OPTIONS)).map { it.second })
+        assertEquals("█████░░░░░", ttxBar(5, 10, 10)); assertEquals("█░░░░░░░░░", ttxBar(1, 120, 10)); assertEquals("█████████░", ttxBar(119, 120, 10))
+        val g = src("GameWindow.kt")
+        val body = g.substring(g.indexOf("private fun TvWindowBody("), g.indexOf("private fun TvControls("))
+        assertTrue(body.contains("TvTeletext(tctx, pg, live, Modifier.fillMaxSize(), footRoom)"))
+        assertFalse(body.contains("WindowTrophies(") || body.contains("WindowOptions(") || body.contains("WindowDetails("))
+        assertEquals(1, src("WinPagesTv.kt").split("ctx.pageFor(").size - 1)
+    }
 }

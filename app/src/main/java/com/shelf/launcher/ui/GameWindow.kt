@@ -60,6 +60,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -1583,7 +1584,9 @@ internal fun GameWindow(
             val onClose: () -> Unit = if (tvFlight) close else onClose
             // (The set switching on: all of the reveal, or - with the case going in - its second half, once the case is in.)
             val tvOn: () -> Float = if (tvFlight) ({ tvSetOn(grow.value) }) else ({ grow.value })
-            BoxWithConstraints(Modifier.fillMaxSize().then(if (tvFlight) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = 0.35f * grow.value.coerceIn(0f, 1f))) } else Modifier.background(Color.Black.copy(alpha = 0.35f))).pointerInput(Unit) { detectTapGestures { onClose() } }) {
+            // (P2 / 681g: L1 / R1 walk the set's teletext pages wherever the D-pad is - on the picture's keys under the set too.)
+            val tvPagesCtx = with(d) { tvSceneCtx(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, extras, options, tvRect.width.toDp(), tvRect.height.toDp()) }
+            BoxWithConstraints(Modifier.fillMaxSize().nativeBumpers(tvPagesCtx).then(if (tvFlight) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = 0.35f * grow.value.coerceIn(0f, 1f))) } else Modifier.background(Color.Black.copy(alpha = 0.35f))).pointerInput(Unit) { detectTapGestures { onClose() } }) {
                 with(d) {
                     // Update 125: the name and the buttons go under the set when there's room, so nothing covers the
                     // game's picture (they sat over its lower half, over the faces); over its foot only when there isn't.
@@ -2029,6 +2032,67 @@ private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: W
  * Update 119: the window on the TV room's set — the picture fills the screen. Update 125: the name and the buttons sit
  * under the set ([TvControls]) unless there's no room there ([controlsInside]: then over the picture's foot, as before).
  */
+/** P2 (681g): the TV room window's scene context - what its teletext pages share with the layouts' own pages (NativePageKit). */
+@Composable
+private fun tvSceneCtx(
+    look: WinLook, g: Game, state: LauncherUiState, backdrop: String?, cover: String?, page: WinPage, setPage: (WinPage) -> Unit,
+    playFocus: FocusRequester, listFocus: FocusRequester, onClose: () -> Unit, extras: WinExtras, options: List<WinOption>,
+    maxW: androidx.compose.ui.unit.Dp, maxH: androidx.compose.ui.unit.Dp
+): WinSceneCtx {
+    val titles = LocalTitleOptions.current
+    val openers = LocalPageOpeners.current
+    val status = LocalWinStatus.current
+    val meta = state.metadata[g.stableKey]
+    val list = state.raAchievementDetails[g.stableKey].orEmpty()
+    val p = state.raProgress[g.stableKey]
+    return WinSceneCtx(
+        g = g, state = state, cover = cover, wide = null, backdrop = backdrop, logo = null,
+        name = titles.display(g.name),
+        console = if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "Android" else titles.console(g.platform),
+        playtime = state.playtime[g.stableKey]?.takeIf { it > 0L }, lastPlayed = state.lastPlayedAt[g.stableKey],
+        year = meta?.releaseYear?.toString(), developer = meta?.developer?.takeIf { it.isNotBlank() },
+        genres = meta?.genres?.take(2)?.joinToString(", ")?.takeIf { it.isNotBlank() },
+        summary = meta?.summary?.takeIf { it.isNotBlank() },
+        earned = if (list.isNotEmpty()) list.count { it.isUnlocked } else p?.NumAchieved ?: 0,
+        total = if (list.isNotEmpty()) list.size else p?.NumPossibleAchievements ?: 0,
+        page = page, setPage = setPage, playFocus = playFocus, listFocus = listFocus,
+        buttons = emptyList(), tools = emptyList(), chips = emptyList(), close = onClose,
+        inspecting = false, accent = look.accent, maxW = maxW, maxH = maxH, reveal = { 1f },
+        pageBody = {},
+        pageFor = { pg, m, live ->
+            val lf = if (live) listFocus else remember { FocusRequester() }
+            when (pg) {
+                WinPage.MAIN -> {}
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.OPTIONS -> WindowOptions(look, options, lf, m)
+                WinPage.TROPHIES -> WindowTrophies(look, g, state, lf, m, extras.onLoadComments)
+                WinPage.PERF -> WindowPerformance(look, lf, m)
+            }
+        },
+        // (A page opened from the picture registers its opener as the set's keys do, so B comes back onto it.)
+        open = { to ->
+            if (page == WinPage.MAIN) when (to) {
+                WinPage.DETAILS -> openers?.opened(OPENER_DETAILS)
+                WinPage.OPTIONS -> openers?.opened(OPENER_OPTIONS)
+                WinPage.TROPHIES -> openers?.opened(OPENER_TROPHIES)
+                else -> {}
+            }
+            when (to) {
+                WinPage.OPTIONS -> extras.onOptions()
+                WinPage.TROPHIES -> extras.onAchievements()
+                else -> setPage(to)
+            }
+        },
+        pages = buildSet {
+            add(WinPage.MAIN); add(WinPage.DETAILS)
+            if (list.isNotEmpty()) add(WinPage.TROPHIES)
+            if (options.isNotEmpty()) add(WinPage.OPTIONS)
+            if (status?.perf != null) add(WinPage.PERF)
+        },
+        options = options
+    )
+}
+
 @Composable
 private fun TvWindowBody(
     look: WinLook, g: Game, state: LauncherUiState, backdrop: String?, cover: String?, page: WinPage, setPage: (WinPage) -> Unit,
@@ -2037,20 +2101,21 @@ private fun TvWindowBody(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val roomy = maxWidth > 380.dp
-        when (page) {
-            WinPage.MAIN -> {
+        // (P2 / 681g: the set's own pages - its TELETEXT service, WinPagesTv.kt. The TV window is no layout scene, so it gets the
+        // little scene context the native pages share: the game, its facts, its achievements, the options, focus and openers.)
+        val tctx = tvSceneCtx(look, g, state, backdrop, cover, page, setPage, playFocus, listFocus, onClose, extras, options, maxWidth, maxHeight)
+        var controlsH by remember { mutableStateOf(0) }
+        val footRoom = if (controlsInside) with(androidx.compose.ui.platform.LocalDensity.current) { controlsH.toDp() } else 0.dp
+        NativePages(tctx, Modifier.fillMaxSize(), label = "tvPage", move = ::ttxMove) { pg, live ->
+            if (pg == WinPage.MAIN) Box(Modifier.fillMaxSize()) {
                 if (backdrop != null) SmartArt(backdrop, null, Modifier.fillMaxSize().pixelArtwork(), request = rememberBackdropRequest(backdrop), maxCrop = SmartFill.maxCropFor(backdrop, cover))
                 val video = state.videoUrls[g.stableKey]
                 VideoCrossfade(video, state.appearance.videoSound, Modifier.fillMaxSize())
                 if (controlsInside) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f), Color.Black.copy(alpha = 0.88f)))))
                 WinPicturePart(look, g, state, cover, extras, Modifier.fillMaxSize(), nameShown = false)
-            }
-            WinPage.DETAILS -> WindowDetails(look, g, state, cover, Modifier.fillMaxSize())
-            WinPage.OPTIONS -> WindowOptions(look, options, listFocus, Modifier.fillMaxSize())
-            WinPage.TROPHIES -> WindowTrophies(look, g, state, listFocus, Modifier.fillMaxSize(), extras.onLoadComments)
-            WinPage.PERF -> WindowPerformance(look, listFocus, Modifier.fillMaxSize())
+            } else TvTeletext(tctx, pg, live, Modifier.fillMaxSize(), footRoom)
         }
-        if (controlsInside) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(10.dp)) {
+        if (controlsInside) Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().onSizeChanged { controlsH = it.height }.padding(10.dp)) {
             TvControls(look, g, page, setPage, playFocus, onClose, onPlay, onFullDetails, extras, roomy)
         }
         // The old set's glass: faint scanlines over everything.
