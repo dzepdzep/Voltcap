@@ -1,5 +1,14 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov ~22:15 Berlin - OWNER: P2 NATIVE PAGES IS A MAIN PRIORITY (newest; read with the v0.6.74 list below).** The 40 layouts
+without their own Details / Achievements / Options pages get them, each in its own design ("not the shared pages in different
+borders"), batches of 4-5, screenshots / recordings for review, tracked as Native pages X/53 (implemented / hardware / owner).
+Plan, rules, per-layout design briefs and the tracker: `docs/claude/NATIVE_PAGES_P2.md` on branch `claude/v0674-native-pages`
+(the kit NativePageKit.kt + Record crate 681a are there; batch 1 next: Classic, Console hub, Resume, TV room).
+Run order from now: alternate - one run P2 (next layout of the current batch on `claude/v0674-native-pages`, worktree, push
+fast-forward; merge the dev line into that branch first when it moved), the next run the v0.6.74 list below (pixel font / badge
+styles / polish / fixes). CI first as always. Never merge the P2 branch into the dev line before the owner approves the batch.
+
 **17 Nov ~20:15 Berlin - OWNER PRIORITIES v0.6.74 (newest; this order wins over every older list below).** v0.6.73 is
 published. Each run: verify Verify 310 on the last push first (red -> fix first), then the first unblocked item:
 1. D356 Channel progress pill vs sliding name - DONE in code 680a (badge lane OVERLAY band; BadgeOverlay680aTest); HW-24 queued.

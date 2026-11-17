@@ -13,6 +13,10 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
+docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages (kit + Record crate done 681a; batch 1 next: Classic,
+Console hub, Resume, TV room).
+
 ## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
 1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+
 Compact (default) / Top Clip / Hanging Bottom, progress kept visible, Twin Icons spacing D352 (branch). 4. 53-window polish (H16).
