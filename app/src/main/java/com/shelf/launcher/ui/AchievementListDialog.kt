@@ -679,3 +679,22 @@ private enum class AchievementFilter(
 /** 678m (H12): the Achievements page opens on its new-unlocks stage (not the first row) when unlocks are waiting to play. */
 internal fun achOpensOnNewUnlocks(stageIds: Set<Int>, achievements: List<RaAchievementDetail>): Boolean =
     stageIds.isNotEmpty() && achievements.any { it.id in stageIds && it.isUnlocked }
+
+/**
+ * 678o (HW-20 QA): the `voltcap_test_achnew N` hook's N newest unlocks of [g] count as new once more before its page opens, so
+ * the new-unlocks stage can be checked on a handheld. Isolated QA app only; a no-op without the hook (the app never calls it
+ * otherwise). The hook's number is used once.
+ */
+internal fun qaMarkNewUnlocks(context: android.content.Context, g: Game, details: List<RaAchievementDetail>?) {
+    val n = TestHooks.achNew
+    TestHooks.achNew = 0
+    if (n <= 0 || !com.shelf.launcher.data.QaVariant.isolated(context)) return
+    val id = g.raGameId ?: return
+    val ids = qaNewestUnlocks(details.orEmpty(), n)
+    com.shelf.launcher.data.AchievementSeen.qaMarkNew(context, com.shelf.launcher.data.AchievementSeen.keyRa(id), ids)
+    android.util.Log.e("VoltcapQA", "achnew ${g.name}: ${ids.size} of $n marked new")
+}
+
+/** The [n] most recently earned unlocked achievements (RetroAchievements dates sort as text: "yyyy-MM-dd HH:mm:ss"). Pure. */
+internal fun qaNewestUnlocks(details: List<RaAchievementDetail>, n: Int): List<Int> =
+    details.filter { it.isUnlocked }.sortedByDescending { it.dateEarned ?: it.dateEarnedHardcore ?: "" }.take(n).map { it.id }

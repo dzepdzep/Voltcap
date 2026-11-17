@@ -9,11 +9,15 @@
 - New QA tool: tools/qa/device/text678.sh - Settings (search "theme", Theme / Achievements / Categories pages), Save Vault
   (fixture), category screen (long name) and a game's Achievements list at x1.0 + x1.3 by test hooks, screenshot + QaClip dump
   each (graded with homecut.py); QA app only, no Back / Home key, snapshot restored.
-- Checked in the cloud: compileDebugKotlin OK (the change compiles); static checks PASS (TRUNCATE 179); QA selftest 190/190.
-  Unit test run blocked by the Maven proxy (test classpath) - CI is its first run.
+- New QA hook (HW-20, isolated QA app only): `--ei voltcap_test_achnew N` with `--ez voltcap_test_achlist true` - the focused
+  game's N newest unlocks count as new once more (AchievementSeen.qaMarkNew) before its Achievements page opens, so 678m's
+  "opens on the new unlocks" is checkable on a handheld without a real unlock. AchNewHook678oTest.
+- Checked in the cloud: compiled; BannerTouch678oTest 2/2, AchNewHook678oTest 2/2, AchNewUnlocksOnOpen678mTest 2/2,
+  AchCompact529Test 8/8, GameWindowBannerFullText678eTest 1/1 PASS; static checks PASS (TRUNCATE 179); QA selftest 190/190.
 - Hardware results: see the end of this session's report (HARDWARE_QA_QUEUE.md HW-1 / HW-12 and the dashboard).
-- Files: app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt; app/src/test/java/com/shelf/launcher/ui/BannerTouch678oTest.kt;
-  tools/qa/device/text678.sh; tools/qa/builds.json (qa-0.6.73-678n-ci).
+- Files: app/src/main/java/com/shelf/launcher/ui/GameWindowBanner.kt; ui/TestHooks.kt, ui/AchievementListDialog.kt,
+  ui/LauncherScreen.kt (one call), data/AchievementSeen.kt (the QA hook); app/src/test/.../BannerTouch678oTest.kt,
+  AchNewHook678oTest.kt; tools/qa/device/text678.sh; tools/qa/builds.json (qa-0.6.73-678n-ci).
 
 # Update 678n (17 Nov 2026, cloud scheduled run) - CI red on 678m fixed (stale source pin)
 - Verify 310 on a6cdfc7 (678m) was RED on one test: AchCompact529Test.controlsAreOneBarWithFoldedPanels (2876 tests, 1 failed,

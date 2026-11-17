@@ -1,7 +1,8 @@
 #!/system/bin/sh
 # 678o (live KONKR session): rule-11 text pages on hardware in one pass - HW-14 Settings (search "theme", the Theme,
 # Achievements and Categories pages), HW-13 Save Vault (fixture: display only, no save read / written, nothing synced),
-# HW-16 category screen (a long console name), HW-20 a game's Achievements list (fixture, nothing new). Isolated QA app ONLY
+# HW-16 category screen (a long console name), HW-20 a game's Achievements list (fixture: nothing new, then 2 marked new by
+# the voltcap_test_achnew hook). Isolated QA app ONLY
 # (com.shelf.launcher.qa): pages are opened by test hooks (no Back / Home key ever), a screenshot + QaClip dump each, and D-pad
 # steps (▼ / ▶) to see rows keep their heights. Never wakes / unlocks; keys only while the QA app has the focus (else it stops
 # the QA app and ends, nothing pressed). The QA app's own settings: snapshot saved first, restored and verified at the end.
@@ -57,6 +58,11 @@ for SC in $SCALES; do
   # HW-20: the focused game's Achievements list (fixture achievements, nothing new): opens on its first achievement, whole
   A --ez voltcap_test_achlist true; sleep 3; shot ${S}_ACHLIST
   k DPAD_DOWN; shot ${S}_ACHLISTD1; k DPAD_UP; shot ${S}_ACHLISTU1
+  A --es voltcap_test_layout CLASSIC --ez voltcap_test_preview true --es voltcap_test_game "Shadow of the Colossus"; sleep 3
+  # HW-20 (678o hook, QA app only): its 2 newest unlocks count as new once more -> the page opens on the new-unlocks stage,
+  # ▼ goes on to the controls / the list one press each, ▲ back
+  A --ei voltcap_test_achnew 2 --ez voltcap_test_achlist true; sleep 4; shot ${S}_ACHNEW
+  k DPAD_DOWN; shot ${S}_ACHNEWD1; k DPAD_DOWN; shot ${S}_ACHNEWD2; k DPAD_UP; shot ${S}_ACHNEWU1
   A --es voltcap_test_layout CLASSIC --ez voltcap_test_preview true; sleep 2
 done
 fin
