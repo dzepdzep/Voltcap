@@ -175,3 +175,8 @@
 - BOOTSTRAP OK b76e3ef; lock free (live session released) -> taken. Verify 310 GREEN on the merge b76e3ef; trial on 678j success.
 - H8: console homes FitText slide instead of "…" + ConsoleHubFullText678kTest (compiled after one Maven 429 retry, PASS);
   HW-17 extended. Lock released.
+
+## 2026-11-17 ~05:18-05:50 UTC - live session (HW-17 focused v0.6.73 checks)
+- CI GREEN on b76e3ef; its CI QA APK installed on RP Classic + Nova (L1). status677 / navbar676 / pop529 (10 layouts, x1.3)
+  graded: see releases.json gate "Focused handheld re-check" (PASS with listed findings). Both handhelds restored, QA app
+  stopped, Classic back on the owner's Voltcap home; owner told safe to disconnect. Lock taken 05:36, released.

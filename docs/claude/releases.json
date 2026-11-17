@@ -162,8 +162,8 @@
     },
     {
      "gate": "Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)",
-     "state": "PENDING",
-     "evidence": "HW-17. Not run on 677l / the merged build: NOT TESTED. Before: Nova j677x13 (677j, with whole words) popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (QA dump reading probes / LCD ghost digits, fixed 677k; word-break findings = pre-existing, deferred with whole words)"
+     "state": "PASS",
+     "evidence": "17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR."
     },
     {
      "gate": "Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line",

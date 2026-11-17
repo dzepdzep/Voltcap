@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678k · 2026-11-17 05:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b76e3ef (merged dev line); 678k push pending · effort: medium
+**1. LATEST UPDATE** - live-17nov-c · 2026-11-17 05:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b76e3ef (tested build); 668577b (678k) pending · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic tests passed on the development line with the v0.6.73 fixes merged in. The Console Hub, Resume and Channel homes no longer end long game names (like 'Advance Wars (Rev 1) (No Glitch)') or the category name in '...': they wrap, shrink a little or slide so they can be read whole. A short check on the RP Classic at Larger text was added to the next handheld session.
+**2. WHAT CLAUDE JUST FIXED** - The v0.6.73 fixes passed their focused checks on the RP Classic and RP Nova at normal and large text: the RetroAchievements points are never squeezed, the profile picture shows once, Storage numbers stay together, and the ten game windows that failed last night all pass now. Two older checker findings remain for you to look at (stacked side covers in the Cube cover flow, and the RP Classic's invisible gesture area), and the newest Hub name fix from the hourly run still needs a short look on a handheld.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: CI on this update; then: RP Classic test-game setup fix for the full handheld gate; Achievements page: keep Recently Unlocked in view on open
+**5. WORKING ON NEXT** - now: v0.6.73: remaining release gates (KONKR / owner review / signed build) - owner; then: short handheld look at 678k (Hub names); fix the RP Classic test-game setup
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 7 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 13 app fixes fully verified · 7 gates left (next: Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 13 app fixes fully verified · 6 gates left (next: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -76,7 +76,7 @@ work. Emulator results never count as handheld verification. Release status is d
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PASS | GREEN on b76e3ef (merged dev line with the facet 677l fixes, run 44021029263, 17 Nov 05:00 UTC); each later push re-checks it (678k pushed after). GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PASS | run 44017399771 (678j, 9d7605f): success (verdict step passes only on PASS; EMULATOR evidence only, pre-merge tree). run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
-| Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) | PENDING | HW-17. Not run on 677l / the merged build: NOT TESTED. Before: Nova j677x13 (677j, with whole words) popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (QA dump reading probes / LCD ghost digits, fixed 677k; word-break findings = pre-existing, deferred with whole words) |
+| Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) | PASS | 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR. |
 | Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line | PASS | merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
@@ -90,7 +90,7 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
@@ -182,7 +182,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
-| HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | OPEN |
+| HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | BLOCKED (QA fixture) |
 | HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
 | HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
@@ -201,7 +201,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 17 of 18.
+Open hardware requests: 16 of 18.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

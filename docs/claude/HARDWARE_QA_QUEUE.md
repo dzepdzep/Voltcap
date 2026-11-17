@@ -32,7 +32,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - OPEN
+### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED
 - Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
 - Build: the merged dev line (af1867f or later; facet 677l merged 17 Nov, whole words NOT included): push a commit with
   "[qa-apk]" for the signed QA APK, add its ledger entry (tools/qa/builds.json) first. Known pre-existing word breaks (D346,
@@ -45,7 +45,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Added 678k (H8): on the RP Classic at Larger text (font=1.3), Console Hub with a long name (e.g. 'Advance Wars (Rev 1) (No
   Glitch)'): the focused Hub tile title and the Continue card name wrap / shrink / slide - no '…'; the Achievements card
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
-- Result:
+- Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
 ### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - BLOCKED (QA fixture)
 - Device(s): RP Classic. Level L1.
