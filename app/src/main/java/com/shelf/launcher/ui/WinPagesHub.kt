@@ -109,6 +109,7 @@ internal fun AnimatedVisibilityScope.HubPage(ctx: WinSceneCtx, p: WinPage, live:
     }
     Column(modifier.graphicsLayer {
         rotationX = swing; transformOrigin = TransformOrigin(0.5f, 0f); cameraDistance = 14f * density
+        flatTextFor3d() // (D285: text under a changing 3D turn - drawn flat into a layer)
     }) {
         Text(hubPageName(p), color = ctx.accent, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.5.sp)
         WinFullText(ctx.name, color = Color.White, fontSize = 16.sp, maxLines = 2, fontWeight = FontWeight.Bold, lineHeight = 19.sp)
