@@ -9,14 +9,14 @@ import java.io.File
 /** 679b (owner decision B): pixel text at 62.5 %, small text keeps a readable minimum, never larger than before. */
 class PixelType679bTest {
     @Test fun drawnRule() {
-        for (v in listOf(4f, 6f, 7f, 8.5f, 9f, 11f, 12f, 13.6f, 16f, 20f, 32f)) {
+        for (v in listOf(4f, 6f, 7f, 8.5f, 9f, 9.5f, 10f, 11f, 12f, 13.6f, 16f, 20f, 32f)) {
             val d = PixelType.drawn(v)
             assertTrue("never larger than before: $v -> $d", d <= v + 1e-4f)
             assertTrue("readable minimum: $v -> $d", d >= minOf(v, PixelType.MIN_SP) - 1e-4f)
             assertTrue("62.5 % baseline: $v -> $d", d >= v * PixelType.SCALE - 1e-4f)
         }
         assertEquals(20f * 0.625f, PixelType.drawn(20f), 1e-4f)   // big text: the baseline
-        assertEquals(8.5f, PixelType.drawn(11f), 1e-4f)          // a small label: the minimum
+        assertEquals(9.5f, PixelType.drawn(11f), 1e-4f)          // a small label: the minimum
         assertEquals(7f, PixelType.drawn(7f), 1e-4f)             // already small: unchanged
     }
 

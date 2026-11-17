@@ -14,8 +14,11 @@ import androidx.compose.ui.unit.sp
 internal object PixelType {
     /** volt_pixel.ttf unitsPerEm 1000 -> 1600. */
     const val SCALE = 0.625f
-    /** The smallest drawn pixel text, in sp (before the user's text size, which still scales it). */
-    const val MIN_SP = 8.5f
+    /**
+     * The smallest drawn pixel text, in sp (the user's text size still scales it). 679c: 8.5 -> 9.5 after the decision-B
+     * emulator review - Pocket camera's menu at x1.0 was readable but small with room to spare.
+     */
+    const val MIN_SP = 9.5f
 
     /** The one pixel family (the same instance everywhere, so [isPixel] can tell it). */
     val family: FontFamily = FontFamily(Font(com.shelf.launcher.R.font.volt_pixel))
