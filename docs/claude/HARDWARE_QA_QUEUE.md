@@ -32,9 +32,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-17 v0.6.73 candidate 677k focused re-check (status bar, profile picture, whole words) - OPEN
+### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - OPEN
 - Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
-- Build: CI QA APK of `claude/cube-statusbar-facet` at 677k ("[qa-apk]" run), ledger entry first (tools/qa/builds.json).
+- Build: the merged dev line (af1867f or later; facet 677l merged 17 Nov, whole words NOT included): push a commit with
+  "[qa-apk]" for the signed QA APK, add its ledger entry (tools/qa/builds.json) first. Known pre-existing word breaks (D346,
+  whole words deferred to v0.6.74 by the owner) go in a homecut --allow file with that reason - never silently.
 - Why not emulator: real fonts / densities and the owner's device sizes are the point.
 - Tests: status677.sh <tag> "CLASSIC GRID CUBE HUB STORAGE TILES" "off font=1.3,density=1.15" -> statuscheck.py + homecut.py
   (expect PASS); pop529.sh run <tag> font=1.3,density=1.15 "ARTLIB GREENCORE LIBRARY LIVE TERMINAL TWIN_ICONS ARCADE DISCS" OWN
