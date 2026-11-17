@@ -2683,7 +2683,10 @@ private fun SceneBody(
     // later page changes moved. Leaving the main page moved the scene from this branch to the plain one below - a new
     // composition, so the scene's own page motion started from nothing. A layout that draws its own pages stays in this
     // branch on every page.)
-    else if (labActions && (page == WinPage.MAIN || nativePages(scene))) androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.End) {
+    // (P2 681h, emulator walk run 44182839168: D-pad Down from Play lands on the Back hint under the window - outside the scene's
+    // own root, so L1 / R1 stopped turning a native layout's pages there. The bumpers are the whole window's.)
+    else if (labActions && (page == WinPage.MAIN || nativePages(scene))) androidx.compose.foundation.layout.Column(
+        if (nativePages(scene)) Modifier.nativeBumpers(ctx) else Modifier, horizontalAlignment = Alignment.End) {
         // (523z, kp523y / fp523y BAR / CROSS / SIDE own windows: scenes that fill the height they're given left the hint 0 px tall.
         // The hint is measured first; the scene gets the rest.)
         Box(Modifier.weight(1f, fill = false)) { DrawWinScene(scene, ctx) }

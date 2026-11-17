@@ -139,7 +139,7 @@ private fun VoltReadout(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.width(10.dp).height(2.dp).background(a))
                 Spacer(Modifier.width(6.dp))
-                Text(f.label.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, modifier = Modifier.width(96.dp))
+                Text(f.label.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, modifier = Modifier.width(124.dp)) // (681h, e x1.3: "CHARGE TIME" wrapped at 96 dp)
                 Text(f.value, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, lineHeight = 16.sp, modifier = Modifier.weight(1f))
             }
         }

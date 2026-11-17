@@ -55,7 +55,7 @@ run)
     REC_SEG=12 rec_start $O/${n}_walk 12; sleep 0.6
     k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3
     rec_stop; sleep 0.3
-    k BUTTON_R1 1.1; shot ${n}_details; k DPAD_DOWN 0.9; shot ${n}_details_focus
+    k BUTTON_R1 1.1; shot ${n}_details; k DPAD_UP 0.9; shot ${n}_details_focus
     k BUTTON_R1 1.1; shot ${n}_trophies; k DPAD_DOWN 0.8; k DPAD_DOWN 0.8; shot ${n}_trophies_focus
     k BUTTON_A 1.0; shot ${n}_trophies_open
     for i in 1 2 3 4 5 6 7; do k DPAD_DOWN 0.45; done; sleep 0.6; shot ${n}_trophies_scroll
@@ -69,19 +69,17 @@ run)
         k BUTTON_B 1.2; k BUTTON_B 1.4
       fi
     fi
-    # The destructive confirmation: an Android app's Options ("Hide from library" asks first) - one press arms it, B leaves.
-    for app in Settings Chrome Files Contacts; do
-      A --es voltcap_test_game "$app"; sleep 2
-      logcat -d -s VoltcapTest | tail -3 | grep -q "NO MATCH" && continue
-      openw $lay ${n}_app || break
-      # Options is the last page: L1 from Info
+    # The destructive confirmation: an app in the QA library's App category ("Hide from library" asks first) - one press arms
+    # it, moving off cancels, B leaves. Never confirmed.
+    A --es voltcap_test_category App; sleep 2
+    if openw $lay ${n}_app; then
       k BUTTON_L1 1.2; shot ${n}_app_options
-      # walk down to the last row (the destructive ones are last), a shot each step, then one A to arm it
       for i in 1 2 3 4 5 6 7 8 9 10; do k DPAD_DOWN 0.5; done; sleep 0.6; shot ${n}_app_options_last
       k BUTTON_A 1.0; shot ${n}_app_armed
       k DPAD_UP 0.9; shot ${n}_app_disarmed
-      k BUTTON_B 1.2; k BUTTON_B 1.4; log "$lay: destructive row armed and left on '$app' (never confirmed)"; break
-    done
+      k BUTTON_B 1.2; k BUTTON_B 1.4; log "$lay: destructive row armed and left (never confirmed)"
+    fi
+    A --es voltcap_test_category ALL; sleep 1.5
     # Motion Off: the walk again, recorded - page changes immediate.
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     MOTION=OFF; if openw $lay ${n}_off; then REC_SEG=10 rec_start $O/${n}_walk_motionoff 10; sleep 0.6
