@@ -260,12 +260,13 @@ internal object QaClip {
                 sb.append("\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],")
                 sb.append("\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}}")
             }
-            // (677d: the status bar's cluster and every profile picture, for statuscheck.py.)
+            // (677d: the status bar's cluster and every profile picture, for statuscheck.py; 677h: with "placed" - StatusFit's
+            // measured-only probes stay in this unmerged tree and are not on screen.)
             val bars = ArrayList<String>(); val avatars = ArrayList<String>()
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
                 val c = n.config
                 fun box(): String { val b = n.boundsInWindow; val p = n.positionInWindow
-                    return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}]" }
+                    return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}" }
                 if (c.getOrNull(StatusClusterTag) == true) bars += "{${box()}}"
                 c.getOrNull(AvatarTag)?.let { w -> avatars += "{\"where\":\"$w\",${box()}}" }
             }

@@ -71,6 +71,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -260,10 +261,10 @@ internal fun StatusBar(
                 Sep()
             }
             // Search, the trophy from the last game, notifications.
-            val actionsShown = !minimal && (level < 3 || trophyCount > 0 || notificationCount > 0)
+            val actionsShown = !minimal && (level < 3 || (trophyCount > 0 && level < 6) || notificationCount > 0)
             if (actionsShown) Group {
                 if (level < 3) Icon(Icons.Filled.Search, null, tint = ink, modifier = Modifier.size(look.iconSize).tapOnly(onSearchButtonClick))
-                if (trophyCount > 0) ReturnTrophy(trophyCount, onTrophy)
+                if (trophyCount > 0 && level < 6) ReturnTrophy(trophyCount, onTrophy) // (677f: level 6 - the last game's trophy chip)
                 if (notificationCount > 0) Row(Modifier.tapOnly(onNotifications), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(look.iconSize))
                     Text(
@@ -400,28 +401,33 @@ internal fun StatusBar(
 internal val LowBatteryColor = Color(0xFFFF6B6B)
 
 /** 677f: the most compact [StatusBar] cluster level (see the cluster's head). */
-private const val STATUS_LEVELS = 6
+private const val STATUS_LEVELS = 7
 
 /**
- * 677f: the status cluster at its own full size - never squeezed. Composed at level 0; while it is wider than the room it has,
- * composed again one level more compact, in the same measure pass (nothing drawn first and changed later). The last level is
- * placed whatever it measures.
+ * 677f: the status cluster at its own full size - never squeezed. Each level is first measured as a silent probe (never placed,
+ * no semantics for TalkBack; the QA dump marks them placed=false - RP Classic c677an: the probes' pictures were read as
+ * duplicates), the
+ * first that fits is composed for real and placed, in the same measure pass (nothing drawn first and changed later). The last
+ * level is used whatever it measures.
  */
 @Composable
 private fun StatusFit(content: @Composable (Int) -> Unit) {
     androidx.compose.ui.layout.SubcomposeLayout { c ->
         val loose = c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity)
         var level = 0
-        while (true) {
-            val ps = subcompose(level) { content(level) }.map { it.measure(loose) }
-            val w = ps.maxOfOrNull { it.width } ?: 0
-            if (w <= c.maxWidth || level == STATUS_LEVELS - 1) {
-                val h = ps.maxOfOrNull { it.height } ?: 0
-                return@SubcomposeLayout layout(w.coerceAtMost(c.maxWidth).coerceAtLeast(c.minWidth), h) { ps.forEach { it.place(0, 0) } }
-            }
+        while (level < STATUS_LEVELS - 1) {
+            val lv = level
+            val w = subcompose("probe$lv") {
+                androidx.compose.foundation.layout.Box(Modifier.clearAndSetSemantics { }) { content(lv) }
+            }.maxOfOrNull { it.measure(loose).width } ?: 0
+            if (w <= c.maxWidth) break
             level++
         }
-        @Suppress("UNREACHABLE_CODE") layout(0, 0) {}
+        val chosen = level
+        val ps = subcompose("real") { content(chosen) }.map { it.measure(loose) }
+        val w = ps.maxOfOrNull { it.width } ?: 0
+        val h = ps.maxOfOrNull { it.height } ?: 0
+        layout(w.coerceAtMost(c.maxWidth).coerceAtLeast(c.minWidth), h) { ps.forEach { it.place(0, 0) } }
     }
 }
 

@@ -14,11 +14,23 @@ A() { am start -n $P/com.shelf.launcher.MainActivity "$@" > /dev/null 2>&1; }
 fg() { dumpsys activity activities | grep -m1 "ResumedActivity: " | grep -q " $P/"; }
 touch $F/qa_nolaunch
 A --ez voltcap_test_preview true; A --ez voltcap_test_nolaunch true; sleep 3
+# (677p: QA_PREF="key=value" - one QA-app setting for this run (ui_font=PIXEL); saved first, put back at the end.)
+if [ -n "$QA_PREF" ]; then A --es voltcap_test_snapshot save; sleep 2; A --es voltcap_test_pref "$QA_PREF"; sleep 3; ev_note $OUT "pref=$QA_PREF"; fi
+# (RP Classic c677a: after an install the QA app opens on "Who's playing?" - every x1.0 step was taken under it. Kept player:
+# B, only while the QA app is in front and the picker is what its own dump shows.)
+pick() { echo "${TAG}_pick" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 2
+  grep -q "Who.s playing" $F/qa_clip/${TAG}_pick.json 2>/dev/null && fg && { input keyevent KEYCODE_BUTTON_B; sleep 2; echo "picker closed (B)" >> $OUT/log.txt; }; }
+pick
 for SC in $SCALES; do
-  A --es voltcap_test_scale "$SC"; sleep 3
+  A --es voltcap_test_scale "$SC"; sleep ${SCALE_WAIT:-3}
+  # (RP Classic c677b: a scale change recreates the screen; on a slower handheld its first frames were still blank - the
+  # script waits until the app's own dump reports a home layout before its first step.)
+  for w in 1 2 3 4 5 6 7 8 9 10; do echo "${TAG}_wait" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.5
+    grep -q '"homeLayout":"[A-Z]' $F/qa_clip/${TAG}_wait.json 2>/dev/null && break; done
+  pick
   S=x13; [ "$SC" = off ] && S=x10
   for lay in $LAYS; do
-    A --es voltcap_test_layout $lay; sleep 3
+    A --es voltcap_test_layout $lay; sleep ${LAYOUT_WAIT:-3}
     for combo in "points=12345678" "points=12345678,notes=12" "points=12345678,notes=12,trophy=3,pads=2"; do
       fg || { echo "ABORT: the QA app is not in front - nothing done" >> $OUT/log.txt; break 3; }
       A --es voltcap_test_status "$combo"; sleep 1.5
@@ -31,5 +43,6 @@ for SC in $SCALES; do
   done
 done
 A --es voltcap_test_status off; A --es voltcap_test_scale off; sleep 2; A --ez voltcap_test_preview false; sleep 1
+[ -n "$QA_PREF" ] && { A --es voltcap_test_snapshot restore; sleep 3; echo "restore: $(cut -c1-40 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)" >> $OUT/log.txt; }
 ev_end $OUT
 echo DONE >> $OUT/log.txt
