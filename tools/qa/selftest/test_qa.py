@@ -2461,6 +2461,49 @@ class TestStatusCheck677d(unittest.TestCase):
         self.assertEqual(r.returncode, 1, r.stdout)
 
 
+class TestAvatarPlace681e(unittest.TestCase):
+    """681e (owner v0.6.74 item 6): the profile picture in its corner (the bar's inside the status bar), on the screen, never
+    under a text; its own initial is part of it."""
+    def _run(self, win):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": 2.0, "windows": [dict(win, focus=True)]}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "statuscheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    bar = {"full": [900, 10, 370, 60], "shown": [900, 10, 370, 60]}
+    pic = {"where": "bar", "full": [1210, 15, 50, 50], "shown": [1210, 15, 50, 50]}
+    initial = {"text": "P", "full": [1225, 25, 20, 30], "shown": [1225, 25, 20, 30], "placed": True}
+
+    def test_bar_picture_in_the_bar_with_its_initial_passes(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import statuscheck
+        res = statuscheck.place_avatars("x", [self.pic], [self.bar], [self.initial], 1280, 960)
+        self.assertEqual([r.status for r in res], ["PASS"]); self.assertIn("top-right", res[0].reason)
+        r = self._run({"statusBars": [self.bar], "avatars": [self.pic], "texts": [self.initial]})
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_bar_picture_outside_the_bar_fails(self):
+        moved = dict(self.pic, full=[20, 880, 50, 50], shown=[20, 880, 50, 50])
+        r = self._run({"statusBars": [self.bar], "avatars": [moved], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("outside the status bar", r.stdout)
+
+    def test_text_over_the_picture_fails(self):
+        title = {"text": "All games", "full": [10, 20, 300, 60], "shown": [10, 20, 300, 60], "placed": True}
+        hub = {"where": "console", "full": [30, 30, 68, 68], "shown": [30, 30, 68, 68]}
+        r = self._run({"statusBars": [], "avatars": [hub], "texts": [title]})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("'All games' over it", r.stdout)
+        beside = dict(title, full=[110, 30, 200, 40], shown=[110, 30, 200, 40])
+        self.assertEqual(self._run({"statusBars": [], "avatars": [hub], "texts": [beside]}).returncode, 0)
+        unplaced = dict(title, placed=False)
+        self.assertEqual(self._run({"statusBars": [], "avatars": [hub], "texts": [unplaced]}).returncode, 0)
+
+    def test_picture_off_the_screen_fails(self):
+        off = {"where": "channel", "full": [1260, 10, 50, 50], "shown": [1260, 10, 50, 50]}
+        r = self._run({"statusBars": [], "avatars": [off], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("off the screen", r.stdout)
+
+
 class TestHomecut676o(unittest.TestCase):
     """676o: home-screen texts cut by their box FAIL (Spotlight OPTIONS / MENU on the RP Nova x1.0); sliding / whole PASS."""
     def _dump(self, texts, focus=True):

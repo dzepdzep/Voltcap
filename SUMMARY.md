@@ -1,3 +1,14 @@
+# Update 681e (17 Nov 2026, cloud run) - statuscheck grades where the profile picture sits (v0.6.74 item 6)
+- tools/qa/tools/statuscheck.py: new place_avatars - per visible profile picture: FAIL when it is not wholly on the screen, when
+  the status bar's picture ("bar") is outside every status cluster on screen, or when any visible text lies over it (> 2 px both
+  ways; its own initial, centred inside it, is part of it). PASS names the corner (top-left, top-right, ...). The layouts' own
+  pictures (Console hub / Resume / Spotlight "console", Channel "channel") sit in parts Edit Home can move, so their corner is
+  reported, not graded. The existing duplicate / cut checks are unchanged.
+- Selftest: TestAvatarPlace681e (4; the outside / text-over / off-screen cases pass on the old checker = would have missed them);
+  full QA selftest 207/207 OK; static checks PASS. No app code changed (nothing to compile, nothing to copy into app/).
+- Files: tools/qa/tools/statuscheck.py, tools/qa/selftest/test_qa.py, trackers.
+- Hardware: NOT TESTED on real dumps - rides along HW-24 (KONKR), no extra device time.
+
 # Update 681cr (17 Nov 2026, cloud run) - P2: Record crate tracklist's first track whole at x1.3 (CI red on the P2 branch)
 - Verify 310 was RED on the P2 branch's 1a6c5c9 (681a): AchFirstRowRoboTest CRATE x1.3 n=12 - the first track 94 of 137 px. The
   tracklist title shared the line with a dotted leader of the same weight, so it had half the line and wrapped to three lines.

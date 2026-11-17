@@ -58,6 +58,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Also (681cr, P2 branch `claude/v0674-native-pages` 64e5955 or later, its CI QA APK; same KONKR session, ~2 min): Record crate
   at x1.3, open TRACKLIST (R1 R1): the first track whole at the page's top (title in two lines, the dotted leader after it,
   its words on one sliding line until A) - p2review.sh / popclip on CRATE; a cut first row = FAIL. Unit evidence only so far.
+- Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
+  new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
+  real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

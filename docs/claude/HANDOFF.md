@@ -29,6 +29,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**17 Nov 22:35 UTC, 681e (cloud, v0.6.74 turn of the alternation):** item 6 (profile picture) - the cloud-testable gap closed in
+QA tooling: statuscheck.py now grades each profile picture's place ("avatar place"): wholly on screen, the status bar's picture
+inside the status bar, no text over any picture (its own initial excluded); the corner is reported as evidence (layout pictures
+live in Edit-Home-movable parts, so their corner is not graded). TestAvatarPlace681e 4 (3 fail on the old checker); selftest
+207/207; static PASS. Hardware: rides along HW-24 (statuscheck over that session's dumps). Dev-line CI GREEN on c71c8cb. A live
+session was pushing to claude/v0674-native-pages during this run (fd32d24) - the cloud stayed off that branch.
+NEXT: check Verify 310 on the 681e push (red -> fix first); next run = P2 turn (Resume / TV room) only if the live session is
+not on the P2 branch (check its newest commit time; < 1 h -> take the v0.6.74 list instead: item 4 window polish H16 - D354
+Pocket Quest "Play game" wrap / status pill cut if it doesn't touch the pixel-font branch's files; then item 7 H12 animations).
+
 **17 Nov 21:45 UTC, 681cr (cloud):** P2 branch CI was RED on 1a6c5c9 (AchFirstRowRoboTest CRATE x1.3: the tracklist's first
 track cut). Fixed on `claude/v0674-native-pages` (64e5955, rebased on the live session's 681b-681d): the title has the whole line,
 the leader runs under it; large text keeps a closed track's words to one sliding line. AchFirstRow 87/87 + NativePages681a 8/8

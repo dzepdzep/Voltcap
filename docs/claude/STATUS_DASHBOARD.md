@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681cr · 2026-11-17 21:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e692ef5 (dev line); P2 branch was RED on 1a6c5c9, fix 64e5955 pushed - CI pending · effort: medium
+**1. LATEST UPDATE** - 681e · 2026-11-17 22:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on c71c8cb (dev line) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - On the new Record crate pages (still on their own test branch), the Achievements tracklist cut the first achievement in half when text is set larger: the name only had half the line and wrapped to three lines. The name now uses the whole line with the dotted line running after it, and with larger text each closed entry's description sits on one sliding line, so the first achievement is fully visible when the page opens. The automatic check that caught it passes again for every layout.
+**2. WHAT CLAUDE JUST FIXED** - The automatic status-bar check now also looks at where your profile picture sits: it fails if the picture is partly off the screen, if the status bar's picture has drifted out of the bar, or if any text is drawn over it, and it reports which corner each picture is in. It runs over the next handheld session's screenshots without extra device time. No app change.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: v0.6.74 list: profile picture in its corner (statuscheck gap); then: P2 batch 1: Resume, TV room; window polish (H16)
+**5. WORKING ON NEXT** - now: P2 batch 1: Resume, TV room (if the live session is not on it); then: window polish (H16): Pocket Quest Play game / status pill; achievements animations (H12)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 

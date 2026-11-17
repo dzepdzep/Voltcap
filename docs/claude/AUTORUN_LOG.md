@@ -246,3 +246,8 @@
 - Dev line CI GREEN on e692ef5. P2 branch Verify 310 RED on 1a6c5c9 (Record crate tracklist first row cut at x1.3) -> fixed on
   claude/v0674-native-pages (64e5955); AchFirstRow 87/87, NativePages681a 8/8, static PASS. Two rebases: a live session pushed
   681b-d to the P2 branch meanwhile. Lock released.
+
+## 2026-11-17 ~22:17-22:40 UTC - cloud run 681e
+- Dev line CI GREEN on c71c8cb. v0.6.74 turn: item 6 profile picture - statuscheck "avatar place" (on screen, bar picture in
+  the bar, no text over it, corner as evidence); selftest 207/207, static PASS. Live session active on the P2 branch - not
+  touched. Lock released.
