@@ -646,7 +646,8 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
     val compact = ctx.maxH < 400.dp
     val metal = Brush.linearGradient(listOf(Color(0xFF3E434C), Color(0xFF262A30), Color(0xFF3A3F47)))
     val plate = RoundedCornerShape(10.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (P2 / 681d: the plate's own pages - WinPagesHub.kt; a steady height on them so the service record has room to scroll.)
+    Column(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 460.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         // Out of the console list on the left: it slides in from that side, the nameplate first.
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.18f
@@ -672,16 +673,20 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
         }
         Box(Modifier.padding(horizontal = 22.dp, vertical = 8.dp).fillMaxWidth().height(2.dp)
             .background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.White.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.5f)))))
-        Row(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp).weight(1f, fill = false)) {
-            // The game seated in the console: its own case.
+        Row(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
+            // The game seated in the console: its own case (a smaller seat while the plate shows another face).
             val aspect = sceneCaseAspect(ctx.g.platform)
-            val cw = minOf(w * (if (compact) 0.2f else 0.26f), 170.dp)
+            val cw = minOf(w * (if (compact || ctx.page != WinPage.MAIN) 0.2f else 0.26f), 170.dp)
             SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
-                Spacer(Modifier.height(6.dp))
-                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year")) }
+                NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "hubPage", move = ::hubMove) { pg, pageLive ->
+                    if (pg == WinPage.MAIN) Column {
+                        StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
+                        Spacer(Modifier.height(6.dp))
+                        Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year")) }
+                    } else HubPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Spacer(Modifier.height(8.dp))
                 KeyRow(sceneKeys(ctx)) { k ->
                     SceneKeyStyled(k, if (k.primary) a else Color.Black.copy(alpha = 0.3f), Color.White, if (k.primary) inkOn(a) else Color.White, Color.Black,

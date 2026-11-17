@@ -41,7 +41,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (P2 batch 1 - owner 17 Nov: each of the remaining layouts its own pages, NativePageKit + WinPages*.kt.)
     WinScene.RECORD_SLEEVE,
     // (P2 681c: Classic - the charged panel's readout, cells and switches, WinPagesVolt.kt.)
-    WinScene.VOLT_PANEL)
+    WinScene.VOLT_PANEL,
+    // (P2 681d: Console hub - the nameplate's engraving, service medals and switch panel, WinPagesHub.kt.)
+    WinScene.HUB_PLATE)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

@@ -70,4 +70,13 @@ class NativePages681aTest {
         assertEquals(40 to 40, voltCells(120, 120))
         assertEquals(99, voltCharge(119, 120)); assertEquals(100, voltCharge(5, 5)); assertEquals(0, voltCharge(0, 0))
     }
+
+    @Test fun hubPlateHasItsOwnFaces() {
+        assertTrue(nativePages(WinScene.HUB_PLATE))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.HUB_PLATE, p))
+        assertEquals("SERVICE MEDALS", hubPageName(WinPage.TROPHIES)); assertEquals("SWITCH PANEL", hubPageName(WinPage.OPTIONS))
+        assertEquals(1, src("WinPagesHub.kt").split("ctx.pageFor(").size - 1)
+        assertTrue(src("WinSceneFamilies.kt").contains("HubPage(ctx, pg, pageLive, Modifier.fillMaxSize())"))
+        assertEquals(5 to 0, hubMedalRow(5, 10)); assertEquals(9 to 11, hubMedalRow(20, 10)); assertEquals(0 to 0, hubMedalRow(0, 10))
+    }
 }
