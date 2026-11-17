@@ -1,3 +1,20 @@
+# Update 678p (17 Nov 2026, live session, owner present) - D333 rapid A/B fix (reopen in place); Banner corner X decision
+- Owner 17 Nov: keep Banner's X in the top corner (D351) - a separate corner-close control, not part of the action order; Play
+  stays the first primary action and the first focus. popclip.py hierarchy now leaves a Back / Close OFF Play's row out of the
+  first-action order (the test the "Back is a hint off the action row" note already used); a Close in Play's row before Play
+  still FAILs. Selftest test_hierarchy_corner_close_is_chrome_678p; 197/197.
+- D333 (traced 678o: the last B of a rapid A B A B fell between the closing dialog and the new one opened a frame later): a game
+  window that reaches the end of its close with an A pending now opens again IN PLACE - same dialog window, nothing handed back,
+  its opening effects replayed (openSeq), its Play guard restarted (GamePopup.takeReopenInPlace). Both close paths: the scene /
+  pickup trip (TV room, Record crate, Card binder, cases, sprites) and the Inspect piece. The old hand-over (reopenGame) stays
+  for windows that close at once. ReopenInPlace678pTest (fails on 678o); PopupNativeStorageTest pin follows the new effect key.
+- Checked in the cloud: compiled; ReopenInPlace678pTest 4/4, PopupReopen453Test 5/5, PlayWhileClosing412Test 1/1,
+  PopupNativeStorageTest 9/9, BoxRapidB0672Test 2/2, PopupPolish444Test 4/4; static checks PASS. Hardware: HW-5 re-check with
+  crate678.sh (10 rounds, CRATE + TV + BOX + CARDS, x1.0 + x1.3) on the QA build of this commit.
+- Owner 17 Nov: pixel-font layouts at x1.3 (Pocket Ribbon, Pocket Classic, Night) need visual polish - v0.6.74, not a v0.6.73 blocker.
+- Files: ui/GameWindow.kt; tools/qa/tools/popclip.py; tools/qa/selftest/test_qa.py; app/src/test/.../ReopenInPlace678pTest.kt,
+  PopupNativeStorageTest.kt.
+
 # Update 678o (17 Nov 2026, live session - KONKR connected, owner present) - KONKR hardware gates; Banner + Channel fixes; QA tools
 - Lock taken by the live session (b7924fc). QA builds (ledger): qa-0.6.73-678n-ci (CI 44054144657, app = 678n), qa-0.6.73-678o-ci
   (2f02390), qa-0.6.73-678o2-ci (94fb3d8), pinned key 4d133dde. KONKR GT78 (BW0306N230000845, USB, Level 1 QA app only): the

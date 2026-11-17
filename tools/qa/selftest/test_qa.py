@@ -998,6 +998,19 @@ class TestPopupGate(unittest.TestCase):
         none = {"windows": [{"focus": True, "nodes": [n for n in d["windows"][0]["nodes"] if n["label"] != "Play"]}]}
         self.assertEqual(popclip.hierarchy(none, None)[0], "FAIL")
 
+    def test_hierarchy_corner_close_is_chrome_678p(self):
+        # 678p (owner 17 Nov, D351): Banner's round X in the top corner stays - a corner close is window chrome, not an action
+        # before Play (KONKR kb678o10 boxes); a Close in Play's own row before it still FAILs.
+        import popclip
+        def dump(nodes):
+            return {"windows": [{"focus": True, "nodes": [{"label": l, "kind": "control", "full": b, "shown": b} for l, b in nodes]}]}
+        banner = [("Close", [36, 18, 50, 50]), ("Play", [31, 215, 189, 69]), ("GAME INFO", [583, 358, 157, 51])]
+        st, why = popclip.hierarchy(dump(banner), None)
+        self.assertEqual(st, "PASS", why); self.assertIn("corner close as chrome", why)
+        in_row = [("Close", [10, 215, 150, 69]), ("Play", [200, 215, 189, 69]), ("GAME INFO", [583, 358, 157, 51])]
+        st, why = popclip.hierarchy(dump(in_row), None)
+        self.assertEqual(st, "FAIL", why); self.assertIn("'Close' comes before Play", why)
+
     def test_hierarchy_page_tabs_above_play_are_not_actions(self):
         # Update 529c: Storage boxes' tabs (INFO / DETAILS / ACHIEVEMENTS / OPTIONS) above the PLAY line passed as navigation (real
         # Flip 2 dump mlast529c); one Details key above Play is still an action before Play.

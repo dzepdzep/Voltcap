@@ -147,6 +147,17 @@ internal object GamePopup {
         else if (game == null) { if (reopenGame == null) reopenGame = g }
         // (a newer window is already up: this press already did its job)
     }
+    /**
+     * 678p (D333, KONKR traces k678c2 / k678tv): the closing window [token] reached its end with an A pending - it opens again
+     * IN PLACE (the same dialog window) instead of closing and handing the game to a new window a frame later. Across that swap
+     * the last B of a rapid A B A B reached no window at all (no window key, no home key in the trace) and the window stayed
+     * open, ~1 round in 10 on the TV room and Record crate. True (and the request taken) when this window should open again.
+     */
+    fun takeReopenInPlace(token: Any): Boolean {
+        val again = reopenRequested && game != null && current === token
+        if (again) reopenRequested = false
+        return again
+    }
     /** B pressed on a closing (or just closed) window: take a pending open-again back. */
     fun cancelAgain(token: Any) {
         if (game != null && current === token) reopenRequested = false
@@ -1000,7 +1011,8 @@ internal fun GameWindow(
 ) {
     // Update 347: Play ignores the first moments after the window opens — a quick second press of A (or a double tap)
     // meant for opening the window started the game while it was still growing in (found testing rapid open / close).
-    val openedAt = remember(g.stableKey) { android.os.SystemClock.uptimeMillis() }
+    // (678p: a holder - a window that opens again in place (D333) starts its Play guard again.)
+    val openedAt = remember(g.stableKey) { longArrayOf(android.os.SystemClock.uptimeMillis()) }
     val playNow by rememberUpdatedState(onPlay)
     @Suppress("NAME_SHADOWING")
     // Update 412: a window that is already flying back (B pressed) never starts the game: a quick A after a B (rapid A B A)
@@ -1013,10 +1025,10 @@ internal fun GameWindow(
         // (Update 467, popup gate: the left-over A release is a key's — a TOUCH on Play after opening with A was taken for
         // it and did nothing the first time (Twin layouts open on A's press). It is cleared either way.)
         val orphan = HomeKeyGuard.takeOrphanRelease() && KeyInput.lastWasKey
-        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt} homeA=$orphan")
+        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt[0]} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit
-        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt)) playNow()
+        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt[0])) playNow()
     }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
@@ -1179,6 +1191,9 @@ internal fun GameWindow(
     // Update 162: closing turns the piece back and flies it to its place first, then the window goes.
     // (Update 330: a layout's own window without a piece goes back the way it came — into its game's place — first.)
     var shrinking by remember { mutableStateOf(false) }
+    // (678p, D333: each opening of this window - 0 the first, +1 for every time it opens again in place; the opening effects
+    // below are keyed on it, so the same opening plays again in the same dialog window.)
+    var openSeq by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     // Update 400: see [cardFlight] below (declared here: the close path needs it).
     // (529t: Record crate's sleeve itself comes out and turns over - sleeveFlip, a spriteFlight - instead of a window grown out of it.)
     // (529t: Card binder's card the same way - out of its pocket, over to its stats side.)
@@ -1225,6 +1240,17 @@ internal fun GameWindow(
                 shrinking = true
                 inspectScope.launch {
                     grow.animateTo(0f, if (tvFlight) tween(TV_FLIGHT_CLOSE_MS, easing = LinearEasing) else if (sleeveFlip) tween(SLEEVE_FLIP_CLOSE_MS, easing = FastOutSlowInEasing) else tween(pickupFlightMs(sceneCloseMs(scene), caseFlight, spriteFlight, open = false), easing = FastOutSlowInEasing)) { if ((spriteFlight || tvFlight) && originLayer != null) pickupFrame(maxOf(value, 0.01f)) }
+                    // (678p, D333: an A pressed while it flew back - it opens again here, in this same window: nothing is handed
+                    // back, no new window is made, so every key of a rapid A B A B keeps reaching this window.)
+                    if (GamePopup.takeReopenInPlace(winToken)) {
+                        if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen in place")
+                        closingFlag[0] = false
+                        shrinking = false
+                        openedAt[0] = android.os.SystemClock.uptimeMillis()
+                        GamePopup.opened(winToken)
+                        openSeq++
+                        return@launch
+                    }
                     // (529s, KONKR frames pk529s10: the box's sprite was missing for one frame as the window went - the home
                     // copy follows grow a frame late (snapshotFlow) and the flying copy left with the window. The landed
                     // sprite is handed over first: the home copy is drawn for one frame under the flying one, same place.)
@@ -1238,6 +1264,17 @@ internal fun GameWindow(
             inspectScope.launch {
                 if (fullInspect) launch { grow.animateTo(0f, tween(420, delayMillis = 80, easing = FastOutSlowInEasing)) }
                 motion.close(fullInspect)
+                // (678p, D333: the piece back at its place with an A pending - it comes out again in this same window.)
+                if (GamePopup.takeReopenInPlace(winToken)) {
+                    if (QaTrace.on) android.util.Log.e("VoltcapQA", "win reopen in place (piece)")
+                    motion.closing = false
+                    motion.started = false
+                    closingFlag[0] = false
+                    openedAt[0] = android.os.SystemClock.uptimeMillis()
+                    GamePopup.opened(winToken)
+                    openSeq++
+                    return@launch
+                }
                 if (MediaInspect.key == g.stableKey) MediaInspect.key = null
                 closeNow()
             }
@@ -1476,7 +1513,7 @@ internal fun GameWindow(
             }
             DisposableEffect(Unit) { onDispose { MediaInspect.amount.floatValue = 0f; CaseFlightGate.release(winToken); if (MediaInspect.key == g.stableKey) MediaInspect.key = null } }
         }
-        LaunchedEffect(target != null) {
+        LaunchedEffect(target != null, openSeq) {
             if (target == null) return@LaunchedEffect
             // (Shelf flash work: a case flight opens once the flying case is drawn - CaseFlightGate, at most its MAX_WAIT_MS -
             // so its first frame is the case where it was, not a jump along its way.)
@@ -1520,7 +1557,7 @@ internal fun GameWindow(
         if (piece != null) {
             InspectStick(motion)
             // (Update 162 (review): keyed on the motion too — another game shown in the open window gets its own.)
-            LaunchedEffect(slot != null, motion) {
+            LaunchedEffect(slot != null, motion, openSeq) {
                 if (slot == null) return@LaunchedEffect
                 // Update 400: the cover is in memory before the case flies (else it flew as a blank slab and the picture popped in).
                 if (fullInspect && piece.kind == InspectKind.BOX && piece.front is String) {
@@ -1540,7 +1577,7 @@ internal fun GameWindow(
         })
         if (tvRect != null) {
             // On the TV: the room stays lit round it, the window fills the set's screen, switching on like an old TV.
-            LaunchedEffect(Unit) { if (!anim && !tvFlight) grow.snapTo(1f) else if (tvFlight) { pickupSettle(); MediaInspect.pickupReveal = grow.asState(); grow.animateTo(1f, tween(TV_FLIGHT_OPEN_MS, easing = LinearEasing)) { pickupFrame(value) } } else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
+            LaunchedEffect(openSeq) { if (!anim && !tvFlight) grow.snapTo(1f) else if (tvFlight) { pickupSettle(); MediaInspect.pickupReveal = grow.asState(); grow.animateTo(1f, tween(TV_FLIGHT_OPEN_MS, easing = LinearEasing)) { pickupFrame(value) } } else grow.animateTo(1f, tween(320, easing = FastOutSlowInEasing)) }
             val d = androidx.compose.ui.platform.LocalDensity.current
             // (529s: with the case going in, B / a tap outside run the trip back first - [close].)
             val onClose: () -> Unit = if (tvFlight) close else onClose

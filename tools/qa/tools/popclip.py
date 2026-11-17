@@ -137,6 +137,12 @@ def reading_first(items, tol):
     return min([it for it in items if cy(it) - top <= tol], key=lambda lb: lb[1][0])
 
 
+def off_row(bb, pb):
+    """A control box [bb] off Play's [pb] action row: its centre a whole Play height away, or drawn under 3/4 of Play's height
+    (a hint / corner control). Pure."""
+    return abs((bb[1] + bb[3] / 2) - (pb[1] + pb[3] / 2)) > pb[3] or bb[3] < 0.75 * pb[3]
+
+
 def hierarchy(main, home):
     """Update 529 (master sprint, Phase 3): the approved action hierarchy, read from the main step's own controls (the ones the
     home step didn't have). FAIL: no Play, Play not the first action, or Play drawn smaller than Details. Notes: More round,
@@ -157,7 +163,13 @@ def hierarchy(main, home):
     # OPTIONS over the PLAY line - is navigation between pages, not an action placed before Play (mlast529 / 529c false FAIL).)
     tabs = page_tabs(ctl, pb, tol)
     if tabs: notes.append("page tabs above the actions (" + ", ".join(l for l, _ in tabs) + ")")
-    first = reading_first([a for a in acts if a not in tabs] or acts, tol)
+    # (678p, owner 17 Nov, D351 - "keep the Banner X in the top corner: a separate corner-close control, not part of the main
+    # action ordering; Play stays the first primary action and the first focus": a Back / Close off Play's row - the same test
+    # as the "Back is a hint off the action row" note below - is window chrome, left out of the first-action order as the
+    # More-last check already leaves it out. A Close IN the action row before Play still FAILs.)
+    chrome = [(l, b) for l, b in acts if BACK_RE.match(l) and off_row(b, pb)]
+    if chrome: notes.append("corner close as chrome (" + ", ".join(l for l, _ in chrome) + ")")
+    first = reading_first([a for a in acts if a not in tabs and a not in chrome] or acts, tol)
     if first[0] != pl and not ACT.match(first[0]): probs.append(f"'{first[0]}' comes before {pl}")
     # (672a, Flip 2 x1.3 f672e: Storage boxes' INFO page tab - 117 px tall with large text - was taken for the Details key and
     # Play's row (103 px) failed against it. A page tab is navigation; Play is measured against the Details action.)
@@ -180,7 +192,7 @@ def hierarchy(main, home):
     back = [(l, b) for l, b in ctl if BACK_RE.match(l)]
     if back:
         bb = back[0][1]
-        notes.append("Back is a hint off the action row" if abs((bb[1] + bb[3] / 2) - (pb[1] + pb[3] / 2)) > pb[3] or bb[3] < 0.75 * pb[3] else "Back sits in the action row")
+        notes.append("Back is a hint off the action row" if off_row(bb, pb) else "Back sits in the action row")
     return (qalib.FAIL, "; ".join(probs + notes)[:400]) if probs else (qalib.PASS, "; ".join(notes) or "Play first")
 
 

@@ -171,7 +171,7 @@ class ShelfCaseHandOverTest {
     @Test fun theRevealWaitsForTheHandOver() {
         // the window opens (the flight starts) only once the flying case is drawn, at most MAX_WAIT_MS
         val gw = src("GameWindow.kt")
-        val open = gw.substringAfter("LaunchedEffect(target != null) {").substringBefore("// Update 506 (motion polish")
+        val open = gw.substringAfter("LaunchedEffect(target != null, openSeq) {").substringBefore("// Update 506 (motion polish")
         assertTrue(open.contains("if (caseFlight && anim) androidx.compose.runtime.snapshotFlow { CaseFlightGate.ready.value }.first { it }"))
         assertTrue(open.indexOf("CaseFlightGate.ready.value }.first") < open.indexOf("grow.animateTo(1f"))
         assertTrue(gw.contains("kotlinx.coroutines.delay(CaseFlightGate.MAX_WAIT_MS); CaseFlightGate.release(winToken)"))
