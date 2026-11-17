@@ -135,3 +135,8 @@
 - BOOTSTRAP OK (cc34a59); lock free (none since 23:39), taken 00:18. CI: Verify 310 RED on cc34a59 (678e) - one source test
   (PopupPolish444Test) pinned the banner name's old em line height; test updated to the new sp form (same rule), compiled +
   PASS in the cloud. No trial (3 h rule, from ~00:45). Effort env: medium. Lock released.
+
+## 2026-11-17 ~01:18-01:45 UTC - cloud run 678g
+- BOOTSTRAP OK (ad80646); lock free (none since 00:29), taken 01:18. CI: Verify 310 GREEN on ad80646 (678f). Effort env: medium.
+- Rule 11: Save Vault text shown whole (13 "…" removed, TRUNCATE 224 -> 211), SaveExplorerFullText678gTest; main Kotlin
+  compiled, test classpath Maven 429 twice (test not run here - CI). HW-13 queued. Emulator trial started on this commit. Lock released.

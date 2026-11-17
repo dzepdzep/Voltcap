@@ -32,6 +32,15 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-13 Save Vault text shown whole (678g, rule 11) - OPEN
+- Device(s): RP Nova or KONKR (batch with HW-12 / HW-1 / HW-9 in the same session). Level L1 (QA app only, no real saves).
+- Build: commit of update 678g on claude/qa-0672-repair; QA build = assembleDebug of that commit.
+- Why not emulator: the trial does not open the Save Vault; a long name / place needs a real screen width and font scale.
+- Tests: open Saves (QA app, Drive not connected and with the vault fixture) at off and font=1.3,density=1.15: header name +
+  count line whole, "Not connected" + problem text whole, save rows one line each (a long one slides), info bar name /
+  state / date whole, Browse saves label whole; rows keep their heights (no jump while moving D-pad focus); touch + controller.
+- Result:
+
 ### HW-12 Banner game window text shown whole (678e, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (any USB handheld; batch with HW-1 / HW-9 in the same session). Level L1 (QA app only).
 - Build: commit of update 678e on claude/qa-0672-repair; QA build = assembleDebug of that commit.

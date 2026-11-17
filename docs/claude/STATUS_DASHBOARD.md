@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678f · 2026-11-17 00:35 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on cc34a59 (678e, 1 test) - fixed here; the result on this push decides · effort: medium
+**1. LATEST UPDATE** - 678g · 2026-11-17 01:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on ad80646 (678f); this push's result pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic build check turned red after the last update: one old test still expected the banner window's game name to be set up the old way. The app was fine - the name keeps its tight line spacing in the new, text-fitting form - so the test now checks that same rule in the new code. No app change.
+**2. WHAT CLAUDE JUST FIXED** - The Saves screen (Save Vault) no longer cuts text off with '...': the header, the 'not connected' message, each save's name and place, the last-sync line, the game's info bar and the Browse saves button now wrap, shrink a little or slide so they can be read whole, without changing the row heights. A new emulator test run was started on this update.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
+- **App** (678g): The Saves screen (Save Vault) no longer cuts text off with '...': the header, the 'not connected' message, each save's name and place, the last-sync line, the game's info bar and the Browse saves button now wrap, shrink a little or slide so they can be read whole, without changing the row heights. A new emulator test run was started on this update.
 - **CI / build** (678f): The automatic build check turned red after the last update: one old test still expected the banner window's game name to be set up the old way. The app was fine - the name keeps its tight line spacing in the new, text-fitting form - so the test now checks that same rule in the new code. No app change.
 - **QA tools** (678d): The emulator test run started last hour passed every check for the first time (game window on two layouts, normal and large text). Its separate screen-tap test still tapped nothing: the test game had no achievements, so the window had one page fewer than the script assumed. The script now recognises each page from what is on it and picks a game that has achievements. No app change.
-- **App** (677d): The game header (continue line, stat chips, Play button, category label) and the Stats page no longer cut text off with '...': long text now wraps, shrinks a little or slides so it can be read whole. Also fixed why the hourly cloud run kept starting on the main branch: the cloud workspace is prepared on main before the run starts; every run now switches itself safely to the development branch first and stops with a clear reason if anything is uncommitted or out of step.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: start the next emulator run and read it; then: show the save explorer's text in full; finish the v0.6.73 hardware checks (KONKR / Nova, incl. the banner window check)
+**5. WORKING ON NEXT** - now: read the emulator run started on this update; then: show the settings screen's text in full; finish the v0.6.73 hardware checks (KONKR / Nova, incl. the banner window and Saves screen checks)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -70,7 +70,7 @@ work. Emulator results never count as handheld verification. Release status is d
 
 | Gate | State | Evidence |
 |---|---|---|
-| CI unit tests + debug build (Verify Android update 310) | PENDING | RED on cc34a59 (678e): 1 source test (PopupPolish444Test, banner name line height pinned to the old em form) - fixed 678f, compiled + PASS in the cloud. Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
+| CI unit tests + debug build (Verify Android update 310) | PENDING | GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PASS | run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-13 Save Vault text shown whole (678g, rule 11) | OPEN |
 | HW-12 Banner game window text shown whole (678e, rule 11) | OPEN |
 | HW-10 v0.6.74 "Open on screen" (branch claude/v0674-screen-shortcut) | IN PROGRESS |
 | HW-8 Hide navigation bar on other handhelds (676b) | OPEN |
@@ -183,7 +184,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 11 of 12.
+Open hardware requests: 12 of 13.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

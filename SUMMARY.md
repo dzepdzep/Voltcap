@@ -1,3 +1,15 @@
+# Update 678g (17 Nov 2026, cloud scheduled run) - rule 11: the Save Vault shows its text whole
+- Save Vault (Saves screen): the header name and its count line, "Not connected to Google Drive" and the connect problem,
+  the console counts, each save row's title and place, the last-sync line, the game info bar (name, state line, date and
+  its label) and the Browse saves button go through FullText (wraps, shrinks to a readable size, then slides) with no
+  reserved height, so the rows keep their heights. 13 "…" uses removed (static TRUNCATE 224 -> 211).
+- Test: SaveExplorerFullText678gTest (fails on the 678f sources: 13 Ellipsis, no FullText). Main Kotlin compiled in the cloud
+  (:app:compileDebugKotlin OK); the unit-test classpath hit Maven 429 twice (Robolectric resources) - the test was NOT run
+  here (its assertions checked against the source by a script); CI is its first run. Static checks PASS.
+- Not a popup file; the vault page on hardware: queued in HW-13 (batch with HW-12). Emulator trial STARTED on this commit.
+- CI on 678f (ad80646): Verify 310 GREEN.
+- Files: app/src/main/java/com/shelf/launcher/ui/SaveExplorer.kt, test SaveExplorerFullText678gTest.kt; trackers.
+
 # Update 678f (17 Nov 2026, cloud scheduled run) - CI red on 678e fixed (test only, no app change)
 - "Verify Android update 310" failed on cc34a59 (678e), both runners, 1 of 2857 tests: PopupPolish444Test
   .bannerRoundKeysNameTheOneYouAreOn looked for the literal `lineHeight = 1.08.em` on the banner's big name. 678e changed it on
