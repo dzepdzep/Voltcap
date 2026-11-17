@@ -1,5 +1,23 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov ~23:10 Berlin - OWNER: LIBRARY RESCAN BUG 681r (data integrity - newest, before everything below).** A deleted game
+that was the only one of its console stayed listed after Rescan library, and the console stayed a category. Focused v0.6.74 fix
+on branch `claude/v0674-rescan-fix` (from this line at c71c8cb): RomScanner.rootState (OK / GONE on readable storage /
+UNREADABLE: card out, bare mount point, refused listing) + failedDirs from the walk; data/RomReconcile.kt one verdict per scan
+(read-and-missing = gone, unreadable = kept, nothing read = no verdict, automatic scan with no games = no verdict); a console
+with no games left drops out of the selection (falls back to All) after a scan's verdict, kept after a restart. Found on the
+way: the old code dropped every game of an unplugged SD-card folder whenever another folder had games (now kept). Saves,
+history, achievements, art, metadata, favourites, settings untouched (keyed by path; re-adding brings them back).
+Evidence: RescanPrune681rTest 8/8 + DeletedRoms523Test 3/3 (cloud); emulator end-to-end rescan681r.sh run 44190749178 VERDICT
+PASS - 15/15 cases (only game deleted -> not listed, its console no category, selection back on All; rescan twice; restart;
+one of two; whole game folder; re-added = same identity) on synthetic stand-ins in the QA app's own folder. Verify 310: one
+runner green (full suite), the other hit Maven Central 429 (infra) - rerun requested. Hardware NOT TESTED (HW queue: the
+owner's real case - the exact Xbox 360 game layout on the device is not known; also an SD card taken out). Not merged; owner GO
+needed. Next for the hourly task: nothing to do on it unless CI goes red.
+P2 batch 1 status: Classic 681c, Console hub 681d, Resume 681e-f, TV room 681g implemented on `claude/v0674-native-pages`
+(18/53 implemented; batch 1 hardware 0/5, owner 0/5). Emulator review of all five re-running (run 44194071430); findings from
+the first review fixed in 681h (bumpers lost on the Back hint, Classic label wrap; crate x1.3 word breaks fixed by 681cr).
+
 **17 Nov ~22:15 Berlin - OWNER: P2 NATIVE PAGES IS A MAIN PRIORITY (newest; read with the v0.6.74 list below).** The 40 layouts
 without their own Details / Achievements / Options pages get them, each in its own design ("not the shared pages in different
 borders"), batches of 4-5, screenshots / recordings for review, tracked as Native pages X/53 (implemented / hardware / owner).
