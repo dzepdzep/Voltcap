@@ -1,5 +1,24 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov ~20:15 Berlin - OWNER PRIORITIES v0.6.74 (newest; this order wins over every older list below).** v0.6.73 is
+published. Each run: verify Verify 310 on the last push first (red -> fix first), then the first unblocked item:
+1. D356 Channel progress pill vs sliding name - DONE in code 680a (badge lane OVERLAY band; BadgeOverlay680aTest); HW-24 queued.
+2. Pixel font 62.5 % with readable minimums (owner B1 = option B, branch `claude/v0674-pixel-font`): finish it and fix the
+   typography of Pocket Classic, Pocket Ribbon, Night, Pocket Quest, Pocket Camera, Bar and Terminal on that branch; emulator
+   review sheets for the owner; merge into this line only after the owner's OK on the comparison.
+3. Badge styles (owner B1 plan, docs/claude/BADGE_STYLES_674.md if present): Classic + Compact (default), Top Clip, Hanging
+   Bottom - selectable, per-layout override, achievement progress visible wherever possible (compact form before hiding);
+   Twin Icons badge spacing (D352). On a separate branch `claude/v0674-badge-styles`; comparison images before approval.
+4. Visual polish across the 53 game windows, each keeping its own design (matrix H16).
+5. badgecheck (D357): skip badges of tiles scrolled partly off-screen and cover-flow covers stacked behind the focused one
+   (real collisions still FAIL) + selftest fixtures for both.
+6. Profile picture in its intended corner, never twice, never overlapping (statuscheck keeps guarding).
+7. Then: Achievements animations (H12), Thor dual-screen (H13, owner options in THOR_DUAL_SCREEN.md), Save Sync 529, the rest.
+Rules (owner 17 Nov 20:52): existing hourly task only; bounded cloud work + tests; emulator QA where it fits; hardware queued;
+never disturb apps running on connected devices; dashboard / matrix / handoff after meaningful changes; no full 53-layout
+hardware reruns without need; experiments on separate v0.6.74 branches; interrupt the owner only for design decisions,
+blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
+
 
 **17 Nov 20:10 Berlin (679a-c):** owner B1. Pixel font B on `claude/v0674-pixel-font` (PixelType, 9.5 sp minimum) - waits for the owner's OK on pixel_font_final_emulator.pdf before merging into the dev line. Badges: build per docs/claude/BADGE_STYLES_PLAN.md on `claude/v0674-badges` (Classic + compact ladder first, idle test first). Emulator review mode: `gh workflow run emulator-qa-trial.yml --ref <branch> -f review_layouts="..."`.
 **17 Nov 19:50 UTC, 679d (cloud):** rule 11 / D353 - Terminal home path, "Directory of" header and preview lines shown whole (FullText, one size; focused root / systems lines slide). TerminalFullText679dTest; NOT compiled in the cloud (Maven 429) - CI first compile. HW-22 queued (KONKR). CI GREEN on e4669b9. NEXT: check Verify 310 on the 679d push (red -> fix first); then D354 Pocket Quest "Play game" wrap / status pill cut (H16, emulator e679r13) if it doesn't touch the pixel-font branch's files, else rule 11 filler (static TRUNCATE 171); pixel font / badges stay on their live-session branches.

@@ -4054,7 +4054,7 @@
    "title": "Channel home: the achievement progress pill reaches 5 px into the sliding name plate (KONKR x1.3, k679p13 badgecheck 'PROGRESS covers text')",
    "rule": "R27",
    "severity": "low",
-   "status": "open (v0.6.74)",
+   "status": "fixed in code 680a (badge lane OVERLAY band = the plate; BadgeOverlay680aTest) - HW-24 on the KONKR",
    "found": "2026-11-17"
   },
   {

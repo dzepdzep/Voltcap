@@ -1,3 +1,12 @@
+# Update 680a (17 Nov 2026, live) - Channel progress pill clear of the name plate (D356); v0.6.74 priorities
+- BadgeLane: new BadgeKind.OVERLAY - a band at the tile's bottom drawn over it from outside; planBadges places it first and every
+  badge (console included) keeps clear; BadgeLane.overlayBottom set by badgeTile(lane, overlayBottom); LocalBadgeOverlayBottom read
+  by StyleArt; Channel's ChanTile provides its plate band (6 dp + 2 x 3 dp + one line at 1.3 x 12 sp, less the art's 3 dp inset)
+  only while the plate shows. No lane reporting from the plate (678o idle problem avoided).
+- Tests: BadgeOverlay680aTest (3), BadgeLane676Test (pin widened), CubeDockFit679eTest - PASS in the cloud; static checks PASS.
+- Hardware: NOT TESTED (HW-24, KONKR).
+- Owner v0.6.74 priority list recorded at the top of docs/claude/HANDOFF.md and as backlog section 000.
+
 # Update 679d (17 Nov 2026, cloud run) - Terminal home: no "…" in the path, header or preview (rule 11, D353)
 - The Terminal home cut its texts with "…": the "Directory of C:\GAMES\PLAYST…" header (emulator e679r13, D353), the title
   bar's path, and the preview's title / SYS / TIME / root name / system name / played-last lines. Each now goes through

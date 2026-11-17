@@ -13,6 +13,11 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
+1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+
+Compact (default) / Top Clip / Hanging Bottom, progress kept visible, Twin Icons spacing D352 (branch). 4. 53-window polish (H16).
+5. badgecheck D357. 6. Profile picture corner. 7. Achievements animations, Thor dual-screen, Save Sync 529, the rest.
+
 ## 00. Owner priorities 17 Nov 2026 (consolidated request; newest - this order wins)
 Each line points at its matrix row (docs/REQUIREMENTS_MATRIX.md section H); no item is repeated elsewhere - older lines that
 cover the same thing are marked "-> H<n>".

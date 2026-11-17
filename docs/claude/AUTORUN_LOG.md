@@ -228,3 +228,7 @@
 - KONKR only (Odin 2 Portal had the owner's app in front - left alone). HW-23 results; 679e Cube dock fix made, verified on the
   KONKR and merged here; D355-D357 recorded; HW-6 KONKR PASS; HW-21 KONKR evidence. KONKR restored (QA app stopped, home = the
   owner's Voltcap). Lock released.
+
+## 2026-11-17 ~20:00-20:20 UTC - live session (owner v0.6.74 priorities)
+- Priorities recorded (HANDOFF top, backlog 000). 680a D356 Channel progress pill: badge lane OVERLAY band; BadgeOverlay680aTest
+  3/3, BadgeLane676Test, CubeDockFit679eTest PASS in the cloud; static checks PASS. HW-24 queued. Lock released.

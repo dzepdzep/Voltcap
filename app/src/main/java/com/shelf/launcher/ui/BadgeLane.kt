@@ -52,7 +52,10 @@ internal val BADGE_GAP: Dp = 6.dp
 /** The badges a tile can carry, in the order they are placed (the earlier keeps its corner). */
 internal enum class BadgeKind { CONSOLE, PROGRESS, NEW_UNLOCK, SCORE,
     /** 676e: a coverless card's name plate - never moved; the badges after the console keep clear of it. */
-    CONTENT }
+    CONTENT,
+    /** 680a (D356): a band at the tile's bottom that something drawn OVER the tile from outside covers (Channel's name plate) -
+     *  never moved; every badge, the console included, keeps clear of it. */
+    OVERLAY }
 
 /** One badge as measured: its corner, the margin round it inside the corner, its pill and how far its glow / border reaches. */
 internal data class BadgeBox(
@@ -81,11 +84,13 @@ internal fun badgesTouch(a: IntRect, b: IntRect, gap: Int): Boolean =
 internal fun planBadges(tile: IntSize, boxes: List<BadgeBox>, gap: Int, dir: LayoutDirection = LayoutDirection.Ltr): Map<BadgeKind, BadgeSpot> {
     val out = HashMap<BadgeKind, BadgeSpot>()
     val placed = ArrayList<IntRect>() // drawn edges, glow included
+    // (680a: an overlay band is there before anything else - the console stacks away from it too.)
+    for (ob in boxes.filter { it.kind == BadgeKind.OVERLAY }) { out[ob.kind] = BadgeSpot(0, 0); placed += badgeRect(ob, tile, dir) }
     // (676e: the console badge first, then the card's own content (its name plate, fixed where it is), then the rest.)
     val content = boxes.filter { it.kind == BadgeKind.CONTENT }
     for (cb in content) out[cb.kind] = BadgeSpot(0, 0)
     var contentAdded = content.isEmpty()
-    for (b in boxes.filter { it.kind != BadgeKind.CONTENT }.sortedBy { it.kind.ordinal }) {
+    for (b in boxes.filter { it.kind != BadgeKind.CONTENT && it.kind != BadgeKind.OVERLAY }.sortedBy { it.kind.ordinal }) {
         if (!contentAdded && b.kind != BadgeKind.CONSOLE) { content.forEach { placed += badgeRect(it, tile, dir) }; contentAdded = true }
         val own = badgeRect(b, tile, dir)
         fun clear(r: IntRect) = placed.none { badgesTouch(r.grow(b.reach), it, gap) }
@@ -137,6 +142,8 @@ internal class BadgeLane {
     internal var gap by mutableStateOf(0)
     internal var dir by mutableStateOf(LayoutDirection.Ltr)
     internal val boxes = mutableStateMapOf<BadgeKind, BadgeBox>()
+    /** 680a (D356): px at the tile's bottom covered by an overlay drawn over the tile from outside (0: none) - set by [badgeTile]. */
+    internal var overlayBottom by mutableStateOf(0)
     internal val id: String get() = System.identityHashCode(this).toString(16)
 
     internal fun report(b: BadgeBox) { if (boxes[b.kind] != b) boxes[b.kind] = b }
@@ -144,9 +151,13 @@ internal class BadgeLane {
     internal fun spot(k: BadgeKind): BadgeSpot {
         val t = tile
         if (t.width <= 0 || t.height <= 0) return BadgeSpot(0, 0)
-        return planBadges(t, boxes.values.toList(), gap, dir)[k] ?: BadgeSpot(0, 0)
+        val all = boxes.values.toList().let { if (overlayBottom > 0) it + BadgeBox(BadgeKind.OVERLAY, Alignment.BottomStart, 0, 0, t.width, overlayBottom) else it }
+        return planBadges(t, all, gap, dir)[k] ?: BadgeSpot(0, 0)
     }
 }
+
+/** 680a (D356): the height of an overlay a caller draws over the tile's bottom (Channel's name plate); the badges keep clear. */
+internal val LocalBadgeOverlayBottom = staticCompositionLocalOf { 0.dp }
 
 /** The lane of the tile being drawn (null: no lane - the badge sits in its corner as before). */
 internal val LocalBadgeLane = staticCompositionLocalOf<BadgeLane?> { null }
@@ -216,16 +227,16 @@ private var SemanticsPropertyReceiver.badgeTileTag by BadgeTileTag
  * On the tile's Box, last in its chain (so its size is the box the badges align in): the tile's size for [lane]. The badges'
  * own sizes are measured inside it, so all of them are known before any is placed.
  */
-internal fun Modifier.badgeTile(lane: BadgeLane?): Modifier = if (lane == null) this else this
-    .then(BadgeTileElement(lane))
+internal fun Modifier.badgeTile(lane: BadgeLane?, overlayBottom: Dp = 0.dp): Modifier = if (lane == null) this else this
+    .then(BadgeTileElement(lane, overlayBottom))
     .semantics { badgeTileTag = lane.id }
 
-private data class BadgeTileElement(val lane: BadgeLane) : ModifierNodeElement<BadgeTileNode>() {
-    override fun create() = BadgeTileNode(lane)
-    override fun update(node: BadgeTileNode) { node.lane = lane }
+private data class BadgeTileElement(val lane: BadgeLane, val overlayBottom: Dp = 0.dp) : ModifierNodeElement<BadgeTileNode>() {
+    override fun create() = BadgeTileNode(lane, overlayBottom)
+    override fun update(node: BadgeTileNode) { node.lane = lane; node.overlayBottom = overlayBottom }
 }
 
-private class BadgeTileNode(var lane: BadgeLane) : Modifier.Node(), LayoutModifierNode {
+private class BadgeTileNode(var lane: BadgeLane, var overlayBottom: Dp = 0.dp) : Modifier.Node(), LayoutModifierNode {
     override fun MeasureScope.measure(measurable: Measurable, constraints: Constraints): MeasureResult {
         val p = measurable.measure(constraints)
         val size = IntSize(p.width, p.height)
@@ -233,6 +244,8 @@ private class BadgeTileNode(var lane: BadgeLane) : Modifier.Node(), LayoutModifi
         val g = BADGE_GAP.roundToPx()
         if (lane.gap != g) lane.gap = g
         if (lane.dir != layoutDirection) lane.dir = layoutDirection
+        val ob = overlayBottom.roundToPx()
+        if (lane.overlayBottom != ob) lane.overlayBottom = ob
         return layout(p.width, p.height) { p.place(0, 0) }
     }
 }
