@@ -373,10 +373,10 @@ private fun ArcadeAttract(g: Game, detail: Boolean) {
         // when even the smallest size doesn't fit.)
         // (676y, D342 - Nova x1.3: the console line under the name ran off the tube's foot. The name fits in what the console
         // line leaves.)
-        FitText(titles.display(g.name).uppercase(), Color(0xFFFFE15A), maxSize = if (detail) 20.sp else 10.sp, minSize = 6.sp, maxLines = 3,
+        FitText(titles.display(g.name).uppercase(), Color(0xFFFFE15A), maxSize = com.shelf.launcher.ui.theme.PixelType.size(if (detail) 20.sp else 10.sp), minSize = com.shelf.launcher.ui.theme.PixelType.size(6.sp), maxLines = 3,
             fontWeight = FontWeight.Black, textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont(), shadow = Shadow(Color(0xFFFF3D7F), Offset(2f, 2f), 0f)),
             slideWhenCut = true, modifier = Modifier.weight(1f, fill = false))
-        if (detail) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
+        if (detail) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), com.shelf.launcher.ui.theme.PixelType.size(9.sp), maxLines = 1, fontFamily = pocketFont())
     }
 }
 
@@ -799,7 +799,7 @@ private fun ArcadeLedSign(text: String, size: TextUnit, modifier: Modifier = Mod
             .padding(horizontal = 10.dp, vertical = 3.dp)
     ) {
         FullText(
-            text, color = ArcadeLed, fontSize = size, fontFamily = pocketFont(), maxLines = 1,
+            text, color = ArcadeLed, fontSize = com.shelf.launcher.ui.theme.PixelType.size(size), fontFamily = pocketFont(), maxLines = 1,
             letterSpacing = 1.5.sp, style = TextStyle(shadow = Shadow(Color(0xFFFF8A1E).copy(alpha = 0.85f), Offset.Zero, 14f)),
             modifier = Modifier.drawWithContent {
                 drawContent()

@@ -296,7 +296,7 @@ private fun PqTopBar(c: StyleCtx, pal: PqPalette, compact: Boolean, pulse: Anima
                     .padding(horizontal = if (compact) 8.dp else 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text("VOLTCAP", color = pal.ink, fontFamily = pocketFont(), fontSize = if (compact) 10.sp else 13.sp, maxLines = 1, softWrap = false)
+                Text("VOLTCAP", color = pal.ink, fontFamily = pocketFont(), fontSize = com.shelf.launcher.ui.theme.PixelType.size(if (compact) 10.sp else 13.sp), maxLines = 1, softWrap = false)
             }
             Spacer(Modifier.width(6.dp))
             PqTabs(c, pal, compact, tabs, single, inTop, Modifier.weight(1f).fillMaxHeight())
@@ -1110,7 +1110,7 @@ private fun PqHeader(text: String, pal: PqPalette, compact: Boolean) {
             Modifier.pqPanel(pal, cut = 6.dp, edge = 1.5.dp, studs = false).padding(horizontal = 18.dp, vertical = if (compact) 4.dp else 6.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(text, color = pal.ink, fontFamily = pocketFont(), fontSize = if (compact) 12.sp else 15.sp, maxLines = 1, softWrap = false)
+            Text(text, color = pal.ink, fontFamily = pocketFont(), fontSize = com.shelf.launcher.ui.theme.PixelType.size(if (compact) 12.sp else 15.sp), maxLines = 1, softWrap = false)
         }
     }
 }

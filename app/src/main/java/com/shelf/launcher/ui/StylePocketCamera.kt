@@ -223,7 +223,7 @@ internal fun StylePocketCamera(c: StyleCtx, modifier: Modifier = Modifier) {
         }
     ) {
         if (g == null) {
-            Text(EmptyShelf.text.uppercase(), color = c3, fontFamily = font, fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
+            Text(EmptyShelf.text.uppercase(), color = c3, fontFamily = font, fontSize = com.shelf.launcher.ui.theme.PixelType.size(14.sp), modifier = Modifier.align(Alignment.Center))
             return@BoxWithConstraints
         }
         val wPx = with(density) { maxWidth.toPx() }
@@ -246,7 +246,7 @@ internal fun StylePocketCamera(c: StyleCtx, modifier: Modifier = Modifier) {
         val thumb = (sideRoom * 0.62f).coerceAtMost(maxHeight / 5.2f)
         val showSides = thumb >= 40.dp
         // (Update 346: never smaller than ~9 sp for the small print, however small the camera's pixel gets on a short screen.)
-        val fs: (Float) -> TextUnit = { k -> with(density) { maxOf((u * k).toSp().value, k * 2.1f).sp } }
+        val fs: (Float) -> TextUnit = { k -> com.shelf.launcher.ui.theme.PixelType.size(with(density) { maxOf((u * k).toSp().value, k * 2.1f).sp }) } // (679b)
         Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             if (showSides) CameraAlbum(c, (1..4).map { c.focus - it }.reversed(), thumb, pal, u, font, fs, select, Alignment.End, Modifier.width(sideRoom).padding(end = u * 6))
             // The viewfinder.
@@ -345,7 +345,7 @@ private fun CameraFacts(c: StyleCtx, g: Game, pal: IntArray, u: Dp, font: FontFa
         Box(Modifier.fillMaxWidth().height(u).background(c0))
         Spacer(Modifier.height(u * 3))
         // (Shrinks rather than breaking a long console name in the middle of a word.)
-        FitText(console, c1, maxSize = fs(4.5f), minSize = 7.sp, maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFamily = font))
+        FitText(console, c1, maxSize = fs(4.5f), minSize = com.shelf.launcher.ui.theme.PixelType.size(7.sp), maxLines = 1, style = androidx.compose.ui.text.TextStyle(fontFamily = font))
         year?.let { Text(it, color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 1) }
         Spacer(Modifier.height(u * 4))
         c.progress(g)?.let { (e, t) ->

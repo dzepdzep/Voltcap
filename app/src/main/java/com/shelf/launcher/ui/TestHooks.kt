@@ -726,7 +726,12 @@ internal object TestHooks {
         if (lk != null && com.shelf.launcher.data.CardArtType.values().any { it.name == lk }) look.value = lk
         if (st != null) settings.value = st.replace('_', ' ')
         if (g != null) game.value = g.replace('_', ' ') // (adb: "Contra_III")
-        if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) layout.value = want
+        if (want != null && com.shelf.launcher.data.HomeLayout.values().any { it.name == want }) {
+            layout.value = want
+            // (679b, emulator review e679r10: Pocket classic opened on its category page left over from the previous run, so the
+            // gate's home shot showed categories and no game window opened. A QA layout switch starts on the layout's home.)
+            PocketNav.page = PocketNav.Page.HOME
+        }
         if (th != null && com.shelf.launcher.ui.theme.AppTheme.values().any { it.name == th }) theme.value = th
         if (pm != null && com.shelf.launcher.data.PerformanceMode.values().any { it.name == pm }) perf.value = pm
     }

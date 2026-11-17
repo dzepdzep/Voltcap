@@ -72,9 +72,10 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 800.dp)
     val h = minOf(ctx.maxH, 500.dp)
     val compact = h < 380.dp
-    val big = if (compact) 15.sp else 19.sp
-    val small = if (compact) 9.sp else 11.sp
-    val line = if (compact) 11.sp else 13.sp
+    // (679b: pixel sizes through the shared readable minimum.)
+    val big = com.shelf.launcher.ui.theme.PixelType.size(if (compact) 15.sp else 19.sp)
+    val small = com.shelf.launcher.ui.theme.PixelType.size(if (compact) 9.sp else 11.sp)
+    val line = com.shelf.launcher.ui.theme.PixelType.size(if (compact) 11.sp else 13.sp)
     val glow = TextStyle(fontFamily = font, shadow = Shadow(ArcCyan.copy(alpha = 0.55f), Offset.Zero, 10f))
     val reduced = !rememberAnimationsEnabled() || LocalLiteEffects.current
     // The coin dropping in (Layout options › Arcade sounds; nothing when off).

@@ -307,7 +307,7 @@ private fun DrawScope.drawPixelIntro(tm: IntroTiming, t: Float, r: Float, word: 
 
 private fun measureWordmark(measurer: TextMeasurer, density: Density, fsPx: Float, pixel: Boolean = false): Wordmark {
     val size = with(density) { fsPx.toSp() }
-    val style = TextStyle(fontSize = size, fontWeight = FontWeight.Black, fontFamily = if (pixel) androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.shelf.launcher.R.font.volt_pixel)) else null)
+    val style = TextStyle(fontSize = size, fontWeight = FontWeight.Black, fontFamily = if (pixel) com.shelf.launcher.ui.theme.PixelType.family else null) // (679b: the shared pixel family)
     val letters = WORD.map { measurer.measure(AnnotatedString(it.toString()), style) }
     val tagStyle = TextStyle(
         fontSize = with(density) { (fsPx * 0.25f).toSp() },

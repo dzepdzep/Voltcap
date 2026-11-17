@@ -131,8 +131,8 @@ private fun PocketClassicMenu(ctx: WinSceneCtx) {
         .clip(RoundedCornerShape(4.dp)).background(paper).border(2.dp, rule, RoundedCornerShape(4.dp))) {
         // The title bar of the handheld's own menu.
         Row(Modifier.fillMaxWidth().background(blue).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(ctx.console.uppercase(), color = onColour(blue), fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
-            ctx.year?.let { Text(it, color = onColour(blue), fontSize = 13.sp, fontFamily = font) }
+            Text(ctx.console.uppercase(), color = onColour(blue), fontSize = com.shelf.launcher.ui.theme.PixelType.size(13.sp), fontFamily = font, modifier = Modifier.weight(1f))
+            ctx.year?.let { Text(it, color = onColour(blue), fontSize = com.shelf.launcher.ui.theme.PixelType.size(13.sp), fontFamily = font) }
         }
         Column(Modifier.padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -158,8 +158,8 @@ private fun PocketRibbonSheet(ctx: WinSceneCtx) {
     Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.06f).background(paper).border(1.dp, grey)) {
         // The thin information bar, as along the ribbon's top.
         Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(ctx.console, color = a, fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
-            Text(ctx.played, color = muted, fontSize = 13.sp, fontFamily = font)
+            Text(ctx.console, color = a, fontSize = com.shelf.launcher.ui.theme.PixelType.size(13.sp), fontFamily = font, modifier = Modifier.weight(1f))
+            Text(ctx.played, color = muted, fontSize = com.shelf.launcher.ui.theme.PixelType.size(13.sp), fontFamily = font)
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(grey))
         Row(Modifier.padding(10.dp)) {

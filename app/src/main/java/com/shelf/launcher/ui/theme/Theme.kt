@@ -242,8 +242,8 @@ fun ShelfLauncherTheme(
     val labContext = androidx.compose.ui.platform.LocalContext.current
     val typography = remember(pixelAll, headings, lab) {
         val normal = androidx.compose.material3.Typography()
-        val mono = androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(com.shelf.launcher.R.font.volt_pixel))
-        fun androidx.compose.ui.text.TextStyle.px(k: Float = 1f) = copy(fontFamily = mono, fontSize = fontSize * k, lineHeight = lineHeight * k)
+        val mono = PixelType.family
+        fun androidx.compose.ui.text.TextStyle.px(k: Float = 1f) = copy(fontFamily = mono, fontSize = PixelType.size(fontSize * k), lineHeight = lineHeight * k) // (679b: readable minimum)
         if (pixelAll) normal.copy(
             displayLarge = normal.displayLarge.px(), displayMedium = normal.displayMedium.px(), displaySmall = normal.displaySmall.px(),
             headlineLarge = normal.headlineLarge.px(), headlineMedium = normal.headlineMedium.px(), headlineSmall = normal.headlineSmall.px(),

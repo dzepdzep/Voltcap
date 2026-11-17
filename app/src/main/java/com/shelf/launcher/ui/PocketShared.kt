@@ -49,7 +49,7 @@ internal class PocketScope(
     val cx: Float = (width - POCKET_W) / 2f
     fun d(dots: Float): Dp = u * dots
     /** Text [dots] tall (the pixel font's size). */
-    fun sp(dots: Float): TextUnit = with(androidx.compose.ui.unit.Density(density)) { (u * dots).toSp() }
+    fun sp(dots: Float): TextUnit = com.shelf.launcher.ui.theme.PixelType.size(with(androidx.compose.ui.unit.Density(density)) { (u * dots).toSp() }) // (679b: readable minimum)
     /** A box at [x],[y] (dots, in the 256-wide design), [w] × [h] dots. */
     fun Modifier.at(x: Float, y: Float, w: Float, h: Float): Modifier = this.offset(u * (x + cx), u * y).size(u * w, u * h)
     /** The same, measured from the screen's own left edge (backgrounds, full-width bars). */
@@ -97,7 +97,7 @@ internal fun PocketScreen(
 
 /** The pixel font (Voltcap's own). */
 @Composable
-internal fun pocketFont(): FontFamily = remember { FontFamily(Font(com.shelf.launcher.R.font.volt_pixel)) }
+internal fun pocketFont(): FontFamily = com.shelf.launcher.ui.theme.PixelType.family // (679b: one instance - PixelType.isPixel)
 
 /** White paper with very faint vertical pinstripes, every [step] dots. */
 internal fun DrawScope.pocketPinstripes(u: Float, base: Color, line: Color, step: Float = 2f) {

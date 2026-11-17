@@ -222,7 +222,8 @@ internal fun StatusBar(
             val segmented = look.backing == BarBacking.SEGMENTS
             val sep = look.sep.takeUnless { compact || segmented }
             val textStyle = look.textStyle(uiFontStyle().merge(CenteredLine))
-            val small = 12.sp
+            // (679b: the bar's pixel face (Pocket Quest, Airy, Arcade LED) keeps the shared readable minimum.)
+            val small = com.shelf.launcher.ui.theme.PixelType.sizeFor(look.font, 12.sp)
             val voltGauge = VoltUi.on && com.shelf.launcher.data.Features.voltBattery.state.value
             val clockShown = clockText != null && OwnClock.count == 0
             val pieceH = Modifier.heightIn(min = look.avatarSize.coerceAtMost(26.dp))
@@ -249,10 +250,10 @@ internal fun StatusBar(
                     if (clockShown) Box(contentAlignment = Alignment.CenterEnd) {
                         val t = look.cased(clockText!!)
                         // An LCD's unlit segments behind the digits.
-                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = look.clockSize, fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)),
+                        if (look.ghost) Text(t.map { if (it.isDigit()) '8' else it }.joinToString(""), color = ink.copy(alpha = 0.12f), fontSize = com.shelf.launcher.ui.theme.PixelType.sizeFor(look.font, look.clockSize), fontWeight = look.clockWeight, maxLines = 1, softWrap = false, style = textStyle.merge(androidx.compose.ui.text.TextStyle(shadow = null)),
                             // (677k: the unlit LCD digits are decoration - not read out, not a second clock for statuscheck, Nova j677x13 Arcade / Discs)
                             modifier = Modifier.clearAndSetSemantics { })
-                        FullText(t, color = ink, fontSize = look.clockSize, lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, style = textStyle)
+                        FullText(t, color = ink, fontSize = com.shelf.launcher.ui.theme.PixelType.sizeFor(look.font, look.clockSize), lineHeight = androidx.compose.ui.unit.TextUnit(1.25f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = look.clockWeight, maxLines = 1, style = textStyle)
                     }
                 }
                 Sep()
@@ -271,7 +272,7 @@ internal fun StatusBar(
                     Icon(Icons.Filled.Notifications, null, tint = ink, modifier = Modifier.size(look.iconSize))
                     Text(
                         if (notificationCount > 99) "99+" else "$notificationCount",
-                        color = ink, fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Bold,
+                        color = ink, fontSize = com.shelf.launcher.ui.theme.PixelType.sizeFor(look.font, 11.sp), lineHeight = 16.sp, fontWeight = FontWeight.Bold,
                         style = textStyle, modifier = Modifier.padding(start = 1.dp)
                     )
                 }

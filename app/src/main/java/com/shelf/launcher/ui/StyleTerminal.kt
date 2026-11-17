@@ -309,7 +309,7 @@ internal fun StyleTerminal(c: StyleCtx, modifier: Modifier = Modifier) {
             else -> 15.sp
         }
         val lineH = with(density) { (fsz.toPx() * 1.32f).toDp() }
-        val style = TextStyle(fontFamily = font, fontSize = fsz, lineHeight = fsz * 1.32f, color = tc.fg, shadow = if (glow) Shadow(tc.fg.copy(alpha = 0.75f), Offset.Zero, 10f) else null)
+        val style = TextStyle(fontFamily = font, fontSize = com.shelf.launcher.ui.theme.PixelType.sizeFor(font, fsz), lineHeight = fsz * 1.32f, color = tc.fg, shadow = if (glow) Shadow(tc.fg.copy(alpha = 0.75f), Offset.Zero, 10f) else null)
         val screenShape = RoundedCornerShape(if (crt == Features.TmCrt.FULL) 22.dp else 0.dp)
         Box(Modifier.fillMaxSize().clip(screenShape).background(tc.bg).graphicsLayer {
             // A faint flicker of the tube (full effects only, never in Lite).

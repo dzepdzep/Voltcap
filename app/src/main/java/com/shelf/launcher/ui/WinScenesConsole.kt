@@ -582,7 +582,7 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 780.dp)
     val h = minOf(ctx.maxH, 480.dp)
     val u = with(density) { kotlin.math.floor((h.toPx() / 120f)).coerceAtLeast(2f).toDp() }
-    val fs: (Float) -> androidx.compose.ui.unit.TextUnit = { k -> with(density) { (u * k).toSp() } }
+    val fs: (Float) -> androidx.compose.ui.unit.TextUnit = { k -> com.shelf.launcher.ui.theme.PixelType.size(with(density) { (u * k).toSp() }) } // (679b)
     // (Update 346: the same picture the layout shows — its cover, a screenshot or the art, as picked with ▲ ▼ there; a
     // screenshot / the art is a landscape photo.)
     val src = CameraNav.source
