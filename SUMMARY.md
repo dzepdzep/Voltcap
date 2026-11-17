@@ -1,3 +1,12 @@
+# Update 678t (17 Nov 2026, cloud run) - dashboard: a published release is no longer shown as "ready for approval"
+- After v0.6.73 was published the dashboard still derived it as READY FOR OWNER APPROVAL ("your approval needed: yes - now"),
+  because release_status() never compared with releases.json 'current'. A scheduled run would also have taken that as the
+  step-10 "READY FOR RELEASE APPROVAL" signal. Now a release whose version is the current stable derives PUBLISHED; the summary's
+  NEXT RELEASE line shows the next unpublished release (v0.6.74) and the tracker says "Published ... Nothing to approve".
+- Test: tools/cloud/test_dashboard.py (4 tests; 3 error on the old dashboard.py, all PASS now).
+- Files: tools/cloud/dashboard.py, tools/cloud/test_dashboard.py, docs/claude/STATUS_DASHBOARD.md (regenerated), trackers.
+- App code unchanged. CI: Verify 310 GREEN on e83aa58 (7648980 cancelled by the next push). NOT TESTED: nothing hardware-related.
+
 # v0.6.73 PUBLISHED (17 Nov 2026 16:15 UTC, owner GO + option 2)
 - PR #21 merged (main a4012212, via the owner-authorized bridge check 678s); PC main fast-forwarded from a verified bundle.
 - Signed release + compat frozen as rc1, scanned, signer = v0.6.72; KONKR real Voltcap upgraded 79 -> 80 from the frozen file

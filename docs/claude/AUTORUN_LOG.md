@@ -210,3 +210,6 @@
 
 ## 17 Nov 17:20 Berlin live - v0.6.73 PUBLISHED
 - Bridge check, PR #21 merged, signed rc1 frozen + scanned, KONKR production upgrade before publish (option 2), published byte-identical. Lock released.
+
+## 17 Nov 16:30 UTC cloud run - 678t
+- Dashboard: published v0.6.73 no longer derived as "ready for approval"; NEXT RELEASE now v0.6.74; tools/cloud/test_dashboard.py (fails on old code). CI GREEN e83aa58. Lock released.

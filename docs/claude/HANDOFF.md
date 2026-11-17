@@ -1,5 +1,7 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov 16:35 UTC, 678t (cloud):** dashboard now derives a release equal to releases.json current as PUBLISHED (v0.6.73), NEXT RELEASE = v0.6.74; tools/cloud/test_dashboard.py. NEXT: check Verify 310 on the 678t push (red -> fix first), then v0.6.74: H9 pixel font before / after (branch claude/pixel-font-small), H16 worst popups, H10 / H11 badge mockups, D352 Twin icons badge gap, H12 animations, H13 Thor reading.
+
 
 **17 Nov 17:20 Berlin: v0.6.73 PUBLISHED** (main a4012212, assets = frozen rc1, KONKR production 0.6.73 upgraded before publication). Dev branch now holds the 0.6.73 pins + RC sums + records -> next PR to main (docs / tooling only). v0.6.74 work may resume on this branch: H9 pixel font before / after, H16 worst popups, H10 / H11 badge mockups, D352, H12 animations, H13 Thor (cloud).
 

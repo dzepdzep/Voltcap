@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - v0.6.73 · 2026-11-17 16:20 UTC · commit `a4012212`
+**1. LATEST UPDATE** - 678t · 2026-11-17 16:35 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e83aa58 (7648980 cancelled by the next push) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
+**2. WHAT CLAUDE JUST FIXED** - The status page still listed 0.6.73 as waiting for your approval even though it is published. It now shows 0.6.73 as published and the next release (0.6.74) as the one in progress, so no future run can mistake it for a release that needs your GO. An automatic check guards this.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (678m): Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
+- **CI / build** (678t): The status page still listed 0.6.73 as waiting for your approval even though it is published. It now shows 0.6.73 as published and the next release (0.6.74) as the one in progress, so no future run can mistake it for a release that needs your GO. An automatic check guards this.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -28,8 +28,7 @@
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.73 · **v0.6.73: READY FOR OWNER APPROVAL** · 0 of 13 app fixes fully verified · 0 gates left · your approval needed: **yes - now (RELEASE READY)** · window: PUBLISHED 17 Nov 2026 16:15 UTC (owner GO 15:22 Berlin, option 2: KONKR upgrade before publication)
-- later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
+**7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
 
 **Links:** [this dashboard](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/claude/STATUS_DASHBOARD.md) ·
@@ -49,7 +48,7 @@ work. Emulator results never count as handheld verification. Release status is d
 <!-- GEN:release -->
 **Current stable:** v0.6.73 (a4012212, 2026-11-17) - Latest stable release (main, PR #21). Assets = frozen rc1 (release 72a94b58, compat 2b6b9e3c). Save Sync 529 not included.
 
-### v0.6.73 - **READY FOR OWNER APPROVAL**
+### v0.6.73 - **PUBLISHED**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner.
 - Release window: PUBLISHED 17 Nov 2026 16:15 UTC (owner GO 15:22 Berlin, option 2: KONKR upgrade before publication)
 - App fixes and features: 13 (13 implemented, 0 fully verified, 6 implemented but not yet tested on a handheld, 4 need your look or decision)
@@ -90,8 +89,7 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: nothing - waiting for your GO.
-Merging, the production install and publishing always wait for your explicit GO.
+Published: this is the current stable release (a4012212, 2026-11-17). Nothing to approve.
 
 ### v0.6.74 - **DEVELOPMENT**
 - Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
