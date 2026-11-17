@@ -1463,6 +1463,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair be8865c - clean (CI run 44089903475, push [qa-apk])",
    "note": "v0.6.73 RC QA build after the Channel revert: Channel + rapid re-check on the KONKR"
+  },
+  {
+   "id": "qa-0.6.73-678r-ci",
+   "apk_sha256": "f430d748191f25d792ce493171aefff75b74a89052382f7d9995039fdce4c53e",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair eadd00f (RC be8865c + 678r Channel one-line name plate, D350)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair eadd00f - clean (CI run 44098184174, push [qa-apk])",
+   "note": "678r: KONKR Channel x1.3 recheck (D350)"
   }
  ]
 }

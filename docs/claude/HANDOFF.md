@@ -1,5 +1,7 @@
 # VoltCap handoff (read first, update last)
 
+
+**17 Nov 15:25 (678r, live):** owner handoff merged (matrix H16 53-window polish, H17 Channel; queue: Thor + RP Classic NOT with the owner - never poll / wake). RC is now **eadd00f** (be8865c + Channel D350 one-line sliding name plate; FitText extraLine, default unchanged). CI GREEN push + PR #21; heavy robo 280/280 incl. CHAN x1.3; KONKR Channel x1.3 + x1.0 PASS on qa-0.6.73-678r-ci. WAITING FOR GO. Do not push app changes to this branch while it is the RC head - v0.6.74 work (H9 pixel font before / after, H16 polish, H10 / H11 badge mockups, H12 animations, H13 Thor cloud reading) goes on a v0674 branch.
 Updated: 2026-11-17 ~13:40 UTC, updates 678p-q (LIVE session, owner present): D333 fixed (reopen in place) and verified on the KONKR
 (60/60 rapid rounds); D351 owner decision (corner X = chrome, popclip changed); v0.6.73 RC prepared - version 0.6.73 / 80, RC commit
 be8865c, draft PR #21 to main, CI GREEN, KONKR x1.0 53/53 on the RC build. 678o's Channel fix reverted (Compose never idle on

@@ -9,7 +9,9 @@
   growing a second line over the achievement count. Nothing is reported to the lane (678o's never-idle loop can't recur).
 - Tests: ChanPlateOneLine678rTest (source pins); EndlessOnceRoboTest gains CHAN n=12 x1.3 (the long names, must idle).
 - Files: app/src/main/java/com/shelf/launcher/ui/FitText.kt, ui/StyleConsoleHomes.kt; tests above; docs listed.
-- NOT TESTED: KONKR Channel x1.3 on this build (queued, short check if connected).
+- CI: Verify 310 GREEN on eadd00f (push + PR #21); heavy robo EndlessOnceRoboTest 280/280 (cloud). KONKR (L1, QA app, qa-0.6.73-678r-ci):
+  Channel x1.3 kc678r13 + x1.0 kc678r10 popup gate PASS; restored (font 1.0, density 240, snapshot diff=0). RC moves to eadd00f.
+- NOT TESTED: Thor / RP Classic (not with the owner).
 
 # Update 678q (17 Nov 2026, live session) - Channel name-plate change reverted (layout loop); D333 / HW-2 / HW-12 records
 - CI Verify 310 on the RC prep commit 91b1ac3: 16 failures, all Channel - EndlessFillLitRoboTestShard3 / EndlessOnceRoboTest

@@ -3,7 +3,7 @@
  "actions": [
   {
    "what": "GO for v0.6.73 (or NO-GO): merge draft PR #21, build + freeze the signed RC on the PC, upgrade test on one handheld, publish",
-   "why": "RC ready: CI green on be8865c, KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS; known: Channel x1.3 name over the count (v0.6.74), pixel-font polish (v0.6.74)",
+   "why": "RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR",
    "device": "none to answer; the upgrade test needs one handheld with your real Voltcap (you pick which)",
    "urgent": true,
    "blocks": "v0.6.73 release"

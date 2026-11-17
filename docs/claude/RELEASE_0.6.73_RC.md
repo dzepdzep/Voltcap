@@ -1,6 +1,6 @@
 # v0.6.73 release candidate - prepared, waiting for the owner's GO
 
-Prepared 17 Nov 2026 (live session 678p / 678q). RC commit: be8865c (draft PR #21); candidate update 678r (Channel D350 one-line plate, owner handoff 17 Nov) - RC moves to it once CI is GREEN and, if the KONKR is connected, a short Channel check passes. Nothing merged, built-for-release or published - each of those waits for the owner's GO.
+Prepared 17 Nov 2026 (live session 678p / 678q). RC commit: eadd00f (678r = be8865c + the Channel D350 one-line name plate, owner handoff 17 Nov; draft PR #21). Nothing merged, built-for-release or published - each of those waits for the owner's GO.
 
 ## Candidate
 - Branch `claude/qa-0672-repair` at the RC prep commit (version 0.6.73 / versionCode 80). Base: main 5b01ef39 (v0.6.72); the
@@ -35,18 +35,18 @@ Handhelds
 ## Verification
 | Gate | State | Evidence |
 |---|---|---|
-| CI Verify 310 (unit tests + debug build) | PASS | GREEN on be8865c (push + PR #21); QA tooling checks PASS on PR #21 |
+| CI Verify 310 (unit tests + debug build) | PASS | GREEN on eadd00f (push + PR #21, QA tooling checks PASS); be8865c GREEN on push + PR #21; heavy robo EndlessOnceRoboTest 280/280 incl. CHAN x1.3 (cloud) |
 | D333 rapid A B A B (HW-5) | PASS | KONKR 678p: Record crate 20/20, TV 20/20 (x1.0 + x1.3), Cardboard box 10/10, Card binder 10/10 |
 | Record crate checklist (HW-2) | PASS | KONKR x1.0 + x1.3 (k678p_crate) |
 | Full popup gate KONKR x1.0, RC build | PASS 53/53 | krc10 on qa-0.6.73-rc-91b1ac3-ci; final RC be8865c: 6 touched layouts 6/6 (krcq10) |
-| Full popup gate KONKR x1.3 | 52/53 | k678n13 (678n) - Channel two-line name over the count (D350): 678r keeps the plate one line; cloud robo idle x1.3 PASS (EndlessOnceRoboTest 280/280); KONKR Channel x1.3 recheck pending |
+| Full popup gate KONKR x1.3 | 52/53 | k678n13 (678n) - Channel two-line name over the count (D350): 678r keeps the plate one line; fixed in 678r: KONKR Channel x1.3 kc678r13 + x1.0 kc678r10 PASS on qa-0.6.73-678r-ci |
 | Banner style | PASS x1.0 + x1.3 | owner decision D351 (corner X is chrome) |
 | Owner visual review | PASS | owner 17 Nov; pixel-font x1.3 polish -> v0.6.74 |
 | RP Nova / RP Classic | earlier builds | HW-17, HW-7 (no regression expected: the RC changes since are the D333 window close and text fixes) |
 | Signed release build + freeze_rc + secret scan | NOT STARTED | after the GO: needs main = RC, on the PC (keys only there) |
 | Upgrade over the real Voltcap on one handheld + smoke test | NOT STARTED | owner's GO (Level 3) |
 
-Known and accepted for v0.6.73: Channel x1.3 name over the count (D350), Twin icons badges 4-4.7 dp apart (D352), 'PlayStation' word
+Known and accepted for v0.6.73: Twin icons badges 4-4.7 dp apart (D352), 'PlayStation' word
 break at x1.3 on the category screen (D346, whole words), pixel-font x1.3 polish - all v0.6.74.
 
 ## GO steps (after the owner says GO)

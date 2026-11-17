@@ -173,7 +173,7 @@
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
      "state": "PASS",
-     "evidence": "KONKR GT78 17 Nov: RC QA build qa-0.6.73-rc-91b1ac3-ci (678p + version) full x1.0 gate krc10 53/53 PASS (TV rapid fixed, D333); final RC be8865c (Channel revert) krcq10 Channel / Twin icons / Record crate / TV / Card binder / Cardboard box 6/6 PASS; rapid A B A B 60/60 (678p). x1.3 full gate on 678n k678n13 52/53 - Channel two-line name over the count = known (D350, v0.6.74; same drawing as v0.6.72). Review sheet: Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
+     "evidence": "KONKR GT78 17 Nov: RC QA build qa-0.6.73-rc-91b1ac3-ci (678p + version) full x1.0 gate krc10 53/53 PASS (TV rapid fixed, D333); final RC be8865c (Channel revert) krcq10 Channel / Twin icons / Record crate / TV / Card binder / Cardboard box 6/6 PASS; rapid A B A B 60/60 (678p). x1.3 full gate on 678n k678n13 52/53 - Channel two-line name over the count (D350) - fixed in 678r, KONKR 17 Nov 15:07: QA build qa-0.6.73-678r-ci (eadd00f, CI Verify 310 GREEN on push) Channel x1.3 kc678r13 popup gate PASS 1/1 (all 11 grades); name plate one line + sliding, 48/120 fully readable; restored (font 1.0, density 240, owner snapshot diff=0). Review sheet: Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",

@@ -204,3 +204,6 @@
 - Lock taken (1b3e391). D333 reopen-in-place (678p, d5eeafb) - KONKR rapid 60/60. RC prep 91b1ac3 (0.6.73 / 80), PR #21 (draft).
 - CI on 91b1ac3 RED: 16 Channel robo tests never idle (678o Channel lane change) -> reverted 678q be8865c, CI GREEN.
 - KONKR: krc10 x1.0 53/53 (RC build), krcq10 6/6 (final RC). Device restored. Lock released; waiting for the owner's GO.
+
+## 17 Nov 15:25 UTC+1 live 678r
+- Owner handoff merged; Channel D350 fixed without the lane (FitText extraLine); CI GREEN eadd00f; KONKR Channel x1.0 + x1.3 PASS; RC = eadd00f; waiting for GO. Lock released.
