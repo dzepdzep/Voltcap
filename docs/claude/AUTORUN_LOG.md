@@ -241,3 +241,8 @@
 - Branch claude/v0674-native-pages: NativePageKit.kt + Record crate's own pages (681a), NativePages681aTest, WinFocusRoboTest
   CRATE (both) + ShelfTextRoboTest PASS in the cloud; emulator review 44173674038 (Info + Liner notes x1.0 / x1.3). Tracker
   docs/claude/NATIVE_PAGES_P2.md. HANDOFF / backlog: P2 alternates with the v0.6.74 list.
+
+## 2026-11-17 ~21:18-21:50 UTC - cloud run 681cr
+- Dev line CI GREEN on e692ef5. P2 branch Verify 310 RED on 1a6c5c9 (Record crate tracklist first row cut at x1.3) -> fixed on
+  claude/v0674-native-pages (64e5955); AchFirstRow 87/87, NativePages681a 8/8, static PASS. Two rebases: a live session pushed
+  681b-d to the P2 branch meanwhile. Lock released.

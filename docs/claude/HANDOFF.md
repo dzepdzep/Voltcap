@@ -29,6 +29,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**17 Nov 21:45 UTC, 681cr (cloud):** P2 branch CI was RED on 1a6c5c9 (AchFirstRowRoboTest CRATE x1.3: the tracklist's first
+track cut). Fixed on `claude/v0674-native-pages` (64e5955, rebased on the live session's 681b-681d): the title has the whole line,
+the leader runs under it; large text keeps a closed track's words to one sliding line. AchFirstRow 87/87 + NativePages681a 8/8
+PASS in the cloud. A live session was pushing P2 (681b-d) at the same time without the dev-line lock: the cloud run named its
+commit 681cr to keep clear of its numbers. NEXT: check Verify 310 on 64e5955 (P2) and on the dev line; next run = v0.6.74 list
+(alternation; P2 batch 1 continues with Resume / TV room unless the live session has them).
+
 **17 Nov 20:35 UTC, 680b (cloud):** priority 5 / D357 done in QA tooling - badgecheck no longer fails badges of a tile a
 carousel scrolled partly off-screen (measured at the tile's scale; a badge cut inside a whole tile still FAILs) nor of covers
 stacked behind a larger one (NOT TESTED, never PASS); real collisions still FAIL. Selftest TestBadgeCheckCarousel680b (6, 3 fail

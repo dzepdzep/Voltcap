@@ -1,3 +1,13 @@
+# Update 681cr (17 Nov 2026, cloud run) - P2: Record crate tracklist's first track whole at x1.3 (CI red on the P2 branch)
+- Verify 310 was RED on the P2 branch's 1a6c5c9 (681a): AchFirstRowRoboTest CRATE x1.3 n=12 - the first track 94 of 137 px. The
+  tracklist title shared the line with a dotted leader of the same weight, so it had half the line and wrapped to three lines.
+- WinPagesCrate.kt (branch claude/v0674-native-pages, commit 64e5955): the leader runs under the title's line and shows where
+  the title ends (the title has the whole width); with large text a closed track's words take one line (shrink readably, then
+  slide; A shows them all). Review render (Robolectric, before 681b's insert tilt): docs/claude/review/p2_crate_681cr_tracklist_x13_robo.png on that branch.
+- Checks (cloud, compiled on top of the live session's e79a407): AchFirstRowRoboTest 87/87 (every layout x1.3, CRATE x1.0 / x1.3),
+  NativePages681aTest 8/8, static checks PASS. CI on the P2 branch decides the rest. Handheld: rides along HW-24 (KONKR).
+- Not on the dev line (P2 stays on its branch until the owner approves the batch). Nothing to copy for the PC.
+
 # Update 680b (17 Nov 2026, cloud run) - badgecheck: carousel-trimmed and stacked-behind tiles are not badge faults (D357)
 - tools/qa/tools/badgecheck.py: a tile a carousel scrolled partly off the screen (shown box trimmed on one side, or laid out past
   the screen edge) is "clipped": its badges trimmed with it are not "cut" / "off the screen"; their gap is measured at the tile's

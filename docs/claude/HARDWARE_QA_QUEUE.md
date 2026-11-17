@@ -55,6 +55,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   and the screenshots: the pill above the plate, nothing cut, the plate still one line and sliding (D350).
 - Also (680b, D357, no extra device time): run badgecheck.py (680b or later) over the same session's CUBE x1.0 and Tiles / Classic
   dumps - the cover-flow side covers and the half-off carousel tile must no longer FAIL; any remaining FAIL is a real collision.
+- Also (681cr, P2 branch `claude/v0674-native-pages` 64e5955 or later, its CI QA APK; same KONKR session, ~2 min): Record crate
+  at x1.3, open TRACKLIST (R1 R1): the first track whole at the page's top (title in two lines, the dotted leader after it,
+  its words on one sliding line until A) - p2review.sh / popclip on CRATE; a cut first row = FAIL. Unit evidence only so far.
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

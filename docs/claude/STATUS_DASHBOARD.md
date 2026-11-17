@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681a · 2026-11-17 21:15 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 79c11a5; P2 branch: unit + Robolectric focus tests PASS in the cloud · effort: high
+**1. LATEST UPDATE** - 681cr · 2026-11-17 21:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e692ef5 (dev line); P2 branch was RED on 1a6c5c9, fix 64e5955 pushed - CI pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Started the big one: every home layout getting its own Details, Achievements and Options pages. A shared kit now handles the data and the controls (bumpers, focus, sounds, touch size, scrolling) while each layout keeps its own look. Record crate is the first new one: its pages are the sleeve's printed matter - liner notes, a tracklist of your achievements (side A yours, side B still to get) and pressing notes for the options. It is on its own branch and waits for your look at the screenshots.
+**2. WHAT CLAUDE JUST FIXED** - On the new Record crate pages (still on their own test branch), the Achievements tracklist cut the first achievement in half when text is set larger: the name only had half the line and wrapped to three lines. The name now uses the whole line with the dotted line running after it, and with larger text each closed entry's description sits on one sliding line, so the first achievement is fully visible when the page opens. The automatic check that caught it passes again for every layout.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: P2 batch 1: Classic, Console hub, Resume, TV room; then: pixel font 62.5 % + the 7 layouts; badge styles
+**5. WORKING ON NEXT** - now: v0.6.74 list: profile picture in its corner (statuscheck gap); then: P2 batch 1: Resume, TV room; window polish (H16)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
