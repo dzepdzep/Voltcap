@@ -60,8 +60,8 @@ import coil.compose.AsyncImage
  * P2 batch 1 (681e): the Resume & discover window's own pages. The window is a big square beside a discover card, so its pages
  * are the discover feed itself - rounded cards and pills, the house style of a store's "for you" feed:
  *  - Details      = ABOUT THIS GAME: a feed of cards - the story (the first D-pad stop), the facts as pills, your play.
- *  - Achievements = PROGRESS FEED: the progress at the top, then shelves of small cards - NEXT UP (the most-earned ones
- *                   you don't have yet), RECENTLY EARNED, then EVERYTHING in the chosen order; A opens a card in place.
+ *  - Achievements = PROGRESS FEED: the progress at the top, then the feed's cards in the chosen order, each once, under
+ *                   shelf headings - EARNED, NEXT UP (the first three still to get), STILL TO GET; A opens a card in place.
  *  - Options      = a settings sheet of full-width pills; one that removes something is a red-outlined pill and asks twice.
  * Motion: the cards slide up into the feed one after another (none with Motion Off). Shared: data, focus, B, Play-first,
  * inert outgoing copy (NativePageKit).
@@ -77,13 +77,18 @@ internal fun discoverPageName(p: WinPage): String = when (p) {
     else -> p.name
 }
 
-/** NEXT UP: the [n] still-to-get achievements most players have (the likeliest next ones). Pure. */
-internal fun discoverNextUp(list: List<com.shelf.launcher.data.RaAchievementDetail>, n: Int = 3) =
-    list.filterNot { it.isUnlocked }.sortedByDescending { it.unlockPercent ?: -1f }.take(n)
-
-/** RECENTLY EARNED: the [n] newest you have. Pure. */
-internal fun discoverRecent(list: List<com.shelf.launcher.data.RaAchievementDetail>, n: Int = 3) =
-    list.filter { it.isUnlocked }.sortedByDescending { it.dateEarnedHardcore ?: it.dateEarned ?: "" }.take(n)
+/**
+ * The feed's shelf heading before the [i]-th card of a run of earned / still-to-get achievements (the list keeps the chosen
+ * order and shows each achievement once): EARNED over a run you have, NEXT UP over the first three still to get, STILL TO GET
+ * after them. Null: no heading here. Pure.
+ */
+internal fun discoverShelf(earned: Boolean, i: Int): String? = when {
+    earned -> if (i == 0) "EARNED" else null
+    i == 0 -> "NEXT UP"
+    i == DISCOVER_NEXT_UP -> "STILL TO GET"
+    else -> null
+}
+internal const val DISCOVER_NEXT_UP = 3
 
 internal fun discoverMove(@Suppress("UNUSED_PARAMETER") dir: Int): ContentTransform =
     fadeIn(tween(NATIVE_PAGE_MS / 2)) togetherWith fadeOut(tween(NATIVE_PAGE_MS / 3))
@@ -204,8 +209,7 @@ private fun DiscoverProgress(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
     val a = ctx.accent
     val t = rememberNativeTrophies(ctx)
     val focus = nativeListFocus(ctx, live)
-    // (each shelf opens its own cards: the same achievement can stand on two shelves)
-    var openKey by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf<String?>(null) }
+    var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
         Row(Modifier.feedIn(rise, 0), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
@@ -222,20 +226,20 @@ private fun DiscoverProgress(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
         }
         Spacer(Modifier.height(6.dp))
         Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(a), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            var card = 1
-            @Composable fun shelf(title: String, tag: String, list: List<com.shelf.launcher.data.RaAchievementDetail>) {
-                if (list.isEmpty()) return
-                Text(title, color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp, modifier = Modifier.padding(top = 4.dp).feedIn(rise, card))
-                list.forEach { ach ->
-                    val k = tag + ach.id
-                    androidx.compose.runtime.key(k) {
-                        FeedTrophy(ach, a, live, openKey == k, { openKey = if (openKey == k) null else k }, Modifier.feedIn(rise, minOf(card++, 6)))
-                    }
+            // (681f, AchFirstRowRoboTest RESUME: shelves that repeated achievements - next up, recent, then everything - put the
+            // list's first one below the fold at x1.3. Each achievement once, in the chosen order; the shelves are the runs.)
+            var run = 0; var was: Boolean? = null
+            t.list.forEachIndexed { n, ach ->
+                val earned = ach.isUnlocked
+                if (was != earned) { was = earned; run = 0 }
+                discoverShelf(earned, run)?.let { Text(it, color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(top = 4.dp).feedIn(rise, minOf(n + 1, 6))) }
+                run++
+                androidx.compose.runtime.key(ach.id) {
+                    val opened = openId == ach.id
+                    FeedTrophy(ach, a, live, opened, { openId = if (opened) null else ach.id }, Modifier.feedIn(rise, minOf(n + 1, 6)))
                 }
             }
-            shelf("NEXT UP", "n", discoverNextUp(t.list))
-            shelf("RECENTLY EARNED", "r", discoverRecent(t.list))
-            shelf("EVERYTHING", "e", t.list)
             if (t.list.isEmpty()) FeedCard("NOTHING TO TRACK", a, Modifier.feedIn(rise, 1)) {
                 Text("This game has no achievements.", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
             }

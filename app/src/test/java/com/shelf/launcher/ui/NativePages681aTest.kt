@@ -87,4 +87,10 @@ class NativePages681aTest {
         assertEquals(1, src("WinPagesDiscover.kt").split("ctx.pageFor(").size - 1)
         assertTrue(src("WinScenesHomes2.kt").contains("DiscoverPage(ctx, pg, pageLive, Modifier.fillMaxSize())"))
     }
+
+    @Test fun discoverShelvesAreRunsNotRepeats() {
+        assertEquals("EARNED", discoverShelf(true, 0)); assertEquals(null, discoverShelf(true, 1))
+        assertEquals("NEXT UP", discoverShelf(false, 0)); assertEquals(null, discoverShelf(false, 2))
+        assertEquals("STILL TO GET", discoverShelf(false, 3)); assertEquals(null, discoverShelf(false, 4))
+    }
 }

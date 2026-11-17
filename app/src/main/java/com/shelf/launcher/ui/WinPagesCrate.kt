@@ -119,7 +119,7 @@ internal fun androidx.compose.animation.AnimatedVisibilityScope.CratePage(ctx: W
     }.padding(start = 8.dp, end = 8.dp, top = 9.dp, bottom = 6.dp)) {
         when (p) {
             WinPage.DETAILS -> CrateLinerNotes(ctx, live, ink, red, Modifier.fillMaxSize())
-            WinPage.TROPHIES -> CrateTracklist(ctx, live, paper, ink, red, Modifier.fillMaxSize())
+            WinPage.TROPHIES -> CrateTracklist(ctx, live, CRATE_INSERT_PAPER, ink, red, Modifier.fillMaxSize()) // (the title's ground is the insert's stock)
             WinPage.OPTIONS -> CratePressingNotes(ctx, live, ink, red, Modifier.fillMaxSize())
             else -> ctx.pageFor(p, Modifier.fillMaxSize(), live) // (Performance: the shared page - not a page of this sleeve yet)
         }
