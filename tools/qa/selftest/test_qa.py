@@ -2179,6 +2179,14 @@ class TestHomecut676o(unittest.TestCase):
         offscreen = dict(play, shown=[0, 0, 0, 0])
         self.assertEqual(homecut.cut_texts(self._dump([offscreen])), [])
 
+    def test_word_broken_across_lines_fails(self):
+        """677h (owner, RP Classic Storage Boxes "6 / 1 0", "Neve / r"): a line break inside a word FAILs; whole words PASS."""
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import homecut
+        nev = {"text": "Never played", "lines": 3, "brokenWord": True, "placed": True, "textH": 90, "boxH": 90}
+        ok = dict(nev, text="Never played ok", lines=2, brokenWord=False)
+        self.assertEqual([c[0] for c in homecut.cut_texts(self._dump([nev, ok]))], ["Never played (word broken)"])
+
 
 class TestReadcheckUnplaced676f(unittest.TestCase):
     """676f: an unplaced text (a badge the lane left out) is not drawn - it can't overlap; a placed one still FAILs."""

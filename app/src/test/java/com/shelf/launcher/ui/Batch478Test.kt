@@ -108,9 +108,10 @@ class Batch478Test {
         assertTrue(a.contains("Features.StatusMode.FOLLOW -> homeLayout.statusFollowsMinimal()"))
         val h = src("HomeChrome.kt")
         // Minimal keeps the clock and the battery; search, Wi-Fi, devices, profile and progress go.
-        assertTrue(h.contains("if (accessories.isNotEmpty() && !minimal)"))
-        assertTrue(h.contains("if (!minimal) Group {\n                Icon(Icons.Filled.Search"))
-        assertTrue(h.contains("if (!minimal) Icon(if (wifiConnected)"))
+        // (677f: also the compact levels of StatusFit - level 3 drops devices and search, 4 Wi-Fi.)
+        assertTrue(h.contains("if (accessories.isNotEmpty() && !minimal && level < 3)"))
+        assertTrue(h.contains("val actionsShown = !minimal && (") && h.contains("if (actionsShown) Group {\n                if (level < 3) Icon(Icons.Filled.Search"))
+        assertTrue(h.contains("if (!minimal && level < 4) Icon(if (wifiConnected)"))
         assertTrue(h.contains("if (progress.isNotEmpty() && !minimal"))
         assertTrue(src("LauncherScreen.kt").contains("minimal = state.appearance.statusMinimal"))
         assertTrue(src("SettingsDialog.kt").contains("arrayOf(\"Follow layout\", \"Always\", \"Minimal\", \"Hidden\")"))

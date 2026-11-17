@@ -136,3 +136,21 @@ class StatusFit677Test {
         assertTrue(src("StyleStorageBoxes.kt").contains("StorageFact(\"Achievements\""))
     }
 }
+
+/** 677h: a line break inside a word ("1 / 0", "Neve / r") is found; breaks at spaces and CJK breaks are not. */
+class WholeWords677hTest {
+    @Test fun brokenWords() {
+        assertTrue(brokenWordAt("6 / 10", intArrayOf(5)))          // "6 / 1" | "0"
+        assertTrue(brokenWordAt("Never played", intArrayOf(4)))    // "Neve" | "r played"
+        assertTrue(!brokenWordAt("Never played", intArrayOf(6)))   // "Never " | "played"
+        assertTrue(!brokenWordAt("6 / 10", intArrayOf(4)))         // "6 / " | "10"
+        assertTrue(!brokenWordAt("スーパーマリオ", intArrayOf(3)))      // Japanese breaks between characters
+        assertTrue(!brokenWordAt("Well-known", intArrayOf(5)))     // after a hyphen
+    }
+    @Test fun wired() {
+        val f = listOf("src/main/java/com/shelf/launcher/ui/FitText.kt", "app/src/main/java/com/shelf/launcher/ui/FitText.kt").map { File(it) }.first { it.exists() }.readText()
+        assertTrue(f.contains("autoSize = if (autoFit) WholeWordsAutoSize(fitMin(fontSize), fontSize) else null"))
+        assertTrue(f.contains("while (s > bottom && !whole(s, lines))"))
+        assertTrue(f.contains("if (!r.hasVisualOverflow) { if (firstFit.isNaN()) firstFit = s; if (!brokenWord(r)) break }"))
+    }
+}

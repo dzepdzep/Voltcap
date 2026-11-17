@@ -222,6 +222,8 @@ internal object QaClip {
                     sb.append("\"lines\":$lines,\"maxLines\":${tl.layoutInput.maxLines.let { if (it == Int.MAX_VALUE) -1 else it }},")
                     sb.append("\"ovH\":${tl.didOverflowHeight},\"ovW\":${tl.didOverflowWidth},\"ellipsis\":$ell,")
                     sb.append("\"textH\":${tl.multiParagraph.height.toInt()},\"boxH\":${tl.size.height},")
+                    // (677h: a line break inside a word - homecut.py fails it.)
+                    if (lines > 1) sb.append("\"brokenWord\":${brokenWord(tl)},")
                     // (676a: a one-line text's own width against its box - didOverflowWidth / Height also say yes for a 1 px rounding
                     // at scaled text, badgecheck.py needs the size of the shortfall.)
                     if (lines == 1) sb.append("\"needW\":${kotlin.math.ceil(tl.multiParagraph.intrinsics.maxIntrinsicWidth).toInt()},\"boxW\":${tl.size.width},")
