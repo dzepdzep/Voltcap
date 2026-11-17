@@ -1,3 +1,15 @@
+# Update 678j (17 Nov 2026, cloud scheduled run) - rule 11: the category screen shows its text whole
+- Category screen (PlatformBrowser): the Slides logo box name (when there is no logo picture), the slide's name line and
+  last-played line, the Stage logo box name + name line, and the card's name + game count go through FullText (same line
+  count and readable shrink as before, then slides) with no reserved height, so the boxes keep their sizes. 7 "…" uses
+  removed (static TRUNCATE 187 -> 180).
+- Test: PlatformBrowserFullText678jTest (fails on the 678i sources: 7 Ellipsis, no FullText). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin) and PASS, with CategoryLooks527Test (7/7, pins the same file). Static checks PASS.
+- CI on 678i (60e9c04): Verify 310 GREEN (the sync prompts change + its test compiled and passed there).
+- Emulator trial STARTED on this commit ("[emulator-qa]"; last real trial 01:30 UTC on 678g). Read it next run.
+- Hardware: HW-16 queued (category screen Slides / Stage / cards at x1.0 / x1.3; batch with HW-12..15).
+- Files: app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt, test PlatformBrowserFullText678jTest.kt; trackers.
+
 # Update 678i (17 Nov 2026, cloud scheduled run) - rule 11: save-sync prompts show their text whole
 - Save sync prompts: the sync toast's title and detail, the Google Drive card's status line, the game row's name, the sync
   log's time and entry lines and the conflict list's game names go through FullText (wrap to their old line count, shrink

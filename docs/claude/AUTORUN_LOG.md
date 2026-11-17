@@ -151,3 +151,8 @@
 - BOOTSTRAP OK (d2185d5); lock free (none since 02:26), taken 03:18. CI: Verify 310 GREEN on d2185d5 (678h). Effort env: medium.
 - Rule 11: save-sync prompts text shown whole (7 "…" removed, TRUNCATE 194 -> 187), SyncPromptsFullText678iTest; Maven 429 on
   both compile tries - not compiled here, CI is the first compile. HW-15 queued. No trial started. Lock released.
+
+## 2026-11-17 ~04:18-04:40 UTC - cloud run 678j
+- BOOTSTRAP OK (60e9c04); lock free (none since 03:22), taken 04:18. CI: Verify 310 GREEN on 60e9c04 (678i). Effort env: medium.
+- Rule 11: category screen text shown whole (7 "…" removed, TRUNCATE 187 -> 180), PlatformBrowserFullText678jTest; compiled
+  and PASS in the cloud (no Maven 429 this time). HW-16 queued. Emulator trial started on this commit. Lock released.

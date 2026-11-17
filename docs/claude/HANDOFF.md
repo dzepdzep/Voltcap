@@ -1,6 +1,8 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~03:40 UTC, update 678i (cloud run: rule 11 - save-sync prompts FullText, SyncPromptsFullText678iTest;
+Updated: 2026-11-17 ~04:40 UTC, update 678j (cloud run: rule 11 - category screen FullText, PlatformBrowserFullText678jTest;
+TRUNCATE 187 -> 180; compiled + PASS in the cloud; HW-16 queued; CI GREEN on 678i; emulator trial STARTED on this commit).
+Before: 2026-11-17 ~03:40 UTC, update 678i (cloud run: rule 11 - save-sync prompts FullText, SyncPromptsFullText678iTest;
 TRUNCATE 194 -> 187; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-15 queued; CI GREEN on 678h).
 Before: 2026-11-17 ~02:50 UTC, update 678h (cloud run: rule 11 - Settings FullText, SettingsDialogFullText678hTest;
 TRUNCATE 211 -> 194; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-14 queued; trial on 678g READ: PASS).
@@ -46,6 +48,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- FIRST (678j): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678j push (if red: fix it first). READ the
+  emulator trial started on 678j ("[emulator-qa]", ~04:40 UTC; next allowed from ~07:40): e529a / e529b popup gate must stay
+  PASS, e529c touch walk as 678d. Then rule 11 filler: StyleTerminal (8) - grep app/src/test for each literal first.
+- DONE 678j: category screen text shown whole; CI GREEN on 678i (SUMMARY "Update 678j").
 - FIRST (678i): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678i push - FIRST compile of the SyncPrompts
   FullText change + SyncPromptsFullText678iTest (cloud hit Maven 429). If red: fix it first. From ~04:45 UTC START the emulator
   trial (head commit "[emulator-qa]") and read it the run after. Then rule 11 filler: PlatformBrowser (7) or StyleTerminal (8)

@@ -32,6 +32,16 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-16 Category screen text shown whole (678j, rule 11) - OPEN
+- Device(s): RP Nova or KONKR (batch with HW-15 / HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
+- Build: commit of update 678j on claude/qa-0672-repair; QA build = assembleDebug of that commit.
+- Why not emulator: the trial does not open the category screen's Slides / Stage / card looks or the slide editor; long
+  system names need a real screen width and font scale.
+- Tests: at off and font=1.3,density=1.15 in the QA app, a category with a long name and no logo picture (e.g. a custom
+  category) and one with a logo: Slides (logo box name two lines, name line, last-played line on), Stage (centred name in
+  the logo box, name line in the editor), card look (name two lines + game count): whole (wrap / shrink / slide), boxes keep
+  their sizes, CATSHELL unchanged (L2 / R2 swaps without a reload); touch + controller.
+
 ### HW-15 Save-sync prompts text shown whole (678i, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (batch with HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
 - Build: commit of update 678i on claude/qa-0672-repair; QA build = assembleDebug of that commit.

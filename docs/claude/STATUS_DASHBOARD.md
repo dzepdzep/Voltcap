@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678i · 2026-11-17 03:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on d2185d5 (678h); this push's result pending · effort: medium
+**1. LATEST UPDATE** - 678j · 2026-11-17 04:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 60e9c04 (678i); this push's result pending · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The save-sync messages no longer cut text off with '...': the sync pop-up's title and detail, the Google Drive status line, game names, the sync history and the conflict list now wrap, shrink a little or slide so they can be read whole, without changing row heights.
+**2. WHAT CLAUDE JUST FIXED** - The category screen no longer cuts text off with '...': category names in the slide, stage and card looks, the last-played line and the game count now wrap, shrink a little or slide so they can be read whole, without changing box sizes. A new emulator test run was started on this update.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: check CI on this update (its change and new test were not compiled in the cloud); then: start the emulator test run (allowed from ~04:45 UTC); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves, Settings and sync checks)
+**5. WORKING ON NEXT** - now: check CI and read the emulator test run on this update; then: next screen with cut text (rule 11: the Terminal look); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves, Settings, sync and category screen checks)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
 
@@ -170,6 +170,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
 | HW-14 Settings text shown whole (678h, rule 11) | OPEN |
 | HW-13 Save Vault text shown whole (678g, rule 11) | OPEN |
@@ -186,7 +187,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 14 of 15.
+Open hardware requests: 15 of 16.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
