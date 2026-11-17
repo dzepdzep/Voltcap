@@ -39,7 +39,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (673f: Disc station - the pages are the deck's tracks, played on its LCD; DiscPlayerPanel.)
     WinScene.DISC_PANEL,
     // (P2 batch 1 - owner 17 Nov: each of the remaining layouts its own pages, NativePageKit + WinPages*.kt.)
-    WinScene.RECORD_SLEEVE)
+    WinScene.RECORD_SLEEVE,
+    // (P2 681c: Classic - the charged panel's readout, cells and switches, WinPagesVolt.kt.)
+    WinScene.VOLT_PANEL)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

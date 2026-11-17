@@ -51,4 +51,23 @@ class NativePages681aTest {
         assertTrue(c.contains("rotationZ = tilt") && c.contains("shadowElevation = 5.dp.toPx()") && c.contains("CRATE_INSERT_PAPER"))
         assertTrue(CRATE_INSERT_PULL_TILT < CRATE_INSERT_REST_TILT && CRATE_INSERT_REST_TILT < 0f)
     }
+
+    @Test fun classicPanelHasItsOwnInstruments() {
+        assertTrue(nativePages(WinScene.VOLT_PANEL))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.VOLT_PANEL, p))
+        assertEquals("CHARGE READOUT", voltPageName(WinPage.DETAILS)); assertEquals("CELLS", voltPageName(WinPage.TROPHIES))
+        assertEquals("SWITCHES", voltPageName(WinPage.OPTIONS))
+        val v = src("WinPagesVolt.kt")
+        assertEquals(1, v.split("ctx.pageFor(").size - 1) // only Performance falls back
+        assertTrue(src("WinScenesHomes2.kt").contains("VoltPage(ctx, pg, pageLive, Modifier.fillMaxSize())"))
+    }
+
+    @Test fun classicBatteryCells() {
+        assertEquals(3 to 10, voltCells(3, 10))
+        assertEquals(0 to 0, voltCells(0, 0))
+        assertEquals(1 to 40, voltCells(1, 120))   // one earned never shows an empty battery
+        assertEquals(39 to 40, voltCells(119, 120)) // one missing never shows a full one
+        assertEquals(40 to 40, voltCells(120, 120))
+        assertEquals(99, voltCharge(119, 120)); assertEquals(100, voltCharge(5, 5)); assertEquals(0, voltCharge(0, 0))
+    }
 }

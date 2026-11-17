@@ -622,7 +622,9 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
 internal fun VoltPanel(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 720.dp)
-    Row(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (P2 / 681c: the panel's own pages - WinPagesVolt.kt. On them the panel takes a steady height so the cells list has room
+    // to scroll; L1 / R1 turn the pages wherever the D-pad is.)
+    Row(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * size.height * 0.15f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -635,7 +637,8 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
         Column(Modifier.weight(1f).padding(14.dp)) {
             // (Update 452, D156: the picture and facts give way to the keys — with More open the keys' extra lines were pushed out
             // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)
-            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "voltPage", move = ::voltMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) Row(verticalAlignment = Alignment.Top) {
                 Box(Modifier.width(minOf(w * 0.24f, 150.dp)).aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.Black)) {
                     SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> SceneNoArt(ctx, m) })
                 }
@@ -646,6 +649,7 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(6.dp))
                     SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
                 }
+            } else VoltPage(ctx, pg, pageLive, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(10.dp))
             KeyRow(sceneKeys(ctx)) { k ->

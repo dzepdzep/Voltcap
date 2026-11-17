@@ -94,7 +94,9 @@ internal const val CRATE_INSERT_REST_TILT = -0.7f
  */
 @Composable
 internal fun androidx.compose.animation.AnimatedVisibilityScope.CratePage(ctx: WinSceneCtx, p: WinPage, live: Boolean, paper: Color, ink: Color, red: Color, modifier: Modifier) {
-    val tilt by transition.animateFloat(transitionSpec = { tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing) }, label = "crateTilt") {
+    // (Motion Off: the insert lies at rest at once - the page change itself is immediate then, so must its lean be.)
+    val anim = rememberAnimationsEnabled()
+    val tilt by transition.animateFloat(transitionSpec = { if (anim) tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing) else androidx.compose.animation.core.snap() }, label = "crateTilt") {
         if (it == androidx.compose.animation.EnterExitState.Visible) CRATE_INSERT_REST_TILT else CRATE_INSERT_PULL_TILT
     }
     Box(modifier.padding(horizontal = 2.dp, vertical = 3.dp).graphicsLayer {
