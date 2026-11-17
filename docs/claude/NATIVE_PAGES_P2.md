@@ -58,3 +58,11 @@ Hero tiles, Layout Studio. Suggested batches: 2 = Cube, Spotlight, Cinema, Magaz
 Terminal, Circuit; 4 = Box, File select, Memory card, Coverflow, Card binder; 5 = Orbit, Airy, Bubbles, Camera, Panels;
 6 = Rental shop, Arctic, Green core, Art library, Cross; 7 = Live, Dashboard, Side menu, Icon bar, Library; 8 = Timeline, Hero,
 Layout Studio.
+
+### Emulator review run 44194071430 (f97abbf, 18 Nov 00:30) - EMULATOR only, not hardware, not approved
+All five batch-1 layouts walked at x1.0 and x1.3 (Info, Details, Achievements opened / scrolled / 120-set far down, Options),
+recordings of the R1 walk and the Motion-Off walk. The 681h bumper fix works: Classic and Hub now reach every page.
+Open findings: (1) Record crate at x1.3 - the insert under the sleeve's header shows one to two tracks only: give the insert more
+room on its pages (smaller header). (2) The armed destructive confirmation is still NOT captured on screen - the App category
+did not take in the script, so the window opened on a ROM game; behaviour is covered by NativeConfirm681Test 8/8 only.
+(3) TV room: one blocked launch per scale during the walk (QA app blocked it, nothing started) - trace which press reached Play.
