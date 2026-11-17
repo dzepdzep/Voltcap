@@ -13,6 +13,14 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
+Branch claude/v0674-rescan-fix. Deleted game must leave every list after Rescan library; a console with no games leaves the
+selector (selection falls back to All, at once, kept after a restart); unreadable storage / SD card out / refused folder never
+counts as deleted; saves, history, achievements, art, metadata, favourites and settings untouched (keyed by path - re-adding the
+same file brings them back). Status: IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3); emulator
+end-to-end check rescan681r.sh (QA app, synthetic stand-ins) - see HANDOFF; hardware NOT TESTED; owner NOT approved. No merge
+without GO.
+
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
 docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages (kit + Record crate done 681a; batch 1 next: Classic,
 Console hub, Resume, TV room).
