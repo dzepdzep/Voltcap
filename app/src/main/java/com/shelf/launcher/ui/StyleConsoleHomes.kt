@@ -338,7 +338,9 @@ private fun HubTiles(c: StyleCtx, small: Dp, big: Dp) {
                         .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))))
                         .padding(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 2, fontWeight = FontWeight.SemiBold)
+                    // (678k, H8 / D348 - RP Classic Larger text: a long name on the focused Hub tile ended in "(No Glitc…"; FitText's last
+                    // resort is now a slide, never "…" - rule 11.)
+                    FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 14.sp, minSize = 9.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, slideWhenCut = true)
                 }
             }
         }
@@ -589,7 +591,7 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
         if (Features.chanNames.state.value && on) Box(
             Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(6.dp).riseOnEnter().clip(RoundedCornerShape(50))
                 .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 3.dp)
-        ) { FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold) }
+        ) { FitText(LocalTitleOptions.current.display(g.name), Color.White, maxSize = 12.sp, minSize = 8.sp, maxLines = 1, fontWeight = FontWeight.SemiBold, slideWhenCut = true) }
     }
 }
 
@@ -807,9 +809,9 @@ private fun ChannelBar(c: StyleCtx, light: Boolean, barH: Dp, page: Int, pages: 
             } else if (stop != null && stop.special != null) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(stop.icon, null, tint = ShelfTheme.accent, modifier = Modifier.size(ring * 0.3f))
-                    FitText(c.categoryLabel, ink, maxSize = 11.sp, minSize = 7.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp))
+                    FitText(c.categoryLabel, ink, maxSize = 11.sp, minSize = 7.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 8.dp), slideWhenCut = true)
                 }
-            } else FitText(c.categoryLabel, ink, maxSize = 13.sp, minSize = 8.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(6.dp))
+            } else FitText(c.categoryLabel, ink, maxSize = 13.sp, minSize = 8.sp, maxLines = 2, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center, modifier = Modifier.padding(6.dp), slideWhenCut = true)
         }
         Box(
             Modifier.align(Alignment.CenterEnd).padding(end = 14.dp, top = barH * 0.1f).size(ring)

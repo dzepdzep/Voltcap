@@ -1,6 +1,9 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~05:15 UTC, live session: owner decisions - whole words to v0.6.74 (branch claude/whole-words-v0674),
+Updated: 2026-11-17 ~05:45 UTC, update 678k (cloud run): priority 1 done - Verify 310 GREEN on the merge b76e3ef (gate PASS);
+priority 2 (H8) done in code - console homes slide long names instead of "…", ConsoleHubFullText678kTest compiled + PASS;
+handheld check added to HW-17. NEXT: check Verify 310 on the 678k push (if red: fix first), then priority 3 (H6 fixture).
+Before: Updated: 2026-11-17 ~05:15 UTC, live session: owner decisions - whole words to v0.6.74 (branch claude/whole-words-v0674),
 same-row badge direction approved but keep both badges visible (compact variant / adaptive spacing, comparison first). The
 v0.6.73 candidate fixes (facet 677l = status bar, one profile picture, Storage facts, Cube facet, line heights, home cuts) are
 MERGED into this dev line; CI on the merge decides; focused handheld re-check HW-17.
@@ -57,9 +60,9 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
 ## Next (in order; skip what needs hardware - queue it instead)
 - OWNER PRIORITIES 17 Nov (backlog section 00 - this order wins over the rule 11 filler below; one item per run, smallest safe
   step first; notify the owner only for hardware, a design decision or a release GO; never a new scheduled task):
-  1. v0.6.73: read "Verify Android update 310" on the merge commit (facet 677l merged into this line, 17 Nov). If red: fix it
+  1. DONE 678k (GREEN on b76e3ef). v0.6.73: read "Verify Android update 310" on the merge commit (facet 677l merged into this line, 17 Nov). If red: fix it
      here first. Then record CI in releases.json. The facet branch is done - work on this line only.
-  2. H8 (cloud, small, v0.6.73-relevant): on the candidate code, find the Console Hub focused-card title ("... (No Glitc…") and
+  2. DONE 678k in code (HW-17 verifies). H8 (cloud, small, v0.6.73-relevant): on the candidate code, find the Console Hub focused-card title ("... (No Glitc…") and
      the Achievements card ticker ("Class Dismisse"): any TextOverflow.Ellipsis / maxLines clip left -> FullText (rule 11) on
      THIS dev line + a test; note whether the facet already fixed it (676y "Hub ticker rows unbounded").
   3. H6 (QA tooling): why pop529 setup finds no fixture game on the RP Classic (files/roms empty after

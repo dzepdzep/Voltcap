@@ -1,3 +1,16 @@
+# Update 678k (17 Nov 2026, cloud scheduled run) - H8: console homes never end a name in "…"
+- CI on the merged dev line (b76e3ef = facet 677l fixes merged): Verify 310 GREEN (run 44021029263) -> releases.json gate PASS.
+  Emulator trial on 678j (44017399771, pre-merge tree): success. EMULATOR evidence only.
+- H8 (owner 17 Nov, installed v0.6.72 at Larger text: "Advance Wars (Rev 1) (No Glitc…" on the focused Hub card, "Class
+  Dismisse" in the Achievements ticker): the Continue card name is already 2 lines + slide on this line (677i, merged); the
+  Hub tile title, Channel tile title and Channel category label (StyleConsoleHomes) now take FitText's slide instead of its
+  "…" last resort (slideWhenCut = true; same sizes and line counts). The ticker rows are FullText at full height since 676y
+  (the squeezed rows are the likely "Class Dismisse" cause) - not changed. Static TRUNCATE 179.
+- Test: ConsoleHubFullText678kTest (fails on the 678j sources: 4 FitText without slideWhenCut). Compiled in the cloud
+  (:app:compileDebugUnitTestKotlin, after one Maven 429 retry) and PASS, with CubeFacet676iTest + Batch480Test (pin the file).
+- Hardware: added to HW-17 (RP Classic Larger text, Console Hub long name). NOT TESTED on a handheld.
+- Files: app/src/main/java/com/shelf/launcher/ui/StyleConsoleHomes.kt, test ConsoleHubFullText678kTest.kt; trackers.
+
 # Live session 17 Nov 2026 (~02:00-04:50 UTC) - RP Classic status bar / profile picture / Storage fixes (branch), owner requests recorded
 - Code is on `claude/cube-statusbar-facet` (v0.6.73 candidate, 677d-k) and `claude/v0674-screen-shortcut`, NOT on this dev line:
   status bar StatusFit (points never squashed; items drop in a fixed order), OwnProfile (one profile picture), Storage facts,

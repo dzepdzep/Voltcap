@@ -42,6 +42,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   (expect PASS); pop529.sh run <tag> font=1.3,density=1.15 "ARTLIB GREENCORE LIBRARY LIVE TERMINAL TWIN_ICONS ARCADE DISCS" OWN
   -> popclip.py (the 6 readability FAILs of j677x13 must be gone), then `pop529.sh restore <tag>` AFTER popclip ends (pop529
   run starts popclip in the background - a chained restore resets the run; wait on popclip's pid, not on pgrep -f).
+- Added 678k (H8): on the RP Classic at Larger text (font=1.3), Console Hub with a long name (e.g. 'Advance Wars (Rev 1) (No
+  Glitch)'): the focused Hub tile title and the Continue card name wrap / shrink / slide - no '…'; the Achievements card
+  ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result:
 
 ### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - BLOCKED (QA fixture)

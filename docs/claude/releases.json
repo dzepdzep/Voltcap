@@ -138,18 +138,27 @@
      "emulator": "no",
      "device": "PASS RP Classic + Nova x1.0 / x1.3",
      "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Console homes (Hub, Resume, Channel): long game names and the category label slide instead of ending in '...' (Hub '(No Glitc...' at Larger text)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "NOT TESTED - HW-17 (RP Classic Larger text)",
+     "owner": "requested 17 Nov (H8)"
     }
    ],
    "gates": [
     {
      "gate": "CI unit tests + debug build (Verify Android update 310)",
-     "state": "PENDING",
-     "evidence": "GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
+     "state": "PASS",
+     "evidence": "GREEN on b76e3ef (merged dev line with the facet 677l fixes, run 44021029263, 17 Nov 05:00 UTC); each later push re-checks it (678k pushed after). GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
     },
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PASS",
-     "evidence": "run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
+     "evidence": "run 44017399771 (678j, 9d7605f): success (verdict step passes only on PASS; EMULATOR evidence only, pre-merge tree). run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
     },
     {
      "gate": "Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs)",

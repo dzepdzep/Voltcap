@@ -170,3 +170,8 @@
   visible. facet 677l (FitText back to 677h, detection kept; whole words preserved on claude/whole-words-v0674 = 3b65c9f) merged
   into this line (conflicts only SUMMARY / HW queue, resolved by keeping both). Compiled + 7 focused classes PASS, static
   checks PASS, selftest OK. Trackers updated. Lock released.
+
+## 2026-11-17 ~05:18-05:50 UTC - cloud run 678k
+- BOOTSTRAP OK b76e3ef; lock free (live session released) -> taken. Verify 310 GREEN on the merge b76e3ef; trial on 678j success.
+- H8: console homes FitText slide instead of "…" + ConsoleHubFullText678kTest (compiled after one Maven 429 retry, PASS);
+  HW-17 extended. Lock released.
