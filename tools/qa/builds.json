@@ -1529,6 +1529,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/cube-statusbar-facet 00fc6db - clean (CI run 43984766592)",
    "note": "677h: StatusFit probes unplaced (QaClip placed for status bars + avatars), trophy chip drops at the last level"
+  },
+  {
+   "id": "qa-677i-ci",
+   "apk_sha256": "c9cec789043264ebe0c4d76823c5bd500683e95ab3ec13ed38290c1df507cea4",
+   "version_name": "0.6.72-qa",
+   "version_code": 79,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/cube-statusbar-facet 016ce87",
+   "patch_sha256": null,
+   "tree_hash": "claude/cube-statusbar-facet 016ce87 - clean (CI run 43988457826)",
+   "note": "677i: whole words in the shared fitters, Storage facts label / console line, QaClip brokenWord"
   }
  ]
 }
