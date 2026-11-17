@@ -1,5 +1,12 @@
 # VoltCap handoff (read first, update last)
 
+Updated: 2026-11-17 ~13:40 UTC, updates 678p-q (LIVE session, owner present): D333 fixed (reopen in place) and verified on the KONKR
+(60/60 rapid rounds); D351 owner decision (corner X = chrome, popclip changed); v0.6.73 RC prepared - version 0.6.73 / 80, RC commit
+be8865c, draft PR #21 to main, CI GREEN, KONKR x1.0 53/53 on the RC build. 678o's Channel fix reverted (Compose never idle on
+Channel - CI robo tests); D350 back to v0.6.74. WAITING FOR THE OWNER'S GO - no merge / build-for-release / publish without it
+(GO steps: docs/claude/RELEASE_0.6.73_RC.md). NEXT (cloud, while waiting): v0.6.74 work only on a separate branch or after the
+release - do NOT push app changes to claude/qa-0672-repair (it is the RC / PR #21 head); docs / QA-tool commits are fine but
+keep the RC commit's app tree unchanged. Then D350 (with a Robolectric idle test first), D352, H13 Thor reading.
 Updated: 2026-11-17 ~11:55 UTC, update 678o (LIVE session, KONKR by USB, owner present): KONKR full popup gates on the newest build -
 x1.0 52/53 (TV rapid A/B, D333), x1.3 52/53 -> Channel fixed (D350) and re-gated PASS; Banner touch boxes fixed (D349, verified);
 HW-20 / HW-8 verified, HW-2 all PASS except rapid A/B 9/10, text pages 32/34 (D346 known). D333 cause traced: the last B falls

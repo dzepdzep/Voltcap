@@ -1,6 +1,6 @@
 # v0.6.73 release candidate - prepared, waiting for the owner's GO
 
-Prepared 17 Nov 2026 (live session 678p). Nothing merged, built-for-release or published - each of those waits for the owner's GO.
+Prepared 17 Nov 2026 (live session 678p / 678q). RC commit: be8865c (draft PR #21). Nothing merged, built-for-release or published - each of those waits for the owner's GO.
 
 ## Candidate
 - Branch `claude/qa-0672-repair` at the RC prep commit (version 0.6.73 / versionCode 80). Base: main 5b01ef39 (v0.6.72); the
@@ -25,7 +25,7 @@ Text and screens
 - Larger-text fixes on small screens (Airy, Blades, Orbit, Circuit, Library, Dashboard, File select, Terminal, Rental shop, Cinema).
 - Status bar: RetroAchievements points are never squashed; less important icons step aside first.
 - One profile picture on Console Hub, Resume, Spotlight and Channel.
-- Badges on game pictures never overlap or cover a name (also Channel at larger text).
+- Badges on game pictures never overlap or cover a name.
 - The Achievements page opens on your new unlocks.
 
 Handhelds
@@ -35,13 +35,19 @@ Handhelds
 ## Verification
 | Gate | State | Evidence |
 |---|---|---|
-| CI Verify 310 (unit tests + debug build) on the RC commit | see CI | - |
-| D333 rapid A B A B (HW-5) | see HARDWARE_QA_QUEUE HW-5 | KONKR crate678.sh 10 rounds per layout / scale on qa-0.6.73-678p-ci |
-| Full popup gate KONKR x1.0 on the RC build | see HW-1 | - |
-| KONKR x1.3 full gate | PASS except D333 + Channel (fixed) on 678n | k678n13, kc678o13 |
-| RP Nova / RP Classic | earlier builds | HW-17, HW-7 |
-| Signed release build + freeze_rc + secret scan | NOT STARTED | needs main = RC (after the GO), on the PC (keys live there only) |
+| CI Verify 310 (unit tests + debug build) | PASS | GREEN on be8865c (push + PR #21); QA tooling checks PASS on PR #21 |
+| D333 rapid A B A B (HW-5) | PASS | KONKR 678p: Record crate 20/20, TV 20/20 (x1.0 + x1.3), Cardboard box 10/10, Card binder 10/10 |
+| Record crate checklist (HW-2) | PASS | KONKR x1.0 + x1.3 (k678p_crate) |
+| Full popup gate KONKR x1.0, RC build | PASS 53/53 | krc10 on qa-0.6.73-rc-91b1ac3-ci; final RC be8865c: 6 touched layouts 6/6 (krcq10) |
+| Full popup gate KONKR x1.3 | 52/53 | k678n13 (678n) - Channel two-line name over the count: known, v0.6.74 (D350; v0.6.72 draws it the same) |
+| Banner style | PASS x1.0 + x1.3 | owner decision D351 (corner X is chrome) |
+| Owner visual review | PASS | owner 17 Nov; pixel-font x1.3 polish -> v0.6.74 |
+| RP Nova / RP Classic | earlier builds | HW-17, HW-7 (no regression expected: the RC changes since are the D333 window close and text fixes) |
+| Signed release build + freeze_rc + secret scan | NOT STARTED | after the GO: needs main = RC, on the PC (keys only there) |
 | Upgrade over the real Voltcap on one handheld + smoke test | NOT STARTED | owner's GO (Level 3) |
+
+Known and accepted for v0.6.73: Channel x1.3 name over the count (D350), Twin icons badges 4-4.7 dp apart (D352), 'PlayStation' word
+break at x1.3 on the category screen (D346, whole words), pixel-font x1.3 polish - all v0.6.74.
 
 ## GO steps (after the owner says GO)
 1. Merge the PR into main (required checks green).

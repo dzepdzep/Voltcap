@@ -225,6 +225,8 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   window open (D333, cause traced, HW-5); x1.3 k678n13 52 / 53 PASS - Channel: the achievement count under the focused name's
   second line (readability) -> 678o fix (D350) passed kc678o13 but made Compose never idle on Channel (CI robo tests) -
   reverted in 678q: Channel x1.3 count under a two-line name is a known v0.6.74 item.
+- RC (17 Nov): qa-0.6.73-rc-91b1ac3-ci full x1.0 krc10 53/53 PASS (incl. TV rapid); final RC qa-0.6.73-rc-be8865c-ci krcq10
+  CHAN / TWIN_ICONS / CRATE / TV / CARDS / BOX 6/6 PASS.
   Arcade, Side, Library, Spot, Bar, Pocket ribbon PASS at both scales (the k674 FAILs are gone). Owner review sheet:
   "C:\Users\User\Claude outputs\live678n\KONKR_popups_678n_review.pdf" (both scales, every layout). Flip 2: unavailable.
 

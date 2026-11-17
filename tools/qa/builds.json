@@ -1452,6 +1452,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair 91b1ac3 - clean (CI run 44083414278, push [qa-apk])",
    "note": "v0.6.73 RC candidate QA build: focused release verification on the KONKR (full x1.0 popup gate)"
+  },
+  {
+   "id": "qa-0.6.73-rc-be8865c-ci",
+   "apk_sha256": "0884f3f92e54b6bb6c9c2f6b832d018716d3d2f38dd16e1b055cd74066f0c9d0",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair be8865c (v0.6.73 RC: 678p + version 0.6.73 / 80 + Channel revert 678q)",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair be8865c - clean (CI run 44089903475, push [qa-apk])",
+   "note": "v0.6.73 RC QA build after the Channel revert: Channel + rapid re-check on the KONKR"
   }
  ]
 }

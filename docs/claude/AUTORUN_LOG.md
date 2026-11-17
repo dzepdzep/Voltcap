@@ -199,3 +199,8 @@
 - Lock taken (b7924fc). QA builds 678n-ci / 678o-ci / 678o2-ci installed on the KONKR (QA app only; old-key QA app replaced).
 - Gates: x1.0 52/53 (TV rapid), x1.3 52/53 (Channel -> fixed 678o, PASS); Banner touch fixed + verified; D333 traced;
   HW-20 / HW-8 verified; HW-2 / HW-13 / HW-14 / HW-16 partly. Device restored (owner's home in front). Lock released.
+
+## 2026-11-17 ~12:00-13:40 UTC - live session 678p-q (owner present)
+- Lock taken (1b3e391). D333 reopen-in-place (678p, d5eeafb) - KONKR rapid 60/60. RC prep 91b1ac3 (0.6.73 / 80), PR #21 (draft).
+- CI on 91b1ac3 RED: 16 Channel robo tests never idle (678o Channel lane change) -> reverted 678q be8865c, CI GREEN.
+- KONKR: krc10 x1.0 53/53 (RC build), krcq10 6/6 (final RC). Device restored. Lock released; waiting for the owner's GO.

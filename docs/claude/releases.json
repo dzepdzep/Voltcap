@@ -11,7 +11,7 @@
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
    "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner",
-   "window": "UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO",
+   "window": "RC ready 17 Nov - waits for the owner's GO (draft PR #21); then ~1.5 h of release steps on the PC",
    "items": [
     {
      "what": "Same-size game-menu buttons on every popup (one row or one column of identical keys, MORE last, nothing cut or squeezed)",
@@ -153,7 +153,7 @@
     {
      "gate": "CI unit tests + debug build (Verify Android update 310)",
      "state": "PASS",
-     "evidence": "GREEN on b76e3ef (merged dev line with the facet 677l fixes, run 44021029263, 17 Nov 05:00 UTC); each later push re-checks it (678k pushed after). GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit"
+     "evidence": "GREEN on be8865c (RC: version 0.6.73 / 80) - push run + PR #21 run, 17 Nov; QA tooling checks PASS on PR #21"
     },
     {
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
@@ -172,8 +172,8 @@
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
-     "state": "FAIL",
-     "evidence": "Only TV room rapid A/B left (D333, cause traced 17 Nov, fix next). KONKR GT78 17 Nov (live session, USB), QA build qa-0.6.73-678n-ci (678n, CI 44054144657): x1.0 k678n10 52/53 PASS - TV room rapid A B A B left the window open (D333: cause traced, ~1 in 10 rounds also on Record crate); x1.3 k678n13 52/53 - Channel count under a two-line name, fixed in 678o (D350) and PASS on qa-0.6.73-678o2-ci (kc678o13). The k674 KONKR FAILs (Arcade, Side, Library R2, Spot START) PASS at both scales. Earlier: RP Nova 676f x1.3 53/53 + badges 79/79. Owner review sheet (every layout, both scales): Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
+     "state": "PASS",
+     "evidence": "KONKR GT78 17 Nov: RC QA build qa-0.6.73-rc-91b1ac3-ci (678p + version) full x1.0 gate krc10 53/53 PASS (TV rapid fixed, D333); final RC be8865c (Channel revert) krcq10 Channel / Twin icons / Record crate / TV / Card binder / Cardboard box 6/6 PASS; rapid A B A B 60/60 (678p). x1.3 full gate on 678n k678n13 52/53 - Channel two-line name over the count = known (D350, v0.6.74; same drawing as v0.6.72). Review sheet: Claude outputs\\live678n\\KONKR_popups_678n_review.pdf"
     },
     {
      "gate": "Flip 2 (unavailable): 15 Nov popup gates as historical evidence",
@@ -187,8 +187,8 @@
     },
     {
      "gate": "Owner visual review of the new menus and x1.3 fixes",
-     "state": "PENDING",
-     "evidence": "KONKR sheet ready 17 Nov: every layout's window as opened + its More page at x1.0 and x1.3 (Claude outputs\\live678n\\KONKR_popups_678n_review.pdf, sent in the chat)"
+     "state": "PASS",
+     "evidence": "owner 17 Nov: reviewed the KONKR sheet - designs good; pixel-font x1.3 polish (Pocket Ribbon, Pocket Classic, Night) to v0.6.74, not a v0.6.73 blocker"
     },
     {
      "gate": "Signed release build, frozen RC, secret scan (main tree on the PC)",
