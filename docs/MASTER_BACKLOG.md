@@ -13,6 +13,28 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 00. Owner priorities 17 Nov 2026 (consolidated request; newest - this order wins)
+Each line points at its matrix row (docs/REQUIREMENTS_MATRIX.md section H); no item is repeated elsewhere - older lines that
+cover the same thing are marked "-> H<n>".
+1. **v0.6.73 as soon as genuinely safe.** Keep: status-bar points (H1), one profile picture (H2), Storage facts (H3), nav-bar
+   + badge-lane fixes (676a-f, already in releases.json), line heights + whole words (H4) ONLY if the full 53-layout results
+   show no unacceptable regressions - the owner reviews the Nova results first; otherwise isolate H4 to v0.6.74 rather than
+   delay the rest. RP Classic: targeted PASS != full gate (H6 fixture issue, fix separately). Same-row badges stay out (H10).
+   No merge / production install / release without the owner's GO.
+2. **Pixel font smaller (H9)** - audit usage, shared typography only, 60-65 % comparisons, before / after for approval. v0.6.74.
+3. **Badges (H10, H11)** - same-row branch continues; alternatives to the 72 % minimum; optional Top Clip / Hanging Bottom
+   styles with mockups first; Classic default; per-layout override. v0.6.74+.
+4. **Status bar + Console Hub (H5, H7, H8, H14)** - permanent QA rules; adaptive rearrangement at extreme sizes; D347 / D348;
+   keep the chosen Cube Facet design.
+5. **Achievements page (H12)** - Recently Unlocked visible on open, no auto-scroll past it; animation overhaul; recordings. v0.6.74.
+6. **Thor dual-screen (H13)** - cloud investigation (multi-display tasks, focus, lifecycle, Recents), hardware verification queued.
+7. **Other v0.6.74:** Save Sync 529 (P11 / A), Flip 2 charging loop (G10, HW-3), App Drawer Open on screen + second-screen dock
+   (HW-10), native popup pages (P2), pickup / return polish (P4), everything already in this backlog.
+8. **Autonomy:** the existing hourly cloud task only (no new scheduled tasks); highest-priority unblocked item each run; dashboard
+   says implemented / tested / owner-approved / released separately; v0.6.73 fixes kept apart from v0.6.74 experiments; notify
+   the owner only for hardware, a design decision or release authorization; no repeated multi-hour hardware gates when a focused
+   check is enough; verify the dev branch at start (never work on main); respect the lock.
+
 ## 0. v0.6.72 released; updates 672a-d, 673a-g (15 Nov 2026) - newest
 
 **Stable release: v0.6.72** (versionCode 79), published 15 Nov 04:46 UTC, Latest; main = `5b01ef39` (PR #20). Both APK digests
@@ -159,7 +181,7 @@ Not run on this line yet: KONKR x1.0 full gate, RP Classic / Thor / Odin (not co
 | Game shelf extraction / Coverflow pickup motion (523f) | owner's eye on the device |
 
 ## 3. Genuinely open and reproducible
-- **Status bar blocks (owner 16 Nov, new):** the status bar's separate blocks look wrong - either one single block, or let each
+- **Status bar blocks (owner 16 Nov, new; status-bar fit -> H1 / H14):** the status bar's separate blocks look wrong - either one single block, or let each
   layout draw the status bar its own way (it does not have to be the same fixed bar on every layout). Owner asked which layout he
   saw it on: unknown yet. Design change -> owner's look approval needed; ask with a side-by-side before making it the default.
 

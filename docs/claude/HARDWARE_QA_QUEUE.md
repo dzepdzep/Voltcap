@@ -32,6 +32,28 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-17 v0.6.73 candidate 677k focused re-check (status bar, profile picture, whole words) - OPEN
+- Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
+- Build: CI QA APK of `claude/cube-statusbar-facet` at 677k ("[qa-apk]" run), ledger entry first (tools/qa/builds.json).
+- Why not emulator: real fonts / densities and the owner's device sizes are the point.
+- Tests: status677.sh <tag> "CLASSIC GRID CUBE HUB STORAGE TILES" "off font=1.3,density=1.15" -> statuscheck.py + homecut.py
+  (expect PASS); pop529.sh run <tag> font=1.3,density=1.15 "ARTLIB GREENCORE LIBRARY LIVE TERMINAL TWIN_ICONS ARCADE DISCS" OWN
+  -> popclip.py (the 6 readability FAILs of j677x13 must be gone), then `pop529.sh restore <tag>` AFTER popclip ends (pop529
+  run starts popclip in the background - a chained restore resets the run; wait on popclip's pid, not on pgrep -f).
+- Result:
+
+### HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) - BLOCKED (QA fixture)
+- Device(s): RP Classic. Level L1.
+- Why: j677c10 stopped at setup "no game matches 'Shadow of the Colossus'" / "'ActRaiser'": the fixture library does not load
+  there (files/roms empty after setup). Cloud first: find why voltcap_test_fixture_roms / names=real don't take on the Classic.
+- Tests: pop529.sh run <tag> off <53 layouts> OWN, then x1.3; popclip.py, badgecheck, homecut, statuscheck.
+- Result:
+
+### HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) - OPEN (after the cloud investigation)
+- Device(s): AYN Thor (3140972f), USB. Level L1 for the QA app; harmless apps only (no ROMs / games that touch saves).
+- Tests: dumpsys activity / window per display before + after a launch from the QA app; Recents; screen recording of both displays.
+- Result:
+
 ### HW-16 Category screen text shown whole (678j, rule 11) - OPEN
 - Device(s): RP Nova or KONKR (batch with HW-15 / HW-14 / HW-13 / HW-12 in the same session). Level L1 (QA app only).
 - Build: commit of update 678j on claude/qa-0672-repair; QA build = assembleDebug of that commit.

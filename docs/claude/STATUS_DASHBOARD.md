@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678j · 2026-11-17 04:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 60e9c04 (678i); this push's result pending · effort: medium
+**1. LATEST UPDATE** - live-17nov · 2026-11-17 04:45 UTC · commit `this update (being pushed)` · CI: Verify 310 + QA app runs pushed on claude/cube-statusbar-facet 677k (3b65c9f) - result for the next run · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The category screen no longer cuts text off with '...': category names in the slide, stage and card looks, the last-played line and the game count now wrap, shrink a little or slide so they can be read whole, without changing box sizes. A new emulator test run was started on this update.
+**2. WHAT CLAUDE JUST FIXED** - Your requests of 17 Nov are now in the backlog and the requirements list, in your order. The RP Classic fixes (status-bar points never squashed, one profile picture, Storage numbers kept together) passed on the RP Classic and RP Nova at both text sizes and wait on a branch for v0.6.73. The full 53-layout Nova run found no real layout breakage from the app-wide 'whole words' change - its failures were the checker reading hidden measuring copies of the clock (fixed) - but that change still needs your decision. Both handhelds were restored and are safe to disconnect.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (675p): First real-handheld test of the newest code, on an RP Nova (small 4:3 screen) through the owner's work laptop: every one of the 53 layouts' game windows passed at normal text size; at 1.3x text 49 of 53 passed - four small-screen problems (Record crate leaves an empty gap, Pocket ribbon cuts two labels, Storage boxes has a squeezed hidden title, Cube's first press) are being fixed.
 - **App** (675i): The Flip 2 charging fix was taken out of the next release because the Flip 2 is away; it is saved separately for v0.6.74, so v0.6.73 can go ahead without it. Also fixed a checker crash that stopped every popup check from being graded.
+- **Docs** (live-17nov): Your requests of 17 Nov are now in the backlog and the requirements list, in your order. The RP Classic fixes (status-bar points never squashed, one profile picture, Storage numbers kept together) passed on the RP Classic and RP Nova at both text sizes and wait on a branch for v0.6.73. The full 53-layout Nova run found no real layout breakage from the app-wide 'whole words' change - its failures were the checker reading hidden measuring copies of the clock (fixed) - but that change still needs your decision. Both handhelds were restored and are safe to disconnect.
 - **App** (678h): The Settings screens no longer cut text off with '...': page and group titles, search results and their section path, theme names, the ScreenScraper look-up lines, the custom music name and the RetroAchievements cards now wrap, shrink a little or slide so they can be read whole, without changing row heights. The emulator test run on the previous update passed fully, including the touch walk.
 - **App** (678g): The Saves screen (Save Vault) no longer cuts text off with '...': the header, the 'not connected' message, each save's name and place, the last-sync line, the game's info bar and the Browse saves button now wrap, shrink a little or slide so they can be read whole, without changing the row heights. A new emulator test run was started on this update.
-- **CI / build** (678f): The automatic build check turned red after the last update: one old test still expected the banner window's game name to be set up the old way. The app was fine - the name keeps its tight line spacing in the new, text-fitting form - so the test now checks that same rule in the new code. No app change.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,11 +24,11 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: check CI and read the emulator test run on this update; then: next screen with cut text (rule 11: the Terminal look); finish the v0.6.73 hardware checks (KONKR / Nova, incl. banner window, Saves, Settings, sync and category screen checks)
+**5. WORKING ON NEXT** - now: read CI on the v0.6.73 candidate fixes (677k); then: check the Hub '(No Glitc…' / 'Class Dismisse' cuts on the candidate code; fix the RP Classic QA test-game setup so its full 53-layout check can run
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 6 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 9 app fixes fully verified · 7 gates left (next: CI unit tests + debug build (Verify Android update 310)) · your approval needed: yes - when it is ready · window: UNKNOWN
+**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 13 app fixes fully verified · 9 gates left (next: CI unit tests + debug build (Verify Android update 310)) · your approval needed: yes - when it is ready · window: UNKNOWN
 - later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
 <!-- /GEN:summary -->
 
@@ -50,9 +50,9 @@ work. Emulator results never count as handheld verification. Release status is d
 **Current stable:** v0.6.72 (5b01ef39, 2026-11-14) - Latest stable release (main). Save Sync 529 not included.
 
 ### v0.6.73 - **TESTING**
-- Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out.
+- Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) and, if approved, whole words (H4).
 - Release window: UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO
-- App fixes and features: 9 (9 implemented, 0 fully verified, 5 implemented but not yet tested on a handheld, 4 need your look or decision)
+- App fixes and features: 13 (13 implemented, 0 fully verified, 6 implemented but not yet tested on a handheld, 4 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
@@ -67,11 +67,17 @@ work. Emulator results never count as handheld verification. Release status is d
 | Hide navigation bar: Retroid pill fixed at its root (676b); polling removed | RP Nova: pill 12/12 states before, 0/14 after (676, 676c, 676d); Thor / KONKR / RP Classic NOT TESTED (HW-8) | APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass) |
 | Global badge lane (676a/c/e/f): console / achievement / NEW / score never overlap, never cut, never over a coverless name | RP Nova 676f: x1.3 CUBE/TILES/GRID popup 3/3 + badges 17/17, x1.0 CUBE 1/1 + 10/10; 676d x1.0 GRID/CUBE/TILES 3/3 + 26/26; KONKR / RP Classic NOT TESTED (HW-9) | APPROVED for v0.6.73 16 Nov (if CI + hardware regression pass) |
 | QA safety: harness can't reach the owner's Voltcap (D334), QA levels, pinned QA key | D334 guard proven on the Nova (5 root Backs kept) | requested 16 Nov |
+| Status bar: RetroAchievements points never squashed or split; when space runs out, less important icons step aside first | PASS RP Classic + Nova x1.0 / x1.3 (c677j, s677i); full Nova x1.3: 2 checker readings of the LCD clock decoration, fixed 677k - re-check pending (HW-17) | requested 17 Nov - keep in v0.6.73 |
+| Profile picture shown once on Console Hub, Resume, Spotlight and Channel (the status bar hides its copy) | PASS RP Classic + Nova x1.0 / x1.3 | requested 17 Nov - keep in v0.6.73 |
+| Storage Boxes facts kept whole ('6 / 10', 'Never played'), console name never cut | PASS RP Classic + Nova x1.0 / x1.3 | requested 17 Nov - keep in v0.6.73 |
+| Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting) | full Nova x1.3 (53 layouts): no layout regression found - 6 popup FAILs were the checker reading hidden measuring copies of the clock (fixed 677k), 3 new word-break findings; x1.0 full gate and RP Classic full gate NOT TESTED | NOT approved - owner reviews the full Nova results first; may move to v0.6.74 |
 
 | Gate | State | Evidence |
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PENDING | GREEN on ad80646 (678f) after RED on cc34a59 (678e: PopupPolish444Test pinned the banner name's old em line height, fixed 678f). Before: GREEN on 833f308 (677b), 0eb3904 (677c), eba2de4 (677d-2) after RED on 0cc6739 + 0e23337 (676h/676l: QaIsolation521Test lookup, fixed 677b). Earlier green: 4c332f1 (677a), 2371ce29 (675i). Re-check on the release commit |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PASS | run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
+| Focused re-check of 677k on RP Classic + Nova (statuscheck + homecut on the 6 status layouts, popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons) | PENDING | HW-17; Nova j677x13 (677j) graded 17 Nov: popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (see matrix H1 / H4) |
+| Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line | NOT STARTED | facet = dev line at 0e23337 + 676m-677k; merge after the owner's decision on the whole-word item (H4) - isolate it if needed |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PENDING | RP Nova build 676f (qa-0.6.73-676f-cloud), all 53 layouts: x1.3 f676x13 popup 53/53 PASS + badge gate 79/79 PASS; x1.0 f676x10 running (16 Nov 16:10-). KONKR not connected (needed before the RC). Dev head also has 677a (rule 11 session card) - its own screens to re-check on the RC build. |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PENDING | hardware request HW-2 |
@@ -84,19 +90,23 @@ work. Emulator results never count as handheld verification. Release status is d
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: CI unit tests + debug build (Verify Android update 310) (PENDING); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
+Why it cannot ship yet: CI unit tests + debug build (Verify Android update 310) (PENDING); Focused re-check of 677k on RP Classic + Nova (statuscheck + homecut on the 6 status layouts, popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons) (PENDING); Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line (NOT STARTED); Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) (PENDING); Record crate checklist (focus after More, rapid A/B, no size change) (PENDING); Owner visual review of the new menus and x1.3 fixes (PENDING); Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
 Merging, the production install and publishing always wait for your explicit GO.
 
 ### v0.6.74 - **DEVELOPMENT**
 - Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
 - Release window: UNKNOWN - the Flip 2 is unavailable
-- App fixes and features: 3 (1 implemented, 0 fully verified, 1 implemented but not yet tested on a handheld, 0 need your look or decision)
+- App fixes and features: 7 (1 implemented, 0 fully verified, 1 implemented but not yet tested on a handheld, 0 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
 |---|---|---|
 | Flip 2 charging sparkle no longer replays while plugged in (charge-limit pause no longer reads as unplugging) | BLOCKED - DEVICE UNAVAILABLE (Flip 2); not failed - never run. Reassess first: is the loop still reproducible? | test when the Flip 2 is back (production limit off for one supervised test) |
 | Save Sync 529 / 529c (verified backups, per-game queues, lineage conflicts, multi-file transactions, mid-game uploads, pre-launch check, restore) | Flip 2 dry run only (no Drive) | owner 16 Nov: v0.6.74 only after real end-to-end Drive tests + approval |
 | Per-item 'Open on screen' shortcut in every context menu (long-press / START): Top / Bottom / Follow default; games also 'Screen layouts…' (docs/claude/SCREEN_SHORTCUT_PLAN.md) | AYN Thor (QA app, branch claude/v0674-screen-shortcut 8dab0b2): All apps START menu shows the row; picker Top/Bottom/Where I open it/Follow default; chose Bottom -> launch path chose display 4 (Screen-2) target=SECOND source=APP; restored. Android-game picker, second-screen dock menu, single-screen Nova: NOT TESTED | requested 16 Nov |
+| Smaller pixel font (about 60-65 %, pixel font only), before / after for approval | not run | design approval needed |
+| Badges stay on one row and scale together; optional Top Clip / Hanging Bottom styles (Classic stays default) | same-row branch PASS on Nova | not approved yet |
+| Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay | not run | requested 17 Nov |
+| AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first) | not run | requested 17 Nov |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -115,12 +125,14 @@ Merging, the production install and publishing always wait for your explicit GO.
 <!-- GEN:owner -->
 | # | What I need from you | Why | Device | Urgent? | Blocks |
 |---|---|---|---|---|---|
-| 1 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
-| 2 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
-| 3 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
-| 4 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
-| 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
-| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 1 | Same-row badges: approve the look or ask for an alternative to the 72 % minimum | design decision - the style stays out of every release until you approve it | screenshots (badges_before_after_nova) | no | v0.6.74 badge work |
+| 2 | Decide on the app-wide 'whole words' text change: keep it in v0.6.73 or move it to v0.6.74 (full RP Nova results are in the dashboard) | you asked to review the full 53-layout results before it is approved; nothing else in v0.6.73 waits on it if you move it | none (read the results) | no | that one v0.6.73 item |
+| 3 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
+| 4 | Today: connect the KONKR and the other handhelds by USB, PC on, then say "devices ready" | the remaining handheld checks for v0.6.73 (popup gates on the newest build at x1.0 / x1.3, Record crate checklist, Cube first press, glyph re-measure, controller / animation checks) | KONKR + other handhelds (USB); Flip 2 not needed for v0.6.73 | no | v0.6.73 |
+| 5 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
+| 6 | Look at the new menus and x1.3 fixes (screenshots after the hardware session) | a design is not done without your approval; only the Record crate menu is approved | screenshots | no | v0.6.73 approval |
+| 7 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
+| 8 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -170,6 +182,9 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-17 v0.6.73 candidate 677k focused re-check (status bar, profile picture, whole words) | OPEN |
+| HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | BLOCKED (QA fixture) |
+| HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
 | HW-16 Category screen text shown whole (678j, rule 11) | OPEN |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
 | HW-14 Settings text shown whole (678h, rule 11) | OPEN |
@@ -187,7 +202,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 15 of 16.
+Open hardware requests: 18 of 19.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

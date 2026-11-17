@@ -10,7 +10,7 @@
   {
    "version": "v0.6.73",
    "base": "main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main",
-   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out",
+   "scope": "the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) and, if approved, whole words (H4)",
    "window": "UNKNOWN - after today's hardware session (KONKR + other handhelds); then about 1.5 h of release steps after the owner's GO",
    "items": [
     {
@@ -111,6 +111,42 @@
      "emulator": "no",
      "device": "D334 guard proven on the Nova (5 root Backs kept)",
      "owner": "requested 16 Nov"
+    },
+    {
+     "what": "Status bar: RetroAchievements points never squashed or split; when space runs out, less important icons step aside first",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3 (c677j, s677i); full Nova x1.3: 2 checker readings of the LCD clock decoration, fixed 677k - re-check pending (HW-17)",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Profile picture shown once on Console Hub, Resume, Spotlight and Channel (the status bar hides its copy)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Storage Boxes facts kept whole ('6 / 10', 'Never played'), console name never cut",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "PASS RP Classic + Nova x1.0 / x1.3",
+     "owner": "requested 17 Nov - keep in v0.6.73"
+    },
+    {
+     "what": "Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting)",
+     "kind": "app",
+     "impl": true,
+     "unit": true,
+     "emulator": "no",
+     "device": "full Nova x1.3 (53 layouts): no layout regression found - 6 popup FAILs were the checker reading hidden measuring copies of the clock (fixed 677k), 3 new word-break findings; x1.0 full gate and RP Classic full gate NOT TESTED",
+     "owner": "NOT approved - owner reviews the full Nova results first; may move to v0.6.74"
     }
    ],
    "gates": [
@@ -123,6 +159,16 @@
      "gate": "Emulator QA trial (KONKR-like, x1.0 + x1.3)",
      "state": "PASS",
      "evidence": "run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates"
+    },
+    {
+     "gate": "Focused re-check of 677k on RP Classic + Nova (statuscheck + homecut on the 6 status layouts, popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons)",
+     "state": "PENDING",
+     "evidence": "HW-17; Nova j677x13 (677j) graded 17 Nov: popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (see matrix H1 / H4)"
+    },
+    {
+     "gate": "Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line",
+     "state": "NOT STARTED",
+     "evidence": "facet = dev line at 0e23337 + 676m-677k; merge after the owner's decision on the whole-word item (H4) - isolate it if needed"
     },
     {
      "gate": "Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported)",
@@ -207,6 +253,42 @@
      "emulator": "no",
      "device": "AYN Thor (QA app, branch claude/v0674-screen-shortcut 8dab0b2): All apps START menu shows the row; picker Top/Bottom/Where I open it/Follow default; chose Bottom -> launch path chose display 4 (Screen-2) target=SECOND source=APP; restored. Android-game picker, second-screen dock menu, single-screen Nova: NOT TESTED",
      "owner": "requested 16 Nov"
+    },
+    {
+     "what": "Smaller pixel font (about 60-65 %, pixel font only), before / after for approval",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "not run",
+     "owner": "design approval needed"
+    },
+    {
+     "what": "Badges stay on one row and scale together; optional Top Clip / Hanging Bottom styles (Classic stays default)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "same-row branch PASS on Nova",
+     "owner": "not approved yet"
+    },
+    {
+     "what": "Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "not run",
+     "owner": "requested 17 Nov"
+    },
+    {
+     "what": "AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first)",
+     "kind": "app",
+     "impl": false,
+     "unit": false,
+     "emulator": "no",
+     "device": "not run",
+     "owner": "requested 17 Nov"
     }
    ],
    "gates": [

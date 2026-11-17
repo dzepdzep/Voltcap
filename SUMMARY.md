@@ -1,3 +1,14 @@
+# Live session 17 Nov 2026 (~02:00-04:50 UTC) - RP Classic status bar / profile picture / Storage fixes (branch), owner requests recorded
+- Code is on `claude/cube-statusbar-facet` (v0.6.73 candidate, 677d-k) and `claude/v0674-screen-shortcut`, NOT on this dev line:
+  status bar StatusFit (points never squashed; items drop in a fixed order), OwnProfile (one profile picture), Storage facts,
+  app-wide whole words (FitText / FullText / StableFullText, wordMin 8 sp) - awaiting the owner's decision -, QA tools
+  statuscheck.py, homecut word-break check, QaClip statusBars / avatars / placed / probe skip. Full notes: that branch's SUMMARY
+  "Update 677d-j"; defects D343-D348 there.
+- Evidence (L1): RP Classic c677j + RP Nova s677i x1.0 / x1.3: status 54/54, homecut 36/36; Nova full x1.3 j677x13 (677j):
+  popup 47/53, homecut 50/53, statuscheck 97/99 - every FAIL traced (probes / LCD ghost -> 677k; 3 new word-break findings).
+  RP Classic full gate INFRA (fixture). Production (owner-approved): Hub settings changed and restored.
+- This dev line: docs only - matrix H, backlog 00, releases.json, owner actions, HW-17..19, handoff.
+
 # Update 678j (17 Nov 2026, cloud scheduled run) - rule 11: the category screen shows its text whole
 - Category screen (PlatformBrowser): the Slides logo box name (when there is no logo picture), the slide's name line and
   last-played line, the Stage logo box name + name line, and the card's name + game count go through FullText (same line

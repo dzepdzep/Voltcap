@@ -1,6 +1,9 @@
 # VoltCap handoff (read first, update last)
 
-Updated: 2026-11-17 ~04:40 UTC, update 678j (cloud run: rule 11 - category screen FullText, PlatformBrowserFullText678jTest;
+Updated: 2026-11-17 ~04:45 UTC, live session (owner at work, devices disconnected after it): owner's consolidated requests of
+17 Nov recorded - matrix section H (H1-H15), backlog section 00, releases.json v0.6.73 / v0.6.74 items + gates, owner actions,
+HW-17..HW-19. Candidate fixes for v0.6.73 live on `claude/cube-statusbar-facet` (677d-k; NOT merged into this dev line).
+Before: 2026-11-17 ~04:40 UTC, update 678j (cloud run: rule 11 - category screen FullText, PlatformBrowserFullText678jTest;
 TRUNCATE 187 -> 180; compiled + PASS in the cloud; HW-16 queued; CI GREEN on 678i; emulator trial STARTED on this commit).
 Before: 2026-11-17 ~03:40 UTC, update 678i (cloud run: rule 11 - save-sync prompts FullText, SyncPromptsFullText678iTest;
 TRUNCATE 194 -> 187; NOT compiled in the cloud (Maven 429) so CI is its first compile; HW-15 queued; CI GREEN on 678h).
@@ -48,6 +51,26 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- OWNER PRIORITIES 17 Nov (backlog section 00 - this order wins over the rule 11 filler below; one item per run, smallest safe
+  step first; notify the owner only for hardware, a design decision or a release GO; never a new scheduled task):
+  1. v0.6.73 candidate (`claude/cube-statusbar-facet`, 677k = 3b65c9f): read "Verify Android update 310" + the QA-app run on
+     677k (`gh run list -R dzepdzep/Voltcap -b claude/cube-statusbar-facet`). Record the result in releases.json (gate
+     "Candidate fixes ... merged") and the matrix H1-H4. If red, report it in the dashboard (the branch is a live-session branch:
+     do not push to it from a scheduled run).
+  2. H8 (cloud, small, v0.6.73-relevant): on the candidate code, find the Console Hub focused-card title ("... (No Glitc…") and
+     the Achievements card ticker ("Class Dismisse"): any TextOverflow.Ellipsis / maxLines clip left -> FullText (rule 11) on
+     THIS dev line + a test; note whether the facet already fixed it (676y "Hub ticker rows unbounded").
+  3. H6 (QA tooling): why pop529 setup finds no fixture game on the RP Classic (files/roms empty after
+     voltcap_test_fixture_roms; "no game matches") - read TestHooks fixture code; fix + selftest; unblocks HW-18.
+  4. H12 Achievements page: find what scrolls past "Recently Unlocked" on open (initial scroll / focus request / async load);
+     plan + first fix with a Robolectric test; animations after that (reduced motion kept). v0.6.74.
+  5. H13 Thor dual-screen (cloud reading): CompanionActivity / SecondScreen Presentation lifecycle, launch flags / display
+     targeting in GameLauncher, onStop / onPause handling - write findings to docs/claude/THOR_DUAL_SCREEN.md; HW-19 verifies.
+  6. H9 pixel font audit (branch `claude/pixel-font-small`): list every pixel-font use + sizes; emulator screenshots may PREVIEW
+     only (never evidence). H10 / H11 badge mockups (static images) for the owner's choice.
+  - Owner decision pending (owner_actions): H4 whole words keep / move; same-row badge look. Do NOT merge the facet branch into
+    this dev line until the owner decides H4 (if "move": merge without 677i/677j).
+  - Owner 17 Nov: the real Voltcap may be used / updated for testing in live sessions (matrix H15; CLAUDE.md L3 safeguards).
 - FIRST (678j): BOOTSTRAP OK required. Check "Verify Android update 310" on the 678j push (if red: fix it first). READ the
   emulator trial started on 678j ("[emulator-qa]", ~04:40 UTC; next allowed from ~07:40): e529a / e529b popup gate must stay
   PASS, e529c touch walk as 678d. Then rule 11 filler: StyleTerminal (8) - grep app/src/test for each literal first.

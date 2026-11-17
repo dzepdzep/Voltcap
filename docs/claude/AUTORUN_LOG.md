@@ -156,3 +156,11 @@
 - BOOTSTRAP OK (60e9c04); lock free (none since 03:22), taken 04:18. CI: Verify 310 GREEN on 60e9c04 (678i). Effort env: medium.
 - Rule 11: category screen text shown whole (7 "…" removed, TRUNCATE 187 -> 180), PlatformBrowserFullText678jTest; compiled
   and PASS in the cloud (no Maven 429 this time). HW-16 queued. Emulator trial started on this commit. Lock released.
+
+## 2026-11-17 ~04:29-04:50 UTC - live session (owner requests 17 Nov)
+- Lock free (678j released 04:28), taken 04:29 by the live session. Docs only on this line: matrix section H (H1-H15), backlog
+  section 00, releases.json items / gates, owner actions (H4 decision, same-row badge look), HW-17..HW-19, handoff priorities.
+- Hardware (L1, before the docs): RP Nova full x1.3 j677x13 on 677j graded - popup 47/53 (6 = StatusFit probes' clock in the
+  dump), homecut 50/53 (3 new word-break findings), statuscheck 97/99 (LCD ghost digits) -> 677k on the facet branch (QA dump
+  skips the probes; ghost digits not read out). RP Classic full gate INFRA (fixture). Both handhelds restored (diff=0), QA app
+  stopped, production untouched; owner told they are safe to disconnect. Lock released.
