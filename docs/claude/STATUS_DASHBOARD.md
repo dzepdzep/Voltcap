@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 679b-c · 2026-11-17 19:10 UTC · commit `claude/v0674-pixel-font`
+**1. LATEST UPDATE** - 679d · 2026-11-17 19:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e4669b9 · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Pixel font decision B is built on the v0.6.74 pixel-font branch: pixel text draws at 62.5 %, but small labels never go below a comfortable size and never get bigger than today. Final emulator comparisons are ready. Pocket classic's mixed-up screenshots are fixed. Terminal and Pocket Quest problems are not pixel text and are logged for the popup polish. The badge plan is written; building the three styles comes next.
+**2. WHAT CLAUDE JUST FIXED** - The Terminal home no longer cuts text with '...': the folder path at the top, the 'Directory of' line and the preview's game title, system and play time now show in full or slide gently when they are too long, at the same size so the DOS look stays. In the C:\ and SYSTEMS folders the line you are on now slides its whole text too, like game lines already did. Checked by a new automatic test (first compiled by GitHub CI); the handheld check on the KONKR is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: owner: approve the final pixel-font sheets (or adjust the minimum); then: badges: Classic + compact ladder, then Top Clip / Hanging Bottom (docs/claude/BADGE_STYLES_PLAN.md); H16: Pocket Quest Play game wrap (D354), Terminal (D353), Night, Bar
+**5. WORKING ON NEXT** - now: check CI on this push; then: Pocket Quest: 'Play game' wraps and the status pill is cut at larger text; owner-decided pixel font and badge work (on their own branches)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
@@ -183,6 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-22 Terminal home: path, header and preview shown whole (679d, rule 11 / D353) | OPEN (batch with other KONKR requests) |
 | HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) | OPEN (batch with HW-18) |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
@@ -202,7 +203,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 12 of 19.
+Open hardware requests: 13 of 20.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

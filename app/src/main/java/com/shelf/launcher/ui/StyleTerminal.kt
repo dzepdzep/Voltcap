@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -319,8 +320,10 @@ internal fun StyleTerminal(c: StyleCtx, modifier: Modifier = Modifier) {
             else Column(Modifier.fillMaxSize().padding(horizontal = if (narrow) 8.dp else 14.dp, vertical = 6.dp)) {
                 // The title line, in reverse.
                 Row(Modifier.fillMaxWidth().background(tc.hi).padding(horizontal = 6.dp)) {
-                    Text(if (narrow) " VOLTCAP OS" else " VOLTCAP OS  v1.0", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, modifier = Modifier.weight(1f))
-                    Text(termPath(c) + " ", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // (Update 679d, rule 11 / D353: the path is shown whole - it takes the room the name leaves, right-aligned, and
+                    // slides when a long category doesn't fit; one size, so the monospace grid stays.)
+                    Text(if (narrow) " VOLTCAP OS " else " VOLTCAP OS  v1.0 ", style = style.copy(color = tc.hiInk, shadow = null), maxLines = 1, softWrap = false)
+                    FullText(termPath(c) + " ", color = tc.hiInk, fontSize = style.fontSize, style = style.copy(shadow = null), textAlign = TextAlign.End, autoFit = false, reserve = false, modifier = Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
                 Row(Modifier.weight(1f).fillMaxWidth()) {
@@ -371,13 +374,19 @@ private fun TermBoot(k: Float, style: TextStyle, tc: TermColors) {
     }
 }
 
-/** Update 346: [s] cut to [n] characters, a "…" where it was cut (never mid-way without saying so). */
+/**
+ * Update 346: [s] cut to [n] characters, a "…" where it was cut (never mid-way without saying so). Only for the listing's
+ * fixed character columns (update 679d): the line you're on slides its whole text and the preview shows it whole.
+ */
 internal fun termFit(s: String, n: Int): String = when {
     n <= 0 -> ""
     s.length <= n -> s.padEnd(n)
-    n == 1 -> "…"
-    else -> s.take(n - 1) + "…"
+    n == 1 -> "…" // qa-ok: TRUNCATE (fixed DOS listing columns; the focused line slides whole, the preview shows it whole)
+    else -> s.take(n - 1) + "…" // qa-ok: TRUNCATE (fixed DOS listing columns; the focused line slides whole, the preview shows it whole)
 }
+
+/** Update 679d: [s] at [n] columns as the line you're on shows it - whole (padded), so it can slide when it's longer. */
+internal fun termWhole(s: String, n: Int): String = if (s.length <= n) s.padEnd(n.coerceAtLeast(0)) else s
 
 /**
  * Update 346: one listing line for a game, fitted to [cols] characters: its 8.3 name and extension, its title (as it is
@@ -429,7 +438,8 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
         }
         val first = (sel - rows / 2).coerceIn(0, (count - rows).coerceAtLeast(0))
         Column {
-            Text(termFit(" Directory of " + termPath(c), cols + 2), style = style.copy(color = tc.dim), maxLines = 1, softWrap = false)
+            // (Update 679d, rule 11 / D353: the whole path, sliding when a long category doesn't fit - it was cut with "…".)
+            FullText(" Directory of " + termPath(c), color = tc.dim, fontSize = style.fontSize, style = style, autoFit = false, reserve = false)
             for (i in first until (first + rows).coerceAtMost(count)) {
                 val on = i == sel
                 var isDir = false
@@ -442,12 +452,20 @@ private fun TermListing(c: StyleCtx, tc: TermColors, style: TextStyle, lineH: an
                         // (The one you're on scrolls its whole title when it doesn't fit.)
                         if (on && marquee && ln.contains('…')) { cut = true; termGameLine(TermNav.alias(g), termExt(g), title, pt, cols, full = true) } else ln
                     }
-                    TermNav.Dir.ROOT -> TermNav.root[i].let { e -> isDir = e.dir; termFit(e.name.padEnd(13) + (if (e.dir) "<DIR>" else "     ") + "  " + e.note, cols) }
+                    // (Update 679d, rule 11: the line you're on slides its whole note / system name, as game lines already did.)
+                    TermNav.Dir.ROOT -> TermNav.root[i].let { e ->
+                        isDir = e.dir
+                        val full = e.name.padEnd(13) + (if (e.dir) "<DIR>" else "     ") + "  " + e.note
+                        if (on && marquee && full.length > cols) { cut = true; full } else termFit(full, cols)
+                    }
                     TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems[i])?.let { st ->
                         isDir = true
                         val n = st.platform?.let { c.state.countIn(it) } ?: 0
                         val head = termFileName(st.label).padEnd(9) + "<DIR>  "
-                        head + termFit(st.label.uppercase(), (cols - head.length - 6).coerceAtLeast(4)) + "$n".padStart(6)
+                        val room = (cols - head.length - 6).coerceAtLeast(4)
+                        val label = st.label.uppercase()
+                        if (on && marquee && label.length > room) cut = true
+                        head + (if (cut) termWhole(label, room) else termFit(label, room)) + "$n".padStart(6)
                     } ?: ""
                 }
                 key(i) {
@@ -503,20 +521,21 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
                 }
                 Spacer(Modifier.height(4.dp))
                 val meta = c.state.metadata[g.stableKey]
-                // (Update 346: the whole title — two lines — and the file's 8.3 name under it; the listing may have cut it.)
-                Text(titles.display(g.name).uppercase(), style = small, maxLines = if (compact) 1 else 2, overflow = TextOverflow.Ellipsis)
+                // (Update 346: the whole title — two lines — and the file's 8.3 name under it; the listing may have cut it.
+                // Update 679d, rule 11: preview lines slide instead of ending in "…"; one size, so the terminal grid stays.)
+                FullText(titles.display(g.name).uppercase(), color = small.color, fontSize = small.fontSize, style = small, maxLines = if (compact) 1 else 2, autoFit = false, reserve = false)
                 Text(TermNav.alias(g) + "." + termExt(g), style = small.copy(color = tc.dim), maxLines = 1)
-                Text("SYS  " + (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else titles.console(g.platform).uppercase()), style = small.copy(color = tc.dim), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText("SYS  " + (if (g.sourceType == com.shelf.launcher.data.SourceType.APP) "ANDROID" else titles.console(g.platform).uppercase()), color = tc.dim, fontSize = small.fontSize, style = small, autoFit = false, reserve = false)
                 if (!compact) meta?.releaseYear?.let { Text("YEAR $it", style = small.copy(color = tc.dim), maxLines = 1) }
-                Text("TIME " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase(), style = small.copy(color = tc.dim), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText("TIME " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null).uppercase(), color = tc.dim, fontSize = small.fontSize, style = small, autoFit = false, reserve = false)
                 c.progress(g)?.let { (e, t) ->
                     val filled = ((e.toFloat() / t) * 10).toInt().coerceIn(0, 10)
                     Text("[" + "#".repeat(filled) + ".".repeat(10 - filled) + "] $e/$t", style = small, maxLines = 1, overflow = TextOverflow.Clip, softWrap = false)
                 }
             }
             TermNav.Dir.ROOT -> TermNav.root.getOrNull(TermNav.rootSel)?.let { e ->
-                Text(e.name, style = style.copy(fontSize = style.fontSize * 1.3f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(e.note, style = small.copy(color = tc.dim), maxLines = 2)
+                FullText(e.name, color = style.color, fontSize = style.fontSize * 1.3f, style = style, autoFit = false, reserve = false)
+                FullText(e.note, color = tc.dim, fontSize = small.fontSize, style = small, maxLines = 2, autoFit = false, reserve = false)
                 Spacer(Modifier.height(6.dp))
                 // (Update 346: what's in the directory — the empty preview said only "a directory".)
                 val inside: List<String> = when (e.name) {
@@ -532,7 +551,7 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
                 }
             }
             TermNav.Dir.SYSTEMS -> c.stops.getOrNull(TermNav.systems.getOrNull(TermNav.sysSel) ?: -1)?.let { st ->
-                Text(st.label.uppercase(), style = style.copy(fontSize = style.fontSize * 1.15f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(st.label.uppercase(), color = style.color, fontSize = style.fontSize * 1.15f, style = style, maxLines = 2, autoFit = false, reserve = false)
                 val games = st.platform?.let { c.state.gamesIn(it) }.orEmpty()
                 Text("${games.size} FILE(S)", style = small.copy(color = tc.dim), maxLines = 1)
                 Spacer(Modifier.height(6.dp))
@@ -540,7 +559,7 @@ private fun TermPreview(c: StyleCtx, tc: TermColors, style: TextStyle, compact: 
                 val shown = games.sortedByDescending { c.lastPlayed(it) ?: 0L }.take(10)
                 if (shown.isNotEmpty()) {
                     Text(if (shown.any { c.lastPlayed(it) != null }) "PLAYED LAST:" else "CONTENTS:", style = small.copy(color = tc.accent), maxLines = 1)
-                    Column(Modifier.weight(1f).clipToBounds()) { shown.forEach { Text("  " + titles.display(it.name).uppercase(), style = small, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
+                    Column(Modifier.weight(1f).clipToBounds()) { shown.forEach { FullText("  " + titles.display(it.name).uppercase(), color = small.color, fontSize = small.fontSize, style = small, autoFit = false, reserve = false) } }
                 }
             }
         }

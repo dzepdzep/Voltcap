@@ -4030,7 +4030,7 @@
    "title": "Terminal x1.3 home: 'Directory of C:\\GAMES\\PLAYST…' ends in '…' (termFit) and the focused listing line shows mid-slide ('►SUS -- SHADOW OF') - EMULATOR e679r13, 17 Nov",
    "rule": "R18",
    "severity": "low",
-   "status": "open (v0.6.74, H16): check rule 11 - the path is whole in the header / prompt; decide fit vs slide; not pixel-font related (Terminal's default face is Monospace)",
+   "status": "fixed in code 679d (TerminalFullText679dTest; CI first compile): title-bar path + Directory header + preview lines FullText (slide, one size); root / systems focused line slides whole like games. The mid-slide focused line is the intended rule 11 slide, not a defect. Handheld: HW-22 (KONKR) - NOT TESTED",
    "found": "2026-11-17 emulator 44140115312"
   },
   {

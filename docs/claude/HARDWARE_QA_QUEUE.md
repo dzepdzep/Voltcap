@@ -49,6 +49,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
+### HW-22 Terminal home: path, header and preview shown whole (679d, rule 11 / D353) - OPEN (batch with other KONKR requests)
+- Device(s): KONKR (GT78, BW0306N230000845), USB, only if already connected. Level L1 (QA app only).
+- Build: the 679d commit on claude/qa-0672-repair (or newer); "[qa-apk]" QA build + tools/qa/builds.json ledger entry first.
+- Why not emulator: the emulator found it (e679r13) but evidence must come from the handheld's own font metrics / width;
+  the cloud test (TerminalFullText679dTest) only proves no "…" path is left in the source.
+- Tests: TERMINAL at off and font=1.3,density=1.15 with a long category name (e.g. PlayStation 2): screenshot + homecut.py -
+  title-bar path and "Directory of ..." header whole or sliding (no "…"), preview title / SYS / TIME lines whole or sliding,
+  C:\ root and SYSTEMS directories: the focused line slides its whole note / name; change category with L2 / R2 - the shell
+  stays (CATSHELL rule 14); vqa.sh onepress on the listing (first / last item, both directions).
+- Result:
+
 ### HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) - OPEN (batch with HW-18)
 - Device(s): RP Classic (where c677h / c677js saw it), USB. Level L1 (QA app only).
 - Build: the 679c commit on claude/qa-0672-repair (or newer); "[qa-apk]" QA build + tools/qa/builds.json ledger entry first.

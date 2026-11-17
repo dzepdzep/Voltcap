@@ -1,3 +1,16 @@
+# Update 679d (17 Nov 2026, cloud run) - Terminal home: no "…" in the path, header or preview (rule 11, D353)
+- The Terminal home cut its texts with "…": the "Directory of C:\GAMES\PLAYST…" header (emulator e679r13, D353), the title
+  bar's path, and the preview's title / SYS / TIME / root name / system name / played-last lines. Each now goes through
+  FullText at one size (autoFit = false - the monospace grid never shrinks) without reserved height (boxes keep their sizes):
+  it fits whole or slides. The title bar gives the path the room the "VOLTCAP OS" name leaves, right-aligned.
+- Listing columns keep their fixed DOS width (termFit, marked qa-ok with where the full text is); the line you're on now
+  slides its whole text in the C:\ root and SYSTEMS directories too (games already did). D353's "mid-slide focused line" is
+  that intended slide. Static TRUNCATE 179 -> 171.
+- Test: TerminalFullText679dTest (fails on the 679c sources). NOT compiled in the cloud (Maven 429 twice) - CI is its first
+  compile. Not on the pixel-font branch's line (that branch only changes the style's font size, line 312; no overlap).
+- Files: app/src/main/java/com/shelf/launcher/ui/StyleTerminal.kt, app/src/test/.../ui/TerminalFullText679dTest.kt, trackers.
+- NOT TESTED on a handheld: HW-22 (KONKR, batched with its other requests).
+
 # Update 679a-c live (17 Nov 2026; not the hourly task's 679c Console hub change) - pixel font decision B on claude/v0674-pixel-font; emulator review mode; badge plan
 - 679a: emulator trial review mode (workflow_dispatch review_layouts / qa_pref; x1.3 then x1.0; standard trial unchanged).
   Follow-up: grade_trial.py still expects the standard e529 runs, so review-mode runs end red (evidence is fine).

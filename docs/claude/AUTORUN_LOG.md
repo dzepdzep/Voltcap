@@ -221,3 +221,5 @@
 - H7 / D347: Console hub category title keeps clear of the Hub's profile row at density 1.4 (HubCategoryClear679cTest 4/4 PASS, cloud compile after one Maven 429 retry). HW-21 queued (RP Classic). CI GREEN f3d8362. Lock released.
 ## 17 Nov 20:10 Berlin live - 679a-c
 - Pixel font B built + emulator comparisons; D353 / D354 logged; badge plan; branches claude/v0674-pixel-font, claude/v0674-badges.
+## 17 Nov 19:50 UTC cloud run - 679d
+- Rule 11 / D353: Terminal home path / header / preview shown whole (TerminalFullText679dTest; cloud compile blocked by Maven 429 twice, CI decides). HW-22 queued (KONKR). CI GREEN e4669b9. Lock released.
