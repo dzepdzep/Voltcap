@@ -66,6 +66,9 @@ def check_layout(out, run, layout):
     if not os.path.exists(ev):
         return Result(layout, INFRA, "frames.py produced no events.json: " + (r.stderr or r.stdout)[-200:], video)
     d = json.load(open(ev))
+    # (682l: a recording cut off before it was written whole - "moov atom not found" - has no counts: INFRA, never a crash)
+    if "counts" not in d.get("summary", {}):
+        return Result(layout, INFRA, "the recording could not be read (not written whole?): " + (r.stderr or r.stdout)[-160:], video)
     c = d["summary"]["counts"]
     note = f"{d['summary']['frames']} frames, {d['summary']['seconds']}s, transient {c.get('transient', 0)} (review), hitch {c.get('hitch', 0)}"
     bad = [k for k in ("black", "white", "dip") if c.get(k)]

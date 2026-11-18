@@ -26,7 +26,8 @@ run)
   [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; }
   touch $F/qa_nolaunch
   A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
-  grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { input keyevent KEYCODE_BUTTON_B; sleep 1.5; log "picker closed with B"; }
+  # (682j-c: the picker passed through winguard - one B, only on the confirmed picker of the QA app; else ABORT)
+  WG_LOG=$L; . ./winguard.sh; wg_pass_picker; log "home confirmed: $(wg_mark)"
   A --es voltcap_test_snapshot save; sleep 2
   A --ez voltcap_test_preview true; sleep 1
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
