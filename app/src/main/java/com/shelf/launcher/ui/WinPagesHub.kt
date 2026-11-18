@@ -187,7 +187,9 @@ private fun HubMedals(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
         }
         Row(Modifier.padding(top = 6.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("SERVICE RECORD", color = HUB_ENGRAVE.copy(alpha = 0.55f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp, modifier = Modifier.weight(1f))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
                 Text("ORDER: " + t.order.label.uppercase(), color = if (on) inkOnHub(a) else HUB_ENGRAVE, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
                     modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(if (on) a else Color.Black.copy(alpha = 0.3f))
                         .border(1.dp, if (on) a else Color.White.copy(alpha = 0.2f), RoundedCornerShape(3.dp)).padding(horizontal = 6.dp, vertical = 3.dp))

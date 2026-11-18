@@ -154,7 +154,9 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
             // (682r, AchFirstRow x1.3: "CUBES LIT" broke onto a second line beside the order key - the wall's count is the
             // lit cubes over the face's cubes, the face's name already says CUBES)
             Text("${t.earned} / ${t.total} LIT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
                 Text("ORDER · " + t.order.label.uppercase(), color = if (on) cubeInkOn(a) else a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
                     modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(if (on) a else Color.Transparent).border(1.dp, a, RoundedCornerShape(3.dp))
                         .padding(horizontal = 6.dp, vertical = 3.dp))

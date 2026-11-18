@@ -831,7 +831,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
         }
         Row(Modifier.fillMaxSize().padding(start = 36.dp, end = 18.dp, top = 16.dp, bottom = 14.dp)) {
             // The cover, taped on.
-            Box(Modifier.fillMaxHeight(0.78f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
+            // (682r, RP Classic x1.3: on the magazine's own pages the taped cover steps back - its column left the checklist so
+            // narrow that titles broke inside words)
+            Box(Modifier.fillMaxHeight(if (ctx.page == WinPage.MAIN) 0.78f else 0.5f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
                     if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                 }

@@ -110,24 +110,31 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     // The picture, INSERT COIN under it.
-                    Column(Modifier.weight(0.46f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    // (682r: on the cabinet's own screens the picture steps back - the table had a third of the width at x1.3)
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.46f else 0.32f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcPink.copy(alpha = 0.7f), RoundedCornerShape(4.dp)).padding(3.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black)) {
                             val shot = ctx.state.screenshots[ctx.g.stableKey]?.firstOrNull()
                             val pic = shot ?: ctx.backdrop ?: ctx.wide ?: ctx.cover
                             if (pic != null) AsyncImage(rememberStyleArtRequest(pic), ctx.name, Modifier.fillMaxSize().pixelArtwork(),
                                 contentScale = if (shot != null) ContentScale.Fit else ContentScale.Crop)
-                            else Text(ctx.name.uppercase(), color = ArcYellow, fontSize = line, style = glow, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            // (682r: in the narrower picture of the cabinet's own screens the no-art name a size down - "COLOSS / US")
+                            else Text(ctx.name.uppercase(), color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, style = glow,
+                                lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
+                                modifier = Modifier.align(Alignment.Center).padding(8.dp))
                             Canvas(Modifier.fillMaxSize()) {
                                 var y = 0f
                                 while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.2f), Offset(0f, y), Size(size.width, 1.5f)); y += 3.5f }
                             }
                         }
                         Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
-                        Text("INSERT COIN", color = ArcYellow, fontSize = line, style = glow, maxLines = 1,
+                        // (682r, RP Classic x1.3: one line only, "INSERT" was all that showed under the narrower picture - it wraps
+                        // between its words now, a size down on the cabinet's own screens)
+                        Text("INSERT COIN", color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, style = glow,
+                            lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
                             modifier = Modifier.graphicsLayer { alpha = blink?.value?.let { if (it > 0.5f) 1f else 0.15f } ?: 1f })
                     }
                     Spacer(Modifier.width(if (compact) 10.dp else 18.dp))
-                    Column(Modifier.weight(0.54f).fillMaxHeight()) {
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.54f else 0.68f).fillMaxHeight()) {
                         if (ctx.page == WinPage.MAIN) {
                             val s = rememberScrollState()
                             Column(Modifier.weight(1f).sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 3.dp)) {

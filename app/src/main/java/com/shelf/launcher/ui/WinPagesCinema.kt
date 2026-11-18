@@ -127,7 +127,9 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
             Text("Episodes", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
             Text("${t.earned} of ${t.total} watched", color = CINEMA_LABEL, fontSize = 12.sp, modifier = Modifier.weight(1f))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
                 Text("Sorted: " + t.order.label + "  ▾", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(Color(0xFF242424))
                         .border(if (on) 2.dp else 1.dp, if (on) Color.White else Color.White.copy(alpha = 0.4f), RoundedCornerShape(3.dp))

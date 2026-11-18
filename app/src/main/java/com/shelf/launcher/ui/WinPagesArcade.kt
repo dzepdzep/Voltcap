@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -132,9 +133,14 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("HIGH SCORES", color = ArcPgPink, fontSize = line, style = glow, modifier = Modifier.weight(1f))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
-                Text((if (on) "▶ " else "  ") + "SORT " + t.order.label.uppercase(), color = if (on) ArcPgYellow else ArcPgCyan, fontSize = small, style = glow, maxLines = 2,
+            // (682r, KONKR x1.3: "HIG / H SCO / RES" - the table's head and its rows keep whole words, the glow kept)
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                WholeWordsText("HIGH SCORES", color = ArcPgPink, fontSize = line, modifier = Modifier.weight(1f), fontFamily = glow.fontFamily, lineHeight = line * ARCADE_LINE)
+            }
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
+                Text((if (on) "▶ " else "  ") + "SORT " + t.order.label.uppercase(), color = if (on) ArcPgYellow else ArcPgCyan, fontSize = small, style = glow,
                     lineHeight = small * ARCADE_LINE)
             }
         }
@@ -149,14 +155,22 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
                         val ink = if (on) ArcPgYellow else if (earned) ArcPgYellow.copy(alpha = 0.92f) else ArcPgDim
                         Column(Modifier.fillMaxWidth().background(if (on) ArcPgPink.copy(alpha = 0.16f) else Color.Transparent).padding(horizontal = 2.dp, vertical = 2.dp)) {
                             Row(verticalAlignment = Alignment.Top) {
-                                Text(arcadeRank(i), color = if (earned) ArcPgCyan else ArcPgDim, fontSize = small, style = glow, modifier = Modifier.width(40.dp))
-                                Text((ach.title ?: "UNTITLED").uppercase(), color = ink, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.weight(1f))
-                                Text(" " + arcadeScore(ach.points, earned), color = ink, fontSize = small, style = glow, maxLines = 1)
+                                // (682r, RP Classic x1.3: "1S / T" in a fixed 40 dp and the title one word a line beside the score - the rank
+                                // as wide as it is, the score under the title)
+                                Text(arcadeRank(i), color = if (earned) ArcPgCyan else ArcPgDim, fontSize = small, style = glow, softWrap = false,
+                                    modifier = Modifier.widthIn(min = 40.dp).padding(end = 4.dp))
+                                Column(Modifier.weight(1f)) {
+                                    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                                        WholeWordsText((ach.title ?: "UNTITLED").uppercase(), color = ink, fontSize = small, fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE)
+                                    }
+                                    Text(arcadeScore(ach.points, earned), color = ink, fontSize = small, style = glow, softWrap = false)
+                                }
                             }
                             ach.description?.let { d ->
-                                if (opened) Text(d.uppercase(), color = ArcPgInk, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.padding(start = 40.dp, top = 1.dp))
-                                else WinFullText(d.uppercase(), color = ArcPgDim, fontSize = small, maxLines = 2, lineHeight = small * ARCADE_LINE, fontFamily = glow.fontFamily,
-                                    modifier = Modifier.padding(start = 40.dp, top = 1.dp))
+                                if (opened) Text(d.uppercase(), color = ArcPgInk, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.padding(start = 44.dp, top = 1.dp))
+                                // (682r, RP Classic x1.3: one sliding line while closed - A opens the whole text, as the TV's rows)
+                                else WinFullText(d.uppercase(), color = ArcPgDim, fontSize = small, maxLines = 1, lineHeight = small * ARCADE_LINE, fontFamily = glow.fontFamily,
+                                    modifier = Modifier.padding(start = 44.dp, top = 1.dp))
                             }
                             if (opened) {
                                 val facts = listOfNotNull(
@@ -165,7 +179,7 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
                                     ach.type?.takeIf { it.isNotBlank() }?.uppercase()
                                 )
                                 if (facts.isNotEmpty()) Text(facts.joinToString("  "), color = ArcPgCyan, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE,
-                                    modifier = Modifier.padding(start = 40.dp, top = 1.dp))
+                                    modifier = Modifier.padding(start = 44.dp, top = 1.dp))
                             }
                         }
                     }

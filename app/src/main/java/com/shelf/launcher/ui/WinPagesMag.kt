@@ -138,7 +138,9 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
                 Text(points, color = st.muted, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 0.5.sp, lineHeight = 11.sp)
             }
             Spacer(Modifier.weight(1f).widthIn(min = 8.dp))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
                 Text("SORTED BY  " + t.order.label.uppercase(), color = if (on) st.paper else st.ink, fontFamily = st.head, fontWeight = FontWeight.Black,
                     fontSize = 10.sp, letterSpacing = 1.sp,
                     modifier = Modifier.background(if (on) st.accent else Color.Transparent).border(1.dp, st.ink).padding(horizontal = 6.dp, vertical = 3.dp))
@@ -172,7 +174,7 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
                                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.size(24.dp))
                                 }
                                 Spacer(Modifier.width(6.dp))
-                                Text((ach.title ?: "Untitled").uppercase(), color = st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 12.sp,
+                                WholeWordsText((ach.title ?: "Untitled").uppercase(), color = st.ink, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 12.sp,
                                     lineHeight = 15.sp, modifier = Modifier.weight(1f))
                                 Text(ach.points?.let { "$it PTS" } ?: "-", color = if (earned) st.accent else st.muted, fontFamily = st.head,
                                     fontWeight = FontWeight.Black, fontSize = 10.sp, modifier = Modifier.padding(start = 6.dp))

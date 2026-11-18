@@ -9,6 +9,7 @@
 #        a track opened (A) and the list scrolled; then the 120-achievement game's Tracklist scrolled far; then an Android app's
 #        Options page with a destructive row ARMED (one press - never confirmed) and moved off; Motion Off walk recorded.
 #   sh p2review.sh restore TAG
+TWO_STEP="CUBE"   # layouts whose home opens a console first, then the game
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 SC=${3:-off}; LAYS=${4:-CRATE}
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -46,8 +47,10 @@ qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Wi
 onhide() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -qiF 'Hide from library'; } # (682h: -i, Hub / TV print it in capitals)
 playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"label":"Play",' | grep -F '"kind":"control",' | grep -qF '"focused":true'; }
 # (682r) the dump's focused node is one of the window's own keys (Play / Full list / Full details / Back ...), not a page row
-focuslabel() { tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | tail -1 | sed -n 's/.*"label":"\([^"]*\)".*/\1/p'; }
-onkey() { [ -s $O/$1.json ] && focuslabel $1 | grep -qixE '(▸ )?(play|play it!|full list|full details|back|details|options|achievements)'; }
+# (every focused control's label, one a line - the window's own node is focused too, before or after the row, by layout:
+# RP Classic Arcade listed the row first, the KONKR Magazine the window first)
+focuslabel() { tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | sed -n 's/.*"label":"\([^"]*\)".*/\1/p'; }
+onkey() { [ -s $O/$1.json ] && focuslabel $1 | grep -qixE '(▸ |▶ )?(play|play it!|full list|full details|back|details|options|achievements)'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 # (682r, RP Classic: "." on a missing rec.sh ended the script silently before its first log line - the recorder now comes from
 # the script's folder or /data/local/tmp; none = the recordings are NOT TESTED, said so, the walk still runs)
@@ -57,7 +60,11 @@ pick() { logcat -d -s VoltcapQA | grep -F "$1" | head -1 | sed 's/.*game=//' | t
 openw() { # layout name -> 0 when the game window is open
   A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=${MOTION:-NORMAL}"; A --es voltcap_test_layout $1; sleep 3.5; gate
   [ "$(qawins)" = 1 ] || { log "$1: PRECONDITION FAILED - $(qawins) QA windows on the home"; screencap -p $O/${2}_precondition.png; return 1; }
-  shot ${2}_home; wg_home; wg_key_home A; sleep 1.9
+  shot ${2}_home; wg_home
+  # (682r, KONKR p2k13b: the Cube menu's home is a cube per console - its first A opens the console's face, the game is one A
+  # further. Declared per layout, never a retry: the second A only for a layout listed here, on the confirmed home.)
+  case " $TWO_STEP " in *" $1 "*) wg_key_home A; sleep 1.6; log "$1: console opened (two-step home)"; wg_home;; esac
+  wg_key_home A; sleep 1.9
   wg_window; }   # (no window = ABORT: winguard stops the run, nothing more pressed)
 case $MODE in
 run)
@@ -87,7 +94,7 @@ run)
     k BUTTON_R1 1.1; shot ${n}_trophies; k DPAD_DOWN 0.8; k DPAD_DOWN 0.8; shot ${n}_trophies_focus
     # (682r, KONKR Magazine x1.3: the list had no row on screen, two Downs reached the window's "Full list" key and the A
     # opened the achievement dialog - winguard stopped the run. A only on an achievement row: never on a window key.)
-    if onkey ${TAG}_${n}_trophies_focus; then log "$lay: FAIL - two Downs from the page's first row reached a window key ($(focuslabel ${TAG}_${n}_trophies_focus)), no achievement row - A NOT pressed"
+    if onkey ${TAG}_${n}_trophies_focus; then log "$lay: FAIL - two Downs from the page's first row reached a window key ($(focuslabel ${TAG}_${n}_trophies_focus | tr '\n' ';')), no achievement row - A NOT pressed"
     else k BUTTON_A 1.0; fi; shot ${n}_trophies_open
     for i in 1 2 3 4 5 6 7; do k DPAD_DOWN 0.45; done; sleep 0.6; shot ${n}_trophies_scroll
     k BUTTON_R1 1.1; shot ${n}_options; k DPAD_DOWN 0.8; shot ${n}_options_focus

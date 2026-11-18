@@ -36,10 +36,10 @@ import java.time.Duration
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
-class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boolean, private val count: Int) {
+open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boolean, private val count: Int) {
     companion object {
         /** The layouts whose own pages are native (their family's card) - every list size, both scales. */
-        private val NATIVE = listOf(HomeLayout.COVERDETAILS, HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES,
+        internal val NATIVE = listOf(HomeLayout.COVERDETAILS, HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES,
             HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE,
             // (P2 681f: the native-page batch 1 layouts - every list size, both scales)
             HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME,

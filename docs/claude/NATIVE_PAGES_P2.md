@@ -194,4 +194,18 @@ Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 
   size and both scales (24 / 24 PASS; MAGAZINE fails on the old code). ShelfText 96 / 96, NoStray 8 / 8, Batch2 4 / 4.
 - p2review: A on an achievement row only - a window key focused is a logged FAIL, A not pressed; rec.sh no longer required (D361,
   the RP Classic run ended silently before its first line).
-- Hardware: re-run on KONKR + RP Classic with the next QA build - NOT TESTED until then.
+- Hardware (QA app, build qa-682r-50f5004-ci, x1.3 only - x1.0 NOT TESTED on hardware):
+  - KONKR p2k13b: Magazine, Cinema, Arcade walked - every page, the 120-set scrolled far, destructive row armed (confirmation
+    shown) and left, never confirmed, 0 launches, restore OK / diff 0. Magazine's CHECKLIST now shows its rows; Cinema fine.
+    FINDING: Arcade at x1.3 broke words ("HIG / H SCO / RES", "ACHIEVEME / NT"). Cube NOT TESTED: its home opens a console
+    first - one A left no game window and winguard ABORTED with nothing more pressed (script fixed: TWO_STEP layouts).
+  - RP Classic p2r13b (1240 x 1032, 620 x 516 dp): Magazine, Cinema walked, 0 launches, restore OK / diff 0. FINDINGS: Arcade's
+    HIGH SCORES showed no row (the order key took the row, the title 0 px wide, 360 px tall) - two Downs reached Full list, the A
+    opened the dialog, winguard ABORTED safely; Magazine's narrow column broke "ACHIEVEMEN / T" (cover column too wide).
+- 682r-2 fixes (code): every native order key gets at most its share of its row (Arcade, Cinema, Cube, Discover, Hub, Volt,
+  Magazine - as the TV's); Arcade: the picture steps back on its screens, whole-word head / titles / INSERT COIN / no-art name,
+  the rank as wide as it is, the score under the title, one sliding description line; Magazine: smaller cover on its pages,
+  whole-word titles. New AchFirstRowRpc682rRoboTest (the RP Classic's 620 x 516 dp, every native layout, x1.3; ARCADE fails on
+  the old code). Tests: AchFirstRow (KONKR size, every native layout, all sizes, both scales) + Rpc - all PASS; ShelfText 192 / 192
+  (ARCADE needed the no-art name and INSERT COIN left-aligned: centred, the legacy-graphics measure called them cut); NoStray,
+  NativeConfirm, ConfirmRoom, Batch2, WinFocus PASS (1012-test run; RESUME's order key left unbounded after it cost 4 px).

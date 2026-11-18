@@ -219,6 +219,8 @@ private fun DiscoverProgress(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
                 }
             }
             Spacer(Modifier.width(8.dp))
+            // (682r: kept unbounded here - a short pill beside a filling progress column; capped to half it squeezed "27 of 40
+            // earned" onto two lines and the first achievement lost 4 px at x1.3, AchFirstRow RESUME n=40)
             NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
                 Text(t.order.label, color = if (on) inkOnDiscover(a) else Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
                     modifier = Modifier.clip(RoundedCornerShape(50)).background(if (on) a else Color.White.copy(alpha = 0.08f)).padding(horizontal = 10.dp, vertical = 5.dp))

@@ -181,7 +181,9 @@ private fun VoltCells(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
         Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("${t.earned} of ${t.total} cells charged", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, modifier = Modifier.weight(1f))
             // The order key: a small labelled switch (A steps it).
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
+            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
+            // line, pushing the list off the page - the key gets at most its share, as the TV's)
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
                 Text("ORDER  " + t.order.label.uppercase(), color = if (on) onColor(a) else a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
                     modifier = Modifier.clip(RoundedCornerShape(4.dp)).background(if (on) a else Color.Transparent)
                         .border(1.dp, a, RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 3.dp))
