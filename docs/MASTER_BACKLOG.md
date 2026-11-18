@@ -40,7 +40,11 @@ favourites, settings untouched; your own collections kept (empty ones are no sto
 docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
 Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
 18 Nov 14:54 owner GO for batch 2 (batch 1 NOT visually approved, its visual fixes remain): Game magazine, Cinema, Arcade,
-Cube implemented (682n-q, NativePagesBatch2Test, ShelfText 48/48, NoStray 44/44) = 22/53 implemented; HW NOT TESTED yet.
+Cube implemented (682n-q) = 22/53 implemented. 682r (branch claude/v0674-native-pages e45fe3e): x1.3 room fixed after KONKR /
+RP Classic walks (Magazine checklist had no rows, Arcade's title 0 px on the RP Classic, Cinema / Cube first row part-cut - D360);
+AchFirstRow now at the KONKR and RP Classic sizes for every native layout. HW (QA app, x1.3): Magazine, Cinema, Arcade walked on
+both, 0 launches, restore OK; Cube first walk OK, its 2nd open aborted safely (script fixed, not re-run); x1.0 NOT TESTED on HW.
+Not owner-approved (neither batch).
 QA safety (owner 14:54): winguard.sh - nav682j / p2review / catswitch / anchors682 press keys only while the QA app's confirmed
 window has the focus; picker / Android quick settings / production / other window = ABORT, no blind retries (D359 follow-up).
 18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
