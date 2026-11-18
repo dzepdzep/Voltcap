@@ -1032,7 +1032,9 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     fun cell(label: String, value: String?) {
                         Row(Modifier.fillMaxWidth().padding(vertical = if (labStorage) 3.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(if (w < 560.dp) 100.dp else 118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                                Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
+                                // (685a, H16 survey KONKR x1.3: "LAST PLAYED" did not fit the 100 dp label on one line and its
+                                // second word was dropped by maxLines = 1. Whole words now - two lines when it must.)
+                                WholeWordsText(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                             }
                             Spacer(Modifier.width(8.dp))
                             // (Batch 523: "Never playe" - the value took the room it wanted and was cut by the window's edge;

@@ -113,6 +113,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   cover art: the window's grey plate shows the console initials only (no "PlayStati / on" break), the entry line beside it names
   "PlayStation 2" whole; a game with a short console name (e.g. "Wii") still shows its caption under the initials. pop529
   TIMELINE OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test TIMELINE, NoArtCaption684Test).
+- Also (685a, H16, dev line 685a or later, ~1 min, KONKR x1.0 + x1.3): Storage boxes (STORAGE) at x1.3, a game played before:
+  the fact tab "LAST PLAYED" whole (two lines in its tab if it must, never just "LAST"); the other tabs one line as before.
+  Card binder (CARDS): open a game - the card still turns over (front away, back in) as before, no flicker or blank frame at
+  the half-turn; B - it turns back. pop529 STORAGE OWN / CARDS OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test
+  NEXT_685, CardFront685Test).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

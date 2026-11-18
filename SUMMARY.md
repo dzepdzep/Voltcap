@@ -1,3 +1,18 @@
+# Update 685a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: six more game windows under the window guards; Card binder hidden front, Storage label fixes
+- CI first: Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its hardware re-check and the owner's look).
+- WindowWordsSurvey682Test.NEXT_685: Card binder (CARDS), Greencore, Box, File select, Storage boxes, Case flow joined all four
+  guards (first page words, parent clip, More, Details / Options / Achievements) at KONKR size x1.0 + x1.3. 36 window scenes guarded.
+- Real findings, fixed in code:
+  1. Storage boxes x1.3: the fact label "LAST PLAYED" did not fit its 100 dp tab on one line and maxLines = 1 dropped "PLAYED"
+     (only "LAST" shown). Labels are WholeWordsText now - whole words, two lines when they must (WinScenes.kt StorageRecordMain cell).
+  2. Card binder x1.0 + x1.3: after the card turns over, its front stayed laid out at alpha 0, edge-on - name, console and
+     trophies sat in the tree a second time ("hidden by a parent"). The turned-away front is no longer composed (cardFrontAway,
+     a derived state that changes only at the turn's ends - not per frame); the visible turn is unchanged.
+- Checks (cloud compiled): the 48 new survey cases green (STORAGE x1.3 survey + CARDS parentClip x2 failed before), CardFront685Test
+  3/3 (new), Batch507 / 508 / 513 / 523xFlip / NoArtCaption684 green, static checks PASS. Handheld NOT TESTED - HW-24 685a (~1 min, KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/WinScenes.kt, app/src/main/java/com/shelf/launcher/ui/WinSceneFamilies.kt,
+  app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt, app/src/test/java/com/shelf/launcher/ui/CardFront685Test.kt (new).
+
 # Update 684a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: seven more game windows under the window guards; Timeline no-art plate fix
 - CI first: Verify 310 on 5f46185 (683a) - ubuntu-24.04 GREEN (full suite), ubuntu-latest Maven Central 429 (infra) -> failed
   job re-run requested. P2 branch: its last push 18:16 UTC is an interactive session's batch 1 visual pass awaiting hardware

@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 20:55 UTC, 685a (cloud, v0.6.74 turn):** Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its
+hardware re-check + the owner's look). H16: Cards, Greencore, Box, File select, Storage, Caseflow under all four window guards
+x1.0 + x1.3 (NEXT_685). Two real findings fixed: Storage's fact label "LAST PLAYED" lost "PLAYED" at x1.3 (labels WholeWordsText);
+Card binder's turned-away front stayed laid out at alpha 0 (no longer composed once away - cardFrontAway derived state;
+CardFront685Test). 36 window scenes guarded. HW-24 685a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Orbit, Airy, Blades, Camera, Magazine, Shop, then Terminal, Arcade, Arctic,
+Artlib, Custom, Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
 **18 Nov 19:55 UTC, 684a (cloud, v0.6.74 turn):** Verify 310 on 5f46185: ubuntu-24.04 GREEN, ubuntu-latest Maven 429 (infra;
 failed job re-run requested). P2 left alone: batch 1's 682s visual pass waits on its hardware re-check + the owner's look (owner
 "2" = batch 1 fixes first); Spotlight is "if wanted". H16: Circuit, Timeline, Shelf, Stacks, Crate, Discs, Cube under all four

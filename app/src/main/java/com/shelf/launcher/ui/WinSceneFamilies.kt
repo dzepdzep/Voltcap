@@ -499,6 +499,9 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
 // ───────────────────────────── Card binder: the card turns over ─────────────────────────────
 
 /** Update 508: the card front's bottom line — the console, and the year when it is known (no stray dash). Pure. */
+/** 685a (pure): the binder card's front is out of sight - turned edge-on (first half of the turn done) or not yet shown. */
+internal fun cardFrontAway(reveal: Float): Boolean = sceneStage(reveal, 0f, 0.5f) >= 0.999f || reveal < 0.02f
+
 internal fun cardFrontLine(console: String, year: String?): String = console.uppercase() + (year?.takeIf { it.isNotBlank() }?.let { "  ·  $it" } ?: "")
 
 @Composable
@@ -512,14 +515,19 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
     // (529t, owner P3: with a pickup the binder's own card comes out of its pocket and turns (PickupOverlay); this front isn't
     // drawn then, and the back turns in from edge-on once the card is here - flipBackTurn.)
     val pickedUp = LocalSceneOrigin.current != null
+    // (685a, H16 parent-clip guard: once the front had turned edge-on it was drawn at alpha 0 but stayed laid out, its texts
+    // still in the tree - name, console and trophies twice, "hidden by a parent" in QA dumps. Out of sight, it is not composed:
+    // frontAway changes only when the turn crosses its ends (open: in at 2 %, out at half; close: back in at half, edge-on),
+    // never per frame.)
+    val frontAway by remember(ctx.reveal) { androidx.compose.runtime.derivedStateOf { cardFrontAway(ctx.reveal()) } }
     Box(Modifier.width(w).heightIn(max = h).pickupFlipTarget(pickedUp), contentAlignment = Alignment.Center) {
         // The front, as it sits in the binder, turning away (first half of the turn)…
-        if (!pickedUp) Box(Modifier.matchParentSize().graphicsLayer {
+        if (!pickedUp && !frontAway) Box(Modifier.matchParentSize().graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.5f)
             rotationY = k * 90f
             cameraDistance = 14f * density
             flatTextFor3d()
-            alpha = if (k >= 0.999f || ctx.reveal() < 0.02f) 0f else 1f
+            alpha = if (cardFrontAway(ctx.reveal())) 0f else 1f
             shape = cardShape; clip = true
         }.background(pal.frame).padding(7.dp).clip(RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             // (Update 508, owner: "the front face shows almost only the cover". The binder card's front as a collectable card

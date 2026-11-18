@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 684a · 2026-11-18 19:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on 5f46185: one runner GREEN, the other Maven download limit (infra) - re-run requested · effort: medium
+**1. LATEST UPDATE** - 685a · 2026-11-18 20:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 86f15c7 (684a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Seven more game windows (Circuit, Timeline, Shelf, Case stacks, Record crate, Discs, Cube) are now under the automatic cut-off-text checks at normal and larger text size. They found one real problem: Timeline's grey 'no picture' plate split 'PlayStation' in the middle of the word. It now shows just the console's initials there, because the full console name already sits right next to it.
+**2. WHAT CLAUDE JUST FIXED** - Six more game windows (Card binder, Greencore, Box, File select, Storage boxes, Case flow) are now under the automatic cut-off-text checks at normal and larger text size. They found two real problems, both fixed: in Storage boxes at larger text the label 'LAST PLAYED' showed only 'LAST' (it now wraps whole onto two lines), and the Card binder kept an invisible copy of the card's front after it turned over (it is now removed once turned; the turn looks the same).
 
 **3. LAST 24 HOURS** (most important first)
+- **App** (685a): Six more game windows (Card binder, Greencore, Box, File select, Storage boxes, Case flow) are now under the automatic cut-off-text checks at normal and larger text size. They found two real problems, both fixed: in Storage boxes at larger text the label 'LAST PLAYED' showed only 'LAST' (it now wraps whole onto two lines), and the Card binder kept an invisible copy of the card's front after it turned over (it is now removed once turned; the turn looks the same).
 - **App** (684a): Seven more game windows (Circuit, Timeline, Shelf, Case stacks, Record crate, Discs, Cube) are now under the automatic cut-off-text checks at normal and larger text size. They found one real problem: Timeline's grey 'no picture' plate split 'PlayStation' in the middle of the word. It now shows just the console's initials there, because the full console name already sits right next to it.
 - **App** (682t): The automatic cut-off-text checks now cover your high-priority game windows too (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Icon bar). They found two real problems at large text size, both fixed: Night's system line split 'PlayStation 2' in the middle of the word (it now moves under its label when it doesn't fit beside it), and Pocket Ribbon's console fact did the same (it now shrinks a little instead). Needs a quick look on the KONKR.
 - **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
 - **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
-- **QA tools** (682g): The automatic check of the next 13 game windows (Hero to Cinema) was misreading its own measurements - it compared each label against the space it was allowed, not the space its letters actually use. Fixed: all 13 windows come back clean at normal and larger text (no word broken, nothing cut off) on their first page, and the check now stays on as a guard so a future change that cuts a label fails the build. Nothing in the app changed; not checked on a handheld.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm the test run stays green; then: Same checks for the next game windows (Cards, Greencore, Box, File select, Storage, Caseflow); Native pages: batch 1 hardware re-check / owner review, then batch 2
+**5. WORKING ON NEXT** - now: Confirm the test run stays green; then: Same checks for the next game windows (Orbit, Airy, Blades, Camera, Magazine, Shop); Native pages: batch 1 hardware re-check / owner review, then batch 2
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
