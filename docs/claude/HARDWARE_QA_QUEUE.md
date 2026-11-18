@@ -86,6 +86,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Also (681t, H16, dev line 681t or later, ~1 min): Night (NIGHT) at x1.3, a game with achievements: the stats panel's
   ACHIEVED / RELEASED / PLAY TIME labels whole (never "ACHIEVE / D"), values beside them readable, the achievements bar under
   the values; also x1.0 looks as before. pop529 NIGHT OWN -> popclip.py. Unit evidence only (NightStatLabels681tTest, CI).
+- Also (681w, H16, dev line 681w or later, ~1 min): Icon bar (BAR) at x1.3, a game with achievements: the dock keys' names
+  under the round icons whole - "Achievements" / "Performance" never broken inside the word, a two-word name only between its
+  words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
+  reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
+  Unit evidence only (BarDockLabels681wTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

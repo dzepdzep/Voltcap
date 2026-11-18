@@ -47,6 +47,19 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 04:20 UTC, 681w (cloud, v0.6.74 turn):** H16 Bar window - the dock keys' names were cramped at x1.3 ("Achievements"
+broke inside the word in the fixed 78 dp column). Each key now takes the widest word's width + 6 dp (>= 78 dp), the name fills
+its key; BarDockLabels681wTest 2/2 (fails on the old code), Readability476 15, WinFocus 448 PASS (cloud). HW-24 extended (Bar x1.3).
+Dev-line CI GREEN on 87f4150 (681v). P2 emulator review 44233448467 READ (P2:TV CRATE on 00b9c1d): crate x1.3 tracklist now
+two whole tracks (681s confirmed on the emulator); TV pages have a body. Still open on the P2 branch: (a) TV Fastext keys at
+equal widths slide - "PICTU / TROPH / OPTIO" at x1.3, "TROPHIE" at x1.0 (WinPagesTv.kt ttxFastext row: weight each key by its
+word, e.g. Modifier.weight(ttxKey(pg).length)); (b) p2review.sh playfocused() did not match on the device - the TV
+app_options_last dump has Play focused yet A was pressed (1 blocked launch per scale): replace the `[^]]` ERE with a toybox-safe
+check (split objects on '}' and grep -F '"label":"Play",' then '"focused":true') + a selftest; (c) review runs end NOT TESTED
+(grade_trial.py expects e529 runs - known 679a follow-up). Record (a)-(c) in NATIVE_PAGES_P2.md on that branch.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: (a) + (b) above, re-run the review, then batch 2
+(Cube first). Following v0.6.74 turn: H12 achievements animations (or more H16 windows from the k678n13 sheet).
+
 **18 Nov 03:55 UTC, 681v (cloud, P2 turn):** batch 1 finding 3 TRACED from the emulator run's own dumps: the TV room "blocked
 launch" was the review script - the App category did not take, ten Downs on a 9-row Options page left the list for Play and the
 "arming" A pressed it (p2review.sh now presses A only on a focused option row). The dumps also showed a real TV defect, now FIXED
