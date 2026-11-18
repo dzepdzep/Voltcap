@@ -1,3 +1,16 @@
+# Update 682b (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey read; its "cut at the edge" signal was unreliable (test only)
+- Read the 682 survey from CI (Verify 310 GREEN on ebe8e55, artifact update-310-test-results): 25 of 26 window/scale cases
+  listed almost EVERY label as "cut at its box's edge" - "Back", "Play", "Details", "PlayStation 2 · Never played" (12 sp in a
+  ~357 dp column) - with identical lists at x1.0 and x1.3 and no word broken anywhere. A real cut does not look like that, so
+  the list is not a fix list. Channel had only "Back".
+- WindowWordsSurvey682Test: a text now counts as cut when its lines run a whole pixel or more past its box, or lines past
+  maxLines are dropped (pure cutAtEdge, SurveyRule682Test.aFractionOfAPixelIsNoCut - fails on the old didOverflowWidth-only rule
+  for a 41.6 px "Back" in a 41 px box); each finding now carries its numbers (text size, box size, max width, lines) so the next
+  run can tell a real cut from a measuring artefact. Suspected cause (not confirmed): sub-pixel rounding of wrap-content text.
+- App code unchanged; no window was changed on the strength of the unreliable list. NOT compiled in the cloud (Maven Central
+  resolution failed twice) - CI on this push compiles and runs it. Static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt. PC copy: none (test only).
+
 # Update 682 (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey: whole words on the next 13 game windows (test only)
 - New unit test WindowWordsSurvey682Test (Robolectric, KONKR 640 x 427 dp, x1.0 and x1.3, 26 cases): renders the first page of
   each window in the owner's H16 order after Pocket / Night / Bar - Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin

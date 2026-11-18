@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682 · 2026-11-18 08:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on ccdc5bf (681z); this push is the first compile of the new test (cloud Maven 429) · effort: medium
+**1. LATEST UPDATE** - 682b · 2026-11-18 09:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on ebe8e55 (682); this push compiles the corrected check in CI (cloud package server failed) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Behind the scenes: a new automatic check opens the game windows of the next 13 layouts on your list (Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema) at KONKR size, normal and larger text, and lists every word split in the middle or cut at an edge. The next runs fix what it finds, one window at a time. Nothing in the app changed.
+**2. WHAT CLAUDE JUST FIXED** - Behind the scenes: the new automatic check of the next 13 game windows came back saying nearly every button label was cut off, identically at normal and larger text - which no real cut does, so nothing in the app was changed on that basis. The check now only counts a text as cut when it really runs past its box, and shows the measurements with each finding. Nothing in the app changed.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Read the H16 survey findings from CI and fix the first windows (Hero, Hero tiles, Live, Cross); then: Native pages batch 2 (Cube first) - after the live session's 682a-c on that branch; Achievements reveal / trophy animation redesign (comparison for the owner)
+**5. WORKING ON NEXT** - now: Read the corrected window check from CI and fix real cuts in Hero, Hero tiles, Live, Cross; then: Native pages batch 2 (Cube first) - after the live session's work on that branch; Achievements reveal / trophy animation redesign (comparison for the owner)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 

@@ -13,6 +13,7 @@ import com.shelf.launcher.data.HomeLayout
 import com.shelf.launcher.data.RaGameProgress
 import com.shelf.launcher.data.SourceType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -75,7 +76,16 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
             frames(240)
             val all = texts()
             assertTrue("$layout x$scale: no text of the window reached", all.isNotEmpty())
-            all.mapNotNull { r -> surveyRule(r.layoutInput.text.text, brokenWord(r), r.didOverflowWidth, r.layoutInput.softWrap, r.lineCount) }.distinct()
+            // (682b: not r.didOverflowWidth alone - in the 682 run it flagged every chip ("Back", "Play") of all 13 windows at
+            // both scales, identical at x1.0 and x1.3, which no real cut does (suspected: sub-pixel rounding of wrap-content
+            // text). A text is cut when its lines run past the box by a whole pixel or more, or lines past maxLines are dropped.
+            // Each finding carries its numbers so the next run can tell a real cut from a measuring artefact.)
+            all.mapNotNull { r ->
+                val cut = cutAtEdge(r.multiParagraph.width, r.size.width, r.multiParagraph.height, r.size.height, r.multiParagraph.didExceedMaxLines)
+                surveyRule(r.layoutInput.text.text, brokenWord(r), cut, r.layoutInput.softWrap, r.lineCount)?.let {
+                    "$it [text ${"%.1f".format(r.multiParagraph.width)}x${"%.1f".format(r.multiParagraph.height)} px in ${r.size.width}x${r.size.height} (max width ${r.layoutInput.constraints.maxWidth}), lines ${r.lineCount}]"
+                }
+            }.distinct()
         } finally { TestHooks.scale.value = null }
         val lines = if (found.isEmpty()) listOf("$layout x$scale: clean") else found.map { "$layout x$scale: $it" }
         val dir = File("build/reports/h16-survey").apply { mkdirs() }
@@ -91,7 +101,20 @@ class SurveyRule682Test {
         assertEquals(null, surveyRule("A long name that slides", false, true, false, 1))   // one sliding line: rule 11 allows it
         assertEquals(null, surveyRule("Played", false, false, true, 1))
     }
+
+    /** 682b: the 682 survey reported every wrap-content chip as cut; a fraction of a pixel is rounding, not a cut. */
+    @Test fun aFractionOfAPixelIsNoCut() {
+        assertFalse("'Back' 41.6 px in a 41 px box", cutAtEdge(41.6f, 41, 18f, 18, false))
+        assertFalse(cutAtEdge(120f, 120, 18.4f, 18, false))
+        assertTrue("a word running 1 px past the edge", cutAtEdge(42f, 41, 18f, 18, false))
+        assertTrue("a second line clipped by the box", cutAtEdge(80f, 80, 36f, 18, false))
+        assertTrue("lines past maxLines dropped", cutAtEdge(80f, 80, 18f, 18, true))
+    }
 }
+
+/** 682b (pure): a text is cut at its box's edge when its lines run a whole pixel or more past the box, or lines past maxLines are dropped. */
+internal fun cutAtEdge(textW: Float, boxW: Int, textH: Float, boxH: Int, droppedLines: Boolean): Boolean =
+    droppedLines || textW - boxW >= 1f || textH - boxH >= 1f
 
 /** 682 (pure): what the H16 survey reports for one text - a word broken inside itself, or a wrapping text cut at its edge. */
 internal fun surveyRule(text: String, broken: Boolean, overflowW: Boolean, softWrap: Boolean, lines: Int): String? = when {

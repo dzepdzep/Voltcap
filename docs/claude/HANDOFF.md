@@ -47,6 +47,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 09:40 UTC, 682b (cloud, v0.6.74 turn):** read the 682 survey (Verify 310 GREEN on ebe8e55): nearly every label of all 13
+windows listed as "cut at its box's edge", identical at x1.0 / x1.3, no broken word - an unreliable signal, so NO window was
+changed. WindowWordsSurvey682Test now counts a cut only at >= 1 px past the box or dropped lines (cutAtEdge, pure test) and prints
+each finding's numbers. Cloud compile failed (Maven resolution x2) - CI compiles it.
+NEXT: check Verify 310 on this push (compile / SurveyRule682Test red -> fix first). Then read the new findings from the
+"update-310-test-results-*" artifact (TEST-...WindowWordsSurvey682Test.xml system-out): if findings remain with text width <= box
+width they are still artefacts (compare against a node-bounds check before fixing anything); real ones -> fix in list order (Hero,
+Hero tiles, Live, Cross ...) with a test that fails on the old code. Next run = P2 turn only if the live session's last P2 push
+(09:04 UTC) is > 1 h old.
+
 **18 Nov 08:45 UTC, 682 (cloud, v0.6.74 turn):** H16 next windows. The k678n13 review PDF is not in the repo and the cloud could
 not compile (Maven Central 429 x3), so this run added WindowWordsSurvey682Test (test only, app unchanged): Hero, Hero tiles, Live,
 Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema at KONKR 640 x 427 dp, x1.0 + x1.3 -
