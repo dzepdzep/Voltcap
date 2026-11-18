@@ -21,8 +21,10 @@ after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware: KONKR only. Ow
 
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
-end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out NOT
-TESTED; owner NOT approved; no merge without GO.
+end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out:
+NOT TESTED (owner 18 Nov 12:12: no physical pull now - record NOT TESTED, never PASS; the protection stays: unit tests
+RescanPrune681rTest unreadable / unmounted roots + emulator unreadable-folder case). READY FOR REVIEW (owner 18 Nov 12:12):
+draft PR into claude/qa-0672-repair; no merge / release without GO.
 Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
 favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
 
