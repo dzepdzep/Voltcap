@@ -16,7 +16,8 @@ class PlayWhileClosing412Test {
 
     @Test fun playIsIgnoredOnceTheWindowIsClosing() {
         val s = src()
-        assertTrue(s.contains("else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed("))  // (update 453: via askAgain)
+        // (update 453: via askAgain; 682a: the page-turn guard joined the Play condition on its own line - closing still comes first)
+        assertTrue(Regex("""else if \(closingFlag\[0\]\) GamePopup\.askAgain\(winToken, g\)\s*(//[^\n]*\s*)?else if \(playAllowed\(""").containsMatchIn(s))
         // v0.6.66 (D135): the release of the home screen's own A press is never a Play press.
         assertTrue(s.contains("val orphan = HomeKeyGuard.takeOrphanRelease()"))
         // Update 413: the home screen routes the window's close through GamePopup.closed so a pending A reopens it
