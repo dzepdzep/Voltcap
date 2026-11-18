@@ -63,7 +63,11 @@ openw() { # layout name -> 0 when the game window is open
   shot ${2}_home; wg_home
   # (682r, KONKR p2k13b: the Cube menu's home is a cube per console - its first A opens the console's face, the game is one A
   # further. Declared per layout, never a retry: the second A only for a layout listed here, on the confirmed home.)
-  case " $TWO_STEP " in *" $1 "*) wg_key_home A; sleep 1.6; log "$1: console opened (two-step home)"; wg_home;; esac
+  # (682r, KONKR / RP Classic p2k13c: after the first walk the cube stays on the console's face - its first A already opened
+  # the game and the home check then aborted. After the first A: a game window open = that is the window.)
+  case " $TWO_STEP " in *" $1 "*) wg_key_home A; sleep 1.6
+    if [ -n "$(wg_popup | grep -v '^null$')" ]; then log "$1: the console's face was open - the game window opened at once"; wg_window; return; fi
+    log "$1: console opened (two-step home)"; wg_home;; esac
   wg_key_home A; sleep 1.9
   wg_window; }   # (no window = ABORT: winguard stops the run, nothing more pressed)
 case $MODE in

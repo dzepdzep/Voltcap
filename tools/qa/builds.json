@@ -1529,6 +1529,39 @@
    "patch_sha256": null,
    "tree_hash": "claude/v0674-native-pages 6a81717",
    "note": "P2 682j focus hand-over + 682k confirmation room"
+  },
+  {
+   "id": "qa-682q-73d6766-ci",
+   "apk_sha256": "f76d32371354f2ef989adc57df869c855b4f2d1b9e529901ce1b1ca5778b57e4",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 73d6766",
+   "tree_hash": "claude/v0674-native-pages 73d6766",
+   "note": "P2 batch 2 (Magazine, Cinema, Arcade, Cube) - KONKR p2k13 (Magazine checklist no rows, D360)"
+  },
+  {
+   "id": "qa-682r-50f5004-ci",
+   "apk_sha256": "47ff38503023f1c3179f6785ab192e2fb02e026c36917e212cb656c96e3646e3",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 50f5004",
+   "tree_hash": "claude/v0674-native-pages 50f5004",
+   "note": "682r x1.3 room - KONKR p2k13b / RP Classic p2r13b"
+  },
+  {
+   "id": "qa-682r2-ef2694a-ci",
+   "apk_sha256": "f54bb52eb384edf12da6e1ad20b77973958cf6a67389b081caa4ec20d12184ac",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages ef2694a",
+   "tree_hash": "claude/v0674-native-pages ef2694a",
+   "note": "682r-2 RP Classic fixes - KONKR p2k13c / RP Classic p2r13c"
   }
  ]
 }

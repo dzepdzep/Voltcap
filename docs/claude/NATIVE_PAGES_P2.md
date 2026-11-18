@@ -209,3 +209,13 @@ Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 
   the old code). Tests: AchFirstRow (KONKR size, every native layout, all sizes, both scales) + Rpc - all PASS; ShelfText 192 / 192
   (ARCADE needed the no-art name and INSERT COIN left-aligned: centred, the legacy-graphics measure called them cut); NoStray,
   NativeConfirm, ConfirmRoom, Batch2, WinFocus PASS (1012-test run; RESUME's order key left unbounded after it cost 4 px).
+
+### 682r - hardware re-check of the fixes (QA app, build qa-682r2-ef2694a-ci, x1.3; 18 Nov 18:06-18:12) - NOT owner-approved
+- KONKR p2k13c ARCADE: every page walked, HIGH SCORES rows on screen with whole words, destructive row armed and left, 0
+  launches. CUBE: first walk complete (CUBES face rows whole; "ORDER · SET / ORDER" key wraps in its half - minor, open);
+  the 120-set's second open ABORTED by winguard (the cube stayed on the console's face, one A already opened the game - the
+  script expected the home; nothing more pressed). Restore OK / diff 0.
+- RP Classic p2r13c ARCADE: HIGH SCORES rows on screen (the 0 px title fixed), whole words, 0 launches; CUBE first walk complete,
+  same second-open ABORT. MAGAZINE not reached (stopped at the task's 15-minute hardware limit). Restore OK / diff 0.
+- p2review: TWO_STEP now checks after the first A whether the game window is already open (fixed after the run - NOT re-run).
+- Still NOT TESTED on hardware: x1.0 for all four; RP Classic Magazine after 682r-2; Cube's 120-set and Options confirmation.
