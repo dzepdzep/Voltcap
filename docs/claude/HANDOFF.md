@@ -47,6 +47,26 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 06:50 UTC, 681y (cloud, v0.6.74 turn):** item 7 H12 - the Achievements page's progress (Power cells battery, Trophy
+header, summary bar) now counts each new unlock as its badge locks in on the stage and fills up to it; nothing new = no fill. The
+stage's waits / sound cues follow the motion speed (Off / reduced motion = every badge at once). AchProgressCount681yTest 5/5 +
+Ach suites PASS (cloud compile + Robolectric). HW-25 queued (KONKR, with HW-24). Dev CI: Verify 310 on 29f0c87 (docs) was running;
+last code push 18a8cbc GREEN. P2 cf40522 Verify 310 GREEN; its emulator review 44247782675 ended "failure" (review runs end NOT
+TESTED by design until (c) grade_trial.py review mode is done) - read it next P2 turn.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: read review 44247782675 (TV keys), (c) grade_trial.py
+review-mode verdict, then batch 2 (Cube first). Following v0.6.74 turn: H12 rest (reveal / trophy animation redesign needs an
+owner look - comparison first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross ...).
+
+**18 Nov 05:20 UTC, 681x (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages` (4a3e313); findings (a) + (b) of
+review 44233448467 fixed there: (a) TV Fastext keys each as wide as their own word, short words PIC / OPTS when the four full
+words cannot fit (WinPagesTv.kt ttxKeyPlan) - TvFastextKeys681xRoboTest; (b) p2review.sh playfocused() fixed strings only
+(toybox) - selftest TestP2ReviewPlayFocused681x 5, 216/216. Cloud compile blocked by Maven 429 (3 tries); CI compiled it: on
+049dd75 the new robo test failed (fixture game had no achievements -> no TROPHIES key), fixed in cf40522 - Verify 310 ubuntu-24.04
+GREEN, the other runner still running at hand-off. (c) review runs end NOT TESTED (grade_trial.py e529 expectation) - still open.
+Emulator review "P2:TV" dispatched on cf40522. Dev-line CI GREEN on 18a8cbc (681w).
+NEXT: check Verify 310 on cf40522 (P2) and on this push. Next run = v0.6.74 turn: H12 achievements animations (or more H16
+windows from the k678n13 sheet). Next P2 turn: read the P2:TV review; (c) grade_trial.py review-mode verdict; then batch 2 (Cube first).
+
 **18 Nov 04:20 UTC, 681w (cloud, v0.6.74 turn):** H16 Bar window - the dock keys' names were cramped at x1.3 ("Achievements"
 broke inside the word in the fixed 78 dp column). Each key now takes the widest word's width + 6 dp (>= 78 dp), the name fills
 its key; BarDockLabels681wTest 2/2 (fails on the old code), Readability476 15, WinFocus 448 PASS (cloud). HW-24 extended (Bar x1.3).

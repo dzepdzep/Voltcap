@@ -276,8 +276,8 @@
      "what": "Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay",
      "kind": "app",
      "impl": false,
-     "note": "partial - 678m: opens on the new unlocks (no scroll past them, code + unit test); animations not started",
-     "unit": "AchNewUnlocksOnOpen678mTest PASS (Robolectric, cloud)",
+     "note": "partial - 678m: opens on the new unlocks (no scroll past them, code + unit test); 681y: progress (battery / trophy header / bar) counts each new unlock as it locks in and fills up to it, the stage follows the motion speed (Off = all at once) - code + unit test; reveal / trophy redesign not started",
+     "unit": "AchNewUnlocksOnOpen678mTest + AchProgressCount681yTest PASS (Robolectric, cloud)",
      "emulator": "no",
      "device": "not run",
      "owner": "requested 17 Nov"

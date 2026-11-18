@@ -116,6 +116,27 @@ internal fun Modifier.achievementBackdrop(style: AchievementStyle, phase: Float)
 //   then one summary line: "4 achievements unlocked · 31/70 · 44% complete".
 // ---------------------------------------------------------------------------------------------------
 
+/**
+ * (681y, H12) The new-unlock stage's timing at a motion speed ([motion] = MotionLevel.scaleFactor: 0 Off / reduced motion,
+ * 0.6 Subtle, 1 Normal, 1.3 Expressive, times Android's animator scale). [badgeMs] is the tween's own length (Compose scales
+ * it); the waits around it are already scaled, so the impact and lock sounds land on the badge's impact and lock.
+ */
+internal data class UnlockStagePlan(val animate: Boolean, val leadMs: Long, val badgeMs: Int, val impactMs: Long, val lockMs: Long, val gapMs: Long)
+
+internal fun unlockStagePlan(amount: Float, motion: Float): UnlockStagePlan {
+    val badge = (1500 / amount.coerceIn(0.8f, 1.3f)).toInt()
+    if (motion <= 0f) return UnlockStagePlan(false, 0, badge, 0, 0, 0)
+    val m = motion.coerceAtMost(10f)
+    return UnlockStagePlan(true, (350 * m).toLong(), badge, (badge * 0.34f * m).toLong(), (badge * 0.62f * m).toLong(), (140 * m).toLong())
+}
+
+/** (681y, H12) The new unlocks still waiting on the stage (in its play order) once [locked] of them have locked in. */
+internal fun achStagePending(stageOrder: List<Int>, locked: Int): Set<Int> = stageOrder.drop(locked.coerceAtLeast(0)).toSet()
+
+/** (681y, H12) How many achievements the page's progress counts: the unlocked ones, less those still waiting on the stage. */
+internal fun achShownUnlocked(list: List<com.shelf.launcher.data.RaAchievementDetail>, pending: Set<Int>): Int =
+    list.count { it.isUnlocked && it.id !in pending }
+
 /** One badge in the new-unlock stage. */
 internal data class StageBadge(val id: Int, val image: String?, val title: String, val points: Int?)
 
@@ -125,6 +146,8 @@ internal fun NewUnlockStage(
     unlocked: Int,
     total: Int,
     modifier: Modifier = Modifier,
+    /** (681y) Told how many badges have locked in so far (1, 2, ... badges.size): the page's progress counts each one then. */
+    onLocked: (Int) -> Unit = {},
     /** Called once every badge has played (the caller marks them as animated then). */
     onPlayed: () -> Unit
 ) {
@@ -134,6 +157,7 @@ internal fun NewUnlockStage(
     val sounds = LocalUiSounds.current
     val withSound = com.shelf.launcher.data.AchievementLook.sounds.value
     val played by rememberUpdatedState(onPlayed)
+    val lockedIn by rememberUpdatedState(onLocked)
     // Per badge: 0 = waiting in its slot (dim), 1 = done. The badge being animated reads [t].
     var current by remember { mutableIntStateOf(-1) }
     val t = remember { Animatable(0f) }
@@ -141,22 +165,36 @@ internal fun NewUnlockStage(
     LaunchedEffect(Unit) {
         // (No endless backdrop clock: the backdrop draws nothing now, and reading it recomposed the stage every frame.)
         if (withSound) RetroFx.warm(context)
-        delay(350)
+        // (681y, H12 reduced motion: the tween below runs at the shared motion speed (MotionLevel, the root recomposer's
+        // MotionDurationScale) but the waits and the sound cues did not - with motion Off or Android's "Remove animations" the
+        // page still sat ~1.6 s per badge before its progress counted them, and at Subtle / Expressive the lock sound missed the
+        // lock. The waits now follow the same speed; at 0 every badge locks in at once, one lock sound, the summary shows.)
+        val plan = unlockStagePlan(style.amount, MotionLevel.scaleFactor)
+        if (!plan.animate) {
+            current = badges.size
+            if (withSound) RetroFx.play(context, sounds, RetroSound.LOCK, pitch = 1f)
+            sounds?.buzz(UiSound.SELECT)
+            lockedIn(badges.size)
+            finished = true
+            played()
+            return@LaunchedEffect
+        }
+        delay(plan.leadMs)
         for (i in badges.indices) {
             current = i
             t.snapTo(0f)
             // 0.00-0.14 flash · 0.14-0.34 rise & pop · 0.34 impact · 0.34-0.78 hover/hop · 0.78-1 settle & lock.
-            val total = (1500 / style.amount.coerceIn(0.8f, 1.3f)).toInt()
             launch {
-                delay((total * 0.34f).toLong())
+                delay(plan.impactMs)
                 if (withSound) RetroFx.play(context, sounds, RetroSound.FLY, pitch = 1.1f)
                 sounds?.buzz(UiSound.MOVE)
-                delay((total * 0.62f).toLong())
+                delay(plan.lockMs)
                 if (withSound) RetroFx.play(context, sounds, RetroSound.LOCK, pitch = 1f + (i % 4) * 0.06f)
                 sounds?.buzz(UiSound.SELECT)
             }
-            t.animateTo(1f, tween(total, easing = LinearEasing))
-            delay(140)
+            t.animateTo(1f, tween(plan.badgeMs, easing = LinearEasing))
+            lockedIn(i + 1)
+            delay(plan.gapMs)
         }
         current = badges.size
         finished = true

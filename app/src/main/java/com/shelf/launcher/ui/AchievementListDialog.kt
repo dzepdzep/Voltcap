@@ -132,6 +132,16 @@ fun AchievementListDialog(
     }
     var stageDone by remember { mutableStateOf(false) }
     var celebrate by remember { mutableStateOf(false) }
+    // (681y, owner H12 "progress animations": the page's progress (Power cells' battery, the trophy header, the summary bar) counted
+    // the new unlocks before the stage had shown them - the battery was already full while the badges still waited dim in their
+    // slots. It now counts each one as it locks in, and the bar / battery / percentage fill up to it at the shared motion speed;
+    // opening a page with nothing new shows the progress as it is, with no fill (old unlocks never replay).)
+    val stageOrder = remember(stageIds, achievements) {
+        achievements.filter { it.id in stageIds && it.isUnlocked }.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER).map { it.id }
+    }
+    var stageLocked by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val stagePending = if (seenKey == null) emptySet() else achStagePending(stageOrder, stageLocked)
+    val shownUnlocked = achShownUnlocked(achievements, stagePending)
     // (678m, owner 17 Nov H12 "Recently Unlocked is skipped - it auto-scrolls to the list": the page gave its opening focus to
     // the first achievement, and focusing that row scrolled the body past the new-unlocks stage above it. With new unlocks
     // waiting the page opens on the stage itself - it is in view, a controller has the focus there and ▼ goes on to the
@@ -208,7 +218,8 @@ fun AchievementListDialog(
             else -> {
                 // New unlocks since the last look: their own stage, one after another, then the summary.
                 if (stageIds.isNotEmpty() && seenKey != null) {
-                    val stage = achievements.filter { it.id in stageIds && it.isUnlocked }.sortedWith(com.shelf.launcher.data.RA_DISPLAY_ORDER)
+                    val byId = achievements.associateBy { it.id }
+                    val stage = stageOrder.mapNotNull { byId[it] }
                         .map { StageBadge(it.id, RaBadges.url(it.badgeName), it.title ?: "Achievement", it.points) }
                     if (stage.isNotEmpty() && !stageDone) {
                         val stageOpen = if (opensOnStage) Modifier.initialFocus() else Modifier
@@ -216,7 +227,8 @@ fun AchievementListDialog(
                             modifier = Modifier.focusRequester(stageFocus).then(stageOpen)
                                 .onFocusChanged { stageHasFocus = it.isFocused }
                                 .shelfFocusable(RoundedCornerShape(com.shelf.launcher.ui.theme.Ds.rLarge))
-                                .semantics { contentDescription = if (stage.size == 1) "New unlock" else "New unlocks" }) {
+                                .semantics { contentDescription = if (stage.size == 1) "New unlock" else "New unlocks" },
+                            onLocked = { n -> stageLocked = n }) {
                             com.shelf.launcher.data.AchievementSeen.markAnimated(context, seenKey, stage.map { it.id })
                             if (com.shelf.launcher.data.Features.completionCelebration.value &&
                                 com.shelf.launcher.data.AchievementSeen.takeCompletion(context, seenKey)) celebrate = true
@@ -232,22 +244,24 @@ fun AchievementListDialog(
                     )
                 }
                 when (view) {
-                    com.shelf.launcher.data.Features.AchView.POWER -> PowerHeader(achievements, showStats = false)
+                    com.shelf.launcher.data.Features.AchView.POWER -> PowerHeader(achievements, showStats = false, pending = stagePending)
                     com.shelf.launcher.data.Features.AchView.TROPHY -> TrophyHeader(
-                        icon = gameIcon, title = gameDisplayName(game.name), list = achievements
+                        icon = gameIcon, title = gameDisplayName(game.name), list = achievements, pending = stagePending
                     )
                     else -> ShelfCard {
-                    val fraction = unlockedCount.toFloat() / achievements.size
+                    val fraction by androidx.compose.animation.core.animateFloatAsState(
+                        shownUnlocked.toFloat() / achievements.size, androidx.compose.animation.core.tween(520), label = "achProgress"
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            com.shelf.launcher.data.achievementProgress(unlockedCount, achievements.size),
+                            com.shelf.launcher.data.achievementProgress(shownUnlocked, achievements.size),
                             color = ShelfTheme.colors.textPrimary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(Modifier.weight(1f))
-                        val note = if (unlockedCount >= achievements.size) "Mastered"
-                            else com.shelf.launcher.data.remainingNote(unlockedCount, achievements.size)
+                        val note = if (shownUnlocked >= achievements.size) "Mastered"
+                            else com.shelf.launcher.data.remainingNote(shownUnlocked, achievements.size)
                         if (note != null) Text(note, color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(8.dp))

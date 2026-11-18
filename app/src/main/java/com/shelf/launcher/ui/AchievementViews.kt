@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -114,10 +115,13 @@ internal val GreyMatrix = ColorFilter.colorMatrix(ColorMatrix().apply { setToSat
  *  [showStats] false (the achievement list, compact hotfix 529): the battery and its percentage only; the three stat tiles open
  *  from the list's Stats panel ([PowerStats]). */
 @Composable
-internal fun PowerHeader(list: List<RaAchievementDetail>, showStats: Boolean = true) {
+internal fun PowerHeader(list: List<RaAchievementDetail>, showStats: Boolean = true, pending: Set<Int> = emptySet()) {
     val total = list.size.coerceAtLeast(1)
-    val unlocked = list.count { it.isUnlocked }
-    val frac = unlocked.toFloat() / total
+    // (681y, H12: [pending] = new unlocks still waiting on the stage - counted once each locks in; the cells fill up to it.)
+    val unlocked = achShownUnlocked(list, pending)
+    val frac by androidx.compose.animation.core.animateFloatAsState(
+        unlocked.toFloat() / total, androidx.compose.animation.core.tween(520), label = "powerCharge"
+    )
     val accent = ShelfTheme.accent
     val full = unlocked >= list.size && list.isNotEmpty()
     val charge = if (full) Ds.gold else accent
@@ -176,9 +180,12 @@ private fun PowerStat(label: String, value: String, modifier: Modifier) {
 
 /** Trophy list: the game's icon and name, then Progress, Earned and the tier counts at the right. */
 @Composable
-internal fun TrophyHeader(icon: String?, title: String, list: List<RaAchievementDetail>) {
-    val unlocked = list.filter { it.isUnlocked }
-    val frac = if (list.isEmpty()) 0f else unlocked.size.toFloat() / list.size
+internal fun TrophyHeader(icon: String?, title: String, list: List<RaAchievementDetail>, pending: Set<Int> = emptySet()) {
+    // (681y, H12: new unlocks still waiting on the stage ([pending]) are counted - progress, earned, tiers - as each locks in.)
+    val unlocked = list.filter { it.isUnlocked && it.id !in pending }
+    val frac by androidx.compose.animation.core.animateFloatAsState(
+        if (list.isEmpty()) 0f else unlocked.size.toFloat() / list.size, androidx.compose.animation.core.tween(520), label = "trophyProgress"
+    )
     val full = list.isNotEmpty() && unlocked.size == list.size
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val narrow = maxWidth < 520.dp

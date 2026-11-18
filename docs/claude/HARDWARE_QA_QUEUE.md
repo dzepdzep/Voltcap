@@ -59,6 +59,16 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   the Xbox 360 game had (file / folder, own ROM folder or a console subfolder), to confirm it is the case covered.
 - Also (P2 batch 1, same session, ~5 min): p2review.sh on CRATE CLASSIC HUB RESUME TV at x1.0 + x1.3 (screens + recordings).
 
+### HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) - OPEN (same KONKR session as HW-24, ~3 min)
+- Device: KONKR (or RP Nova), x1.0; L1 QA app only. Build: the CI QA APK of the 681y commit or later.
+- Why not emulator: the trial has no RetroAchievements account (no real set, no new unlocks); the QA hook below needs a real set.
+- Tests: a game with an achievement set, `--ei voltcap_test_achnew 2` (678o hook) -> open its Achievements page (Power cells view):
+  on open the battery / percentage leave out the 2 new ones; each fills up as its badge locks in on the stage; after the stage the
+  percentage equals the set's real progress and the summary line agrees. Again with Settings > Motion = Off: the stage shows both
+  badges settled at once, the summary line and the full percentage at once (no waiting). Trophy list view: Earned / Progress / tier
+  counts follow the same way. A game with nothing new: no fill on open. Screen recording of the first case. Unit evidence only
+  (AchProgressCount681yTest, cloud Robolectric).
+
 ### HW-24 Channel progress pill clear of the name plate (680a, D356) - OPEN (next KONKR session)
 - Device: KONKR (where k679p13 found it), x1.0 + x1.3; L1 QA app only. Build: the CI QA APK of the 680a commit or later.
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CHAN" OWN (+ off) -> popclip.py + badgecheck (no "PROGRESS covers text"),
@@ -76,6 +86,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   one-line masthead (P-number, page name block, the game's name sliding), Fastext keys PICTURE / INFO / TROPHIES / OPTIONS on one
   line, P200 two whole rows at x1.0 and one at x1.3, D-pad Down walks the rows (not straight to the buttons), the 120-set scrolls
   far. p2review.sh run <tag> <scale> "TV" -> popclip.py. Unit evidence only (TvTeletextRoom681vRoboTest).
+  681x (049dd75 or later, same check, no extra time): each Fastext key's word stands whole in its key (no sliding) - full
+  words where they fit, PIC / INFO / TROPHIES / OPTS at x1.3; a tap on each key opens its page. Unit evidence only
+  (TvFastextKeys681xRoboTest). p2review.sh's Play guard now uses fixed strings (toybox): the log must show no 'LAUNCH blocked'.
 - Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
   new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
   real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
