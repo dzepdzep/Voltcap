@@ -33,7 +33,7 @@ dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 dump() { rm -f $F/qa_clip/$1.json; echo "$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; i=0
   while ! dr $F/qa_clip/$1.json && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done; dr $F/qa_clip/$1.json && cp $F/qa_clip/$1.json out/$1.json; }
 nav() { n=0; for k in $1; do case $k in
-    W*) ms=${k#W}; if [ "$DUMPS" = 1 ] && [ $ms -ge 800 ]; then sleep 0.6; n=$((n + 1)); dump ${run}_${L}_s$n; else sleep $(awk "BEGIN{print $ms/1000}"); fi;;
+    W*) ms=${k#W}; if [ "$DUMPS" = 1 ] && [ $ms -ge 800 ]; then sleep 0.6; n=$((n + 1)); [ "$SHOTS" = 1 ] && screencap -p out/${run}_${L}_s$n.png; dump ${run}_${L}_s$n; else sleep $(awk "BEGIN{print $ms/1000}"); fi;;
     *) wg_key_home $k;;
   esac; done; }
 WG_LOG=out/${run}_guard.txt; TAG=$run
