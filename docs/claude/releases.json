@@ -306,7 +306,7 @@
      "impl": false,
      "unit": false,
      "emulator": "no",
-     "device": "KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test), handheld HW-24 NOT TESTED",
+     "device": "KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test); Night ACHIEVED / RELEASED whole in code 681t (unit test, CI); handheld HW-24 NOT TESTED",
      "owner": "owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval"
     }
    ],

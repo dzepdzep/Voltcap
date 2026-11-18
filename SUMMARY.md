@@ -1,3 +1,16 @@
+# Update 681t (18 Nov 2026, cloud run, v0.6.74 turn) - Night window: ACHIEVED / RELEASED never break inside the word (H16)
+- Cause (owner review of the KONKR x1.3 sheet k678n13, "Night: ACHIEVED / RELEASED broken"): the stats panel's labels sat in a
+  fixed min(96 dp, 40 %) column; at x1.3 an 8-letter label in 12 sp black italic is wider than that and wrapped mid-word.
+- WinScenes.kt NightStatus: the label column takes the widest shown label's measured width + a 6 dp gap (nightLabelWidth: never
+  narrower than before, half the row at most); only when even that is too narrow the labels step down in proportion to the
+  readable minimum (nightLabelSize, fitMin = 10 sp). The achievements bar starts where the label column ends (was a fixed 96 dp).
+  Same slanted panel, italic labels, motion and order; x1.0 short-label case keeps 96 dp.
+- Tests: NightStatLabels681tTest (new: pure width / size cases + Robolectric GameWindow NIGHT at KONKR x1.3 - ACHIEVED, RELEASED,
+  SYSTEM, MAKER one line, no broken word, no overflow); Batch513Test's pinned line updated to the new call. NOT compiled or run
+  in the cloud this run: Maven Central answered 429 twice (one retry per the rules) - GitHub CI on this push is the first
+  compile + run. Static checks PASS.
+- Not done: emulator re-capture of Night x1.3; hardware NOT TESTED (HW-24 extended, KONKR). PC copy: src_copy/ui/WinScenes.kt.
+
 # Update 681s (18 Nov 2026, cloud run, P2 turn) - Record crate's own pages give the printed insert the room (x1.3 finding)
 - Cause (emulator review 44194071430, finding 1): on LINER NOTES / TRACKLIST / PRESSING NOTES the sleeve kept its full Info
   header (cover a quarter of the sleeve, the name in up to three 19 sp lines, the console line) and TRACKLIST had its own line for

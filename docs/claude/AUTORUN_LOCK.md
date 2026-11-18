@@ -1,2 +1,2 @@
-holder: cloud-run 2026-11-18T02:18:47Z
-since: 2026-11-18T02:18:47Z
+holder: none
+since: 2026-11-18T02:30:17Z

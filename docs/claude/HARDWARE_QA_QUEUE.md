@@ -78,6 +78,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   beside it: "Play game" and "Status" on ONE line each, two whole keys between the arrows, More reached by D-pad right and by a
   swipe; the key words readable (10-12 sp). pop529 POCKET OWN -> popclip.py. Also look at the home status bar's category pill:
   "PlayStation 2" slides inside a narrow pill (rule 11) - say whether that is fine or the pill should get more room.
+- Also (681t, H16, dev line 681t or later, ~1 min): Night (NIGHT) at x1.3, a game with achievements: the stats panel's
+  ACHIEVED / RELEASED / PLAY TIME labels whole (never "ACHIEVE / D"), values beside them readable, the achievements bar under
+  the values; also x1.0 looks as before. pop529 NIGHT OWN -> popclip.py. Unit evidence only (NightStatLabels681tTest, CI).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

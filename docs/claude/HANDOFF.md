@@ -47,6 +47,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 02:45 UTC, 681t (cloud, v0.6.74 turn):** Night window stats labels (ACHIEVED / RELEASED) keep whole words at x1.3:
+label column = widest label + gap (>= old 96 dp / 40 %, <= half the row), labels step down to 10 sp only if needed; the
+achievements bar follows the column (WinScenes.kt; NightStatLabels681tTest new, Batch513Test pin updated). NOT compiled in the
+cloud (Maven Central 429 twice) - CI on this push is the first compile: red on code -> fix first. HW-24 extended (Night x1.3).
+NEXT: check Verify 310 on this push. Next run = P2 turn: batch 1 finding 3 (TV room blocked launch - trace which press reached
+Play) or batch 2 (Cube first). Following v0.6.74 turn: Bar window labels cramped (H16; check it is not in the pixel-font
+branch's files: WinScenesStyled / WinScenesArcade / WinScenesConsole are), then H12 achievements animations.
+
 **18 Nov 02:10 UTC, 681s (cloud, P2 turn - the live session's last P2 push was > 1 h old):** dev line merged into
 `claude/v0674-native-pages`; batch 1 finding 1 (Record crate x1.3: the insert showed one track and a part) fixed on that branch
 (0c7ad56): compact sleeve header on the sleeve's own pages, count beside TRACKLIST, ORDER stamp on the first side's line.
