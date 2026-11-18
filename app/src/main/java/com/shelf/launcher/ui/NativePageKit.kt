@@ -114,9 +114,18 @@ internal fun Modifier.nativeBumpers(ctx: WinSceneCtx, tabs: List<WinPage> = nati
     if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
     val step = when (e.key) { Key.ButtonL1 -> -1; Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
     val to = pageStep(tabs, ctx.page, step)
-    if (to != ctx.page) ctx.open(to)
+    if (to != ctx.page) { NativePageTurn.at = android.os.SystemClock.uptimeMillis(); ctx.open(to) }
     true
 }
+
+/**
+ * P2 682a (owner 18 Nov, release-blocking: "page navigation, B, L1 / R1 and rapid inputs NEVER trigger Play unintentionally"):
+ * when the last L1 / R1 page turn happened. An A within [PAGE_TURN_PLAY_GUARD_MS] of it is for a page not yet seen - on Details
+ * the focus lands on Play - so it never starts the game (GameWindow's onPlay). After that, Play answers the first press.
+ */
+internal object NativePageTurn { @Volatile var at = 0L }
+internal const val PAGE_TURN_PLAY_GUARD_MS = 300L
+internal fun playAfterTurnAllowed(sinceTurnMs: Long): Boolean = sinceTurnMs !in 0 until PAGE_TURN_PLAY_GUARD_MS // (a clock older than the turn: no turn here)
 
 /** The list focus for a page's first row: the window's own while the page is live, a loose one for the copy that leaves. */
 @Composable

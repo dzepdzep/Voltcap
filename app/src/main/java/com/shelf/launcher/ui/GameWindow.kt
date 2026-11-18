@@ -1021,7 +1021,8 @@ internal fun GameWindow(
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
     // (Update 453: this window's identity for late A / B presses — see [GamePopup.current].)
     val winToken = remember(g.stableKey) { Any() }
-    DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
+    // (682a: a new window starts with no page turn behind it.)
+    DisposableEffect(winToken) { GamePopup.opened(winToken); NativePageTurn.at = 0L; onDispose { } }
     val onPlay: () -> Unit = {
         // (Update 467, popup gate: the left-over A release is a key's — a TOUCH on Play after opening with A was taken for
         // it and did nothing the first time (Twin layouts open on A's press). It is cleared either way.)
@@ -1029,7 +1030,10 @@ internal fun GameWindow(
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt[0]} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit
-        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt[0])) playNow()
+        else if (closingFlag[0]) GamePopup.askAgain(winToken, g)
+        // (682a: and never within a moment of an L1 / R1 page turn - qa-ok: ONEPRESS (protects Play; it answers after 300 ms))
+        else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt[0]) &&
+            playAfterTurnAllowed(android.os.SystemClock.uptimeMillis() - NativePageTurn.at)) playNow()
     }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
