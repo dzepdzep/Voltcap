@@ -73,6 +73,12 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 17:25 UTC, 682u (cloud, CI fix):** Verify 310 on 4aa599a (682t) RED on both runners: Batch513Test.
+narrowWindowsKeepWholeWords searched Night's old `WholeWordsText(value ?: "—"` text (682t made it `shown`, beside or stacked).
+Guard updated to the same intent (val shown + exactly 2 WholeWordsText(shown ...)); app unchanged. Cloud Gradle blocked (Maven
+429) - CI runs it. NEXT: check Verify 310 on this push FIRST (red -> fix). Then the turn order from 682t's NEXT below (P2 turn if
+the live session's last P2 push - e45fe3e 17:13 UTC - is > 1 h old, else H16 next windows).
+
 **18 Nov 16:50 UTC, 682t (cloud, v0.6.74 turn):** Verify 310 GREEN on 1a66808 (both runners; 682s page guard clean). Live P2
 push 15:47 UTC (< 1 h) -> v0.6.74 turn. H16 high-priority set (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar) added to
 WindowWordsSurvey682Test (all four guards, x1.0 + x1.3): two real x1.3 word breaks fixed in code - Night SYSTEM value stacks under

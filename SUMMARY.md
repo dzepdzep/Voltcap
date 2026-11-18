@@ -1,3 +1,12 @@
+# Update 682u (18 Nov 2026, cloud run) - CI red fix: Batch513Test source guard follows 682t's Night value
+- CI first: Verify 310 on 4aa599a (682t) RED on both runners, one test: Batch513Test.narrowWindowsKeepWholeWords looked for the
+  literal `WholeWordsText(value ?: "—", ...` in Night's stat row; 682t renamed it `shown` (beside the label OR stacked under it).
+  Not an app regression - the guard was outdated. Updated to the same intent, stricter: `val shown = value ?: "—"` and exactly 2
+  `WholeWordsText(shown, color = Color.White, fontSize = 15.sp` (both placements keep words whole). App code unchanged.
+- Checked: test strings verified against the source (python), static checks PASS. Cloud Gradle BLOCKED (Maven 429) - CI compiles
+  and runs it. Files: app/src/test/java/com/shelf/launcher/ui/Batch513Test.kt (cloud: edited in app/ directly).
+- Not tested: handheld (none needed).
+
 # Update 682t (18 Nov 2026, cloud run, v0.6.74 turn) - H16: Pocket Classic / Ribbon / Quest, Night, Bar under the window guards; two x1.3 word breaks fixed
 - CI first: Verify 310 on 1a66808 (682s page guard) GREEN on both runners - the 13 windows' Details / Options / Achievements
   pages are clean x1.0 / x1.3. Live P2 push 15:47 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
