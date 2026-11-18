@@ -155,6 +155,8 @@ internal fun NativeItem(
     val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     val lastH = remember { intArrayOf(-1) }
+    // (682k: a tapped row that grows - the touch screen's armed confirmation - brings itself into view too.)
+    val pressedAt = remember { longArrayOf(0L) }
     Box(
         modifier
             .then(if (focus != null) Modifier.focusRequester(focus) else Modifier)
@@ -162,7 +164,8 @@ internal fun NativeItem(
             .onSizeChanged { sz ->
                 val grew = lastH[0] >= 0 && sz.height > lastH[0]
                 lastH[0] = sz.height
-                if (grew && focused) scope.launch { kotlinx.coroutines.delay(16); bring.bringIntoView() }
+                val justPressed = android.os.SystemClock.uptimeMillis() - pressedAt[0] < 600
+                if (grew && (focused || justPressed)) scope.launch { kotlinx.coroutines.delay(16); bring.bringIntoView() }
             }
             .heightIn(min = minTouch)
             // (The copy on its way out stays focusable - disabling it handed the focus to Play for a frame on B (WinFocusRoboTest) -
@@ -170,6 +173,7 @@ internal fun NativeItem(
             .clickable(interactionSource = source, indication = null) {
                 if (!live) return@clickable
                 WinClickProbe.clicks++
+                pressedAt[0] = android.os.SystemClock.uptimeMillis()
                 sounds?.play(if (back) UiSound.BACK else UiSound.SELECT)
                 onClick()
             }

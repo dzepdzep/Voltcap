@@ -169,11 +169,22 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
         if (it == EnterExitState.Visible) 3f else 0f
     }
     val no = ttxPageNo(p).toString()
+    // (682k: the Options page's confirmation - the room's, when it shows it under the set: LocalTvConfirm.)
+    val room = LocalTvConfirm.current
+    val confirm = room?.confirm ?: rememberNativeConfirm(ctx)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(TTX_BLACK)) {
     val tight = ttxTight((maxHeight - footRoom).value)
     Column(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = if (tight) 4.dp else 6.dp, bottom = footRoom)) {
         val pageNo = "P" + no.take(typed.toInt().coerceIn(1, 3)).padEnd(3, ' ')
-        if (tight) {
+        if (p == WinPage.OPTIONS && confirm.armed != null && room?.underSet != true) {
+            // (682k: where the room has no panel under the set, the confirmation is the page's status line, in the masthead's place
+            // as a teletext set shows one; with the panel it is there - TvConfirmStrip.)
+            Column(Modifier.fillMaxWidth().background(TTX_WHITE).padding(horizontal = 4.dp, vertical = 2.dp)) {
+                Text("PRESS A AGAIN TO CONFIRM", color = TTX_RED, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 13.sp)
+                Text("MOVE AWAY TO CANCEL", color = TTX_BLUE, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 13.sp)
+            }
+            Spacer(Modifier.height(3.dp))
+        } else if (tight) {
             // One masthead line: page number, the page name on its blue block, the game's name sliding beside it (rule 11).
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(pageNo, color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
@@ -205,7 +216,7 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
         when (p) {
             WinPage.DETAILS -> TtxInfo(ctx, live, body, withConsole = tight)
             WinPage.TROPHIES -> TtxAchievements(ctx, live, body, tight)
-            WinPage.OPTIONS -> TtxOptions(ctx, live, body)
+            WinPage.OPTIONS -> TtxOptions(ctx, live, body, confirm)
             else -> ctx.pageFor(p, body, live) // (Performance: the shared page - not a teletext page yet)
         }
         // FASTEXT: the coloured page keys (a tap opens; the controller walks them with L1 / R1). Tight: one line of key words.
@@ -317,26 +328,46 @@ private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier,
 }
 
 @Composable
-private fun TtxOptions(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
+private fun TtxOptions(ctx: WinSceneCtx, live: Boolean, modifier: Modifier, confirm: NativeConfirm) {
     val focus = nativeListFocus(ctx, live)
-    val confirm = rememberNativeConfirm(ctx)
     Column(modifier.nativeScroll(TTX_WHITE)) {
         ctx.options.forEachIndexed { i, o ->
             NativeItem(onClick = { if (confirm.press(i, o.destructive)) o.onClick() }, Modifier.fillMaxWidth(), focus = if (i == 0) focus else null, live = live) { on ->
                 androidx.compose.runtime.LaunchedEffect(on) { if (!on) confirm.leave(i) }
-                val armed = confirm.armed == i
-                Column(Modifier.fillMaxWidth().background(when { o.destructive && on -> TTX_RED; on -> TTX_BLUE; else -> Color.Transparent }).padding(horizontal = 2.dp, vertical = 2.dp)) {
+                // (682k: the set's lines as tight as teletext's - at x1.3 the removing row (a two-line name and a three-line note) was
+                // taller than the list's whole room, so its last line could not be seen.)
+                Column(Modifier.fillMaxWidth().background(when { o.destructive && on -> TTX_RED; on -> TTX_BLUE; else -> Color.Transparent }).padding(horizontal = 2.dp, vertical = 1.dp)) {
                     Row {
-                        Text("%3d ".format(301 + i), color = if (o.destructive) (if (on) TTX_WHITE else TTX_RED) else TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold)
+                        Text("%3d ".format(301 + i), color = if (o.destructive) (if (on) TTX_WHITE else TTX_RED) else TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 13.sp)
                         Text(o.label.uppercase(), color = if (o.destructive && !on) TTX_RED else if (on) TTX_YELLOW else TTX_WHITE, fontSize = 11.sp, fontFamily = TTX,
-                            fontWeight = FontWeight.Bold, lineHeight = 14.sp, modifier = Modifier.weight(1f))
+                            fontWeight = FontWeight.Bold, lineHeight = 13.sp, modifier = Modifier.weight(1f))
                     }
-                    o.sub?.let { Text(it, color = TTX_WHITE.copy(alpha = 0.8f), fontSize = 10.sp, fontFamily = TTX, lineHeight = 13.sp, modifier = Modifier.padding(start = 30.dp)) }
-                    if (armed) Text("PRESS A AGAIN TO CONFIRM - MOVE AWAY TO CANCEL", color = TTX_RED, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
-                        lineHeight = 13.sp, modifier = Modifier.padding(start = 30.dp, top = 2.dp).background(TTX_WHITE).padding(horizontal = 3.dp))
+                    o.sub?.let { Text(it, color = TTX_WHITE.copy(alpha = 0.8f), fontSize = 10.sp, fontFamily = TTX, lineHeight = 12.sp, modifier = Modifier.padding(start = 30.dp)) }
+                    // (682k: an armed row's confirmation is the page's status line, in the masthead - TvTeletext.)
                 }
             }
         }
         if (ctx.options.isEmpty()) Text("NO OPTIONS ON THIS SERVICE.", color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX)
+    }
+}
+
+
+/** 682k: the TV room's confirmation for an armed removing row, shared by the set's Options page and the panel under the set. */
+internal class TvConfirmRoom(val confirm: NativeConfirm, val underSet: Boolean)
+internal val LocalTvConfirm = androidx.compose.runtime.compositionLocalOf<TvConfirmRoom?> { null }
+
+/**
+ * 682k (owner 18 Nov: "fix the cramped TV Room teletext confirmation ... completely visible at x1.0 and x1.3"): the set's
+ * screen has about three teletext lines for the options' list, so the confirmation squeezed in under the armed row was cramped
+ * and ran out of the list. Where the room has its panel under the set (Play, Back), the confirmation is a teletext strip at
+ * the top of that panel - white box, both halves on lines of their own, the panel's whole width - while the row it asks about
+ * stays lit red on the set, whole. Moving off the row disarms it and the strip goes.
+ */
+@Composable
+internal fun TvConfirmStrip(room: TvConfirmRoom?, page: WinPage) {
+    if (room == null || page != WinPage.OPTIONS || room.confirm.armed == null) return
+    Column(Modifier.fillMaxWidth().padding(bottom = 6.dp).background(TTX_WHITE).padding(horizontal = 6.dp, vertical = 3.dp)) {
+        Text("PRESS A AGAIN TO CONFIRM", color = TTX_RED, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 14.sp)
+        Text("MOVE AWAY TO CANCEL", color = TTX_BLUE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 14.sp)
     }
 }

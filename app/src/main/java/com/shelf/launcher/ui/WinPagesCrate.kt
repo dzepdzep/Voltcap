@@ -303,7 +303,8 @@ private fun CratePressingNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red:
             NativeItem(onClick = { if (confirm.press(i, o.destructive)) o.onClick() }, Modifier.fillMaxWidth(), focus = if (i == 0) focus else null, live = live) { on ->
                 androidx.compose.runtime.LaunchedEffect(on) { if (!on) confirm.leave(i) }
                 val armed = confirm.armed == i
-                Row(Modifier.fillMaxWidth().background(if (on) ink.copy(alpha = 0.07f) else Color.Transparent).padding(vertical = 4.dp),
+                // (682k, owner 18 Nov: the confirmation's last word touched the insert's edge at x1.0 - the row keeps a margin there.)
+                Row(Modifier.fillMaxWidth().background(if (on) ink.copy(alpha = 0.07f) else Color.Transparent).padding(top = 4.dp, bottom = 4.dp, end = 6.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     // The sticker: a printed round with its number (a warning mark for the ones that remove something).
                     Box(Modifier.size(22.dp).clip(CircleShape).background(if (o.destructive || on) red else ink.copy(alpha = 0.85f)), contentAlignment = Alignment.Center) {
@@ -315,8 +316,11 @@ private fun CratePressingNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red:
                             fontFamily = FontFamily.Serif, lineHeight = 18.sp)
                         o.sub?.let { WinFullText(it, color = ink.copy(alpha = 0.65f), fontSize = 11.sp, maxLines = 2, fontFamily = FontFamily.Serif, lineHeight = 14.sp) }
                         // (681b: the confirmation - printed in the sleeve's red under the line, as a warning sticker reads.)
+                        // (682k: the sticker spans the line's width inside the row's margin - one line where it fits, wrapping whole words
+                        // where it doesn't; it never meets the insert's edge or the list's scroll bar.)
                         if (armed) Text("Press A again to confirm  ·  move away to cancel", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Serif, lineHeight = 14.sp, modifier = Modifier.padding(top = 2.dp).border(1.dp, red).padding(horizontal = 4.dp, vertical = 1.dp))
+                            fontFamily = FontFamily.Serif, lineHeight = 14.sp,
+                            modifier = Modifier.fillMaxWidth().padding(top = 3.dp).border(1.dp, red).padding(horizontal = 6.dp, vertical = 2.dp))
                     }
                     if (on) Text("▸", color = red, fontSize = 14.sp, fontWeight = FontWeight.Black)
                 }

@@ -39,7 +39,8 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1}")
-        fun cases(): List<Array<Any>> = listOf(HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME)
+        // (682k: the TV room's set too - its teletext confirmation was cramped at x1.0)
+        fun cases(): List<Array<Any>> = listOf(HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME, HomeLayout.TV)
             .flatMap { l -> listOf(false, true).map { arrayOf<Any>(l, it) } }
     }
 
@@ -72,6 +73,8 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
         val before = com.shelf.launcher.data.Features.winScenes.state.value
         com.shelf.launcher.data.Features.winScenes.state.value = true
         TestHooks.scale.value = if (big) 1.3f to 1.15f else null
+        val oldRect = TvScreen.rect; val oldId = TvScreen.displayId
+        if (layout == HomeLayout.TV) { TvScreen.rect = androidx.compose.ui.geometry.Rect(97f, 117f, 314f, 265f); TvScreen.displayId = -1 }
         try {
             compose.mainClock.autoAdvance = false
             val g = Game("Probe Quest", "SNES", 1, SourceType.ROM, romPath = "/r/p.sfc")
@@ -89,8 +92,9 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
                 if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
             }
             val os = compose.onAllNodes(optionsControl).fetchSemanticsNodes()
-            assertTrue("$layout: no Options control", os.isNotEmpty())
-            compose.onAllNodes(optionsControl)[os.size - 1].performSemanticsAction(SemanticsActions.OnClick)
+            // (682k: a window without an Options control on its picture - the TV set - turns to Options with L1, as a person does)
+            if (os.isNotEmpty()) compose.onAllNodes(optionsControl)[os.size - 1].performSemanticsAction(SemanticsActions.OnClick)
+            else key(KeyEvent.KEYCODE_BUTTON_L1)
             frames(40)
             assertTrue("$layout: the Options page shows the removing row", shows("Hide from library"))
             // (opened by touch: the first D-pad press lights a row - walk down until the removing row is the lit one)
@@ -102,10 +106,34 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
             assertTrue("$layout: one A arms it - the confirmation shows", shows("again to confirm"))
             // (682h: the line that appears is whole on screen - the grown row brings itself into view, never cut by the page's edge)
             frames(30)
-            val line = compose.onAllNodes(hasText("again to confirm", substring = true, ignoreCase = true), useUnmergedTree = true)
-                .fetchSemanticsNodes(atLeastOneRootRequired = false).first()
+            val all = compose.onAllNodes(hasText("again to confirm", substring = true, ignoreCase = true), useUnmergedTree = true)
+                .fetchSemanticsNodes(atLeastOneRootRequired = false)
+            val line = all.maxBy { it.boundsInRoot.height }
             assertTrue("$layout x${if (big) "1.3" else "1.0"}: the confirmation line is cut (shown ${line.boundsInRoot.height} of ${line.size.height} px)",
                 line.boundsInRoot.height >= line.size.height - 1.5f)
+            // (682k, owner 18 Nov: "all text, controls and confirmation messages must remain completely visible at x1.0 and x1.3" -
+            // both halves of the confirmation and every word of the lit row whole, in height and width, and clear of the row's
+            // edges: TV's teletext line was cramped, the crate's "cancel" touched the insert's edge.)
+            val sc = if (big) "1.3" else "1.0"
+            assertTrue("$layout x$sc: the confirmation says how to cancel", shows("to cancel"))
+            val row = compose.onAllNodes(androidx.compose.ui.test.isFocused()).fetchSemanticsNodes(atLeastOneRootRequired = false).first()
+            // (where the confirmation must stay clear of the edges: the lit row - or, in the TV room, the panel under the set)
+            val frame = if (layout == HomeLayout.TV) TvScreen.rect!!.let { androidx.compose.ui.geometry.Rect(it.left - 6f, it.bottom + 8f, it.right + 6f, 427f) } else row.boundsInRoot
+            fun whole(part: String) {
+                val t = compose.onAllNodes(hasText(part, substring = true, ignoreCase = true), useUnmergedTree = true)
+                    .fetchSemanticsNodes(atLeastOneRootRequired = false).maxBy { it.boundsInRoot.height }
+                val b = t.boundsInRoot
+                assertTrue("$layout x$sc: \"$part\" is cut ($b of ${t.size})",
+                    b.height >= t.size.height - 1.5f && b.width >= t.size.width - 1.5f)
+                assertTrue("$layout x$sc: \"$part\" touches the edge (text $b, frame $frame)",
+                    b.left >= frame.left + 3f && b.right <= frame.right - 3f && b.top >= frame.top && b.bottom <= frame.bottom)
+            }
+            whole("again to confirm"); whole("to cancel")
+            // (the row it asks about stays readable under it: its name whole)
+            val name = compose.onAllNodes(hasText("Hide from library", substring = true, ignoreCase = true), useUnmergedTree = true)
+                .fetchSemanticsNodes(atLeastOneRootRequired = false).maxBy { it.boundsInRoot.height }
+            assertTrue("$layout x$sc: the armed row's name is cut (${name.boundsInRoot} of ${name.size})",
+                name.boundsInRoot.height >= name.size.height - 1.5f && name.boundsInRoot.width >= name.size.width - 1.5f)
             key(KeyEvent.KEYCODE_DPAD_UP)
             assertFalse("$layout: moving off cancels", shows("again to confirm"))
             n = 0
@@ -114,7 +142,7 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
             assertEquals("$layout: A A runs it once", 1, hides)
             assertEquals("$layout: the ordinary row was never run", 0, favs)
         } finally {
-            TestHooks.scale.value = null
+            TestHooks.scale.value = null; TvScreen.rect = oldRect; TvScreen.displayId = oldId
             com.shelf.launcher.data.Features.winScenes.state.value = before
         }
     }

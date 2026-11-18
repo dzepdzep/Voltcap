@@ -139,3 +139,17 @@ Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TEST
   tile / shelf / twin: A on the Back hint closed the window). Regression: WinFocusRoboTest 448, NativeConfirm681 8,
   PlayWhileClosing412, RapidPlayD135 5, NativePages681a 11, PopupNativeStorage 9, TV 681v / 681x, Crate 681s, DiscTracks673 - PASS.
 - Hardware: NOT TESTED yet (next: KONKR, quick L1 / R1 + A walk in Classic, Tiles, Crate, TV).
+
+
+## 682k - confirmation room: TV teletext and Record Crate (owner 18 Nov 12:12)
+- TV room: on the set's screen the options' list has about three teletext lines; the confirmation squeezed under the armed
+  row was cramped and ran out of the list (x1.0: 0 px of it on screen). It is now a teletext strip (white box, "PRESS A AGAIN
+  TO CONFIRM" / "MOVE AWAY TO CANCEL") at the top of the room's panel under the set (Play, Back); where there is no panel it
+  replaces the set's masthead line. The armed row stays lit red on the set. TV option rows tightened (1 dp padding, 13 / 12 sp
+  lines) so the removing row (2-line name, 3-line note) is whole at x1.3 (95 of 96 px of list).
+- Record Crate: the row keeps a 6 dp margin at its end (the scroll cue no longer meets the sticker) and the sticker spans the
+  line's width with 6 dp inside - "cancel" never touches the edge; one line where it fits, whole words where it wraps.
+- A tapped row that grows brings itself into view too (NativeItem, was focus only).
+- Tests: ConfirmRoom682kRoboTest (native text metrics, CRATE + TV, x1.0 / x1.3): both halves whole and >= 3 px from the row /
+  panel edges, the armed row's name and note whole, Fastext keys whole, A A removes once. NativeConfirm681Test now includes
+  TV and the same edge checks (D-pad walk, legacy metrics). Hardware: NOT TESTED yet.

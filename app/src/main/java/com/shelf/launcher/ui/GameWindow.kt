@@ -1614,6 +1614,9 @@ internal fun GameWindow(
                     // game's picture (they sat over its lower half, over the faces); over its foot only when there isn't.
                     val below = maxHeight - tvRect.bottom.toDp()
                     val outside = below >= 74.dp
+                    // (682k: an armed removing row's confirmation - under the set when the panel is there, else on the set's masthead.)
+                    val tvConfirm = remember(g.stableKey) { NativeConfirm() }
+                    val tvRoom = remember(tvConfirm, outside) { TvConfirmRoom(tvConfirm, underSet = outside) }
                     Box(
                         Modifier.offset(tvRect.left.toDp(), tvRect.top.toDp()).size(tvRect.width.toDp(), tvRect.height.toDp())
                             .graphicsLayer { val k = tvOn(); scaleY = 0.04f + 0.96f * k; scaleX = 0.6f + 0.4f * k; alpha = maxOf((k * 3f).coerceAtMost(1f), if (tvFlight) PREWARM_ALPHA else 0f) }
@@ -1621,7 +1624,7 @@ internal fun GameWindow(
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                     ) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
+                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners, LocalTvConfirm provides tvRoom) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
                     }
                     if (outside) Box(
                         Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
@@ -1632,7 +1635,10 @@ internal fun GameWindow(
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                             .padding(8.dp)
                     ) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
+                        androidx.compose.foundation.layout.Column {
+                            TvConfirmStrip(tvRoom, page)
+                            androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
+                        }
                     }
                     // (529s: the case on its way into the set and back.)
                     if (tvFlight && originLayer != null && origin != null) TvCaseFlyer(origin, tvRect, originLayer) { grow.value }
