@@ -267,3 +267,5 @@
 ## 2026-11-18 ~02:18-02:45 UTC - cloud run 681t (v0.6.74 turn)
 - Verify 310 GREEN on 98f46f2 (dev) and 0c7ad56 (P2). Night window stats labels (ACHIEVED / RELEASED) whole at x1.3 + test
   NightStatLabels681tTest. Gradle blocked by Maven Central 429 twice -> not compiled in the cloud; CI is the check. Lock released.
+- ~03:15 UTC 681u: CI RED on 1888e41 (the new Night test: ACHIEVED 2 lines at x1.3) -> cap 55 %, gap 4 dp; compiled + tests PASS
+  in the cloud (Maven answered). Lock released.

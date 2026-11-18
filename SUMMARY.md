@@ -1,3 +1,11 @@
+# Update 681u (18 Nov 2026, cloud run) - CI red on 681t fixed: the Night label column needed 55 % of the row at x1.3
+- Verify 310 RED on 1888e41 (681t) on code, both runners: NightStatLabels681tTest - "ACHIEVED" still took 2 lines at the KONKR
+  x1.3 (row ~135 dp; the word needs ~63 dp even at the 10 sp minimum; the 50 % cap left it 61.7 dp). The new test caught it.
+- WinScenes.kt: cap 50 % -> 55 % of the row, label gap 6 -> 4 dp, the step-down keeps 3 % spare (glyphs do not scale exactly,
+  the italic leans past the last letter). At x1.3 the labels now draw at 10.5 sp in an 80 px column, all on one line.
+- Tests (cloud, compiled this time - Maven Central answered again): NightStatLabels681tTest 3/3, Batch513Test, NightMotion529Test,
+  Airy477Test PASS; static PASS. Hardware NOT TESTED (HW-24 Night item stands). PC copy: src_copy/ui/WinScenes.kt.
+
 # Update 681t (18 Nov 2026, cloud run, v0.6.74 turn) - Night window: ACHIEVED / RELEASED never break inside the word (H16)
 - Cause (owner review of the KONKR x1.3 sheet k678n13, "Night: ACHIEVED / RELEASED broken"): the stats panel's labels sat in a
   fixed min(96 dp, 40 %) column; at x1.3 an 8-letter label in 12 sp black italic is wider than that and wrapped mid-word.

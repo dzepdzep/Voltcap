@@ -47,6 +47,10 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 03:15 UTC, 681u (cloud):** Verify 310 was RED on 1888e41 (681t): the new NightStatLabels681tTest showed ACHIEVED still on
+2 lines at x1.3 (50 % cap too narrow). Fixed: cap 55 %, gap 4 dp, 3 % spare; compiled + NightStatLabels681tTest 3/3 and related
+PASS in the cloud. NEXT: check Verify 310 on this push first; then the P2 turn below.
+
 **18 Nov 02:45 UTC, 681t (cloud, v0.6.74 turn):** Night window stats labels (ACHIEVED / RELEASED) keep whole words at x1.3:
 label column = widest label + gap (>= old 96 dp / 40 %, <= half the row), labels step down to 10 sp only if needed; the
 achievements bar follows the column (WinScenes.kt; NightStatLabels681tTest new, Batch513Test pin updated). NOT compiled in the

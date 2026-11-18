@@ -29,7 +29,7 @@ import java.time.Duration
 /**
  * 681t (H16, owner review of the KONKR x1.3 sheet k678n13: Night "ACHIEVED / RELEASED broken"): the Night window's stats
  * labels sat in a fixed 96 dp / 40 % column and broke inside the word at the KONKR's x1.3. The column now takes the widest
- * label's width (half the row at most) and the labels step down to the readable minimum only where that is still too
+ * label's width (55 % of the row at most) and the labels step down to the readable minimum only where that is still too
  * narrow - every label on one line, whole. KONKR 640 x 427 dp, QA scale font 1.3 / density x1.15.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -55,8 +55,8 @@ class NightStatLabels681tTest {
     @Test fun columnFitsTheWidestLabelWithinHalfTheRow() {
         assertEquals(96f, nightLabelWidth(60.dp, 300.dp).value, 0.01f)          // short labels: the old 96 dp
         assertEquals(48f, nightLabelWidth(30.dp, 120.dp).value, 0.01f)          // narrow row, short labels: the old 40 %
-        assertEquals(87f, nightLabelWidth(80.dp, 180.dp).value, 0.01f)          // KONKR x1.3: the widest label + its gap
-        assertEquals(75f, nightLabelWidth(120.dp, 150.dp).value, 0.01f)         // capped at half the row
+        assertEquals(85f, nightLabelWidth(80.dp, 180.dp).value, 0.01f)          // KONKR x1.3: the widest label + its gap
+        assertEquals(82.5f, nightLabelWidth(120.dp, 150.dp).value, 0.01f)       // capped at 55 % of the row
     }
 
     @Test fun labelsStepDownOnlyWhenTheyMustAndStayReadable() {
