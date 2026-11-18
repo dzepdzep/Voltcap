@@ -217,6 +217,8 @@ internal object TestHooks {
      * ordinary Voltcap ignores it, hooks file or not.
      */
     val fixtureRoms = mutableStateOf<String?>(null)
+    /** 682e: `--ez voltcap_test_anchor_off true|false` - ONLY in the isolated QA app: the Play / chip anchor rule off, for before / after shots. */
+    val anchorOff = mutableStateOf(false)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
@@ -312,6 +314,8 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        if (intent?.hasExtra("voltcap_test_anchor_off") == true && com.shelf.launcher.data.QaVariant.isolated(context))
+            anchorOff.value = intent.getBooleanExtra("voltcap_test_anchor_off", false)
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }

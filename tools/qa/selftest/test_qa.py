@@ -2468,6 +2468,40 @@ class TestGlyphsUnderFocusedWindow676s(unittest.TestCase):
         self.assertEqual(len(glyphcheck.candidates({"windows": [dict(home, focus=True)]})), 1)
 
 
+class TestAnchorCheck682e(unittest.TestCase):
+    """682e: the home's Play button and the selected category chip share one left edge (anchorcheck.py)."""
+    def _run(self, win, extra=None):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump(dict({"screen": [1280, 960], "density": 2.0, "homeLayout": "CLASSIC", "windows": [dict(win, focus=True)]}, **(extra or {})), open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "anchorcheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    def test_aligned_passes_apart_fails(self):
+        play = {"what": "play", "full": [48, 500, 200, 60], "shown": [48, 500, 200, 60], "placed": True}
+        chip = {"what": "chip", "full": [50, 600, 120, 40], "shown": [50, 600, 120, 40], "placed": True}
+        self.assertEqual(self._run({"anchors": [play, chip], "texts": []}).returncode, 0)
+        far = dict(chip, full=[300, 600, 120, 40], shown=[300, 600, 120, 40])
+        r = self._run({"anchors": [play, far], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("+126.0 dp", r.stdout)
+        left = dict(chip, full=[16, 600, 120, 40], shown=[16, 600, 120, 40])
+        self.assertEqual(self._run({"anchors": [play, left], "texts": []}).returncode, 1)
+
+    def test_missing_side_not_tested_old_build_infra_window_skipped(self):
+        play = {"what": "play", "full": [48, 500, 200, 60], "shown": [48, 500, 200, 60], "placed": True}
+        self.assertEqual(self._run({"anchors": [play], "texts": []}).returncode, 3)
+        self.assertEqual(self._run({"texts": []}).returncode, 2)
+        offscreen = {"what": "chip", "full": [-300, 600, 120, 40], "shown": [0, 0, 0, 0], "placed": True}
+        self.assertEqual(self._run({"anchors": [play, offscreen], "texts": []}).returncode, 3)
+        # a game window open over the home: not a home dump - nothing judged
+        self.assertEqual(self._run({"anchors": [play], "texts": []}, {"popupGame": "x"}).returncode, 3)
+
+    def test_unmarked_own_play_and_chips_listed_for_review(self):
+        t = lambda s: {"text": s, "shown": [10, 10, 40, 20]}
+        r = self._run({"anchors": [], "texts": [t("Play"), t("All")]})
+        self.assertIn("REVIEW", r.stdout)
+
+
 class TestStatusCheck677d(unittest.TestCase):
     """677d: status-bar texts never squeezed / cut / over each other; one profile picture per screen."""
     def _run(self, win):

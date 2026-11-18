@@ -1485,6 +1485,39 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair e4669b9 - clean (CI run 44153799854, workflow_dispatch)",
    "note": "v0.6.74 dev line after 679c"
+  },
+  {
+   "id": "qa-682c-2ca480f-ci",
+   "apk_sha256": "5063b00a7dc62b7fb59d233d6ce46df3d457cffb3466467645013b367ce21c1b",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-native-pages 2ca480f",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-native-pages 2ca480f - clean (CI run 44264347681, [qa-apk])",
+   "note": "P2 batch 1 + page-turn Play guard 682a + libapp hook 682c"
+  },
+  {
+   "id": "qa-682b-3ec7e45-ci",
+   "apk_sha256": "76b11b977f77c1406c44efe899eaa8233f6c4b1580a97c0d05d5c83e97d15741",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-rescan-fix 3ec7e45",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-rescan-fix 3ec7e45 - clean (CI run 44263366886, [qa-apk])",
+   "note": "rescan fix 681r + extra-root hook 682b"
+  },
+  {
+   "id": "qa-681r-d082e7f-ci",
+   "apk_sha256": "74e3ccf90e1acca4030b04fcd8d6e605e245ac836475669ebea7de7f615baed1",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-rescan-fix d082e7f",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-rescan-fix d082e7f - clean (CI run 44190741288, [qa-apk])",
+   "note": "rescan fix 681r"
   }
  ]
 }
