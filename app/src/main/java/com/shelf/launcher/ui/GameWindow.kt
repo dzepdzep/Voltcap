@@ -1448,6 +1448,18 @@ internal fun GameWindow(
             }
             if (qaInspect != null) TestHooks.winInspect.value = null
         }
+        // (682s, QA only: `--es voltcap_test_winpage details|options|trophies` turns to that page as its own button does -
+        // Options / Achievements through the same callbacks, so a window without the page does what its button does.)
+        val qaPage = TestHooks.winPage.value
+        LaunchedEffect(qaPage) {
+            when (qaPage) {
+                null -> return@LaunchedEffect
+                WinPage.OPTIONS -> extras.onOptions()
+                WinPage.TROPHIES -> extras.onAchievements()
+                else -> page = qaPage
+            }
+            TestHooks.winPage.value = null
+        }
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
         var turned by remember { mutableStateOf(false) }

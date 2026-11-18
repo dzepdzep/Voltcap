@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 15:40 UTC, 682s (cloud, v0.6.74 turn):** Verify 310 on fb0cd09: ubuntu-latest GREEN (682m More guard passes, 6 windows
+clean), the other runner Maven infra. Live P2 push 15:13 UTC (< 1 h) -> v0.6.74 turn. H16: WindowWordsSurvey682Test.otherPages -
+Details / Options / Achievements of the 13 windows (Hero .. Cinema; Cross achievements = home column, skipped) under both guards,
+x1.0 + x1.3, real option rows + long achievement titles; opened by the new QA page hook (TestHooks.winPage /
+voltcap_test_winpage, through the window's own callbacks). Cloud compile BLOCKED (Maven x2) - CI compiles first.
+NEXT: check Verify 310 on this push FIRST: compile error / "page did not open" -> fix the test or hook; words / parent finding
+-> a real H16 cut on a page: fix that page (test fails on the old code). Then P2 turn if the live session's last P2 push is
+> 1 h old (batch 2 is implemented by the live session - next is its review / batch 3 per NATIVE_PAGES_P2.md); else v0.6.74 turn:
+H16 next is the owner's high-priority set (Pocket Classic, Pocket Ribbon, Night, Pocket, Bar) under the same three guards, or H12
+once the owner picks.
+
 **18 Nov 14:45 UTC, 682m (cloud, v0.6.74 turn):** Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC (< 1 h) -> v0.6.74 turn.
 H16: WindowWordsSurvey682Test.morePage - the 6 of the 13 windows with More (Hero, Hero tiles, Live, Hub, Twin icons, Twin
 showcase) opened, More opened via TestHooks.winMore, both guards on what it reveals, x1.0 + x1.3 (12 cases; 14 skipped, no

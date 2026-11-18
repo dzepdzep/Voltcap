@@ -15,6 +15,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import com.shelf.launcher.LauncherUiState
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.HomeLayout
+import com.shelf.launcher.data.RaAchievementDetail
 import com.shelf.launcher.data.RaGameProgress
 import com.shelf.launcher.data.SourceType
 import org.junit.Assert.assertEquals
@@ -72,12 +73,14 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
             }
 
     /** Opens this layout's game window (first page) at this scale and settles it. */
-    private fun open() {
+    private fun open(pageFixture: Boolean = false) {
         val g = Game("Shadow of the Colossus", "PS2", 1, SourceType.ROM, romPath = "/r/s.iso")
-        val state = LauncherUiState().copy(raProgress = mapOf(g.stableKey to RaGameProgress(NumPossibleAchievements = 40, NumAchieved = 12)))
+        val state = LauncherUiState().copy(raProgress = mapOf(g.stableKey to RaGameProgress(NumPossibleAchievements = 40, NumAchieved = 12)),
+            raAchievementDetails = if (pageFixture) mapOf(g.stableKey to pageSurveyAchievements()) else emptyMap())
+        val options = if (pageFixture) pageSurveyOptions() else emptyList()
         compose.mainClock.autoAdvance = false
         compose.setContent { com.shelf.launcher.ui.theme.ShelfLauncherTheme {
-            GameWindow(layout, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}) } }
+            GameWindow(layout, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}, options = options) } }
         frames(240)
     }
 
@@ -172,9 +175,71 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         report("more_findings.txt", "H16 MORE", found, " More")
         assertTrue("$layout x$scale H16 More findings:\n" + found.joinToString("\n"), found.isEmpty())
     }
+
+    /**
+     * 682s (H16, the windows' other pages - the k678n13 sheet's last column): Details, Options and Achievements of each of the
+     * 13 windows (shared expanded page or the window's own - Twin icons / Twin showcase draw theirs on the touch screen), opened
+     * as their own buttons do (TestHooks.winPage -> the window's own callbacks), with the app's real option labels (the long
+     * "Sync, second screen, artwork, look ..." line, a destructive row) and an achievement list with long titles. The same two
+     * guards run on each page. Proof the page turned: texts appear that the first page did not show (printed). Cross's
+     * achievements open as the home menu's own column (outside the window) and are not part of this survey.
+     * Findings: h16-survey/page_findings.txt.
+     */
+    @Test fun otherPages() {
+        TestHooks.scale.value = scale to (if (scale > 1f) 1.15f else 1f)
+        val found = mutableListOf<String>()
+        try {
+            open(pageFixture = true)
+            val first = texts().map { it.layoutInput.text.text }.toSet()
+            // (Cross: with "achievements as the menu's own column" on (the default) its achievements open on the home screen,
+            // outside the window - CrossTrophies.kt, not this window's page.)
+            val pages = listOf(WinPage.DETAILS, WinPage.OPTIONS) + (if (crossTrophiesOn(layout)) emptyList() else listOf(WinPage.TROPHIES))
+            for (p in pages) {
+                TestHooks.winPage.value = p
+                frames(120)
+                val shown = texts().map { it.layoutInput.text.text }.toSet()
+                val revealed = shown - first
+                assertTrue("$layout x$scale: the $p page did not open (no new text; shown: $shown)", revealed.isNotEmpty())
+                println("H16 PAGE $layout x$scale $p revealed: $revealed")
+                found += wordFindings().map { "$p words: $it" } + clipFindings().map { "$p parent: $it" }
+                TestHooks.winPage.value = WinPage.MAIN
+                frames(120)
+            }
+        } finally { TestHooks.scale.value = null; TestHooks.winPage.value = null }
+        report("page_findings.txt", "H16 PAGES", found.distinct(), " pages")
+        assertTrue("$layout x$scale H16 page findings:\n" + found.distinct().joinToString("\n"), found.isEmpty())
+    }
 }
 
+/** 682s: the app's own option rows (LauncherScreen's list for a ROM game) and achievements with long titles, for the page survey. */
+internal fun pageSurveyOptions(): List<WinOption> = listOf(
+    WinOption("Add to favorites") {},
+    WinOption("Game settings", "Sync, second screen, artwork, look — for this game") {},
+    WinOption("Music", "Music of its own while you're on it") {},
+    WinOption("Guide", "Walkthrough that follows where you are") {},
+    WinOption("Emulator for PlayStation 2", "Which app — and core — runs this console") {},
+    WinOption("Achievement matching", "Hash, custom hash or game ID") {},
+    WinOption("Remove shortcut", "Takes it out of Voltcap (the game stays in its app)", destructive = true) {},
+)
+
+internal fun pageSurveyAchievements(): List<RaAchievementDetail> = listOf(
+    RaAchievementDetail(1, "The Colossus of the Forbidden Lands", "Defeat the first colossus without losing your grip on its fur", 10, null, null, "2026-11-01 10:00:00", null, 41.5f, 1),
+    RaAchievementDetail(2, "Unbreakable", "Finish a fight without being knocked down", 25, null, "missable", null, null, 3.2f, 2),
+    RaAchievementDetail(3, "Wanderer", "Ride across the whole bridge", 5, null, null, null, null, null, 3),
+)
+
 class SurveyRule682Test {
+    /** 682s: the QA page request names exactly the window's pages; anything else is no request. */
+    @Test fun theQaPageRequestNamesTheWindowsPages() {
+        assertEquals(WinPage.DETAILS, qaWinPage("details"))
+        assertEquals(WinPage.OPTIONS, qaWinPage(" Options "))
+        assertEquals(WinPage.TROPHIES, qaWinPage("achievements"))
+        assertEquals(WinPage.TROPHIES, qaWinPage("trophies"))
+        assertEquals(WinPage.MAIN, qaWinPage("main"))
+        assertEquals(null, qaWinPage("perf"))
+        assertEquals(null, qaWinPage(""))
+    }
+
     /** 683: what counts as a parent cutting a text's glyphs - box (l, t, r, b), inked size (w, h), visible part. */
     @Test fun aParentCutIsAWholePixelOfInkOutsideTheVisibleBounds() {
         // 'Achievements' 90 x 18 box full of ink, a clipping card shows 0..70 of it -> 20 px of glyphs cut on the right

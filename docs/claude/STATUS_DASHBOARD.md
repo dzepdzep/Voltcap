@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682m · 2026-11-18 14:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4460aa3: GREEN · effort: medium
+**1. LATEST UPDATE** - 682s · 2026-11-18 15:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on fb0cd09: GREEN on ubuntu-latest (other runner: Maven download error, infra) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now also open the More section of the six game windows that have one (Hero, Hero tiles, Live, Hub, Twin icons, Twin showcase), at normal and large text size. Nothing in the app changed; the first result comes from the GitHub build.
+**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now also open the Details, Options and Achievements pages of the 13 game windows (Hero to Cinema) at normal and large text size, with real long option and achievement names. A small test-only switch lets QA open those pages directly; nothing users see changed.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Check the More-section result on GitHub (fix any real cut text); then: Native pages batch 2 (Cube first); Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix)
+**5. WORKING ON NEXT** - now: Check the page-check result on GitHub (fix any real cut text); then: Native pages: review of batch 2 / batch 3; Same checks for Pocket Classic, Pocket Ribbon, Night, Pocket, Bar
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

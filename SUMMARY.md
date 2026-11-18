@@ -1,3 +1,20 @@
+# Update 682s (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the 13 windows' Details / Options / Achievements pages checked too
+- CI first: Verify 310 on fb0cd09 (682m More guard): ubuntu-latest GREEN (full suite, morePage included); ubuntu-24.04 = Maven
+  "Could not find robolectric 4.16" (infra). Live P2 push 15:13 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
+- WindowWordsSurvey682Test.otherPages: each of the 13 windows (Hero .. Cinema) at KONKR size x1.0 / x1.3 turns to Details,
+  Options and Achievements as its own buttons do, with the app's real option rows (long "Game settings" line, a destructive row)
+  and three achievements with long titles; both guards (word broken / cut at its box; text cut by a clipping parent) run on each
+  page. Proof the page turned: new texts appear (printed). Cross's achievements open as the home menu's own column (outside the
+  window) - not surveyed here. Findings -> app/build/reports/h16-survey/page_findings.txt.
+- QA hook (app, QA-gated like voltcap_test_winmore): TestHooks.winPage / `--es voltcap_test_winpage details|options|trophies|main`
+  -> GameWindow turns the page through the window's own callbacks (Options / Achievements as their buttons). qaWinPage parser
+  pinned by SurveyRule682Test. No user-facing change.
+- Checks: static checks PASS. Cloud compile BLOCKED (Maven resolution of kotlin-build-tools-impl, x2) - NOT compiled here; CI's
+  Verify 310 compiles and runs it (red -> next run fixes first: a finding = a real H16 fix; "page did not open" = test problem).
+  Handheld NOT TESTED.
+- Copy: app/src/main/java/com/shelf/launcher/ui/TestHooks.kt, app/src/main/java/com/shelf/launcher/ui/GameWindow.kt,
+  app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt.
+
 # Update 682m (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the More half of the 6 windows that have More checked too (test only)
 - CI first: Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
 - WindowWordsSurvey682Test.morePage: of the 13 windows (Hero .. Cinema) the six with a More key (MORE_SCENES: Hero, Hero tiles,
