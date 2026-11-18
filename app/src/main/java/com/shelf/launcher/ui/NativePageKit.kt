@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
@@ -155,9 +158,20 @@ internal fun NativeItem(
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
     LaunchedEffect(focused) { if (focused) sounds?.play(UiSound.MOVE) }
+    // (682h, emulator review 44272567211: an armed removing row - and an opened achievement - grows a line under it; at the
+    // list's bottom that line was cut by the page's edge. A focused row that grows brings itself whole into view again.)
+    val bring = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val lastH = remember { intArrayOf(-1) }
     Box(
         modifier
             .then(if (focus != null) Modifier.focusRequester(focus) else Modifier)
+            .bringIntoViewRequester(bring)
+            .onSizeChanged { sz ->
+                val grew = lastH[0] >= 0 && sz.height > lastH[0]
+                lastH[0] = sz.height
+                if (grew && focused) scope.launch { kotlinx.coroutines.delay(16); bring.bringIntoView() }
+            }
             .heightIn(min = minTouch)
             // (The copy on its way out stays focusable - disabling it handed the focus to Play for a frame on B (WinFocusRoboTest) -
             // but its press does nothing.)

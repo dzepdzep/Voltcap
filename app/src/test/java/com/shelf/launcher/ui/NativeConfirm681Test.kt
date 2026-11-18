@@ -77,8 +77,10 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
             val g = Game("Probe Quest", "SNES", 1, SourceType.ROM, romPath = "/r/p.sfc")
             compose.setContent {
                 GameWindow(layout, g, LauncherUiState(), emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {},
-                    options = listOf(WinOption("Add to favorites") { favs++ },
-                        WinOption("Hide from library", "Takes it off your library - nothing is deleted", destructive = true) { hides++ }))
+                    // (682h: enough rows that the removing one sits at the bottom of a list that scrolls)
+                    options = listOf(WinOption("Add to favorites") { favs++ }) +
+                        (1..7).map { WinOption("Probe setting $it", "A line about it") { favs++ } } +
+                        WinOption("Hide from library", "Takes it off your library - nothing is deleted", destructive = true) { hides++ })
             }
             frames(150)
             if (compose.onAllNodes(optionsControl).fetchSemanticsNodes().isEmpty()) {
@@ -93,15 +95,21 @@ class NativeConfirm681Test(private val layout: HomeLayout, private val big: Bool
             assertTrue("$layout: the Options page shows the removing row", shows("Hide from library"))
             // (opened by touch: the first D-pad press lights a row - walk down until the removing row is the lit one)
             var n = 0
-            while (!onRemoving() && n++ < 5) key(KeyEvent.KEYCODE_DPAD_DOWN)
+            while (!onRemoving() && n++ < 14) key(KeyEvent.KEYCODE_DPAD_DOWN)
             assertTrue("$layout: the removing row takes the focus; lit ${focusedWords()}", onRemoving())
             key(KeyEvent.KEYCODE_DPAD_CENTER)
             assertEquals("$layout: one A on a removing row must not run it", 0, hides)
             assertTrue("$layout: one A arms it - the confirmation shows", shows("again to confirm"))
+            // (682h: the line that appears is whole on screen - the grown row brings itself into view, never cut by the page's edge)
+            frames(30)
+            val line = compose.onAllNodes(hasText("again to confirm", substring = true, ignoreCase = true), useUnmergedTree = true)
+                .fetchSemanticsNodes(atLeastOneRootRequired = false).first()
+            assertTrue("$layout x${if (big) "1.3" else "1.0"}: the confirmation line is cut (shown ${line.boundsInRoot.height} of ${line.size.height} px)",
+                line.boundsInRoot.height >= line.size.height - 1.5f)
             key(KeyEvent.KEYCODE_DPAD_UP)
             assertFalse("$layout: moving off cancels", shows("again to confirm"))
             n = 0
-            while (!onRemoving() && n++ < 5) key(KeyEvent.KEYCODE_DPAD_DOWN)
+            while (!onRemoving() && n++ < 14) key(KeyEvent.KEYCODE_DPAD_DOWN)
             key(KeyEvent.KEYCODE_DPAD_CENTER); key(KeyEvent.KEYCODE_DPAD_CENTER)
             assertEquals("$layout: A A runs it once", 1, hides)
             assertEquals("$layout: the ordinary row was never run", 0, favs)

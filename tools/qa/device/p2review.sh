@@ -27,7 +27,7 @@ qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Wi
 # (681x: the old ERE's [^]] bracket did not match under the device's toybox grep - the TV dump had Play focused and A was
 # pressed. One node per line (split on '{'; a node holds no nested object), then fixed-string matches only.)
 # (682f) the D-pad is on the "Hide from library" option row (QaClip: a focused node whose label carries it)
-onhide() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -qF 'Hide from library'; }
+onhide() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -qiF 'Hide from library'; } # (682h: -i, Hub / TV print it in capitals)
 playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"label":"Play",' | grep -F '"kind":"control",' | grep -qF '"focused":true'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 . /data/local/tmp/rec.sh 2>/dev/null
@@ -98,9 +98,11 @@ run)
       else
         k BUTTON_A 1.0; shot ${n}_app_armed
         # (claimed only when the dump shows the confirmation line - text, not the log's hope)
-        if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${n}_app_armed.json 2>/dev/null; then
+        # (682h: the dumps are kept as $O/${TAG}_<name>.json - review 44272567211 read the wrong name and called a shown
+        # confirmation missing)
+        if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_${n}_app_armed.json 2>/dev/null; then
           k DPAD_UP 0.9; shot ${n}_app_disarmed
-          if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${n}_app_disarmed.json 2>/dev/null; then log "$lay: FAIL - the confirmation stayed after moving off"
+          if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_${n}_app_disarmed.json 2>/dev/null; then log "$lay: FAIL - the confirmation stayed after moving off"
           else log "$lay: destructive row armed (confirmation shown) and left (cancelled; never confirmed)"; fi
         else log "$lay: FAIL - A on 'Hide from library' showed no confirmation"; fi
       fi
