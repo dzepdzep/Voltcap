@@ -47,6 +47,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 02:10 UTC, 681s (cloud, P2 turn - the live session's last P2 push was > 1 h old):** dev line merged into
+`claude/v0674-native-pages`; batch 1 finding 1 (Record crate x1.3: the insert showed one track and a part) fixed on that branch
+(0c7ad56): compact sleeve header on the sleeve's own pages, count beside TRACKLIST, ORDER stamp on the first side's line.
+CrateInsertRoom681sRoboTest 4/4 + crate-related suites PASS in the cloud; Info unchanged. Emulator re-capture + owner look pending.
+Dev-line CI GREEN on b0bc839.
+NEXT: check Verify 310 on this push and on 0c7ad56 (P2) - red on code -> fix first. Next run = v0.6.74 turn: item 7 H12
+achievements animations or more H16 windows (Bar labels cramped, Night ACHIEVED / RELEASED) if they don't touch the pixel-font
+branch's files. Next P2 turn: finding 3 (TV room blocked launch - trace which press reached Play) or batch 2 (Cube first).
+
 **18 Nov 00:20 UTC, 681q (cloud):** Verify 310 RED on f303833 (681p) = infra: Maven Central 429 on ubuntu-latest, the 24.04 image
 passed every test. Fixed in CI: tools/ci/retry_infra.py re-runs Gradle only after a package-server 429 / 5xx with no code failure
 in the output (selftest TestCiRetryInfra681q 4, 211/211). App unchanged. 681p's code itself was green on the other runner.

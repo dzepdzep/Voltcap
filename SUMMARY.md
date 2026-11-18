@@ -1,3 +1,18 @@
+# Update 681s (18 Nov 2026, cloud run, P2 turn) - Record crate's own pages give the printed insert the room (x1.3 finding)
+- Cause (emulator review 44194071430, finding 1): on LINER NOTES / TRACKLIST / PRESSING NOTES the sleeve kept its full Info
+  header (cover a quarter of the sleeve, the name in up to three 19 sp lines, the console line) and TRACKLIST had its own line for
+  the count + ORDER stamp: at x1.3 the insert showed one track and part of the next.
+- Branch claude/v0674-native-pages (0c7ad56, after merging the dev line 681p-681q into it): WinScenesMore.kt RecordSleeve - on the
+  sleeve's own pages a compact header (crateHeader: thumbnail 0.08 of the sleeve, animated with Motion Off respected; page name;
+  the game's name on one line that fits / slides - never cut; no console line, Info and FORMAT carry it); Info unchanged.
+  WinPagesCrate.kt - the count is printed beside TRACKLIST ("TRACKLIST · 8 / 12", crateHeaderName); the ORDER stamp sits on the
+  first side's line (FlowRow: a long order name moves it below, never squeezed), 26 dp touch (>= 24 dp), still the first D-pad stop.
+- Tests (cloud, compiled): CrateInsertRoom681sRoboTest 4/4 (new: 3 whole tracks at x1.0, 2 at x1.3 - a header still smaller than
+  the old one failed with 1 whole at x1.3); NativePages681aTest 11/11, NativeConfirm681Test 8/8, AchFirstRowRoboTest CRATE 6/6,
+  WinFocusRoboTest 448 (39 skipped as before), ShelfTextRoboTest 264/264; static PASS.
+- Not done: emulator re-capture of the crate pages; hardware NOT TESTED; owner look pending (batch 1 review). Not merged into the
+  dev line (P2 rule). PC copy (only once the owner approves batch 1): src_copy/ui/WinScenesMore.kt, src_copy/ui/WinPagesCrate.kt.
+
 # Update 681q (18 Nov 2026, cloud run) - CI: a Maven Central 429 no longer turns Verify 310 red (retry on server errors only)
 - Cause: Verify 310 on f303833 (681p) failed on ubuntu-latest in :app:mergeDebugUnitTestManifest - "Could not HEAD ... compose
   plugin 2.2.10 jar. Received status code 429 from server: Too Many Requests"; ubuntu-24.04 passed the full suite on the same
