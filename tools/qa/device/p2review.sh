@@ -23,6 +23,8 @@ shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$
   i=0; while ! dr $F/qa_clip/${TAG}_$1.json && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
   dr $F/qa_clip/${TAG}_$1.json && cp $F/qa_clip/${TAG}_$1.json $O/ || log "dump missing: $1"; }
 qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Window #.*$P" | grep -c "isVisible=true"; }
+# 0 when the dump [1] has the window's Play control focused (a focused node labelled Play), i.e. A would start the game.
+playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | grep -qE '"label":"Play","kind":"control","full":\[[^]]*\],"shown":\[[^]]*\],"focused":true'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 . /data/local/tmp/rec.sh 2>/dev/null
 pick() { logcat -d -s VoltcapQA | grep -F "$1" | head -1 | sed 's/.*game=//' | tr -d '\r'; }
@@ -75,9 +77,14 @@ run)
     if openw $lay ${n}_app; then
       k BUTTON_L1 1.2; shot ${n}_app_options
       for i in 1 2 3 4 5 6 7 8 9 10; do k DPAD_DOWN 0.5; done; sleep 0.6; shot ${n}_app_options_last
-      k BUTTON_A 1.0; shot ${n}_app_armed
-      k DPAD_UP 0.9; shot ${n}_app_disarmed
-      k BUTTON_B 1.2; k BUTTON_B 1.4; log "$lay: destructive row armed and left (never confirmed)"
+      # (681v, review 44194071430: the App category did not take, the window was on a ROM game with 9 options, ten Downs left the
+      # list for the buttons and this A pressed Play - the QA app blocked the launch. A is pressed only on a focused option row.)
+      if playfocused ${TAG}_${n}_app_options_last; then log "$lay: focus left the options for Play - A NOT pressed (armed confirmation NOT TESTED)"
+      else
+        k BUTTON_A 1.0; shot ${n}_app_armed
+        k DPAD_UP 0.9; shot ${n}_app_disarmed; log "$lay: destructive row armed and left (never confirmed)"
+      fi
+      k BUTTON_B 1.2; k BUTTON_B 1.4
     fi
     A --es voltcap_test_category ALL; sleep 1.5
     # Motion Off: the walk again, recorded - page changes immediate.

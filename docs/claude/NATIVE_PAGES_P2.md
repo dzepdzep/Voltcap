@@ -68,4 +68,15 @@ name, the name on one sliding line, no console line); the count sits beside TRAC
 (wraps below on a long order name). CrateInsertRoom681sRoboTest: 3 whole tracks at x1.0, 2 at x1.3 (was 1 + part); Info unchanged.
 Needs an emulator re-capture + the owner's look. (2) The armed destructive confirmation is still NOT captured on screen - the App category
 did not take in the script, so the window opened on a ROM game; behaviour is covered by NativeConfirm681Test 8/8 only.
-(3) TV room: one blocked launch per scale during the walk (QA app blocked it, nothing started) - trace which press reached Play.
+(3) TV room: one blocked launch per scale during the walk (QA app blocked it, nothing started) - trace which press reached Play. -> TRACED 681v (cloud, 18 Nov, from the run's own layout dumps): the App category did not take (finding 2), so the window was on
+a ROM game whose Options page has 9 rows; the script's ten Downs left the list for the button row (TV_app_options_last: Play focused)
+and the "arming" A pressed Play. Not an app defect: p2review.sh now presses A only when the dump shows an option row focused (else
+logs "armed confirmation NOT TESTED"). The same dumps showed a real TV defect - (4) the teletext pages had NO body on the set's
+screen: header "VOLTCAP TXT" wrapped (one letter a line at x1.3), the double-height name + two-line Fastext keys left 0 px for
+the list - P200 showed no achievement row (all rows 0 px at x1.0 and x1.3), P100 no story, and D-pad Down fell straight to the
+buttons (TV_trophies_focus: Back lit; the 120-set never scrolled). -> FIXED IN CODE 681v: under 200 dp of page height the masthead
+is one line (P-number, page name on its blue block, the game's name sliding), the console joins the Info facts, Fastext keys are
+one line of short key words (PICTURE / INFO / TROPHIES / OPTIONS), the P200 bar row stays one line (10-cell bar, ORDER key slides,
+24 dp touch), rows at the readable 10 sp with one sliding description line (A opens the whole text). Roomy windows unchanged.
+TvTeletextRoom681vRoboTest 4/4 (2 whole rows at x1.0, 1 at x1.3, masthead one line); NativePages681aTest 11, NativeConfirm681Test 8,
+AchFirstRowRoboTest 107, WinFocusRoboTest 448 (39 skipped) PASS in the cloud. Needs an emulator re-capture + the owner's look.

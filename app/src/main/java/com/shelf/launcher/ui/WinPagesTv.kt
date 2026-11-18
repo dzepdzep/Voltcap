@@ -121,6 +121,26 @@ private fun Modifier.doubleHeight(): Modifier = this.layout { m, c ->
     layout(pl.width, pl.height * 2) { pl.placeWithLayer(0, 0) { scaleY = 2f; transformOrigin = TransformOrigin(0f, 0f) } }
 }
 
+/**
+ * 681v (emulator review 44194071430, TV room on the set's own screen): the page's lines for the room it has. On the room's
+ * television (about 150 dp of picture under the controls on a 640 x 427 dp screen) the full masthead - a header that wrapped
+ * "VOLTCAP TXT" over three lines (one letter a line at x1.3), the page name, the double-height name and two-line Fastext keys -
+ * left the body no height: no achievement row, no story and no option on screen, and D-pad Down fell through to the buttons.
+ * Under [TTX_TIGHT_DP] of page height the masthead is one line (page number, the page name on its blue block, the game's name
+ * sliding beside it; the console joins the Info facts) and the Fastext keys are one line of short key words. Pure.
+ */
+internal const val TTX_TIGHT_DP = 200f
+internal fun ttxTight(pageHeightDp: Float): Boolean = pageHeightDp < TTX_TIGHT_DP
+
+/** The Fastext key word for a page: the set's short key names, one line each. Pure. */
+internal fun ttxKey(p: WinPage): String = when (p) {
+    WinPage.MAIN -> "PICTURE"
+    WinPage.DETAILS -> "INFO"
+    WinPage.TROPHIES -> "TROPHIES"
+    WinPage.OPTIONS -> "OPTIONS"
+    else -> ttxPageName(p)
+}
+
 @Composable
 internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, live: Boolean, modifier: Modifier, footRoom: androidx.compose.ui.unit.Dp) {
     val anim = rememberAnimationsEnabled()
@@ -129,44 +149,67 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
         if (it == EnterExitState.Visible) 3f else 0f
     }
     val no = ttxPageNo(p).toString()
-    Column(modifier.background(TTX_BLACK).padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = footRoom)) {
-        // The header: page number (typed), the service, the console.
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("P" + no.take(typed.toInt().coerceIn(1, 3)).padEnd(3, ' '), color = TTX_WHITE, fontSize = 12.sp, fontFamily = TTX, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.width(8.dp))
-            Text("VOLTCAP TXT", color = TTX_YELLOW, fontSize = 12.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            Text(ctx.console.uppercase(), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX)
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(TTX_BLACK)) {
+    val tight = ttxTight((maxHeight - footRoom).value)
+    Column(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = if (tight) 4.dp else 6.dp, bottom = footRoom)) {
+        val pageNo = "P" + no.take(typed.toInt().coerceIn(1, 3)).padEnd(3, ' ')
+        if (tight) {
+            // One masthead line: page number, the page name on its blue block, the game's name sliding beside it (rule 11).
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(pageNo, color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                Spacer(Modifier.width(4.dp))
+                Text(ttxPageName(p), color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false,
+                    modifier = Modifier.background(TTX_BLUE).padding(horizontal = 4.dp, vertical = 1.dp))
+                Spacer(Modifier.width(6.dp))
+                WinFullText(ctx.name.uppercase(), color = TTX_YELLOW, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1,
+                    modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(3.dp))
+        } else {
+            // The header: page number (typed), the service, the console (one line - the console slides when it is long).
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(pageNo, color = TTX_WHITE, fontSize = 12.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                Spacer(Modifier.width(8.dp))
+                Text("VOLTCAP TXT", color = TTX_YELLOW, fontSize = 12.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+                Spacer(Modifier.width(8.dp))
+                WinFullText(ctx.console.uppercase(), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, maxLines = 1,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End, modifier = Modifier.weight(1f))
+            }
+            Text(ttxPageName(p), color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 3.dp).fillMaxWidth().background(TTX_BLUE).padding(horizontal = 4.dp, vertical = 1.dp))
+            Text(ctx.name.uppercase(), color = TTX_YELLOW, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 13.sp,
+                modifier = Modifier.padding(top = 3.dp).doubleHeight())
+            Spacer(Modifier.height(4.dp))
         }
-        Text(ttxPageName(p), color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 3.dp).fillMaxWidth().background(TTX_BLUE).padding(horizontal = 4.dp, vertical = 1.dp))
-        Text(ctx.name.uppercase(), color = TTX_YELLOW, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, lineHeight = 13.sp,
-            modifier = Modifier.padding(top = 3.dp).doubleHeight())
-        Spacer(Modifier.height(4.dp))
         val body = Modifier.weight(1f).fillMaxWidth()
         when (p) {
-            WinPage.DETAILS -> TtxInfo(ctx, live, body)
-            WinPage.TROPHIES -> TtxAchievements(ctx, live, body)
+            WinPage.DETAILS -> TtxInfo(ctx, live, body, withConsole = tight)
+            WinPage.TROPHIES -> TtxAchievements(ctx, live, body, tight)
             WinPage.OPTIONS -> TtxOptions(ctx, live, body)
             else -> ctx.pageFor(p, body, live) // (Performance: the shared page - not a teletext page yet)
         }
-        // FASTEXT: the coloured page keys (a tap opens; the controller walks them with L1 / R1).
+        // FASTEXT: the coloured page keys (a tap opens; the controller walks them with L1 / R1). Tight: one line of key words.
         Row(Modifier.fillMaxWidth().padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             ttxFastext(ctx.pages).forEach { (c, pg) ->
-                Text(if (pg == WinPage.MAIN) "PICTURE" else ttxPageName(pg), color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
-                    lineHeight = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.weight(1f).then(if (pg == p) Modifier.border(1.dp, c) else Modifier)
-                        .pointerInput(pg, live) { detectTapGestures { if (live) { if (pg == WinPage.MAIN) ctx.setPage(WinPage.MAIN) else ctx.open(pg) } } }
-                        .padding(vertical = 1.dp))
+                val key = Modifier.weight(1f).then(if (pg == p) Modifier.border(1.dp, c) else Modifier)
+                    .pointerInput(pg, live) { detectTapGestures { if (live) { if (pg == WinPage.MAIN) ctx.setPage(WinPage.MAIN) else ctx.open(pg) } } }
+                    .padding(vertical = 1.dp)
+                if (tight) WinFullText(ttxKey(pg), color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1,
+                    lineHeight = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = key)
+                else Text(if (pg == WinPage.MAIN) "PICTURE" else ttxPageName(pg), color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
+                    lineHeight = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = key)
             }
         }
+    }
     }
 }
 
 @Composable
-private fun TtxInfo(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
+private fun TtxInfo(ctx: WinSceneCtx, live: Boolean, modifier: Modifier, withConsole: Boolean = false) {
     val focus = nativeListFocus(ctx, live)
     Column(modifier.nativeScroll(TTX_WHITE)) {
-        val facts = nativeFacts(ctx, setOf("Console", "Trophies"))
+        // (681v: the tight masthead has no console - it is the first fact then.)
+        val facts = nativeFacts(ctx, if (withConsole) setOf("Trophies") else setOf("Console", "Trophies"))
         facts.forEach { f ->
             Row(Modifier.fillMaxWidth()) {
                 Text(f.label.uppercase().padEnd(12, ' '), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp)
@@ -183,18 +226,21 @@ private fun TtxInfo(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
+private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier, tight: Boolean = false) {
     val t = rememberNativeTrophies(ctx)
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
+        // (681v: one line - on the set's screen the ORDER key stood one word a line (59 dp at x1.0, 96 at x1.3) beside the
+        // 16-cell bar; tight: a 10-cell bar, and the key slides on its one line where even that is too narrow.)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(ttxBar(t.earned, t.total, 16), color = TTX_GREEN, fontSize = 11.sp, fontFamily = TTX)
+            Text(ttxBar(t.earned, t.total, if (tight) 10 else 16), color = TTX_GREEN, fontSize = 11.sp, fontFamily = TTX, maxLines = 1, softWrap = false)
             Spacer(Modifier.width(6.dp))
-            Text("${t.earned}/${t.total}", color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
-                Text("ORDER " + t.order.label.uppercase(), color = if (on) TTX_BLACK else TTX_MAGENTA, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.background(if (on) TTX_MAGENTA else Color.Transparent).border(1.dp, TTX_MAGENTA).padding(horizontal = 3.dp))
+            Text("${t.earned}/${t.total}", color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+            Spacer(Modifier.weight(1f).width(6.dp))
+            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live, minTouch = if (tight) 24.dp else NATIVE_ROW_MIN.dp) { on ->
+                WinFullText("ORDER " + t.order.label.uppercase(), color = if (on) TTX_BLACK else TTX_MAGENTA, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
+                    maxLines = 1, modifier = Modifier.background(if (on) TTX_MAGENTA else Color.Transparent).border(1.dp, TTX_MAGENTA).padding(horizontal = 3.dp))
             }
         }
         Spacer(Modifier.height(3.dp))
@@ -204,17 +250,20 @@ private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier)
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
                     NativeItem(onClick = { openId = if (opened) null else ach.id }, Modifier.fillMaxWidth(), live = live) { on ->
-                        Column(Modifier.fillMaxWidth().background(if (on) TTX_BLUE else Color.Transparent).padding(horizontal = 2.dp, vertical = 2.dp)) {
+                        // (681v tight: the set's screen rows at the readable 10 sp, closer together - two whole rows at x1.0, one at x1.3.)
+                        val ts = if (tight) 10.sp else 11.sp
+                        Column(Modifier.fillMaxWidth().background(if (on) TTX_BLUE else Color.Transparent).padding(horizontal = 2.dp, vertical = if (tight) 1.dp else 2.dp)) {
                             Row(verticalAlignment = Alignment.Top) {
                                 Box(Modifier.padding(top = 2.dp).size(10.dp).background(if (earned) TTX_GREEN else Color.Transparent).border(1.dp, if (earned) TTX_GREEN else TTX_RED))
                                 Spacer(Modifier.width(5.dp))
-                                Text((ach.title ?: "UNTITLED").uppercase(), color = if (earned) TTX_YELLOW else TTX_WHITE, fontSize = 11.sp, fontFamily = TTX,
-                                    fontWeight = FontWeight.Bold, lineHeight = 14.sp, modifier = Modifier.weight(1f))
-                                Text(ach.points?.let { "${it}P" } ?: "", color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, modifier = Modifier.padding(start = 4.dp))
+                                Text((ach.title ?: "UNTITLED").uppercase(), color = if (earned) TTX_YELLOW else TTX_WHITE, fontSize = ts, fontFamily = TTX,
+                                    fontWeight = FontWeight.Bold, lineHeight = if (tight) 13.sp else 14.sp, modifier = Modifier.weight(1f))
+                                Text(ach.points?.let { "${it}P" } ?: "", color = TTX_CYAN, fontSize = ts, fontFamily = TTX, modifier = Modifier.padding(start = 4.dp))
                             }
                             ach.description?.let { d ->
                                 if (opened) Text(d, color = TTX_WHITE, fontSize = 10.sp, fontFamily = TTX, lineHeight = 13.sp, modifier = Modifier.padding(start = 15.dp))
-                                else WinFullText(d, color = TTX_WHITE.copy(alpha = 0.75f), fontSize = 10.sp, maxLines = 2, lineHeight = 13.sp, fontFamily = TTX,
+                                // (tight: one line that slides - A still opens the whole text)
+                                else WinFullText(d, color = TTX_WHITE.copy(alpha = 0.75f), fontSize = 10.sp, maxLines = if (tight) 1 else 2, lineHeight = 13.sp, fontFamily = TTX,
                                     modifier = Modifier.padding(start = 15.dp))
                             }
                             if (opened) {
