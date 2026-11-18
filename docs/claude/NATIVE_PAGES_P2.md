@@ -80,3 +80,16 @@ one line of short key words (PICTURE / INFO / TROPHIES / OPTIONS), the P200 bar 
 24 dp touch), rows at the readable 10 sp with one sliding description line (A opens the whole text). Roomy windows unchanged.
 TvTeletextRoom681vRoboTest 4/4 (2 whole rows at x1.0, 1 at x1.3, masthead one line); NativePages681aTest 11, NativeConfirm681Test 8,
 AchFirstRowRoboTest 107, WinFocusRoboTest 448 (39 skipped) PASS in the cloud. Needs an emulator re-capture + the owner's look.
+
+### Emulator review run 44233448467 (00b9c1d, "P2:TV CRATE") - EMULATOR only, read by 681w
+Crate x1.3: the insert now shows two whole tracks (681s confirmed). TV: the pages have a body. Open findings:
+(5) TV Fastext keys at equal widths slid ("PICTU / TROPH / OPTIO" at x1.3, "TROPHIE" at x1.0). -> FIXED IN CODE 681x (cloud,
+18 Nov): each tight key is as wide as its own word (measured); where the four full words cannot stand side by side the set's
+short words PIC / INFO / TROPHIES / OPTS do, each in a key of its own width (ttxKeyPlan). TvFastextKeys681xRoboTest (x1.0 /
+x1.3: every key's word laid out no wider than its key + the plan's pure cases). NOT compiled in the cloud (Maven Central 429
+twice) - CI on the push is the first compile.
+(6) p2review.sh playfocused() did not match on the device (toybox grep, the ERE's [^]] bracket): the TV app_options_last dump
+had Play focused yet A was pressed (one blocked launch per scale). -> FIXED 681x: fixed-string matches on one node per line;
+selftest TestP2ReviewPlayFocused681x 5 (the fixed-string test fails on the old function), QA selftest 216/216.
+(7) Review runs end NOT TESTED: grade_trial.py expects e529 runs (known 679a follow-up) - still open.
+Needs: an emulator re-run "P2:TV" on the 681x push, then the owner's look.

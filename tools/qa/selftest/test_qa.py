@@ -2688,5 +2688,48 @@ class TestCrateChecklist678o(unittest.TestCase):
         self.assertIn("grep -q '^PICKER' $F/voltcap_qa_screen", sh)  # (k678c: the profile picker closed before the first A)
 
 
+
+class TestP2ReviewPlayFocused681x(unittest.TestCase):
+    """681x (P2 emulator review 44233448467): p2review.sh playfocused() did not match on the device (toybox grep, the old ERE's
+    [^]] bracket) - the TV dump had Play focused and A was pressed. The check uses fixed strings only, one node per line."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def _fn(self):
+        with open(os.path.join(self.DEV, "p2review.sh")) as f:
+            line = [l for l in f if l.startswith("playfocused()")]
+        self.assertEqual(1, len(line))
+        return line[0]
+
+    def _node(self, label, on, kind="control"):
+        return {"label": label, "kind": kind, "full": [1, 2, 3, 4], "shown": [1, 2, 3, 4], "focused": on, "scroll": False, "id": 7}
+
+    def _run(self, nodes, pretty=False, write=True):
+        d = tempfile.mkdtemp()
+        if write:
+            with open(os.path.join(d, "dump.json"), "w") as f:
+                json.dump({"windows": [{"id": "w", "focus": True, "nodes": nodes}]}, f, indent=1 if pretty else None, separators=None if pretty else (",", ":"))
+        r = subprocess.run(["sh", "-c", "O=%s\n%s\nplayfocused dump" % (d, self._fn())], capture_output=True, text=True)
+        return r.returncode
+
+    def test_fixed_strings_only(self):
+        fn = self._fn()
+        self.assertNotIn("[^", fn); self.assertNotIn("grep -qE", fn); self.assertNotIn("grep -E", fn)
+
+    def test_play_focused(self):
+        self.assertEqual(0, self._run([self._node("Okami", False), self._node("Play", True), self._node("Info", False)]))
+
+    def test_play_not_focused(self):
+        # Play shown but another row holds the focus; and a focused TEXT labelled Play is not the control.
+        self.assertNotEqual(0, self._run([self._node("Play", False), self._node("Info", True)]))
+        self.assertNotEqual(0, self._run([self._node("Play", True, kind="text"), self._node("Play", False)]))
+
+    def test_other_focused_label_next_to_play(self):
+        # A focused neighbour must not lend its "focused":true to the Play node before it.
+        self.assertNotEqual(0, self._run([self._node("Play", False), self._node("Options", True)]))
+        self.assertNotEqual(0, self._run([self._node("Play game", True)]))
+
+    def test_missing_dump(self):
+        self.assertNotEqual(0, self._run([], write=False))
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

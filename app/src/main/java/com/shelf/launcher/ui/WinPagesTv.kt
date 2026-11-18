@@ -141,6 +141,26 @@ internal fun ttxKey(p: WinPage): String = when (p) {
     else -> ttxPageName(p)
 }
 
+/** 681x: the set's shorter key words, used only when the full words cannot stand whole beside each other on the one line. Pure. */
+internal fun ttxKeyShort(p: WinPage): String = when (p) {
+    WinPage.MAIN -> "PIC"
+    WinPage.OPTIONS -> "OPTS"
+    else -> ttxKey(p)
+}
+
+/**
+ * 681x (P2 emulator review 44233448467, TV room): the tight Fastext keys had equal widths, so a long word slid inside its key
+ * ("TROPHIE" at x1.0, "PICTU / TROPH / OPTIO" at x1.3) while INFO had room to spare. Each key now takes its own word's width
+ * (the keys' monospace words, measured by [width]): the full words when they all fit [avail] with the [gap]s between them, else
+ * the short words (PIC / OPTS), each still in a key of its own width. Returns the words and the keys' weights. Pure.
+ */
+internal fun ttxKeyPlan(full: List<String>, short: List<String>, width: (String) -> Float, avail: Float, gap: Float): Pair<List<String>, List<Float>> {
+    val gaps = gap * (full.size - 1).coerceAtLeast(0)
+    val fw = full.map { width(it).coerceAtLeast(1f) }
+    if (fw.sum() + gaps <= avail) return full to fw
+    return short to short.map { width(it).coerceAtLeast(1f) }
+}
+
 @Composable
 internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, live: Boolean, modifier: Modifier, footRoom: androidx.compose.ui.unit.Dp) {
     val anim = rememberAnimationsEnabled()
@@ -189,16 +209,28 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
             else -> ctx.pageFor(p, body, live) // (Performance: the shared page - not a teletext page yet)
         }
         // FASTEXT: the coloured page keys (a tap opens; the controller walks them with L1 / R1). Tight: one line of key words.
-        Row(Modifier.fillMaxWidth().padding(top = 3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            ttxFastext(ctx.pages).forEach { (c, pg) ->
-                val key = Modifier.weight(1f).then(if (pg == p) Modifier.border(1.dp, c) else Modifier)
+        // (681x: tight keys are as wide as their words - see ttxKeyPlan.)
+        val fast = ttxFastext(ctx.pages)
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 3.dp)) {
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+        val keyStyle = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold))
+        val gapPx = with(androidx.compose.ui.platform.LocalDensity.current) { 4.dp.toPx() }
+        val avail = constraints.maxWidth.toFloat()
+        val plan = androidx.compose.runtime.remember(fast, avail, gapPx, measurer, keyStyle) {
+            ttxKeyPlan(fast.map { ttxKey(it.second) }, fast.map { ttxKeyShort(it.second) },
+                { w -> measurer.measure(w, keyStyle, softWrap = false, maxLines = 1).size.width.toFloat() }, avail, gapPx)
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            fast.forEachIndexed { i, (c, pg) ->
+                val key = Modifier.weight(if (tight) plan.second[i] else 1f).then(if (pg == p) Modifier.border(1.dp, c) else Modifier)
                     .pointerInput(pg, live) { detectTapGestures { if (live) { if (pg == WinPage.MAIN) ctx.setPage(WinPage.MAIN) else ctx.open(pg) } } }
                     .padding(vertical = 1.dp)
-                if (tight) WinFullText(ttxKey(pg), color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1,
+                if (tight) WinFullText(plan.first[i], color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold, maxLines = 1,
                     lineHeight = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = key)
                 else Text(if (pg == WinPage.MAIN) "PICTURE" else ttxPageName(pg), color = c, fontSize = 10.sp, fontFamily = TTX, fontWeight = FontWeight.Bold,
                     lineHeight = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = key)
             }
+        }
         }
     }
     }

@@ -24,7 +24,9 @@ shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$
   dr $F/qa_clip/${TAG}_$1.json && cp $F/qa_clip/${TAG}_$1.json $O/ || log "dump missing: $1"; }
 qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Window #.*$P" | grep -c "isVisible=true"; }
 # 0 when the dump [1] has the window's Play control focused (a focused node labelled Play), i.e. A would start the game.
-playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | grep -qE '"label":"Play","kind":"control","full":\[[^]]*\],"shown":\[[^]]*\],"focused":true'; }
+# (681x: the old ERE's [^]] bracket did not match under the device's toybox grep - the TV dump had Play focused and A was
+# pressed. One node per line (split on '{'; a node holds no nested object), then fixed-string matches only.)
+playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"label":"Play",' | grep -F '"kind":"control",' | grep -qF '"focused":true'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 . /data/local/tmp/rec.sh 2>/dev/null
 pick() { logcat -d -s VoltcapQA | grep -F "$1" | head -1 | sed 's/.*game=//' | tr -d '\r'; }
