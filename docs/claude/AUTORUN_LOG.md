@@ -255,3 +255,7 @@
 ## 2026-11-17 ~23:18-23:55 UTC - cloud run 681p
 - Dev line CI GREEN on c342492. Live session pushed the P2 branch 22:51 -> v0.6.74 turn: H16 / D354 Pocket Quest "Play game"
   one line at x1.3 (PqPlayKeyOneLine681pTest 5/5, related tests + static PASS). HW-24 extended. Lock released.
+
+## 2026-11-18 ~00:18-00:30 UTC - cloud run 681q
+- Verify 310 RED on f303833 = Maven Central 429 (infra; other image green). CI fix: retry_infra.py (retries 429 / 5xx only,
+  never code failures), selftest 211/211, static PASS. Lock released.

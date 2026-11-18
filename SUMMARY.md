@@ -1,3 +1,18 @@
+# Update 681q (18 Nov 2026, cloud run) - CI: a Maven Central 429 no longer turns Verify 310 red (retry on server errors only)
+- Cause: Verify 310 on f303833 (681p) failed on ubuntu-latest in :app:mergeDebugUnitTestManifest - "Could not HEAD ... compose
+  plugin 2.2.10 jar. Received status code 429 from server: Too Many Requests"; ubuntu-24.04 passed the full suite on the same
+  commit. Second 429 red in a day (681r's run too): infra, not code.
+- tools/ci/retry_infra.py: runs the Gradle command, streams its output; on a non-zero exit retries (60 s, then 120 s; 3 runs at
+  most) ONLY when the output names a package-server 429 / 500 / 502-504 and shows no code failure (failing tests, "N tests
+  completed, M failed", Kotlin "e:" / javac errors, failed compile* / test*UnitTest / lint* task, watchdog stop). Every retry is a
+  public warning annotation; a real failure keeps its exit code on the first run. Wired into both Gradle steps of
+  verify-update-310.yml (inside the watchdog for the tests, so its 35 min limit still holds).
+- Tests: QA selftest TestCiRetryInfra681q 4 (the real 17 Nov log line; code failures beside a 429 never retried; the first
+  draft wrongly read "mergeDebugUnitTestManifest FAILED" as a test failure - caught and fixed); selftest 211/211; static PASS.
+  App code unchanged (nothing to compile). Takes effect on this push's CI.
+- Files: tools/ci/retry_infra.py (new), .github/workflows/verify-update-310.yml, tools/qa/selftest/test_qa.py, trackers.
+  No PC copy needed (no app sources). Hardware: none.
+
 # Update 681p (17 Nov 2026, cloud run) - Pocket Quest window: "Play game" stays on one line at x1.3 (D354, H16)
 - Cause (emulator e679r13, POCKET x1.3 beside the pulled-out disc, window ~294 dp): one-line "Play game" missed two keys to a
   view by ~10 dp, so the uniform row took its two-line keys (674c) - "Play / game" on two lines.

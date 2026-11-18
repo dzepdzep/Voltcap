@@ -2165,6 +2165,60 @@ class TestCiWatchdog673(unittest.TestCase):
         self.assertEqual(r.returncode, 3); self.assertNotIn("::error", r.stdout)
 
 
+class TestCiRetryInfra681q(unittest.TestCase):
+    """681q: tools/ci/retry_infra.py re-runs Gradle after a package-server 429 / 5xx only - never after a code failure."""
+    LOG429 = ("> Task :app:mergeDebugUnitTestManifest FAILED\nFAILURE: Build failed with an exception.\n"
+              "   > Could not HEAD 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/plugin/compose/x-2.2.10.jar'. "
+              "Received status code 429 from server: Too Many Requests\n")
+
+    def mod(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import retry_infra
+        return retry_infra
+
+    def test_the_17_nov_maven_429_is_infra(self):
+        r = self.mod()
+        self.assertEqual(r.classify(self.LOG429), ("infra", "HTTP 429 from a package server"))
+        self.assertEqual(r.classify("Could not GET 'https://dl.google.com/x.pom'. Received status code 503 from server: x")[0], "infra")
+
+    def test_code_failures_are_never_infra_even_beside_a_429(self):
+        r = self.mod()
+        for code in ("There were failing tests. See the report", "812 tests completed, 1 failed",
+                     "e: file:///a/B.kt:3:1 Unresolved reference", "> Task :app:compileDebugKotlin FAILED",
+                     "> Task :app:testDebugUnitTest FAILED", "::error title=Unit tests stopped by the watchdog::x"):
+            self.assertEqual(r.classify(self.LOG429 + code + "\n")[0], "code", code)
+        self.assertEqual(r.classify("Received status code 404 from server: Not Found")[0], None)  # a missing artifact is ours
+
+    def test_retries_only_infra_and_keeps_the_exit_code(self):
+        r = self.mod()
+        runs, slept = [], []
+        def runner(results):
+            it = iter(results)
+            def f(cmd, keep):
+                runs.append(cmd); return next(it)
+            return f
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(r.main(["--wait", "5", "--", "gradle"], runner([(1, self.LOG429), (0, "")]), slept.append), 0)
+        self.assertEqual(len(runs), 2); self.assertEqual(slept, [5.0]); self.assertIn("::warning title=Retrying", out.getvalue())
+        runs.clear(); slept.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(r.main(["--", "gradle"], runner([(1, "There were failing tests\n" + self.LOG429)]), slept.append), 1)
+        self.assertEqual((len(runs), slept), (1, []))                     # a real failure: one run, no retry
+        runs.clear()
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(r.main(["--attempts", "2", "--wait", "1", "--", "g"], runner([(1, self.LOG429)] * 2), slept.append), 1)
+        self.assertEqual(len(runs), 2); self.assertIn("::error title=Package servers still failing", out.getvalue())
+
+    def test_the_verify_workflow_uses_it_inside_the_watchdog(self):
+        with open(os.path.join(HERE, "..", "..", "..", ".github", "workflows", "verify-update-310.yml")) as fh:
+            wf = fh.read()
+        self.assertIn("watchdog.py --progress app/build/test-progress.log --min-avail-mb 1500 --limit-min 35 -- "
+                      "python3 tools/ci/retry_infra.py -- bash ./gradlew", wf)
+        self.assertIn("python3 tools/ci/retry_infra.py -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true "
+                      ":app:assembleDebug", wf)
+
+
 class TestUniformAudit673(unittest.TestCase):
     """673g (owner brief 15 Nov): the uniform-button audit finds uneven key groups, three dots, a status line drawn as a key."""
     def test_the_disc_station_keys_before_the_uniform_system(self):

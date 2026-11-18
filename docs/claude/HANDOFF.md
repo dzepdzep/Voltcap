@@ -47,6 +47,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 00:20 UTC, 681q (cloud):** Verify 310 RED on f303833 (681p) = infra: Maven Central 429 on ubuntu-latest, the 24.04 image
+passed every test. Fixed in CI: tools/ci/retry_infra.py re-runs Gradle only after a package-server 429 / 5xx with no code failure
+in the output (selftest TestCiRetryInfra681q 4, 211/211). App unchanged. 681p's code itself was green on the other runner.
+NEXT: check Verify 310 on the 681q push (red on code -> fix first; a retry warning annotation is expected only on 429s). Then the
+P2 turn of the alternation IF the live session's last P2 push (e6e16fd 23:31 UTC) is > 1 h old - batch 1 open finding: crate
+x1.3 insert (see NATIVE_PAGES_P2.md on that branch); else v0.6.74 item 7 H12 / more H16 windows (Bar labels, Night).
+
 **17 Nov 23:55 UTC, 681p (cloud, v0.6.74 turn - live session was on the P2 branch < 1 h ago):** item 4 window polish (H16) -
 D354 Pocket Quest "Play game" wrap fixed in code (one-line keys while two show, key words 12 -> readable 10 sp at large text;
 twoLineOnlyWhenAlone opt-in, other layouts unchanged). PqPlayKeyOneLine681pTest 5/5 + related PASS in the cloud. The status

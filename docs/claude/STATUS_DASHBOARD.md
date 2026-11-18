@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681p · 2026-11-17 23:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on c342492 (dev line) · effort: medium
+**1. LATEST UPDATE** - 681q · 2026-11-18 00:30 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on f303833 (Maven Central 429 on one image; the other image passed every test) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Pocket Quest's game window with larger text: "Play game" no longer breaks onto two lines when the window sits beside the pulled-out disc. The buttons keep one line each with two whole buttons in view (the row scrolls to the rest), and if needed the button words get slightly smaller, never below a readable size. Other layouts are unchanged. Checked by automatic tests; waits for the next KONKR session.
+**2. WHAT CLAUDE JUST FIXED** - The automatic build check on GitHub sometimes turned red only because the public package server answered 'too many requests' - the code itself passed on the other machine. The check now waits and tries again in that case only; a real test or compile failure still turns it red straight away. The app itself is unchanged.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: P2 native pages next batch (if the live session left it); then: achievements animations (H12); window polish (H16): Bar labels, Night
+**5. WORKING ON NEXT** - now: P2 native pages batch 1 findings (crate x1.3); then: achievements animations (H12); window polish (H16): Bar labels, Night
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
