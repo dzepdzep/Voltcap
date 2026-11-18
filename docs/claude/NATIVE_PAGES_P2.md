@@ -153,3 +153,10 @@ Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TEST
 - Tests: ConfirmRoom682kRoboTest (native text metrics, CRATE + TV, x1.0 / x1.3): both halves whole and >= 3 px from the row /
   panel edges, the armed row's name and note whole, Fastext keys whole, A A removes once. NativeConfirm681Test now includes
   TV and the same edge checks (D-pad walk, legacy metrics). Hardware: NOT TESTED yet.
+
+- 682j / 682k HARDWARE (18 Nov, QA app only, build qa-682k-6a81717-ci): nav682j.sh on KONKR (CLASSIC TILES CRATE TV) and
+  RP Classic (CLASSIC; TILES CRATE TV): R1 + A at once / 60 / 150 ms, R1 R1 + A, an L1 / R1 storm + A, R1 B A - 0 LAUNCH lines
+  in every layout; one deliberate A on Play straight after the window opens - exactly 1 (PASS 8 / 8 layout runs). Screens: the
+  turned page lights its own item (TV P100 story, crate liner notes, Tiles' Details story stop). First attempt: D359 (the
+  script's R1 + A reached the QA app's quick-settings panel on the home - Android's Wi-Fi panel opened, nothing changed;
+  fixed, re-run). NOT TESTED on hardware: the 682k confirmation strip / crate margin by eye (needs a p2review run).

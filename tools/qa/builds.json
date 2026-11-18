@@ -1518,6 +1518,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/v0674-rescan-fix d082e7f - clean (CI run 44190741288, [qa-apk])",
    "note": "rescan fix 681r"
+  },
+  {
+   "id": "qa-682k-6a81717-ci",
+   "apk_sha256": "c3362e64de551537b376cad448fa8b5fe5040e6446f2c764221a1b8101158c2c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-native-pages 6a81717",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-native-pages 6a81717",
+   "note": "rescan fix 682k"
   }
  ]
 }
