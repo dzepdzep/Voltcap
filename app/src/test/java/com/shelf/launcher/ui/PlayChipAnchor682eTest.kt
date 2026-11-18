@@ -35,4 +35,16 @@ class PlayChipAnchor682eTest {
         assertTrue(p.contains("LocalHomeHeader provides true") && p.contains("anchor.playLeftPx = x") && p.contains("homeAnchor = \"play\""))
         assertTrue(h.contains("startPadding = anchoredStart ?: e") && h.contains("anchored = anchoredStart != null") && h.contains("homeAnchor = \"chip\""))
     }
+
+    @Test fun adaptedVersionsInTheOwnLayouts() {
+        // Library: the tab you're in leads its strip (after L2) - steady - unless every tab fits (then nothing moves)
+        assertEquals(7, ChipLead.start(keep = 7, allFit = false)); assertEquals(0, ChipLead.start(7, allFit = true))
+        fun src(n: String) = java.io.File(listOf("src/main/java/com/shelf/launcher/ui/", "app/src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + n) }.first { it.exists() }.path).readText()
+        assertTrue(src("StyleLibrary.kt").contains("leadFocused = true"))
+        // Bar: the category tab on the Play button's column (6 dp, as the title), both marked for anchorcheck
+        val bar = src("StyleIconBar.kt")
+        assertTrue(bar.contains("Modifier.padding(start = 6.dp)\n            .semantics { homeAnchor = \"chip\" }") && bar.contains("homeAnchor = \"play\""))
+        // Dash: already on one column - marked so anchorcheck keeps it so
+        val dash = src("StyleDashboard.kt"); assertTrue(dash.contains("homeAnchor = \"play\"") && dash.contains("homeAnchor = \"chip\""))
+    }
 }

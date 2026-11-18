@@ -68,6 +68,12 @@ private class ChipWindow {
  * chips show. Between two windows the strip moves as one piece and a chip shows as much as it is inside the span of whole
  * chips - an incoming chip slides in from the edge and comes up as it enters, never appears whole at once.
  */
+/** 682e: where a lead-focused window starts (WholeChipRow leadFocused). Pure. */
+internal object ChipLead {
+    /** All chips fit: the window starts at the first (nothing moves). Else at the chip you're on ([keep]). */
+    fun start(keep: Int, allFit: Boolean): Int = if (allFit) 0 else keep.coerceAtLeast(0)
+}
+
 internal object ChipGlide {
     const val MS = 280
     /** QA A/B only (voltcap_test_chipglide legacy): the old instant re-layout, for a same-build before / after recording. */
@@ -114,6 +120,8 @@ internal fun WholeChipRow(
     endPadding: Dp = 0.dp,
     hintColor: Color = Color.White.copy(alpha = 0.72f),
     hintSize: TextUnit = 12.sp,
+    /** 682e: the chip you're on leads the window (the first whole chip) - a steady place - instead of being kept anywhere in it. */
+    leadFocused: Boolean = false,
     chip: @Composable (Int) -> Unit
 ) {
     val win = remember { ChipWindow() }
@@ -194,11 +202,14 @@ internal fun WholeChipRow(
         var s = win.start.coerceIn(0, (count - 1).coerceAtLeast(0))
         val keep = win.keep
         if (!win.manual && keep in 0 until count) {
-            if (keep < s) s = keep
-            while (s < keep && endFor(s) < keep) s++
+            if (leadFocused) s = ChipLead.start(keep, endFor(0) == count - 1)
+            else {
+                if (keep < s) s = keep
+                while (s < keep && endFor(s) < keep) s++
+            }
         }
-        // No empty room at the end while there are chips hidden before.
-        if (endFor(s) == count - 1) while (s > 0 && endFor(s - 1) == count - 1) s--
+        // No empty room at the end while there are chips hidden before (682e: unless the chip you're on leads).
+        if (!leadFocused && endFor(s) == count - 1) while (s > 0 && endFor(s - 1) == count - 1) s--
         win.start = s
         val e = endFor(s)
 

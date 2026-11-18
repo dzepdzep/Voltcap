@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -284,6 +285,7 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
                         val playOn = StyleNav.on(StyleNav.Zone.TOP, 0)
                         Row(
                             Modifier
+                                .semantics { homeAnchor = "play" } // (682e: anchorcheck - already on the category label's column)
                                 .graphicsLayer { val k = if (playOn) 1.08f else 1f; scaleX = k; scaleY = k }
                                 .clip(uiRounded(4.dp))
                                 .background(ShelfTheme.accent)
@@ -330,7 +332,7 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
         // (Update 315: off for this layout — Categories tile / Settings — no caption.)
         val catOn = custom.isNotBlank() || CategoryTitle.captionOn(c.state.appearance)
         if (custom.isBlank() && catOn) CategoryTitle.Native() // (Update 212: the layout's own category title.)
-        if (catOn) PanelLabel(custom.ifBlank { c.categoryLabel }, ink)
+        if (catOn) Box(Modifier.semantics { homeAnchor = "chip" }) { PanelLabel(custom.ifBlank { c.categoryLabel }, ink) }
         Spacer(Modifier.height(6.dp))
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             // Room round the cards for the glow / electric frame (it spreads ~14 dp).

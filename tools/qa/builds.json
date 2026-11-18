@@ -1518,6 +1518,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/v0674-rescan-fix d082e7f - clean (CI run 44190741288, [qa-apk])",
    "note": "rescan fix 681r"
+  },
+  {
+   "id": "qa-682e-cd5c921-ci",
+   "apk_sha256": "91952f133316703b650d6d139aa280d84119ed2a1c6e111c0505a10cb730bb0b",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-play-anchor cd5c921",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-play-anchor cd5c921 - clean (CI run 44272299405, [qa-apk])",
+   "note": "Play / category-chip anchor rule 682e"
   }
  ]
 }

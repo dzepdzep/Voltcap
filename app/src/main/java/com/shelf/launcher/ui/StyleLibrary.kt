@@ -225,7 +225,9 @@ private fun LibraryTabs(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         LibraryHint("L2", compact) { step(-1) }
         Spacer(Modifier.width(6.dp))
         // (Update 294: whole tabs only, "+N ›" for the rest, the lit one always whole — WholeChipRow.)
-        WholeChipRow(tabs.size, lit, Modifier.weight(1f), spacing = if (compact) 2.dp else 4.dp, hintSize = if (compact) 11.sp else 12.sp) { t ->
+        // (682e, owner's anchor rule - adapted: L2 keeps the row's start on the panel's column, so the tab you're in leads the strip
+        // right after it - one steady place - instead of running to the far right at the end of the list.)
+        WholeChipRow(tabs.size, lit, Modifier.weight(1f), spacing = if (compact) 2.dp else 4.dp, hintSize = if (compact) 11.sp else 12.sp, leadFocused = true) { t ->
                 val (label, icon) = tabs[t]
                 val here = t == current
                 val dpad = inTop && StyleNav.index == t

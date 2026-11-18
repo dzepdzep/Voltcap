@@ -125,7 +125,9 @@ private fun BarCategoryTab(c: StyleCtx, compact: Boolean) {
     val step by rememberUpdatedState(c.actions.category)
     val on = StyleNav.on(StyleNav.Zone.TOP, 0)
     Row(
-        Modifier.padding(start = 2.dp)
+        // (682e, owner's anchor rule: the tab - and its focus pill - starts on the Play button's column, the title's 6 dp, not 2 dp.)
+        Modifier.padding(start = 6.dp)
+            .semantics { homeAnchor = "chip" }
             .then(if (on) Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.14f)).border(1.5.dp, Color.White, CircleShape).padding(horizontal = 12.dp, vertical = 3.dp) else Modifier),
         horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp), verticalAlignment = Alignment.CenterVertically
     ) {
@@ -169,7 +171,7 @@ private fun BarTabs(icons: List<HomeShortcut>, compact: Boolean) {
     // (Update 294: whole tabs only, "+N ›" for the rest, the one you're on always whole — WholeChipRow.)
     val lit = if (StyleNav.zone == StyleNav.Zone.TOP) StyleNav.index else -1
     WholeChipRow(
-        icons.size, lit, Modifier.fillMaxWidth(), spacing = if (compact) 12.dp else 18.dp, startPadding = 2.dp,
+        icons.size, lit, Modifier.fillMaxWidth(), spacing = if (compact) 12.dp else 18.dp, startPadding = 6.dp, // (682e: Play's column)
         hintSize = if (compact) 13.sp else 15.sp
     ) { i ->
             val s = icons[i]
@@ -294,6 +296,7 @@ private fun BarTitle(c: StyleCtx, g: com.shelf.launcher.data.Game, compact: Bool
                 val playOn = StyleNav.on(StyleNav.Zone.BAR, 0)
                 Box(
                     Modifier
+                        .semantics { homeAnchor = "play" } // (682e: anchorcheck)
                         .graphicsLayer { val k = if (playOn) 1.06f else 1f; scaleX = k; scaleY = k }
                         .clip(uiRounded(8.dp)).background(if (playOn) Color.White else Color.White.copy(alpha = 0.16f))
                         .border(if (playOn) 2.dp else 1.dp, Color.White.copy(alpha = if (playOn) 1f else 0.35f), uiRounded(8.dp))
