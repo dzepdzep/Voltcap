@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 16:50 UTC, 682t (cloud, v0.6.74 turn):** Verify 310 GREEN on 1a66808 (both runners; 682s page guard clean). Live P2
+push 15:47 UTC (< 1 h) -> v0.6.74 turn. H16 high-priority set (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar) added to
+WindowWordsSurvey682Test (all four guards, x1.0 + x1.3): two real x1.3 word breaks fixed in code - Night SYSTEM value stacks under
+its label when it cannot fit beside it; SceneFactsBody values are WholeWordsText (Pocket ribbon CONSOLE fact). 18 windows clean
+(cloud compile + 144 cases). HW-24 extended (682t). Handheld NOT TESTED.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the live session's last P2 push (15:47 UTC) is > 1 h old
+(batch 2 review / batch 3 per NATIVE_PAGES_P2.md, merge the dev line into the P2 branch first); else v0.6.74 turn: H16 next
+windows not yet under the guards (the remaining 35 of 53: e.g. Classic, Tiles, Grid, Dash, Side, Spot, Library, Circuit,
+Timeline, Shelf family, Crate, Discs, Cube...) in batches of ~6, or H12 once the owner picks.
+
 **18 Nov 15:40 UTC, 682s (cloud, v0.6.74 turn):** Verify 310 on fb0cd09: ubuntu-latest GREEN (682m More guard passes, 6 windows
 clean), the other runner Maven infra. Live P2 push 15:13 UTC (< 1 h) -> v0.6.74 turn. H16: WindowWordsSurvey682Test.otherPages -
 Details / Options / Achievements of the 13 windows (Hero .. Cinema; Cross achievements = home column, skipped) under both guards,

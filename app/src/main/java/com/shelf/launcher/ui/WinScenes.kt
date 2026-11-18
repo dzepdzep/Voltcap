@@ -2056,13 +2056,28 @@ private fun NightStatus(ctx: WinSceneCtx) {
                             }) {
                             val labelW = nightLabelWidth(widestLabel, maxWidth)
                             val labelSize = nightLabelSize(widestWord, labelW)
-                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // (682t, H16 survey x1.3: "PlayStation 2" broke as "PlayStatio / n 2" - beside the label column the value
+                            // keeps ~60 dp, and its longest word needs more even at the readable minimum. Such a value goes under its
+                            // label, across the whole row; every value that fits beside its label stays there (x1.0 unchanged).)
+                            val shown = value ?: "—"
+                            val valueWord = remember(shown, dens) {
+                                val longest = shown.split(' ', '\n').maxByOrNull { it.length } ?: ""
+                                with(dens) { labelMeasurer.measure(longest, labelBase.copy(fontSize = fitMin(15.sp), fontWeight = FontWeight.Bold,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Normal), softWrap = false, maxLines = 1).size.width.toDp() }
+                            }
+                            val labelText: @Composable (Modifier) -> Unit = { m ->
                                 Text(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                    modifier = Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
+                                    modifier = m)
+                            }
+                            if (nightValueStacks(valueWord, maxWidth - labelW)) Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                                labelText(Modifier.fillMaxWidth())
+                                WholeWordsText(shown, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+                            } else Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                labelText(Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
                                 // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
                                 // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
                                 // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
-                                WholeWordsText(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                WholeWordsText(shown, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             }
                             }
                         }
@@ -2250,6 +2265,14 @@ internal fun nightLabelWidth(widest: androidx.compose.ui.unit.Dp, row: androidx.
     val base = minOf(96.dp, row * 0.4f)
     return (widest + NIGHT_LABEL_GAP + 1.dp).coerceAtLeast(base).coerceAtMost(maxOf(base, row * 0.55f))
 }
+
+/**
+ * 682t (pure, NightValueStack682tTest): a Night value goes under its label when its longest word, at the readable minimum
+ * ([fitMin] of 15 sp), is wider than the room beside the label column (2 % spare for rounding) - else it would break inside
+ * the word.
+ */
+internal fun nightValueStacks(longestWordAtMin: androidx.compose.ui.unit.Dp, beside: androidx.compose.ui.unit.Dp): Boolean =
+    longestWordAtMin.value > beside.value * 0.98f
 
 /**
  * 681t (pure): the labels' size - 12 sp while the widest word fits the column, else stepped down in proportion, never under

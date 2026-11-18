@@ -104,6 +104,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
   reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
   Unit evidence only (BarDockLabels681wTest).
+- Also (682t, H16, dev line 682t or later, ~2 min, KONKR x1.3): Night (NIGHT), a game on PlayStation 2: the SYSTEM value
+  "PlayStation 2" whole - under its label across the panel when it does not fit beside it (never "PlayStatio / n 2"); the other
+  values still beside their labels; x1.0 as before. Pocket ribbon (POCKET_RIBBON), same game, first page and More: the CONSOLE
+  fact "PlayStation 2" whole (smaller if it must, never broken inside the word). pop529 NIGHT OWN / POCKET_RIBBON OWN ->
+  popclip.py. Unit evidence only (WindowWordsSurvey682Test x1.3, NightValueStack682tTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

@@ -46,8 +46,12 @@ import java.time.Duration
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
 class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale: Float) {
     companion object {
-        /** The owner's H16 order after Pocket / Night / Bar. */
-        val LAYOUTS = listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
+        /**
+         * 682t: the owner's high-priority set first (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar - polished before the
+         * survey existed, now under the same guards), then the owner's H16 order after Pocket / Night / Bar.
+         */
+        val HIGH_PRIORITY = listOf(HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET, HomeLayout.NIGHT, HomeLayout.BAR)
+        val LAYOUTS = HIGH_PRIORITY + listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
             HomeLayout.CHAN, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.MEMCARD, HomeLayout.BUBBLES, HomeLayout.PANELS,
             HomeLayout.CINEMA)
 

@@ -1,3 +1,21 @@
+# Update 682t (18 Nov 2026, cloud run, v0.6.74 turn) - H16: Pocket Classic / Ribbon / Quest, Night, Bar under the window guards; two x1.3 word breaks fixed
+- CI first: Verify 310 on 1a66808 (682s page guard) GREEN on both runners - the 13 windows' Details / Options / Achievements
+  pages are clean x1.0 / x1.3. Live P2 push 15:47 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
+- WindowWordsSurvey682Test: the owner's high-priority set (POCKET_CLASSIC, POCKET_RIBBON, POCKET, NIGHT, BAR) added in front of
+  the 13 windows - all four guards (first page words, parent clip, More, Details / Options / Achievements) at x1.0 and x1.3.
+  First run on the old code: 3 failures, all real x1.3 breaks inside a word:
+  - Night: the SYSTEM value "PlayStation 2" -> "PlayStatio / n 2" (~60 dp beside the label column; the longest word does not
+    fit even at the readable minimum). Fix (WinScenes.kt NightStatus stat()): such a value goes under its label across the row
+    (nightValueStacks, pure, NightValueStack682tTest 3/3); values that fit stay beside their label (x1.0 unchanged).
+  - Pocket ribbon (first page and More): the CONSOLE fact "PlayStation 2" broke in the pixel font. Fix (WinScenesMore.kt
+    SceneFactsBody): both facts value texts are WholeWordsText (same size / line height; steps down to the readable minimum only
+    when the longest word does not fit) - shared by every window using the facts body.
+- Checks (cloud, compiled): WindowWordsSurvey682Test 144 (0 failed, 16 skipped = no More) - 18 windows clean; NightStatLabels681tTest
+  3/3; NightValueStack682tTest 3/3; window regression set (AchFirstRowRobo, BarDockLabels681w, Batch478/508/675r, DiscLcd673,
+  Popup421, ShelfTextRobo, WinFocusRobo) green; static checks PASS. Handheld NOT TESTED -> HW-24 (682t).
+- Files: app/src/main/java/com/shelf/launcher/ui/WinScenes.kt, ui/WinScenesMore.kt; tests WindowWordsSurvey682Test.kt,
+  NightValueStack682tTest.kt (new).
+
 # Update 682s (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the 13 windows' Details / Options / Achievements pages checked too
 - CI first: Verify 310 on fb0cd09 (682m More guard): ubuntu-latest GREEN (full suite, morePage included); ubuntu-24.04 = Maven
   "Could not find robolectric 4.16" (infra). Live P2 push 15:13 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).

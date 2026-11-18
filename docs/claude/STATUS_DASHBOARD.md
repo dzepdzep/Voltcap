@@ -2,12 +2,12 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682s · 2026-11-18 15:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on fb0cd09: GREEN on ubuntu-latest (other runner: Maven download error, infra) · effort: medium
+**1. LATEST UPDATE** - 682t · 2026-11-18 16:50 UTC · commit `this update (being pushed)` · CI: Verify 310 on 1a66808: GREEN (both runners) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now also open the Details, Options and Achievements pages of the 13 game windows (Hero to Cinema) at normal and large text size, with real long option and achievement names. A small test-only switch lets QA open those pages directly; nothing users see changed.
+**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now cover your high-priority game windows too (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Icon bar). They found two real problems at large text size, both fixed: Night's system line split 'PlayStation 2' in the middle of the word (it now moves under its label when it doesn't fit beside it), and Pocket Ribbon's console fact did the same (it now shrinks a little instead). Needs a quick look on the KONKR.
 
 **3. LAST 24 HOURS** (most important first)
-- **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
+- **App** (682t): The automatic cut-off-text checks now cover your high-priority game windows too (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Icon bar). They found two real problems at large text size, both fixed: Night's system line split 'PlayStation 2' in the middle of the word (it now moves under its label when it doesn't fit beside it), and Pocket Ribbon's console fact did the same (it now shrinks a little instead). Needs a quick look on the KONKR.
 - **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
 - **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
 - **QA tools** (682g): The automatic check of the next 13 game windows (Hero to Cinema) was misreading its own measurements - it compared each label against the space it was allowed, not the space its letters actually use. Fixed: all 13 windows come back clean at normal and larger text (no word broken, nothing cut off) on their first page, and the check now stays on as a guard so a future change that cuts a label fails the build. Nothing in the app changed; not checked on a handheld.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Check the page-check result on GitHub (fix any real cut text); then: Native pages: review of batch 2 / batch 3; Same checks for Pocket Classic, Pocket Ribbon, Night, Pocket, Bar
+**5. WORKING ON NEXT** - now: Native pages: batch 2 review / batch 3; then: Same checks for the next game windows not yet covered; Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
