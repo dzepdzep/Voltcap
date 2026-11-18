@@ -2886,10 +2886,10 @@ echo REACHED_END >> {d}/log.txt
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
 
     def test_navigation_scripts_press_keys_only_through_the_guard(self):
-        for name in ("nav682j.sh",):
+        for name in ("nav682j.sh", "p2review.sh"):
             src = open(os.path.join(self.DEV, name)).read()
             self.assertNotIn("input keyevent KEYCODE_BUTTON", src, name + " presses a button around the guard")
-            self.assertIn(". ./winguard.sh", src)
+            self.assertIn("winguard.sh", src)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

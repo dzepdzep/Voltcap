@@ -17,7 +17,15 @@ stop() { log "STOP $1"; echo DONE >> $L; exit 3; }
 gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
-k() { gate; input keyevent KEYCODE_$1; sleep ${2:-0.8}; }
+# (682j-c, owner 18 Nov 14:54: keys only through winguard.sh - inside the game window only while that window has the focus;
+# the home's A only while the QA app's home window has it; anything else = ABORT, nothing more pressed, test state put back.)
+WG_LOG=$L
+putback() { A --es voltcap_test_libapp remove:com.android.settings; A --ez voltcap_test_preview false; A --es voltcap_test_snapshot restore; sleep 2; am force-stop $P; }
+WG_ONABORT=putback
+. "$(dirname "$0")/winguard.sh"
+wgk() { case $1 in BUTTON_A) echo A;; BUTTON_B) echo B;; BUTTON_R1) echo R1;; BUTTON_L1) echo L1;; DPAD_UP) echo U;; DPAD_DOWN) echo D;;
+  DPAD_LEFT) echo L;; DPAD_RIGHT) echo R;; *) echo "$1";; esac; }
+k() { wg_key_win $(wgk $1); sleep ${2:-0.8}; }
 dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
   i=0; while ! dr $F/qa_clip/${TAG}_$1.json && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
@@ -35,8 +43,8 @@ pick() { logcat -d -s VoltcapQA | grep -F "$1" | head -1 | sed 's/.*game=//' | t
 openw() { # layout name -> 0 when the game window is open
   A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=${MOTION:-NORMAL}"; A --es voltcap_test_layout $1; sleep 3.5; gate
   [ "$(qawins)" = 1 ] || { log "$1: PRECONDITION FAILED - $(qawins) QA windows on the home"; screencap -p $O/${2}_precondition.png; return 1; }
-  shot ${2}_home; k BUTTON_A 1.9
-  [ "$(qawins)" = 2 ] || { log "$1: the game window did not open - NOT TESTED"; screencap -p $O/${2}_precondition.png; k BUTTON_B 1.2; return 1; }; }
+  shot ${2}_home; wg_home; wg_key_home A; sleep 1.9
+  wg_window; }   # (no window = ABORT: winguard stops the run, nothing more pressed)
 case $MODE in
 run)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -44,7 +52,7 @@ run)
   [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
   touch $F/qa_nolaunch
   A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
-  grep -q '^PICKER' $F/voltcap_qa_screen 2>/dev/null && { k BUTTON_B 1.5; log "picker closed with B"; }
+  wg_pass_picker; log "home: $(wg_mark)"
   A --es voltcap_test_snapshot save; sleep 2
   A --ez voltcap_test_preview true; sleep 1
   logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
