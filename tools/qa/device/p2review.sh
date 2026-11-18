@@ -78,6 +78,8 @@ run)
     # (681z, review 44247782675: the category still did not take - the QA library had no app, the launcher logged "category
     # App is empty here; left as it was" and the window opened on a ROM game. Then the confirmation is NOT TESTED, said so.)
     # (No logcat -c here: the layout's blocked-launch count reads the same buffer.)
+    # (682c: the QA library gets an app of its own for this - Settings, never launched, never hidden; taken out after)
+    A --es voltcap_test_libapp add:com.android.settings; sleep 2
     e0=$(logcat -d -s VoltcapQA | grep -cF 'category App is empty here'); A --es voltcap_test_category App; sleep 2
     if [ "$(logcat -d -s VoltcapQA | grep -cF 'category App is empty here')" -gt "$e0" ]; then log "$lay: no Android app in the QA library - destructive confirmation NOT TESTED"
     elif openw $lay ${n}_app; then
@@ -93,6 +95,7 @@ run)
       k BUTTON_B 1.2; k BUTTON_B 1.4
     fi
     A --es voltcap_test_category ALL; sleep 1.5
+    A --es voltcap_test_libapp remove:com.android.settings; sleep 1.5
     # Motion Off: the walk again, recorded - page changes immediate.
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     MOTION=OFF; if openw $lay ${n}_off; then REC_SEG=10 rec_start $O/${n}_walk_motionoff 10; sleep 0.6
@@ -101,6 +104,7 @@ run)
   done
   log "run done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"; echo DONE >> $L ;;
 restore)
+  A --es voltcap_test_libapp remove:com.android.settings; sleep 1.5
   A --es voltcap_test_pref "motion_level=NORMAL" --es voltcap_test_scale off --es voltcap_test_fixture off; sleep 1.5
   A --ez voltcap_test_preview false; sleep 1; A --es voltcap_test_snapshot restore; sleep 3
   log "restore verify: $(cut -c1-60 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)"

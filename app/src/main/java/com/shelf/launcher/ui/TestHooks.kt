@@ -217,6 +217,12 @@ internal object TestHooks {
      * ordinary Voltcap ignores it, hooks file or not.
      */
     val fixtureRoms = mutableStateOf<String?>(null)
+    /**
+     * 682c: `--es voltcap_test_libapp add:<package>` / `remove:<package>` - ONLY in the isolated QA app: puts an installed app in
+     * (or takes it out of) the QA app's OWN library, so a review can open an app's window and its Options ("Hide from library"
+     * asks first). Nothing is launched or hidden by this; the real Voltcap is never touched.
+     */
+    val libApp = mutableStateOf<String?>(null)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
@@ -312,6 +318,7 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        intent?.getStringExtra("voltcap_test_libapp")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && (v.startsWith("add:") || v.startsWith("remove:"))) libApp.value = v }
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }

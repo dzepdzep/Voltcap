@@ -1112,6 +1112,11 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.game.value = null
     }
     // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)
+    TestHooks.libApp.value?.let { v -> LaunchedEffect(v) {
+        val add = v.startsWith("add:"); val pkg = v.substringAfter(':')
+        if ((pkg in viewModel.uiState.value.libraryApps.added) != add) viewModel.toggleAppInLibrary(pkg)
+        android.util.Log.e("VoltcapQA", "libapp ${if (add) "added" else "removed"} $pkg"); TestHooks.libApp.value = null
+    } }
     TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
     // (Update 503: the fixture library's late-arriving art + achievements, QA app only — QaArtFixture.kt.)
     QaArtFixture.spec.value?.let { d -> LaunchedEffect(d, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaArtFixture() } }
