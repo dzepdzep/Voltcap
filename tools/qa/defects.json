@@ -4064,6 +4064,14 @@
    "severity": "low",
    "status": "fixed in QA tooling 680b (badgecheck: a carousel-trimmed tile's badges are not cut, covers stacked behind a larger one are NOT TESTED; real collisions still FAIL; selftest TestBadgeCheckCarousel680b) - confirm on the next device run's dumps (HW-24)",
    "found": "2026-11-17"
+  },
+  {
+   "id": "D358",
+   "title": "catswitch.sh (R24 category-switch test) and picker.sh pointed at the owner's real Voltcap (com.shelf.launcher/.MainActivity intents, its files and process) and pressed keys without checking which app had the focus - a QA script must drive the isolated QA app only (CLAUDE.md Level 1); vqa.sh hooks restarted '$PKG/.MainActivity', which is no activity in the QA app",
+   "rule": "R24",
+   "severity": "high",
+   "status": "fixed in QA tooling 682l (catswitch.sh: QA app only, full gate at start + a focus check before every key, recording stopped with the walk, ANCH=off|on and DUMPS=1; picker.sh: the QA app's mark; vqa.sh hooks: the QA app's MainActivity; the PC push guard refused the old picker.sh) - found before any run reached the real app",
+   "found": "2026-11-18 (682l, anchor review prep)"
   }
  ]
 }

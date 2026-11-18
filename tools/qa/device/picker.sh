@@ -7,7 +7,8 @@
 # A stale mark (another pid) is never trusted: the old colour check decides, and only while awake with Voltcap in front.
 # Without a mark (an older build, hooks off) it falls back to the old check: the deep-blue top-left corner of the Midnight look.
 # Host tests: PK_MARK=<file> PK_PID=<pid> PK_AWAKE=1|0 PK_TOP=1|0 PK_RAW=<raw capture> replace the device reads.
-P=com.shelf.launcher
+# (682l: the isolated QA app only - a QA script never reads or watches the production app)
+P=com.shelf.launcher.qa
 MARK=${PK_MARK:-/sdcard/Android/data/$P/files/voltcap_qa_screen}
 f=${PK_RAW:-/data/local/tmp/pk.raw}
 

@@ -141,7 +141,7 @@ EOF
     F=/sdcard/Android/data/$PKG/files
     if [ "$1" = on ]; then [ -f $F/voltcap_test_hooks.paused ] && mv $F/voltcap_test_hooks.paused $F/voltcap_test_hooks; touch $F/voltcap_test_hooks
     else [ -f $F/voltcap_test_hooks ] && mv $F/voltcap_test_hooks $F/voltcap_test_hooks.paused; fi
-    am force-stop $PKG; sleep 1; am start -n $PKG/.MainActivity > /dev/null 2>&1; sleep 7; log_mark "hooks $1"; echo "hooks $1";;
+    am force-stop $PKG; sleep 1; am start -n $PKG/com.shelf.launcher.MainActivity > /dev/null 2>&1; sleep 7; log_mark "hooks $1"; echo "hooks $1";;
   ready)
     # Precondition: Voltcap's home screen is in front and taking the controller (needs the hooks on: QaTrace logs focus).
     # A cold start can open "Who's playing?" first — B keeps the current profile. Fails loudly instead of measuring the
