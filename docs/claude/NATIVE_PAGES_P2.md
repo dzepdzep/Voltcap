@@ -93,3 +93,20 @@ had Play focused yet A was pressed (one blocked launch per scale). -> FIXED 681x
 selftest TestP2ReviewPlayFocused681x 5 (the fixed-string test fails on the old function), QA selftest 216/216.
 (7) Review runs end NOT TESTED: grade_trial.py expects e529 runs (known 679a follow-up) - still open.
 Needs: an emulator re-run "P2:TV" on the 681x push, then the owner's look.
+
+### Emulator review run 44247782675 (cf40522, "P2:TV") - EMULATOR only, read by 681z (cloud, 18 Nov)
+(5) CONFIRMED on the emulator: the Fastext keys read whole at both scales (PICTURE / INFO / TROPHIES / OPTIONS, x1.0 and x1.3).
+The ORDER key and the game name in the masthead slide on their one line at x1.3 (681v design, rule 11 - full text by sliding).
+(6) CONFIRMED: the guard held - Play was focused, A was NOT pressed, launches 0 at both scales. But the App category still did not
+take (the window opened on Mario Kart 64, a ROM): the QA library has no Android app on the emulator. -> 681z: p2review.sh now
+checks the launcher's "category App is empty here" line and logs "no Android app in the QA library - destructive confirmation
+NOT TESTED" instead of walking a ROM game's options (no logcat -c mid-layout: the blocked-launch count reads that buffer).
+Destructive confirmation: still NOT TESTED on the emulator - it needs an app fixture in the QA library, or the hardware run.
+(7) DONE 681z: grade_trial.py review mode - a "P2:<layouts>" run is graded on its own walks p2r13 / p2r10 (grade_p2_run: walk
+finished, every layout walked, its page shots there, no crash, no launch reached, nothing the script marked NOT TESTED, the QA
+app's settings and snapshot files put back), a font review on e679r13 / e679r10 (popclip); P2 contact sheet sheet_p2_<LAY>.jpg
+(both scales). PASS covers the walk's mechanics only - the look stays the owner's review. Selftest TestGradeTrialReview681z 6 +
+TestP2ReviewRestore681z 2, 224/224. Graded on this run's artifact the new grader says FAIL (x1.3 "snapshot files diff=1") +
+NOT TESTED (armed confirmation): the diff=1 was the restore's own false alarm - on a fresh emulator the keep folder was empty and
+its literal glob failed cp / cmp (reproduced with the old line) -> fixed 681z ("none existed before the run").
+Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TESTED until an app fixture exists for the confirmation).

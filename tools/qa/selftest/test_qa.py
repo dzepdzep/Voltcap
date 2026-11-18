@@ -2731,5 +2731,87 @@ class TestP2ReviewPlayFocused681x(unittest.TestCase):
     def test_missing_dump(self):
         self.assertNotEqual(0, self._run([], write=False))
 
+class TestGradeTrialReview681z(unittest.TestCase):
+    """681z: emulator review runs (review_layouts) are graded on their own runs - P2 walks p2r13 / p2r10 - instead of always
+    ending NOT TESTED for the standard trial's missing e529a / e529b. PASS only for a complete, clean walk."""
+    EMU = os.path.join(os.path.dirname(HERE), "emulator")
+
+    def _g(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("grade_trial_681z", os.path.join(self.EMU, "grade_trial.py"))
+        m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+
+    def _run(self, log, shots=None, lay="TV"):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "log.txt"), "w") as f: f.write(log)
+        for s in (self._g().P2_SHOTS if shots is None else shots): open(os.path.join(d, f"{lay}_{s}.png"), "wb").close()
+        return d
+
+    CLEAN = ("06:07:59 setup scale=off layouts=TV\n06:10:00 TV: destructive row armed and left (never confirmed)\n"
+             "06:10:35 TV done (launches: 0)\n06:10:35 run done fatal=0\nDONE\n06:10:41 restore verify: OK {}\n"
+             "06:10:41 owner snapshot files back: diff=0\n")
+
+    def test_plan(self):
+        g = self._g()
+        self.assertEqual(["p2r13", "p2r10"], [t for t, _ in g.review_plan("P2:TV CRATE")[1]])
+        self.assertEqual(["e679r13", "e679r10"], [t for t, _ in g.review_plan("POCKET BAR")[1]])
+        self.assertEqual(["e529a", "e529b"], [t for t, _ in g.review_plan("")[1]])
+
+    def test_clean_walk_passes(self):
+        self.assertEqual("PASS", self._g().grade_p2_run(self._run(self.CLEAN), ["TV"])[0])
+
+    def test_missing_folder_and_unfinished(self):
+        g = self._g()
+        self.assertEqual("NOT TESTED", g.grade_p2_run("/nonexistent/p2r13", ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run("06:07 setup\n"), ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(self.CLEAN), ["TV", "CRATE"])[0])  # CRATE never walked
+
+    def test_script_not_tested_and_missing_shot(self):
+        g = self._g()
+        log = self.CLEAN.replace("destructive row armed and left (never confirmed)", "TV: focus left the options for Play - A NOT pressed (armed confirmation NOT TESTED)")
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(log), ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(self.CLEAN, shots=("home", "info")), ["TV"])[0])
+
+    def test_failures(self):
+        g = self._g()
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("launches: 0", "launches: 1")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("fatal=0", "fatal=2")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("diff=0", "diff=1")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("restore verify: OK", "restore verify: MISMATCH")), ["TV"])[0])
+        self.assertEqual("INFRA", g.grade_p2_run(self._run("06:07 STOP asleep\nDONE\n"), ["TV"])[0])
+
+    def test_verdict_file_never_pass_with_a_gap(self):
+        g = self._g(); d = tempfile.mkdtemp()
+        g.write_verdict(d, [("p2r13", "PASS", "ok"), ("p2r10", "NOT TESTED", "gap")], "p2")
+        self.assertEqual("VERDICT: NOT TESTED", open(os.path.join(d, "verdict.txt")).readline().strip())
+        g.write_verdict(d, [], "p2")
+        self.assertEqual("VERDICT: NOT TESTED", open(os.path.join(d, "verdict.txt")).readline().strip())
+
+
+class TestP2ReviewRestore681z(unittest.TestCase):
+    """681z: p2review.sh restore with an EMPTY keep folder (fresh emulator: no snapshot files before the run) logged diff=1 from
+    the literal glob; it now says nothing existed. A real difference still logs diff=1."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def _restore(self, keep):
+        with open(os.path.join(self.DEV, "p2review.sh")) as f: src = f.read()
+        body = src[src.index("restore)") + len("restore)"):]
+        line = [l for l in body.splitlines() if l.strip().startswith(("if [ -d $O/snapbak", "elif [ -d $O/snapbak"))]
+        d = tempfile.mkdtemp(); O = os.path.join(d, "O"); F = os.path.join(d, "F"); os.makedirs(os.path.join(O, "snapbak")); os.makedirs(F)
+        for name, (a, b) in keep.items():
+            open(os.path.join(O, "snapbak", name), "w").write(a)
+            if b is not None: open(os.path.join(F, name), "w").write(b)
+        script = "O=%s; F=%s; L=$O/log.txt\nlog() { echo \"$*\" >> $L; }\n%s\n" % (O, F, "\n".join(line) + "\nfi")
+        subprocess.run(["sh", "-c", script], capture_output=True, text=True)
+        return open(os.path.join(O, "log.txt")).read() if os.path.exists(os.path.join(O, "log.txt")) else ""
+
+    def test_empty_keep_folder(self):
+        self.assertIn("none existed", self._restore({}))
+        self.assertNotIn("diff=1", self._restore({}))
+
+    def test_files_put_back(self):
+        self.assertIn("diff=0", self._restore({"voltcap_test_snapshot.json": ("owner", "changed by the run")}))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

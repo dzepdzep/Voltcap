@@ -75,8 +75,12 @@ run)
     fi
     # The destructive confirmation: an app in the QA library's App category ("Hide from library" asks first) - one press arms
     # it, moving off cancels, B leaves. Never confirmed.
-    A --es voltcap_test_category App; sleep 2
-    if openw $lay ${n}_app; then
+    # (681z, review 44247782675: the category still did not take - the QA library had no app, the launcher logged "category
+    # App is empty here; left as it was" and the window opened on a ROM game. Then the confirmation is NOT TESTED, said so.)
+    # (No logcat -c here: the layout's blocked-launch count reads the same buffer.)
+    e0=$(logcat -d -s VoltcapQA | grep -cF 'category App is empty here'); A --es voltcap_test_category App; sleep 2
+    if [ "$(logcat -d -s VoltcapQA | grep -cF 'category App is empty here')" -gt "$e0" ]; then log "$lay: no Android app in the QA library - destructive confirmation NOT TESTED"
+    elif openw $lay ${n}_app; then
       k BUTTON_L1 1.2; shot ${n}_app_options
       for i in 1 2 3 4 5 6 7 8 9 10; do k DPAD_DOWN 0.5; done; sleep 0.6; shot ${n}_app_options_last
       # (681v, review 44194071430: the App category did not take, the window was on a ROM game with 9 options, ten Downs left the
@@ -100,6 +104,9 @@ restore)
   A --es voltcap_test_pref "motion_level=NORMAL" --es voltcap_test_scale off --es voltcap_test_fixture off; sleep 1.5
   A --ez voltcap_test_preview false; sleep 1; A --es voltcap_test_snapshot restore; sleep 3
   log "restore verify: $(cut -c1-60 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)"
-  if [ -d $O/snapbak ]; then cp $O/snapbak/* $F/; n=0; for f in $O/snapbak/*; do cmp -s $f $F/$(basename $f) || n=1; done; log "owner snapshot files back: diff=$n"; fi
+  # (681z, review 44247782675: on a fresh emulator there were no snapshot files to keep - the empty folder's literal glob made
+  # cp / cmp fail and the restore logged diff=1. An empty keep folder means there was nothing to put back.)
+  if [ -d $O/snapbak ] && [ -n "$(ls $O/snapbak 2>/dev/null)" ]; then cp $O/snapbak/* $F/; n=0; for f in $O/snapbak/*; do cmp -s $f $F/$(basename $f) || n=1; done; log "owner snapshot files back: diff=$n"
+  elif [ -d $O/snapbak ]; then log "owner snapshot files back: none existed before the run"; fi
   am force-stop $P; log "QA app stopped" ;;
 esac
