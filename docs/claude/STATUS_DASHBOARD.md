@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682l · 2026-11-18 13:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on eec7217: GREEN · effort: medium
+**1. LATEST UPDATE** - 682m · 2026-11-18 14:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4460aa3: GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Added an automatic check that no text in 13 of the game windows (Hero to Cinema) is cut off by the card or panel around it, at normal and large text size. All 13 windows pass; nothing in the app changed.
+**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now also open the More section of the six game windows that have one (Hero, Hero tiles, Live, Hub, Twin icons, Twin showcase), at normal and large text size. Nothing in the app changed; the first result comes from the GitHub build.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
-- **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
 - **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
 - **QA tools** (682g): The automatic check of the next 13 game windows (Hero to Cinema) was misreading its own measurements - it compared each label against the space it was allowed, not the space its letters actually use. Fixed: all 13 windows come back clean at normal and larger text (no word broken, nothing cut off) on their first page, and the check now stays on as a guard so a future change that cuts a label fails the build. Nothing in the app changed; not checked on a handheld.
+- **App** (681y): Achievements page: the progress at the top (battery, percentage, trophy counts) used to count brand-new unlocks before their celebration had even shown them. Now it counts each one the moment its badge locks in, and the battery fills up to it; a game with nothing new shows its progress straight away. With animations turned off (in Voltcap or Android) the new badges now appear settled at once instead of making you wait.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Native pages batch 2 (Cube first); then: Game-window polish: check the second (More) pages too; Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix)
+**5. WORKING ON NEXT** - now: Check the More-section result on GitHub (fix any real cut text); then: Native pages batch 2 (Cube first); Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

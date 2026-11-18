@@ -1,3 +1,14 @@
+# Update 682m (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the More half of the 6 windows that have More checked too (test only)
+- CI first: Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
+- WindowWordsSurvey682Test.morePage: of the 13 windows (Hero .. Cinema) the six with a More key (MORE_SCENES: Hero, Hero tiles,
+  Live, Hub, Twin icons, Twin showcase) are opened at KONKR size x1.0 / x1.3, More opened by its QA hook (TestHooks.winMore, as
+  the button does), and both guards (word broken / cut at its box; text cut by a clipping parent) run on what it reveals.
+  Proof it opened: new texts appear (printed). The other seven have no More (skipped by Assume). survey / parentClip refactored
+  into shared helpers, behaviour unchanged. Findings -> app/build/reports/h16-survey/more_findings.txt.
+- Checks: static checks PASS. Cloud compile BLOCKED (Maven Central 429 x2) - NOT compiled here; CI's Verify 310 compiles and
+  runs it (red -> next run fixes first: a finding is a real H16 fix, "More did not open" is a test problem). Handheld NOT TESTED.
+- Copy: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt (test only, no app change).
+
 # Update 682l (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the 13 windows' texts checked for a PARENT cutting them (test only)
 - CI first: Verify 310 GREEN on eec7217 (incl. the 682k fix). Live P2 push 12:40 UTC < 1 h old -> v0.6.74 turn.
 - H16 gap named in 682g ("a parent clipping a text is outside what it measures"): WindowWordsSurvey682Test.parentClip - every

@@ -85,30 +85,39 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         TestHooks.scale.value = scale to (if (scale > 1f) 1.15f else 1f)
         val found = try {
             open()
-            val all = texts()
-            assertTrue("$layout x$scale: no text of the window reached", all.isNotEmpty())
-            // (682b: not r.didOverflowWidth alone - in the 682 run it flagged every chip ("Back", "Play") of all 13 windows at
-            // both scales, identical at x1.0 and x1.3, which no real cut does (suspected: sub-pixel rounding of wrap-content
-            // text). A text is cut when its lines run past the box by a whole pixel or more, or lines past maxLines are dropped.
-            // Each finding carries its numbers so the next run can tell a real cut from a measuring artefact.)
-            // (682g: the 682b run still listed 187 "cuts" - every one with "text" = the max width, e.g. 'Play' 53 px in 28 px:
-            // MultiParagraph.width is the width the paragraph was laid out AT (the constraint), not the width its glyphs use.
-            // The inked width is the widest line's right - left.)
-            all.mapNotNull { r ->
-                val inkW = inkedWidth((0 until r.lineCount).map { r.getLineLeft(it) }, (0 until r.lineCount).map { r.getLineRight(it) })
-                val cut = cutAtEdge(inkW, r.size.width, r.multiParagraph.height, r.size.height, r.multiParagraph.didExceedMaxLines)
-                surveyRule(r.layoutInput.text.text, brokenWord(r), cut, r.layoutInput.softWrap, r.lineCount)?.let {
-                    "$it [ink ${"%.1f".format(inkW)}x${"%.1f".format(r.multiParagraph.height)} px in ${r.size.width}x${r.size.height} (max width ${r.layoutInput.constraints.maxWidth}), lines ${r.lineCount}]"
-                }
-            }.distinct()
+            wordFindings()
         } finally { TestHooks.scale.value = null }
-        val lines = if (found.isEmpty()) listOf("$layout x$scale: clean") else found.map { "$layout x$scale: $it" }
-        val dir = File("build/reports/h16-survey").apply { mkdirs() }
-        File(dir, "findings.txt").appendText(lines.joinToString("\n", postfix = "\n"))
-        println(lines.joinToString("\n", prefix = "H16 SURVEY\n"))
+        report("findings.txt", "H16 SURVEY", found)
         // 682g: with the inked width all 26 cases came back clean (cloud run 18 Nov) - from now on the survey is a guard:
         // a word broken inside itself or a text cut at its box on any of these 13 windows fails the build.
         assertTrue("$layout x$scale H16 findings:\n" + found.joinToString("\n"), found.isEmpty())
+    }
+
+    private fun report(file: String, title: String, found: List<String>, tag: String = "") {
+        val lines = if (found.isEmpty()) listOf("$layout x$scale$tag: clean") else found.map { "$layout x$scale$tag: $it" }
+        val dir = File("build/reports/h16-survey").apply { mkdirs() }
+        File(dir, file).appendText(lines.joinToString("\n", postfix = "\n"))
+        println(lines.joinToString("\n", prefix = "$title\n"))
+    }
+
+    /** Words broken inside themselves or texts cut at their own box, on what the window shows now. */
+    private fun wordFindings(): List<String> {
+        val all = texts()
+        assertTrue("$layout x$scale: no text of the window reached", all.isNotEmpty())
+        // (682b: not r.didOverflowWidth alone - in the 682 run it flagged every chip ("Back", "Play") of all 13 windows at
+        // both scales, identical at x1.0 and x1.3, which no real cut does (suspected: sub-pixel rounding of wrap-content
+        // text). A text is cut when its lines run past the box by a whole pixel or more, or lines past maxLines are dropped.
+        // Each finding carries its numbers so the next run can tell a real cut from a measuring artefact.)
+        // (682g: the 682b run still listed 187 "cuts" - every one with "text" = the max width, e.g. 'Play' 53 px in 28 px:
+        // MultiParagraph.width is the width the paragraph was laid out AT (the constraint), not the width its glyphs use.
+        // The inked width is the widest line's right - left.)
+        return all.mapNotNull { r ->
+            val inkW = inkedWidth((0 until r.lineCount).map { r.getLineLeft(it) }, (0 until r.lineCount).map { r.getLineRight(it) })
+            val cut = cutAtEdge(inkW, r.size.width, r.multiParagraph.height, r.size.height, r.multiParagraph.didExceedMaxLines)
+            surveyRule(r.layoutInput.text.text, brokenWord(r), cut, r.layoutInput.softWrap, r.lineCount)?.let {
+                "$it [ink ${"%.1f".format(inkW)}x${"%.1f".format(r.multiParagraph.height)} px in ${r.size.width}x${r.size.height} (max width ${r.layoutInput.constraints.maxWidth}), lines ${r.lineCount}]"
+            }
+        }.distinct()
     }
 
     /**
@@ -125,16 +134,43 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         TestHooks.scale.value = scale to (if (scale > 1f) 1.15f else 1f)
         val found = try {
             open()
-            val nodes = compose.onAllNodes(SemanticsMatcher("any text") { it.config.getOrNull(SemanticsProperties.Text) != null }, useUnmergedTree = true)
-                .fetchSemanticsNodes()
-            assertTrue("$layout x$scale: no text of the window reached", nodes.isNotEmpty())
-            nodes.mapNotNull { n -> clipFindingOf(n) }.distinct()
+            clipFindings()
         } finally { TestHooks.scale.value = null }
-        val lines = if (found.isEmpty()) listOf("$layout x$scale: clean") else found.map { "$layout x$scale: $it" }
-        val dir = File("build/reports/h16-survey").apply { mkdirs() }
-        File(dir, "parent_clip.txt").appendText(lines.joinToString("\n", postfix = "\n"))
-        println(lines.joinToString("\n", prefix = "H16 PARENT CLIP\n"))
+        report("parent_clip.txt", "H16 PARENT CLIP", found)
         assertTrue("$layout x$scale H16 parent-clip findings:\n" + found.joinToString("\n"), found.isEmpty())
+    }
+
+    private fun clipFindings(): List<String> {
+        val nodes = compose.onAllNodes(SemanticsMatcher("any text") { it.config.getOrNull(SemanticsProperties.Text) != null }, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertTrue("$layout x$scale: no text of the window reached", nodes.isNotEmpty())
+        return nodes.mapNotNull { n -> clipFindingOf(n) }.distinct()
+    }
+
+    /**
+     * 682m (H16, the More half of each window - the k678n13 sheet compares first / More pages): the windows that keep Play,
+     * Details and Back in view and fold the rest behind More (MORE_SCENES: Hero, Hero tiles, Live, Hub, Twin icons, Twin
+     * showcase of this list) are opened, More is opened as its own button does (TestHooks.winMore, the QA hook), and the same
+     * two guards run on what it reveals: no word broken inside itself or cut at its box, no text cut by a parent. Proof More
+     * opened: texts appear that the first page did not show (printed). Windows without More: nothing to check here (their whole row is the first page).
+     * Findings: h16-survey/more_findings.txt.
+     */
+    @Test fun morePage() {
+        val scene = winSceneFor(layout)
+        org.junit.Assume.assumeTrue("$layout has no More", scene != null && scene in MORE_SCENES)
+        TestHooks.scale.value = scale to (if (scale > 1f) 1.15f else 1f)
+        val found = try {
+            open()
+            val before = texts().map { it.layoutInput.text.text }.toSet()
+            TestHooks.winMore.value = true
+            frames(120)
+            val revealed = texts().map { it.layoutInput.text.text }.toSet() - before
+            assertTrue("$layout x$scale: More did not open (no new text revealed; first page: $before)", revealed.isNotEmpty())
+            println("H16 MORE $layout x$scale revealed: $revealed")
+            wordFindings().map { "words: $it" } + clipFindings().map { "parent: $it" }
+        } finally { TestHooks.scale.value = null; TestHooks.winMore.value = null }
+        report("more_findings.txt", "H16 MORE", found, " More")
+        assertTrue("$layout x$scale H16 More findings:\n" + found.joinToString("\n"), found.isEmpty())
     }
 }
 

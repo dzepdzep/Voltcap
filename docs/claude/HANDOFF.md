@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 14:45 UTC, 682m (cloud, v0.6.74 turn):** Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.morePage - the 6 of the 13 windows with More (Hero, Hero tiles, Live, Hub, Twin icons, Twin
+showcase) opened, More opened via TestHooks.winMore, both guards on what it reveals, x1.0 + x1.3 (12 cases; 14 skipped, no
+More). Cloud compile BLOCKED (Maven 429 x2) - CI compiles + runs it first. Test only.
+NEXT: check Verify 310 on this push FIRST: compile error / "More did not open" -> fix the test; a words / parent finding -> a
+real H16 cut on a More section: fix the window (test fails on the old code). Then P2 turn (batch 2, Cube first; merge the dev
+line into the P2 branch first) if the live session's last P2 push (13:59 UTC) is > 1 h old. Following v0.6.74 turn: the same
+guards for the windows' own Details / Achievements / Options pages, or H12 once the owner picks.
+
 **18 Nov 13:20 UTC, 682l (cloud, v0.6.74 turn):** Verify 310 GREEN on eec7217. Live P2 push 12:40 UTC (< 1 h) -> v0.6.74 turn.
 H16: WindowWordsSurvey682Test.parentClip - texts of the 13 windows (Hero .. Cinema) checked for a PARENT cutting them (box vs
 visible bounds in the root, beyond the box's empty room; sliding lines / scrolling content excluded). All 26 cases CLEAN (cloud
