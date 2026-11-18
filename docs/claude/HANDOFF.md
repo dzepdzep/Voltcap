@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 11:50 UTC, 682j (cloud, v0.6.74 turn):** CI: Verify 310 on 67b08fd red = Maven 429 on one runner (infra; the other
+ran the full suite GREEN). H12 reveal / trophy redesign comparison: StageSlot now draws a pure pose (RevealPose, voltRevealPose =
+the old formulas, unchanged look); RevealSheet682jTest renders NOW vs proposals A "Trophy flip" / B "Glow burst" (test-only) to
+app/build/reports/tests/h12-reveal/storyboard.png (CI test-results artifact). Cloud compile blocked (Maven 429 x2) - CI compiles.
+NEXT: check Verify 310 on this push (compile / RevealSheet682jTest red -> fix first); if green, download the storyboard, look at it
+and fix any drawing problems in the proposals; then it goes to the owner as a design decision (A / B / keep NOW / mix) - an
+owner action, not decided by the run. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push (10:39 UTC)
+is > 1 h old.
+
 **18 Nov 11:05 UTC, 682g (cloud, v0.6.74 turn):** H16 survey read again (Verify 310 GREEN on cc229b9): all 187 "cuts" had
 "text" = the max width - MultiParagraph.width is the layout width, not the glyphs. Survey now measures the inked width (widest
 line); cloud compile + run: all 13 windows (Hero .. Cinema) CLEAN at x1.0 and x1.3 on their first page; the survey is now a guard

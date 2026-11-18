@@ -1,3 +1,17 @@
+# Update 682j (18 Nov 2026, cloud run, v0.6.74 turn) - H12 reveal / trophy redesign: storyboard comparison for the owner (app unchanged)
+- CI first: Verify 310 on 67b08fd (682g) red = Maven Central 429 on the ubuntu-24.04 runner (infra); the ubuntu-latest runner ran
+  the full suite GREEN.
+- AchievementFx.kt: the new-unlock badge's motion is now a pure pose function (RevealPose; voltRevealPose = the app's reveal, the
+  exact old formulas) drawn by StageSlot (now internal). RevealPose gained optional turn / shine / ring / silhouette fields that
+  default to nothing, so the app's reveal draws as before. No new setting, nothing wired.
+- RevealSheet682jTest: voltPoseIsTheOldReveal (the old inline formulas, 101 moments x 3 intensities x waiting) + storyboard - the
+  real StageSlot drawn by Robolectric native graphics at 9 moments for NOW (Volt capsule) and two PROPOSALS that exist only in the
+  test: A "Trophy flip" (face-down badge lifts, turns over, gold ring burst, shine sweep, settles) and B "Glow burst" (no flight:
+  silhouette lights up, ring burst, overshoot, shine). PNG: app/build/reports/tests/h12-reveal/storyboard.png in CI's
+  "update-310-test-results-*" artifact. Not handheld evidence (no badge art, no GPU, no sound).
+- Checks: static checks PASS. Cloud compile NOT RUN (Maven Central 429 twice) - CI compiles and runs it on this push.
+- Files: ui/AchievementFx.kt, test ui/RevealSheet682jTest.kt. PC copy: src_copy/ui/AchievementFx.kt.
+
 # Update 682g (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey fixed: the 13 next game windows are clean; survey is now a guard (test only)
 - Read the corrected survey from CI (Verify 310 GREEN on cc229b9): still 187 "cuts", and every one showed the cause - the
   "text" width was always the max width ('Play' 53 px in a 28 px box): MultiParagraph.width is the width the paragraph was laid

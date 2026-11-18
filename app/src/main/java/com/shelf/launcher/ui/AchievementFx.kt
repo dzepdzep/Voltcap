@@ -248,8 +248,25 @@ internal fun NewUnlockStage(
     }
 }
 
-@Composable
-private fun StageSlot(b: StageBadge, p: Float, waiting: Boolean, size: Dp, style: AchievementStyle) {
+/**
+ * (682j, H12) One frame of a new unlock's reveal at its progress p (0..1): everything StageSlot draws that moves. [voltRevealPose]
+ * is the app's reveal (the charging capsule); other reveals (the trophy-redesign proposals for the owner's comparison) only
+ * supply a different pose - StageSlot draws them all. The extra fields default to "nothing", so the Volt reveal draws as before.
+ */
+internal data class RevealPose(
+    val lift: Float, val scale: Float, val flash: Float, val capsuleCharge: Float, val capsuleFlare: Float, val arc: Boolean,
+    /** Turn around the vertical axis in degrees (past 90 the badge's back shows). */
+    val turn: Float = 0f,
+    /** A light band sweeping across the badge, 0..1 = left to right; below 0 = none. */
+    val shine: Float = -1f,
+    /** A ring bursting out of the badge, 0..1 = born .. gone; 0 = none. */
+    val ring: Float = 0f,
+    /** The art darkened to a silhouette, 0..1. */
+    val silhouette: Float = 0f
+)
+
+/** The Volt reveal (the app's own, unchanged by 682j): the capsule charges, the badge flashes, pops up, hops and locks back in. */
+internal fun voltRevealPose(p: Float, waiting: Boolean, amount: Float): RevealPose {
     // Phases of p (0..1): the capsule charges (outline → bolt → full flare), the badge flashes and pops
     // up out of it, hops on the air above it, then drops back in and locks with a second flare.
     fun seg(a: Float, z: Float) = ((p - a) / (z - a)).coerceIn(0f, 1f)
@@ -259,7 +276,7 @@ private fun StageSlot(b: StageBadge, p: Float, waiting: Boolean, size: Dp, style
     val hover = seg(0.36f, 0.78f)
     val settle = FastOutSlowInEasing.transform(seg(0.78f, 0.92f))
     val lockFlare = (1f - abs(seg(0.88f, 1f) * 2f - 1f)).coerceIn(0f, 1f)
-    val amp = style.amount.coerceIn(0.6f, 1.4f)
+    val amp = amount.coerceIn(0.6f, 1.4f)
     // Two small hops while hovering (a capsule bouncing on air).
     val hop = abs(sin(hover * 2 * PI.toFloat())) * 7f * amp * (1f - hover * 0.4f)
     val lift = (rise * 30f * amp + hop) * (1f - settle)
@@ -268,6 +285,22 @@ private fun StageSlot(b: StageBadge, p: Float, waiting: Boolean, size: Dp, style
     // The capsule: dark before its turn, then charging, flaring at launch and lock, glowing steady after.
     val capsuleCharge = if (waiting) 0.12f else if (done) 1f else charge
     val capsuleFlare = if (waiting) 0f else maxOf(if (p in 0.2f..0.4f) 1f - abs((p - 0.3f) / 0.1f) else 0f, lockFlare)
+    return RevealPose(lift, scale, flash, capsuleCharge, capsuleFlare, arc = !waiting && lift > 2f)
+}
+
+@Composable
+internal fun StageSlot(
+    b: StageBadge, p: Float, waiting: Boolean, size: Dp, style: AchievementStyle,
+    pose: (Float, Boolean, Float) -> RevealPose = ::voltRevealPose
+) {
+    val q = pose(p, waiting, style.amount)
+    val lift = q.lift
+    val scale = q.scale
+    val flash = q.flash
+    val capsuleCharge = q.capsuleCharge
+    val capsuleFlare = q.capsuleFlare
+    val back = abs(q.turn) > 90f
+    val slot = size
     // Embers and the lightning use the slow clock below.
     val clock = androidx.compose.animation.core.rememberInfiniteTransition(label = "capsule")
     val phase by clock.animateFloat(
@@ -276,7 +309,13 @@ private fun StageSlot(b: StageBadge, p: Float, waiting: Boolean, size: Dp, style
     Column(Modifier.width(size + 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.width(size + 22.dp).height(size + 30.dp), contentAlignment = Alignment.BottomCenter) {
             // Lightning between the capsule and the badge while it's in the air.
-            if (!waiting && lift > 2f) ChargeArc(lift, phase, style.glow, Modifier.matchParentSize())
+            if (q.arc) ChargeArc(lift, phase, style.glow, Modifier.matchParentSize())
+            if (q.ring > 0f) Canvas(Modifier.matchParentSize()) {
+                val r = slot.toPx() / 2f
+                val c = Offset(this.size.width / 2f, this.size.height - 2.dp.toPx() - r - lift.dp.toPx())
+                drawCircle(style.glow.copy(alpha = (1f - q.ring) * 0.9f), radius = r * (0.9f + q.ring * 0.7f), center = c,
+                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = (3f + 5f * (1f - q.ring)) * density))
+            }
             Box(
                 Modifier
                     .padding(bottom = 2.dp)
@@ -285,17 +324,27 @@ private fun StageSlot(b: StageBadge, p: Float, waiting: Boolean, size: Dp, style
                         translationY = -lift.dp.toPx()
                         scaleX = scale; scaleY = scale
                         alpha = if (waiting) 0.3f else 1f
+                        if (q.turn != 0f) { rotationY = q.turn; cameraDistance = 12f * density }
                     }
                     .clip(style.shape)
-                    .background(Brush.linearGradient(if (waiting) style.plateOff else style.plateOn))
-                    .border(2.dp, if (waiting) style.frameOff else style.frameOn, style.shape)
+                    .background(Brush.linearGradient(if (waiting || back) style.plateOff else style.plateOn))
+                    .border(2.dp, if (waiting || back) style.frameOff else style.frameOn, style.shape)
                     .padding(6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (b.image != null) AsyncImage(
+                if (b.image != null && !back) AsyncImage(
                     model = b.image, contentDescription = b.title, contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(style.radius * 0.6f))
                 )
+                if (q.silhouette > 0f && !back) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.8f * q.silhouette)))
+                if (q.shine >= 0f && !back) Canvas(Modifier.fillMaxSize()) {
+                    val w = this.size.width
+                    val x = -0.4f * w + q.shine * 1.8f * w
+                    drawRect(Brush.linearGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = 0.55f), Color.Transparent),
+                        start = Offset(x - w * 0.25f, 0f), end = Offset(x + w * 0.25f, this.size.height * 0.4f)
+                    ))
+                }
                 Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.75f * flash)))
             }
         }
