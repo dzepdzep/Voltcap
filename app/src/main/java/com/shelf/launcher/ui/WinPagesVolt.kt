@@ -107,7 +107,9 @@ internal fun AnimatedVisibilityScope.VoltPage(ctx: WinSceneCtx, p: WinPage, live
         // The panel's head on its own pages: the cover as a small chip, the name whole, the page name in the charge colour.
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(34.dp).clip(RoundedCornerShape(5.dp)).background(Color.Black)) {
-                SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> SceneNoArt(ctx, m) })
+                // (682s, ShelfText: with no picture the 34 dp chip got the console plate - "SNES" one letter a line; the chip is the
+                // game's own colour then, as the Cube's small mark (682q) - the name stands beside it)
+                SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> Box(m.background(placeholderBrush(ctx.g.hue))) })
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
@@ -290,7 +292,9 @@ private fun VoltSwitches(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                             fontWeight = FontWeight.Black, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp)
                                 .border(1.dp, VOLT_GUARD, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 2.dp))
                     }
-                    Text(if (on) "ON" else "OFF", color = if (on) c else Color.White.copy(alpha = 0.35f), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                    // (682s, KONKR / RP Classic x1.3 review: the ON / OFF word beside each switch said the row's focus, not the
+                    // option's state - "Add to favorites OFF", "Game settings ON" read as settings - and sat on the armed row's
+                    // confirmation box. The rocker alone shows the lit switch.)
                 }
             }
         }

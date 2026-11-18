@@ -131,7 +131,12 @@ private fun HubEngraved(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
     Column(modifier.nativeScroll(HUB_ENGRAVE)) {
         val facts = nativeFacts(ctx, setOf("Console", "Year", "Trophies"))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // (682s, KONKR x1.3 review: the story, the page's only stop, was taller than the page - landing on it scrolled the
+        // stamped tags away (0 px shown) and nothing brought them back. The tags are the page's first stop now: it opens at its
+        // top, Down goes on to the story.)
+        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = if (facts.isNotEmpty()) focus else null, live = live) { tagsOn ->
+        FlowRow(Modifier.fillMaxWidth().then(if (tagsOn) Modifier.border(2.dp, a, RoundedCornerShape(6.dp)).padding(3.dp) else Modifier.padding(3.dp)),
+            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             facts.forEach { f ->
                 // The stamped tag: two rivets, the label engraved small, the value cut deep.
                 Column(Modifier.hubRecess(RoundedCornerShape(4.dp)).drawBehind {
@@ -143,8 +148,9 @@ private fun HubEngraved(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                 }
             }
         }
+        }
         Spacer(Modifier.height(8.dp))
-        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = focus, live = live) { on ->
+        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = if (facts.isEmpty()) focus else null, live = live) { on ->
             Column(Modifier.fillMaxWidth().hubRecess(RoundedCornerShape(8.dp)).then(if (on) Modifier.border(2.dp, a, RoundedCornerShape(8.dp)) else Modifier).padding(10.dp)) {
                 Text("THE PLATE'S BACK", color = HUB_ENGRAVE.copy(alpha = 0.5f), fontSize = 9.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                 Spacer(Modifier.height(3.dp))

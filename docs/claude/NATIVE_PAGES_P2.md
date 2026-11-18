@@ -219,3 +219,19 @@ Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 
   same second-open ABORT. MAGAZINE not reached (stopped at the task's 15-minute hardware limit). Restore OK / diff 0.
 - p2review: TWO_STEP now checks after the first A whether the game window is already open (fixed after the run - NOT re-run).
 - Still NOT TESTED on hardware: x1.0 for all four; RP Classic Magazine after 682r-2; Cube's 120-set and Options confirmation.
+
+### 682s - batch 1 visual pass (owner 18 Nov 18:20: "2" = batch 1 visual fixes first) - NOT owner-approved
+Hardware review walk (QA app, build qa-682r2-ef2694a-ci, x1.3, the hardened p2review; KONKR b1k13 + RP Classic b1r13, 18:21-18:36):
+Record crate, Classic, Console hub, Resume & discover, TV room - every page reached on both, destructive row armed (confirmation
+shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Findings and fixes:
+- Classic SWITCHES: an ON / OFF word beside every option showed the row's focus, not the option's state ("Add to favorites OFF",
+  "Game settings ON") and touched the armed row's confirmation box -> removed; the lit rocker alone shows the focus.
+- Classic page head with no picture: the 34 dp chip got the console plate, "SNES" one letter a line (ShelfText, now covering the
+  batch-1 layouts) -> the chip is the game's colour, the name beside it.
+- Console hub ENGRAVED (KONKR x1.3): the focus landed on the story, taller than the page, and the stamped tags were scrolled away
+  (GENRE / PLAYED 0 px shown, unreachable) -> the tags are the page's first stop; Down goes on to the story. Robolectric did not
+  reproduce the scroll (a test written for it passed on the old code and was dropped) - hardware re-check needed.
+- ShelfTextRoboTest now includes CRATE, CLASSIC, HUB, RESUME (TV keeps its own TvTeletext / TvFastext tests): 48 + 48 PASS after
+  the fixes (the Classic chip failed before; Crate's "Sleeve notes" key is now matched as the details control).
+- Looked at, no change: Crate (whole words, confirmation whole), Resume (rows whole), TV (one-line sliding parts as 681v).
+  Hub's medal discs show no badge art on the RP Classic (art loading there, not the page).
