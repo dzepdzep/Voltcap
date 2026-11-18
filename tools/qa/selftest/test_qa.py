@@ -2813,5 +2813,83 @@ class TestP2ReviewRestore681z(unittest.TestCase):
         self.assertIn("diff=0", self._restore({"voltcap_test_snapshot.json": ("owner", "changed by the run")}))
 
 
+
+class TestWinGuard682jc(unittest.TestCase):
+    """682j-c (owner 18 Nov 14:54): navigation keys only while the QA app's expected window has the focus; the picker,
+    Android quick settings, the production app or another window = ABORT with nothing pressed. Host run with shims for
+    dumpsys / input; every key that reached `input` is logged."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def run_guard(self, focus_lines, body, mark="HOME", popup="null", ty="APPLICATION"):
+        d = tempfile.mkdtemp()
+        try:
+            bin_ = os.path.join(d, "bin"); os.makedirs(bin_)
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            open(os.path.join(fdir, "voltcap_qa_screen"), "w").write(mark + " 123\n")
+            seq = os.path.join(d, "focus.txt"); open(seq, "w").write("\n".join(focus_lines) + "\n")
+            keys = os.path.join(d, "keys.txt"); open(keys, "w").close()
+            # dumpsys window: the next focus line each call (the last one repeats); windows: the window's type
+            open(os.path.join(bin_, "dumpsys"), "w").write(f"""#!/bin/sh
+if [ "$2" = windows ]; then echo "  Window{{abc1 u0 x}}:"; echo "    mAttrs={{ty={ty}}}"; echo "  Window{{main9 u0 x}}:"; echo "    mAttrs={{ty=BASE_APPLICATION}}"; exit 0; fi
+n=$(cat {d}/n 2>/dev/null || echo 1); l=$(sed -n "${{n}}p" {seq}); [ -z "$l" ] && l=$(tail -1 {seq})
+echo "  mCurrentFocus=$l"; echo $((n + 1)) > {d}/n
+""")
+            open(os.path.join(bin_, "input"), "w").write(f"#!/bin/sh\necho \"$*\" >> {keys}\n")
+            for f in ("dumpsys", "input"): os.chmod(os.path.join(bin_, f), 0o755)
+            # QaClip: answer every request with the given popupGame
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+wg_popup() {{ echo "{popup}"; }}
+{body}
+echo REACHED_END >> {d}/log.txt
+"""
+            r = subprocess.run(["sh", "-c", script], env={**os.environ, "PATH": bin_ + ":" + os.environ["PATH"]},
+                               capture_output=True, text=True, timeout=30)
+            log = open(os.path.join(d, "log.txt")).read() if os.path.exists(os.path.join(d, "log.txt")) else ""
+            return r.returncode, open(keys).read().split("\n")[:-1], log
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    QA = "Window{abc1 u0 com.shelf.launcher.qa/com.shelf.launcher.MainActivity}"
+    MAIN = "Window{main9 u0 com.shelf.launcher.qa/com.shelf.launcher.MainActivity}"
+
+    def test_presses_only_in_the_confirmed_game_window(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_seq_win "R1 W10 A"', popup="/r/game.sfc")
+        self.assertEqual(rc, 0, log); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1", "keyevent KEYCODE_BUTTON_A"])
+
+    def test_quick_settings_in_front_aborts_before_the_key(self):
+        shade = "Window{77 u0 NotificationShade}"
+        rc, keys, log = self.run_guard([self.QA, self.QA, self.QA, shade], 'wg_window; wg_key_win R1; wg_key_win A', popup="/r/game.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1"]); self.assertIn("quick settings", log)
+        self.assertNotIn("REACHED_END", log)
+
+    def test_production_app_or_settings_panel_aborts(self):
+        for other, word in (("Window{55 u0 com.shelf.launcher/com.shelf.launcher.HomeAlias}", "production"),
+                            ("Window{56 u0 com.android.settings/com.android.settings.panel.SettingsPanelActivity}", "settings panel")):
+            rc, keys, log = self.run_guard([self.QA, self.QA, self.QA, other], 'wg_window; wg_key_win R1; wg_key_win A', popup="/r/g.sfc")
+            self.assertEqual(rc, 4); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1"]); self.assertIn(word, log)
+
+    def test_no_game_window_means_no_page_key(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="null")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("game window expected", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="")   # no dump: never a yes
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_the_main_window_is_not_a_game_window(self):
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_picker_or_another_game_aborts(self):
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', mark="PICKER")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("picker", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window "/r/one.sfc"; wg_key_win A', popup="/r/two.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_navigation_scripts_press_keys_only_through_the_guard(self):
+        for name in ("nav682j.sh",):
+            src = open(os.path.join(self.DEV, name)).read()
+            self.assertNotIn("input keyevent KEYCODE_BUTTON", src, name + " presses a button around the guard")
+            self.assertIn(". ./winguard.sh", src)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
