@@ -282,3 +282,4 @@
   (reduced motion at once). Cloud compile OK; AchProgressCount681yTest 5/5 + Ach suites PASS (one Maven 429, retried once).
   HW-25 queued. Lock released.
 - ~07:20 UTC 681z (P2 turn): lock taken. Read P2 TV review 44247782675; grade_trial.py review mode + p2review.sh restore / App-category fixes on claude/v0674-native-pages (d14710b); selftest 224/224. No Gradle (QA tools only). Lock released.
+- ~08:20 UTC 682 (v0.6.74 turn): lock taken. Verify 310 GREEN on ccdc5bf. H16 next windows: no review sheet in the cloud + Maven 429 x3 -> added WindowWordsSurvey682Test (13 windows x 2 scales, findings to CI test results). Live session active on the P2 branch (682a/682c) - P2 left alone. Lock released.

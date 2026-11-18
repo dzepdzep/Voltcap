@@ -1,3 +1,14 @@
+# Update 682 (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey: whole words on the next 13 game windows (test only)
+- New unit test WindowWordsSurvey682Test (Robolectric, KONKR 640 x 427 dp, x1.0 and x1.3, 26 cases): renders the first page of
+  each window in the owner's H16 order after Pocket / Night / Bar - Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin
+  icons, Twin showcase, Memory card, Bubbles, Panels, Cinema - and lists every text broken inside a word or cut at its box's edge
+  (a one-line sliding text is rule 11's allowed form, not counted). Findings go to app/build/reports/h16-survey/findings.txt
+  (uploaded with CI's test results) and the test log; the survey fails only when a window can't be reached. SurveyRule682Test
+  pins what counts. Why a survey: the k678n13 review PDF is not in the cloud and Maven Central answered 429 three times, so the
+  cloud could not render the windows itself; CI's compile + run gives the concrete list the next H16 fixes start from.
+- App code unchanged. NOT compiled in the cloud (Maven 429 x3) - CI on this push is the first compile. Static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt (new). PC copy: none (test only).
+
 # Update 681z (18 Nov 2026, cloud run, P2 turn) - emulator review runs get a real verdict; P2 TV review read (QA tools only)
 - Branch `claude/v0674-native-pages` (d14710b, dev line 681y merged in first). App code unchanged.
 - Emulator review 44247782675 ("P2:TV", cf40522) READ: the TV Fastext keys read whole at x1.0 and x1.3 (681x confirmed on the

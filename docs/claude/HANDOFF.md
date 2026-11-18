@@ -47,6 +47,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 08:45 UTC, 682 (cloud, v0.6.74 turn):** H16 next windows. The k678n13 review PDF is not in the repo and the cloud could
+not compile (Maven Central 429 x3), so this run added WindowWordsSurvey682Test (test only, app unchanged): Hero, Hero tiles, Live,
+Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema at KONKR 640 x 427 dp, x1.0 + x1.3 -
+every text broken inside a word or cut at its edge (one-line sliding text excluded) -> app/build/reports/h16-survey/findings.txt in
+CI's "update-310-test-results-*" artifact + the test stdout. A live session pushed P2 682a / 682c to `claude/v0674-native-pages`
+at ~08:07 UTC - left alone.
+NEXT: check Verify 310 on this push (first compile of the survey: a compile / "no text reached" failure -> fix first). Next run =
+P2 turn ONLY if the live session's last P2 push is > 1 h old (else another v0.6.74 turn). Next v0.6.74 turn: download the survey
+findings (gh api .../actions/runs/<id>/artifacts) and fix the first windows in list order, each with a test that fails on the old
+code (pattern: BarDockLabels681wTest / NightStatLabels681tTest); "clean" windows need no change.
+
 **18 Nov 07:45 UTC, 681z (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages`; emulator review 44247782675 READ
 (TV Fastext keys whole at both scales - 681x confirmed; Play guard held; App category still empty on the emulator -> destructive
 confirmation NOT TESTED there). (c) DONE on the P2 branch (d14710b): grade_trial.py grades review runs on their own walks (P2:

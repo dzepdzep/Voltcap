@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681z · 2026-11-18 07:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 19bc1e0 (681y); 79bb40d red = package-server 429 (infra); P2 cf40522 GREEN · effort: medium
+**1. LATEST UPDATE** - 682 · 2026-11-18 08:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on ccdc5bf (681z); this push is the first compile of the new test (cloud Maven 429) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Behind the scenes: the automatic emulator reviews of the new game-window pages now give a real pass / not-tested / fail result instead of always saying 'not tested', and they produce one picture sheet per layout for your review. The TV room review confirmed the coloured page keys at the bottom now read in full at both text sizes.
+**2. WHAT CLAUDE JUST FIXED** - Behind the scenes: a new automatic check opens the game windows of the next 13 layouts on your list (Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema) at KONKR size, normal and larger text, and lists every word split in the middle or cut at an edge. The next runs fix what it finds, one window at a time. Nothing in the app changed.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Window polish (H16): Hero, Hero tiles, Live, Cross; then: Native pages batch 2 (Cube first) + emulator review; Achievements reveal / trophy animation redesign (comparison for the owner)
+**5. WORKING ON NEXT** - now: Read the H16 survey findings from CI and fix the first windows (Hero, Hero tiles, Live, Cross); then: Native pages batch 2 (Cube first) - after the live session's 682a-c on that branch; Achievements reveal / trophy animation redesign (comparison for the owner)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
@@ -106,7 +106,7 @@ Published: this is the current stable release (a4012212, 2026-11-17). Nothing to
 | Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay | not run | requested 17 Nov |
 | AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first) | not run | requested 17 Nov |
 | Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting) | full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED | owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674 |
-| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test); Night ACHIEVED / RELEASED whole in code 681t-681u (unit test, cloud); Bar dock key names whole in code 681w (unit test, cloud); handheld HW-24 NOT TESTED | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
+| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test); Night ACHIEVED / RELEASED whole in code 681t-681u (unit test, cloud); Bar dock key names whole in code 681w (unit test, cloud); 682 survey test of the next 13 windows (findings from CI); handheld HW-24 NOT TESTED | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
 
 | Gate | State | Evidence |
 |---|---|---|
