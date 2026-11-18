@@ -44,7 +44,10 @@ Cube implemented (682n-q) = 22/53 implemented. 682r (branch claude/v0674-native-
 RP Classic walks (Magazine checklist had no rows, Arcade's title 0 px on the RP Classic, Cinema / Cube first row part-cut - D360);
 AchFirstRow now at the KONKR and RP Classic sizes for every native layout. HW (QA app, x1.3): Magazine, Cinema, Arcade walked on
 both, 0 launches, restore OK; Cube first walk OK, its 2nd open aborted safely (script fixed, not re-run); x1.0 NOT TESTED on HW.
-Not owner-approved (neither batch).
+Not owner-approved (neither batch). Owner 18 Nov 18:20 chose batch-1 visual fixes first: hardware walk x1.3 KONKR + RP Classic
+(all five layouts, every page, 0 launches, restore OK); 682s fixed Classic's misleading ON / OFF switch words, the no-art chip
+("SNES" one letter a line) and Hub ENGRAVED scrolling its tags away; ShelfText now covers batch 1. Build qa-682s-f816912-ci
+is NOT on a device yet - re-check of Classic / Hub on hardware and x1.0 pending.
 QA safety (owner 14:54): winguard.sh - nav682j / p2review / catswitch / anchors682 press keys only while the QA app's confirmed
 window has the focus; picker / Android quick settings / production / other window = ABORT, no blind retries (D359 follow-up).
 18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
