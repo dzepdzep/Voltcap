@@ -1562,6 +1562,17 @@
    "base_commit": "claude/v0674-native-pages ef2694a",
    "tree_hash": "claude/v0674-native-pages ef2694a",
    "note": "682r-2 RP Classic fixes - KONKR p2k13c / RP Classic p2r13c"
+  },
+  {
+   "id": "qa-682s-f816912-ci",
+   "apk_sha256": "0645fb4b4107c105faf6a0aacd931024d43ef7a5dedc03cc8de19db48bb88d56",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages f816912",
+   "tree_hash": "claude/v0674-native-pages f816912",
+   "note": "682s batch-1 visual pass (Classic switches / chip, Hub tags first) - not on a device yet"
   }
  ]
 }
