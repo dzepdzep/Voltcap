@@ -70,8 +70,12 @@ private class ChipWindow {
  */
 /** 682e: where a lead-focused window starts (WholeChipRow leadFocused). Pure. */
 internal object ChipLead {
-    /** All chips fit: the window starts at the first (nothing moves). Else at the chip you're on ([keep]). */
-    fun start(keep: Int, allFit: Boolean): Int = if (allFit) 0 else keep.coerceAtLeast(0)
+    /**
+     * All chips fit: the window starts at the first (nothing moves). Else (682m, owner 18 Nov 14:54: "approve the adapted
+     * L2 / R2 placement, but preserve surrounding category context where space allows") one chip before the one you're on
+     * ([keep]), so its neighbour stays in view; WholeChipRow then keeps the chip you're on whole and fills the end.
+     */
+    fun start(keep: Int, allFit: Boolean): Int = if (allFit) 0 else (keep - 1).coerceAtLeast(0)
 }
 
 internal object ChipGlide {
@@ -202,14 +206,17 @@ internal fun WholeChipRow(
         var s = win.start.coerceIn(0, (count - 1).coerceAtLeast(0))
         val keep = win.keep
         if (!win.manual && keep in 0 until count) {
-            if (leadFocused) s = ChipLead.start(keep, endFor(0) == count - 1)
-            else {
+            if (leadFocused) {
+                s = ChipLead.start(keep, endFor(0) == count - 1)
+                while (s < keep && endFor(s) < keep) s++  // (a narrow strip: the chip you're on stays whole first)
+            } else {
                 if (keep < s) s = keep
                 while (s < keep && endFor(s) < keep) s++
             }
         }
-        // No empty room at the end while there are chips hidden before (682e: unless the chip you're on leads).
-        if (!leadFocused && endFor(s) == count - 1) while (s > 0 && endFor(s - 1) == count - 1) s--
+        // No empty room at the end while there are chips hidden before (682m: also when the chip you're on leads - the list's
+        // end shows its last chips together, more context before them).
+        if (endFor(s) == count - 1) while (s > 0 && endFor(s - 1) == count - 1) s--
         win.start = s
         val e = endFor(s)
 

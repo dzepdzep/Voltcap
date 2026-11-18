@@ -28,6 +28,29 @@ class PlayChipAnchor682eTest {
         assertEquals(24f, PlayChipAnchor.endRoom(viewW = 100f, start = 24f, lastChipW = 100f, end = 24f))
     }
 
+    /** 682m (owner 18 Nov 14:54): the strip starts on Play's edge, then scrolls naturally - neighbours kept, the end at its end. */
+    @Test fun naturalScrollKeepsNeighboursAndTheEndAtItsEnd() {
+        // 10 chips 100 px wide, 10 px apart, the strip starting at the Play edge (24 px): chip i at 24 + 110 i; 500 px view
+        val lefts = IntArray(10) { 24 + 110 * it }; val widths = IntArray(10) { 100 }
+        val max = 24 + 110 * 9 + 100 - 500   // = 614: the last chip's right edge on the view's right edge
+        val fade = 56
+        // at the start nothing moves while the chip, the one before and the one after are in view
+        assertEquals(0, PlayChipAnchor.natural(0, lefts, widths, cur = 0, viewW = 500, start = 24, fade = fade, max = max))
+        assertEquals(0, PlayChipAnchor.natural(1, lefts, widths, 0, 500, 24, fade, max))
+        // going on: chip 3's neighbour (4) would sit under the fade - the row moves just enough for it to show whole
+        val t3 = PlayChipAnchor.natural(3, lefts, widths, 0, 500, 24, fade, max)
+        assertEquals(24 + 110 * 4 + 100 - 500 + fade, t3)
+        assertTrue("the chip you're on is not pinned to the Play edge", lefts[3] - t3 > 24)
+        // going back: the one before comes to the Play edge, so the strip starts there again with the chip beside it
+        assertEquals(lefts[4] - 24, PlayChipAnchor.natural(5, lefts, widths, cur = 600, viewW = 500, start = 24, fade = fade, max = max))
+        // the last chip: the list ends at its own end - it sits on the right with its neighbours, never alone on the left
+        val tl = PlayChipAnchor.natural(9, lefts, widths, cur = 300, viewW = 500, start = 24, fade = fade, max = max)
+        assertEquals(max, tl)
+        assertTrue("neighbours of the last chip in view", lefts[8] - tl >= 24 && lefts[7] - tl >= 0)
+        // all chips fit: no scroll at all
+        assertEquals(0, PlayChipAnchor.natural(1, IntArray(3) { 24 + 110 * it }, IntArray(3) { 100 }, 0, 500, 24, fade, max = 0))
+    }
+
     @Test fun theRuleIsWiredOnBothEnds() {
         fun src(n: String) = java.io.File(listOf("src/main/java/com/shelf/launcher/ui/", "app/src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + n) }.first { it.exists() }.path).readText()
         val h = src("HomeChrome.kt"); val p = src("PlayHeader.kt"); val l = src("LauncherScreen.kt")
@@ -38,7 +61,9 @@ class PlayChipAnchor682eTest {
 
     @Test fun adaptedVersionsInTheOwnLayouts() {
         // Library: the tab you're in leads its strip (after L2) - steady - unless every tab fits (then nothing moves)
-        assertEquals(7, ChipLead.start(keep = 7, allFit = false)); assertEquals(0, ChipLead.start(7, allFit = true))
+        // (682m: one chip of context before the one you're on)
+        assertEquals(6, ChipLead.start(keep = 7, allFit = false)); assertEquals(0, ChipLead.start(7, allFit = true))
+        assertEquals(0, ChipLead.start(keep = 0, allFit = false))
         fun src(n: String) = java.io.File(listOf("src/main/java/com/shelf/launcher/ui/", "app/src/main/java/com/shelf/launcher/ui/").map { java.io.File(it + n) }.first { it.exists() }.path).readText()
         assertTrue(src("StyleLibrary.kt").contains("leadFocused = true"))
         // Bar: the category tab on the Play button's column (6 dp, as the title), both marked for anchorcheck

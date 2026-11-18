@@ -879,8 +879,11 @@ internal fun GlidingChipRow(
         // third in from the start, wherever the list allows; the ends of the list stop at their own edge.)
         val startPx = with(density) { startPadding.toPx() }
         val target = if (anchored) {
-            // (682e: the selected chip's left edge on the Play edge - when the chips need scrolling at all)
-            if (scroll.maxValue <= 0) 0 else PlayChipAnchor.target(cur, winLefts[focused] - viewWinX, startPx, scroll.maxValue)
+            // (682m, owner 18 Nov 14:54: the strip starts on the Play edge and scrolls naturally - neighbours kept in view, the
+            // list's end at its own end - PlayChipAnchor.natural; 682e pinned the chip you're on to the edge)
+            // (each chip's left in the row's content from where it is on screen - the 682e measure, padding included)
+            val contentLefts = IntArray(count) { i -> Math.round(winLefts[i] - viewWinX) + cur }
+            PlayChipAnchor.natural(focused, contentLefts, widths, cur, viewW, Math.round(startPx), with(density) { GlidingChips.FADE_DP.dp.roundToPx() }, scroll.maxValue)
         } else GlidingChips.target(l, r - l, viewW, cur, margin).coerceIn(0, scroll.maxValue)
         if (target == cur) return@LaunchedEffect
         if (first[0]) scroll.scrollTo(target) else scroll.animateScrollTo(target, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
@@ -913,12 +916,9 @@ internal fun GlidingChipRow(
             }
     ) {
         val minW = maxWidth
-        // (682e: anchored, room after the last chip once the chips overflow, so the last ones can reach the Play edge too)
-        val natural = widths.sum() + (count - 1).coerceAtLeast(0) * with(density) { spacing.roundToPx() }
-        val end = if (!anchored || count == 0 || laidOut < 0) endPadding else with(density) {
-            val st = startPadding.toPx(); val vw = maxWidth.toPx()
-            if (PlayChipAnchor.overflows(st, natural.toFloat(), endPadding.toPx(), vw)) PlayChipAnchor.endRoom(vw, st, widths[count - 1].toFloat(), endPadding.toPx()).toDp() else endPadding
-        }
+        // (682m: the list ends at its own end - no extra room after the last chip; 682e added room so it could reach the Play
+        // edge, which left the last category alone on the far left)
+        val end = endPadding
         Row(
             Modifier.horizontalScroll(scroll).widthIn(min = minW).padding(start = startPadding, end = end),
             horizontalArrangement = Arrangement.spacedBy(spacing, align),
