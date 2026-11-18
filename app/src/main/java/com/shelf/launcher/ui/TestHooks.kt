@@ -217,6 +217,16 @@ internal object TestHooks {
      * ordinary Voltcap ignores it, hooks file or not.
      */
     val fixtureRoms = mutableStateOf<String?>(null)
+    /**
+     * 682b (HW-25): `--es voltcap_test_extra_root <folder>` with voltcap_test_fixture_roms - ONLY in the isolated QA app: a second
+     * ROM folder scanned with the fixture one (the QA app's own folder on an SD card), so a card taken out can be checked.
+     */
+    val extraRoot = mutableStateOf<String?>(null)
+    /**
+     * 681r: `--ez voltcap_test_libdump true` - ONLY in the isolated QA app: the library as the screen has it (selected category,
+     * the console categories, every game with its console and file) into <its external files>/voltcap_qa_lib.txt.
+     */
+    val libDump = androidx.compose.runtime.mutableIntStateOf(0)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
@@ -312,8 +322,11 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        if (intent?.hasExtra("voltcap_test_extra_root") == true && com.shelf.launcher.data.QaVariant.isolated(context))
+            extraRoot.value = intent.getStringExtra("voltcap_test_extra_root")?.takeIf { it.isNotBlank() && it != "off" }
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
+        if (intent?.getBooleanExtra("voltcap_test_libdump", false) == true && com.shelf.launcher.data.QaVariant.isolated(context)) libDump.intValue++
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
         intent?.getStringExtra("voltcap_test_wininspect")?.let { v -> if (enabled(context)) winInspect.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
