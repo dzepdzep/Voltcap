@@ -151,7 +151,9 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${t.earned} / ${t.total} CUBES LIT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+            // (682r, AchFirstRow x1.3: "CUBES LIT" broke onto a second line beside the order key - the wall's count is the
+            // lit cubes over the face's cubes, the face's name already says CUBES)
+            Text("${t.earned} / ${t.total} LIT", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
             NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
                 Text("ORDER · " + t.order.label.uppercase(), color = if (on) cubeInkOn(a) else a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
                     modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(if (on) a else Color.Transparent).border(1.dp, a, RoundedCornerShape(3.dp))
@@ -159,11 +161,13 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
             }
         }
         Spacer(Modifier.height(4.dp))
-        // The wall: one little cube per achievement in the list's order.
+        // The wall: one little cube per achievement in the list's order (682r: smaller cubes for a big set - three rows of
+        // them took the first achievement's room at x1.3).
+        val cube = if (t.total > 16) 9.dp else 12.dp
         if (t.total > 0) FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            t.list.forEach { LittleCube(it.isUnlocked, a, Modifier.size(14.dp)) }
+            t.list.forEach { LittleCube(it.isUnlocked, a, Modifier.size(cube)) }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(4.dp))
         Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(a), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             t.list.forEach { ach ->
                 val earned = ach.isUnlocked
@@ -188,7 +192,8 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
                             }
                             ach.description?.let { d ->
                                 if (opened) Text(d, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp, lineHeight = 15.sp, modifier = Modifier.padding(start = 54.dp, top = 2.dp))
-                                else WinFullText(d, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp, modifier = Modifier.padding(start = 54.dp, top = 2.dp))
+                                // (682r: one sliding line while closed - A opens the whole text, as the TV's rows (681v))
+                                else WinFullText(d, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp, modifier = Modifier.padding(start = 54.dp, top = 2.dp))
                             }
                             if (opened) {
                                 val facts = listOfNotNull(

@@ -45,8 +45,14 @@ qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Wi
 # (682f) the D-pad is on the "Hide from library" option row (QaClip: a focused node whose label carries it)
 onhide() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -qiF 'Hide from library'; } # (682h: -i, Hub / TV print it in capitals)
 playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"label":"Play",' | grep -F '"kind":"control",' | grep -qF '"focused":true'; }
+# (682r) the dump's focused node is one of the window's own keys (Play / Full list / Full details / Back ...), not a page row
+focuslabel() { tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | tail -1 | sed -n 's/.*"label":"\([^"]*\)".*/\1/p'; }
+onkey() { [ -s $O/$1.json ] && focuslabel $1 | grep -qixE '(▸ )?(play|play it!|full list|full details|back|details|options|achievements)'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
-. /data/local/tmp/rec.sh 2>/dev/null
+# (682r, RP Classic: "." on a missing rec.sh ended the script silently before its first log line - the recorder now comes from
+# the script's folder or /data/local/tmp; none = the recordings are NOT TESTED, said so, the walk still runs)
+for r in "$(dirname "$0")/rec.sh" /data/local/tmp/rec.sh; do [ -f "$r" ] && { . "$r"; break; }; done
+type rec_start > /dev/null 2>&1 || { rec_start() { log "no recorder (rec.sh) - recording $1 NOT TESTED"; }; rec_stop() { :; }; }
 pick() { logcat -d -s VoltcapQA | grep -F "$1" | head -1 | sed 's/.*game=//' | tr -d '\r'; }
 openw() { # layout name -> 0 when the game window is open
   A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=${MOTION:-NORMAL}"; A --es voltcap_test_layout $1; sleep 3.5; gate
@@ -79,7 +85,10 @@ run)
     rec_stop; sleep 0.3
     k BUTTON_R1 1.1; shot ${n}_details; k DPAD_UP 0.9; shot ${n}_details_focus
     k BUTTON_R1 1.1; shot ${n}_trophies; k DPAD_DOWN 0.8; k DPAD_DOWN 0.8; shot ${n}_trophies_focus
-    k BUTTON_A 1.0; shot ${n}_trophies_open
+    # (682r, KONKR Magazine x1.3: the list had no row on screen, two Downs reached the window's "Full list" key and the A
+    # opened the achievement dialog - winguard stopped the run. A only on an achievement row: never on a window key.)
+    if onkey ${TAG}_${n}_trophies_focus; then log "$lay: FAIL - two Downs from the page's first row reached a window key ($(focuslabel ${TAG}_${n}_trophies_focus)), no achievement row - A NOT pressed"
+    else k BUTTON_A 1.0; fi; shot ${n}_trophies_open
     for i in 1 2 3 4 5 6 7; do k DPAD_DOWN 0.45; done; sleep 0.6; shot ${n}_trophies_scroll
     k BUTTON_R1 1.1; shot ${n}_options; k DPAD_DOWN 0.8; shot ${n}_options_focus
     k BUTTON_B 1.2; shot ${n}_back_main; closewin; shot ${n}_closed

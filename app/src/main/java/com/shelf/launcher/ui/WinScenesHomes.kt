@@ -83,7 +83,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize()) {
             // The art: the game's backdrop with a slow drift in, fading into the page.
             // (Update 507, owner review of 506: the title no longer sits on the picture — it has its own line under it, see below.)
-            Box(Modifier.fillMaxWidth().height(h * (if (ctx.page != WinPage.MAIN) 0.26f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
+            // (682r, AchFirstRow x1.3: on the service's own screens the band steps back to a strip, the title line with it - the
+            // EPISODES list had 51 of an episode's 95 px.)
+            val onPage = ctx.page != WinPage.MAIN
+            Box(Modifier.fillMaxWidth().height(h * (if (onPage) 0.10f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Update 469: the window-wide backdrop at the screen's size — rememberBackdropRequest — not the 360–720 px card decode.)
                 // (Batch 523, Smart Fill: a cover standing in for the backdrop shows whole over its soft copy instead of a band cut
@@ -104,9 +107,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                 },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.width(4.dp).height(if (compact) 34.dp else 50.dp).clip(RoundedCornerShape(2.dp)).background(accent))
+                Box(Modifier.width(4.dp).height(if (onPage) 26.dp else if (compact) 34.dp else 50.dp).clip(RoundedCornerShape(2.dp)).background(accent))
                 Spacer(Modifier.width(12.dp))
-                LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 40.dp else 56.dp).fillMaxWidth(0.7f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Black, maxLines = 2) }
+                LogoOrName(ctx.logo, ctx.name, Modifier.height(if (onPage) 32.dp else if (compact) 40.dp else 56.dp).fillMaxWidth(0.7f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (onPage) 18.sp else if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Black, maxLines = 2) }
             }
             // Update 487 (E7 Cinema actions, owner-approved): the round keys run under both columns (the page's whole width)
             // instead of under the facts only — there, 5 of the 8 fitted and Manual / Inspect / Back wrapped below the window.
@@ -123,7 +126,7 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         if (ctx.total > 0 && ctx.earned >= ctx.total) { Text("MASTERED", color = Color(0xFF46D369), fontSize = 13.sp, fontWeight = FontWeight.Black); Spacer(Modifier.width(10.dp)) }
                         FullText(listOfNotNull(ctx.year, ctx.console, ctx.genres?.substringBefore(",")).joinToString("   "), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(if (onPage) 4.dp else 10.dp))
                     if (ctx.page == WinPage.MAIN && !playInRow) {
                         val play = ctx.buttons.filter { it.primary }
                         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -71,11 +71,11 @@ jobs:
           cache-read-only: true
       - name: Build (debug = com.shelf.launcher.qa, Discord SDK stub, debug key, + x86_64)
         # (529t: lint's own tool download failed once on Maven Central - lint is not part of this test; one retry for a
-        # passing network hiccup.)
+        # passing network hiccup; 682r: the lint REPORT task fetches the same tool - 44332100351 failed on it - skipped too.)
         timeout-minutes: 20
         run: |
           for i in 1 2; do
-            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true -PvoltcapEmulatorAbi=true :app:assembleDebug -x lintVitalAnalyzeDebug && exit 0
+            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true -PvoltcapEmulatorAbi=true :app:assembleDebug -x lintVitalAnalyzeDebug -x lintVitalReportDebug && exit 0
             echo "build attempt $i failed"; sleep 20
           done
           exit 1

@@ -4072,6 +4072,22 @@
    "severity": "high",
    "status": "fixed in QA tooling 682j-b (nav682j.sh: the picker passed first, page keys only while a QaClip dump shows a game window open, else the layout is skipped with nothing pressed; hooks on for the dumps) - re-run 18 Nov PASS on both",
    "found": "2026-11-18 14:15 (682j hardware run)"
+  },
+  {
+   "id": "D360",
+   "title": "P2 batch 2 at x1.3 (KONKR 640 x 427 dp): the Game magazine's CHECKLIST page showed no achievement row at all (the facts line wrapped, the points broke a word per line beside the order key, the page keys stacked), Cinema's EPISODES 51 of a row's 95 px, the Cube's CUBES face 83 of 116 px. KONKR p2review run p2k13: two Downs reached the window's Full list key, the A opened the achievement dialog and winguard stopped the run safely (nothing more pressed)",
+   "rule": "R26",
+   "severity": "high",
+   "status": "fixed in code 682r (magazine pages without the facts line, keys in one row, points inside the SCORE box; Cinema's band a strip on its own screens; Cube LIT count, smaller cubes for a big set, one sliding description line) - AchFirstRowRoboTest now covers MAGAZINE CINEMA ARCADE CUBE every size both scales (fails on the old code); hardware re-run pending",
+   "found": "2026-11-18 16:21 (KONKR p2k13 + CI Verify 44334080749)"
+  },
+  {
+   "id": "D361",
+   "title": "p2review.sh ended silently on the RP Classic before its first log line: '.' on a missing /data/local/tmp/rec.sh stops a non-interactive sh",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "fixed in QA tooling 682r (recorder from the script's folder or /data/local/tmp, else the recordings logged NOT TESTED)",
+   "found": "2026-11-18 16:22"
   }
  ]
 }

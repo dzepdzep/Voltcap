@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -129,12 +130,14 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
         Row(verticalAlignment = Alignment.CenterVertically) {
             val pts = t.list.filter { it.isUnlocked }.sumOf { it.points ?: 0 }
             val (score, points) = magScore(t.earned, t.total, pts, t.list.sumOf { it.points ?: 0 })
+            // (682r, KONKR x1.3: the points sat between the box and the order key and broke a word per line - "26 / OF / 95 /
+            // PT" - pushing the list off the page; they are the box's own last line now.)
             Column(Modifier.border(2.dp, st.ink).padding(horizontal = 8.dp, vertical = 3.dp)) {
                 Text("SCORE", color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 9.sp, letterSpacing = 1.5.sp)
                 Text(score, color = st.ink, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 18.sp, lineHeight = 20.sp)
+                Text(points, color = st.muted, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 9.sp, letterSpacing = 0.5.sp, lineHeight = 11.sp)
             }
-            Spacer(Modifier.width(8.dp))
-            Text(points, color = st.muted, fontFamily = st.head, fontWeight = FontWeight.Bold, fontSize = 10.sp, letterSpacing = 1.sp, modifier = Modifier.weight(1f))
+            Spacer(Modifier.weight(1f).widthIn(min = 8.dp))
             NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
                 Text("SORTED BY  " + t.order.label.uppercase(), color = if (on) st.paper else st.ink, fontFamily = st.head, fontWeight = FontWeight.Black,
                     fontSize = 10.sp, letterSpacing = 1.sp,

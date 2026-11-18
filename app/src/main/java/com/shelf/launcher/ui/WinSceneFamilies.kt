@@ -629,13 +629,14 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                         fontWeight = FontWeight.Black, reserve = false)
                 }
             }
-            Spacer(Modifier.height(8.dp))
+            // (682r: on the other faces the gaps tighten - the face's room goes to the page)
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
             // (682q, P2 batch 2: the cube's other faces - SPECS, CUBES, CONTROLS - WinPagesCube.kt; face 1 is the game.)
             NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "cubePage", move = ::cubeMove) { pg, pageLive ->
                 if (pg == WinPage.MAIN) Column { SceneFactsBody(ctx, Color.White.copy(alpha = 0.6f), Color.White, omit = setOf("Console")) }
                 else CubePage(ctx, pg, pageLive, a, faceBottom, Modifier.fillMaxSize())
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
             KeyRow(sceneKeys(ctx)) { k ->
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, inkOn(a), Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
             }

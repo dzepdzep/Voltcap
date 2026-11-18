@@ -849,8 +849,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                     fontSize = if (onPage) 16.sp else if (compact) 20.sp else 26.sp, lineHeight = if (onPage) 18.sp else if (compact) 22.sp else 28.sp,
                     maxLines = if (onPage) 2 else 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
                         fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal))
-                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
-                Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
+                // (682r, KONKR x1.3: on its own pages the facts line steps out - THE REVIEW's FACT FILE carries them - and the rule
+                // tightens; with it there the CHECKLIST had no room left for a single achievement row.)
+                if (!onPage) Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
+                Box(Modifier.padding(vertical = if (onPage) 4.dp else 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
                 // (682n, P2 batch 2: the magazine's own pages - WinPagesMag.kt; the feature itself is the first page.)
                 NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "magPage", move = ::magMove) { pg, pageLive ->
                 // (the copy on its way out keeps no focus requesters and presses nothing - WinAction.inert)
@@ -911,8 +913,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                 } else {
                     MagPage(ctx, st, pg, pageLive, Modifier.weight(1f).fillMaxWidth())
                     Spacer(Modifier.height(4.dp))
-                    // (674e: the page's keys one vertical menu of identical keys - the page's width, 26 dp, the lit one ringed.)
-                    UniformKeyColumn(btns, 2.dp, fill = true) { a ->
+                    // (674e: the page's keys identical keys, 26 dp, the lit one ringed; 682r: side by side in one row - stacked
+                    // they took two lines from the page at x1.3)
+                    UniformKeyRow(btns, 6.dp) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                 .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {

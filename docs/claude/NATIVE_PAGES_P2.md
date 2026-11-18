@@ -182,3 +182,16 @@ Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 
   never two blind B presses. Every key goes through winguard (682j-c).
 - Batch 1 (Record crate, Classic, Console hub, Resume & discover, TV room): still NOT owner-approved; its open visual findings stay open
   until the owner's review of the next sheets.
+
+### 682r - batch 2 room at x1.3 (KONKR, 18 Nov) - NOT owner-approved
+- KONKR p2review p2k13 (build 73d6766, x1.3): Game magazine's CHECKLIST had no achievement row - the facts line wrapped, the
+  points broke a word per line beside the order key, the page keys stacked. Two Downs reached the window's Full list key; the A
+  opened the achievement dialog and winguard ABORTED the run safely (nothing more pressed, QA app put back). D360.
+- CI Verify 44334080749 caught the same on AchFirstRow (MAGAZINE 0 px, CINEMA 51 / 95 px, CUBE 83 / 116 px at x1.3).
+- Fixed in code: magazine pages drop the facts line (THE REVIEW's FACT FILE has them), keys in one row, points inside the SCORE
+  box; Cinema's own screens keep a strip of the backdrop and a smaller title line; Cube: "8 / 12 LIT", smaller cubes for a big
+  set, one sliding description line while closed (A opens the whole text). AchFirstRowRoboTest now runs the four layouts at every
+  size and both scales (24 / 24 PASS; MAGAZINE fails on the old code). ShelfText 96 / 96, NoStray 8 / 8, Batch2 4 / 4.
+- p2review: A on an achievement row only - a window key focused is a logged FAIL, A not pressed; rec.sh no longer required (D361,
+  the RP Classic run ended silently before its first line).
+- Hardware: re-run on KONKR + RP Classic with the next QA build - NOT TESTED until then.
