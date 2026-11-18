@@ -63,7 +63,7 @@ jobs:
           VOLTCAP_QA_KEYSTORE_PATH: ${{ runner.temp }}/qa-debug.keystore
         run: |
           for i in 1 2; do
-            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug -x lintVitalAnalyzeDebug -x lintVitalReportDebug && exit 0
+            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true :app:assembleDebug -x lintVitalDebug -x lintVitalAnalyzeDebug -x lintVitalReportDebug && exit 0
             echo "build attempt $i failed"; sleep 20
           done
           exit 1
