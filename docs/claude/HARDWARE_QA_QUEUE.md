@@ -59,6 +59,16 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   the Xbox 360 game had (file / folder, own ROM folder or a console subfolder), to confirm it is the case covered.
 - Also (P2 batch 1, same session, ~5 min): p2review.sh on CRATE CLASSIC HUB RESUME TV at x1.0 + x1.3 (screens + recordings).
 
+### HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) - OPEN (same KONKR session as HW-24, ~3 min)
+- Device: KONKR (or RP Nova), x1.0; L1 QA app only. Build: the CI QA APK of the 681y commit or later.
+- Why not emulator: the trial has no RetroAchievements account (no real set, no new unlocks); the QA hook below needs a real set.
+- Tests: a game with an achievement set, `--ei voltcap_test_achnew 2` (678o hook) -> open its Achievements page (Power cells view):
+  on open the battery / percentage leave out the 2 new ones; each fills up as its badge locks in on the stage; after the stage the
+  percentage equals the set's real progress and the summary line agrees. Again with Settings > Motion = Off: the stage shows both
+  badges settled at once, the summary line and the full percentage at once (no waiting). Trophy list view: Earned / Progress / tier
+  counts follow the same way. A game with nothing new: no fill on open. Screen recording of the first case. Unit evidence only
+  (AchProgressCount681yTest, cloud Robolectric).
+
 ### HW-24 Channel progress pill clear of the name plate (680a, D356) - OPEN (next KONKR session)
 - Device: KONKR (where k679p13 found it), x1.0 + x1.3; L1 QA app only. Build: the CI QA APK of the 680a commit or later.
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CHAN" OWN (+ off) -> popclip.py + badgecheck (no "PROGRESS covers text"),

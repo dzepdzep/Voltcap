@@ -47,6 +47,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 06:50 UTC, 681y (cloud, v0.6.74 turn):** item 7 H12 - the Achievements page's progress (Power cells battery, Trophy
+header, summary bar) now counts each new unlock as its badge locks in on the stage and fills up to it; nothing new = no fill. The
+stage's waits / sound cues follow the motion speed (Off / reduced motion = every badge at once). AchProgressCount681yTest 5/5 +
+Ach suites PASS (cloud compile + Robolectric). HW-25 queued (KONKR, with HW-24). Dev CI: Verify 310 on 29f0c87 (docs) was running;
+last code push 18a8cbc GREEN. P2 cf40522 Verify 310 GREEN; its emulator review 44247782675 ended "failure" (review runs end NOT
+TESTED by design until (c) grade_trial.py review mode is done) - read it next P2 turn.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: read review 44247782675 (TV keys), (c) grade_trial.py
+review-mode verdict, then batch 2 (Cube first). Following v0.6.74 turn: H12 rest (reveal / trophy animation redesign needs an
+owner look - comparison first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross ...).
+
 **18 Nov 05:20 UTC, 681x (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages` (4a3e313); findings (a) + (b) of
 review 44233448467 fixed there: (a) TV Fastext keys each as wide as their own word, short words PIC / OPTS when the four full
 words cannot fit (WinPagesTv.kt ttxKeyPlan) - TvFastextKeys681xRoboTest; (b) p2review.sh playfocused() fixed strings only

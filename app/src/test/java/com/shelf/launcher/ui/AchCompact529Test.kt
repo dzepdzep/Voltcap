@@ -71,7 +71,7 @@ class AchCompact529Test {
     /** Stats folded by default (owner): Power cells' tiles open from the bar's Stats panel. */
     @Test fun statsAreAPanel() {
         val l = src("AchievementListDialog.kt")
-        assertTrue(l.contains("PowerHeader(achievements, showStats = false)"))
+        assertTrue(l.contains("PowerHeader(achievements, showStats = false")) // (681y: + pending = stagePending)
         assertTrue(l.contains("AchPanelBody(panel == AchPanel.STATS) { PowerStats(achievements) }"))
     }
 

@@ -1,3 +1,18 @@
+# Update 681y (18 Nov 2026, cloud run, v0.6.74 turn) - Achievements progress counts new unlocks as they lock in (H12)
+- Achievements page (AchievementListDialog.kt, AchievementViews.kt, AchievementFx.kt): the progress - Power cells' battery and
+  percentage, the Trophy list's Progress / Earned / tier counts, the summary bar - counted the new unlocks before the NEW UNLOCKS
+  stage had shown them (full battery while the badges still waited dim). It now leaves out the ones still waiting and counts each
+  as it locks in; the battery / bar fill up to it at the shared motion speed (520 ms tween). A page with nothing new shows its
+  progress at once, no fill (old unlocks never replay).
+- Reduced motion: the stage's waits and sound cues did not follow the motion speed (only its tween did), so with Motion Off or
+  Android "Remove animations" it still sat ~1.6 s per badge; at Subtle / Expressive the lock sound missed the lock.
+  unlockStagePlan(amount, MotionLevel.scaleFactor) scales them; at 0 every badge locks in at once, one lock sound, summary shown.
+- Tests: AchProgressCount681yTest 5/5 (new; 22 % on open -> 30 % after the stage, fails on the old code; motion Off at once;
+  plan + pending pure cases); AchCompact529Test 8 (pin follows the new parameter), AchNewUnlocksOnOpen678mTest 2, AchNewHook678oTest 2,
+  AchFirstRowRoboTest 87 PASS - compiled + run in the cloud. Static checks PASS. Hardware NOT TESTED (HW-25, batched with HW-24).
+- Files: app/src/main/java/com/shelf/launcher/ui/{AchievementFx,AchievementListDialog,AchievementViews}.kt,
+  app/src/test/java/com/shelf/launcher/ui/{AchProgressCount681yTest,AchCompact529Test}.kt. PC copy: the three ui files to src_copy/ui/.
+
 # Update 681x (18 Nov 2026, cloud run, P2 turn) - TV room Fastext keys stand whole; review-script Play guard fixed
 - P2 branch `claude/v0674-native-pages` (049dd75, after merging the dev line 681w = 4a3e313): on the room television the four
   Fastext keys had equal widths, so long words slid inside them ("TROPHIE" at x1.0, "PICTU / TROPH / OPTIO" at x1.3) while INFO
