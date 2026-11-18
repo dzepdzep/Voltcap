@@ -190,7 +190,10 @@ fun LauncherScreen(viewModel: LauncherViewModel = viewModel()) {
     // Update 129: the Voltcap row with the carousel look (its games sized by the carousel's Game size).
     val rowCarousel = appearance.homeLayout == com.shelf.launcher.data.HomeLayout.CLASSIC &&
         com.shelf.launcher.data.HomeLayout.CLASSIC.name in com.shelf.launcher.data.Features.carouselLayouts.state.value
+    // (682e: the home's Play / category-chip anchor - HomeAnchor.kt.)
+    val homeAnchor = remember { HomeAnchorState() }
     CompositionLocalProvider(
+        LocalHomeAnchor provides homeAnchor,
         LocalUiSounds provides sounds,
         LocalLiteEffects provides liteEffects,
         LocalAnimateOnLite provides appearance.animateOnLite,

@@ -267,7 +267,7 @@ internal object QaClip {
             }
             // (677d: the status bar's cluster and every profile picture, for statuscheck.py; 677h: with "placed" - StatusFit's
             // measured-only probes stay in this unmerged tree and are not on screen.)
-            val bars = ArrayList<String>(); val avatars = ArrayList<String>()
+            val bars = ArrayList<String>(); val avatars = ArrayList<String>(); val anchors = ArrayList<String>()
             for (n in root.semanticsOwner.getAllSemanticsNodes(mergingEnabled = false)) {
                 if (inProbe(n)) continue // (677k: StatusFit probes are never on screen)
                 val c = n.config
@@ -275,9 +275,10 @@ internal object QaClip {
                     return "\"full\":[${p.x.toInt()},${p.y.toInt()},${n.size.width},${n.size.height}],\"shown\":[${b.left.toInt()},${b.top.toInt()},${(b.right - b.left).toInt()},${(b.bottom - b.top).toInt()}],\"placed\":${placed(n)}" }
                 if (c.getOrNull(StatusClusterTag) == true) bars += "{${box()}}"
                 c.getOrNull(AvatarTag)?.let { w -> avatars += "{\"where\":\"$w\",${box()}}" }
+                c.getOrNull(HomeAnchorTag)?.let { w -> anchors += "{\"what\":\"$w\",${box()}}" }
             }
             sb.append("],\"badgeTiles\":[").append(tiles.joinToString(",")).append("],\"statusBars\":[").append(bars.joinToString(","))
-                .append("],\"avatars\":[").append(avatars.joinToString(",")).append("]}")
+                .append("],\"avatars\":[").append(avatars.joinToString(",")).append("],\"anchors\":[").append(anchors.joinToString(",")).append("]}")
         }
         sb.append("],")
         // (Update 474: which game the home screen is on and which one the open window shows — the "wrong game" check.)

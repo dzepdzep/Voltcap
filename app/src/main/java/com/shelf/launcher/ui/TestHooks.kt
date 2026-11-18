@@ -217,6 +217,8 @@ internal object TestHooks {
      * ordinary Voltcap ignores it, hooks file or not.
      */
     val fixtureRoms = mutableStateOf<String?>(null)
+    /** 682e: `--ez voltcap_test_anchor_off true|false` - ONLY in the isolated QA app: the Play / chip anchor rule off, for before / after shots. */
+    val anchorOff = mutableStateOf(false)
     /**
      * 682c: `--es voltcap_test_libapp add:<package>` / `remove:<package>` - ONLY in the isolated QA app: puts an installed app in
      * (or takes it out of) the QA app's OWN library, so a review can open an app's window and its Options ("Hide from library"
@@ -319,6 +321,8 @@ internal object TestHooks {
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
         intent?.getStringExtra("voltcap_test_libapp")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && (v.startsWith("add:") || v.startsWith("remove:"))) libApp.value = v }
+        if (intent?.hasExtra("voltcap_test_anchor_off") == true && com.shelf.launcher.data.QaVariant.isolated(context))
+            anchorOff.value = intent.getBooleanExtra("voltcap_test_anchor_off", false)
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }

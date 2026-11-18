@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -145,8 +148,15 @@ internal fun PlayPill(label: String, selected: Boolean, compact: Boolean, onClic
     val shape = uiRounded(50)
     val accent = ShelfTheme.accent
     val z = headerSizes(compact)
+    // (682e: on the home's own header, Play is the anchor the category chips line up with - HomeAnchor.kt.)
+    val anchor = if (LocalHomeHeader.current) LocalHomeAnchor.current else null
+    if (anchor != null) androidx.compose.runtime.DisposableEffect(anchor) { onDispose { anchor.playLeftPx = null } }
     Row(
         Modifier
+            .then(if (anchor != null) Modifier.onGloballyPositioned { c ->
+                val x = c.positionInWindow().x
+                if (anchor.playLeftPx?.let { kotlin.math.abs(it - x) < 0.5f } != true) anchor.playLeftPx = x
+            }.semantics { homeAnchor = "play" } else Modifier)
             .height(z.playH.dp)
             .widthIn(min = z.playMinW.dp)
             .revealWhen(selected)
@@ -436,7 +446,7 @@ internal fun HomeShowcaseHeader(
     val reachAt = if ((publishes || only == HomeWidgets.H_BUTTONS) && HomeReach.zone == HomeReach.Zone.HEADER) HomeReach.index else -1
     val playFocused = showPlay && reachAt == 0
     val focusedButton = if (reachAt < 0) null else buttons.getOrNull(reachAt - if (showPlay) 1 else 0)
-    androidx.compose.runtime.CompositionLocalProvider(LocalHeaderDense provides true) { ShowcaseHeader(
+    androidx.compose.runtime.CompositionLocalProvider(LocalHeaderDense provides true, LocalHomeHeader provides true) { ShowcaseHeader(
         title = title.takeIf { "title" !in hidden }, lastPlayedAt = lastPlayedAt, stats = stats.filter { it.label !in hidden }, buttons = buttons,
         source = if ("source" in hidden) null else when (game.sourceType) {
             com.shelf.launcher.data.SourceType.STEAM -> "Steam"
