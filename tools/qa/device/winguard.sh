@@ -30,7 +30,8 @@ wg_what() { case "$1" in
 wg_dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 # the open game window's game from a fresh QaClip dump; "null" = none; "" = no dump (unknown - never taken as a yes)
 wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; chmod 666 $F/qa_clip_req 2>/dev/null; i=0
-  while ! wg_dr $F/qa_clip/$n.json && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
+  # (682s: up to 15 s - on the emulator the dump came later than 6 s and the walk aborted on "no dump"; a wait, never a key)
+  while ! wg_dr $F/qa_clip/$n.json && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1)); done
   wg_dr $F/qa_clip/$n.json || { echo ""; return; }
   grep -o '"popupGame": *[^,}]*' $F/qa_clip/$n.json | head -1 | sed 's/^"popupGame": *//; s/"//g'; }
 wg_type() { dumpsys window windows | grep -A6 "Window{$1 " | grep -o "ty=[A-Z_]*" | head -1; }
