@@ -76,6 +76,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   one-line masthead (P-number, page name block, the game's name sliding), Fastext keys PICTURE / INFO / TROPHIES / OPTIONS on one
   line, P200 two whole rows at x1.0 and one at x1.3, D-pad Down walks the rows (not straight to the buttons), the 120-set scrolls
   far. p2review.sh run <tag> <scale> "TV" -> popclip.py. Unit evidence only (TvTeletextRoom681vRoboTest).
+  681x (049dd75 or later, same check, no extra time): each Fastext key's word stands whole in its key (no sliding) - full
+  words where they fit, PIC / INFO / TROPHIES / OPTS at x1.3; a tap on each key opens its page. Unit evidence only
+  (TvFastextKeys681xRoboTest). p2review.sh's Play guard now uses fixed strings (toybox): the log must show no 'LAUNCH blocked'.
 - Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
   new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
   real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.

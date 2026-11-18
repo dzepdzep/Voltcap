@@ -1,3 +1,16 @@
+# Update 681x (18 Nov 2026, cloud run, P2 turn) - TV room Fastext keys stand whole; review-script Play guard fixed
+- P2 branch `claude/v0674-native-pages` (049dd75, after merging the dev line 681w = 4a3e313): on the room television the four
+  Fastext keys had equal widths, so long words slid inside them ("TROPHIE" at x1.0, "PICTU / TROPH / OPTIO" at x1.3) while INFO
+  had room to spare. WinPagesTv.kt: each tight key now takes its own word's measured width; where the four full words cannot
+  stand side by side, the set's short words PIC / INFO / TROPHIES / OPTS do (ttxKeyPlan, ttxKeyShort). Roomy TV windows unchanged.
+- tools/qa/device/p2review.sh: playfocused() used an ERE with a `[^]]` bracket that toybox grep did not match, so the script
+  pressed A with Play focused (one blocked launch per scale). Now fixed-string matches on one node per line.
+- Tests: TvFastextKeys681xRoboTest (new: pure plan cases + x1.0 / x1.3 on the set - each key's word laid out no wider than its
+  key); NOT compiled in the cloud (Maven Central 429, 3 tries). CI on 049dd75: the new test failed (its game had no
+  achievements, so no TROPHIES key) -> fixture fixed in cf40522, Verify 310 ubuntu-24.04 GREEN. Emulator review P2:TV dispatched. QA selftest
+  TestP2ReviewPlayFocused681x 5 (fails on the old function), full selftest 216/216; static checks PASS. Hardware NOT TESTED (HW-24).
+- Not on the dev line (owner approval of batch 1 first). PC copy: none for the dev line.
+
 # Update 681w (18 Nov 2026, cloud run, v0.6.74 turn) - Bar window: dock key names whole at x1.3 (H16); P2 review read
 - Icon bar window (DockFlyout, WinScenesHomes2.kt): each key's name sat in a fixed 78 dp column under its round icon; at the
   KONKR's x1.3 "Achievements" broke inside the word (2 lines). Every key now takes the width of the widest single word among the

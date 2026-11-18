@@ -275,3 +275,6 @@
 - ~04:18 UTC 681w (v0.6.74 turn): Verify 310 GREEN on 87f4150 (681v). Bar window dock key names whole at x1.3 (widest-word key
   width); BarDockLabels681wTest 2/2 (fails on old code) + Readability476 + WinFocus PASS in the cloud. P2 review 44233448467 read
   (crate fixed; TV Fastext keys slide, review-script guard missed) -> next P2 turn. Lock released.
+- ~05:18 UTC 681x (P2 turn): Verify 310 GREEN on 18a8cbc (681w). TV Fastext keys word-width + short words; p2review Play guard
+  toybox-safe (selftest 216/216). Cloud compile blocked (Maven 429); CI caught a test-fixture miss on 049dd75, fixed cf40522
+  (24.04 runner GREEN). Emulator review P2:TV dispatched. Lock released.
