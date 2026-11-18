@@ -1528,7 +1528,7 @@
    "base_commit": "claude/v0674-native-pages 6a81717",
    "patch_sha256": null,
    "tree_hash": "claude/v0674-native-pages 6a81717",
-   "note": "rescan fix 682k"
+   "note": "P2 682j focus hand-over + 682k confirmation room"
   }
  ]
 }
