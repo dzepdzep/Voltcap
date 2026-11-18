@@ -1,3 +1,16 @@
+# Update 682g (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey fixed: the 13 next game windows are clean; survey is now a guard (test only)
+- Read the corrected survey from CI (Verify 310 GREEN on cc229b9): still 187 "cuts", and every one showed the cause - the
+  "text" width was always the max width ('Play' 53 px in a 28 px box): MultiParagraph.width is the width the paragraph was laid
+  out AT, not the width its glyphs use. Not sub-pixel rounding (682b's guess).
+- WindowWordsSurvey682Test now measures the inked width (widest line, right - left; pure inkedWidth, SurveyRule682Test
+  .theInkedWidthIsTheWidestLineNotTheLayoutWidth). Result (cloud Robolectric, 640 x 427 dp): Hero, Hero tiles, Live, Cross, Hub,
+  Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema - all CLEAN at x1.0 and x1.3 on the first
+  page (no word broken inside itself, nothing past its box, no dropped lines). The survey is now a guard: any finding fails it.
+- Limits: first page only; a parent clipping a text (scroll / clip) is not what it measures; handheld NOT TESTED (HW-24 covers
+  the H16 windows already changed; nothing new to queue - no app change).
+- Checks: cloud compile (after 3 Maven 429 retries) + WindowWordsSurvey682Test 26/26 + SurveyRule682Test 3/3 PASS; static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt. PC copy: none (test only).
+
 # Update 682b (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey read; its "cut at the edge" signal was unreliable (test only)
 - Read the 682 survey from CI (Verify 310 GREEN on ebe8e55, artifact update-310-test-results): 25 of 26 window/scale cases
   listed almost EVERY label as "cut at its box's edge" - "Back", "Play", "Details", "PlayStation 2 · Never played" (12 sp in a

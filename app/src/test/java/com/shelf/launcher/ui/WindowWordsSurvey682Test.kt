@@ -32,7 +32,8 @@ import java.time.Duration
  * KONKR's size (640 x 427 dp), x1.0 and x1.3 - a word broken inside itself, or a wrapping text cut at its box's edge (a
  * one-line text that slides is rule 11's allowed form and is not counted). The findings are written to
  * app/build/reports/h16-survey/findings.txt (uploaded with CI's test results) and printed; they feed the next H16 fixes.
- * The survey itself fails only when a window cannot be reached; SurveyRule682Test pins what counts as a finding.
+ * 682g: measured by the glyphs' inked width, all 13 windows are clean at both scales, so the survey is now a GUARD - any finding
+ * (or a window that cannot be reached) fails it; SurveyRule682Test pins what counts as a finding.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -80,10 +81,14 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
             // both scales, identical at x1.0 and x1.3, which no real cut does (suspected: sub-pixel rounding of wrap-content
             // text). A text is cut when its lines run past the box by a whole pixel or more, or lines past maxLines are dropped.
             // Each finding carries its numbers so the next run can tell a real cut from a measuring artefact.)
+            // (682g: the 682b run still listed 187 "cuts" - every one with "text" = the max width, e.g. 'Play' 53 px in 28 px:
+            // MultiParagraph.width is the width the paragraph was laid out AT (the constraint), not the width its glyphs use.
+            // The inked width is the widest line's right - left.)
             all.mapNotNull { r ->
-                val cut = cutAtEdge(r.multiParagraph.width, r.size.width, r.multiParagraph.height, r.size.height, r.multiParagraph.didExceedMaxLines)
+                val inkW = inkedWidth((0 until r.lineCount).map { r.getLineLeft(it) }, (0 until r.lineCount).map { r.getLineRight(it) })
+                val cut = cutAtEdge(inkW, r.size.width, r.multiParagraph.height, r.size.height, r.multiParagraph.didExceedMaxLines)
                 surveyRule(r.layoutInput.text.text, brokenWord(r), cut, r.layoutInput.softWrap, r.lineCount)?.let {
-                    "$it [text ${"%.1f".format(r.multiParagraph.width)}x${"%.1f".format(r.multiParagraph.height)} px in ${r.size.width}x${r.size.height} (max width ${r.layoutInput.constraints.maxWidth}), lines ${r.lineCount}]"
+                    "$it [ink ${"%.1f".format(inkW)}x${"%.1f".format(r.multiParagraph.height)} px in ${r.size.width}x${r.size.height} (max width ${r.layoutInput.constraints.maxWidth}), lines ${r.lineCount}]"
                 }
             }.distinct()
         } finally { TestHooks.scale.value = null }
@@ -91,6 +96,9 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         val dir = File("build/reports/h16-survey").apply { mkdirs() }
         File(dir, "findings.txt").appendText(lines.joinToString("\n", postfix = "\n"))
         println(lines.joinToString("\n", prefix = "H16 SURVEY\n"))
+        // 682g: with the inked width all 26 cases came back clean (cloud run 18 Nov) - from now on the survey is a guard:
+        // a word broken inside itself or a text cut at its box on any of these 13 windows fails the build.
+        assertTrue("$layout x$scale H16 findings:\n" + found.joinToString("\n"), found.isEmpty())
     }
 }
 
@@ -110,7 +118,20 @@ class SurveyRule682Test {
         assertTrue("a second line clipped by the box", cutAtEdge(80f, 80, 36f, 18, false))
         assertTrue("lines past maxLines dropped", cutAtEdge(80f, 80, 18f, 18, true))
     }
+
+    /** 682g: the 682b run measured the layout width (the constraint, 53 px for 'Play') instead of the glyphs (28 px) -> 187 false cuts. */
+    @Test fun theInkedWidthIsTheWidestLineNotTheLayoutWidth() {
+        assertEquals(27.6f, inkedWidth(listOf(12.7f), listOf(40.3f)), 0.01f)          // 'Play' centred in a 53 px layout
+        assertFalse("'Play' centred: 27.6 px of glyphs in a 28 px box", cutAtEdge(inkedWidth(listOf(12.7f), listOf(40.3f)), 28, 16f, 16, false))
+        assertEquals(90f, inkedWidth(listOf(0f, 0f), listOf(60f, 90f)), 0.01f)         // the widest of two lines
+        assertTrue("a 90 px line in an 80 px box", cutAtEdge(inkedWidth(listOf(0f, 0f), listOf(60f, 90f)), 80, 36f, 36, false))
+        assertEquals(0f, inkedWidth(emptyList(), emptyList()), 0f)
+    }
 }
+
+/** 682g (pure): the width a text's glyphs use - its widest line, right edge minus left edge. */
+internal fun inkedWidth(lefts: List<Float>, rights: List<Float>): Float =
+    lefts.indices.maxOfOrNull { rights[it] - lefts[it] } ?: 0f
 
 /** 682b (pure): a text is cut at its box's edge when its lines run a whole pixel or more past the box, or lines past maxLines are dropped. */
 internal fun cutAtEdge(textW: Float, boxW: Int, textH: Float, boxH: Int, droppedLines: Boolean): Boolean =

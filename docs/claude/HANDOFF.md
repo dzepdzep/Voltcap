@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 11:05 UTC, 682g (cloud, v0.6.74 turn):** H16 survey read again (Verify 310 GREEN on cc229b9): all 187 "cuts" had
+"text" = the max width - MultiParagraph.width is the layout width, not the glyphs. Survey now measures the inked width (widest
+line); cloud compile + run: all 13 windows (Hero .. Cinema) CLEAN at x1.0 and x1.3 on their first page; the survey is now a guard
+(any finding fails). Test only; no window needed a change by this measure (parent clipping / More pages not covered).
+NEXT: check Verify 310 on this push. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push is > 1 h old;
+else v0.6.74 turn: H12 reveal / trophy redesign comparison (the 682e anchor for Library / Bar / Dash was done by the live
+session, a4382ac). Also read P2 re-review 44280831400 on the next P2 turn.
+
 **18 Nov 09:40 UTC, 682b (cloud, v0.6.74 turn):** read the 682 survey (Verify 310 GREEN on ebe8e55): nearly every label of all 13
 windows listed as "cut at its box's edge", identical at x1.0 / x1.3, no broken word - an unreliable signal, so NO window was
 changed. WindowWordsSurvey682Test now counts a cut only at >= 1 px past the box or dropped lines (cutAtEdge, pure test) and prints
