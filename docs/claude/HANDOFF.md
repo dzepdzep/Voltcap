@@ -47,6 +47,18 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 03:55 UTC, 681v (cloud, P2 turn):** batch 1 finding 3 TRACED from the emulator run's own dumps: the TV room "blocked
+launch" was the review script - the App category did not take, ten Downs on a 9-row Options page left the list for Play and the
+"arming" A pressed it (p2review.sh now presses A only on a focused option row). The dumps also showed a real TV defect, now FIXED
+on `claude/v0674-native-pages` (d3d06b0, merged with the dev line = 00b9c1d): on the set's screen the teletext pages had no body
+(achievement rows / story / options 0 px, VOLTCAP TXT one letter a line at x1.3, Down fell to the buttons). Under 200 dp: one-line
+masthead, one-line Fastext keys, one-line P200 bar row, 10 sp rows. TvTeletextRoom681vRoboTest 4/4 + NativePages681a 11,
+NativeConfirm681 8, AchFirstRow 107, WinFocus 448 PASS (cloud). Emulator review "P2:TV CRATE" dispatched on the P2 branch.
+Dev-line CI GREEN on 18106e4 (681u code). HW-24 extended (TV room).
+NEXT: check Verify 310 on this push and the P2 push; read the emulator review (TV + crate re-capture) and record it in
+NATIVE_PAGES_P2.md. Next run = v0.6.74 turn: Bar window labels cramped (H16; not in the pixel-font branch's files), then H12
+achievements animations. Next P2 turn: finding 2 (App category in the review script) or batch 2 (Cube first).
+
 **18 Nov 03:15 UTC, 681u (cloud):** Verify 310 was RED on 1888e41 (681t): the new NightStatLabels681tTest showed ACHIEVED still on
 2 lines at x1.3 (50 % cap too narrow). Fixed: cap 55 %, gap 4 dp, 3 % spare; compiled + NightStatLabels681tTest 3/3 and related
 PASS in the cloud. NEXT: check Verify 310 on this push first; then the P2 turn below.

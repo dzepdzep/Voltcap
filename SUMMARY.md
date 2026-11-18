@@ -1,3 +1,19 @@
+# Update 681v (18 Nov 2026, cloud run, P2 turn) - TV room teletext pages get a body on the set's screen; review-script launch traced
+- Finding 3 of emulator review 44194071430 ("TV room: one blocked launch per scale") traced from the run's layout dumps: the App
+  category did not take, so the window was on a ROM game with 9 options; ten Downs left the list for the button row (Play lit in
+  TV_app_options_last) and the "arming" A pressed Play. QA script only: p2review.sh presses A only when the dump shows an option row
+  focused, else logs "armed confirmation NOT TESTED".
+- The same dumps showed a real defect: on the room television (217 x 148 dp) the teletext pages had no body - every achievement row
+  0 px (x1.0 and x1.3), no story line, VOLTCAP TXT one letter per line at x1.3, D-pad Down went straight to the buttons.
+- WinPagesTv.kt (P2 branch only): under 200 dp of page height the masthead is one line (P-number, page name block, the game's name
+  sliding), the console joins the Info facts, Fastext keys are one line (PICTURE / INFO / TROPHIES / OPTIONS), the P200 bar row is one
+  line (10-cell bar, ORDER key slides, 24 dp touch), rows at 10 sp with one sliding description line (A opens the whole text).
+  Roomy TV windows unchanged.
+- Tests (cloud): TvTeletextRoom681vRoboTest 4/4 (new), NativePages681aTest 11, NativeConfirm681Test 8, AchFirstRowRoboTest 107,
+  WinFocusRoboTest 448 (39 skipped) PASS; static PASS; QA selftest OK. Emulator review "P2:TV CRATE" dispatched. Hardware NOT TESTED
+  (HW-24). Branch claude/v0674-native-pages d3d06b0 + merge 00b9c1d; not on the dev line (owner approval of batch 1 first).
+- PC copy (only if the P2 branch is taken): src_copy/ui/WinPagesTv.kt.
+
 # Update 681u (18 Nov 2026, cloud run) - CI red on 681t fixed: the Night label column needed 55 % of the row at x1.3
 - Verify 310 RED on 1888e41 (681t) on code, both runners: NightStatLabels681tTest - "ACHIEVED" still took 2 lines at the KONKR
   x1.3 (row ~135 dp; the word needs ~63 dp even at the 10 sp minimum; the 50 % cap left it 61.7 dp). The new test caught it.

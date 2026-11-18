@@ -71,6 +71,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   681s (0c7ad56 or later): the same TRACKLIST shows at least two whole tracks at x1.3 (three at x1.0) under the compact sleeve
   header ("TRACKLIST · n / m", the name on one sliding line), the ORDER stamp on the SIDE line and A on it steps the order;
   Info's header unchanged. Unit evidence only (CrateInsertRoom681sRoboTest).
+- Also (681v, P2 branch `claude/v0674-native-pages` 00b9c1d or later, its CI QA APK; same KONKR session, ~2 min): TV room at x1.0
+  and x1.3, a game with achievements, the window on the set's screen: Info (P100) / TROPHIES (P200) / OPTIONS (P300) each show a
+  one-line masthead (P-number, page name block, the game's name sliding), Fastext keys PICTURE / INFO / TROPHIES / OPTIONS on one
+  line, P200 two whole rows at x1.0 and one at x1.3, D-pad Down walks the rows (not straight to the buttons), the 120-set scrolls
+  far. p2review.sh run <tag> <scale> "TV" -> popclip.py. Unit evidence only (TvTeletextRoom681vRoboTest).
 - Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
   new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
   real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.

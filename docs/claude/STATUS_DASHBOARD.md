@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681u · 2026-11-18 03:15 UTC · commit `this update (being pushed)` · CI: Verify 310 RED on 1888e41 (the new Night test caught the too-narrow column); fixed here, tests PASS in the cloud, CI pending · effort: medium
+**1. LATEST UPDATE** - 681v · 2026-11-18 03:53 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 18106e4 (681u code) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Night window fix from the previous push was not quite wide enough: the automatic check showed ACHIEVED still breaking onto two lines with large text, so the build went red. The label column may now take a little more of the panel and the labels shrink a touch less; all labels now fit on one line in the test at the KONKR's large text. Checked by tests in the cloud this time.
+**2. WHAT CLAUDE JUST FIXED** - TV room's own pages (on the old television's screen) were unusable: the header took all the room, so no achievement, story line or option showed and the D-pad jumped to the buttons. On a small TV screen the header is now one line and the page keys one line, so two achievements show at normal size and one with large text. The 'blocked launch' from the emulator review was the test script pressing Play by mistake; the script is fixed. On the native-pages branch, waiting for your review.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (681u): The Night window fix from the previous push was not quite wide enough: the automatic check showed ACHIEVED still breaking onto two lines with large text, so the build went red. The label column may now take a little more of the panel and the labels shrink a touch less; all labels now fit on one line in the test at the KONKR's large text. Checked by tests in the cloud this time.
+- **App** (681v): TV room's own pages (on the old television's screen) were unusable: the header took all the room, so no achievement, story line or option showed and the D-pad jumped to the buttons. On a small TV screen the header is now one line and the page keys one line, so two achievements show at normal size and one with large text. The 'blocked launch' from the emulator review was the test script pressing Play by mistake; the script is fixed. On the native-pages branch, waiting for your review.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: P2 turn: batch 1 finding 3 (TV room blocked launch trace) or batch 2 (Cube first); then: v0.6.74: Bar window labels cramped (H16); achievements animations (H12)
+**5. WORKING ON NEXT** - now: Read the TV + crate emulator re-capture (P2 branch); then: Bar window labels cramped (H16); H12 achievements animations
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
