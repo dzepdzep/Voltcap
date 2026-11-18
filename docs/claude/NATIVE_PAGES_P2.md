@@ -110,3 +110,14 @@ TestP2ReviewRestore681z 2, 224/224. Graded on this run's artifact the new grader
 NOT TESTED (armed confirmation): the diff=1 was the restore's own false alarm - on a fresh emulator the keep folder was empty and
 its literal glob failed cp / cmp (reproduced with the old line) -> fixed 681z ("none existed before the run").
 Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TESTED until an app fixture exists for the confirmation).
+
+### 18 Nov (interactive 682) - EMULATOR + KONKR, not owner-approved
+- 682a RELEASE-BLOCKING fix: an A ~30-200 ms after an L1/R1 turn onto Details started the game (all 5 layouts) - 300 ms
+  page-turn guard; NoStrayPlay682aTest 10/10 (fails without the guard).
+- KONKR (GT78) popup gate pop529 + popclip, build qa-682c-2ca480f-ci: x1.0 PASS 5/5, x1.3 PASS 5/5, 0 launches.
+- 682h: a grown focused row (armed / opened) brings itself into view - the confirmation line was cut (NativeConfirm681Test fails
+  without, 8/8 with).
+- Emulator review 44280831400 (c68e7b6): armed "Hide from library" confirmation ON SCREEN in all five layouts at x1.0 and x1.3
+  (sheet p2_armed_confirmations_emulator.png); 0 launches. OPEN: TV room's teletext confirmation is cramped and partly cut
+  (x1.0 worst); Crate x1.0 "cancel" touches the insert's edge. QA-tool gaps: p2review logged a false "no confirmation" for the
+  x1.0 pass (dump read too early / by name), and grade_trial's review mode passed a log with FAIL lines - both to fix.
