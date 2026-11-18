@@ -325,6 +325,7 @@ internal fun StageSlot(
                         scaleX = scale; scaleY = scale
                         alpha = if (waiting) 0.3f else 1f
                         if (q.turn != 0f) { rotationY = q.turn; cameraDistance = 12f * density }
+                        flatTextFor3d() // Update 177 / D285: a turned badge is drawn flat, then turned (Android 13 text cache)
                     }
                     .clip(style.shape)
                     .background(Brush.linearGradient(if (waiting || back) style.plateOff else style.plateOn))

@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 12:40 UTC, 682k (cloud, v0.6.74 turn):** CI: Verify 310 on 16a1388 (682j) RED on code - Batch489Test: StageSlot's
+turned layer lacked flatTextFor3d() (D285). Fixed (AchievementFx.kt); cloud compile OK, Batch489Test 6/6 + RevealSheet682jTest 2/2,
+static PASS. Storyboard read: proposals draw correctly -> docs/evidence/h12_reveal_682k/storyboard.png + owner action (NOW / A / B /
+mix). H12 reveal waits on the owner; nothing wired.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push
+(11:54 UTC, 682j focus hand-over) is > 1 h old; else v0.6.74 turn: more H16 windows from the k678n13 sheet (parent clipping / More
+pages, which the survey does not cover) or item 5 badgecheck (D357) if not done.
+
 **18 Nov 11:50 UTC, 682j (cloud, v0.6.74 turn):** CI: Verify 310 on 67b08fd red = Maven 429 on one runner (infra; the other
 ran the full suite GREEN). H12 reveal / trophy redesign comparison: StageSlot now draws a pure pose (RevealPose, voltRevealPose =
 the old formulas, unchanged look); RevealSheet682jTest renders NOW vs proposals A "Trophy flip" / B "Glow burst" (test-only) to

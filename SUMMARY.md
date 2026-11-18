@@ -1,3 +1,14 @@
+# Update 682k (18 Nov 2026, cloud run, v0.6.74 turn) - CI red fix: the reveal storyboard's turned badge draws flat (D285 guard); storyboard ready for the owner
+- CI first: Verify 310 on 16a1388 (682j) RED on code, both runners: Batch489Test.everyTurnedLayerDrawsItsTextFlat - the new
+  StageSlot graphicsLayer sets rotationY (proposal A's turn) without flatTextFor3d() (D285 / update 177: a turned layer must be
+  drawn flat into its own buffer, Android 13 text cache). Fix: flatTextFor3d() last in that layer (AchievementFx.kt). The app's
+  own reveal never turns (turn = 0), so it is unchanged; the guard only applies when a proposal turns the badge.
+- Storyboard read (cloud Robolectric render): NOW / A Trophy flip / B Glow burst draw as intended (no clipping, labels whole);
+  copied to docs/evidence/h12_reveal_682k/storyboard.png and added as an owner action (pick NOW / A / B / mix) - nothing wired.
+- Checks: cloud compile OK (compileDebugUnitTestKotlin); Batch489Test 6/6 (failed on 682j in CI), RevealSheet682jTest 2/2;
+  static checks PASS. Not tested on a handheld.
+- Files: app/src/main/java/com/shelf/launcher/ui/AchievementFx.kt; docs only otherwise.
+
 # Update 682j (18 Nov 2026, cloud run, v0.6.74 turn) - H12 reveal / trophy redesign: storyboard comparison for the owner (app unchanged)
 - CI first: Verify 310 on 67b08fd (682g) red = Maven Central 429 on the ubuntu-24.04 runner (infra); the ubuntu-latest runner ran
   the full suite GREEN.
