@@ -1112,7 +1112,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.game.value = null
     }
     // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)
-    TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
+    TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir) + listOfNotNull(TestHooks.extraRoot.value), true); TestHooks.fixtureRoms.value = null } }
     // (681r: the library as shown - QA app only; the rescan check reads it after each step.)
     val libDumpN = TestHooks.libDump.intValue
     if (libDumpN > 0) LaunchedEffect(libDumpN) {
