@@ -241,3 +241,21 @@
 - Branch claude/v0674-native-pages: NativePageKit.kt + Record crate's own pages (681a), NativePages681aTest, WinFocusRoboTest
   CRATE (both) + ShelfTextRoboTest PASS in the cloud; emulator review 44173674038 (Info + Liner notes x1.0 / x1.3). Tracker
   docs/claude/NATIVE_PAGES_P2.md. HANDOFF / backlog: P2 alternates with the v0.6.74 list.
+
+## 2026-11-17 ~21:18-21:50 UTC - cloud run 681cr
+- Dev line CI GREEN on e692ef5. P2 branch Verify 310 RED on 1a6c5c9 (Record crate tracklist first row cut at x1.3) -> fixed on
+  claude/v0674-native-pages (64e5955); AchFirstRow 87/87, NativePages681a 8/8, static PASS. Two rebases: a live session pushed
+  681b-d to the P2 branch meanwhile. Lock released.
+
+## 2026-11-17 ~22:17-22:40 UTC - cloud run 681e
+- Dev line CI GREEN on c71c8cb. v0.6.74 turn: item 6 profile picture - statuscheck "avatar place" (on screen, bar picture in
+  the bar, no text over it, corner as evidence); selftest 207/207, static PASS. Live session active on the P2 branch - not
+  touched. Lock released.
+
+## 2026-11-17 ~23:18-23:55 UTC - cloud run 681p
+- Dev line CI GREEN on c342492. Live session pushed the P2 branch 22:51 -> v0.6.74 turn: H16 / D354 Pocket Quest "Play game"
+  one line at x1.3 (PqPlayKeyOneLine681pTest 5/5, related tests + static PASS). HW-24 extended. Lock released.
+
+## 2026-11-18 ~00:18-00:30 UTC - cloud run 681q
+- Verify 310 RED on f303833 = Maven Central 429 (infra; other image green). CI fix: retry_infra.py (retries 429 / 5xx only,
+  never code failures), selftest 211/211, static PASS. Lock released.

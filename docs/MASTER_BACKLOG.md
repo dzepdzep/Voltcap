@@ -13,9 +13,15 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
+Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
+end-to-end PASS 15/15 (run 44190749178, QA app, synthetic stand-ins); hardware NOT TESTED; owner NOT approved; no merge without GO.
+Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
+favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
+
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
-docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages (kit + Record crate done 681a; batch 1 next: Classic,
-Console hub, Resume, TV room).
+docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
+Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
 
 ## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
 1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+

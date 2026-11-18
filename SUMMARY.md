@@ -1,3 +1,52 @@
+# Update 681q (18 Nov 2026, cloud run) - CI: a Maven Central 429 no longer turns Verify 310 red (retry on server errors only)
+- Cause: Verify 310 on f303833 (681p) failed on ubuntu-latest in :app:mergeDebugUnitTestManifest - "Could not HEAD ... compose
+  plugin 2.2.10 jar. Received status code 429 from server: Too Many Requests"; ubuntu-24.04 passed the full suite on the same
+  commit. Second 429 red in a day (681r's run too): infra, not code.
+- tools/ci/retry_infra.py: runs the Gradle command, streams its output; on a non-zero exit retries (60 s, then 120 s; 3 runs at
+  most) ONLY when the output names a package-server 429 / 500 / 502-504 and shows no code failure (failing tests, "N tests
+  completed, M failed", Kotlin "e:" / javac errors, failed compile* / test*UnitTest / lint* task, watchdog stop). Every retry is a
+  public warning annotation; a real failure keeps its exit code on the first run. Wired into both Gradle steps of
+  verify-update-310.yml (inside the watchdog for the tests, so its 35 min limit still holds).
+- Tests: QA selftest TestCiRetryInfra681q 4 (the real 17 Nov log line; code failures beside a 429 never retried; the first
+  draft wrongly read "mergeDebugUnitTestManifest FAILED" as a test failure - caught and fixed); selftest 211/211; static PASS.
+  App code unchanged (nothing to compile). Takes effect on this push's CI.
+- Files: tools/ci/retry_infra.py (new), .github/workflows/verify-update-310.yml, tools/qa/selftest/test_qa.py, trackers.
+  No PC copy needed (no app sources). Hardware: none.
+
+# Update 681p (17 Nov 2026, cloud run) - Pocket Quest window: "Play game" stays on one line at x1.3 (D354, H16)
+- Cause (emulator e679r13, POCKET x1.3 beside the pulled-out disc, window ~294 dp): one-line "Play game" missed two keys to a
+  view by ~10 dp, so the uniform row took its two-line keys (674c) - "Play / game" on two lines.
+- WinScenesStyled.kt (PocketQuestPanel, large text only): keys via PqSceneKey (side padding 6 dp, panel 10 dp); pqKeyTextSize
+  picks the largest key size of 12 / 11.5 / 11 / 10.5 / 10 sp at which every word stays on one line with two whole keys in view
+  (else 12 sp and the old two-line fallback). WinScenesMore.kt: KeyRow / UniformKeyRow / uniformRowPick take
+  twoLineOnlyWhenAlone (default false = every other layout unchanged): two-line keys only where one-line keys show one at a time.
+- Tests (cloud, compiled): PqPlayKeyOneLine681pTest 5/5 (the Robolectric row at the emulator's width failed with 2 lines before),
+  TwoLineKeys674Test 5/5, UniformKeys673Test 7/7 (status-line pin follows the new call), AchFirstRowRoboTest POCKET* 3/3; static PASS.
+- Not done: the home status pill ("n 2  Pla" is the sliding PlayStation 2 in a narrow pill - rule 11 slide; owner's look on HW-24).
+- Files: app/.../ui/WinScenesStyled.kt, ui/WinScenesMore.kt, test PqPlayKeyOneLine681pTest.kt, UniformKeys673Test.kt, trackers.
+  PC copy: src_copy/ui/WinScenesStyled.kt, src_copy/ui/WinScenesMore.kt. Hardware: HW-24 (KONKR) NOT TESTED.
+
+# Update 681e (17 Nov 2026, cloud run) - statuscheck grades where the profile picture sits (v0.6.74 item 6)
+- tools/qa/tools/statuscheck.py: new place_avatars - per visible profile picture: FAIL when it is not wholly on the screen, when
+  the status bar's picture ("bar") is outside every status cluster on screen, or when any visible text lies over it (> 2 px both
+  ways; its own initial, centred inside it, is part of it). PASS names the corner (top-left, top-right, ...). The layouts' own
+  pictures (Console hub / Resume / Spotlight "console", Channel "channel") sit in parts Edit Home can move, so their corner is
+  reported, not graded. The existing duplicate / cut checks are unchanged.
+- Selftest: TestAvatarPlace681e (4; the outside / text-over / off-screen cases pass on the old checker = would have missed them);
+  full QA selftest 207/207 OK; static checks PASS. No app code changed (nothing to compile, nothing to copy into app/).
+- Files: tools/qa/tools/statuscheck.py, tools/qa/selftest/test_qa.py, trackers.
+- Hardware: NOT TESTED on real dumps - rides along HW-24 (KONKR), no extra device time.
+
+# Update 681cr (17 Nov 2026, cloud run) - P2: Record crate tracklist's first track whole at x1.3 (CI red on the P2 branch)
+- Verify 310 was RED on the P2 branch's 1a6c5c9 (681a): AchFirstRowRoboTest CRATE x1.3 n=12 - the first track 94 of 137 px. The
+  tracklist title shared the line with a dotted leader of the same weight, so it had half the line and wrapped to three lines.
+- WinPagesCrate.kt (branch claude/v0674-native-pages, commit 64e5955): the leader runs under the title's line and shows where
+  the title ends (the title has the whole width); with large text a closed track's words take one line (shrink readably, then
+  slide; A shows them all). Review render (Robolectric, before 681b's insert tilt): docs/claude/review/p2_crate_681cr_tracklist_x13_robo.png on that branch.
+- Checks (cloud, compiled on top of the live session's e79a407): AchFirstRowRoboTest 87/87 (every layout x1.3, CRATE x1.0 / x1.3),
+  NativePages681aTest 8/8, static checks PASS. CI on the P2 branch decides the rest. Handheld: rides along HW-24 (KONKR).
+- Not on the dev line (P2 stays on its branch until the owner approves the batch). Nothing to copy for the PC.
+
 # Update 680b (17 Nov 2026, cloud run) - badgecheck: carousel-trimmed and stacked-behind tiles are not badge faults (D357)
 - tools/qa/tools/badgecheck.py: a tile a carousel scrolled partly off the screen (shown box trimmed on one side, or laid out past
   the screen edge) is "clipped": its badges trimmed with it are not "cut" / "off the screen"; their gap is measured at the tile's

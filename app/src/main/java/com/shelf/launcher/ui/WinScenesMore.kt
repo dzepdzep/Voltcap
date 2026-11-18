@@ -122,11 +122,13 @@ internal val KEY_ROW_GUTTER = 16.dp
  * (Was update 423's wrapping FlowRow: keys of every width on as many lines as they needed.)
  */
 @Composable
-internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
+internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp,
+    /** D354 (681p): two-line keys only where one-line keys would show a single key at a time (uniformRowPick). */
+    twoLineOnlyWhenAlone: Boolean = false, key: @Composable (WinAction) -> Unit) {
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
-        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key = key)
+        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -160,9 +162,12 @@ internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int
  * one-line width, [need2] the width at which every key's word takes two lines at most (0: a key can't take a second line).
  * The two-line keys are used only where the one-line row would scroll and the two-line one shows more keys at once.
  */
-internal fun uniformRowPick(n: Int, need: Int, need2: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
+internal fun uniformRowPick(n: Int, need: Int, need2: Int, width: Int, gap: Int, gutter: Int, onlyWhenAlone: Boolean = false): UniformRowGeom {
     val one = uniformRowGeom(n, need, width, gap, gutter)
     if (!one.scrolls || need2 <= 0 || need2 >= need) return one
+    // (D354, 681p: a window whose keys' words must stay on one line - Pocket Quest's "Play game" - keeps one-line keys
+    // while at least two show at once; the row scrolls to the rest.)
+    if (onlyWhenAlone && one.visible >= 2) return one
     val two = uniformRowGeom(n, need2, width, gap, gutter)
     return if (!two.scrolls || two.visible > one.visible) two else one
 }
@@ -189,7 +194,7 @@ internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
  * clipped away (not drawn, not counted as shown). Each key is drawn by [key] - the layout's own look - at the group's size.
  */
 @Composable
-internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, twoLineOnlyWhenAlone: Boolean = false, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
     val gutterPx = with(density) { KEY_ROW_GUTTER.roundToPx() }
@@ -251,7 +256,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformRowPick(n, need, need2, width, gapPx, gutterPx)
+        val g = uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
             .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
         keyW[0] = g.keyW

@@ -4038,7 +4038,7 @@
    "title": "Pocket Quest x1.3: 'Play game' wraps onto two lines in the game window; the status bar's category pill is cut ('n 2  Pl') - EMULATOR e679r13, 17 Nov",
    "rule": "R26",
    "severity": "medium",
-   "status": "open (v0.6.74, H16 'Pocket: Play game wraps' - owner list); not pixel-font related",
+   "status": "Play game wrap fixed in code 681p (PqPlayKeyOneLine681pTest 5/5: one-line keys while two show, key words 12 sp down to a readable 10 sp at large text; the old row wrapped in the same test); HW-24 (KONKR). The home status pill: its PlayStation 2 is a sliding name in a narrow pill (rule 11 slide, 'n 2  Pla' is a mid-slide frame) - open for the owner's look on HW-24",
    "found": "2026-11-17 emulator 44140115312"
   },
   {

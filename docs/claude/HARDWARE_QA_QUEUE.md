@@ -49,12 +49,32 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
+### HW-25 Library rescan: deleted last game / empty console / SD card out (681r) - OPEN (next session with a USB device)
+- Branch `claude/v0674-rescan-fix` (d082e7f or later), its CI QA APK; L1 QA app only, synthetic stand-ins only (never the owner's
+  ROMs or saves). Emulator: PASS 15/15 (run 44190749178).
+- Tests: `sh rescan681r.sh run <tag>` then `restore <tag>` (tools/qa/device) - every case PASS. Plus, on a device with an SD card:
+  copy a stand-in to a ROM folder on the card in the QA app, rescan, take the card out (or unmount it), rescan - the card's
+  stand-in stays listed ("Kept N from folders that couldn't be read"); card back, rescan - still there; delete it, rescan - gone.
+- Then (owner, LEVEL 2 read-only, optional): the owner's real case on their device as they found it - which ROM folder layout
+  the Xbox 360 game had (file / folder, own ROM folder or a console subfolder), to confirm it is the case covered.
+- Also (P2 batch 1, same session, ~5 min): p2review.sh on CRATE CLASSIC HUB RESUME TV at x1.0 + x1.3 (screens + recordings).
+
 ### HW-24 Channel progress pill clear of the name plate (680a, D356) - OPEN (next KONKR session)
 - Device: KONKR (where k679p13 found it), x1.0 + x1.3; L1 QA app only. Build: the CI QA APK of the 680a commit or later.
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CHAN" OWN (+ off) -> popclip.py + badgecheck (no "PROGRESS covers text"),
   and the screenshots: the pill above the plate, nothing cut, the plate still one line and sliding (D350).
 - Also (680b, D357, no extra device time): run badgecheck.py (680b or later) over the same session's CUBE x1.0 and Tiles / Classic
   dumps - the cover-flow side covers and the half-off carousel tile must no longer FAIL; any remaining FAIL is a real collision.
+- Also (681cr, P2 branch `claude/v0674-native-pages` 64e5955 or later, its CI QA APK; same KONKR session, ~2 min): Record crate
+  at x1.3, open TRACKLIST (R1 R1): the first track whole at the page's top (title in two lines, the dotted leader after it,
+  its words on one sliding line until A) - p2review.sh / popclip on CRATE; a cut first row = FAIL. Unit evidence only so far.
+- Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
+  new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
+  real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
+- Also (681p, D354, dev line 681p or later, ~2 min): Pocket Quest (POCKET) at x1.3, open a game's window with the disc pulled out
+  beside it: "Play game" and "Status" on ONE line each, two whole keys between the arrows, More reached by D-pad right and by a
+  swipe; the key words readable (10-12 sp). pop529 POCKET OWN -> popclip.py. Also look at the home status bar's category pill:
+  "PlayStation 2" slides inside a narrow pill (rule 11) - say whether that is fine or the pill should get more room.
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

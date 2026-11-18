@@ -1,5 +1,23 @@
 # VoltCap handoff (read first, update last)
 
+**17 Nov ~23:10 Berlin - OWNER: LIBRARY RESCAN BUG 681r (data integrity - newest, before everything below).** A deleted game
+that was the only one of its console stayed listed after Rescan library, and the console stayed a category. Focused v0.6.74 fix
+on branch `claude/v0674-rescan-fix` (from this line at c71c8cb): RomScanner.rootState (OK / GONE on readable storage /
+UNREADABLE: card out, bare mount point, refused listing) + failedDirs from the walk; data/RomReconcile.kt one verdict per scan
+(read-and-missing = gone, unreadable = kept, nothing read = no verdict, automatic scan with no games = no verdict); a console
+with no games left drops out of the selection (falls back to All) after a scan's verdict, kept after a restart. Found on the
+way: the old code dropped every game of an unplugged SD-card folder whenever another folder had games (now kept). Saves,
+history, achievements, art, metadata, favourites, settings untouched (keyed by path; re-adding brings them back).
+Evidence: RescanPrune681rTest 8/8 + DeletedRoms523Test 3/3 (cloud); emulator end-to-end rescan681r.sh run 44190749178 VERDICT
+PASS - 15/15 cases (only game deleted -> not listed, its console no category, selection back on All; rescan twice; restart;
+one of two; whole game folder; re-added = same identity) on synthetic stand-ins in the QA app's own folder. Verify 310: one
+runner green (full suite), the other hit Maven Central 429 (infra) - rerun requested. Hardware NOT TESTED (HW queue: the
+owner's real case - the exact Xbox 360 game layout on the device is not known; also an SD card taken out). Not merged; owner GO
+needed. Next for the hourly task: nothing to do on it unless CI goes red.
+P2 batch 1 status: Classic 681c, Console hub 681d, Resume 681e-f, TV room 681g implemented on `claude/v0674-native-pages`
+(18/53 implemented; batch 1 hardware 0/5, owner 0/5). Emulator review of all five re-running (run 44194071430); findings from
+the first review fixed in 681h (bumpers lost on the Back hint, Classic label wrap; crate x1.3 word breaks fixed by 681cr).
+
 **17 Nov ~22:15 Berlin - OWNER: P2 NATIVE PAGES IS A MAIN PRIORITY (newest; read with the v0.6.74 list below).** The 40 layouts
 without their own Details / Achievements / Options pages get them, each in its own design ("not the shared pages in different
 borders"), batches of 4-5, screenshots / recordings for review, tracked as Native pages X/53 (implemented / hardware / owner).
@@ -28,6 +46,38 @@ never disturb apps running on connected devices; dashboard / matrix / handoff af
 hardware reruns without need; experiments on separate v0.6.74 branches; interrupt the owner only for design decisions,
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
+
+**18 Nov 00:20 UTC, 681q (cloud):** Verify 310 RED on f303833 (681p) = infra: Maven Central 429 on ubuntu-latest, the 24.04 image
+passed every test. Fixed in CI: tools/ci/retry_infra.py re-runs Gradle only after a package-server 429 / 5xx with no code failure
+in the output (selftest TestCiRetryInfra681q 4, 211/211). App unchanged. 681p's code itself was green on the other runner.
+NEXT: check Verify 310 on the 681q push (red on code -> fix first; a retry warning annotation is expected only on 429s). Then the
+P2 turn of the alternation IF the live session's last P2 push (e6e16fd 23:31 UTC) is > 1 h old - batch 1 open finding: crate
+x1.3 insert (see NATIVE_PAGES_P2.md on that branch); else v0.6.74 item 7 H12 / more H16 windows (Bar labels, Night).
+
+**17 Nov 23:55 UTC, 681p (cloud, v0.6.74 turn - live session was on the P2 branch < 1 h ago):** item 4 window polish (H16) -
+D354 Pocket Quest "Play game" wrap fixed in code (one-line keys while two show, key words 12 -> readable 10 sp at large text;
+twoLineOnlyWhenAlone opt-in, other layouts unchanged). PqPlayKeyOneLine681pTest 5/5 + related PASS in the cloud. The status
+pill part of D354 is the rule-11 slide in a narrow pill - owner look on HW-24. Dev CI GREEN on c342492.
+NEXT: check Verify 310 on the 681p push (red -> fix first); next run = P2 turn if the live session left the P2 branch (> 1 h
+since its last commit), else v0.6.74 item 7 H12 achievements animations / more H16 windows (Bar labels cramped, Night
+ACHIEVED / RELEASED) if they don't touch the pixel-font branch's files.
+
+**17 Nov 22:35 UTC, 681e (cloud, v0.6.74 turn of the alternation):** item 6 (profile picture) - the cloud-testable gap closed in
+QA tooling: statuscheck.py now grades each profile picture's place ("avatar place"): wholly on screen, the status bar's picture
+inside the status bar, no text over any picture (its own initial excluded); the corner is reported as evidence (layout pictures
+live in Edit-Home-movable parts, so their corner is not graded). TestAvatarPlace681e 4 (3 fail on the old checker); selftest
+207/207; static PASS. Hardware: rides along HW-24 (statuscheck over that session's dumps). Dev-line CI GREEN on c71c8cb. A live
+session was pushing to claude/v0674-native-pages during this run (fd32d24) - the cloud stayed off that branch.
+NEXT: check Verify 310 on the 681e push (red -> fix first); next run = P2 turn (Resume / TV room) only if the live session is
+not on the P2 branch (check its newest commit time; < 1 h -> take the v0.6.74 list instead: item 4 window polish H16 - D354
+Pocket Quest "Play game" wrap / status pill cut if it doesn't touch the pixel-font branch's files; then item 7 H12 animations).
+
+**17 Nov 21:45 UTC, 681cr (cloud):** P2 branch CI was RED on 1a6c5c9 (AchFirstRowRoboTest CRATE x1.3: the tracklist's first
+track cut). Fixed on `claude/v0674-native-pages` (64e5955, rebased on the live session's 681b-681d): the title has the whole line,
+the leader runs under it; large text keeps a closed track's words to one sliding line. AchFirstRow 87/87 + NativePages681a 8/8
+PASS in the cloud. A live session was pushing P2 (681b-d) at the same time without the dev-line lock: the cloud run named its
+commit 681cr to keep clear of its numbers. NEXT: check Verify 310 on 64e5955 (P2) and on the dev line; next run = v0.6.74 list
+(alternation; P2 batch 1 continues with Resume / TV room unless the live session has them).
 
 **17 Nov 20:35 UTC, 680b (cloud):** priority 5 / D357 done in QA tooling - badgecheck no longer fails badges of a tile a
 carousel scrolled partly off-screen (measured at the tile's scale; a badge cut inside a whole tile still FAILs) nor of covers
