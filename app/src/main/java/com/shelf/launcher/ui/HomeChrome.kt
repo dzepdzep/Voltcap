@@ -1,8 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.layout.positionInWindow
 import com.shelf.launcher.data.dockHere
 import kotlinx.coroutines.flow.first
 
@@ -764,20 +761,10 @@ internal fun PlatformFilterRow(
     // one row that glides to keep the category you're in in view, its ends fading out softly — GlidingChipRow — in place
     // of update 294's pages of whole pills with "+N ›".)
     val e = edge ?: dockTextStart()
-    // (682e, owner 18 Nov - system rule: with the home's Play row on screen, the chips share its anchor: they start on Play's
-    // left edge, and the selected chip glides onto that edge when they scroll - HomeAnchor.kt. Without a Play row: as before.)
-    val anchor = if (TestHooks.anchorOff.value) null else LocalHomeAnchor.current // (QA before / after only)
-    val playLeft = anchor?.playLeftPx
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    var rowLeft by remember { androidx.compose.runtime.mutableFloatStateOf(Float.NaN) }
-    val anchoredStart = if (playLeft == null || rowLeft.isNaN()) null else with(density) {
-        PlayChipAnchor.start(playLeft, rowLeft, -1f).takeIf { it >= 0f }?.toDp()
-    }
-    Row(Modifier.padding(bottom = bottomGap).onGloballyPositioned { rowLeft = it.positionInWindow().x }, verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.padding(bottom = bottomGap), verticalAlignment = Alignment.CenterVertically) {
     GlidingChipRow(
         count = itemKeys.size, focused = itemKeys.indexOf(selectedKey), modifier = Modifier.weight(1f),
-        spacing = 6.dp, align = if (anchoredStart != null) Alignment.Start else align, startPadding = anchoredStart ?: e,
-        endPadding = if (anchoredStart != null || align == Alignment.Start) 24.dp else e, memory = "home", anchored = anchoredStart != null
+        spacing = 6.dp, align = align, startPadding = e, endPadding = if (align == Alignment.Start) 24.dp else e, memory = "home"
     ) { i ->
         val key = itemKeys[i]
         when {
@@ -849,8 +836,6 @@ internal fun GlidingChipRow(
     endPadding: androidx.compose.ui.unit.Dp = 0.dp,
     /** 529j: remembers the scroll under this name when the row is dropped and built again (null: not remembered). */
     memory: String? = null,
-    /** 682e: [startPadding] is the home's Play edge - the selected chip glides onto it (HomeAnchor.kt). */
-    anchored: Boolean = false,
     chip: @Composable (Int) -> Unit
 ) {
     val memKey = memory?.let { "$it/$count" }
@@ -859,9 +844,6 @@ internal fun GlidingChipRow(
     if (memKey != null) androidx.compose.runtime.DisposableEffect(memKey) { onDispose { GlidingChips.lastScroll[memKey] = scroll.value } }
     val lefts = remember(count) { IntArray(count) }
     val widths = remember(count) { IntArray(count) }
-    // (682e: each chip's left on screen and the row's own, for the anchored glide.)
-    val winLefts = remember(count) { FloatArray(count) }
-    var viewWinX by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val margin = with(density) { 48.dp.roundToPx() }
     var viewW by remember { androidx.compose.runtime.mutableIntStateOf(0) }
@@ -870,18 +852,14 @@ internal fun GlidingChipRow(
     val first = remember { booleanArrayOf(restored == null) }
     // Update 310: remeasuring a pill should not cancel/restart the ongoing scroll animation.
     // This repeated restart could look like a flashing category bar on dual screens.
-    androidx.compose.runtime.LaunchedEffect(focused, viewW, count, anchored, startPadding) {
+    androidx.compose.runtime.LaunchedEffect(focused, viewW, count) {
         if (focused !in 0 until count || viewW <= 0) return@LaunchedEffect
         androidx.compose.runtime.snapshotFlow { laidOut }.first { widths[focused] > 0 }
         val l = lefts[focused]; val r = l + widths[focused]
         val cur = scroll.value
         // (Sprint 527, owner: the selected pill drifted to the right edge as you went on - it now sits at one steady place, a
         // third in from the start, wherever the list allows; the ends of the list stop at their own edge.)
-        val startPx = with(density) { startPadding.toPx() }
-        val target = if (anchored) {
-            // (682e: the selected chip's left edge on the Play edge - when the chips need scrolling at all)
-            if (scroll.maxValue <= 0) 0 else PlayChipAnchor.target(cur, winLefts[focused] - viewWinX, startPx, scroll.maxValue)
-        } else GlidingChips.target(l, r - l, viewW, cur, margin).coerceIn(0, scroll.maxValue)
+        val target = GlidingChips.target(l, r - l, viewW, cur, margin).coerceIn(0, scroll.maxValue)
         if (target == cur) return@LaunchedEffect
         if (first[0]) scroll.scrollTo(target) else scroll.animateScrollTo(target, androidx.compose.animation.core.tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing))
         first[0] = false
@@ -890,44 +868,34 @@ internal fun GlidingChipRow(
     androidx.compose.foundation.layout.BoxWithConstraints(
         modifier
             .onSizeChanged { viewW = it.width }
-            .onGloballyPositioned { viewWinX = it.positionInWindow().x }
             // The ends fade out where pills carry on past them (drawn off-screen once, then masked).
             .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
             .drawWithContent {
                 drawContent()
-                val fadeFull = GlidingChips.FADE_DP.dp.toPx() // (Sprint 527: wider - a pill past the end fades out, no cut word)
-                // (682e: anchored, the start fade stays left of the Play edge - the selected chip on it is never faded)
-                val fade = if (anchored) minOf(fadeFull, startPadding.toPx()) else fadeFull
+                val fade = GlidingChips.FADE_DP.dp.toPx() // (Sprint 527: wider - a pill past the end fades out, no cut word)
                 // (529j: each end fades in as the row moves away from it, out as it arrives - never on / off in one frame.)
                 val fl = if (GlidingChips.legacyFade) (if (scroll.value > 0) 1f else 0f) else GlidingChips.fadeStrength(scroll.value, fade)
-                val fr = if (GlidingChips.legacyFade) (if (scroll.value < scroll.maxValue) 1f else 0f) else GlidingChips.fadeStrength(scroll.maxValue - scroll.value, fadeFull)
+                val fr = if (GlidingChips.legacyFade) (if (scroll.value < scroll.maxValue) 1f else 0f) else GlidingChips.fadeStrength(scroll.maxValue - scroll.value, fade)
                 if (fl > 0f) drawRect(
                     Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 1f - fl), Color.Black), startX = 0f, endX = fade),
                     size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                 )
                 if (fr > 0f) drawRect(
-                    Brush.horizontalGradient(listOf(Color.Black, Color.Black.copy(alpha = 1f - fr)), startX = size.width - fadeFull, endX = size.width),
-                    topLeft = androidx.compose.ui.geometry.Offset(size.width - fadeFull, 0f),
-                    size = androidx.compose.ui.geometry.Size(fadeFull, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
+                    Brush.horizontalGradient(listOf(Color.Black, Color.Black.copy(alpha = 1f - fr)), startX = size.width - fade, endX = size.width),
+                    topLeft = androidx.compose.ui.geometry.Offset(size.width - fade, 0f),
+                    size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn
                 )
             }
     ) {
         val minW = maxWidth
-        // (682e: anchored, room after the last chip once the chips overflow, so the last ones can reach the Play edge too)
-        val natural = widths.sum() + (count - 1).coerceAtLeast(0) * with(density) { spacing.roundToPx() }
-        val end = if (!anchored || count == 0 || laidOut < 0) endPadding else with(density) {
-            val st = startPadding.toPx(); val vw = maxWidth.toPx()
-            if (PlayChipAnchor.overflows(st, natural.toFloat(), endPadding.toPx(), vw)) PlayChipAnchor.endRoom(vw, st, widths[count - 1].toFloat(), endPadding.toPx()).toDp() else endPadding
-        }
         Row(
-            Modifier.horizontalScroll(scroll).widthIn(min = minW).padding(start = startPadding, end = end),
+            Modifier.horizontalScroll(scroll).widthIn(min = minW).padding(start = startPadding, end = endPadding),
             horizontalArrangement = Arrangement.spacedBy(spacing, align),
             verticalAlignment = Alignment.CenterVertically
         ) {
             for (i in 0 until count) {
                 Box(Modifier.onGloballyPositioned { c ->
                     val x = c.positionInParent().x.toInt()
-                    if (i < winLefts.size) winLefts[i] = c.positionInWindow().x
                     if (i < lefts.size && (lefts[i] != x || widths[i] != c.size.width)) {
                         lefts[i] = x; widths[i] = c.size.width; laidOut++
                     }
@@ -976,8 +944,6 @@ internal fun FilterPill(label: String, isSelected: Boolean, onClick: () -> Unit,
     val ps = if (compact) LocalTileScale.current.coerceIn(0.9f, 1.5f) else 1f
     Box(
         Modifier
-            // (682e: the selected pill is the chip end of the home's Play / chip anchor - QaClip "anchors", anchorcheck.py.)
-            .then(if (isSelected) Modifier.semantics { homeAnchor = "chip" } else Modifier)
             .clip(RoundedCornerShape(50))
             // (Sprint 527: over a background clip the other pills take a dark backing - a local scrim, the clip stays as it is.)
             .background(if (isSelected) ShelfTheme.accent else if (ClipBackdrop.on) Color.Black.copy(alpha = 0.46f) else Color.White.copy(alpha = 0.08f))

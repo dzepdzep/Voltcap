@@ -18,9 +18,6 @@ internal val AvatarTag = SemanticsPropertyKey<String>("VoltcapAvatar")
 /** 677k: a measured-only probe (StatusFit, 679e Cube dock label) - never placed; QaClip leaves its whole subtree out of every dump. */
 internal val StatusProbeTag = SemanticsPropertyKey<Boolean>("VoltcapStatusProbe")
 internal var SemanticsPropertyReceiver.statusProbe by StatusProbeTag
-/** 682e: the home's Play / category-chip anchor ("play", "chip": the selected chip) - QaClip's "anchors", anchorcheck.py. */
-internal val HomeAnchorTag = SemanticsPropertyKey<String>("VoltcapHomeAnchor")
-internal var SemanticsPropertyReceiver.homeAnchor by HomeAnchorTag
 private var SemanticsPropertyReceiver.statusClusterTag by StatusClusterTag
 private var SemanticsPropertyReceiver.avatarTag by AvatarTag
 
