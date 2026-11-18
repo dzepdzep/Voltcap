@@ -1,0 +1,64 @@
+package com.shelf.launcher.ui
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.io.File
+
+/** P2 batch 2 (owner 18 Nov 14:54, GO): each layout's own Details / Achievements / Options pages, not the shared bodies. */
+class NativePagesBatch2Test {
+    private fun src(n: String) = listOf("src/main/java/com/shelf/launcher/ui/$n", "app/src/main/java/com/shelf/launcher/ui/$n")
+        .map { File(it) }.first { it.exists() }.readText()
+    private fun between(s: String, a: String, b: String) = s.substring(s.indexOf(a), s.indexOf(b, s.indexOf(a)))
+
+    @Test fun magazinePrintsItsOwnPages() {
+        assertTrue(nativePages(WinScene.MAG_PAGE))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.MAG_PAGE, p))
+        assertEquals("THE REVIEW", magPageName(WinPage.DETAILS)); assertEquals("CHECKLIST", magPageName(WinPage.TROPHIES))
+        assertEquals("READER SERVICES", magPageName(WinPage.OPTIONS)); assertEquals("FEATURE", magPageName(WinPage.MAIN))
+        assertEquals("3 / 12" to "40 OF 150 PTS", magScore(3, 12, 40, 150)); assertEquals("0 / 0" to "NO POINTS", magScore(0, 0, 0, 0))
+        val scene = between(src("WinScenesConsole.kt"), "internal fun MagazinePage(", "// Rental shop: the rental tag")
+        assertFalse(scene.contains("ctx.pageBody("))
+        assertTrue(scene.contains("MagPage(ctx, st, pg, pageLive,") && scene.contains("it.inert()"))
+        assertEquals(1, src("WinPagesMag.kt").split("ctx.pageFor(").size - 1) // only Performance falls back
+        assertTrue(src("WinPagesMag.kt").contains("rememberNativeConfirm(ctx)"))
+    }
+
+    @Test fun cinemaShowsTheServicesOwnScreens() {
+        assertTrue(nativePages(WinScene.CINEMA_PREMIERE))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.CINEMA_PREMIERE, p))
+        assertEquals("MORE INFO", cinemaPageName(WinPage.DETAILS)); assertEquals("EPISODES", cinemaPageName(WinPage.TROPHIES))
+        assertEquals("MY LIST & MORE", cinemaPageName(WinPage.OPTIONS))
+        assertEquals("1", cinemaEpisodeNo(0)); assertEquals("10 pts", cinemaRuntime(10)); assertEquals("-", cinemaRuntime(null))
+        val scene = between(src("WinScenesHomes.kt"), "internal fun CinemaPremiere(", "// Arctic info drawer")
+        assertFalse(scene.contains("ctx.pageBody("))
+        assertTrue(scene.contains("CinemaPage(ctx, pg, pageLive, accent,"))
+        assertEquals(1, src("WinPagesCinema.kt").split("ctx.pageFor(").size - 1)
+    }
+
+    @Test fun arcadeShowsTheCabinetsOwnScreens() {
+        assertTrue(nativePages(WinScene.ARCADE_MENU))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.ARCADE_MENU, p))
+        assertEquals("INSTRUCTIONS", arcadeNativePageName(WinPage.DETAILS)); assertEquals("HIGH SCORES", arcadeNativePageName(WinPage.TROPHIES))
+        assertEquals("SERVICE MODE", arcadeNativePageName(WinPage.OPTIONS))
+        assertEquals(listOf("1ST", "2ND", "3RD", "4TH", "11TH", "12TH", "13TH", "21ST", "22ND"), listOf(0, 1, 2, 3, 10, 11, 12, 20, 21).map(::arcadeRank))
+        assertEquals("000050", arcadeScore(50, true)); assertEquals("-----", arcadeScore(50, false)); assertEquals("000000", arcadeScore(null, true))
+        val scene = between(src("WinScenesArcade.kt"), "internal fun ArcadeMenu(", "private fun ArcadeMenuRow(")
+        assertFalse(scene.contains("ctx.pageBody("))
+        assertTrue(scene.contains("ArcadePage(ctx, pg, pageLive, font, line, small,"))
+        assertEquals(1, src("WinPagesArcade.kt").split("ctx.pageFor(").size - 1)
+    }
+
+    @Test fun cubeTurnsToItsOtherFaces() {
+        assertTrue(nativePages(WinScene.CUBE_FACE))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.CUBE_FACE, p))
+        assertEquals("FACE 2 · SPECS", cubePageName(WinPage.DETAILS)); assertEquals("FACE 3 · CUBES", cubePageName(WinPage.TROPHIES))
+        assertEquals("FACE 4 · CONTROLS", cubePageName(WinPage.OPTIONS))
+        assertEquals(5, cubeWallColumns(82f)); assertEquals(1, cubeWallColumns(5f))
+        val scene = between(src("WinSceneFamilies.kt"), "internal fun CubeTurnFace(", "// ───────────────────────────── Console hub")
+        assertFalse(scene.contains("ctx.pageBody("))
+        assertTrue(scene.contains("CubePage(ctx, pg, pageLive, a, faceBottom,"))
+        assertEquals(1, src("WinPagesCube.kt").split("ctx.pageFor(").size - 1)
+    }
+}

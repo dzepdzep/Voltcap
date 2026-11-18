@@ -147,7 +147,11 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                     } else if (ctx.page != WinPage.MAIN) {
                         // (674d: only the other pages - k674c drew the page body and these keys on the main page too where Play
                         // went into the round keys' row, the main page's own keys squeezed to 5 px.)
-                        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                        // (682o, P2 batch 2: the service's own screens - MORE INFO, EPISODES, MY LIST & MORE - WinPagesCinema.kt.)
+                        NativePages(ctx, Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f)),
+                            label = "cinemaPage", move = ::cinemaMove) { pg, pageLive ->
+                            CinemaPage(ctx, pg, pageLive, accent, Modifier.fillMaxSize().padding(8.dp))
+                        }
                         Spacer(Modifier.height(6.dp))
                         // (674d, owner brief 15 Nov: the page's keys one row of identical keys - they were as wide as their words.)
                         UniformKeyRow(ctx.buttons, 8.dp) { a ->

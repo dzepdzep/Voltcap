@@ -43,7 +43,7 @@ moves (merge, never force-push).
 
 ## All 53
 
-Native pages **18 / 53 implemented** (13 earlier families + batch 1: Record crate 681a-b, Classic 681c, Console hub 681d, Resume 681e-f, TV room 681g) - implemented is NOT hardware-tested and NOT owner-approved; batch 1: 0 / 5 hardware-tested, 0 / 5 approved; hardware-verified: the 13 earlier ones in their
+Native pages **18 / 53 implemented** at batch 1 (22 with batch 2, below) (13 earlier families + batch 1: Record crate 681a-b, Classic 681c, Console hub 681d, Resume 681e-f, TV room 681g) - implemented is NOT hardware-tested and NOT owner-approved; batch 1: 0 / 5 hardware-tested, 0 / 5 approved; hardware-verified: the 13 earlier ones in their
 own gates (673j / k, KONKR / Flip 2 / Nova), Record crate NOT TESTED; owner-approved: none recorded for the new pages yet.
 
 Earlier families (13 layouts, 7 scenes): Storage boxes (STORAGE_RECORD), Night menu (NIGHT_STATUS), Tile home + Grid
@@ -160,3 +160,16 @@ Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TEST
   turned page lights its own item (TV P100 story, crate liner notes, Tiles' Details story stop). First attempt: D359 (the
   script's R1 + A reached the QA app's quick-settings panel on the home - Android's Wi-Fi panel opened, nothing changed;
   fixed, re-run). NOT TESTED on hardware: the 682k confirmation strip / crate margin by eye (needs a p2review run).
+
+
+## Batch 2 (owner GO 18 Nov 14:54): Game magazine, Cinema, Arcade cabinets, Cube menu - IMPLEMENTED, not hardware-reviewed, not approved
+Batch 1 still needs its remaining visual fixes and is NOT visually approved.
+
+| Layout | Scene | Its own pages | Impl | Robo | HW | Owner |
+|---|---|---|---|---|---|---|
+| Game magazine | MAG_PAGE | THE REVIEW (FACT FILE box + drop-cap article), CHECKLIST (SCORE box, tick boxes, SORTED BY tab), READER SERVICES (dashed coupons with scissors, WARNING coupon asks twice); page-turn slide; headline steps down on pages; the leaving copy's keys inert | 682n | WinFocus MAGAZINE 8/8, ShelfText 12/12 (x1.0 / x1.3, long name, 0 / 160 / 9999 achievements), NoStray x1.0 / x1.3 PASS | NOT TESTED | pending |
+| Cinema | CINEMA_PREMIERE | MORE INFO ("About", rating-style plate, grey-label credits, synopsis), EPISODES (numbered rows, badge still with a progress bar, points as running time, "Sorted:" picker), MY LIST & MORE (round outlined keys, red one asks twice); fade-up screen change | 682o | WinFocus CINEMA 8/8, ShelfText 12/12, NoStray PASS | NOT TESTED | pending |
+| Arcade cabinets | ARCADE_MENU | INSTRUCTIONS (NAME .... VALUE card, attract text), HIGH SCORES (1ST / 2ND ranks, 000050 scores, "-----" for to get), SERVICE MODE (▶ cursor rows, pink one asks twice); tube roll with a scan line; page name on its own line | 682p | WinFocus ARCADE 8/8, ShelfText 12/12 (x1.3 long-name overlap fixed), NoStray PASS | NOT TESTED | pending |
+| Cube menu | CUBE_FACE | FACE 2 · SPECS (square fact tiles + glass slab story), FACE 3 · CUBES (a wall of little lit / hollow cubes + rows led by their cube), FACE 4 · CONTROLS (square keys, red-edged one asks twice); a quarter turn on the face's edge; small picture mark on the other faces | 682q | WinFocus CUBE 8/8, ShelfText 12/12, NoStray PASS | NOT TESTED | pending |
+
+Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 2 if wanted: Spotlight (SPOT_POSTER).

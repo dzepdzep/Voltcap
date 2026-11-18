@@ -102,8 +102,9 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // (Update 478, D271: shrinks, then slides — a long name was cut at 2 lines.)
                     WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
-                    if (ctx.page != WinPage.MAIN) Text(" " + arcadePageName(ctx.page), color = ArcCyan, fontSize = small, style = glow, maxLines = 1)
                 }
+                // (682p: the page's name on a line of its own - beside a long name at x1.3 the two ran over each other)
+                if (ctx.page != WinPage.MAIN) Text(arcadeNativePageName(ctx.page), color = ArcPink, fontSize = small, style = glow, maxLines = 1)
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
                     lineHeight = small * ARCADE_LINE, style = glow)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
@@ -145,8 +146,10 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                                 }
                             }
                         } else {
-                            Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcCyan.copy(alpha = 0.6f), RoundedCornerShape(4.dp)).clip(RoundedCornerShape(4.dp))) {
-                                ctx.pageBody(Modifier.fillMaxSize())
+                            // (682p, P2 batch 2: the cabinet's own screens - INSTRUCTIONS, HIGH SCORES, SERVICE MODE - WinPagesArcade.kt.)
+                            NativePages(ctx, Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcCyan.copy(alpha = 0.6f), RoundedCornerShape(4.dp)).clip(RoundedCornerShape(4.dp)),
+                                label = "arcadePage", move = ::arcadeMove) { pg, pageLive ->
+                                ArcadePage(ctx, pg, pageLive, font, line, small, Modifier.fillMaxSize().padding(6.dp))
                             }
                             Spacer(Modifier.height(4.dp))
                             ctx.buttons.forEach { a -> ArcadeMenuRow(a, font, line, compact) }
@@ -198,9 +201,6 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
     }
 }
 
-private fun arcadePageName(p: WinPage) = when (p) {
-    WinPage.MAIN -> ""; WinPage.DETAILS -> "GAME INFO"; WinPage.OPTIONS -> "OPTIONS"; WinPage.TROPHIES -> "ACHIEVEMENTS"; WinPage.PERF -> "PERFORMANCE"
-}
 
 
 /** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */

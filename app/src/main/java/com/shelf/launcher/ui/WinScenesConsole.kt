@@ -839,17 +839,27 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
+                // (682n: the page's own name - THE REVIEW, CHECKLIST, READER SERVICES - WinPagesMag.kt)
+                Text(st.masthead + "  ·  " + magPageName(ctx.page), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
                 // (Update 424, rule 11: the headline wraps and shrinks a step when long; update 478, D271: then slides — it was cut.)
-                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
-                    maxLines = 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
+                // (682n: on its own pages the headline steps down, so the page has the room)
+                val onPage = ctx.page != WinPage.MAIN
+                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight,
+                    fontSize = if (onPage) 16.sp else if (compact) 20.sp else 26.sp, lineHeight = if (onPage) 18.sp else if (compact) 22.sp else 28.sp,
+                    maxLines = if (onPage) 2 else 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
                         fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal))
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
-                if (ctx.page == WinPage.MAIN) {
+                // (682n, P2 batch 2: the magazine's own pages - WinPagesMag.kt; the feature itself is the first page.)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "magPage", move = ::magMove) { pg, pageLive ->
+                // (the copy on its way out keeps no focus requesters and presses nothing - WinAction.inert)
+                val btns = ctx.buttons.map { if (pageLive) it else it.inert() }
+                val tls = ctx.tools.map { if (pageLive) it else it.inert() }
+                Column(Modifier.fillMaxSize()) {
+                if (pg == WinPage.MAIN) {
                     Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ctx.buttons.filter { it.primary }.forEach { a ->
+                        btns.filter { it.primary }.forEach { a ->
                             SceneControl(a, Modifier) { on ->
                                 Box(Modifier.size(if (compact) 88.dp else 112.dp, if (compact) 42.dp else 60.dp), contentAlignment = Alignment.Center) {
                                     Canvas(Modifier.fillMaxSize().graphicsLayer { rotationZ = if (on) -4f else 0f; val s = if (on) 1.08f else 1f; scaleX = s; scaleY = s }) {
@@ -869,7 +879,7 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         }
                         // (Update 346: the "see page" callouts run in two columns, down then across, as a contents box would —
                         // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
-                        val callouts = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                        val callouts = btns.filter { !it.primary && !it.back } + tls + btns.filter { it.back }
                         val half = (callouts.size + 1) / 2
                         // (Update 470: a gutter between the two columns — at font 1.3 a wrapped callout reached the next column's edge.)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -899,9 +909,10 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                     Text(listOfNotNull(if (ctx.playtime == null && ctx.lastPlayed == null) "NOT PLAYED YET" else "PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
                         color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 2)
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth().border(1.dp, st.ink.copy(alpha = 0.35f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                    MagPage(ctx, st, pg, pageLive, Modifier.weight(1f).fillMaxWidth())
+                    Spacer(Modifier.height(4.dp))
                     // (674e: the page's keys one vertical menu of identical keys - the page's width, 26 dp, the lit one ringed.)
-                    UniformKeyColumn(ctx.buttons, 2.dp, fill = true) { a ->
+                    UniformKeyColumn(btns, 2.dp, fill = true) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                 .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {
@@ -909,6 +920,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                             }
                         }
                     }
+                }
+                }
                 }
             }
         }

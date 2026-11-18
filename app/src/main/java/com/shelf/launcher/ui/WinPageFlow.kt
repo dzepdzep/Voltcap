@@ -51,7 +51,15 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (P2 681d: Console hub - the nameplate's engraving, service medals and switch panel, WinPagesHub.kt.)
     WinScene.HUB_PLATE,
     // (P2 681e: Resume & discover - the discover feed's about cards, progress shelves and settings pills, WinPagesDiscover.kt.)
-    WinScene.DISCOVER_CARD)
+    WinScene.DISCOVER_CARD,
+    // (P2 batch 2, 682n: Game magazine - the review, the checklist and the reader-service coupons, WinPagesMag.kt.)
+    WinScene.MAG_PAGE,
+    // (682o: Cinema - the streaming service's More info, Episodes and My List screens, WinPagesCinema.kt.)
+    WinScene.CINEMA_PREMIERE,
+    // (682p: Arcade cabinets - the machine's instruction card, high-score table and service mode, WinPagesArcade.kt.)
+    WinScene.ARCADE_MENU,
+    // (682q: Cube menu - the cube's other faces: specs tiles, a wall of little cubes, square control keys, WinPagesCube.kt.)
+    WinScene.CUBE_FACE)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
