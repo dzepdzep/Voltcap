@@ -26,6 +26,14 @@ WG_ONABORT=putback
 wgk() { case $1 in BUTTON_A) echo A;; BUTTON_B) echo B;; BUTTON_R1) echo R1;; BUTTON_L1) echo L1;; DPAD_UP) echo U;; DPAD_DOWN) echo D;;
   DPAD_LEFT) echo L;; DPAD_RIGHT) echo R;; *) echo "$1";; esac; }
 k() { wg_key_win $(wgk $1); sleep ${2:-0.8}; }
+# close the game window: B only while that window still has the focus, until QaClip says no window is open (each B checked;
+# a window that took the focus elsewhere = ABORT through winguard), then the home is confirmed again
+closewin() { for i in 1 2 3; do [ "$(wg_popup)" = null ] && break; wg_key_win B; sleep 1.4; [ "$(wg_hash "$(wg_focus)")" = "$WG_WIN" ] || break; done
+  wg_home; }
+# (682r) the armed confirmation read twice (a dump taken while the row was still growing called a shown confirmation missing
+# at x1.0, review 44280831400) - a second READ, never a second key
+armed() { grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_$1.json 2>/dev/null && return 0
+  sleep 0.8; shot $1; grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_$1.json 2>/dev/null; }
 dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
   i=0; while ! dr $F/qa_clip/${TAG}_$1.json && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
@@ -74,13 +82,13 @@ run)
     k BUTTON_A 1.0; shot ${n}_trophies_open
     for i in 1 2 3 4 5 6 7; do k DPAD_DOWN 0.45; done; sleep 0.6; shot ${n}_trophies_scroll
     k BUTTON_R1 1.1; shot ${n}_options; k DPAD_DOWN 0.8; shot ${n}_options_focus
-    k BUTTON_B 1.2; shot ${n}_back_main; k BUTTON_B 1.4; shot ${n}_closed
+    k BUTTON_B 1.2; shot ${n}_back_main; closewin; shot ${n}_closed
     if [ -n "$BIG" ]; then
       A --es voltcap_test_game "$BIG"; sleep 2
       if openw $lay ${n}_big; then
         k BUTTON_R1 1.1; k BUTTON_R1 1.1; shot ${n}_big_trophies
         for i in $(seq 1 24); do k DPAD_DOWN 0.3; done; sleep 0.8; shot ${n}_big_trophies_far
-        k BUTTON_B 1.2; k BUTTON_B 1.4
+        closewin
       fi
     fi
     # The destructive confirmation: an app in the QA library's App category ("Hide from library" asks first) - one press arms
@@ -108,20 +116,20 @@ run)
         # (claimed only when the dump shows the confirmation line - text, not the log's hope)
         # (682h: the dumps are kept as $O/${TAG}_<name>.json - review 44272567211 read the wrong name and called a shown
         # confirmation missing)
-        if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_${n}_app_armed.json 2>/dev/null; then
+        if armed ${n}_app_armed; then
           k DPAD_UP 0.9; shot ${n}_app_disarmed
           if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${TAG}_${n}_app_disarmed.json 2>/dev/null; then log "$lay: FAIL - the confirmation stayed after moving off"
           else log "$lay: destructive row armed (confirmation shown) and left (cancelled; never confirmed)"; fi
         else log "$lay: FAIL - A on 'Hide from library' showed no confirmation"; fi
       fi
-      k BUTTON_B 1.2; k BUTTON_B 1.4
+      closewin
     fi
     A --es voltcap_test_category ALL; sleep 1.5
     A --es voltcap_test_libapp remove:com.android.settings; sleep 1.5
     # Motion Off: the walk again, recorded - page changes immediate.
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     MOTION=OFF; if openw $lay ${n}_off; then REC_SEG=10 rec_start $O/${n}_walk_motionoff 10; sleep 0.6
-      k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.2; rec_stop; k BUTTON_B 1.4; fi; MOTION=NORMAL
+      k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.2; rec_stop; closewin; fi; MOTION=NORMAL
     log "$lay done (launches: $(launches))"
   done
   log "run done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"; echo DONE >> $L ;;

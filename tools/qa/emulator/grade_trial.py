@@ -27,9 +27,13 @@ def grade_p2_run(run, layouts):
     except OSError: return "NOT TESTED", "no log.txt in the run folder"
     m = re.search(r"STOP (.*)", log)
     if m: return "INFRA", "the walk stopped: " + m.group(1).strip()
+    m = re.search(r"ABORT (.*)", log)   # (682j-c) winguard stopped the walk safely: no verdict on the pages
+    if m: return "INFRA", "winguard aborted the walk: " + m.group(1).strip()
+    # (682r) a line the script marked FAIL is a FAIL even when the walk then finished (the review mode passed such logs)
+    line_fails = [l.split(" ", 1)[-1].strip() for l in log.splitlines() if re.search(r"(^|\s|:)FAIL\b", l)]
     m = re.search(r"run done fatal=(\d+)", log)
     if not m: return "NOT TESTED", "the walk did not finish (no 'run done')"
-    fails, gaps = [], []
+    fails, gaps = list(line_fails), []
     if int(m.group(1)) > 0: fails.append(f"{m.group(1)} FATAL EXCEPTION in the crash buffer")
     for lay in layouts:
         d = re.search(r"\b%s done \(launches: (\d+)\)" % re.escape(lay), log)

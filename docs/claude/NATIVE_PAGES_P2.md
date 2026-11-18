@@ -173,3 +173,12 @@ Batch 1 still needs its remaining visual fixes and is NOT visually approved.
 | Cube menu | CUBE_FACE | FACE 2 · SPECS (square fact tiles + glass slab story), FACE 3 · CUBES (a wall of little lit / hollow cubes + rows led by their cube), FACE 4 · CONTROLS (square keys, red-edged one asks twice); a quarter turn on the face's edge; small picture mark on the other faces | 682q | WinFocus CUBE 8/8, ShelfText 12/12, NoStray PASS | NOT TESTED | pending |
 
 Native pages **22 / 53 implemented** (batch 1: 18; batch 2: +4). Next for batch 2 if wanted: Spotlight (SPOT_POSTER).
+
+### 682r - QA-tool gaps closed (cloud, 18 Nov)
+- grade_trial.py review mode: a line the script marked FAIL now fails the run even when the walk finished (it passed such a log
+  before); a winguard ABORT grades INFRA. Selftest test_fail_lines_and_abort_682r fails on the old grader.
+- p2review.sh: the armed confirmation is read twice (a second dump read, never a second key) - the x1.0 false "no confirmation";
+  the window is closed by a checked closewin (B only while the game window holds the focus, until QaClip says none is open),
+  never two blind B presses. Every key goes through winguard (682j-c).
+- Batch 1 (Record crate, Classic, Console hub, Resume & discover, TV room): still NOT owner-approved; its open visual findings stay open
+  until the owner's review of the next sheets.

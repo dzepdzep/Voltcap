@@ -2780,6 +2780,17 @@ class TestGradeTrialReview681z(unittest.TestCase):
         self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("restore verify: OK", "restore verify: MISMATCH")), ["TV"])[0])
         self.assertEqual("INFRA", g.grade_p2_run(self._run("06:07 STOP asleep\nDONE\n"), ["TV"])[0])
 
+    def test_fail_lines_and_abort_682r(self):
+        # (682r) a finished walk with a line the script marked FAIL must not pass (the old review mode passed it); a winguard
+        # ABORT is INFRA (the walk stopped safely), never PASS.
+        g = self._g()
+        log = self.CLEAN.replace("06:10:35 TV done", "06:10:20 TV: FAIL - A on 'Hide from library' showed no confirmation\n06:10:35 TV done")
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(log), ["TV"])[0])
+        log = self.CLEAN.replace("06:10:35 TV done", "06:10:20 TV: FAIL - the confirmation stayed after moving off\n06:10:35 TV done")
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(log), ["TV"])[0])
+        self.assertEqual("INFRA", g.grade_p2_run(self._run("06:07 setup\n06:08:01 ABORT focus left the game window - nothing more pressed, run stopped\n"), ["TV"])[0])
+        self.assertEqual("PASS", g.grade_p2_run(self._run(self.CLEAN.replace("setup", "setup FAILSAFE-off")), ["TV"])[0])
+
     def test_verdict_file_never_pass_with_a_gap(self):
         g = self._g(); d = tempfile.mkdtemp()
         g.write_verdict(d, [("p2r13", "PASS", "ok"), ("p2r10", "NOT TESTED", "gap")], "p2")
@@ -2890,6 +2901,10 @@ echo REACHED_END >> {d}/log.txt
             src = open(os.path.join(self.DEV, name)).read()
             self.assertNotIn("input keyevent KEYCODE_BUTTON", src, name + " presses a button around the guard")
             self.assertIn("winguard.sh", src)
+            # (682r) the window is closed by a checked closewin (B while the window holds the focus, until QaClip says none
+            # is open) - never two blind B presses
+            self.assertNotIn("k BUTTON_B 1.2; k BUTTON_B 1.4", src)
+            self.assertIn("closewin", src)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
