@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 19:55 UTC, 684a (cloud, v0.6.74 turn):** Verify 310 on 5f46185: ubuntu-24.04 GREEN, ubuntu-latest Maven 429 (infra;
+failed job re-run requested). P2 left alone: batch 1's 682s visual pass waits on its hardware re-check + the owner's look (owner
+"2" = batch 1 fixes first); Spotlight is "if wanted". H16: Circuit, Timeline, Shelf, Stacks, Crate, Discs, Cube under all four
+window guards x1.0 + x1.3 (NEXT_684) - Timeline's no-art plate broke "PlayStati / on 2": fixed (SceneNoArt drops a caption that
+cannot stay whole where the console is named beside it; NoArtCaption684Test). 30 window scenes guarded. HW-24 684a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Cards, Greencore, Box, File select, Storage, Caseflow, then Orbit, Airy, Blades,
+Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
 **18 Nov 18:40 UTC, 683a (cloud, v0.6.74 turn):** Verify 310 GREEN on 4784060 (682u). Live P2 push 18:16 UTC (< 1 h) -> v0.6.74
 turn. H16: Classic, Tiles (Grid shares its Tile card), Dash, Side, Spot, Library added to WindowWordsSurvey682Test (NEXT_683) -
 all four guards x1.0 + x1.3 clean (48 cases, cloud compiled), no app change. 24 window scenes guarded.

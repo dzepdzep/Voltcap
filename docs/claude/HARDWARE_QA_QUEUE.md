@@ -109,6 +109,10 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   values still beside their labels; x1.0 as before. Pocket ribbon (POCKET_RIBBON), same game, first page and More: the CONSOLE
   fact "PlayStation 2" whole (smaller if it must, never broken inside the word). pop529 NIGHT OWN / POCKET_RIBBON OWN ->
   popclip.py. Unit evidence only (WindowWordsSurvey682Test x1.3, NightValueStack682tTest).
+- Also (684a, H16, dev line 684a or later, ~1 min, KONKR x1.0 + x1.3): Timeline (TIMELINE), a PlayStation 2 game WITHOUT
+  cover art: the window's grey plate shows the console initials only (no "PlayStati / on" break), the entry line beside it names
+  "PlayStation 2" whole; a game with a short console name (e.g. "Wii") still shows its caption under the initials. pop529
+  TIMELINE OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test TIMELINE, NoArtCaption684Test).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

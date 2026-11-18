@@ -1,3 +1,19 @@
+# Update 684a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: seven more game windows under the window guards; Timeline no-art plate fix
+- CI first: Verify 310 on 5f46185 (683a) - ubuntu-24.04 GREEN (full suite), ubuntu-latest Maven Central 429 (infra) -> failed
+  job re-run requested. P2 branch: its last push 18:16 UTC is an interactive session's batch 1 visual pass awaiting hardware
+  re-check and the owner's look, so no new P2 layout from the cloud this turn (batch 2's Spotlight is "if wanted").
+- WindowWordsSurvey682Test.NEXT_684: Circuit (Chip sheet), Timeline, Shelf + Stacks (Index card), Record crate (sleeve), Discs,
+  Cube joined all four guards (first page words, parent clip, More, Details / Options / Achievements) at KONKR size x1.0 + x1.3.
+- Real finding: Timeline's compact no-art plate (52 dp inside) broke "PlayStation 2" inside the word ("PlayStati / on 2") at
+  both scales - the caption is 10 sp, already its readable minimum. Fix (WinSceneFamilies.kt SceneNoArt + noArtCaptionShown):
+  where the window names the console beside the plate (Timeline's entry line), a caption whose longest word cannot fit whole is
+  left out - initials stay, the full name is right beside it (rule 11: never broken, never cut, still reachable). Other
+  scenes' plates unchanged (parameter defaults to off).
+- Checks (cloud compiled): the 56 new survey cases green (TIMELINE 4 failed before the fix), NoArtCaption684Test 4/4,
+  Batch507Test + Batch508Test green, static checks PASS. Handheld NOT TESTED - HW-24 684a (~1 min, KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/WinSceneFamilies.kt, app/src/test/java/com/shelf/launcher/ui/
+  WindowWordsSurvey682Test.kt, app/src/test/java/com/shelf/launcher/ui/NoArtCaption684Test.kt (new).
+
 # Update 683a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: six more game windows under the window guards (test only)
 - CI first: Verify 310 GREEN on 4784060 (682u fix). Live P2 push 18:16 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
 - WindowWordsSurvey682Test.NEXT_683: Classic (Volt panel), Tiles (Tile card; Grid shares it), Dash (Dash card), Side (Side

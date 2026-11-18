@@ -49,6 +49,10 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         /** 683a: H16 next batch - six windows with their own scene not yet under the guards (Volt panel, Tile card, Dash card, Side
          *  drawer, Spot poster, Library page). */
         val NEXT_683 = listOf(HomeLayout.CLASSIC, HomeLayout.TILES, HomeLayout.DASH, HomeLayout.SIDE, HomeLayout.SPOT, HomeLayout.LIBRARY)
+        /** 684a: H16 next batch - Circuit (Chip sheet), Timeline, Shelf family (Shelf + Stacks, Index card), Record crate (sleeve),
+         *  Discs, Cube - first page, More and the window's own pages under the same guards. */
+        val NEXT_684 = listOf(HomeLayout.CIRCUIT, HomeLayout.TIMELINE, HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CRATE,
+            HomeLayout.DISCS, HomeLayout.CUBE)
         /**
          * 682t: the owner's high-priority set first (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar - polished before the
          * survey existed, now under the same guards), then the owner's H16 order after Pocket / Night / Bar.
@@ -56,7 +60,7 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         val HIGH_PRIORITY = listOf(HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET, HomeLayout.NIGHT, HomeLayout.BAR)
         val LAYOUTS = HIGH_PRIORITY + listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
             HomeLayout.CHAN, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.MEMCARD, HomeLayout.BUBBLES, HomeLayout.PANELS,
-            HomeLayout.CINEMA) + NEXT_683
+            HomeLayout.CINEMA) + NEXT_683 + NEXT_684
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} x{1}")
