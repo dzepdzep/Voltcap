@@ -281,3 +281,4 @@
 - ~06:18 UTC 681y (v0.6.74 turn): lock taken. H12 progress counts new unlocks as they lock in + stage follows motion speed
   (reduced motion at once). Cloud compile OK; AchProgressCount681yTest 5/5 + Ach suites PASS (one Maven 429, retried once).
   HW-25 queued. Lock released.
+- ~07:20 UTC 681z (P2 turn): lock taken. Read P2 TV review 44247782675; grade_trial.py review mode + p2review.sh restore / App-category fixes on claude/v0674-native-pages (d14710b); selftest 224/224. No Gradle (QA tools only). Lock released.

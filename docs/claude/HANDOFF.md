@@ -47,6 +47,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 07:45 UTC, 681z (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages`; emulator review 44247782675 READ
+(TV Fastext keys whole at both scales - 681x confirmed; Play guard held; App category still empty on the emulator -> destructive
+confirmation NOT TESTED there). (c) DONE on the P2 branch (d14710b): grade_trial.py grades review runs on their own walks (P2:
+p2r13 / p2r10, font reviews: e679r13 / e679r10) + P2 contact sheets; p2review.sh restore no false diff=1 on an empty keep folder,
+App category checked. Selftest 224/224. Dev CI: Verify 310 GREEN on 19bc1e0 (681y); 79bb40d red = Maven 429 (infra, lock commit).
+NEXT: check Verify 310 on this push and on d14710b (P2). Next run = v0.6.74 turn: H12 rest (reveal / trophy animation redesign -
+comparison for the owner first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross). Next P2 turn: batch 2
+(Cube first) + dispatch "P2:TV CUBE" review (expect NOT TESTED until an app fixture exists for the confirmation).
+
 **18 Nov 06:50 UTC, 681y (cloud, v0.6.74 turn):** item 7 H12 - the Achievements page's progress (Power cells battery, Trophy
 header, summary bar) now counts each new unlock as its badge locks in on the stage and fills up to it; nothing new = no fill. The
 stage's waits / sound cues follow the motion speed (Off / reduced motion = every badge at once). AchProgressCount681yTest 5/5 +

@@ -1,3 +1,19 @@
+# Update 681z (18 Nov 2026, cloud run, P2 turn) - emulator review runs get a real verdict; P2 TV review read (QA tools only)
+- Branch `claude/v0674-native-pages` (d14710b, dev line 681y merged in first). App code unchanged.
+- Emulator review 44247782675 ("P2:TV", cf40522) READ: the TV Fastext keys read whole at x1.0 and x1.3 (681x confirmed on the
+  emulator); the Play guard held (A not pressed, 0 launches). The App category still did not take on the emulator (no Android app in
+  the QA library) - the destructive confirmation stays NOT TESTED there.
+- tools/qa/emulator/grade_trial.py review mode: a review_layouts run is graded on its own runs - "P2:<layouts>" on p2r13 / p2r10
+  (walk finished, every layout walked, page shots there, no crash, no launch reached, nothing marked NOT TESTED, the QA app's settings
+  and snapshot files back), font reviews on e679r13 / e679r10 (popclip) - instead of always NOT TESTED for missing e529 runs. P2
+  contact sheet per layout (both scales). PASS = the walk's mechanics only; the look stays the owner's review.
+- tools/qa/device/p2review.sh: restore with an empty keep folder (fresh emulator) logged a false "diff=1" (literal glob) - now "none
+  existed before the run"; the App category is checked ("category App is empty here") and the confirmation logged NOT TESTED
+  instead of walking a ROM game's options.
+- Tests: selftest TestGradeTrialReview681z 6 + TestP2ReviewRestore681z 2 (the empty-folder case reproduces diff=1 on the old line),
+  224/224; static checks PASS. No Gradle run (no Kotlin change). Hardware: nothing new.
+- Copy: nothing on the dev line (P2 branch only, not merged).
+
 # Update 681y (18 Nov 2026, cloud run, v0.6.74 turn) - Achievements progress counts new unlocks as they lock in (H12)
 - Achievements page (AchievementListDialog.kt, AchievementViews.kt, AchievementFx.kt): the progress - Power cells' battery and
   percentage, the Trophy list's Progress / Earned / tier counts, the summary bar - counted the new unlocks before the NEW UNLOCKS

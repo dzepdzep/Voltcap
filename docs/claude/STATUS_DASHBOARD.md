@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681y · 2026-11-18 06:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 18a8cbc (last code push); 29f0c87 (docs) running at hand-off; P2 cf40522 GREEN · effort: medium
+**1. LATEST UPDATE** - 681z · 2026-11-18 07:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 19bc1e0 (681y); 79bb40d red = package-server 429 (infra); P2 cf40522 GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Achievements page: the progress at the top (battery, percentage, trophy counts) used to count brand-new unlocks before their celebration had even shown them. Now it counts each one the moment its badge locks in, and the battery fills up to it; a game with nothing new shows its progress straight away. With animations turned off (in Voltcap or Android) the new badges now appear settled at once instead of making you wait.
+**2. WHAT CLAUDE JUST FIXED** - Behind the scenes: the automatic emulator reviews of the new game-window pages now give a real pass / not-tested / fail result instead of always saying 'not tested', and they produce one picture sheet per layout for your review. The TV room review confirmed the coloured page keys at the bottom now read in full at both text sizes.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Native pages: read the TV review, review-mode verdict, then batch 2 (Cube first); then: Window polish (H16): Hero, Hero tiles, Live, Cross; Achievements reveal / trophy animation redesign (comparison for the owner)
+**5. WORKING ON NEXT** - now: Window polish (H16): Hero, Hero tiles, Live, Cross; then: Native pages batch 2 (Cube first) + emulator review; Achievements reveal / trophy animation redesign (comparison for the owner)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
 
