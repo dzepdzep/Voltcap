@@ -199,8 +199,7 @@ internal fun pageBarRows(need: List<Int>, width: Int, gap: Int): List<List<Int>>
  * bar along its right edge shows how much more there is and where the view is. Elsewhere it is the plain verticalScroll.
  */
 @Composable
-internal fun Modifier.pageScroll(): Modifier {
-    val state = androidx.compose.foundation.rememberScrollState()
+internal fun Modifier.pageScroll(state: androidx.compose.foundation.ScrollState = androidx.compose.foundation.rememberScrollState()): Modifier {
     val host = LocalNativePageHost.current ?: return this.then(Modifier.verticalScroll(state))
     return this.pageScrollCue(state, if (host.dark) Color.White else Color(0xFF2E3640)).verticalScroll(state)
 }

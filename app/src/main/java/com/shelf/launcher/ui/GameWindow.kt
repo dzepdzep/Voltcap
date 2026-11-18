@@ -71,6 +71,10 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -1021,8 +1025,7 @@ internal fun GameWindow(
     val closingFlag = remember(g.stableKey) { booleanArrayOf(false) }
     // (Update 453: this window's identity for late A / B presses — see [GamePopup.current].)
     val winToken = remember(g.stableKey) { Any() }
-    // (682a: a new window starts with no page turn behind it.)
-    DisposableEffect(winToken) { GamePopup.opened(winToken); NativePageTurn.at = 0L; onDispose { } }
+    DisposableEffect(winToken) { GamePopup.opened(winToken); onDispose { } }
     val onPlay: () -> Unit = {
         // (Update 467, popup gate: the left-over A release is a key's — a TOUCH on Play after opening with A was taken for
         // it and did nothing the first time (Twin layouts open on A's press). It is cleared either way.)
@@ -1030,10 +1033,7 @@ internal fun GameWindow(
         if (QaTrace.on) android.util.Log.e("VoltcapQA", "win play closing=${closingFlag[0]} since=${android.os.SystemClock.uptimeMillis() - openedAt[0]} homeA=$orphan")
         // (v0.6.66, D135: the release of the A whose press opened the window on the home screen is not a Play press.)
         if (orphan) Unit
-        else if (closingFlag[0]) GamePopup.askAgain(winToken, g)
-        // (682a: and never within a moment of an L1 / R1 page turn - qa-ok: ONEPRESS (protects Play; it answers after 300 ms))
-        else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt[0]) &&
-            playAfterTurnAllowed(android.os.SystemClock.uptimeMillis() - NativePageTurn.at)) playNow()
+        else if (closingFlag[0]) GamePopup.askAgain(winToken, g) else if (playAllowed(android.os.SystemClock.uptimeMillis() - openedAt[0])) playNow()
     }
     // Update 213: its performance profile and save sync (GamePopupStatus.kt), for every style of the window.
     val perfState = rememberGamePerf(g, perfPackage)
@@ -1382,9 +1382,14 @@ internal fun GameWindow(
         // (Update 285: the Inspect button is gone once the piece is out — the D-pad back onto Play.)
         LaunchedEffect(askedInspect) { if (askedInspect) { kotlinx.coroutines.delay(80); runCatching { playFocus.requestFocus() } } }
         // Update 125: the picture, the details, the options and the achievements are pages of the same window.
-        var page by remember { mutableStateOf(WinPage.MAIN) }
+        // (682j: the page change hands the focus over in the same event - WinPageFlow.PageHandoff.)
+        val handoff = remember { PageHandoff() }
+        val pageBox = remember { HandoffPage(WinPage.MAIN, handoff) }
+        pageBox.own = nativePages(scene) || tvRect != null
+        var page by pageBox
         // (Popup motion work: the control that opened the current page - B comes back onto it. Shared with SceneBody.)
-        val pageOpener = remember(g.stableKey) { arrayOfNulls<FocusRequester>(1) }
+        // ([1], 682j: the picture's Details key - where a return lands when the page's own key isn't on the picture.)
+        val pageOpener = remember(g.stableKey) { arrayOfNulls<FocusRequester>(2) }
         val pageOpeners = remember(pageOpener) { PageOpeners(pageOpener) }
         val details = page != WinPage.MAIN
         val listFocus = remember { FocusRequester() }
@@ -1460,10 +1465,17 @@ internal fun GameWindow(
         // be Play at 60 ms and the opener at 120 ms, so Play was lit for a moment and a quick A after B started the game. A layout
         // window that draws its own pages keeps the leaving page inert and without requesters, so the new page's focus is asked
         // at once - no ignored first press while the pages move.)
+        // (682j: the hand-over's holder - invisible, it can only take the focus while a page change holds it.)
+        androidx.compose.foundation.layout.Box(Modifier.size(0.dp)
+            .focusProperties { canFocus = handoff.holding }
+            .focusRequester(handoff.focus)
+            .onFocusChanged { handoff.focused = it.isFocused }
+            .onKeyEvent { handoff.keep(it.nativeKeyEvent) }
+            .focusable())
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
             val opener = pageOpener[0]
-            when (pageFocusTarget(page, fromPerf, opener != null)) {
+            when (pageFocusTarget(page, fromPerf, opener != null, ownDetails = nativePages(scene) || tvRect != null)) {
                 PageFocus.LIST -> {
                     // (A native page's leaving copy holds no requester and is inert: no wait for it - Phase 2, WinFocusRoboTest: the
                     // 60 ms left nothing lit for 4 frames and an L1 / R1 in them was lost. The shared page still waits for its own.)
@@ -1477,13 +1489,19 @@ internal fun GameWindow(
                 }
                 PageFocus.OPENER -> {
                     pageOpener[0] = null
-                    if (!focusWhenAttached(opener!!)) runCatching { playFocus.requestFocus() }
+                    // (682j: when the page's own key isn't on the picture - Options behind More, an icon the layout doesn't draw -
+                    // the return lands on the picture's Details key, still not Play: B / L1 / R1 then A never starts the game.)
+                    if (!focusWhenAttached(opener!!) && pageOpener[1]?.let { it !== opener && focusWhenAttached(it, 3) } != true)
+                        runCatching { playFocus.requestFocus() }
                 }
                 PageFocus.PLAY -> {
                     if (!nativePages(scene)) kotlinx.coroutines.delay(60) // (as LIST: no wait on a native page)
                     if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
                 }
             }
+            // (682j: the new page has its control lit - the presses kept while the pages changed go to it, in order.)
+            if (handoff.focused) runCatching { winFocusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) }
+            handoff.release { keyView.dispatchKeyEvent(it) }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
         // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)
@@ -1589,7 +1607,7 @@ internal fun GameWindow(
             // (The set switching on: all of the reveal, or - with the case going in - its second half, once the case is in.)
             val tvOn: () -> Float = if (tvFlight) ({ tvSetOn(grow.value) }) else ({ grow.value })
             // (P2 / 681g: L1 / R1 walk the set's teletext pages wherever the D-pad is - on the picture's keys under the set too.)
-            val tvPagesCtx = with(d) { tvSceneCtx(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, extras, options, tvRect.width.toDp(), tvRect.height.toDp()) }
+            val tvPagesCtx = with(d) { tvSceneCtx(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, extras, options, tvRect.width.toDp(), tvRect.height.toDp(), openers = pageOpeners) }
             BoxWithConstraints(Modifier.fillMaxSize().nativeBumpers(tvPagesCtx).then(if (tvFlight) Modifier.drawBehind { drawRect(Color.Black.copy(alpha = 0.35f * grow.value.coerceIn(0f, 1f))) } else Modifier.background(Color.Black.copy(alpha = 0.35f))).pointerInput(Unit) { detectTapGestures { onClose() } }) {
                 with(d) {
                     // Update 125: the name and the buttons go under the set when there's room, so nothing covers the
@@ -2041,10 +2059,12 @@ private fun WinIcons(look: WinLook, extras: WinExtras, size: Dp = 40.dp, slot: W
 private fun tvSceneCtx(
     look: WinLook, g: Game, state: LauncherUiState, backdrop: String?, cover: String?, page: WinPage, setPage: (WinPage) -> Unit,
     playFocus: FocusRequester, listFocus: FocusRequester, onClose: () -> Unit, extras: WinExtras, options: List<WinOption>,
-    maxW: androidx.compose.ui.unit.Dp, maxH: androidx.compose.ui.unit.Dp
+    maxW: androidx.compose.ui.unit.Dp, maxH: androidx.compose.ui.unit.Dp,
+    /** 682j: the window's openers - the set's L1 / R1 (made outside the openers' provider) register theirs too, so L1 / B back
+     *  to the picture land on the key of the page you left, never on Play. */
+    openers: PageOpeners? = LocalPageOpeners.current
 ): WinSceneCtx {
     val titles = LocalTitleOptions.current
-    val openers = LocalPageOpeners.current
     val status = LocalWinStatus.current
     val meta = state.metadata[g.stableKey]
     val list = state.raAchievementDetails[g.stableKey].orEmpty()
@@ -2067,7 +2087,7 @@ private fun tvSceneCtx(
             val lf = if (live) listFocus else remember { FocusRequester() }
             when (pg) {
                 WinPage.MAIN -> {}
-                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m, focus = lf)
                 WinPage.OPTIONS -> WindowOptions(look, options, lf, m)
                 WinPage.TROPHIES -> WindowTrophies(look, g, state, lf, m, extras.onLoadComments)
                 WinPage.PERF -> WindowPerformance(look, lf, m)
@@ -2550,6 +2570,7 @@ private fun SceneBody(
     // Update 347: back from Details / Options / Achievements, the D-pad lands on the button that opened the page (it
     // went to Play). Performance has its own (WinStatus.perfFocus, see GameWindow's page effect).
     val detailsF = remember { FocusRequester() }
+    pageOpener[1] = detailsF // (682j: the return's second choice - GameWindow's page effect)
     val optionsF = remember { FocusRequester() }
     val trophiesF = remember { FocusRequester() }
     // (Popup motion work: the opener is GameWindow's [pageOpener]; its page effect brings the D-pad back to it, with no Play
@@ -2652,7 +2673,7 @@ private fun SceneBody(
             val lf = if (live) listFocus else remember { FocusRequester() }
             when (p) {
                 WinPage.MAIN -> {}
-                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m)
+                WinPage.DETAILS -> WindowDetails(look, g, state, cover, m, focus = lf)
                 WinPage.OPTIONS -> WindowOptions(look, options, lf, m)
                 WinPage.TROPHIES -> WindowTrophies(look, g, state, lf, m, extras.onLoadComments)
                 WinPage.PERF -> WindowPerformance(look, lf, m)
@@ -3287,7 +3308,10 @@ internal val LocalNativePageHost = androidx.compose.runtime.staticCompositionLoc
 
 /** The details page inside the window (its story, facts, play time and achievements), in the layout's colours. */
 @Composable
-private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier) {
+private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover: String?, modifier: Modifier,
+    /** 682j: on a layout's own Details page the story is the page's own first stop (an invisible one that scrolls with the
+     *  D-pad, as ScrollStop) - a page turn lights it, never Play. Null on the shared page (its own rule: Play). */
+    focus: FocusRequester? = null) {
     val paper = LocalNativePageHost.current?.paper ?: look.paper ?: Color(0xFF15181E) // (529k: a native page draws on its card)
     val light = LocalNativePageHost.current?.let { !it.dark } ?: ((paper.red * 0.3f + paper.green * 0.59f + paper.blue * 0.11f) > 0.6f)
     val ink = if (light) Color(0xFF2E3640) else Color.White
@@ -3316,7 +3340,8 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
             coverBox(Modifier.width(fit.dp).aspectRatio(0.72f))
             Spacer(Modifier.width(DETAILS_GAP.dp))
         }
-        Column(Modifier.weight(1f).fillMaxHeight().pageScroll()) {
+        val storyScroll = androidx.compose.foundation.rememberScrollState()
+        Column(Modifier.weight(1f).fillMaxHeight().then(if (focus != null) Modifier.storyStop(focus, storyScroll) else Modifier).pageScroll(storyScroll)) {
             if (stacked) {
                 coverBox(Modifier.height(stackedCoverH).aspectRatio(0.72f))
                 Spacer(Modifier.height(10.dp))
@@ -3387,3 +3412,18 @@ internal val WIN_REHOME_DELIVER = setOf(
     android.view.KeyEvent.KEYCODE_BUTTON_R1, android.view.KeyEvent.KEYCODE_BUTTON_L1,
     android.view.KeyEvent.KEYCODE_BUTTON_R2, android.view.KeyEvent.KEYCODE_BUTTON_L2
 )
+
+
+/** 682j: a page's text as a D-pad stop of its own (as [ScrollStop]): ▲ ▼ scroll it while there is more, then let the press move on. */
+@Composable
+internal fun Modifier.storyStop(focus: FocusRequester, scroll: androidx.compose.foundation.ScrollState): Modifier {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    return this.focusRequester(focus).onKeyEvent { e ->
+        if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onKeyEvent false
+        when (e.key) {
+            androidx.compose.ui.input.key.Key.DirectionDown -> if (scroll.value < scroll.maxValue) { scope.launch { scroll.animateScrollBy(220f) }; true } else false
+            androidx.compose.ui.input.key.Key.DirectionUp -> if (scroll.value > 0) { scope.launch { scroll.animateScrollBy(-220f) }; true } else false
+            else -> false
+        }
+    }.focusable()
+}

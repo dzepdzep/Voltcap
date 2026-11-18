@@ -121,3 +121,21 @@ Needs: the next "P2:..." review dispatch shows a real verdict (expected NOT TEST
   (sheet p2_armed_confirmations_emulator.png); 0 launches. OPEN: TV room's teletext confirmation is cramped and partly cut
   (x1.0 worst); Crate x1.0 "cancel" touches the insert's edge. QA-tool gaps: p2review logged a false "no confirmation" for the
   x1.0 pass (dump read too early / by name), and grade_trial's review mode passed a log with FAIL lines - both to fix.
+
+
+## 682j - A after L1 / R1: focus ownership instead of the 300 ms guard (owner 18 Nov 12:12)
+- Root cause (diagnosed in Robolectric, focused node per frame): between a page turn and the new page lighting its control the
+  focus stayed on the old one - Play on the TV set's keys for 4 frames, the B Back hint under the window on the shelf / tile /
+  twin families (A then closed the window) - and Details itself landed on Play (pageFocusTarget DETAILS -> PLAY), so a quick A
+  after R1 started the game. The TV ctx also never registered its opener (made outside the openers' provider): L1 back lit Play.
+- Fix: no cooldown. `PageHandoff` (WinPageFlow) - the page change takes the focus off the old control in the same event; an
+  invisible holder keeps every press made meanwhile (A, D-pad, L1 / R1) and delivers them in order to what the new page lights;
+  B is never held (it drops the kept presses). Details on a layout's own pages lights its own story (`storyStop`, the older
+  families' WindowDetails too), never Play. A return to the picture lands on the page's key, else the Details key, else Play.
+  `NativePageTurn` / `PAGE_TURN_PLAY_GUARD_MS` removed.
+- Tests: NoStrayPlay682jTest - all 17 layouts with their own pages + TV, x1.0 / x1.3 (36 cases): storms, A 0 / 1 / 2 frames
+  after every turn, D-pad walls, B; intentional presses at once: L1 + A runs Options' first row once, B + A never plays,
+  D-pad to Play + A plays once. Without the hand-over (DETAILS -> LIST only) 36 / 36 failed (TV: A 0 frames after R1 played;
+  tile / shelf / twin: A on the Back hint closed the window). Regression: WinFocusRoboTest 448, NativeConfirm681 8,
+  PlayWhileClosing412, RapidPlayD135 5, NativePages681a 11, PopupNativeStorage 9, TV 681v / 681x, Crate 681s, DiscTracks673 - PASS.
+- Hardware: NOT TESTED yet (next: KONKR, quick L1 / R1 + A walk in Classic, Tiles, Crate, TV).

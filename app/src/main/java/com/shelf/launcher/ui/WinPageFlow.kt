@@ -16,9 +16,15 @@ internal enum class PageFocus { LIST, PERF, OPENER, PLAY }
  * The page's focus target. Back on the first page the D-pad returns to the control that opened the page (B never lands on
  * Play first: Play lit for a moment after B made a quick A start the game). Pure.
  */
-internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolean): PageFocus = when (page) {
+/**
+ * 682j (owner 18 Nov: "correct focus ownership rather than a cooldown"): the page you land on owns the focus - Info its Play,
+ * Achievements / Options their first row, and Details its own first item wherever the window draws its own Details ([ownDetails]:
+ * the native pages, the TV set's teletext). Details on Play was the shared page's rule (an information page with nothing of its
+ * own to stand on); on a native page it made a quick L1 / R1 then A start the game.
+ */
+internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolean, ownDetails: Boolean = false): PageFocus = when (page) {
     WinPage.OPTIONS, WinPage.TROPHIES, WinPage.PERF -> PageFocus.LIST
-    WinPage.DETAILS -> PageFocus.PLAY
+    WinPage.DETAILS -> if (ownDetails) PageFocus.LIST else PageFocus.PLAY
     WinPage.MAIN -> when {
         fromPerf -> PageFocus.PERF
         hasOpener -> PageFocus.OPENER
@@ -127,6 +133,8 @@ internal fun sharedPageFor(scene: WinScene?, page: WinPage): Boolean =
  */
 internal class PageOpeners(private val slot: Array<FocusRequester?>) {
     private val byName = HashMap<String, FocusRequester>()
+    // (682j: the plain / TV windows' Details key is the return's second choice - GameWindow's page effect.)
+    init { if (slot.size > 1 && slot[1] == null) slot[1] = requester(OPENER_DETAILS) }
     /** The requester of the control called [name] (made once per window). */
     fun requester(name: String): FocusRequester = byName.getOrPut(name) { FocusRequester() }
     /** The control called [name] is opening a page: B comes back onto it. */
@@ -134,3 +142,59 @@ internal class PageOpeners(private val slot: Array<FocusRequester?>) {
 }
 
 internal val LocalPageOpeners = androidx.compose.runtime.staticCompositionLocalOf<PageOpeners?> { null }
+
+
+/**
+ * 682j (owner 18 Nov, "prefer correct focus ownership, event consumption and action routing rather than a fixed cooldown"): a
+ * page change of a window that draws its own pages hands the focus over in the same event. Root cause of "A after L1 / R1 starts
+ * the game": for the frames between the turn and the new page lighting its own control, the focus stayed where it was - on
+ * Play (the TV set's keys stay on screen on every page), or it fell to the next control (the B Back hint under the window, so A
+ * closed it) - and Details itself put the focus on Play. Now the control that had the focus gives it up at once to this
+ * holder, an invisible stop that can only take the focus while it holds; every press that comes in meanwhile (A, the D-pad,
+ * more L1 / R1) is kept in order and delivered to whatever the new page lights - nothing is suppressed, nothing is lost, and
+ * nothing reaches the control that was lit before the turn. B / Back is not kept: it goes back at once and drops the presses
+ * meant for the page it leaves.
+ */
+internal class PageHandoff {
+    val focus = FocusRequester()
+    @Volatile var holding = false
+        private set
+    /** Whether the holder has the focus (its onFocusChanged). */
+    var focused = false
+    private val held = ArrayList<android.view.KeyEvent>()
+    /** Take the focus off whatever has it - called by the page change itself, inside the event that turns the page. */
+    fun hold() {
+        holding = true
+        val r = runCatching { focus.requestFocus() }
+        if (r.isFailure || r.getOrNull() == false) holding = false
+    }
+    /** A key that reached the holder: kept for the new page (true), or let through (B / Back, or not holding). */
+    fun keep(e: android.view.KeyEvent): Boolean {
+        if (!holding) return false
+        if (e.keyCode in HANDOFF_BACK_KEYS) { held.clear(); return false }
+        if (held.size < HANDOFF_MAX_KEPT) held += android.view.KeyEvent(e)
+        return true
+    }
+    /** The new page lit its control: deliver what was kept, in order (a press that turns the page again is kept anew). */
+    fun release(deliver: (android.view.KeyEvent) -> Unit) {
+        holding = false
+        if (held.isEmpty()) return
+        val out = ArrayList(held); held.clear()
+        out.forEach(deliver)
+    }
+    internal val keptCount: Int get() = held.size
+}
+
+internal val HANDOFF_BACK_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_BACK, android.view.KeyEvent.KEYCODE_BUTTON_B, android.view.KeyEvent.KEYCODE_ESCAPE)
+internal const val HANDOFF_MAX_KEPT = 48
+
+/** The window's page with [PageHandoff]: a change in a window with its own pages ([own]) hands the focus over as it happens. */
+internal class HandoffPage(initial: WinPage, private val h: PageHandoff) {
+    private val s = androidx.compose.runtime.mutableStateOf(initial)
+    var own = false
+    operator fun getValue(r: Any?, p: kotlin.reflect.KProperty<*>): WinPage = s.value
+    operator fun setValue(r: Any?, p: kotlin.reflect.KProperty<*>, v: WinPage) {
+        if (v != s.value && own) h.hold()
+        s.value = v
+    }
+}
