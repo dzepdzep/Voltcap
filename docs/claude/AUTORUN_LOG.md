@@ -259,3 +259,13 @@
 ## 2026-11-18 ~00:18-00:30 UTC - cloud run 681q
 - Verify 310 RED on f303833 = Maven Central 429 (infra; other image green). CI fix: retry_infra.py (retries 429 / 5xx only,
   never code failures), selftest 211/211, static PASS. Lock released.
+
+## 2026-11-18 ~01:18-02:10 UTC - cloud run 681s (P2 turn)
+- Verify 310 GREEN on b0bc839. P2 branch: dev line merged in; Record crate pages compact header + stamp on the first side line
+  (emulator finding 1); CrateInsertRoom681sRoboTest 4/4 + related PASS; static PASS; pushed 0c7ad56. Lock released.
+
+## 2026-11-18 ~02:18-02:45 UTC - cloud run 681t (v0.6.74 turn)
+- Verify 310 GREEN on 98f46f2 (dev) and 0c7ad56 (P2). Night window stats labels (ACHIEVED / RELEASED) whole at x1.3 + test
+  NightStatLabels681tTest. Gradle blocked by Maven Central 429 twice -> not compiled in the cloud; CI is the check. Lock released.
+- ~03:15 UTC 681u: CI RED on 1888e41 (the new Night test: ACHIEVED 2 lines at x1.3) -> cap 55 %, gap 4 dp; compiled + tests PASS
+  in the cloud (Maven answered). Lock released.

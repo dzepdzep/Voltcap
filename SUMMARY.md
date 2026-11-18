@@ -1,3 +1,39 @@
+# Update 681u (18 Nov 2026, cloud run) - CI red on 681t fixed: the Night label column needed 55 % of the row at x1.3
+- Verify 310 RED on 1888e41 (681t) on code, both runners: NightStatLabels681tTest - "ACHIEVED" still took 2 lines at the KONKR
+  x1.3 (row ~135 dp; the word needs ~63 dp even at the 10 sp minimum; the 50 % cap left it 61.7 dp). The new test caught it.
+- WinScenes.kt: cap 50 % -> 55 % of the row, label gap 6 -> 4 dp, the step-down keeps 3 % spare (glyphs do not scale exactly,
+  the italic leans past the last letter). At x1.3 the labels now draw at 10.5 sp in an 80 px column, all on one line.
+- Tests (cloud, compiled this time - Maven Central answered again): NightStatLabels681tTest 3/3, Batch513Test, NightMotion529Test,
+  Airy477Test PASS; static PASS. Hardware NOT TESTED (HW-24 Night item stands). PC copy: src_copy/ui/WinScenes.kt.
+
+# Update 681t (18 Nov 2026, cloud run, v0.6.74 turn) - Night window: ACHIEVED / RELEASED never break inside the word (H16)
+- Cause (owner review of the KONKR x1.3 sheet k678n13, "Night: ACHIEVED / RELEASED broken"): the stats panel's labels sat in a
+  fixed min(96 dp, 40 %) column; at x1.3 an 8-letter label in 12 sp black italic is wider than that and wrapped mid-word.
+- WinScenes.kt NightStatus: the label column takes the widest shown label's measured width + a 6 dp gap (nightLabelWidth: never
+  narrower than before, half the row at most); only when even that is too narrow the labels step down in proportion to the
+  readable minimum (nightLabelSize, fitMin = 10 sp). The achievements bar starts where the label column ends (was a fixed 96 dp).
+  Same slanted panel, italic labels, motion and order; x1.0 short-label case keeps 96 dp.
+- Tests: NightStatLabels681tTest (new: pure width / size cases + Robolectric GameWindow NIGHT at KONKR x1.3 - ACHIEVED, RELEASED,
+  SYSTEM, MAKER one line, no broken word, no overflow); Batch513Test's pinned line updated to the new call. NOT compiled or run
+  in the cloud this run: Maven Central answered 429 twice (one retry per the rules) - GitHub CI on this push is the first
+  compile + run. Static checks PASS.
+- Not done: emulator re-capture of Night x1.3; hardware NOT TESTED (HW-24 extended, KONKR). PC copy: src_copy/ui/WinScenes.kt.
+
+# Update 681s (18 Nov 2026, cloud run, P2 turn) - Record crate's own pages give the printed insert the room (x1.3 finding)
+- Cause (emulator review 44194071430, finding 1): on LINER NOTES / TRACKLIST / PRESSING NOTES the sleeve kept its full Info
+  header (cover a quarter of the sleeve, the name in up to three 19 sp lines, the console line) and TRACKLIST had its own line for
+  the count + ORDER stamp: at x1.3 the insert showed one track and part of the next.
+- Branch claude/v0674-native-pages (0c7ad56, after merging the dev line 681p-681q into it): WinScenesMore.kt RecordSleeve - on the
+  sleeve's own pages a compact header (crateHeader: thumbnail 0.08 of the sleeve, animated with Motion Off respected; page name;
+  the game's name on one line that fits / slides - never cut; no console line, Info and FORMAT carry it); Info unchanged.
+  WinPagesCrate.kt - the count is printed beside TRACKLIST ("TRACKLIST · 8 / 12", crateHeaderName); the ORDER stamp sits on the
+  first side's line (FlowRow: a long order name moves it below, never squeezed), 26 dp touch (>= 24 dp), still the first D-pad stop.
+- Tests (cloud, compiled): CrateInsertRoom681sRoboTest 4/4 (new: 3 whole tracks at x1.0, 2 at x1.3 - a header still smaller than
+  the old one failed with 1 whole at x1.3); NativePages681aTest 11/11, NativeConfirm681Test 8/8, AchFirstRowRoboTest CRATE 6/6,
+  WinFocusRoboTest 448 (39 skipped as before), ShelfTextRoboTest 264/264; static PASS.
+- Not done: emulator re-capture of the crate pages; hardware NOT TESTED; owner look pending (batch 1 review). Not merged into the
+  dev line (P2 rule). PC copy (only once the owner approves batch 1): src_copy/ui/WinScenesMore.kt, src_copy/ui/WinPagesCrate.kt.
+
 # Update 681q (18 Nov 2026, cloud run) - CI: a Maven Central 429 no longer turns Verify 310 red (retry on server errors only)
 - Cause: Verify 310 on f303833 (681p) failed on ubuntu-latest in :app:mergeDebugUnitTestManifest - "Could not HEAD ... compose
   plugin 2.2.10 jar. Received status code 429 from server: Too Many Requests"; ubuntu-24.04 passed the full suite on the same

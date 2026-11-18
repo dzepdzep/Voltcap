@@ -68,6 +68,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Also (681cr, P2 branch `claude/v0674-native-pages` 64e5955 or later, its CI QA APK; same KONKR session, ~2 min): Record crate
   at x1.3, open TRACKLIST (R1 R1): the first track whole at the page's top (title in two lines, the dotted leader after it,
   its words on one sliding line until A) - p2review.sh / popclip on CRATE; a cut first row = FAIL. Unit evidence only so far.
+  681s (0c7ad56 or later): the same TRACKLIST shows at least two whole tracks at x1.3 (three at x1.0) under the compact sleeve
+  header ("TRACKLIST · n / m", the name on one sliding line), the ORDER stamp on the SIDE line and A on it steps the order;
+  Info's header unchanged. Unit evidence only (CrateInsertRoom681sRoboTest).
 - Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
   new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
   real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
@@ -75,6 +78,9 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   beside it: "Play game" and "Status" on ONE line each, two whole keys between the arrows, More reached by D-pad right and by a
   swipe; the key words readable (10-12 sp). pop529 POCKET OWN -> popclip.py. Also look at the home status bar's category pill:
   "PlayStation 2" slides inside a narrow pill (rule 11) - say whether that is fine or the pill should get more room.
+- Also (681t, H16, dev line 681t or later, ~1 min): Night (NIGHT) at x1.3, a game with achievements: the stats panel's
+  ACHIEVED / RELEASED / PLAY TIME labels whole (never "ACHIEVE / D"), values beside them readable, the achievements bar under
+  the values; also x1.0 looks as before. pop529 NIGHT OWN -> popclip.py. Unit evidence only (NightStatLabels681tTest, CI).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE
