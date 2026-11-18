@@ -241,9 +241,15 @@ private fun DashMenu(menu: List<HomeShortcut>, title: String, subtitle: String, 
 
 /** A panel's small heading. */
 @Composable
-private fun PanelLabel(text: String, ink: Color) {
-    FullText(text, color = ink.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+private fun PanelLabel(text: String, ink: Color, anchor: Boolean = false) {
+    // (682i, owner's anchor rule: every card's label starts on the same inner column as Now playing's Play button - 8 dp in;
+    // KONKR kb682 measured the category label 8 dp left of Play. [anchor]: the category label, marked for anchorcheck.)
+    FullText(text, color = ink.copy(alpha = 0.85f), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
+        modifier = Modifier.padding(start = DASH_INNER).then(if (anchor) Modifier.semantics { homeAnchor = "chip" } else Modifier))
 }
+
+/** 682i: the cards' inner column - labels and Now playing's name / Play start here (inside the 8 dp panel padding). */
+internal val DASH_INNER = 8.dp
 
 /** The game you're on, big: its art, its name and Play / Continue. */
 @Composable
@@ -274,7 +280,10 @@ private fun DashHero(c: StyleCtx, g: com.shelf.launcher.data.Game, panel: Featur
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val small = maxHeight < 150.dp
                 val tiny = maxHeight < 96.dp
-                Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().riseOnChange(g.stableKey).padding(if (small) 8.dp else 14.dp)) {
+                // (682i: the name and Play start on the cards' inner column (DASH_INNER) at every size - 14 dp on a big card put Play
+                // 6 dp right of the labels; top / end / bottom keep their room.)
+                Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().riseOnChange(g.stableKey)
+                    .padding(start = DASH_INNER, end = if (small) 8.dp else 14.dp, top = if (small) 8.dp else 14.dp, bottom = if (small) 8.dp else 14.dp)) {
                     if (!tiny) FullText(
                         titles.display(g.name), color = Color.White, fontSize = if (small) 16.sp else 22.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.18f, androidx.compose.ui.unit.TextUnitType.Em),
                         fontWeight = FontWeight.Bold, maxLines = if (small) 1 else 2, style = nameTextStyle(NameBackdrop.SHADOW)
@@ -332,7 +341,7 @@ private fun DashRow(c: StyleCtx, panel: Features.PanelLook, op: Float, shape: Sh
         // (Update 315: off for this layout — Categories tile / Settings — no caption.)
         val catOn = custom.isNotBlank() || CategoryTitle.captionOn(c.state.appearance)
         if (custom.isBlank() && catOn) CategoryTitle.Native() // (Update 212: the layout's own category title.)
-        if (catOn) Box(Modifier.semantics { homeAnchor = "chip" }) { PanelLabel(custom.ifBlank { c.categoryLabel }, ink) }
+        if (catOn) PanelLabel(custom.ifBlank { c.categoryLabel }, ink, anchor = true)
         Spacer(Modifier.height(6.dp))
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             // Room round the cards for the glow / electric frame (it spreads ~14 dp).

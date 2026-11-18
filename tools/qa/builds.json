@@ -1529,6 +1529,17 @@
    "patch_sha256": null,
    "tree_hash": "claude/v0674-play-anchor cd5c921 - clean (CI run 44272299405, [qa-apk])",
    "note": "Play / category-chip anchor rule 682e"
+  },
+  {
+   "id": "qa-682g-18b6015-ci",
+   "apk_sha256": "b4739e1bd761805077e5c6c96d0bac2646a2bd3ef13c3d0d9dcb123710f88cd4",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-play-anchor 18b6015",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-play-anchor 18b6015 - clean (CI run 44279021986, [qa-apk])",
+   "note": "anchor rule + Bar / Library / Dash 682g"
   }
  ]
 }
