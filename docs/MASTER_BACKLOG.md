@@ -17,7 +17,11 @@ Statuses:
 Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
 PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
 for layouts with their own Play / chips - DONE 682g/i (a4382ac): BAR, DASH exact (KONKR PASS), LIBRARY adapted (lit tab leads
-after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware: KONKR only. Owner NOT approved; no merge without GO.
+after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware 18 Nov, KONKR + RP Classic (QA app, a4382ac; before =
+the rule off / 3ec7e45): anchorcheck 33/33 PASS at every L2 / R2 step (end of the list included) + 9/9 sheet shots each;
+category order off vs on identical 14/14 x 4 layouts x 2 (catorder682.py); catswitch frames 15/16 PASS, 1 INFRA (an RP Classic
+recording not written whole). Before / after sheet published for the owner ("Play and chip alignment review"). QA tooling:
+catswitch.sh / picker.sh pointed at the real app - fixed before any run (D358). Owner NOT approved; no merge without GO.
 
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
@@ -31,6 +35,9 @@ favourites, settings untouched; your own collections kept (empty ones are no sto
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
 docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
 Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
+18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
+TV teletext / crate confirmations whole at x1.0 / x1.3 (682k). Hardware: nav682j.sh KONKR + RP Classic 8/8 PASS (0 stray
+launches, deliberate A = 1); D359 (script reached the QA quick-settings Wi-Fi tile on the first run, nothing changed, fixed).
 
 ## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
 1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+
