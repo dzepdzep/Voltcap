@@ -1,3 +1,17 @@
+# Update 682l (18 Nov 2026, cloud run, v0.6.74 turn) - H16: the 13 windows' texts checked for a PARENT cutting them (test only)
+- CI first: Verify 310 GREEN on eec7217 (incl. the 682k fix). Live P2 push 12:40 UTC < 1 h old -> v0.6.74 turn.
+- H16 gap named in 682g ("a parent clipping a text is outside what it measures"): WindowWordsSurvey682Test.parentClip - every
+  text of the 13 windows (Hero .. Cinema) at KONKR size x1.0 / x1.3, unmerged tree: the text's own box vs what its clipping
+  ancestors (card, panel, page, window edge) leave visible; only what is cut beyond the box's empty room counts; one sliding
+  line and scrolling content excluded. First run reported 'PlayStation 2' in Twin icons / Twin showcase "cut 36 px" - an
+  artefact (centred wrap-content lines' offsets are relative to the paragraph's layout width; its whole 83 px box was visible),
+  so the measure uses the box, not line offsets. Result: all 26 cases CLEAN; now a guard. ParentClipProbe683Test proves the
+  measure is not vacuous (a 60 dp clipping box cutting "Achievements unlocked" is found; 400 dp is clean).
+- No window needed a change. Not covered yet: the More / second pages (first page only), icons / non-text controls.
+- Checks: cloud compile OK (Maven 429 once, retry OK); SurveyRule682Test 3/3, WindowWordsSurvey682Test 52/52,
+  ParentClipProbe683Test 2/2; static checks PASS. Handheld NOT TESTED (no hardware needed for a test-only change).
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt; docs.
+
 # Update 682k (18 Nov 2026, cloud run, v0.6.74 turn) - CI red fix: the reveal storyboard's turned badge draws flat (D285 guard); storyboard ready for the owner
 - CI first: Verify 310 on 16a1388 (682j) RED on code, both runners: Batch489Test.everyTurnedLayerDrawsItsTextFlat - the new
   StageSlot graphicsLayer sets rotationY (proposal A's turn) without flatTextFor3d() (D285 / update 177: a turned layer must be

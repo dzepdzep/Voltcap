@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 13:20 UTC, 682l (cloud, v0.6.74 turn):** Verify 310 GREEN on eec7217. Live P2 push 12:40 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.parentClip - texts of the 13 windows (Hero .. Cinema) checked for a PARENT cutting them (box vs
+visible bounds in the root, beyond the box's empty room; sliding lines / scrolling content excluded). All 26 cases CLEAN (cloud
+compile + run), now a guard; ParentClipProbe683Test 2/2 proves it finds a real cut. Test only, no window changed.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first; merge the dev line into the P2
+branch first) if the live session's last P2 push (12:40 UTC) is > 1 h old - it will be. Following v0.6.74 turn: extend the H16
+survey to the More / second page of each window (the k678n13 sheet compares first / More pages), or the H12 reveal once the
+owner picks NOW / A / B.
+
 **18 Nov 12:40 UTC, 682k (cloud, v0.6.74 turn):** CI: Verify 310 on 16a1388 (682j) RED on code - Batch489Test: StageSlot's
 turned layer lacked flatTextFor3d() (D285). Fixed (AchievementFx.kt); cloud compile OK, Batch489Test 6/6 + RevealSheet682jTest 2/2,
 static PASS. Storyboard read: proposals draw correctly -> docs/evidence/h12_reveal_682k/storyboard.png + owner action (NOW / A / B /

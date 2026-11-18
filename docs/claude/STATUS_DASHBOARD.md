@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682k · 2026-11-18 12:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 16a1388: RED (one guard test, both runners) - fixed in this push; targeted tests green in the cloud · effort: medium
+**1. LATEST UPDATE** - 682l · 2026-11-18 13:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on eec7217: GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
+**2. WHAT CLAUDE JUST FIXED** - Added an automatic check that no text in 13 of the game windows (Hero to Cinema) is cut off by the card or panel around it, at normal and large text size. All 13 windows pass; nothing in the app changed.
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
-- **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
 - **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
 - **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
+- **QA tools** (682g): The automatic check of the next 13 game windows (Hero to Cinema) was misreading its own measurements - it compared each label against the space it was allowed, not the space its letters actually use. Fixed: all 13 windows come back clean at normal and larger text (no word broken, nothing cut off) on their first page, and the check now stays on as a guard so a future change that cuts a label fails the build. Nothing in the app changed; not checked on a handheld.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix); then: Native pages batch 2 (Cube first); More game-window polish from your review sheet
+**5. WORKING ON NEXT** - now: Native pages batch 2 (Cube first); then: Game-window polish: check the second (More) pages too; Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -184,6 +184,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
 | HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) | OPEN (same KONKR session as HW-24, ~3 min) |
 | HW-24 Channel progress pill clear of the name plate (680a, D356) | OPEN (next KONKR session) |
 | HW-23 KONKR evening session 17 Nov (live, owner present) | DONE |
@@ -206,7 +207,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 14 of 22.
+Open hardware requests: 14 of 23.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
