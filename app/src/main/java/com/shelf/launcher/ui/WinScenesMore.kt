@@ -603,21 +603,27 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             drawRect(Brush.linearGradient(listOf(Color.Transparent, ink.copy(alpha = 0.10f)), Offset(size.width * 0.8f, size.height * 0.8f), Offset(size.width, size.height)))
         }
         Column(Modifier.fillMaxSize().padding(16.dp)) {
+            // (681s, emulator review 44194071430: at x1.3 the sleeve's full header left the insert one or two tracks - on the
+            // sleeve's own pages the header steps back to a small sleeve, so the printed matter gets the room; Info keeps it.)
+            val head = crateHeader(ctx.page != WinPage.MAIN)
+            val anim = rememberAnimationsEnabled()
+            val coverSide by androidx.compose.animation.core.animateDpAsState(side * head.cover,
+                if (anim) androidx.compose.animation.core.tween(NATIVE_PAGE_MS) else androidx.compose.animation.core.snap(), label = "crateCover")
             Row(verticalAlignment = Alignment.Top) {
-                Box(Modifier.size(side * 0.26f).background(ink.copy(alpha = 0.08f)).border(1.dp, ink.copy(alpha = 0.3f))) {
+                Box(Modifier.size(coverSide).background(ink.copy(alpha = 0.08f)).border(1.dp, ink.copy(alpha = 0.3f))) {
                     ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     // (P2 / 681a: the sleeve's other printed matter names its page here - LINER NOTES, TRACKLIST, PRESSING NOTES.)
-                    Text(cratePageName(ctx.page), color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                    Text(crateHeaderName(ctx.page, ctx.earned, ctx.total), color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                     // (672c, KONKR x1.3 k673b: the name kept three lines' height for a two-line name - the sleeve's keys then had no
                     // room for More's rows. A window's own name takes the lines it needs.)
-                    StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Black, lineHeight = 21.sp, reserve = false)
-                    Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
+                    StableFullText(ctx.name, color = ink, fontSize = head.name.sp, maxLines = head.lines, fontWeight = FontWeight.Black, lineHeight = head.line.sp, reserve = false)
+                    if (head.console) Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
                 }
             }
-            Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(2.dp).background(ink))
+            Box(Modifier.padding(vertical = head.rule.dp).fillMaxWidth().height(2.dp).background(ink))
             // (674f: the room under the rule, measured - the vertical menu shows whole keys only, as many as leave the track list
             // two rows (k674e KONKR x1.3: three keys took all of it; f674e Flip 2: the third key cut at the stack's foot).)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {

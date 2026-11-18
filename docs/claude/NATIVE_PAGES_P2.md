@@ -63,6 +63,9 @@ Layout Studio.
 All five batch-1 layouts walked at x1.0 and x1.3 (Info, Details, Achievements opened / scrolled / 120-set far down, Options),
 recordings of the R1 walk and the Motion-Off walk. The 681h bumper fix works: Classic and Hub now reach every page.
 Open findings: (1) Record crate at x1.3 - the insert under the sleeve's header shows one to two tracks only: give the insert more
-room on its pages (smaller header). (2) The armed destructive confirmation is still NOT captured on screen - the App category
+room on its pages (smaller header). -> FIXED IN CODE 681s (cloud, 18 Nov): on the sleeve's own pages the header steps back (thumbnail, page
+name, the name on one sliding line, no console line); the count sits beside TRACKLIST, the ORDER stamp on the first side's line
+(wraps below on a long order name). CrateInsertRoom681sRoboTest: 3 whole tracks at x1.0, 2 at x1.3 (was 1 + part); Info unchanged.
+Needs an emulator re-capture + the owner's look. (2) The armed destructive confirmation is still NOT captured on screen - the App category
 did not take in the script, so the window opened on a ROM game; behaviour is covered by NativeConfirm681Test 8/8 only.
 (3) TV room: one blocked launch per scale during the walk (QA app blocked it, nothing started) - trace which press reached Play.

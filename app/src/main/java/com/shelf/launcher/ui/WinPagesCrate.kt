@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -74,6 +75,24 @@ internal fun cratePageName(p: WinPage): String = when (p) {
     WinPage.OPTIONS -> "PRESSING NOTES"
     WinPage.PERF -> "PERFORMANCE"
 }
+
+/**
+ * The sleeve's header above the rule (681s, emulator review 44194071430: at x1.3 the full header - a cover a quarter of the
+ * sleeve, the name in up to three 19 sp lines, the console line - left the insert room for one or two tracks). On Info the
+ * sleeve shows itself whole; on its own pages it steps back to a small sleeve: a thumbnail, the page's name and the game's
+ * name on one line under it that slides when long (never cut - rule 11), no console line (Info and LINER NOTES' FORMAT carry it), so
+ * the printed insert gets the room. [cover] is the cover's side as a share of the sleeve, sizes in sp, [rule] the rule's
+ * margin in dp. Pure.
+ */
+internal data class CrateHeader(val cover: Float, val name: Int, val line: Int, val lines: Int, val rule: Int, val console: Boolean)
+
+internal fun crateHeader(onPage: Boolean): CrateHeader =
+    if (onPage) CrateHeader(cover = 0.08f, name = 15, line = 17, lines = 1, rule = 5, console = false)
+    else CrateHeader(cover = 0.26f, name = 19, line = 21, lines = 3, rule = 8, console = true)
+
+/** The page's name printed in the sleeve's header; TRACKLIST carries the count (681s: it left the sheet's own first line). Pure. */
+internal fun crateHeaderName(p: WinPage, earned: Int, total: Int): String =
+    cratePageName(p) + (if (p == WinPage.TROPHIES && total > 0) "  ·  $earned / $total" else "")
 
 /** The paper inner sleeve slides out sideways the way the D-pad went; the one before slips back behind the record. */
 internal fun crateMove(dir: Int): ContentTransform =
@@ -172,39 +191,48 @@ internal fun crateCreditName(label: String): String = when (label) {
     else -> label.uppercase()
 }
 
+/** The order stamp's touch height (dp): above the 24 dp minimum (R26), below a list row - it shares the first side's line. */
+internal const val CRATE_STAMP_TOUCH = 26
+
 /** "A1", "B3": a track's number on its side. Pure. */
 internal fun crateTrackNo(earned: Boolean, i: Int): String = (if (earned) "A" else "B") + (i + 1)
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: Color, red: Color, modifier: Modifier) {
     val t = rememberNativeTrophies(ctx)
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     val big = bigPageText()
-    Column(modifier) {
-        // The order key: a rubber stamp on the sleeve (A steps it), with the count beside it.
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${t.earned} / ${t.total}", color = ink, fontSize = 15.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Serif)
-            Spacer(Modifier.width(10.dp))
-            NativeItem(onClick = t.nextOrder, Modifier.weight(1f), focus = focus, live = live) { on ->
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    Box(Modifier.border(if (on) 2.dp else 1.dp, red, androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
-                        .background(if (on) red.copy(alpha = 0.12f) else Color.Transparent).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                        Text("ORDER · " + t.order.label.uppercase(), color = red, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-                    }
+    // The order key: a rubber stamp on the sleeve (A steps it); the count is printed beside TRACKLIST in the sleeve's header.
+    // (681s, emulator review 44194071430: count and stamp on their own line above the list took a track's room at x1.3 - the
+    // stamp is printed on the first side's line now, at the head of the sheet, and scrolls with it (the D-pad's first stop as
+    // before); a long order name moves it to the line below, never squeezed.)
+    val stamp: @Composable () -> Unit = {
+        NativeItem(onClick = t.nextOrder, focus = focus, live = live, minTouch = CRATE_STAMP_TOUCH.dp) { on ->
+            Box(Modifier.defaultMinSize(minHeight = CRATE_STAMP_TOUCH.dp), contentAlignment = Alignment.Center) {
+                Box(Modifier.border(if (on) 2.dp else 1.dp, red, androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
+                    .background(if (on) red.copy(alpha = 0.12f) else Color.Transparent).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                    Text("ORDER · " + t.order.label.uppercase(), color = red, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                 }
             }
         }
-        Spacer(Modifier.height(4.dp))
+    }
+    Column(modifier) {
         Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ink)) {
             var a = 0; var b = 0
             var side: Boolean? = null
+            if (t.list.isEmpty()) stamp()
             t.list.forEach { ach ->
                 val earned = ach.isUnlocked
                 if (side != earned) {
+                    val first = side == null
                     side = earned
-                    Text(if (earned) "SIDE A  ·  YOURS" else "SIDE B  ·  STILL TO GET", color = red, fontSize = 9.sp, fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp, modifier = Modifier.padding(top = 6.dp, bottom = 2.dp))
+                    FlowRow(Modifier.fillMaxWidth().padding(top = if (first) 0.dp else 6.dp, bottom = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(if (earned) "SIDE A  ·  YOURS" else "SIDE B  ·  STILL TO GET", color = red, fontSize = 9.sp, fontWeight = FontWeight.Black,
+                            letterSpacing = 2.sp, modifier = Modifier.align(Alignment.CenterVertically))
+                        if (first) stamp()
+                    }
                 }
                 val no = crateTrackNo(earned, if (earned) a++ else b++)
                 androidx.compose.runtime.key(ach.id) {
