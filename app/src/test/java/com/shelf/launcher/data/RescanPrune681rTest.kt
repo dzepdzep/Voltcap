@@ -132,4 +132,23 @@ class RescanPrune681rTest {
         assertEquals(RomScanner.RootState.UNREADABLE, RomScanner.rootState(File("/storage/ABCD-1234/ROMs")))
         assertEquals(RomScanner.RootState.OK, RomScanner.rootState(tmp.root))
     }
+
+    @Test fun yourOwnCollectionSurvivesEmptyAndGetsItsGameBack() {
+        // (owner 18 Nov: "preserve empty manually created collections") - the collection's members live in its own store, keyed
+        // by the game's path; a rescan never writes that store.
+        val (roms, halo) = library()
+        var lib = scanInto(emptyList(), listOf(roms.path))
+        val key = lib.first { it.name == "Halo 3" }.stableKey
+        val mine = mapOf("Mine" to setOf(key))
+        fun col(games: List<Game>) = buildCollections(games, mine, emptyMap(), userOn = true, franchisesOn = false, statusOn = false)
+            .single { it.key == "col:Mine" }
+        assertEquals(setOf(key), col(lib).keys)
+        halo.delete(); lib = scanInto(lib, listOf(roms.path))
+        assertTrue("the emptied collection is still there", col(lib).keys.isEmpty())
+        assertEquals("its membership is untouched", setOf(key), mine.getValue("Mine"))
+        halo.writeText("h"); lib = scanInto(lib, listOf(roms.path))
+        assertEquals("re-added: the game is in it again", setOf(key), col(lib).keys)
+        // and a selected collection is never dropped by the empty-console rule
+        assertEquals("col:Mine", RomReconcile.platformFilterAfter("col:Mine", emptyList(), isCollection = true, isAndroidGames = false))
+    }
 }

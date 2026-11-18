@@ -16,8 +16,12 @@ stop() { log "STOP $1"; echo DONE >> $L; exit 3; }
 gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 VOL=$3; S=""; [ -n "$VOL" ] && S=/storage/$VOL/Android/data/$P/files/sd681r
-rescan() { A --ez voltcap_test_fixture_roms true --es voltcap_test_extra_root "${XR:-off}"; sleep 6; gate; }
-dump() { rm -f $F/voltcap_qa_lib.txt; A --ez voltcap_test_libdump true; i=0; while [ ! -s $F/voltcap_qa_lib.txt ] && [ $i -lt 30 ]; do sleep 0.3; i=$((i+1)); done
+# (682b, KONKR: a 60 s screen timeout put it to sleep between key-less rescans; on Android 12 WAKEUP does not count as activity
+# while awake. A lone SHIFT does - it goes only to the QA app (gate: awake, QA app in front, never a locked screen) and no part
+# of Voltcap acts on it.)
+keep() { gate; input keyevent KEYCODE_SHIFT_LEFT; }
+rescan() { keep; A --ez voltcap_test_fixture_roms true --es voltcap_test_extra_root "${XR:-off}"; sleep 6; gate; }
+dump() { keep; rm -f $F/voltcap_qa_lib.txt; A --ez voltcap_test_libdump true; i=0; while [ ! -s $F/voltcap_qa_lib.txt ] && [ $i -lt 30 ]; do sleep 0.3; i=$((i+1)); done
   cp $F/voltcap_qa_lib.txt $O/$1.lib.txt 2>/dev/null; screencap -p $O/$1.png; }
 has() { grep -qF "$2" $O/$1.lib.txt 2>/dev/null; }
 check() { if eval "$2"; then log "PASS $1"; else log "FAIL $1"; fi; }
