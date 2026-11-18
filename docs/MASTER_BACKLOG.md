@@ -21,7 +21,11 @@ after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware 18 Nov, KONKR +
 the rule off / 3ec7e45): anchorcheck 33/33 PASS at every L2 / R2 step (end of the list included) + 9/9 sheet shots each;
 category order off vs on identical 14/14 x 4 layouts x 2 (catorder682.py); catswitch frames 15/16 PASS, 1 INFRA (an RP Classic
 recording not written whole). Before / after sheet published for the owner ("Play and chip alignment review"). QA tooling:
-catswitch.sh / picker.sh pointed at the real app - fixed before any run (D358). Owner NOT approved; no merge without GO.
+catswitch.sh / picker.sh pointed at the real app - fixed before any run (D358). Owner 18 Nov 14:54: APPROVED WITH ONE
+ADJUSTMENT (keep Classic, Bar, Dash, Cinema, Custom; the strip starts on Play's edge but scrolls naturally, neighbours kept;
+Library's L2 / R2 placement approved, keep context). DONE 682m (2c688ce): PlayChipAnchor.natural, no end room, ChipLead one
+chip of context; hardware KONKR + RP Classic: walk order same 4/4, selected chip whole 10/10 per walk, Xbox 360 on the right
+with its neighbours; sheet "Category strip scroll review" for the owner. Not merged; no merge without GO.
 
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
@@ -35,6 +39,10 @@ favourites, settings untouched; your own collections kept (empty ones are no sto
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
 docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
 Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
+18 Nov 14:54 owner GO for batch 2 (batch 1 NOT visually approved, its visual fixes remain): Game magazine, Cinema, Arcade,
+Cube implemented (682n-q, NativePagesBatch2Test, ShelfText 48/48, NoStray 44/44) = 22/53 implemented; HW NOT TESTED yet.
+QA safety (owner 14:54): winguard.sh - nav682j / p2review / catswitch / anchors682 press keys only while the QA app's confirmed
+window has the focus; picker / Android quick settings / production / other window = ABORT, no blind retries (D359 follow-up).
 18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
 TV teletext / crate confirmations whole at x1.0 / x1.3 (682k). Hardware: nav682j.sh KONKR + RP Classic 8/8 PASS (0 stray
 launches, deliberate A = 1); D359 (script reached the QA quick-settings Wi-Fi tile on the first run, nothing changed, fixed).
