@@ -47,6 +47,31 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 04:20 UTC, 681w (cloud, v0.6.74 turn):** H16 Bar window - the dock keys' names were cramped at x1.3 ("Achievements"
+broke inside the word in the fixed 78 dp column). Each key now takes the widest word's width + 6 dp (>= 78 dp), the name fills
+its key; BarDockLabels681wTest 2/2 (fails on the old code), Readability476 15, WinFocus 448 PASS (cloud). HW-24 extended (Bar x1.3).
+Dev-line CI GREEN on 87f4150 (681v). P2 emulator review 44233448467 READ (P2:TV CRATE on 00b9c1d): crate x1.3 tracklist now
+two whole tracks (681s confirmed on the emulator); TV pages have a body. Still open on the P2 branch: (a) TV Fastext keys at
+equal widths slide - "PICTU / TROPH / OPTIO" at x1.3, "TROPHIE" at x1.0 (WinPagesTv.kt ttxFastext row: weight each key by its
+word, e.g. Modifier.weight(ttxKey(pg).length)); (b) p2review.sh playfocused() did not match on the device - the TV
+app_options_last dump has Play focused yet A was pressed (1 blocked launch per scale): replace the `[^]]` ERE with a toybox-safe
+check (split objects on '}' and grep -F '"label":"Play",' then '"focused":true') + a selftest; (c) review runs end NOT TESTED
+(grade_trial.py expects e529 runs - known 679a follow-up). Record (a)-(c) in NATIVE_PAGES_P2.md on that branch.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: (a) + (b) above, re-run the review, then batch 2
+(Cube first). Following v0.6.74 turn: H12 achievements animations (or more H16 windows from the k678n13 sheet).
+
+**18 Nov 03:55 UTC, 681v (cloud, P2 turn):** batch 1 finding 3 TRACED from the emulator run's own dumps: the TV room "blocked
+launch" was the review script - the App category did not take, ten Downs on a 9-row Options page left the list for Play and the
+"arming" A pressed it (p2review.sh now presses A only on a focused option row). The dumps also showed a real TV defect, now FIXED
+on `claude/v0674-native-pages` (d3d06b0, merged with the dev line = 00b9c1d): on the set's screen the teletext pages had no body
+(achievement rows / story / options 0 px, VOLTCAP TXT one letter a line at x1.3, Down fell to the buttons). Under 200 dp: one-line
+masthead, one-line Fastext keys, one-line P200 bar row, 10 sp rows. TvTeletextRoom681vRoboTest 4/4 + NativePages681a 11,
+NativeConfirm681 8, AchFirstRow 107, WinFocus 448 PASS (cloud). Emulator review "P2:TV CRATE" dispatched on the P2 branch.
+Dev-line CI GREEN on 18106e4 (681u code). HW-24 extended (TV room).
+NEXT: check Verify 310 on this push and the P2 push; read the emulator review (TV + crate re-capture) and record it in
+NATIVE_PAGES_P2.md. Next run = v0.6.74 turn: Bar window labels cramped (H16; not in the pixel-font branch's files), then H12
+achievements animations. Next P2 turn: finding 2 (App category in the review script) or batch 2 (Cube first).
+
 **18 Nov 03:15 UTC, 681u (cloud):** Verify 310 was RED on 1888e41 (681t): the new NightStatLabels681tTest showed ACHIEVED still on
 2 lines at x1.3 (50 % cap too narrow). Fixed: cap 55 %, gap 4 dp, 3 % spare; compiled + NightStatLabels681tTest 3/3 and related
 PASS in the cloud. NEXT: check Verify 310 on this push first; then the P2 turn below.

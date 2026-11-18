@@ -394,6 +394,18 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                 val keys = sceneKeys(ctx)
                 val anyShort = keys.any { dockShortLabel(sceneLabel(it.label)) != sceneLabel(it.label) }
                 val fullLine = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                // (681w, H16 - owner review of the KONKR x1.3 sheet: the Bar window's key names were cramped - in the old fixed
+                // 78 dp a long name such as "Achievements" or "Performance" broke inside the word at x1.3. Every key takes the
+                // width of the widest single word among the keys' names (78 dp at least), so names break only between words;
+                // the uniform row scrolls by whole keys where they no longer all fit.)
+                val labelStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = DOCK_LABEL_SP.sp)
+                val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 16)
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val words = keys.map { dockShortLabel(sceneLabel(it.label)) }
+                val keyW = androidx.compose.runtime.remember(words, labelStyle, density) {
+                    val widest = dockLabelWords(words).maxOfOrNull { measurer.measure(it, labelStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                    dockKeyWidthDp(with(density) { widest.toDp() }.value).dp
+                }
                 KeyRow(keys, 10.dp) { k ->
                     SceneControl(k, Modifier) { on ->
                         val whole = sceneLabel(k.label)
@@ -402,14 +414,14 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                             if (on) fullLine.value = if (short != whole) whole else null
                             else if (fullLine.value == whole) fullLine.value = null
                         }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(78.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(keyW)) {
                             Box(Modifier.size(46.dp).graphicsLayer { val s = if (on) 1.12f else 1f; scaleX = s; scaleY = s }.clip(CircleShape)
                                 .background(if (k.primary) a else Color.White.copy(alpha = 0.1f)).border(if (on) 2.dp else 0.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center) {
                                 Icon(k.icon, null, tint = if (k.primary) onColor(a) else Color.White, modifier = Modifier.size(22.dp))
                             }
-                            Text(short, color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = 10.sp, lineHeight = 12.sp,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 3.dp))
+                            Text(short, color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = DOCK_LABEL_SP.sp, lineHeight = 12.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 3.dp))
                         }
                     }
                 }
@@ -669,6 +681,17 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
  * Update 476 (D258): the dock's label for a key — a status text ("Balanced · AutoTDP Balanced · Device default",
  * "Saves: up to date · 1 min ago") keeps its first part under the icon; the whole text is shown while the key has the focus.
  */
+/** 681w: the Bar window's key names' size (sp) and a dock key's least width / the air beside its widest word (dp). */
+internal const val DOCK_LABEL_SP = 10f
+internal const val DOCK_KEY_MIN_DP = 78f
+internal const val DOCK_KEY_AIR_DP = 6f
+
+/** 681w: the single words of the dock keys' names - a name breaks only between them. Pure. */
+internal fun dockLabelWords(names: List<String>): List<String> = names.flatMap { it.split(' ', '\n') }.filter { it.isNotBlank() }
+
+/** 681w: a dock key's width (dp) for the widest word of the keys' names: the old 78 dp, or that word plus a little air. Pure. */
+internal fun dockKeyWidthDp(widestWordDp: Float): Float = maxOf(DOCK_KEY_MIN_DP, kotlin.math.ceil(widestWordDp + DOCK_KEY_AIR_DP))
+
 internal fun dockShortLabel(label: String): String = label.substringBefore(" · ").trim().ifEmpty { label }
 
 /** Update 504: ChipSheet's board, traces and print in the Circuit layout's own colours (circuitColors), legible. */

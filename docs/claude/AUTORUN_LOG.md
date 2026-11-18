@@ -269,3 +269,9 @@
   NightStatLabels681tTest. Gradle blocked by Maven Central 429 twice -> not compiled in the cloud; CI is the check. Lock released.
 - ~03:15 UTC 681u: CI RED on 1888e41 (the new Night test: ACHIEVED 2 lines at x1.3) -> cap 55 %, gap 4 dp; compiled + tests PASS
   in the cloud (Maven answered). Lock released.
+- ~03:55 UTC 681v (P2 turn): Verify 310 GREEN on 18106e4. TV room blocked launch traced (review script pressed Play after leaving
+  the options list; script guarded); TV teletext pages had no body on the set's screen -> fixed on the P2 branch (00b9c1d),
+  TvTeletextRoom681vRoboTest 4/4 + related PASS; emulator review P2:TV CRATE dispatched. Lock released.
+- ~04:18 UTC 681w (v0.6.74 turn): Verify 310 GREEN on 87f4150 (681v). Bar window dock key names whole at x1.3 (widest-word key
+  width); BarDockLabels681wTest 2/2 (fails on old code) + Readability476 + WinFocus PASS in the cloud. P2 review 44233448467 read
+  (crate fixed; TV Fastext keys slide, review-script guard missed) -> next P2 turn. Lock released.

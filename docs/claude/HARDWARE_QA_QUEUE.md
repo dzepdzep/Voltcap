@@ -71,6 +71,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   681s (0c7ad56 or later): the same TRACKLIST shows at least two whole tracks at x1.3 (three at x1.0) under the compact sleeve
   header ("TRACKLIST · n / m", the name on one sliding line), the ORDER stamp on the SIDE line and A on it steps the order;
   Info's header unchanged. Unit evidence only (CrateInsertRoom681sRoboTest).
+- Also (681v, P2 branch `claude/v0674-native-pages` 00b9c1d or later, its CI QA APK; same KONKR session, ~2 min): TV room at x1.0
+  and x1.3, a game with achievements, the window on the set's screen: Info (P100) / TROPHIES (P200) / OPTIONS (P300) each show a
+  one-line masthead (P-number, page name block, the game's name sliding), Fastext keys PICTURE / INFO / TROPHIES / OPTIONS on one
+  line, P200 two whole rows at x1.0 and one at x1.3, D-pad Down walks the rows (not straight to the buttons), the 120-set scrolls
+  far. p2review.sh run <tag> <scale> "TV" -> popclip.py. Unit evidence only (TvTeletextRoom681vRoboTest).
 - Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
   new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
   real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
@@ -81,6 +86,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Also (681t, H16, dev line 681t or later, ~1 min): Night (NIGHT) at x1.3, a game with achievements: the stats panel's
   ACHIEVED / RELEASED / PLAY TIME labels whole (never "ACHIEVE / D"), values beside them readable, the achievements bar under
   the values; also x1.0 looks as before. pop529 NIGHT OWN -> popclip.py. Unit evidence only (NightStatLabels681tTest, CI).
+- Also (681w, H16, dev line 681w or later, ~1 min): Icon bar (BAR) at x1.3, a game with achievements: the dock keys' names
+  under the round icons whole - "Achievements" / "Performance" never broken inside the word, a two-word name only between its
+  words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
+  reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
+  Unit evidence only (BarDockLabels681wTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

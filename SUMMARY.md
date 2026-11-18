@@ -1,3 +1,35 @@
+# Update 681w (18 Nov 2026, cloud run, v0.6.74 turn) - Bar window: dock key names whole at x1.3 (H16); P2 review read
+- Icon bar window (DockFlyout, WinScenesHomes2.kt): each key's name sat in a fixed 78 dp column under its round icon; at the
+  KONKR's x1.3 "Achievements" broke inside the word (2 lines). Every key now takes the width of the widest single word among the
+  keys' names (measured at 10 sp with the screen's text scale) + 6 dp, at least the old 78 dp, so names break only between
+  words; the uniform key row scrolls by whole keys where they no longer all fit. The name also fills its key (it was centred in a
+  narrower box than its paragraph and could lose its last pixels). x1.0 with short names unchanged (78 dp).
+- Test: BarDockLabels681wTest (new, 2) - fails on the old 78 dp ("Achievements on one line expected 1 but was 2"); with the
+  fix PASS. Readability476Test 15, WinFocusRoboTest 448 (43 skipped) PASS (cloud). Static checks PASS. Hardware NOT TESTED (HW-24).
+- P2 emulator review 44233448467 (P2:TV CRATE, 00b9c1d) read: Record crate x1.3 TRACKLIST shows two whole tracks under the
+  compact sleeve header (681s finding fixed on the emulator); TV room pages now have a body (one achievement row at x1.3, two at
+  x1.0). Open for the next P2 turn: (a) the TV Fastext keys at equal widths slide ("PICTU", "TROPH", "OPTIO" at x1.3; "TROPHIE"
+  even at x1.0) - give each key its word's width; (b) p2review.sh's playfocused guard did not match on the device (TV
+  app_options_last dump has Play focused, the script still pressed A -> 1 blocked launch per scale; toybox grep and the
+  `[^]]` bracket); (c) the verdict reads NOT TESTED because review runs have no e529 runs (known grade_trial.py follow-up).
+- PC copy: src_copy/ui/WinScenesHomes2.kt; test app/src/test/.../ui/BarDockLabels681wTest.kt.
+
+# Update 681v (18 Nov 2026, cloud run, P2 turn) - TV room teletext pages get a body on the set's screen; review-script launch traced
+- Finding 3 of emulator review 44194071430 ("TV room: one blocked launch per scale") traced from the run's layout dumps: the App
+  category did not take, so the window was on a ROM game with 9 options; ten Downs left the list for the button row (Play lit in
+  TV_app_options_last) and the "arming" A pressed Play. QA script only: p2review.sh presses A only when the dump shows an option row
+  focused, else logs "armed confirmation NOT TESTED".
+- The same dumps showed a real defect: on the room television (217 x 148 dp) the teletext pages had no body - every achievement row
+  0 px (x1.0 and x1.3), no story line, VOLTCAP TXT one letter per line at x1.3, D-pad Down went straight to the buttons.
+- WinPagesTv.kt (P2 branch only): under 200 dp of page height the masthead is one line (P-number, page name block, the game's name
+  sliding), the console joins the Info facts, Fastext keys are one line (PICTURE / INFO / TROPHIES / OPTIONS), the P200 bar row is one
+  line (10-cell bar, ORDER key slides, 24 dp touch), rows at 10 sp with one sliding description line (A opens the whole text).
+  Roomy TV windows unchanged.
+- Tests (cloud): TvTeletextRoom681vRoboTest 4/4 (new), NativePages681aTest 11, NativeConfirm681Test 8, AchFirstRowRoboTest 107,
+  WinFocusRoboTest 448 (39 skipped) PASS; static PASS; QA selftest OK. Emulator review "P2:TV CRATE" dispatched. Hardware NOT TESTED
+  (HW-24). Branch claude/v0674-native-pages d3d06b0 + merge 00b9c1d; not on the dev line (owner approval of batch 1 first).
+- PC copy (only if the P2 branch is taken): src_copy/ui/WinPagesTv.kt.
+
 # Update 681u (18 Nov 2026, cloud run) - CI red on 681t fixed: the Night label column needed 55 % of the row at x1.3
 - Verify 310 RED on 1888e41 (681t) on code, both runners: NightStatLabels681tTest - "ACHIEVED" still took 2 lines at the KONKR
   x1.3 (row ~135 dp; the word needs ~63 dp even at the 10 sp minimum; the 50 % cap left it 61.7 dp). The new test caught it.
