@@ -13,6 +13,12 @@
   x1.0 PASS 5/5 and x1.3 PASS 5/5, 0 launches. Armed-confirmation capture: review 44264372593's "armed" shots were the Info page
   (script pressed the B Back hint) - p2review 682f fixed (A only on a focused "Hide from library", claimed only from the dump);
   re-review 44272567211 running. TV room's armed state still NOT captured. Next P2 layouts only after the owner sees batch 1.
+- 682e-i UPDATE (owner: "whatever looks best" at the list's end -> exact alignment kept; "yes, all three"): Bar (tab on Play's
+  column, was 2 dp vs 6), Library (lit tab leads its strip after L2, WholeChipRow leadFocused), Dash (labels + Play on one inner
+  column DASH_INNER, KONKR had measured -8 dp) done on `claude/v0674-play-anchor` a4382ac (Verify 310 GREEN). KONKR kc682
+  anchorcheck PASS 6/6 (Dash, Bar, Classic x All / Xbox 360); Library adapted (review by eye); Tiles / Hero tiles no home Play.
+  P2 682h: an armed / grown native row now brings itself into view (confirmation line was cut; NativeConfirm681Test fails
+  without, 8/8 with). Emulator re-review 44280831400 running.
 - NEW SYSTEM RULE 682e (owner 09:44): the home's Play button and the selected category chip share one anchor - own branch
   `claude/v0674-play-anchor` (cd5c921, Verify 310 GREEN). HomeAnchor.kt; anchorcheck.py; anchors682.sh before/after from one
   build (voltcap_test_anchor_off, QA only). KONKR all 53 layouts x All / Xbox 360: CLASSIC before -8 dp / +522 dp, after 0.0 /

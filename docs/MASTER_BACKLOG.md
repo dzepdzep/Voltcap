@@ -16,8 +16,8 @@ Statuses:
 ## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
 Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
 PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
-for layouts with their own Play / chips - LIBRARY (selected chip far right), BAR and DASH (small offsets); CINEMA / CUSTOM
-already aligned; ARTLIB n/a. Owner NOT approved; no merge without GO.
+for layouts with their own Play / chips - DONE 682g/i (a4382ac): BAR, DASH exact (KONKR PASS), LIBRARY adapted (lit tab leads
+after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware: KONKR only. Owner NOT approved; no merge without GO.
 
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
