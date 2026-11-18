@@ -1,5 +1,25 @@
 # VoltCap handoff (read first, update last)
 
+**18 Nov ~10:45 Berlin - OWNER DECISIONS 08:11 + NEW RULE 09:44 (newest; before everything below).**
+- RESCAN FIX (`claude/v0674-rescan-fix`, 0c49f03, Verify 310 GREEN on 3ec7e45): stays on its branch until HW-25 passes. HW-25
+  hardware: KONKR (GT78, Android 12, 36-game QA library) + RP Classic (Android 14) rescan681r.sh 18/18 PASS each (only game of a
+  console deleted -> gone, console no category, All selected; twice; restart; one of two; whole game folder; re-added same
+  identity; QA-app crashes 0). Your own collections kept empty and refilled on re-add (unit). SD card physically out: NOT TESTED
+  (owner "not now") - rescan681r.sh run TAG 453E-4658 on the RP Classic waits for the card. No console-category feature invented.
+  Ready for the owner's merge GO apart from that one step.
+- P2 (`claude/v0674-native-pages`, Verify 310 GREEN eb3eb91): batch 1 NOT visually approved. RELEASE-BLOCKING Play defect found
+  and fixed (682a): an A within ~30-200 ms of an L1/R1 turn onto Details started the game on all 5 layouts - 300 ms page-turn
+  guard, NoStrayPlay682aTest 10/10 (fails without the guard). KONKR popup gate (pop529 + popclip, build qa-682c-2ca480f-ci)
+  x1.0 PASS 5/5 and x1.3 PASS 5/5, 0 launches. Armed-confirmation capture: review 44264372593's "armed" shots were the Info page
+  (script pressed the B Back hint) - p2review 682f fixed (A only on a focused "Hide from library", claimed only from the dump);
+  re-review 44272567211 running. TV room's armed state still NOT captured. Next P2 layouts only after the owner sees batch 1.
+- NEW SYSTEM RULE 682e (owner 09:44): the home's Play button and the selected category chip share one anchor - own branch
+  `claude/v0674-play-anchor` (cd5c921, Verify 310 GREEN). HomeAnchor.kt; anchorcheck.py; anchors682.sh before/after from one
+  build (voltcap_test_anchor_off, QA only). KONKR all 53 layouts x All / Xbox 360: CLASSIC before -8 dp / +522 dp, after 0.0 /
+  0.0 (PASS); every layout that shows the shared header + chip row gets it. Own Play / chips (rule not reached, by eye):
+  CINEMA, CUSTOM already one column; BAR, DASH small offsets; LIBRARY selected chip runs to the far right (needs the adapted
+  rule); ARTLIB has no chip row (n/a). Trade-off for the owner: the last console selected leaves it alone at Play's edge.
+
 **17 Nov ~23:10 Berlin - OWNER: LIBRARY RESCAN BUG 681r (data integrity - newest, before everything below).** A deleted game
 that was the only one of its console stayed listed after Rescan library, and the console stayed a category. Focused v0.6.74 fix
 on branch `claude/v0674-rescan-fix` (from this line at c71c8cb): RomScanner.rootState (OK / GONE on readable storage /

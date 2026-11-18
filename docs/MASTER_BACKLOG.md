@@ -13,9 +13,16 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
+Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
+PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
+for layouts with their own Play / chips - LIBRARY (selected chip far right), BAR and DASH (small offsets); CINEMA / CUSTOM
+already aligned; ARTLIB n/a. Owner NOT approved; no merge without GO.
+
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
-end-to-end PASS 15/15 (run 44190749178, QA app, synthetic stand-ins); hardware NOT TESTED; owner NOT approved; no merge without GO.
+end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out NOT
+TESTED; owner NOT approved; no merge without GO.
 Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
 favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
 
