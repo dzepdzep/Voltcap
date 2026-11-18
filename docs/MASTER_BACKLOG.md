@@ -13,17 +13,24 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
+Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
+PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
+for layouts with their own Play / chips - DONE 682g/i (a4382ac): BAR, DASH exact (KONKR PASS), LIBRARY adapted (lit tab leads
+after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware: KONKR only. Owner NOT approved; no merge without GO.
+
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
-Branch claude/v0674-rescan-fix. Deleted game must leave every list after Rescan library; a console with no games leaves the
-selector (selection falls back to All, at once, kept after a restart); unreadable storage / SD card out / refused folder never
-counts as deleted; saves, history, achievements, art, metadata, favourites and settings untouched (keyed by path - re-adding the
-same file brings them back). Status: IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3); emulator
-end-to-end check rescan681r.sh (QA app, synthetic stand-ins) - see HANDOFF; hardware NOT TESTED; owner NOT approved. No merge
-without GO.
+Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
+end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out:
+NOT TESTED (owner 18 Nov 12:12: no physical pull now - record NOT TESTED, never PASS; the protection stays: unit tests
+RescanPrune681rTest unreadable / unmounted roots + emulator unreadable-folder case). READY FOR REVIEW (owner 18 Nov 12:12):
+draft PR into claude/qa-0672-repair; no merge / release without GO.
+Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
+favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
 
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
-docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages (kit + Record crate done 681a; batch 1 next: Classic,
-Console hub, Resume, TV room).
+docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
+Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
 
 ## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
 1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+

@@ -67,7 +67,7 @@ class UniformKeys673Test {
         assertTrue(gw.contains("WinAction(p.perf.summary, I.Speed, st.onPerf, status = true)"))
         val more = src("WinScenesMore.kt")
         assertTrue(more.contains("val actions = keys.filterNot { it.status }"))
-        assertTrue(more.contains("if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key = key)"))
+        assertTrue(more.contains("if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, key = key)"))
         assertTrue(more.contains("if (LocalKeyAsStatus.current) { SceneStatusLine(a, k, font, size); return }"))
         // the inert copy of a page's keys keeps the flag
         assertTrue(src("WinPageFlow.kt").contains("inert = true, status = status)"))

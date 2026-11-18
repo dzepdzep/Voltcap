@@ -2,6 +2,13 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
+   "what": "Achievement reveal animation: pick NOW (Volt capsule), A Trophy flip, B Glow burst, or a mix - see docs/evidence/h12_reveal_682k/storyboard.png (one row per option, left to right over time)",
+   "why": "H12 redesign of the reveal / trophy moment; a new look never becomes the default without your OK on the comparison. Nothing changes in the app until you pick",
+   "device": "none (image on GitHub)",
+   "urgent": false,
+   "blocks": "H12 reveal redesign only"
+  },
+  {
    "what": "Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready",
    "why": "you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison",
    "device": "screenshots (when Claude posts them)",

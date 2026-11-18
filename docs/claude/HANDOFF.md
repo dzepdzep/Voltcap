@@ -1,5 +1,49 @@
 # VoltCap handoff (read first, update last)
 
+**18 Nov ~10:45 Berlin - OWNER DECISIONS 08:11 + NEW RULE 09:44 (newest; before everything below).**
+- RESCAN FIX (`claude/v0674-rescan-fix`, 0c49f03, Verify 310 GREEN on 3ec7e45): stays on its branch until HW-25 passes. HW-25
+  hardware: KONKR (GT78, Android 12, 36-game QA library) + RP Classic (Android 14) rescan681r.sh 18/18 PASS each (only game of a
+  console deleted -> gone, console no category, All selected; twice; restart; one of two; whole game folder; re-added same
+  identity; QA-app crashes 0). Your own collections kept empty and refilled on re-add (unit). SD card physically out: NOT TESTED
+  (owner "not now") - rescan681r.sh run TAG 453E-4658 on the RP Classic waits for the card. No console-category feature invented.
+  Ready for the owner's merge GO apart from that one step.
+- P2 (`claude/v0674-native-pages`, Verify 310 GREEN eb3eb91): batch 1 NOT visually approved. RELEASE-BLOCKING Play defect found
+  and fixed (682a): an A within ~30-200 ms of an L1/R1 turn onto Details started the game on all 5 layouts - 300 ms page-turn
+  guard, NoStrayPlay682aTest 10/10 (fails without the guard). KONKR popup gate (pop529 + popclip, build qa-682c-2ca480f-ci)
+  x1.0 PASS 5/5 and x1.3 PASS 5/5, 0 launches. Armed-confirmation capture: review 44264372593's "armed" shots were the Info page
+  (script pressed the B Back hint) - p2review 682f fixed (A only on a focused "Hide from library", claimed only from the dump);
+  re-review 44272567211 running. TV room's armed state still NOT captured. Next P2 layouts only after the owner sees batch 1.
+- 682e-i UPDATE (owner: "whatever looks best" at the list's end -> exact alignment kept; "yes, all three"): Bar (tab on Play's
+  column, was 2 dp vs 6), Library (lit tab leads its strip after L2, WholeChipRow leadFocused), Dash (labels + Play on one inner
+  column DASH_INNER, KONKR had measured -8 dp) done on `claude/v0674-play-anchor` a4382ac (Verify 310 GREEN). KONKR kc682
+  anchorcheck PASS 6/6 (Dash, Bar, Classic x All / Xbox 360); Library adapted (review by eye); Tiles / Hero tiles no home Play.
+  P2 682h: an armed / grown native row now brings itself into view (confirmation line was cut; NativeConfirm681Test fails
+  without, 8/8 with). Emulator re-review 44280831400 running.
+- NEW SYSTEM RULE 682e (owner 09:44): the home's Play button and the selected category chip share one anchor - own branch
+  `claude/v0674-play-anchor` (cd5c921, Verify 310 GREEN). HomeAnchor.kt; anchorcheck.py; anchors682.sh before/after from one
+  build (voltcap_test_anchor_off, QA only). KONKR all 53 layouts x All / Xbox 360: CLASSIC before -8 dp / +522 dp, after 0.0 /
+  0.0 (PASS); every layout that shows the shared header + chip row gets it. Own Play / chips (rule not reached, by eye):
+  CINEMA, CUSTOM already one column; BAR, DASH small offsets; LIBRARY selected chip runs to the far right (needs the adapted
+  rule); ARTLIB has no chip row (n/a). Trade-off for the owner: the last console selected leaves it alone at Play's edge.
+
+**17 Nov ~23:10 Berlin - OWNER: LIBRARY RESCAN BUG 681r (data integrity - newest, before everything below).** A deleted game
+that was the only one of its console stayed listed after Rescan library, and the console stayed a category. Focused v0.6.74 fix
+on branch `claude/v0674-rescan-fix` (from this line at c71c8cb): RomScanner.rootState (OK / GONE on readable storage /
+UNREADABLE: card out, bare mount point, refused listing) + failedDirs from the walk; data/RomReconcile.kt one verdict per scan
+(read-and-missing = gone, unreadable = kept, nothing read = no verdict, automatic scan with no games = no verdict); a console
+with no games left drops out of the selection (falls back to All) after a scan's verdict, kept after a restart. Found on the
+way: the old code dropped every game of an unplugged SD-card folder whenever another folder had games (now kept). Saves,
+history, achievements, art, metadata, favourites, settings untouched (keyed by path; re-adding brings them back).
+Evidence: RescanPrune681rTest 8/8 + DeletedRoms523Test 3/3 (cloud); emulator end-to-end rescan681r.sh run 44190749178 VERDICT
+PASS - 15/15 cases (only game deleted -> not listed, its console no category, selection back on All; rescan twice; restart;
+one of two; whole game folder; re-added = same identity) on synthetic stand-ins in the QA app's own folder. Verify 310: one
+runner green (full suite), the other hit Maven Central 429 (infra) - rerun requested. Hardware NOT TESTED (HW queue: the
+owner's real case - the exact Xbox 360 game layout on the device is not known; also an SD card taken out). Not merged; owner GO
+needed. Next for the hourly task: nothing to do on it unless CI goes red.
+P2 batch 1 status: Classic 681c, Console hub 681d, Resume 681e-f, TV room 681g implemented on `claude/v0674-native-pages`
+(18/53 implemented; batch 1 hardware 0/5, owner 0/5). Emulator review of all five re-running (run 44194071430); findings from
+the first review fixed in 681h (bumpers lost on the Back hint, Classic label wrap; crate x1.3 word breaks fixed by 681cr).
+
 **17 Nov ~22:15 Berlin - OWNER: P2 NATIVE PAGES IS A MAIN PRIORITY (newest; read with the v0.6.74 list below).** The 40 layouts
 without their own Details / Achievements / Options pages get them, each in its own design ("not the shared pages in different
 borders"), batches of 4-5, screenshots / recordings for review, tracked as Native pages X/53 (implemented / hardware / owner).
@@ -28,6 +72,152 @@ never disturb apps running on connected devices; dashboard / matrix / handoff af
 hardware reruns without need; experiments on separate v0.6.74 branches; interrupt the owner only for design decisions,
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
+
+**18 Nov 12:40 UTC, 682k (cloud, v0.6.74 turn):** CI: Verify 310 on 16a1388 (682j) RED on code - Batch489Test: StageSlot's
+turned layer lacked flatTextFor3d() (D285). Fixed (AchievementFx.kt); cloud compile OK, Batch489Test 6/6 + RevealSheet682jTest 2/2,
+static PASS. Storyboard read: proposals draw correctly -> docs/evidence/h12_reveal_682k/storyboard.png + owner action (NOW / A / B /
+mix). H12 reveal waits on the owner; nothing wired.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push
+(11:54 UTC, 682j focus hand-over) is > 1 h old; else v0.6.74 turn: more H16 windows from the k678n13 sheet (parent clipping / More
+pages, which the survey does not cover) or item 5 badgecheck (D357) if not done.
+
+**18 Nov 11:50 UTC, 682j (cloud, v0.6.74 turn):** CI: Verify 310 on 67b08fd red = Maven 429 on one runner (infra; the other
+ran the full suite GREEN). H12 reveal / trophy redesign comparison: StageSlot now draws a pure pose (RevealPose, voltRevealPose =
+the old formulas, unchanged look); RevealSheet682jTest renders NOW vs proposals A "Trophy flip" / B "Glow burst" (test-only) to
+app/build/reports/tests/h12-reveal/storyboard.png (CI test-results artifact). Cloud compile blocked (Maven 429 x2) - CI compiles.
+NEXT: check Verify 310 on this push (compile / RevealSheet682jTest red -> fix first); if green, download the storyboard, look at it
+and fix any drawing problems in the proposals; then it goes to the owner as a design decision (A / B / keep NOW / mix) - an
+owner action, not decided by the run. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push (10:39 UTC)
+is > 1 h old.
+
+**18 Nov 11:05 UTC, 682g (cloud, v0.6.74 turn):** H16 survey read again (Verify 310 GREEN on cc229b9): all 187 "cuts" had
+"text" = the max width - MultiParagraph.width is the layout width, not the glyphs. Survey now measures the inked width (widest
+line); cloud compile + run: all 13 windows (Hero .. Cinema) CLEAN at x1.0 and x1.3 on their first page; the survey is now a guard
+(any finding fails). Test only; no window needed a change by this measure (parent clipping / More pages not covered).
+NEXT: check Verify 310 on this push. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push is > 1 h old;
+else v0.6.74 turn: H12 reveal / trophy redesign comparison (the 682e anchor for Library / Bar / Dash was done by the live
+session, a4382ac). Also read P2 re-review 44280831400 on the next P2 turn.
+
+**18 Nov 09:40 UTC, 682b (cloud, v0.6.74 turn):** read the 682 survey (Verify 310 GREEN on ebe8e55): nearly every label of all 13
+windows listed as "cut at its box's edge", identical at x1.0 / x1.3, no broken word - an unreliable signal, so NO window was
+changed. WindowWordsSurvey682Test now counts a cut only at >= 1 px past the box or dropped lines (cutAtEdge, pure test) and prints
+each finding's numbers. Cloud compile failed (Maven resolution x2) - CI compiles it.
+NEXT: check Verify 310 on this push (compile / SurveyRule682Test red -> fix first). Then read the new findings from the
+"update-310-test-results-*" artifact (TEST-...WindowWordsSurvey682Test.xml system-out): if findings remain with text width <= box
+width they are still artefacts (compare against a node-bounds check before fixing anything); real ones -> fix in list order (Hero,
+Hero tiles, Live, Cross ...) with a test that fails on the old code. Next run = P2 turn only if the live session's last P2 push
+(09:04 UTC) is > 1 h old.
+
+**18 Nov 08:45 UTC, 682 (cloud, v0.6.74 turn):** H16 next windows. The k678n13 review PDF is not in the repo and the cloud could
+not compile (Maven Central 429 x3), so this run added WindowWordsSurvey682Test (test only, app unchanged): Hero, Hero tiles, Live,
+Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema at KONKR 640 x 427 dp, x1.0 + x1.3 -
+every text broken inside a word or cut at its edge (one-line sliding text excluded) -> app/build/reports/h16-survey/findings.txt in
+CI's "update-310-test-results-*" artifact + the test stdout. A live session pushed P2 682a / 682c to `claude/v0674-native-pages`
+at ~08:07 UTC - left alone.
+NEXT: check Verify 310 on this push (first compile of the survey: a compile / "no text reached" failure -> fix first). Next run =
+P2 turn ONLY if the live session's last P2 push is > 1 h old (else another v0.6.74 turn). Next v0.6.74 turn: download the survey
+findings (gh api .../actions/runs/<id>/artifacts) and fix the first windows in list order, each with a test that fails on the old
+code (pattern: BarDockLabels681wTest / NightStatLabels681tTest); "clean" windows need no change.
+
+**18 Nov 07:45 UTC, 681z (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages`; emulator review 44247782675 READ
+(TV Fastext keys whole at both scales - 681x confirmed; Play guard held; App category still empty on the emulator -> destructive
+confirmation NOT TESTED there). (c) DONE on the P2 branch (d14710b): grade_trial.py grades review runs on their own walks (P2:
+p2r13 / p2r10, font reviews: e679r13 / e679r10) + P2 contact sheets; p2review.sh restore no false diff=1 on an empty keep folder,
+App category checked. Selftest 224/224. Dev CI: Verify 310 GREEN on 19bc1e0 (681y); 79bb40d red = Maven 429 (infra, lock commit).
+NEXT: check Verify 310 on this push and on d14710b (P2). Next run = v0.6.74 turn: H12 rest (reveal / trophy animation redesign -
+comparison for the owner first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross). Next P2 turn: batch 2
+(Cube first) + dispatch "P2:TV CUBE" review (expect NOT TESTED until an app fixture exists for the confirmation).
+
+**18 Nov 06:50 UTC, 681y (cloud, v0.6.74 turn):** item 7 H12 - the Achievements page's progress (Power cells battery, Trophy
+header, summary bar) now counts each new unlock as its badge locks in on the stage and fills up to it; nothing new = no fill. The
+stage's waits / sound cues follow the motion speed (Off / reduced motion = every badge at once). AchProgressCount681yTest 5/5 +
+Ach suites PASS (cloud compile + Robolectric). HW-25 queued (KONKR, with HW-24). Dev CI: Verify 310 on 29f0c87 (docs) was running;
+last code push 18a8cbc GREEN. P2 cf40522 Verify 310 GREEN; its emulator review 44247782675 ended "failure" (review runs end NOT
+TESTED by design until (c) grade_trial.py review mode is done) - read it next P2 turn.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: read review 44247782675 (TV keys), (c) grade_trial.py
+review-mode verdict, then batch 2 (Cube first). Following v0.6.74 turn: H12 rest (reveal / trophy animation redesign needs an
+owner look - comparison first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross ...).
+
+**18 Nov 05:20 UTC, 681x (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages` (4a3e313); findings (a) + (b) of
+review 44233448467 fixed there: (a) TV Fastext keys each as wide as their own word, short words PIC / OPTS when the four full
+words cannot fit (WinPagesTv.kt ttxKeyPlan) - TvFastextKeys681xRoboTest; (b) p2review.sh playfocused() fixed strings only
+(toybox) - selftest TestP2ReviewPlayFocused681x 5, 216/216. Cloud compile blocked by Maven 429 (3 tries); CI compiled it: on
+049dd75 the new robo test failed (fixture game had no achievements -> no TROPHIES key), fixed in cf40522 - Verify 310 ubuntu-24.04
+GREEN, the other runner still running at hand-off. (c) review runs end NOT TESTED (grade_trial.py e529 expectation) - still open.
+Emulator review "P2:TV" dispatched on cf40522. Dev-line CI GREEN on 18a8cbc (681w).
+NEXT: check Verify 310 on cf40522 (P2) and on this push. Next run = v0.6.74 turn: H12 achievements animations (or more H16
+windows from the k678n13 sheet). Next P2 turn: read the P2:TV review; (c) grade_trial.py review-mode verdict; then batch 2 (Cube first).
+
+**18 Nov 04:20 UTC, 681w (cloud, v0.6.74 turn):** H16 Bar window - the dock keys' names were cramped at x1.3 ("Achievements"
+broke inside the word in the fixed 78 dp column). Each key now takes the widest word's width + 6 dp (>= 78 dp), the name fills
+its key; BarDockLabels681wTest 2/2 (fails on the old code), Readability476 15, WinFocus 448 PASS (cloud). HW-24 extended (Bar x1.3).
+Dev-line CI GREEN on 87f4150 (681v). P2 emulator review 44233448467 READ (P2:TV CRATE on 00b9c1d): crate x1.3 tracklist now
+two whole tracks (681s confirmed on the emulator); TV pages have a body. Still open on the P2 branch: (a) TV Fastext keys at
+equal widths slide - "PICTU / TROPH / OPTIO" at x1.3, "TROPHIE" at x1.0 (WinPagesTv.kt ttxFastext row: weight each key by its
+word, e.g. Modifier.weight(ttxKey(pg).length)); (b) p2review.sh playfocused() did not match on the device - the TV
+app_options_last dump has Play focused yet A was pressed (1 blocked launch per scale): replace the `[^]]` ERE with a toybox-safe
+check (split objects on '}' and grep -F '"label":"Play",' then '"focused":true') + a selftest; (c) review runs end NOT TESTED
+(grade_trial.py expects e529 runs - known 679a follow-up). Record (a)-(c) in NATIVE_PAGES_P2.md on that branch.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn: (a) + (b) above, re-run the review, then batch 2
+(Cube first). Following v0.6.74 turn: H12 achievements animations (or more H16 windows from the k678n13 sheet).
+
+**18 Nov 03:55 UTC, 681v (cloud, P2 turn):** batch 1 finding 3 TRACED from the emulator run's own dumps: the TV room "blocked
+launch" was the review script - the App category did not take, ten Downs on a 9-row Options page left the list for Play and the
+"arming" A pressed it (p2review.sh now presses A only on a focused option row). The dumps also showed a real TV defect, now FIXED
+on `claude/v0674-native-pages` (d3d06b0, merged with the dev line = 00b9c1d): on the set's screen the teletext pages had no body
+(achievement rows / story / options 0 px, VOLTCAP TXT one letter a line at x1.3, Down fell to the buttons). Under 200 dp: one-line
+masthead, one-line Fastext keys, one-line P200 bar row, 10 sp rows. TvTeletextRoom681vRoboTest 4/4 + NativePages681a 11,
+NativeConfirm681 8, AchFirstRow 107, WinFocus 448 PASS (cloud). Emulator review "P2:TV CRATE" dispatched on the P2 branch.
+Dev-line CI GREEN on 18106e4 (681u code). HW-24 extended (TV room).
+NEXT: check Verify 310 on this push and the P2 push; read the emulator review (TV + crate re-capture) and record it in
+NATIVE_PAGES_P2.md. Next run = v0.6.74 turn: Bar window labels cramped (H16; not in the pixel-font branch's files), then H12
+achievements animations. Next P2 turn: finding 2 (App category in the review script) or batch 2 (Cube first).
+
+**18 Nov 03:15 UTC, 681u (cloud):** Verify 310 was RED on 1888e41 (681t): the new NightStatLabels681tTest showed ACHIEVED still on
+2 lines at x1.3 (50 % cap too narrow). Fixed: cap 55 %, gap 4 dp, 3 % spare; compiled + NightStatLabels681tTest 3/3 and related
+PASS in the cloud. NEXT: check Verify 310 on this push first; then the P2 turn below.
+
+**18 Nov 02:45 UTC, 681t (cloud, v0.6.74 turn):** Night window stats labels (ACHIEVED / RELEASED) keep whole words at x1.3:
+label column = widest label + gap (>= old 96 dp / 40 %, <= half the row), labels step down to 10 sp only if needed; the
+achievements bar follows the column (WinScenes.kt; NightStatLabels681tTest new, Batch513Test pin updated). NOT compiled in the
+cloud (Maven Central 429 twice) - CI on this push is the first compile: red on code -> fix first. HW-24 extended (Night x1.3).
+NEXT: check Verify 310 on this push. Next run = P2 turn: batch 1 finding 3 (TV room blocked launch - trace which press reached
+Play) or batch 2 (Cube first). Following v0.6.74 turn: Bar window labels cramped (H16; check it is not in the pixel-font
+branch's files: WinScenesStyled / WinScenesArcade / WinScenesConsole are), then H12 achievements animations.
+
+**18 Nov 02:10 UTC, 681s (cloud, P2 turn - the live session's last P2 push was > 1 h old):** dev line merged into
+`claude/v0674-native-pages`; batch 1 finding 1 (Record crate x1.3: the insert showed one track and a part) fixed on that branch
+(0c7ad56): compact sleeve header on the sleeve's own pages, count beside TRACKLIST, ORDER stamp on the first side's line.
+CrateInsertRoom681sRoboTest 4/4 + crate-related suites PASS in the cloud; Info unchanged. Emulator re-capture + owner look pending.
+Dev-line CI GREEN on b0bc839.
+NEXT: check Verify 310 on this push and on 0c7ad56 (P2) - red on code -> fix first. Next run = v0.6.74 turn: item 7 H12
+achievements animations or more H16 windows (Bar labels cramped, Night ACHIEVED / RELEASED) if they don't touch the pixel-font
+branch's files. Next P2 turn: finding 3 (TV room blocked launch - trace which press reached Play) or batch 2 (Cube first).
+
+**18 Nov 00:20 UTC, 681q (cloud):** Verify 310 RED on f303833 (681p) = infra: Maven Central 429 on ubuntu-latest, the 24.04 image
+passed every test. Fixed in CI: tools/ci/retry_infra.py re-runs Gradle only after a package-server 429 / 5xx with no code failure
+in the output (selftest TestCiRetryInfra681q 4, 211/211). App unchanged. 681p's code itself was green on the other runner.
+NEXT: check Verify 310 on the 681q push (red on code -> fix first; a retry warning annotation is expected only on 429s). Then the
+P2 turn of the alternation IF the live session's last P2 push (e6e16fd 23:31 UTC) is > 1 h old - batch 1 open finding: crate
+x1.3 insert (see NATIVE_PAGES_P2.md on that branch); else v0.6.74 item 7 H12 / more H16 windows (Bar labels, Night).
+
+**17 Nov 23:55 UTC, 681p (cloud, v0.6.74 turn - live session was on the P2 branch < 1 h ago):** item 4 window polish (H16) -
+D354 Pocket Quest "Play game" wrap fixed in code (one-line keys while two show, key words 12 -> readable 10 sp at large text;
+twoLineOnlyWhenAlone opt-in, other layouts unchanged). PqPlayKeyOneLine681pTest 5/5 + related PASS in the cloud. The status
+pill part of D354 is the rule-11 slide in a narrow pill - owner look on HW-24. Dev CI GREEN on c342492.
+NEXT: check Verify 310 on the 681p push (red -> fix first); next run = P2 turn if the live session left the P2 branch (> 1 h
+since its last commit), else v0.6.74 item 7 H12 achievements animations / more H16 windows (Bar labels cramped, Night
+ACHIEVED / RELEASED) if they don't touch the pixel-font branch's files.
+
+**17 Nov 22:35 UTC, 681e (cloud, v0.6.74 turn of the alternation):** item 6 (profile picture) - the cloud-testable gap closed in
+QA tooling: statuscheck.py now grades each profile picture's place ("avatar place"): wholly on screen, the status bar's picture
+inside the status bar, no text over any picture (its own initial excluded); the corner is reported as evidence (layout pictures
+live in Edit-Home-movable parts, so their corner is not graded). TestAvatarPlace681e 4 (3 fail on the old checker); selftest
+207/207; static PASS. Hardware: rides along HW-24 (statuscheck over that session's dumps). Dev-line CI GREEN on c71c8cb. A live
+session was pushing to claude/v0674-native-pages during this run (fd32d24) - the cloud stayed off that branch.
+NEXT: check Verify 310 on the 681e push (red -> fix first); next run = P2 turn (Resume / TV room) only if the live session is
+not on the P2 branch (check its newest commit time; < 1 h -> take the v0.6.74 list instead: item 4 window polish H16 - D354
+Pocket Quest "Play game" wrap / status pill cut if it doesn't touch the pixel-font branch's files; then item 7 H12 animations).
 
 **17 Nov 21:45 UTC, 681cr (cloud):** P2 branch CI was RED on 1a6c5c9 (AchFirstRowRoboTest CRATE x1.3: the tracklist's first
 track cut). Fixed on `claude/v0674-native-pages` (64e5955, rebased on the live session's 681b-681d): the title has the whole line,

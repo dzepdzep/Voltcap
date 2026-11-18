@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 681cr · 2026-11-17 21:50 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e692ef5 (dev line); P2 branch was RED on 1a6c5c9, fix 64e5955 pushed - CI pending · effort: medium
+**1. LATEST UPDATE** - 682k · 2026-11-18 12:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 16a1388: RED (one guard test, both runners) - fixed in this push; targeted tests green in the cloud · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - On the new Record crate pages (still on their own test branch), the Achievements tracklist cut the first achievement in half when text is set larger: the name only had half the line and wrapped to three lines. The name now uses the whole line with the dotted line running after it, and with larger text each closed entry's description sits on one sliding line, so the first achievement is fully visible when the page opens. The automatic check that caught it passes again for every layout.
+**2. WHAT CLAUDE JUST FIXED** - Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
 
 **3. LAST 24 HOURS** (most important first)
 - **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
 - **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
 - **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
-- **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (681a): Started the big one: every home layout getting its own Details, Achievements and Options pages. A shared kit now handles the data and the controls (bumpers, focus, sounds, touch size, scrolling) while each layout keeps its own look. Record crate is the first new one: its pages are the sleeve's printed matter - liner notes, a tracklist of your achievements (side A yours, side B still to get) and pressing notes for the options. It is on its own branch and waits for your look at the screenshots.
+- **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
+- **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,9 +24,9 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: v0.6.74 list: profile picture in its corner (statuscheck gap); then: P2 batch 1: Resume, TV room; window polish (H16)
+**5. WORKING ON NEXT** - now: Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix); then: Native pages batch 2 (Cube first); More game-window polish from your review sheet
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 8 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
 **7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
@@ -106,7 +106,7 @@ Published: this is the current stable release (a4012212, 2026-11-17). Nothing to
 | Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay | not run | requested 17 Nov |
 | AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first) | not run | requested 17 Nov |
 | Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting) | full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED | owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674 |
-| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
+| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test); Night ACHIEVED / RELEASED whole in code 681t-681u (unit test, cloud); Bar dock key names whole in code 681w (unit test, cloud); 682 survey test of the next 13 windows (findings from CI); handheld HW-24 NOT TESTED | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -125,14 +125,15 @@ Merging, the production install and publishing always wait for your explicit GO.
 <!-- GEN:owner -->
 | # | What I need from you | Why | Device | Urgent? | Blocks |
 |---|---|---|---|---|---|
-| 1 | Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready | you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison | screenshots (when Claude posts them) | no | v0.6.74 badge redesign only |
-| 2 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
-| 3 | Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say "devices ready" | left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6) | RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73 | no | nothing for v0.6.73 (KONKR covered it) |
-| 4 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
-| 5 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
-| 6 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
-| 7 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
-| 8 | Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum | pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font | none | no | merging the pixel font into the v0.6.74 line |
+| 1 | Achievement reveal animation: pick NOW (Volt capsule), A Trophy flip, B Glow burst, or a mix - see docs/evidence/h12_reveal_682k/storyboard.png (one row per option, left to right over time) | H12 redesign of the reveal / trophy moment; a new look never becomes the default without your OK on the comparison. Nothing changes in the app until you pick | none (image on GitHub) | no | H12 reveal redesign only |
+| 2 | Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready | you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison | screenshots (when Claude posts them) | no | v0.6.74 badge redesign only |
+| 3 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
+| 4 | Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say "devices ready" | left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6) | RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73 | no | nothing for v0.6.73 (KONKR covered it) |
+| 5 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
+| 6 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
+| 7 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 8 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
+| 9 | Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum | pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font | none | no | merging the pixel font into the v0.6.74 line |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -183,6 +184,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | Request | Status |
 |---|---|
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) | OPEN (same KONKR session as HW-24, ~3 min) |
 | HW-24 Channel progress pill clear of the name plate (680a, D356) | OPEN (next KONKR session) |
 | HW-23 KONKR evening session 17 Nov (live, owner present) | DONE |
 | HW-22 Terminal home: path, header and preview shown whole (679d, rule 11 / D353) | OPEN (batch with other KONKR requests) |
@@ -204,7 +206,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 13 of 21.
+Open hardware requests: 14 of 22.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

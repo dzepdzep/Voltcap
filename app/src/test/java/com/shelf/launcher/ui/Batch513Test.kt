@@ -52,7 +52,7 @@ class Batch513Test {
         assertTrue(c.contains("val coverW = minOf(maxHeight * 0.72f, maxWidth * 0.6f)"))
         assertTrue(c.contains("WholeWordsText(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)"))
         val n = src("ui/WinScenes.kt")
-        assertTrue(n.contains("val labelW = minOf(96.dp, maxWidth * 0.4f)"))
+        assertTrue(n.contains("val labelW = nightLabelWidth(widestLabel, maxWidth)"))
         assertTrue(n.contains("WholeWordsText(value ?: \"—\", color = Color.White, fontSize = 15.sp"))
     }
 

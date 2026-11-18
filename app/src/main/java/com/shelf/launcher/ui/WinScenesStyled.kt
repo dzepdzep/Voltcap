@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -188,11 +189,13 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
     // column right of the art — seven lines — and the window's height cut the last ones (Inspect, the Saves line). With
     // larger text the keys take the window's whole width under the art.)
     val under = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
-    val key: @Composable (WinAction) -> Unit = { k ->
-        SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
-    }
+    // (D354, 681p: with large text the keys' words take the size at which two whole one-line keys share the row - 12 sp down
+    // to a readable 10 sp - before any word takes a second line.)
+    val keySize = if (under) pqKeyTextSize(sceneKeys(ctx).filterNot { it.status }, w - pqPanelPadX(true) * 2, 6.dp) else 12.sp
+    val key: @Composable (WinAction) -> Unit = { k -> PqSceneKey(k, p, under, keySize) }
     Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.1f)
-        .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape).padding(14.dp)) {
+        .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape)
+        .padding(horizontal = pqPanelPadX(under), vertical = 14.dp)) {
         if (!under) Row {
             ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.28f, 150.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
             Spacer(Modifier.width(12.dp))
@@ -218,10 +221,54 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
                 SceneFactsBody(ctx, p.muted, p.ink, null)
             }
-            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp) { key(it) }
+            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp, twoLineOnlyWhenAlone = true) { key(it) }
         }
     }
 }
+
+/** D354 (681p): the Pocket Quest window's side padding - 14 dp; 10 dp with large text, where the keys run under the art. */
+internal fun pqPanelPadX(under: Boolean): Dp = if (under) 10.dp else 14.dp
+
+/**
+ * A Pocket Quest window key. D354 (681p, emulator e679r13, x1.3 beside the pulled-out disc): the window is ~294 dp wide there
+ * and "Play game" missed one line by a few px, so the uniform row fell back to two-line keys ("Play / game"). With large text the
+ * key's side padding is 6 dp (10 dp otherwise) and the panel's 10 dp: two whole one-line keys between the row's arrows.
+ */
+@Composable
+internal fun PqSceneKey(k: WinAction, p: PqPalette, under: Boolean, size: TextUnit = 12.sp) =
+    SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = size,
+        pad = pqKeyPad(under), height = 30.dp)
+
+internal fun pqKeyPad(under: Boolean): Dp = if (under) 6.dp else 10.dp
+
+/** The readable sizes a Pocket Quest key's word may take with large text, largest first (Play draws 15 % larger). */
+internal val PQ_KEY_SIZES = listOf(12f, 11.5f, 11f, 10.5f, 10f)
+
+/**
+ * D354 (681p): the largest of [PQ_KEY_SIZES] at which every key's word stays on one line with at least two whole keys in a row
+ * [rowW] wide (the row's ‹ › gutters left out when it scrolls) - each key measured as SceneKey draws it (sceneKeyWidth's sum).
+ * 12 sp when even 10 sp can't (the row then takes its two-line keys, 674c), or when there's a single key.
+ */
+@Composable
+internal fun pqKeyTextSize(actions: List<WinAction>, rowW: Dp, gap: Dp): TextUnit {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val style = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val words = actions.map { sceneLabel(it.label) to it.primary }
+    val sz = remember(words, rowW, gap, style, density) {
+        fun need(s: Float): Dp = words.maxOf { (w, primary) ->
+            val px = measurer.measure(w, style.merge(androidx.compose.ui.text.TextStyle(fontSize = (if (primary) s * 1.15f else s).sp,
+                fontWeight = FontWeight.Bold)), maxLines = 1, softWrap = false).size.width
+            with(density) { px.toDp() } + (if (primary) 16.dp else 13.dp) + 5.dp + pqKeyPad(true) * 2 + 2.dp // (2 dp: font metrics on devices)
+        }
+        if (words.size < 2) 12f else PQ_KEY_SIZES.firstOrNull { s -> pqTwoFit(words.size, need(s), rowW, gap) } ?: 12f
+    }
+    return sz.sp
+}
+
+/** D354 (pure): [n] one-line keys [need] wide fit [rowW]: all at once, or two at a time between the scrolling row's gutters. */
+internal fun pqTwoFit(n: Int, need: Dp, rowW: Dp, gap: Dp): Boolean =
+    need * n + gap * (n - 1) <= rowW || need * 2 + gap <= rowW - KEY_ROW_GUTTER * 2
 
 // ───────────────────────────── Game shelf ─────────────────────────────
 

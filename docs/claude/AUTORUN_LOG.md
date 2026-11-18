@@ -246,3 +246,44 @@
 - Dev line CI GREEN on e692ef5. P2 branch Verify 310 RED on 1a6c5c9 (Record crate tracklist first row cut at x1.3) -> fixed on
   claude/v0674-native-pages (64e5955); AchFirstRow 87/87, NativePages681a 8/8, static PASS. Two rebases: a live session pushed
   681b-d to the P2 branch meanwhile. Lock released.
+
+## 2026-11-17 ~22:17-22:40 UTC - cloud run 681e
+- Dev line CI GREEN on c71c8cb. v0.6.74 turn: item 6 profile picture - statuscheck "avatar place" (on screen, bar picture in
+  the bar, no text over it, corner as evidence); selftest 207/207, static PASS. Live session active on the P2 branch - not
+  touched. Lock released.
+
+## 2026-11-17 ~23:18-23:55 UTC - cloud run 681p
+- Dev line CI GREEN on c342492. Live session pushed the P2 branch 22:51 -> v0.6.74 turn: H16 / D354 Pocket Quest "Play game"
+  one line at x1.3 (PqPlayKeyOneLine681pTest 5/5, related tests + static PASS). HW-24 extended. Lock released.
+
+## 2026-11-18 ~00:18-00:30 UTC - cloud run 681q
+- Verify 310 RED on f303833 = Maven Central 429 (infra; other image green). CI fix: retry_infra.py (retries 429 / 5xx only,
+  never code failures), selftest 211/211, static PASS. Lock released.
+
+## 2026-11-18 ~01:18-02:10 UTC - cloud run 681s (P2 turn)
+- Verify 310 GREEN on b0bc839. P2 branch: dev line merged in; Record crate pages compact header + stamp on the first side line
+  (emulator finding 1); CrateInsertRoom681sRoboTest 4/4 + related PASS; static PASS; pushed 0c7ad56. Lock released.
+
+## 2026-11-18 ~02:18-02:45 UTC - cloud run 681t (v0.6.74 turn)
+- Verify 310 GREEN on 98f46f2 (dev) and 0c7ad56 (P2). Night window stats labels (ACHIEVED / RELEASED) whole at x1.3 + test
+  NightStatLabels681tTest. Gradle blocked by Maven Central 429 twice -> not compiled in the cloud; CI is the check. Lock released.
+- ~03:15 UTC 681u: CI RED on 1888e41 (the new Night test: ACHIEVED 2 lines at x1.3) -> cap 55 %, gap 4 dp; compiled + tests PASS
+  in the cloud (Maven answered). Lock released.
+- ~03:55 UTC 681v (P2 turn): Verify 310 GREEN on 18106e4. TV room blocked launch traced (review script pressed Play after leaving
+  the options list; script guarded); TV teletext pages had no body on the set's screen -> fixed on the P2 branch (00b9c1d),
+  TvTeletextRoom681vRoboTest 4/4 + related PASS; emulator review P2:TV CRATE dispatched. Lock released.
+- ~04:18 UTC 681w (v0.6.74 turn): Verify 310 GREEN on 87f4150 (681v). Bar window dock key names whole at x1.3 (widest-word key
+  width); BarDockLabels681wTest 2/2 (fails on old code) + Readability476 + WinFocus PASS in the cloud. P2 review 44233448467 read
+  (crate fixed; TV Fastext keys slide, review-script guard missed) -> next P2 turn. Lock released.
+- ~05:18 UTC 681x (P2 turn): Verify 310 GREEN on 18a8cbc (681w). TV Fastext keys word-width + short words; p2review Play guard
+  toybox-safe (selftest 216/216). Cloud compile blocked (Maven 429); CI caught a test-fixture miss on 049dd75, fixed cf40522
+  (24.04 runner GREEN). Emulator review P2:TV dispatched. Lock released.
+- ~06:18 UTC 681y (v0.6.74 turn): lock taken. H12 progress counts new unlocks as they lock in + stage follows motion speed
+  (reduced motion at once). Cloud compile OK; AchProgressCount681yTest 5/5 + Ach suites PASS (one Maven 429, retried once).
+  HW-25 queued. Lock released.
+- ~07:20 UTC 681z (P2 turn): lock taken. Read P2 TV review 44247782675; grade_trial.py review mode + p2review.sh restore / App-category fixes on claude/v0674-native-pages (d14710b); selftest 224/224. No Gradle (QA tools only). Lock released.
+- ~08:20 UTC 682 (v0.6.74 turn): lock taken. Verify 310 GREEN on ccdc5bf. H16 next windows: no review sheet in the cloud + Maven 429 x3 -> added WindowWordsSurvey682Test (13 windows x 2 scales, findings to CI test results). Live session active on the P2 branch (682a/682c) - P2 left alone. Lock released.
+- ~09:18 UTC 682b (v0.6.74 turn): lock taken. Verify 310 GREEN on ebe8e55. Read the H16 survey: nearly every label "cut" at both scales identically (measuring artefact suspected) -> survey rule made pixel-tolerant + numbers per finding; no window changed. Cloud compile failed (Maven resolution x2). P2 branch left alone (live push 09:04). Lock released.
+- ~10:18 UTC 682g (v0.6.74 turn): lock taken. Verify 310 GREEN on cc229b9. H16 survey cause found (layout width, not inked width) - fixed; all 13 windows clean x1.0 / x1.3 (cloud compile + 26/26); survey now a guard. Test only. Lock released.
+- ~11:18 UTC 682j (v0.6.74 turn): lock taken. Verify 310 on 67b08fd red = Maven 429 (infra, one runner; other GREEN). H12 reveal comparison: StageSlot pose refactor (no visual change) + RevealSheet682jTest storyboard (NOW / Trophy flip / Glow burst). Cloud compile blocked by Maven 429 x2 - CI compiles. Lock released.
+- ~12:21 UTC 682k (v0.6.74 turn; live P2 push 11:54 < 1 h): lock taken. Verify 310 RED on 16a1388 (Batch489Test: reveal storyboard's turned badge without flatTextFor3d) -> fixed; cloud compile + Batch489 6/6 + RevealSheet 2/2 + static PASS. Storyboard to docs/evidence + owner action. Lock released.

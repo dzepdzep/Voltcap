@@ -2031,6 +2031,19 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 ) {
                     Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
                         val statIdx = intArrayOf(0)
+                        // (681t, H16 KONKR x1.3 k678n13: "ACHIEVED" / "RELEASED" broke inside the word in the fixed 96 dp / 40 %
+                        // label column. The column is as wide as the widest label needs (40 % of the row at least, as before;
+                        // 55 % of the row at most), and only where even that is too narrow the labels step down to the readable
+                        // minimum - whole words always, the slanted italic kept.)
+                        val labelBase = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, fontWeight = FontWeight.Black,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        val labelMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+                        val dens = androidx.compose.ui.platform.LocalDensity.current
+                        val nightLabels = nightStatLabels(ctx.total > 0)
+                        val (widestLabel, widestWord) = remember(nightLabels, labelBase, dens) {
+                            fun wd(t: String) = with(dens) { labelMeasurer.measure(t, labelBase, softWrap = false, maxLines = 1).size.width.toDp() }
+                            nightLabels.maxOf { wd(it) } to nightLabels.flatMap { it.split(' ') }.maxOf { wd(it) }
+                        }
                         @Composable
                         fun stat(label: String, value: String?) {
                             // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
@@ -2041,9 +2054,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                 val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 5.7f + idx, 0.035f, 0.4f))
                                 translationX = (1f - e) * 36.dp.toPx(); alpha = e
                             }) {
-                            val labelW = minOf(96.dp, maxWidth * 0.4f)
+                            val labelW = nightLabelWidth(widestLabel, maxWidth)
+                            val labelSize = nightLabelSize(widestWord, labelW)
                             Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
+                                Text(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    modifier = Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
                                 // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
                                 // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
                                 // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
@@ -2055,8 +2070,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         stat("LAST", ctx.last)
                         if (ctx.total > 0) {
                             stat("ACHIEVED", "${ctx.earned} / ${ctx.total}")
-                            Box(Modifier.padding(start = 96.dp, top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
+                            // (681t: the bar starts under the values, wherever the label column ends.)
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            Box(Modifier.padding(start = nightLabelWidth(widestLabel, maxWidth), top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
                                 Box(Modifier.fillMaxHeight().fillMaxWidth((ctx.earned.toFloat() / ctx.total).coerceIn(0f, 1f)).background(hi))
+                            }
                             }
                         }
                         stat("RELEASED", ctx.year)
@@ -2213,4 +2231,33 @@ internal fun storyLead(story: String, max: Int = 200): Pair<String, Boolean> {
     val cut = ends.lastOrNull { it <= max } ?: ends.firstOrNull { it <= max * 2 } ?: t.lastIndexOf(' ', max).takeIf { it > max / 2 } ?: return t to false
     val lead = t.substring(0, cut).trim()
     return lead to (lead.length < t.length)
+}
+
+
+/** 681t: the Night stats panel's labels, in their order (ACHIEVED only for a game with achievements). */
+internal fun nightStatLabels(achievements: Boolean): List<String> =
+    listOfNotNull("PLAY TIME", "LAST", if (achievements) "ACHIEVED" else null, "RELEASED", "MAKER", "KIND", "SYSTEM")
+
+/** 681t: the gap between a Night label and its value. */
+internal val NIGHT_LABEL_GAP = 4.dp
+
+/**
+ * 681t (pure, NightStatLabels681tTest): the Night label column - the widest label plus its gap, never narrower than before
+ * (96 dp, or 40 % of a narrow row), 55 % of the row at most so the values keep theirs (KONKR x1.3: the row is ~135 dp,
+ * "ACHIEVED" needs ~63 dp even at the 10 sp minimum).
+ */
+internal fun nightLabelWidth(widest: androidx.compose.ui.unit.Dp, row: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp {
+    val base = minOf(96.dp, row * 0.4f)
+    return (widest + NIGHT_LABEL_GAP + 1.dp).coerceAtLeast(base).coerceAtMost(maxOf(base, row * 0.55f))
+}
+
+/**
+ * 681t (pure): the labels' size - 12 sp while the widest word fits the column, else stepped down in proportion, never under
+ * the readable minimum ([fitMin] of 12 sp = 10 sp).
+ */
+internal fun nightLabelSize(widestWord: androidx.compose.ui.unit.Dp, column: androidx.compose.ui.unit.Dp): Float {
+    // (3 % spare: the glyphs do not scale exactly in proportion, and the italic leans past the last letter)
+    val room = (column - NIGHT_LABEL_GAP - 1.dp).value * 0.97f
+    if (widestWord.value <= room || widestWord.value <= 0f) return 12f
+    return maxOf(fitMin(12.sp).value, kotlin.math.floor(12f * room / widestWord.value * 2f) / 2f)
 }

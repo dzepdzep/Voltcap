@@ -49,6 +49,26 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
+### HW-25 Library rescan: deleted last game / empty console / SD card out (681r) - DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says)
+- Branch `claude/v0674-rescan-fix` (d082e7f or later), its CI QA APK; L1 QA app only, synthetic stand-ins only (never the owner's
+  ROMs or saves). Emulator: PASS 15/15 (run 44190749178).
+- Tests: `sh rescan681r.sh run <tag>` then `restore <tag>` (tools/qa/device) - every case PASS. Plus, on a device with an SD card:
+  copy a stand-in to a ROM folder on the card in the QA app, rescan, take the card out (or unmount it), rescan - the card's
+  stand-in stays listed ("Kept N from folders that couldn't be read"); card back, rescan - still there; delete it, rescan - gone.
+- Then (owner, LEVEL 2 read-only, optional): the owner's real case on their device as they found it - which ROM folder layout
+  the Xbox 360 game had (file / folder, own ROM folder or a console subfolder), to confirm it is the case covered.
+- Also (P2 batch 1, same session, ~5 min): p2review.sh on CRATE CLASSIC HUB RESUME TV at x1.0 + x1.3 (screens + recordings).
+
+### HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) - OPEN (same KONKR session as HW-24, ~3 min)
+- Device: KONKR (or RP Nova), x1.0; L1 QA app only. Build: the CI QA APK of the 681y commit or later.
+- Why not emulator: the trial has no RetroAchievements account (no real set, no new unlocks); the QA hook below needs a real set.
+- Tests: a game with an achievement set, `--ei voltcap_test_achnew 2` (678o hook) -> open its Achievements page (Power cells view):
+  on open the battery / percentage leave out the 2 new ones; each fills up as its badge locks in on the stage; after the stage the
+  percentage equals the set's real progress and the summary line agrees. Again with Settings > Motion = Off: the stage shows both
+  badges settled at once, the summary line and the full percentage at once (no waiting). Trophy list view: Earned / Progress / tier
+  counts follow the same way. A game with nothing new: no fill on open. Screen recording of the first case. Unit evidence only
+  (AchProgressCount681yTest, cloud Robolectric).
+
 ### HW-24 Channel progress pill clear of the name plate (680a, D356) - OPEN (next KONKR session)
 - Device: KONKR (where k679p13 found it), x1.0 + x1.3; L1 QA app only. Build: the CI QA APK of the 680a commit or later.
 - Tests: pop529.sh run <tag> font=1.3,density=1.15 "CHAN" OWN (+ off) -> popclip.py + badgecheck (no "PROGRESS covers text"),
@@ -58,6 +78,32 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 - Also (681cr, P2 branch `claude/v0674-native-pages` 64e5955 or later, its CI QA APK; same KONKR session, ~2 min): Record crate
   at x1.3, open TRACKLIST (R1 R1): the first track whole at the page's top (title in two lines, the dotted leader after it,
   its words on one sliding line until A) - p2review.sh / popclip on CRATE; a cut first row = FAIL. Unit evidence only so far.
+  681s (0c7ad56 or later): the same TRACKLIST shows at least two whole tracks at x1.3 (three at x1.0) under the compact sleeve
+  header ("TRACKLIST · n / m", the name on one sliding line), the ORDER stamp on the SIDE line and A on it steps the order;
+  Info's header unchanged. Unit evidence only (CrateInsertRoom681sRoboTest).
+- Also (681v, P2 branch `claude/v0674-native-pages` 00b9c1d or later, its CI QA APK; same KONKR session, ~2 min): TV room at x1.0
+  and x1.3, a game with achievements, the window on the set's screen: Info (P100) / TROPHIES (P200) / OPTIONS (P300) each show a
+  one-line masthead (P-number, page name block, the game's name sliding), Fastext keys PICTURE / INFO / TROPHIES / OPTIONS on one
+  line, P200 two whole rows at x1.0 and one at x1.3, D-pad Down walks the rows (not straight to the buttons), the 120-set scrolls
+  far. p2review.sh run <tag> <scale> "TV" -> popclip.py. Unit evidence only (TvTeletextRoom681vRoboTest).
+  681x (049dd75 or later, same check, no extra time): each Fastext key's word stands whole in its key (no sliding) - full
+  words where they fit, PIC / INFO / TROPHIES / OPTS at x1.3; a tap on each key opens its page. Unit evidence only
+  (TvFastextKeys681xRoboTest). p2review.sh's Play guard now uses fixed strings (toybox): the log must show no 'LAUNCH blocked'.
+- Also (681e, v0.6.74 item 6, no extra device time): run statuscheck.py (681e or later) over every dump of this session - the
+  new "avatar place" lines (picture on screen, the bar's inside the bar, no text over it; corner as evidence). Any FAIL = a
+  real misplaced / covered profile picture (report the layout + corner); confirm the reported corners are the intended ones.
+- Also (681p, D354, dev line 681p or later, ~2 min): Pocket Quest (POCKET) at x1.3, open a game's window with the disc pulled out
+  beside it: "Play game" and "Status" on ONE line each, two whole keys between the arrows, More reached by D-pad right and by a
+  swipe; the key words readable (10-12 sp). pop529 POCKET OWN -> popclip.py. Also look at the home status bar's category pill:
+  "PlayStation 2" slides inside a narrow pill (rule 11) - say whether that is fine or the pill should get more room.
+- Also (681t, H16, dev line 681t or later, ~1 min): Night (NIGHT) at x1.3, a game with achievements: the stats panel's
+  ACHIEVED / RELEASED / PLAY TIME labels whole (never "ACHIEVE / D"), values beside them readable, the achievements bar under
+  the values; also x1.0 looks as before. pop529 NIGHT OWN -> popclip.py. Unit evidence only (NightStatLabels681tTest, CI).
+- Also (681w, H16, dev line 681w or later, ~1 min): Icon bar (BAR) at x1.3, a game with achievements: the dock keys' names
+  under the round icons whole - "Achievements" / "Performance" never broken inside the word, a two-word name only between its
+  words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
+  reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
+  Unit evidence only (BarDockLabels681wTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

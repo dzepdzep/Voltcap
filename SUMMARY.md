@@ -1,3 +1,216 @@
+# Update 682k (18 Nov 2026, cloud run, v0.6.74 turn) - CI red fix: the reveal storyboard's turned badge draws flat (D285 guard); storyboard ready for the owner
+- CI first: Verify 310 on 16a1388 (682j) RED on code, both runners: Batch489Test.everyTurnedLayerDrawsItsTextFlat - the new
+  StageSlot graphicsLayer sets rotationY (proposal A's turn) without flatTextFor3d() (D285 / update 177: a turned layer must be
+  drawn flat into its own buffer, Android 13 text cache). Fix: flatTextFor3d() last in that layer (AchievementFx.kt). The app's
+  own reveal never turns (turn = 0), so it is unchanged; the guard only applies when a proposal turns the badge.
+- Storyboard read (cloud Robolectric render): NOW / A Trophy flip / B Glow burst draw as intended (no clipping, labels whole);
+  copied to docs/evidence/h12_reveal_682k/storyboard.png and added as an owner action (pick NOW / A / B / mix) - nothing wired.
+- Checks: cloud compile OK (compileDebugUnitTestKotlin); Batch489Test 6/6 (failed on 682j in CI), RevealSheet682jTest 2/2;
+  static checks PASS. Not tested on a handheld.
+- Files: app/src/main/java/com/shelf/launcher/ui/AchievementFx.kt; docs only otherwise.
+
+# Update 682j (18 Nov 2026, cloud run, v0.6.74 turn) - H12 reveal / trophy redesign: storyboard comparison for the owner (app unchanged)
+- CI first: Verify 310 on 67b08fd (682g) red = Maven Central 429 on the ubuntu-24.04 runner (infra); the ubuntu-latest runner ran
+  the full suite GREEN.
+- AchievementFx.kt: the new-unlock badge's motion is now a pure pose function (RevealPose; voltRevealPose = the app's reveal, the
+  exact old formulas) drawn by StageSlot (now internal). RevealPose gained optional turn / shine / ring / silhouette fields that
+  default to nothing, so the app's reveal draws as before. No new setting, nothing wired.
+- RevealSheet682jTest: voltPoseIsTheOldReveal (the old inline formulas, 101 moments x 3 intensities x waiting) + storyboard - the
+  real StageSlot drawn by Robolectric native graphics at 9 moments for NOW (Volt capsule) and two PROPOSALS that exist only in the
+  test: A "Trophy flip" (face-down badge lifts, turns over, gold ring burst, shine sweep, settles) and B "Glow burst" (no flight:
+  silhouette lights up, ring burst, overshoot, shine). PNG: app/build/reports/tests/h12-reveal/storyboard.png in CI's
+  "update-310-test-results-*" artifact. Not handheld evidence (no badge art, no GPU, no sound).
+- Checks: static checks PASS. Cloud compile NOT RUN (Maven Central 429 twice) - CI compiles and runs it on this push.
+- Files: ui/AchievementFx.kt, test ui/RevealSheet682jTest.kt. PC copy: src_copy/ui/AchievementFx.kt.
+
+# Update 682g (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey fixed: the 13 next game windows are clean; survey is now a guard (test only)
+- Read the corrected survey from CI (Verify 310 GREEN on cc229b9): still 187 "cuts", and every one showed the cause - the
+  "text" width was always the max width ('Play' 53 px in a 28 px box): MultiParagraph.width is the width the paragraph was laid
+  out AT, not the width its glyphs use. Not sub-pixel rounding (682b's guess).
+- WindowWordsSurvey682Test now measures the inked width (widest line, right - left; pure inkedWidth, SurveyRule682Test
+  .theInkedWidthIsTheWidestLineNotTheLayoutWidth). Result (cloud Robolectric, 640 x 427 dp): Hero, Hero tiles, Live, Cross, Hub,
+  Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema - all CLEAN at x1.0 and x1.3 on the first
+  page (no word broken inside itself, nothing past its box, no dropped lines). The survey is now a guard: any finding fails it.
+- Limits: first page only; a parent clipping a text (scroll / clip) is not what it measures; handheld NOT TESTED (HW-24 covers
+  the H16 windows already changed; nothing new to queue - no app change).
+- Checks: cloud compile (after 3 Maven 429 retries) + WindowWordsSurvey682Test 26/26 + SurveyRule682Test 3/3 PASS; static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt. PC copy: none (test only).
+
+# Update 682b (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey read; its "cut at the edge" signal was unreliable (test only)
+- Read the 682 survey from CI (Verify 310 GREEN on ebe8e55, artifact update-310-test-results): 25 of 26 window/scale cases
+  listed almost EVERY label as "cut at its box's edge" - "Back", "Play", "Details", "PlayStation 2 · Never played" (12 sp in a
+  ~357 dp column) - with identical lists at x1.0 and x1.3 and no word broken anywhere. A real cut does not look like that, so
+  the list is not a fix list. Channel had only "Back".
+- WindowWordsSurvey682Test: a text now counts as cut when its lines run a whole pixel or more past its box, or lines past
+  maxLines are dropped (pure cutAtEdge, SurveyRule682Test.aFractionOfAPixelIsNoCut - fails on the old didOverflowWidth-only rule
+  for a 41.6 px "Back" in a 41 px box); each finding now carries its numbers (text size, box size, max width, lines) so the next
+  run can tell a real cut from a measuring artefact. Suspected cause (not confirmed): sub-pixel rounding of wrap-content text.
+- App code unchanged; no window was changed on the strength of the unreliable list. NOT compiled in the cloud (Maven Central
+  resolution failed twice) - CI on this push compiles and runs it. Static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt. PC copy: none (test only).
+
+# Update 682 (18 Nov 2026, cloud run, v0.6.74 turn) - H16 survey: whole words on the next 13 game windows (test only)
+- New unit test WindowWordsSurvey682Test (Robolectric, KONKR 640 x 427 dp, x1.0 and x1.3, 26 cases): renders the first page of
+  each window in the owner's H16 order after Pocket / Night / Bar - Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin
+  icons, Twin showcase, Memory card, Bubbles, Panels, Cinema - and lists every text broken inside a word or cut at its box's edge
+  (a one-line sliding text is rule 11's allowed form, not counted). Findings go to app/build/reports/h16-survey/findings.txt
+  (uploaded with CI's test results) and the test log; the survey fails only when a window can't be reached. SurveyRule682Test
+  pins what counts. Why a survey: the k678n13 review PDF is not in the cloud and Maven Central answered 429 three times, so the
+  cloud could not render the windows itself; CI's compile + run gives the concrete list the next H16 fixes start from.
+- App code unchanged. NOT compiled in the cloud (Maven 429 x3) - CI on this push is the first compile. Static checks PASS.
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt (new). PC copy: none (test only).
+
+# Update 681z (18 Nov 2026, cloud run, P2 turn) - emulator review runs get a real verdict; P2 TV review read (QA tools only)
+- Branch `claude/v0674-native-pages` (d14710b, dev line 681y merged in first). App code unchanged.
+- Emulator review 44247782675 ("P2:TV", cf40522) READ: the TV Fastext keys read whole at x1.0 and x1.3 (681x confirmed on the
+  emulator); the Play guard held (A not pressed, 0 launches). The App category still did not take on the emulator (no Android app in
+  the QA library) - the destructive confirmation stays NOT TESTED there.
+- tools/qa/emulator/grade_trial.py review mode: a review_layouts run is graded on its own runs - "P2:<layouts>" on p2r13 / p2r10
+  (walk finished, every layout walked, page shots there, no crash, no launch reached, nothing marked NOT TESTED, the QA app's settings
+  and snapshot files back), font reviews on e679r13 / e679r10 (popclip) - instead of always NOT TESTED for missing e529 runs. P2
+  contact sheet per layout (both scales). PASS = the walk's mechanics only; the look stays the owner's review.
+- tools/qa/device/p2review.sh: restore with an empty keep folder (fresh emulator) logged a false "diff=1" (literal glob) - now "none
+  existed before the run"; the App category is checked ("category App is empty here") and the confirmation logged NOT TESTED
+  instead of walking a ROM game's options.
+- Tests: selftest TestGradeTrialReview681z 6 + TestP2ReviewRestore681z 2 (the empty-folder case reproduces diff=1 on the old line),
+  224/224; static checks PASS. No Gradle run (no Kotlin change). Hardware: nothing new.
+- Copy: nothing on the dev line (P2 branch only, not merged).
+
+# Update 681y (18 Nov 2026, cloud run, v0.6.74 turn) - Achievements progress counts new unlocks as they lock in (H12)
+- Achievements page (AchievementListDialog.kt, AchievementViews.kt, AchievementFx.kt): the progress - Power cells' battery and
+  percentage, the Trophy list's Progress / Earned / tier counts, the summary bar - counted the new unlocks before the NEW UNLOCKS
+  stage had shown them (full battery while the badges still waited dim). It now leaves out the ones still waiting and counts each
+  as it locks in; the battery / bar fill up to it at the shared motion speed (520 ms tween). A page with nothing new shows its
+  progress at once, no fill (old unlocks never replay).
+- Reduced motion: the stage's waits and sound cues did not follow the motion speed (only its tween did), so with Motion Off or
+  Android "Remove animations" it still sat ~1.6 s per badge; at Subtle / Expressive the lock sound missed the lock.
+  unlockStagePlan(amount, MotionLevel.scaleFactor) scales them; at 0 every badge locks in at once, one lock sound, summary shown.
+- Tests: AchProgressCount681yTest 5/5 (new; 22 % on open -> 30 % after the stage, fails on the old code; motion Off at once;
+  plan + pending pure cases); AchCompact529Test 8 (pin follows the new parameter), AchNewUnlocksOnOpen678mTest 2, AchNewHook678oTest 2,
+  AchFirstRowRoboTest 87 PASS - compiled + run in the cloud. Static checks PASS. Hardware NOT TESTED (HW-25, batched with HW-24).
+- Files: app/src/main/java/com/shelf/launcher/ui/{AchievementFx,AchievementListDialog,AchievementViews}.kt,
+  app/src/test/java/com/shelf/launcher/ui/{AchProgressCount681yTest,AchCompact529Test}.kt. PC copy: the three ui files to src_copy/ui/.
+
+# Update 681x (18 Nov 2026, cloud run, P2 turn) - TV room Fastext keys stand whole; review-script Play guard fixed
+- P2 branch `claude/v0674-native-pages` (049dd75, after merging the dev line 681w = 4a3e313): on the room television the four
+  Fastext keys had equal widths, so long words slid inside them ("TROPHIE" at x1.0, "PICTU / TROPH / OPTIO" at x1.3) while INFO
+  had room to spare. WinPagesTv.kt: each tight key now takes its own word's measured width; where the four full words cannot
+  stand side by side, the set's short words PIC / INFO / TROPHIES / OPTS do (ttxKeyPlan, ttxKeyShort). Roomy TV windows unchanged.
+- tools/qa/device/p2review.sh: playfocused() used an ERE with a `[^]]` bracket that toybox grep did not match, so the script
+  pressed A with Play focused (one blocked launch per scale). Now fixed-string matches on one node per line.
+- Tests: TvFastextKeys681xRoboTest (new: pure plan cases + x1.0 / x1.3 on the set - each key's word laid out no wider than its
+  key); NOT compiled in the cloud (Maven Central 429, 3 tries). CI on 049dd75: the new test failed (its game had no
+  achievements, so no TROPHIES key) -> fixture fixed in cf40522, Verify 310 ubuntu-24.04 GREEN. Emulator review P2:TV dispatched. QA selftest
+  TestP2ReviewPlayFocused681x 5 (fails on the old function), full selftest 216/216; static checks PASS. Hardware NOT TESTED (HW-24).
+- Not on the dev line (owner approval of batch 1 first). PC copy: none for the dev line.
+
+# Update 681w (18 Nov 2026, cloud run, v0.6.74 turn) - Bar window: dock key names whole at x1.3 (H16); P2 review read
+- Icon bar window (DockFlyout, WinScenesHomes2.kt): each key's name sat in a fixed 78 dp column under its round icon; at the
+  KONKR's x1.3 "Achievements" broke inside the word (2 lines). Every key now takes the width of the widest single word among the
+  keys' names (measured at 10 sp with the screen's text scale) + 6 dp, at least the old 78 dp, so names break only between
+  words; the uniform key row scrolls by whole keys where they no longer all fit. The name also fills its key (it was centred in a
+  narrower box than its paragraph and could lose its last pixels). x1.0 with short names unchanged (78 dp).
+- Test: BarDockLabels681wTest (new, 2) - fails on the old 78 dp ("Achievements on one line expected 1 but was 2"); with the
+  fix PASS. Readability476Test 15, WinFocusRoboTest 448 (43 skipped) PASS (cloud). Static checks PASS. Hardware NOT TESTED (HW-24).
+- P2 emulator review 44233448467 (P2:TV CRATE, 00b9c1d) read: Record crate x1.3 TRACKLIST shows two whole tracks under the
+  compact sleeve header (681s finding fixed on the emulator); TV room pages now have a body (one achievement row at x1.3, two at
+  x1.0). Open for the next P2 turn: (a) the TV Fastext keys at equal widths slide ("PICTU", "TROPH", "OPTIO" at x1.3; "TROPHIE"
+  even at x1.0) - give each key its word's width; (b) p2review.sh's playfocused guard did not match on the device (TV
+  app_options_last dump has Play focused, the script still pressed A -> 1 blocked launch per scale; toybox grep and the
+  `[^]]` bracket); (c) the verdict reads NOT TESTED because review runs have no e529 runs (known grade_trial.py follow-up).
+- PC copy: src_copy/ui/WinScenesHomes2.kt; test app/src/test/.../ui/BarDockLabels681wTest.kt.
+
+# Update 681v (18 Nov 2026, cloud run, P2 turn) - TV room teletext pages get a body on the set's screen; review-script launch traced
+- Finding 3 of emulator review 44194071430 ("TV room: one blocked launch per scale") traced from the run's layout dumps: the App
+  category did not take, so the window was on a ROM game with 9 options; ten Downs left the list for the button row (Play lit in
+  TV_app_options_last) and the "arming" A pressed Play. QA script only: p2review.sh presses A only when the dump shows an option row
+  focused, else logs "armed confirmation NOT TESTED".
+- The same dumps showed a real defect: on the room television (217 x 148 dp) the teletext pages had no body - every achievement row
+  0 px (x1.0 and x1.3), no story line, VOLTCAP TXT one letter per line at x1.3, D-pad Down went straight to the buttons.
+- WinPagesTv.kt (P2 branch only): under 200 dp of page height the masthead is one line (P-number, page name block, the game's name
+  sliding), the console joins the Info facts, Fastext keys are one line (PICTURE / INFO / TROPHIES / OPTIONS), the P200 bar row is one
+  line (10-cell bar, ORDER key slides, 24 dp touch), rows at 10 sp with one sliding description line (A opens the whole text).
+  Roomy TV windows unchanged.
+- Tests (cloud): TvTeletextRoom681vRoboTest 4/4 (new), NativePages681aTest 11, NativeConfirm681Test 8, AchFirstRowRoboTest 107,
+  WinFocusRoboTest 448 (39 skipped) PASS; static PASS; QA selftest OK. Emulator review "P2:TV CRATE" dispatched. Hardware NOT TESTED
+  (HW-24). Branch claude/v0674-native-pages d3d06b0 + merge 00b9c1d; not on the dev line (owner approval of batch 1 first).
+- PC copy (only if the P2 branch is taken): src_copy/ui/WinPagesTv.kt.
+
+# Update 681u (18 Nov 2026, cloud run) - CI red on 681t fixed: the Night label column needed 55 % of the row at x1.3
+- Verify 310 RED on 1888e41 (681t) on code, both runners: NightStatLabels681tTest - "ACHIEVED" still took 2 lines at the KONKR
+  x1.3 (row ~135 dp; the word needs ~63 dp even at the 10 sp minimum; the 50 % cap left it 61.7 dp). The new test caught it.
+- WinScenes.kt: cap 50 % -> 55 % of the row, label gap 6 -> 4 dp, the step-down keeps 3 % spare (glyphs do not scale exactly,
+  the italic leans past the last letter). At x1.3 the labels now draw at 10.5 sp in an 80 px column, all on one line.
+- Tests (cloud, compiled this time - Maven Central answered again): NightStatLabels681tTest 3/3, Batch513Test, NightMotion529Test,
+  Airy477Test PASS; static PASS. Hardware NOT TESTED (HW-24 Night item stands). PC copy: src_copy/ui/WinScenes.kt.
+
+# Update 681t (18 Nov 2026, cloud run, v0.6.74 turn) - Night window: ACHIEVED / RELEASED never break inside the word (H16)
+- Cause (owner review of the KONKR x1.3 sheet k678n13, "Night: ACHIEVED / RELEASED broken"): the stats panel's labels sat in a
+  fixed min(96 dp, 40 %) column; at x1.3 an 8-letter label in 12 sp black italic is wider than that and wrapped mid-word.
+- WinScenes.kt NightStatus: the label column takes the widest shown label's measured width + a 6 dp gap (nightLabelWidth: never
+  narrower than before, half the row at most); only when even that is too narrow the labels step down in proportion to the
+  readable minimum (nightLabelSize, fitMin = 10 sp). The achievements bar starts where the label column ends (was a fixed 96 dp).
+  Same slanted panel, italic labels, motion and order; x1.0 short-label case keeps 96 dp.
+- Tests: NightStatLabels681tTest (new: pure width / size cases + Robolectric GameWindow NIGHT at KONKR x1.3 - ACHIEVED, RELEASED,
+  SYSTEM, MAKER one line, no broken word, no overflow); Batch513Test's pinned line updated to the new call. NOT compiled or run
+  in the cloud this run: Maven Central answered 429 twice (one retry per the rules) - GitHub CI on this push is the first
+  compile + run. Static checks PASS.
+- Not done: emulator re-capture of Night x1.3; hardware NOT TESTED (HW-24 extended, KONKR). PC copy: src_copy/ui/WinScenes.kt.
+
+# Update 681s (18 Nov 2026, cloud run, P2 turn) - Record crate's own pages give the printed insert the room (x1.3 finding)
+- Cause (emulator review 44194071430, finding 1): on LINER NOTES / TRACKLIST / PRESSING NOTES the sleeve kept its full Info
+  header (cover a quarter of the sleeve, the name in up to three 19 sp lines, the console line) and TRACKLIST had its own line for
+  the count + ORDER stamp: at x1.3 the insert showed one track and part of the next.
+- Branch claude/v0674-native-pages (0c7ad56, after merging the dev line 681p-681q into it): WinScenesMore.kt RecordSleeve - on the
+  sleeve's own pages a compact header (crateHeader: thumbnail 0.08 of the sleeve, animated with Motion Off respected; page name;
+  the game's name on one line that fits / slides - never cut; no console line, Info and FORMAT carry it); Info unchanged.
+  WinPagesCrate.kt - the count is printed beside TRACKLIST ("TRACKLIST · 8 / 12", crateHeaderName); the ORDER stamp sits on the
+  first side's line (FlowRow: a long order name moves it below, never squeezed), 26 dp touch (>= 24 dp), still the first D-pad stop.
+- Tests (cloud, compiled): CrateInsertRoom681sRoboTest 4/4 (new: 3 whole tracks at x1.0, 2 at x1.3 - a header still smaller than
+  the old one failed with 1 whole at x1.3); NativePages681aTest 11/11, NativeConfirm681Test 8/8, AchFirstRowRoboTest CRATE 6/6,
+  WinFocusRoboTest 448 (39 skipped as before), ShelfTextRoboTest 264/264; static PASS.
+- Not done: emulator re-capture of the crate pages; hardware NOT TESTED; owner look pending (batch 1 review). Not merged into the
+  dev line (P2 rule). PC copy (only once the owner approves batch 1): src_copy/ui/WinScenesMore.kt, src_copy/ui/WinPagesCrate.kt.
+
+# Update 681q (18 Nov 2026, cloud run) - CI: a Maven Central 429 no longer turns Verify 310 red (retry on server errors only)
+- Cause: Verify 310 on f303833 (681p) failed on ubuntu-latest in :app:mergeDebugUnitTestManifest - "Could not HEAD ... compose
+  plugin 2.2.10 jar. Received status code 429 from server: Too Many Requests"; ubuntu-24.04 passed the full suite on the same
+  commit. Second 429 red in a day (681r's run too): infra, not code.
+- tools/ci/retry_infra.py: runs the Gradle command, streams its output; on a non-zero exit retries (60 s, then 120 s; 3 runs at
+  most) ONLY when the output names a package-server 429 / 500 / 502-504 and shows no code failure (failing tests, "N tests
+  completed, M failed", Kotlin "e:" / javac errors, failed compile* / test*UnitTest / lint* task, watchdog stop). Every retry is a
+  public warning annotation; a real failure keeps its exit code on the first run. Wired into both Gradle steps of
+  verify-update-310.yml (inside the watchdog for the tests, so its 35 min limit still holds).
+- Tests: QA selftest TestCiRetryInfra681q 4 (the real 17 Nov log line; code failures beside a 429 never retried; the first
+  draft wrongly read "mergeDebugUnitTestManifest FAILED" as a test failure - caught and fixed); selftest 211/211; static PASS.
+  App code unchanged (nothing to compile). Takes effect on this push's CI.
+- Files: tools/ci/retry_infra.py (new), .github/workflows/verify-update-310.yml, tools/qa/selftest/test_qa.py, trackers.
+  No PC copy needed (no app sources). Hardware: none.
+
+# Update 681p (17 Nov 2026, cloud run) - Pocket Quest window: "Play game" stays on one line at x1.3 (D354, H16)
+- Cause (emulator e679r13, POCKET x1.3 beside the pulled-out disc, window ~294 dp): one-line "Play game" missed two keys to a
+  view by ~10 dp, so the uniform row took its two-line keys (674c) - "Play / game" on two lines.
+- WinScenesStyled.kt (PocketQuestPanel, large text only): keys via PqSceneKey (side padding 6 dp, panel 10 dp); pqKeyTextSize
+  picks the largest key size of 12 / 11.5 / 11 / 10.5 / 10 sp at which every word stays on one line with two whole keys in view
+  (else 12 sp and the old two-line fallback). WinScenesMore.kt: KeyRow / UniformKeyRow / uniformRowPick take
+  twoLineOnlyWhenAlone (default false = every other layout unchanged): two-line keys only where one-line keys show one at a time.
+- Tests (cloud, compiled): PqPlayKeyOneLine681pTest 5/5 (the Robolectric row at the emulator's width failed with 2 lines before),
+  TwoLineKeys674Test 5/5, UniformKeys673Test 7/7 (status-line pin follows the new call), AchFirstRowRoboTest POCKET* 3/3; static PASS.
+- Not done: the home status pill ("n 2  Pla" is the sliding PlayStation 2 in a narrow pill - rule 11 slide; owner's look on HW-24).
+- Files: app/.../ui/WinScenesStyled.kt, ui/WinScenesMore.kt, test PqPlayKeyOneLine681pTest.kt, UniformKeys673Test.kt, trackers.
+  PC copy: src_copy/ui/WinScenesStyled.kt, src_copy/ui/WinScenesMore.kt. Hardware: HW-24 (KONKR) NOT TESTED.
+
+# Update 681e (17 Nov 2026, cloud run) - statuscheck grades where the profile picture sits (v0.6.74 item 6)
+- tools/qa/tools/statuscheck.py: new place_avatars - per visible profile picture: FAIL when it is not wholly on the screen, when
+  the status bar's picture ("bar") is outside every status cluster on screen, or when any visible text lies over it (> 2 px both
+  ways; its own initial, centred inside it, is part of it). PASS names the corner (top-left, top-right, ...). The layouts' own
+  pictures (Console hub / Resume / Spotlight "console", Channel "channel") sit in parts Edit Home can move, so their corner is
+  reported, not graded. The existing duplicate / cut checks are unchanged.
+- Selftest: TestAvatarPlace681e (4; the outside / text-over / off-screen cases pass on the old checker = would have missed them);
+  full QA selftest 207/207 OK; static checks PASS. No app code changed (nothing to compile, nothing to copy into app/).
+- Files: tools/qa/tools/statuscheck.py, tools/qa/selftest/test_qa.py, trackers.
+- Hardware: NOT TESTED on real dumps - rides along HW-24 (KONKR), no extra device time.
+
 # Update 681cr (17 Nov 2026, cloud run) - P2: Record crate tracklist's first track whole at x1.3 (CI red on the P2 branch)
 - Verify 310 was RED on the P2 branch's 1a6c5c9 (681a): AchFirstRowRoboTest CRATE x1.3 n=12 - the first track 94 of 137 px. The
   tracklist title shared the line with a dotted leader of the same weight, so it had half the line and wrapped to three lines.
