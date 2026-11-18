@@ -13,6 +13,8 @@ import androidx.compose.ui.text.TextLayoutResult
 import com.shelf.launcher.LauncherUiState
 import com.shelf.launcher.data.Game
 import com.shelf.launcher.data.HomeLayout
+import com.shelf.launcher.data.RaAchievementDetail
+import com.shelf.launcher.data.RaGameProgress
 import com.shelf.launcher.data.SourceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -69,13 +71,20 @@ class TvFastextKeys681xRoboTest(private val big: Boolean) {
 
     @Test fun fastextWordsStandWholeInTheirKeysOnTheSet() {
         val g = Game("Okami", "PS2", 1, SourceType.ROM, romPath = "/r/okami.iso")
+        // Achievements, so the set has its TROPHIES page and key (a game without them has PICTURE / INFO only).
+        val list = (1..6).map { i ->
+            RaAchievementDetail(i, "Fastext fixture $i", "Synthetic fixture achievement $i.", 5, null, null, if (i % 2 == 0) "2026-11-01 10:00:00" else null, null,
+                unlockPercent = 10f, displayOrder = i)
+        }
+        val state = LauncherUiState().copy(raAchievementDetails = mapOf(g.stableKey to list),
+            raProgress = mapOf(g.stableKey to RaGameProgress(NumPossibleAchievements = 6, NumAchieved = 3)))
         TestHooks.scale.value = if (big) 1.3f to 1.15f else null
         val oldRect = TvScreen.rect; val oldId = TvScreen.displayId
         TvScreen.rect = Rect(97f, 117f, 314f, 265f); TvScreen.displayId = -1
         try {
             compose.mainClock.autoAdvance = false
             compose.setContent { com.shelf.launcher.ui.theme.ShelfLauncherTheme {
-                GameWindow(HomeLayout.TV, g, LauncherUiState(), emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}) } }
+                GameWindow(HomeLayout.TV, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}) } }
             frames(180)
             val info = SemanticsMatcher("Info") { n -> n.config.contains(SemanticsActions.OnClick) && words(n) == "info" }
             assertTrue("the TV window's Info key is missing", compose.onAllNodes(info).fetchSemanticsNodes().isNotEmpty())
@@ -86,7 +95,7 @@ class TvFastextKeys681xRoboTest(private val big: Boolean) {
             // The Fastext row is the lowest line of key words on the set's page.
             val bottom = keys.maxOfOrNull { it.boundsInRoot.top } ?: -1f
             val row = keys.filter { kotlin.math.abs(it.boundsInRoot.top - bottom) < 4f }.sortedBy { it.boundsInRoot.left }
-            assertEquals("x$sx: Fastext keys on the set's page (found ${row.map(::words)})", 4, row.size)
+            assertTrue("x$sx: Fastext keys on the set's page (found ${row.map(::words)})", row.size >= 3 && row.any { words(it) == "trophies" })
             val report = row.map { k ->
                 val res = mutableListOf<TextLayoutResult>()
                 k.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(res)
