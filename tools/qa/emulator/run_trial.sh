@@ -87,7 +87,8 @@ timeout 30 adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | t
 if [ -z "$PID" ]; then note "LAUNCH: FAILED (no process; see crash_log.txt / launch_log.txt) - every check BLOCKED"; exit 0; fi
 note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt") (FATAL: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log.txt"); processes: $(grep -o 'Process: [^,]*' "$OUT/crash_log.txt" | sort -u | tr '\n' ' '))"
 adb shell mkdir -p /data/local/tmp
-for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh p2review.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
+# (682r: p2review.sh sources winguard.sh beside it - without it the review ended before its first log line, 44339661824)
+for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh p2review.sh winguard.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
 # 529p: preconditions before each sequence - emulator there, the QA app in front with nothing over its home (one visible
 # QA window: an in-app dialog is a second window with the same title), not on the profile picker. A failed precondition stops
 # the run: its sequence and every later one are NOT TESTED, with a screenshot of what was in front.

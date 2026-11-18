@@ -2906,5 +2906,13 @@ echo REACHED_END >> {d}/log.txt
             self.assertNotIn("k BUTTON_B 1.2; k BUTTON_B 1.4", src)
             self.assertIn("closewin", src)
 
+    def test_emulator_trial_pushes_what_p2review_sources_682r(self):
+        # (682r, run 44339661824: winguard.sh was not pushed - p2review's "." on it ended the run before its first log line)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        trial = open(os.path.join(os.path.dirname(self.DEV), "emulator", "run_trial.sh")).read()
+        push = next(l for l in trial.splitlines() if l.startswith("for f in ") and "p2review.sh" in l)
+        for dep in ("winguard.sh", "rec.sh"):
+            if dep in src: self.assertIn(dep, push, dep + " sourced by p2review.sh but not pushed to the emulator")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
