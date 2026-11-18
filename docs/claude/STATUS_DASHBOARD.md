@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682u · 2026-11-18 17:25 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4aa599a: RED (1 outdated test, fixed here) · effort: medium
+**1. LATEST UPDATE** - 683a · 2026-11-18 18:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4784060: GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic test run went red after the last change because one older check was still looking for the exact old wording of the Night window's code. The check now looks for the new code (it still makes sure words are never split). The app itself did not change.
+**2. WHAT CLAUDE JUST FIXED** - Six more game windows (Classic, Tiles, Dash, Side, Spot, Library) are now under the automatic cut-off-text checks, at normal and larger text size, including their More, Details, Options and Achievements pages. All six came back clean, so nothing in the app needed changing.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (682t): The automatic cut-off-text checks now cover your high-priority game windows too (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Icon bar). They found two real problems at large text size, both fixed: Night's system line split 'PlayStation 2' in the middle of the word (it now moves under its label when it doesn't fit beside it), and Pocket Ribbon's console fact did the same (it now shrinks a little instead). Needs a quick look on the KONKR.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm the test run is green again; then: Native pages: batch 2 review / batch 3; Same cut-off-text checks for the next game windows
+**5. WORKING ON NEXT** - now: Confirm the test run stays green; then: Native pages: batch 2 review / batch 3; Same checks for the next game windows (Circuit, Timeline, Shelf, Crate, Discs, Cube)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

@@ -1,3 +1,13 @@
+# Update 683a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: six more game windows under the window guards (test only)
+- CI first: Verify 310 GREEN on 4784060 (682u fix). Live P2 push 18:16 UTC < 1 h old -> v0.6.74 turn (P2 branch left alone).
+- WindowWordsSurvey682Test.NEXT_683: Classic (Volt panel), Tiles (Tile card; Grid shares it), Dash (Dash card), Side (Side
+  drawer), Spot (Spot poster), Library (Library page) joined all four guards (first page words, parent clip, More, Details /
+  Options / Achievements) at KONKR size x1.0 and x1.3. Result: all clean - 48 cases, 0 failed, 2 skipped (Side has no More);
+  no app change needed. 24 windows (scenes) now guarded.
+- Checks (cloud, compiled after one Maven 429 retry): the 48 new cases green; static checks PASS. Handheld NOT TESTED (no app
+  change, no HW request needed).
+- Files: app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt (test only).
+
 # Update 682u (18 Nov 2026, cloud run) - CI red fix: Batch513Test source guard follows 682t's Night value
 - CI first: Verify 310 on 4aa599a (682t) RED on both runners, one test: Batch513Test.narrowWindowsKeepWholeWords looked for the
   literal `WholeWordsText(value ?: "—", ...` in Night's stat row; 682t renamed it `shown` (beside the label OR stacked under it).

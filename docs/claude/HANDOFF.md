@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**18 Nov 18:40 UTC, 683a (cloud, v0.6.74 turn):** Verify 310 GREEN on 4784060 (682u). Live P2 push 18:16 UTC (< 1 h) -> v0.6.74
+turn. H16: Classic, Tiles (Grid shares its Tile card), Dash, Side, Spot, Library added to WindowWordsSurvey682Test (NEXT_683) -
+all four guards x1.0 + x1.3 clean (48 cases, cloud compiled), no app change. 24 window scenes guarded.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the last P2 push (18:16 UTC) is > 1 h old; else H16 next
+batch: Circuit (Chip sheet), Timeline, Shelf family (Index card), Crate (Record sleeve), Discs, Cube - then Cards, Greencore, Box,
+File select, Storage, Caseflow, Orbit, Airy, Blades, Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
 **18 Nov 17:25 UTC, 682u (cloud, CI fix):** Verify 310 on 4aa599a (682t) RED on both runners: Batch513Test.
 narrowWindowsKeepWholeWords searched Night's old `WholeWordsText(value ?: "—"` text (682t made it `shown`, beside or stacked).
 Guard updated to the same intent (val shown + exactly 2 WholeWordsText(shown ...)); app unchanged. Cloud Gradle blocked (Maven
