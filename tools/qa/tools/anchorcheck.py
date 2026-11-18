@@ -24,6 +24,9 @@ def visible(b):
     return s[2] > 0 and s[3] > 0
 
 
+PINNED = False   # --pinned: the 682e rule (the selected chip on Play's edge, 0 dp), for before / after of that rule
+
+
 def check_dump(path, tol_dp=2.0):
     name = os.path.basename(path).replace(".json", "")
     try:
@@ -52,9 +55,19 @@ def check_dump(path, tol_dp=2.0):
         return [qalib.Result(f"{lay} {name}", qalib.NOT_TESTED, f"not on screen: {miss}")], unmarked
     px, cx = play[0]["shown"][0], chip[0]["shown"][0]
     gap = (cx - px) / dens
-    ok = abs(gap) <= tol_dp
+    if PINNED:
+        ok = abs(gap) <= tol_dp
+        why = f"selected chip {gap:+.1f} dp from Play's left edge"
+    else:
+        # 682m (owner 18 Nov 14:54): the strip starts on Play's edge and scrolls naturally - the chip you're on is not pinned
+        # there; it must be whole and never left of the edge (the strip's start). Neighbours: by eye on the screenshots.
+        full, shown = chip[0]["full"], chip[0]["shown"]
+        whole = shown[2] >= full[2] - 1 and shown[3] >= full[3] - 1
+        ok = whole and gap >= -tol_dp
+        why = (f"selected chip {gap:+.1f} dp right of Play's left edge, whole" if ok else
+               (f"selected chip cut ({shown[2]} of {full[2]} px shown)" if not whole else f"selected chip {gap:+.1f} dp LEFT of Play's edge"))
     return [qalib.Result(f"{lay} {name}", qalib.PASS if ok else qalib.FAIL,
-                         f"selected chip {gap:+.1f} dp from Play's left edge (Play x {px}px, chip x {cx}px, density {dens:g})")], unmarked
+                         f"{why} (Play x {px}px, chip x {cx}px, density {dens:g})")], unmarked
 
 
 def main(argv):
@@ -63,6 +76,9 @@ def main(argv):
     for a in it:
         if a == "--json":
             json_out = next(it)
+        elif a == "--pinned":
+            global PINNED
+            PINNED = True
         elif a == "--tol":
             tol = float(next(it))
         else:
