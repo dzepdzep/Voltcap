@@ -26,6 +26,8 @@ qawins() { dumpsys window windows | grep -E "Window #|isVisible=" | grep -A1 "Wi
 # 0 when the dump [1] has the window's Play control focused (a focused node labelled Play), i.e. A would start the game.
 # (681x: the old ERE's [^]] bracket did not match under the device's toybox grep - the TV dump had Play focused and A was
 # pressed. One node per line (split on '{'; a node holds no nested object), then fixed-string matches only.)
+# (682f) the D-pad is on the "Hide from library" option row (QaClip: a focused node whose label carries it)
+onhide() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | grep -qF 'Hide from library'; }
 playfocused() { [ -s $O/$1.json ] && tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"label":"Play",' | grep -F '"kind":"control",' | grep -qF '"focused":true'; }
 launches() { logcat -d -s VoltcapQA | grep -c 'LAUNCH blocked'; }
 . /data/local/tmp/rec.sh 2>/dev/null
@@ -84,13 +86,23 @@ run)
     if [ "$(logcat -d -s VoltcapQA | grep -cF 'category App is empty here')" -gt "$e0" ]; then log "$lay: no Android app in the QA library - destructive confirmation NOT TESTED"
     elif openw $lay ${n}_app; then
       k BUTTON_L1 1.2; shot ${n}_app_options
-      for i in 1 2 3 4 5 6 7 8 9 10; do k DPAD_DOWN 0.5; done; sleep 0.6; shot ${n}_app_options_last
-      # (681v, review 44194071430: the App category did not take, the window was on a ROM game with 9 options, ten Downs left the
-      # list for the buttons and this A pressed Play - the QA app blocked the launch. A is pressed only on a focused option row.)
-      if playfocused ${TAG}_${n}_app_options_last; then log "$lay: focus left the options for Play - A NOT pressed (armed confirmation NOT TESTED)"
+      # (682f, review 44264372593: ten Downs left the list for the "B Back" hint and the A pressed it - back to Info, logged as
+      # armed. Now one Down at a time, the dump read after each: A only once "Hide from library" itself has the focus.)
+      j=0; found=0
+      while [ $j -lt 14 ]; do k DPAD_DOWN 0.5; sleep 0.3; shot ${n}_app_step$j
+        if onhide ${TAG}_${n}_app_step$j; then found=1; break; fi
+        if playfocused ${TAG}_${n}_app_step$j; then break; fi
+        j=$((j + 1)); done
+      cp $O/${n}_app_step$j.png $O/${n}_app_options_last.png 2>/dev/null
+      if [ $found = 0 ]; then log "$lay: the focus never reached 'Hide from library' ($j Downs) - A NOT pressed (armed confirmation NOT TESTED)"
       else
         k BUTTON_A 1.0; shot ${n}_app_armed
-        k DPAD_UP 0.9; shot ${n}_app_disarmed; log "$lay: destructive row armed and left (never confirmed)"
+        # (claimed only when the dump shows the confirmation line - text, not the log's hope)
+        if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${n}_app_armed.json 2>/dev/null; then
+          k DPAD_UP 0.9; shot ${n}_app_disarmed
+          if grep -qiE 'again to confirm|cover lifted|guarded switch' $O/${n}_app_disarmed.json 2>/dev/null; then log "$lay: FAIL - the confirmation stayed after moving off"
+          else log "$lay: destructive row armed (confirmation shown) and left (cancelled; never confirmed)"; fi
+        else log "$lay: FAIL - A on 'Hide from library' showed no confirmation"; fi
       fi
       k BUTTON_B 1.2; k BUTTON_B 1.4
     fi
