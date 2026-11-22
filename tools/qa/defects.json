@@ -4110,7 +4110,7 @@
    "title": "Storage boxes Info sheet at x1.3 on the RP Classic: the menu key 'ACHIEVEMENTS' breaks inside the word ('ACHIEVEMENT / S') at its smallest size",
    "rule": "R18",
    "severity": "low",
-   "status": "fixed 682z2 (storageCellsPerRow: cells a row from the measured word in the drawn style; StorageMenuWords682zRoboTest fails on the old code) - hardware recheck pending",
+   "status": "fixed 682z2 - VERIFIED RP Classic x1.3 fr13 (QA app 2763331, 22 Nov 20:29): ACHIEVEMENTS whole, one cell a row; KONKR x1.3 fk13 whole",
    "found": "2026-11-22 18:05 (pr14 STORAGE_info.png)"
   },
   {
@@ -4144,6 +4144,14 @@
    "severity": "low",
    "status": "QA tooling fixed 682ab (one Up back onto the grid's row, A only if not a key); not a product defect",
    "found": "2026-11-22 19:28"
+  },
+  {
+   "id": "D369",
+   "title": "Storage boxes: a coverless entry's sprite card was near-white under the name plate's white words (record's stand, RP Classic x1.3 fr13) - name barely readable",
+   "rule": "R18",
+   "severity": "low",
+   "status": "fixed 682ac (the game's placeholder colour, as every coverless card) - not in the review capture build 1ada6c8; hardware NOT TESTED",
+   "found": "2026-11-22 21:12 (fr13 STORAGE_info.png)"
   }
  ]
 }
