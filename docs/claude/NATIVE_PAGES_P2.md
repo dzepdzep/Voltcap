@@ -235,3 +235,22 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
   the fixes (the Classic chip failed before; Crate's "Sleeve notes" key is now matched as the details control).
 - Looked at, no change: Crate (whole words, confirmation whole), Resume (rows whole), TV (one-line sliding parts as 681v).
   Hub's medal discs show no badge art on the RP Classic (art loading there, not the page).
+
+### 682t / 682u - Spotlight, TV figure rule, Play slots (owner 18 Nov 21:28) - NOT owner-approved
+- Spotlight (SPOT_POSTER) own pages: THE PLOT (the poster's billing block + synopsis), THE CREDITS (end credits, badges as cast
+  photos, "BILLING:" order), BACKSTAGE (options as doors under a work light, red confirm strip on its own line). The pool of
+  light moves from the title onto the page. Batch 2 = 23 / 53 layouts implemented.
+- Play the same size in the same place on a layout's pages: KeyRow / UniformKeyRow `slots` - the main page's key count is kept
+  (rememberKeySlots, More closed) and a page row with fewer keys keeps the main page's slot width from the same start; a page
+  key wider than a slot takes the rest of the row, Play keeps its slot. Applied: Spotlight. Other layouts: queued (their rows).
+- NativeBadge: an achievement badge with a fallback mark (first letter on the layout's colour) under the picture - never an
+  empty black disc where badges don't load (RP Classic). Used by Spotlight; Hub / others: queued.
+- TV room figure (permanent rule R27): drawn in front where it stands, the window's text / keys kept out of its box, the panel
+  under the set starts past it. Teletext facts: label column as wide as the longest label, values whole words, stacked under
+  their labels on a set too narrow.
+- Hardware (QA app, build 0ac1f95, RP Classic only - the KONKR was not connected; 22 Nov 13:24-13:39): TV and Spotlight at x1.3
+  (t3r13) and x1.0 (t3r10) - every page, destructive row armed and left, 0 launches, fatal 0, restore OK / diff 0. TV: the
+  figure stands in front, no page text or key under it, at both scales. Spotlight: Play the same size and place on Info /
+  Details / Credits / Backstage; badge fallback "Q" shown (no badge pictures on the RP Classic). Found: a credit label could end
+  a line apart from its name ("GENRE" /) - fixed after the run with no-break spaces (not re-run).
+- KONKR: NOT TESTED for all of 682t / 682u.

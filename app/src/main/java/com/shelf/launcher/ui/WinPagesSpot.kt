@@ -107,7 +107,8 @@ private fun SpotPlot(ctx: WinSceneCtx, live: Boolean, light: Color, modifier: Mo
                 facts.forEachIndexed { i, f ->
                     if (i > 0) append("   ")
                     pushStyle(androidx.compose.ui.text.SpanStyle(color = SPOT_DIM, fontSize = 9.sp, fontWeight = FontWeight.Medium))
-                    append(spotCreditLabel(f.label) + " ")
+                    // (no-break spaces inside a credit: a label never ends a line apart from its name - RP Classic x1.0 "GENRE" /)
+                    append(spotCreditLabel(f.label).replace(' ', '\u00A0') + "\u00A0")
                     pop()
                     pushStyle(androidx.compose.ui.text.SpanStyle(color = Color.White, fontWeight = FontWeight.Bold))
                     append(f.value.uppercase())
