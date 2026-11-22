@@ -262,7 +262,8 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
 | TV room | yes + R27 figure (682u) | x1.3 pre-682u only | x1.0 + x1.3 PASS (0ac1f95) | NO |
 | Game magazine, Cinema, Arcade | yes (682r) | x1.3 (Arcade 682r2) | x1.3 (Magazine pre-682r2) | NO |
 | Cube | yes (682r) | x1.3 first walk | x1.3 first walk | NO |
-| Spotlight | yes (682t) | NOT TESTED | x1.0 + x1.3 PASS (0ac1f95) | NO |
+| Spotlight | yes (682t) | x1.0 + x1.3 PASS (b06044b) | x1.0 + x1.3 PASS | NO |
+| Terminal, Dashboard, Library, Card binder | yes (682w) | x1.0 + x1.3 PASS (b06044b) | x1.0 + x1.3 PASS (b06044b) | NO |
 
 ### Queued for the next handheld session (KONKR + RP Classic) - owner 18 Nov list
 1. TV room R27 on the KONKR (x1.0 / x1.3): open, close, switch pages with the figure in view.
@@ -294,3 +295,23 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
 | Dashboard | OVERVIEW - stat tiles grid + story card | PROGRESS - completion widget + list cards with points chips | SETTINGS - cards with chevrons | tab switch: fade up from 97 % |
 | Library | ABOUT THIS GAME - description panel + facts column | ACHIEVEMENTS - icon rows with the unlock-rate bar | MANAGE - manage menu | tab strip underline; slides in from the tab's side; banner steps back to a strip |
 | Card binder | CARD TEXT - stat line + italic flavour text box | MOVES - badge as the cost, points as the move's number | RULES - the rule box | the text box is dealt (rises in) |
+
+### 682x - full hardware pass, all 14 native-page layouts (owner 22 Nov "do it on the RP Classic all", KONKR connected too)
+QA app build b06044b (682v/w), the hardened p2review (winguard), synthetic library, 14:43-16:14 (longer than the usual 15-minute
+limit - the owner asked for all of them). Layouts: Crate, Classic, Hub, Resume, TV, Magazine, Cinema, Arcade, Cube, Spotlight,
+Terminal, Dashboard, Library, Card binder.
+| Run | Device | Scale | Result |
+|---|---|---|---|
+| all13 | RP Classic | x1.3 | 14 / 14 walked, every page; 0 launches; fatal 0; restore OK / diff 0 |
+| allk13 | KONKR | x1.3 | 14 / 14 (first start stopped "asleep" before any key, re-run); 0 launches; restore OK |
+| all10 | RP Classic | x1.0 | 14 / 14; 0 launches; restore OK |
+| allk10 | KONKR | x1.0 | 14 / 14; 0 launches; restore OK |
+- The only FAIL lines: Terminal "A on Hide from library showed no confirmation" on all four runs - a CHECKER miss: Terminal's
+  confirmation reads "ARE YOU SURE (Y/N)? A AGAIN = YES · MOVE AWAY = NO" (present in every dump and screenshot); p2review now
+  matches it (the device copies were the old script - a push raced the start). Confirmation = PASS by evidence.
+- Verified on both: TV figure in front, no page text / key under it (x1.0 + x1.3); Cube's two-step home (both opens); the
+  Resume no-art tile, Hub slim seat and medal letters, readable confirmations, Crate vertical keys at x1.3 on the KONKR.
+- Found: Dashboard / Library / Card binder at x1.3 - Play half-width on pages where a page key is wider than a slot (main Play
+  smaller) -> 682x: Play keeps its slot where the main row showed every key whole (not on hardware yet).
+- Not owner-approved: all 14. Device side: the RP Classic shows an Android install-confirmation prompt that was there before
+  the run (not ours) - left untouched.
