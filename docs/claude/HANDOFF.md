@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 13:50 UTC, 687a (cloud, v0.6.74 turn):** fcb4998's Verify 310 red = infra (one runner's dependency transform failed,
+no test ran; the other runner GREEN); cbf0226 (686a) Verify 310 was still running. H16: Terminal, Arcade, Arctic, Artlib, Custom +
+the shared-scene layouts Grid, Console stack, Coverflow details, Twin desk under all four window guards x1.0 + x1.3 (NEXT_687) -
+all clean, no app change. 52 of 53 layouts guarded (TV room left: needs tvRect).
+NEXT: check Verify 310 on cbf0226 and this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (else skip);
+v0.6.74: H16 TV room window (a test harness that opens it on a tvRect), then item 5 badgecheck (D357) if still open, then H12.
+
 **22 Nov 12:20 UTC, 686a (cloud, v0.6.74 turn):** Verify 310 GREEN on 5e76521 (685a). P2 left alone (a live session pushed the P2
 branch 12:03 UTC; its Verify 310 there is red - that session's to fix). H16: Orbit, Airy, Blades, Camera, Magazine, Shop under all
 four window guards x1.0 + x1.3 (NEXT_686) - Orbit x1.3 key label "ACHIEVEMENTS" broke inside the word: fixed (odLabelFit,

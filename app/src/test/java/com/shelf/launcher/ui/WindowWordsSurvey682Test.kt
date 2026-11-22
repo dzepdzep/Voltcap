@@ -62,6 +62,13 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         /** 686a: H16 next batch - Orbit, Airy, Blades, Pocket camera, Game magazine, Rental shop under the same four guards. */
         val NEXT_686 = listOf(HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.BLADES, HomeLayout.CAMERA, HomeLayout.MAGAZINE,
             HomeLayout.SHOP)
+        /** 687a: H16 last windows with their own scene - Terminal (run screen), Arcade (cabinet menu), Arctic (drawer), Artwork
+         *  library (gallery placard), Layout Studio (studio panel) under the same four guards - plus the layouts that share an
+         *  already-guarded scene (Grid: Tiles' card; Console stack, Coverflow details: the Index card; Twin desk: the Twin hinge),
+         *  since a scene can read its layout. (The TV room opens on the TV's own screen, which needs the home's tvRect and is not
+         *  reachable from GameWindow alone - not covered here.) */
+        val NEXT_687 = listOf(HomeLayout.TERMINAL, HomeLayout.ARCADE, HomeLayout.ARCTIC, HomeLayout.ARTLIB, HomeLayout.CUSTOM,
+            HomeLayout.GRID, HomeLayout.CONSOLES, HomeLayout.COVERDETAILS, HomeLayout.TWIN_DESK)
         /**
          * 682t: the owner's high-priority set first (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar - polished before the
          * survey existed, now under the same guards), then the owner's H16 order after Pocket / Night / Bar.
@@ -69,7 +76,7 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         val HIGH_PRIORITY = listOf(HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET, HomeLayout.NIGHT, HomeLayout.BAR)
         val LAYOUTS = HIGH_PRIORITY + listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
             HomeLayout.CHAN, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.MEMCARD, HomeLayout.BUBBLES, HomeLayout.PANELS,
-            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685 + NEXT_686
+            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685 + NEXT_686 + NEXT_687
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} x{1}")
