@@ -4096,6 +4096,30 @@
    "severity": "low",
    "status": "fixed in QA tooling 682r (TWO_STEP layouts: a declared second A on the confirmed home, never a retry)",
    "found": "2026-11-18 17:08 (KONKR p2k13b)"
+  },
+  {
+   "id": "D363",
+   "title": "Native pages: Play's size / place changed between a window's own pages (Card binder Options, Side menu Options, Storage boxes keys on the name line on some sheets only)",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "fixed 682y / 682z (pageKeySlots, pageAloneGeom, Side two-row room, Storage page-independent inline); verified KONKR + RP Classic x1.3 pk14 / pk15 / pr14 / pr15",
+   "found": "2026-11-22 16:52 (pk13 / pr13 QaClip dumps)"
+  },
+  {
+   "id": "D364",
+   "title": "Storage boxes Info sheet at x1.3 on the RP Classic: the menu key 'ACHIEVEMENTS' breaks inside the word ('ACHIEVEMENT / S') at its smallest size",
+   "rule": "R18",
+   "severity": "low",
+   "status": "open - pre-existing main-sheet key (StorageKey), not a native page; queued",
+   "found": "2026-11-22 18:05 (pr14 STORAGE_info.png)"
+  },
+  {
+   "id": "D365",
+   "title": "No-art plate broke the console's name inside a word on a slim picture ('PlayStatio / n 2', Card binder pages x1.3)",
+   "rule": "R18",
+   "severity": "low",
+   "status": "fixed 682y (noArtNameFits: the initials alone where the longest word can't fit; the name stays on the window's line)",
+   "found": "2026-11-22 (PageSheet review)"
   }
  ]
 }

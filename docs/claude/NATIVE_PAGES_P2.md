@@ -354,4 +354,8 @@ Terminal, Dashboard, Library, Card binder.
 - Play on the pages (QaClip): Card binder now the same on Details / Achievements / Options (fixed, PASS); Icon bar and Arctic
   the same on every page (PASS). Side menu - Options (Play alone) a row lower: FAIL -> 682z (two rows' room on pages).
   Storage boxes - keys on the name line on some pages and under the sheet on others (Play jumped): FAIL -> 682z (every page
-  decides as for Play + "Full details"; two slots). 682z not on hardware yet.
+  decides as for Play + "Full details"; two slots).
+- 682z on hardware (QA app 3d6d46f, x1.3, 18:28-18:36): pk15 KONKR + pr15 RP Classic, Side menu + Storage boxes - walked,
+  0 launches, fatal 0, restore diff 0; Play the same size and place on Details / Achievements / Options on both (PASS).
+- Found, pre-existing (not a native page): D364 Storage Info sheet "ACHIEVEMENT / S" at x1.3 on the RP Classic - queued.
+- Batch 4 x1.0 on hardware: NOT TESTED. Review page updated to 18 layouts (batch 4 strips x1.3). Approval: none yet.

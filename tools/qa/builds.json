@@ -1584,6 +1584,28 @@
    "base_commit": "claude/v0674-native-pages 69aafaf",
    "tree_hash": "claude/v0674-native-pages 69aafaf",
    "note": "682x Play slot (mainFit) - KONKR pk13 / RP Classic pr13 x1.3 Dashboard, Library, Card binder, Terminal"
+  },
+  {
+   "id": "qa-682y-d294cf2-ci",
+   "apk_sha256": "ac10b20340047d4902e752e33cee5fdbf6485fc3730103dad4719aee6775a2ea",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages d294cf2",
+   "tree_hash": "claude/v0674-native-pages d294cf2",
+   "note": "682y P2 batch 4 - KONKR pk14 / RP Classic pr14 x1.3"
+  },
+  {
+   "id": "qa-682z-3d6d46f-ci",
+   "apk_sha256": "edc80e912b568097bcf7248ecbd35b2473d0876ebc5cfa17e5c17331f2c7760f",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 3d6d46f",
+   "tree_hash": "claude/v0674-native-pages 3d6d46f",
+   "note": "682z Side / Storage Play place - KONKR pk15 / RP Classic pr15 x1.3"
   }
  ]
 }
