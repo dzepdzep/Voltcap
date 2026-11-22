@@ -254,3 +254,20 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
   Details / Credits / Backstage; badge fallback "Q" shown (no badge pictures on the RP Classic). Found: a credit label could end
   a line apart from its name ("GENRE" /) - fixed after the run with no-break spaces (not re-run).
 - KONKR: NOT TESTED for all of 682t / 682u.
+
+### Status board (owner 18 Nov: implementation, hardware verification and visual approval kept apart)
+| Layout | Implemented | HW KONKR | HW RP Classic | Owner visual approval |
+|---|---|---|---|---|
+| Record crate, Classic, Console hub, Resume & discover | yes (682s fixes) | x1.3 pre-682s only | x1.3 pre-682s only | NO - refinements queued |
+| TV room | yes + R27 figure (682u) | x1.3 pre-682u only | x1.0 + x1.3 PASS (0ac1f95) | NO |
+| Game magazine, Cinema, Arcade | yes (682r) | x1.3 (Arcade 682r2) | x1.3 (Magazine pre-682r2) | NO |
+| Cube | yes (682r) | x1.3 first walk | x1.3 first walk | NO |
+| Spotlight | yes (682t) | NOT TESTED | x1.0 + x1.3 PASS (0ac1f95) | NO |
+
+### Queued for the next handheld session (KONKR + RP Classic) - owner 18 Nov list
+1. TV room R27 on the KONKR (x1.0 / x1.3): open, close, switch pages with the figure in view.
+2. Spotlight on the KONKR; credit label no-break fix on either.
+3. Batch-1 refinements once built: Play slot consistency (Crate, Classic, Hub, Resume, Magazine, Cinema, Arcade, Cube rows),
+   Console hub horizontal room for achievements / options, Resume & discover no-art fallback (no large black area), badge
+   fallback in Hub medals / all pages (RP Classic), confirmation-text spacing.
+4. x1.0 for batch 1 + batch 2 (all nine layouts), Cube's 120-set second open and Options, Magazine on the RP Classic (682r2).
