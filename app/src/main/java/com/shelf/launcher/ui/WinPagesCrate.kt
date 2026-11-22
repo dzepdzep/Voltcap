@@ -243,6 +243,7 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
                                 Text(no, color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, modifier = Modifier.width(28.dp))
                                 // The badge as the record's centre label.
                                 Box(Modifier.size(24.dp).clip(CircleShape).background(ink.copy(alpha = 0.12f)).border(1.dp, ink.copy(alpha = 0.4f), CircleShape)) {
+                                    NativeBadgeMark(ach.title, earned, ink)
                                     AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                         colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.fillMaxSize())
@@ -318,9 +319,10 @@ private fun CratePressingNotes(ctx: WinSceneCtx, live: Boolean, ink: Color, red:
                         // (681b: the confirmation - printed in the sleeve's red under the line, as a warning sticker reads.)
                         // (682k: the sticker spans the line's width inside the row's margin - one line where it fits, wrapping whole words
                         // where it doesn't; it never meets the insert's edge or the list's scroll bar.)
-                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Serif, lineHeight = 14.sp,
-                            modifier = Modifier.fillMaxWidth().padding(top = 3.dp).border(1.dp, red).padding(horizontal = 6.dp, vertical = 2.dp))
+                        // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = red, fontSize = 12.sp, fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Serif, lineHeight = 16.sp,
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).border(1.dp, red).padding(horizontal = 8.dp, vertical = 4.dp))
                     }
                     if (on) Text("▸", color = red, fontSize = 14.sp, fontWeight = FontWeight.Black)
                 }

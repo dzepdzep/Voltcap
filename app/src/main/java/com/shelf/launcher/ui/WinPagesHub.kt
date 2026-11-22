@@ -161,9 +161,12 @@ private fun HubEngraved(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
 }
 
 @Composable
-private fun HubMedalDisc(url: String?, earned: Boolean, a: Color, size: androidx.compose.ui.unit.Dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(if (earned) Color.Black else Color.Black.copy(alpha = 0.35f))
+private fun HubMedalDisc(url: String?, earned: Boolean, a: Color, size: androidx.compose.ui.unit.Dp, title: String? = null) {
+    // (682v, RP Classic: earned medals were empty black discs where badge pictures don't load - the medal's letter on the
+    // hub's colour under the picture now)
+    Box(Modifier.size(size).clip(CircleShape).background(if (earned) a.copy(alpha = 0.35f) else Color.Black.copy(alpha = 0.35f))
         .border(if (earned) 2.dp else 1.dp, if (earned) a else Color(0xFF8A919C).copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
+        if (earned) NativeBadgeMark(title, true)
         if (earned) AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().padding(2.dp).clip(CircleShape))
         else Box(Modifier.size(size * 0.35f).clip(CircleShape).background(Color(0xFF15171B)).border(1.dp, Color(0xFF6A707A), CircleShape))
     }
@@ -183,7 +186,7 @@ private fun HubMedals(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
             val (pinned, more) = hubMedalRow(t.earned, room)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    t.gained.take(pinned).forEach { HubMedalDisc(com.shelf.launcher.data.RaBadges.url(it.badgeName), true, a, 26.dp) }
+                    t.gained.take(pinned).forEach { HubMedalDisc(com.shelf.launcher.data.RaBadges.url(it.badgeName), true, a, 26.dp, it.title) }
                     if (more > 0) Text("+$more", color = HUB_ENGRAVE, fontSize = 12.sp, fontWeight = FontWeight.Black)
                     if (t.earned == 0) Text(if (t.total > 0) "No medals yet" else "No medals for this game", color = HUB_ENGRAVE.copy(alpha = 0.6f), fontSize = 12.sp)
                 }
@@ -215,7 +218,7 @@ private fun HubMedals(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                                 drawCircle(Color(0xFF8A919C), r, Offset(size.width - m, m)); drawCircle(Color(0xFF8A919C), r, Offset(size.width - m, size.height - m))
                             }.padding(start = 6.dp, end = 12.dp, top = 5.dp, bottom = 5.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                HubMedalDisc(com.shelf.launcher.data.RaBadges.url(ach.badgeName), earned, a, 28.dp)
+                                HubMedalDisc(com.shelf.launcher.data.RaBadges.url(ach.badgeName), earned, a, 28.dp, ach.title)
                                 Spacer(Modifier.width(8.dp))
                                 Text(ach.title ?: "Untitled", color = if (earned) Color.White else HUB_ENGRAVE.copy(alpha = 0.7f), fontSize = 13.sp,
                                     fontWeight = if (on) FontWeight.Black else FontWeight.Bold, lineHeight = 16.sp, modifier = Modifier.weight(1f))
@@ -277,9 +280,10 @@ private fun HubSwitches(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                         WinFullText(o.label.uppercase(), color = if (o.destructive) HUB_COVER_RED else HUB_ENGRAVE, fontSize = 13.sp, maxLines = 2,
                             fontWeight = FontWeight.Black, letterSpacing = 1.sp, lineHeight = 17.sp)
                         o.sub?.let { WinFullText(it, color = HUB_ENGRAVE.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp) }
-                        if (armed) Text("Cover lifted - press A again to confirm, move away to cancel", color = HUB_COVER_RED, fontSize = 11.sp,
-                            fontWeight = FontWeight.Black, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp)
-                                .border(1.dp, HUB_COVER_RED, RoundedCornerShape(3.dp)).padding(horizontal = 5.dp, vertical = 2.dp))
+                        // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                        if (armed) Text("Cover lifted - press A again to confirm, move away to cancel", color = HUB_COVER_RED, fontSize = 12.sp,
+                            fontWeight = FontWeight.Black, lineHeight = 16.sp, modifier = Modifier.padding(top = 6.dp)
+                                .border(1.dp, HUB_COVER_RED, RoundedCornerShape(3.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
                     }
                 }
             }

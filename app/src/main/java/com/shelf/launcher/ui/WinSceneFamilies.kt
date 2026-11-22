@@ -535,20 +535,26 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
                 if (ctx.total > 0) Text("${ctx.earned}/${ctx.total}", color = Color(0xFFB0302A), fontSize = 13.sp, fontWeight = FontWeight.Black)
             }
             Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(pal.frame))
-            Row(Modifier.weight(1f, fill = false)) {
+            // (682w, P2 batch 3: the card's text box shows its other sections - CARD TEXT, MOVES, RULES - WinPagesCard.kt; the
+            // picture window steps back to a small one beside them.)
+            val onPage = ctx.page != WinPage.MAIN
+            Row(Modifier.weight(1f, fill = onPage)) {
                 // The picture window: the cover whole, at its own shape (no strip).
-                Box(Modifier.width(minOf(w * (if (short) 0.24f else 0.3f), 150.dp)).aspectRatio(0.72f).border(3.dp, pal.frame, RoundedCornerShape(4.dp)).padding(3.dp)) {
+                Box(Modifier.width(minOf(w * (if (onPage) 0.16f else if (short) 0.24f else 0.3f), 150.dp)).aspectRatio(0.72f).border(3.dp, pal.frame, RoundedCornerShape(4.dp)).padding(3.dp)) {
                     SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color(0xFF26221C))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text(ctx.console.uppercase() + (if (onPage) "  ·  " + cardSection(ctx.page) else ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(4.dp))
-                    SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink, omit = setOf("Console", "Year"))
+                    if (!onPage) SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink, omit = setOf("Console", "Year"))
+                    else NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "cardPage", move = ::cardMove) { pg, pageLive ->
+                        CardPage(ctx, pg, pageLive, ink, pal.rim, pal.star, Modifier.fillMaxSize())
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, if (k.primary) Color(0xFF2A2620) else Color.White, Color(0xFF2A2620), if (k.primary) pal.star else ink, pal.star,
                     ink.copy(alpha = 0.35f), ink, RoundedCornerShape(50), size = 11.sp)
             }
@@ -637,7 +643,7 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                 else CubePage(ctx, pg, pageLive, a, faceBottom, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, inkOn(a), Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
             }
         }
@@ -687,9 +693,14 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
         Row(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
             // The game seated in the console: its own case (a smaller seat while the plate shows another face).
             val aspect = sceneCaseAspect(ctx.g.platform)
-            val cw = minOf(w * (if (compact || ctx.page != WinPage.MAIN) 0.2f else 0.26f), 170.dp)
+            // (682v, owner 18 Nov: "Console Hub: improve available horizontal space for achievements and options" - on those two
+            // faces the seated case slims to a narrow seat, smoothly, and the gap tightens; Details keeps its 20 % seat.)
+            val slim = ctx.page == WinPage.TROPHIES || ctx.page == WinPage.OPTIONS
+            val cwTarget = minOf(w * (if (slim) 0.11f else if (compact || ctx.page != WinPage.MAIN) 0.2f else 0.26f), 170.dp)
+            val cw by androidx.compose.animation.core.animateDpAsState(cwTarget,
+                if (rememberAnimationsEnabled()) tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(), label = "hubSeat")
             SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(if (slim) 10.dp else 16.dp))
             Column(Modifier.weight(1f)) {
                 NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "hubPage", move = ::hubMove) { pg, pageLive ->
                     if (pg == WinPage.MAIN) Column {
@@ -699,7 +710,7 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
                     } else HubPage(ctx, pg, pageLive, Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx)) { k ->
+                KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                     SceneKeyStyled(k, if (k.primary) a else Color.Black.copy(alpha = 0.3f), Color.White, if (k.primary) inkOn(a) else Color.White, Color.Black,
                         Color.White.copy(alpha = 0.2f), Color.White, RoundedCornerShape(4.dp))
                 }

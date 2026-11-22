@@ -88,11 +88,31 @@ class NativePagesBatch2Test {
         // (682t, owner 18 Nov: Play the same size in the same place on every page) 4 slots in 400 px, 8 px apart: 94 px each
         val g = uniformSlotGeom(2, 4, 90, 400, 8)!!
         assertEquals(94, g.keyW); assertEquals(0, g.viewStart); assertEquals(0, g.firstW)
-        // a page key wider than a slot: Play keeps 94, the other takes the rest
-        val w = uniformSlotGeom(2, 4, 150, 400, 8)!!
-        assertEquals(94, w.firstW); assertEquals(400 - 94 - 8, w.keyW)
+        // a page key wider than a slot: the usual row (Play would be cut where the main row had scrolled)
+        assertEquals(null, uniformSlotGeom(2, 4, 150, 400, 8))
         assertEquals(null, uniformSlotGeom(4, 4, 90, 400, 8))    // the main page itself: the usual row
         assertEquals(null, uniformSlotGeom(2, 0, 90, 400, 8))    // no main page seen
         assertEquals(null, uniformSlotGeom(3, 4, 200, 400, 8))   // nothing fits whole: the usual (scrolling) row
+    }
+
+    @Test fun batch3PagesAreTheirOwn() {
+        // (682w) Terminal, Dashboard, Library, Card binder: their own pages, no shared page body left in their scenes
+        for (sc in listOf(WinScene.TERM_RUN, WinScene.DASH_CARD, WinScene.LIBRARY_PAGE, WinScene.CARD_BACK)) {
+            assertTrue("$sc", nativePages(sc))
+            for (p in WinPage.values()) assertFalse("$sc $p", sharedPageFor(sc, p))
+        }
+        assertEquals("DIR ACHIEVE\\ /O:RAREST_FIRST", termCommand(WinPage.TROPHIES, "TETRIS", "rarest first"))
+        assertEquals("TYPE TETRIS.TXT", termCommand(WinPage.DETAILS, "TETRIS"))
+        assertEquals("[X] FIRST BLOOD", termDirLine(true, "First blood")); assertEquals("[ ] UNTITLED", termDirLine(false, null))
+        assertEquals(" 10 PTS", termPoints(10)); assertEquals("  - PTS", termPoints(null))
+        assertEquals(50, dashPercent(5, 10)); assertEquals(0, dashPercent(3, 0))
+        assertEquals("ABOUT THIS GAME", libraryTab(WinPage.DETAILS)); assertEquals(0.5f, libraryRate(50f), 0.001f); assertEquals(1f, libraryRate(140f), 0.001f)
+        assertEquals("MOVES", cardSection(WinPage.TROPHIES)); assertEquals("—", cardMoveValue(null))
+        assertFalse(src("WinScenesConsole.kt").let { it.substring(it.indexOf("internal fun TerminalDialog("), minOf(it.length, it.indexOf("internal fun TerminalDialog(") + 9000)) }.contains("ctx.pageBody("))
+        for ((f, fn) in listOf("WinScenesHomes2.kt" to "internal fun DashCard(", "WinScenesHomes2.kt" to "internal fun LibraryPage(", "WinSceneFamilies.kt" to "internal fun CardTurnOver(")) {
+            val s = src(f); val i = s.indexOf(fn); val body = s.substring(i, s.indexOf("\n}\n", i))
+            assertFalse(fn, body.contains("ctx.pageBody("))
+            assertTrue(fn, body.contains("slots = sceneKeySlots(ctx)"))
+        }
     }
 }

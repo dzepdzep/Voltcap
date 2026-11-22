@@ -12,7 +12,7 @@ class PopupMore452Test {
         val v = src.substring(src.indexOf("internal fun VoltPanel(ctx: WinSceneCtx)"))
         // (P2 681c: Info's picture + facts sit in the panel's page area - on Info it gives way (fill = false) exactly as the row did.)
         val top = v.indexOf("NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN)")
-        val keys = v.indexOf("KeyRow(sceneKeys(ctx))")
+        val keys = v.indexOf("KeyRow(sceneKeys(ctx)")
         assertTrue("picture + facts give way", top in 0 until keys)
     }
 }

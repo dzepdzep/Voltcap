@@ -169,6 +169,7 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
                                 }
                                 Spacer(Modifier.width(6.dp))
                                 Box(Modifier.size(24.dp).background(st.ink.copy(alpha = 0.1f))) {
+                                    NativeBadgeMark(ach.title, earned, st.ink)
                                     AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                         colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.size(24.dp))
@@ -224,8 +225,9 @@ private fun MagServices(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier:
                             fontSize = 13.sp, maxLines = 2, lineHeight = 16.sp, modifier = Modifier.weight(1f))
                     }
                     o.sub?.let { WinFullText(it, color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp) }
+                    // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
                     if (armed) Text("Press A again to confirm  ·  move away to cancel", color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black,
-                        fontSize = 11.sp, lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).border(1.5.dp, st.accent).padding(horizontal = 6.dp, vertical = 2.dp))
+                        fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).border(1.5.dp, st.accent).padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
         }

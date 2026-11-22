@@ -28,7 +28,7 @@ class CrateVertical674Test {
     @Test fun onlyTheCrateSleeveTurnsVertical() {
         val s = src("WinScenesMore.kt")
         val body = s.substring(s.indexOf("internal fun RecordSleeve("), s.indexOf("internal fun crateKeysVertical("))
-        assertTrue(body.contains("if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER))"))
+        assertTrue(body.contains("val vertNow = crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)"))
         assertTrue(body.contains("UniformKeyColumn(actions, 6.dp, fill = true)"))
         assertTrue(body.contains("else Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll))"))
         // no other scene calls the crate's rule

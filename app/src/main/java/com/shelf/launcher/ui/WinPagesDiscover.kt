@@ -174,6 +174,7 @@ private fun FeedTrophy(ach: com.shelf.launcher.data.RaAchievementDetail, a: Colo
             .border(if (on) 2.dp else 0.dp, if (on) a else Color.Transparent, RoundedCornerShape(12.dp)).padding(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(34.dp).clip(RoundedCornerShape(9.dp)).background(Color.Black)) {
+                    NativeBadgeMark(ach.title, earned)
                     AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                         colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.fillMaxSize())
@@ -271,8 +272,9 @@ private fun DiscoverSettings(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
                         }
                         Text("›", color = if (on) c else Color.White.copy(alpha = 0.4f), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
-                    if (armed) Text("Press A again to confirm · move away to cancel", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, lineHeight = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp).clip(RoundedCornerShape(50)).background(DISCOVER_RED).padding(horizontal = 8.dp, vertical = 3.dp))
+                    // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                    if (armed) Text("Press A again to confirm · move away to cancel", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
+                        modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(50)).background(DISCOVER_RED).padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
         }

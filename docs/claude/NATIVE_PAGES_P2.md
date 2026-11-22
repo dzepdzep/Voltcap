@@ -271,3 +271,26 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
    Console hub horizontal room for achievements / options, Resume & discover no-art fallback (no large black area), badge
    fallback in Hub medals / all pages (RP Classic), confirmation-text spacing.
 4. x1.0 for batch 1 + batch 2 (all nine layouts), Cube's 120-set second open and Options, Magazine on the RP Classic (682r2).
+
+### 682v - batch-1 refinements (owner 18 Nov list; owner 22 Nov "1 and then 2") - NOT owner-approved, HW NOT TESTED
+- Play the same size and place on a layout's pages (KeyRow `slots`, the main page's key count): Classic, Console hub, Cube,
+  Spotlight, Dashboard, Library, Card binder; Record crate keeps the main page's arrangement (x1.3 vertical menu stays vertical
+  on its pages, one key in view, the stack scrolls; x1.0 row). Where a page key is wider than a slot the usual row is used (a
+  variant that kept Play's slot cut Play where the main row had scrolled - ShelfText CUBE / CRATE x1.3 - and was dropped).
+  Not changed: Game magazine (vertical key menu on its cover, a row on its pages - 682r), Cinema (the big Play button on its main
+  page by design), Resume & discover (its main row scrolls), Arcade (a vertical menu, Play first everywhere already).
+- Console hub: on MEDALS and the SWITCH PANEL the seated case slims to 11 % (animated), the gap 10 dp - more width for the rows.
+- Resume & discover: no picture (or one that never loads) = the game's discover tile (its colour, console and name), never a
+  big black square.
+- Badges: the fallback mark (the achievement's first letter) under every page's badge picture - Crate, Classic, Hub (medals in
+  the hub's colour), Resume, Magazine, Cinema, Cube, Spotlight, Dashboard, Library, Card binder.
+- Confirmation text: 12 sp on a 16 sp line, 6 dp above it, 8 x 4 dp inside its box, on every native page.
+- Tests: TvFrontKeepOut682u, NativePagesBatch2 (slots, badges, batch 3), CrateInsertRoom681s still 2 whole tracks at x1.3.
+
+### 682w - P2 batch 3 (owner 22 Nov) - implemented, NOT owner-approved, HW NOT TESTED (27 / 53 layouts)
+| Layout | Details | Achievements | Options | Motion |
+|---|---|---|---|---|
+| Terminal | C:\> TYPE <GAME>.TXT - the story typed out | C:\> DIR ACHIEVE\ /O:<order> - a directory listing, [X] earned, points as size | C:\> SETUP - numbered menu, "ARE YOU SURE (Y/N)?" | types in line by line from the prompt; the command menu on the right never moves |
+| Dashboard | OVERVIEW - stat tiles grid + story card | PROGRESS - completion widget + list cards with points chips | SETTINGS - cards with chevrons | tab switch: fade up from 97 % |
+| Library | ABOUT THIS GAME - description panel + facts column | ACHIEVEMENTS - icon rows with the unlock-rate bar | MANAGE - manage menu | tab strip underline; slides in from the tab's side; banner steps back to a strip |
+| Card binder | CARD TEXT - stat line + italic flavour text box | MOVES - badge as the cost, points as the move's number | RULES - the rule box | the text box is dealt (rises in) |

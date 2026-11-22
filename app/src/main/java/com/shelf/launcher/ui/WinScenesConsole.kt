@@ -1189,7 +1189,16 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             val cut = kotlin.math.floor(shown * lines) * lineH
             clipRect(0f, 0f, size.width, cut) { this@drawWithContent.drawContent() }
         }) {
-            Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
+            // (682w, P2 batch 3: the pages are commands typed at the prompt, their output here - WinPagesTerm.kt; the menu on
+            // the right stays as it is on every page.)
+            if (ctx.page != WinPage.MAIN) Column(Modifier.weight(0.55f).fillMaxHeight()) {
+                Text("C:\\> " + termCommand(ctx.page, TermNav.alias(ctx.g)), style = style.copy(color = tc.dim), maxLines = 2)
+                // (whole, wrapped in its column - a one-line sliding name ran under the command menu, ShelfText)
+                WholeWordsText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(top = 4.dp), label = "termPage", move = ::termMove) { pg, pageLive ->
+                    TermPage(ctx, pg, pageLive, style, tc.fg, tc.dim, tc.accent, tc.hi, tc.hiInk, Modifier.fillMaxSize())
+                }
+            } else Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
                 WinFullText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, lineHeight = style.lineHeight, maxLines = 3, style = style)
@@ -1206,7 +1215,6 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(6.dp))
                     Text(it.uppercase(), style = style.copy(color = tc.dim, fontSize = fs * 0.85f), maxLines = 7)
                 }
-                if (ctx.page != WinPage.MAIN) Box(Modifier.fillMaxWidth().height(h * 0.5f).padding(top = 6.dp).border(1.dp, tc.dim)) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll())) {

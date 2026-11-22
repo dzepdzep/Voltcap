@@ -61,7 +61,15 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (682q: Cube menu - the cube's other faces: specs tiles, a wall of little cubes, square control keys, WinPagesCube.kt.)
     WinScene.CUBE_FACE,
     // (682t: Spotlight - the poster's billing block, the end credits and backstage, WinPagesSpot.kt.)
-    WinScene.SPOT_POSTER)
+    WinScene.SPOT_POSTER,
+    // (682w, P2 batch 3: Terminal - TYPE / DIR / SETUP at the prompt, WinPagesTerm.kt.)
+    WinScene.TERM_RUN,
+    // (682w: Dashboard - Overview / Progress / Settings tabs, WinPagesDash.kt.)
+    WinScene.DASH_CARD,
+    // (682w: Library - About this game / Achievements / Manage under a tab strip, WinPagesLibrary.kt.)
+    WinScene.LIBRARY_PAGE,
+    // (682w: Card binder - CARD TEXT / MOVES / RULES in the card's text box, WinPagesCard.kt.)
+    WinScene.CARD_BACK)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

@@ -210,9 +210,11 @@ internal fun DashCard(ctx: WinSceneCtx) {
         // two titles fought. The name now sits just under the art, on the card; the art strip is unchanged.)
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 2.dp)) {
             StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(if (ctx.page == WinPage.MAIN) ctx.console else ctx.console + "  ·  " + dashPageName(ctx.page), color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = false)) {
+        // (682w, P2 batch 3: the dashboard's other tabs - Overview, Progress, Settings - WinPagesDash.kt, in the card's room above
+        // the keys; the tab's name beside the console line.)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
             if (ctx.page == WinPage.MAIN) {
                 // Three stat widgets.
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -226,10 +228,12 @@ internal fun DashCard(ctx: WinSceneCtx) {
                 // (Update 476, D255: the story ended after 3 lines, cut silently mid-sentence. Whole lines, and a cue to Details
                 // when there's more.)
                 ctx.summary?.let { StoryWithCue(it, Color.White.copy(alpha = 0.7f), a, 11.sp, 14.sp, 3, Modifier.padding(top = 8.dp).fillMaxWidth()) }
-            } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
+            } else NativePages(ctx, Modifier.fillMaxWidth().weight(1f), label = "dashPage", move = ::dashMove) { pg, pageLive ->
+                DashPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
         }
         Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp)) {
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
                     Color.White.copy(alpha = 0.1f), a, RoundedCornerShape(8.dp), height = 34.dp)
             }
@@ -475,7 +479,11 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
         // keys one per line and the facts a 14 dp sliver showing half a line; it now leaves the card at least 290 dp).
         val side = minOf(h, (w - 10.dp - 290.dp).coerceAtLeast(140.dp))
         Box(Modifier.size(side).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
-            (ctx.cover ?: ctx.wide)?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+            // (682v, owner 18 Nov: "Resume & Discover: avoid large empty black areas when artwork is unavailable" - with no
+            // picture, or one that does not load, the square is the game's own discover tile: its colour, console and name.)
+            val noArt: @Composable (Modifier) -> Unit = { m -> DiscoverNoArt(ctx, a, m) }
+            (ctx.cover ?: ctx.wide)?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover), noArt = noArt) }
+                ?: noArt(Modifier.fillMaxSize())
             Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
         }
@@ -495,6 +503,19 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
                     Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp, primaryStyled = true, lineHeight = 15.sp, wide = true)
             }
+        }
+    }
+}
+
+/** 682v: the discover square with no picture - a tile in the game's colour washed with the theme's, its console and its name. */
+@Composable
+private fun DiscoverNoArt(ctx: WinSceneCtx, accent: Color, modifier: Modifier) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)).background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), Color.Black.copy(alpha = 0.55f))))
+        .padding(horizontal = 14.dp, vertical = 30.dp), contentAlignment = Alignment.BottomStart) {
+        Column {
+            Text(ctx.console.uppercase(), color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Spacer(Modifier.height(4.dp))
+            WholeWordsText(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black, lineHeight = 26.sp)
         }
     }
 }
@@ -568,7 +589,8 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
         shape = RoundedCornerShape(4.dp); clip = true
     }.background(ground)) {
         // The hero banner across the top, logo on it.
-        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
+        // (682w, P2 batch 3: on the page's own sections the banner steps back to a strip - the sections get the room.)
+        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * (if (ctx.page == WinPage.MAIN) 0.36f else 0.2f), 200.dp)).background(Color.Black)) {
             (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, ground))))
             Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
@@ -579,13 +601,13 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
         // The play bar: the big green Play, then the stats.
         Row(Modifier.fillMaxWidth().background(bar).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
-                KeyRow(sceneKeys(ctx)) { k ->
+                KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                     SceneKeyStyled(k, if (k.primary) green else Color.White.copy(alpha = 0.08f), if (k.primary) androidx.compose.ui.graphics.lerp(green, Color.White, 0.25f) else Color.White.copy(alpha = 0.2f),
                         Color.White, com.shelf.launcher.ui.theme.textOn(if (k.primary) androidx.compose.ui.graphics.lerp(green, Color.White, 0.25f) else Color.White.copy(alpha = 0.2f), Color.White), Color.Transparent, Color.White, RoundedCornerShape(3.dp), height = if (k.primary) 40.dp else 34.dp, upper = k.primary)
                 }
             }
         }
-        Column(Modifier.padding(14.dp).weight(1f, fill = false)) {
+        Column(Modifier.padding(14.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
             if (ctx.page == WinPage.MAIN) {
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     listOf("LAST PLAYED" to (ctx.last ?: "Never"), "PLAY TIME" to ctx.played, "ACHIEVEMENTS" to (if (ctx.total > 0) "${ctx.earned}/${ctx.total}" else "—")).forEach { (l, v) ->
@@ -597,7 +619,14 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
                 }
                 // (674g, KONKR x1.3 k674f with More open: no room left for the story - it gives way by design (Details has it whole).)
                 ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.semantics { this[QaClip.GivesWay] = true }.padding(top = 8.dp)) }
-            } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
+            } else {
+                // (682w: the page's sections under a tab strip - ABOUT THIS GAME, ACHIEVEMENTS, MANAGE - WinPagesLibrary.kt.)
+                LibraryTabs(ctx, green)
+                Spacer(Modifier.height(6.dp))
+                NativePages(ctx, Modifier.fillMaxWidth().weight(1f), label = "libraryPage", move = ::libraryMove) { pg, pageLive ->
+                    LibraryPagesBody(ctx, pg, pageLive, bar, green, Modifier.fillMaxSize())
+                }
+            }
         }
     }
 }
@@ -683,7 +712,7 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
             } else VoltPage(ctx, pg, pageLive, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(8.dp), height = 36.dp)
             }

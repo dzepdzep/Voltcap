@@ -219,6 +219,7 @@ private fun VoltCells(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                                 }
                                 Spacer(Modifier.width(8.dp))
                                 Box(Modifier.size(28.dp).clip(RoundedCornerShape(5.dp)).background(Color.Black)) {
+                                    NativeBadgeMark(ach.title, earned)
                                     AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                         colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                         alpha = if (earned) 1f else 0.5f, modifier = Modifier.fillMaxSize())
@@ -288,9 +289,10 @@ private fun VoltSwitches(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                     Column(Modifier.weight(1f)) {
                         WinFullText(o.label, color = if (o.destructive) VOLT_GUARD else Color.White, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.Bold, lineHeight = 18.sp)
                         o.sub?.let { WinFullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp) }
-                        if (armed) Text("Guarded switch - press A again to confirm, move away to cancel", color = VOLT_GUARD, fontSize = 11.sp,
-                            fontWeight = FontWeight.Black, lineHeight = 14.sp, modifier = Modifier.padding(top = 3.dp)
-                                .border(1.dp, VOLT_GUARD, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 2.dp))
+                        // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                        if (armed) Text("Guarded switch - press A again to confirm, move away to cancel", color = VOLT_GUARD, fontSize = 12.sp,
+                            fontWeight = FontWeight.Black, lineHeight = 16.sp, modifier = Modifier.padding(top = 6.dp)
+                                .border(1.dp, VOLT_GUARD, RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
                     }
                     // (682s, KONKR / RP Classic x1.3 review: the ON / OFF word beside each switch said the row's focus, not the
                     // option's state - "Add to favorites OFF", "Game settings ON" read as settings - and sat on the armed row's

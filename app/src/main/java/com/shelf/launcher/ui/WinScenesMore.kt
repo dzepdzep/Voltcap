@@ -172,12 +172,15 @@ internal fun uniformSlotGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int
     val w = (width - (slots - 1) * gap) / slots
     if (w <= 0) return null
     if (need <= w) return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
-    // A page key wider than a slot ("FULL DETAILS" at x1.3): Play keeps its slot, the page's other keys share the rest.
-    if (n < 2) return null
-    val rest = (width - w - gap - (n - 2) * gap) / (n - 1)
-    if (rest < need) return null
-    return UniformRowGeom(rest, n, false, rest + gap, 0, 0, width, firstW = w)
+    // A page key wider than a slot ("FULL DETAILS" at x1.3): the usual row. (682v: a "Play keeps its slot, the rest share the
+    // row" variant cut Play itself where the main page's row had scrolled - its slot was narrower than Play's word, ShelfText
+    // CUBE / CRATE x1.3 - so it is gone; [UniformRowGeom.firstW] stays 0.)
+    return null
 }
+
+/** 682v: [rememberKeySlots] for a window's own key row (sceneKeys). */
+@Composable
+internal fun sceneKeySlots(ctx: WinSceneCtx): Int = rememberKeySlots(ctx.page, sceneKeys(ctx))
 
 /** 682t: the main page's action-key count, kept while the window turns its own pages (KeyRow's slots) - counted on the main
  *  page with More closed (its open list - "Less" - is not the row Play sits in). [keys] are this page's. */
@@ -700,7 +703,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 }
             } else CratePage(ctx, pg, pageLive, paper, ink, red, Modifier.fillMaxSize())
             }
-            Spacer(Modifier.height(8.dp))
+            // (682v: 4 dp on the sleeve's own pages - with the keys kept vertical there, the tracklist's second track was 2 px short)
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
             // (672a, f672e hierarchy: PLAY 218 px wide beside SLEEVE NOTES 378 px - the sleeve's long word made Play the smaller
             // key. Play is as wide as Sleeve notes now, its word centred - as far as the two still share their row: KONKR x1.3
             // (k673a) has no room for two keys that wide, and a Play alone on its row pushed the ••• off the sleeve.)
@@ -718,14 +722,23 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             // scrolling the stack smoothly; the track list keeps its room above. Only here - no other row turns vertical.)
             val actions = keys.filterNot { it.status }
             val widest = actions.maxOfOrNull { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: 0.dp
-            if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)) {
+            // (682v, owner 18 Nov: Play the same size in the same place on every page - the sleeve's own pages keep the main
+            // page's arrangement: a vertical menu there (x1.3) stays a vertical menu on the liner notes, the tracklist and the
+            // pressing notes, instead of a row whose Play changed size page by page.)
+            val vertNow = crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)
+            val mainVert = remember { mutableStateOf<Boolean?>(null) }
+            if (ctx.page == WinPage.MAIN && keys.none { it.label == "Less" } && mainVert.value != vertNow) mainVert.value = vertNow
+            if (if (ctx.page == WinPage.MAIN) vertNow else mainVert.value ?: vertNow) {
                 val keyH = 34.dp
                 // (675r, n675d: the status line under the keys ("Save sync is not set up", ~36 dp at x1.3) was not counted, so three
                 // keys left the list less than one row. Its height is measured and reserved too.)
                 val status = keys.filter { it.status }
                 var statusH by remember { mutableStateOf(0.dp) }
                 val statusRoom = if (status.isEmpty()) 0.dp else if (statusH > 0.dp) statusH + 6.dp else CRATE_STATUS_GUESS * status.size
+                // (682v: on the sleeve's own pages, kept vertical as on the main page, one key in view at a time (the stack scrolls) - the tracklist
+                // keeps two whole tracks at x1.3 (CrateInsertRoom681s); Play stays the first, the same width.)
                 val shown = crateVisibleKeys(regionH, keyH, 6.dp, (if (ctx.page == WinPage.MAIN) 46.dp else 0.dp) + statusRoom, actions.size)
+                    .let { if (ctx.page == WinPage.MAIN) it else it.coerceAtMost(1) }
                 // (674g, owner review prep f674f / k674f: the fade at the stack's foot hid the last key's lower edge - it read as cut.
                 // The view holds whole keys exactly, so no fade; a hair of room for the keys' borders.)
                 Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp).verticalScroll(keyScroll)) {
@@ -741,7 +754,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                     }
                 }
             } else Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
-                KeyRow(keys) { a ->
+                KeyRow(keys, slots = rememberKeySlots(ctx.page, keys)) { a ->
                     SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
                         minWidth = if (a.primary) playMin else Dp.Unspecified)
                 }

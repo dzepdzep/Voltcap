@@ -150,6 +150,7 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
                                 // The still with its progress bar under it (full = earned).
                                 Column(Modifier.width(52.dp)) {
                                     Box(Modifier.size(52.dp, 32.dp).clip(RoundedCornerShape(2.dp)).background(Color.Black)) {
+                                        NativeBadgeMark(ach.title, earned)
                                         AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                             colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                             alpha = if (earned) 1f else 0.6f, modifier = Modifier.fillMaxSize())
@@ -207,8 +208,9 @@ private fun CinemaMyList(ctx: WinSceneCtx, live: Boolean, accent: Color, modifie
                     Column(Modifier.weight(1f)) {
                         WinFullText(o.label, color = ink, fontSize = 14.sp, maxLines = 2, fontWeight = FontWeight.Bold, lineHeight = 18.sp)
                         o.sub?.let { WinFullText(it, color = CINEMA_LABEL, fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp) }
-                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                            lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(3.dp)).background(CINEMA_PAGE_RED)
+                        // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            lineHeight = 16.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(3.dp)).background(CINEMA_PAGE_RED)
                                 .padding(horizontal = 6.dp, vertical = 3.dp))
                     }
                 }

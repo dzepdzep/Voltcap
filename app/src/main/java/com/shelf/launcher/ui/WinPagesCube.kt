@@ -182,6 +182,7 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
                                 LittleCube(earned, a, Modifier.size(16.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Box(Modifier.size(26.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black)) {
+                                    NativeBadgeMark(ach.title, earned)
                                     AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                         colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
                                         alpha = if (earned) 1f else 0.55f, modifier = Modifier.fillMaxSize())
@@ -236,8 +237,9 @@ private fun CubeControls(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color
                     Column(Modifier.weight(1f)) {
                         WinFullText(o.label, color = if (o.destructive) CUBE_DANGER else Color.White, fontSize = 13.sp, maxLines = 2, fontWeight = FontWeight.Bold, lineHeight = 16.sp)
                         o.sub?.let { WinFullText(it, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp) }
-                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black,
-                            lineHeight = 14.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).clip(RoundedCornerShape(3.dp)).background(CUBE_DANGER.copy(alpha = 0.85f))
+                        // (682v, owner 18 Nov: the confirmation readable and spaced - 12 sp on 16, a 6 dp gap above, room inside its box)
+                        if (armed) Text("Press A again to confirm  ·  move away to cancel", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black,
+                            lineHeight = 16.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clip(RoundedCornerShape(3.dp)).background(CUBE_DANGER.copy(alpha = 0.85f))
                                 .padding(horizontal = 6.dp, vertical = 2.dp))
                     }
                 }

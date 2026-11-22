@@ -240,3 +240,11 @@ internal fun NativeBadge(badgeName: String?, title: String?, earned: Boolean, ac
 
 /** The fallback mark: the title's first letter or digit, upper case; "★" with none. Pure. */
 internal fun nativeBadgeMark(title: String?): String = title?.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "★"
+
+/** 682v: [NativeBadge]'s fallback mark alone, for a page's own badge frame - drawn under the picture, so a badge that never
+ *  loads shows the achievement's letter instead of an empty black tile (RP Classic, owner 18 Nov). */
+@Composable
+internal fun androidx.compose.foundation.layout.BoxScope.NativeBadgeMark(title: String?, earned: Boolean, ink: Color = Color.White) {
+    Text(nativeBadgeMark(title), color = ink.copy(alpha = if (earned) 0.85f else 0.45f), fontWeight = FontWeight.Black, fontSize = 11.sp,
+        maxLines = 1, softWrap = false, modifier = Modifier.align(Alignment.Center))
+}
