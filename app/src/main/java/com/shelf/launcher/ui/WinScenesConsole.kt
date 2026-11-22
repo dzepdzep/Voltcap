@@ -919,7 +919,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(4.dp))
                     // (674e: the page's keys identical keys, 26 dp, the lit one ringed; 682r: side by side in one row - stacked
                     // they took two lines from the page at x1.3)
-                    UniformKeyRow(btns, 6.dp) { a ->
+                    // (682af, KONKR x1.0 gk10: PLAY IT! alone on the coupons page was a short key in the middle - two page slots)
+                    UniformKeyRow(btns, 6.dp, slots = PAGE_SLOTS) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                 .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {

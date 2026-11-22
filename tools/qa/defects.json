@@ -4152,6 +4152,14 @@
    "severity": "low",
    "status": "fixed 682ac (the game's placeholder colour, as every coverless card) - not in the review capture build 1ada6c8; hardware NOT TESTED",
    "found": "2026-11-22 21:12 (fr13 STORAGE_info.png)"
+  },
+  {
+   "id": "D370",
+   "title": "Game magazine and Arcade pages x1.0 (KONKR gk10, build 1ada6c8): Play moved on Options - Magazine's PLAY IT! a short key in the middle, Arcade's PRESS START a row lower (one menu line fewer under the screen)",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "fixed 682af (Magazine: two page slots; Arcade: the missing line held by an unseen measure-only row that keeps the 24 dp touch height) - PlayPlace682abRoboTest now covers both (its Play words: PLAY IT, PRESS START); hardware re-check pending",
+   "found": "2026-11-22 22:10 (gk10)"
   }
  ]
 }

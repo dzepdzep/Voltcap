@@ -160,6 +160,12 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                             }
                             Spacer(Modifier.height(4.dp))
                             ctx.buttons.forEach { a -> ArcadeMenuRow(a, font, line, compact) }
+                            // (682af, KONKR x1.0 gk10: on SERVICE MODE - PRESS START alone - the screen above took the second row's room
+                            // and PRESS START sat a row lower than on the other screens. A page keeps two rows: the missing one is
+                            // held by an unseen row - no focus, touch or semantics (LocalMeasureOnly).)
+                            if (ctx.buttons.none { !it.primary && !it.back && !it.status }) Box(Modifier.graphicsLayer { alpha = 0f }.clearAndSetSemantics { }) {
+                                androidx.compose.runtime.CompositionLocalProvider(LocalMeasureOnly provides true) { ArcadeMenuRow(PAGE_KEY_REF, font, line, compact) }
+                            }
                         }
                     }
                 }

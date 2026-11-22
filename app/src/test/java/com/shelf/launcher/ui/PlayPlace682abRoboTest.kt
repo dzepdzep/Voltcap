@@ -38,7 +38,7 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1}")
         fun cases(): List<Array<Any>> = AchFirstRowRoboTest.NATIVE.filter { it != HomeLayout.TV }
             .flatMap { l -> listOf(arrayOf<Any>(l, false), arrayOf<Any>(l, true)) }
-        private val PLAY = setOf("play", "run", "power on", "insert coin", "start")
+        private val PLAY = setOf("play", "run", "power on", "insert coin", "start", "play it", "press start")
     }
 
     private val compose = createComposeRule()

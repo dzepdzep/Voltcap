@@ -375,7 +375,12 @@ internal object WinClickProbe { @Volatile var clicks: Int = 0 }
 @Composable
 internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp, content: @Composable BoxScope.(Boolean) -> Unit) {
     // (682ab: a page row's measuring reference - drawn, never focused, touched or heard - UniformKeyRow)
-    if (LocalMeasureOnly.current) { Box(modifier, contentAlignment = Alignment.Center) { content(false) }; return }
+    // (its touch size kept too: a row's room is the same seen or not - Arcade's 24 dp menu lines)
+    if (LocalMeasureOnly.current) {
+        Box(modifier.then(if (maxOf(minTouch, if (a.status) 24.dp else 0.dp) > 0.dp) Modifier.heightIn(min = maxOf(minTouch, if (a.status) 24.dp else 0.dp)) else Modifier),
+            contentAlignment = Alignment.Center) { content(false) }
+        return
+    }
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
