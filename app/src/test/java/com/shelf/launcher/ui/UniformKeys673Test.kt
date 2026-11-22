@@ -81,7 +81,7 @@ class UniformKeys673Test {
         assertTrue(more.contains("Modifier.then(if (uniform) Modifier.fillMaxSize() else if (wide) Modifier.fillMaxWidth() else Modifier)"))
         assertTrue(more.contains("it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h))"))
         // pages' bars, the TV strip, the plain window and the shared page use the same groups
-        assertTrue(src("WinSceneShelfPages.kt").contains("UniformKeyRow(keys.filterNot { it.status }, gap, key = key)"))
+        assertTrue(src("WinSceneShelfPages.kt").contains("UniformKeyRow(keys.filterNot { it.status }, gap, slots = if (page) PAGE_SLOTS else 0, key = key)"))
         assertTrue(Regex("UniformKeyRow\\(tvItems\\.indices").containsMatchIn(src("GameWindow.kt")))
         assertTrue(src("GameWindow.kt").contains("UniformKeyColumn(all.map"))
         assertTrue(src("GameWindow.kt").contains("UniformKeyRow(ctx.buttons.filterNot { it.status }, 12.dp)"))

@@ -157,7 +157,8 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         }
                         Spacer(Modifier.height(6.dp))
                         // (674d, owner brief 15 Nov: the page's keys one row of identical keys - they were as wide as their words.)
-                        UniformKeyRow(ctx.buttons, 8.dp) { a ->
+                        // (682ab: two page slots - Play keeps the first half with or without the page's own key)
+                        UniformKeyRow(ctx.buttons, 8.dp, slots = PAGE_SLOTS) { a ->
                                 SceneControl(a, Modifier) { on ->
                                     Box(Modifier.uniformFill().clip(RoundedCornerShape(4.dp)).background(if (on) Color.White else Color(0xFF333333)).padding(horizontal = 14.dp, vertical = 6.dp),
                                         contentAlignment = Alignment.Center) {

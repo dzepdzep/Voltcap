@@ -513,7 +513,8 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
                 } else DiscoverPage(ctx, pg, pageLive, Modifier.fillMaxSize())
             }
             // (529p, owner #15 pattern: the keys as pills that span the card in whole-word rows - PageBars - Play still the filled one.)
-            PageBars(sceneKeys(ctx), 6.dp) { k ->
+            // (682ab: on its pages Play keeps the first half, as on every layout's pages - PageBars(page))
+            PageBars(sceneKeys(ctx), 6.dp, page = ctx.page != WinPage.MAIN) { k ->
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
                     Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp, primaryStyled = true, lineHeight = 15.sp, wide = true)
             }

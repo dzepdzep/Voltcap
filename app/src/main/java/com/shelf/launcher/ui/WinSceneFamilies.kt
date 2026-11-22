@@ -704,7 +704,9 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
             val aspect = sceneCaseAspect(ctx.g.platform)
             // (682v, owner 18 Nov: "Console Hub: improve available horizontal space for achievements and options" - on those two
             // faces the seated case slims to a narrow seat, smoothly, and the gap tightens; Details keeps its 20 % seat.)
-            val slim = ctx.page == WinPage.TROPHIES || ctx.page == WinPage.OPTIONS
+            // (682ab, KONKR + RP Classic x1.0: with Details on the wider seat the keys under the plate started further right than
+            // on the other faces - Play moved. Every page has the narrow seat now; the main face keeps its own.)
+            val slim = ctx.page != WinPage.MAIN
             val cwTarget = minOf(w * (if (slim) 0.11f else if (compact || ctx.page != WinPage.MAIN) 0.2f else 0.26f), 170.dp)
             val cw by androidx.compose.animation.core.animateDpAsState(cwTarget,
                 if (rememberAnimationsEnabled()) tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(), label = "hubSeat")

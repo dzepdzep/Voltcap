@@ -98,7 +98,11 @@ run)
     k BUTTON_R1 1.1; shot ${n}_trophies; k DPAD_DOWN 0.8; k DPAD_DOWN 0.8; shot ${n}_trophies_focus
     # (682r, KONKR Magazine x1.3: the list had no row on screen, two Downs reached the window's "Full list" key and the A
     # opened the achievement dialog - winguard stopped the run. A only on an achievement row: never on a window key.)
-    if onkey ${TAG}_${n}_trophies_focus; then log "$lay: FAIL - two Downs from the page's first row reached a window key ($(focuslabel ${TAG}_${n}_trophies_focus | tr '\n' ';')), no achievement row - A NOT pressed"
+    # (682ab, Icon bar x1.0 fk10 / fr10: its achievements are a grid of icons - two rows hold ten, so Down Down from the order
+    # icon passes row 2 to the keys. A grid page gets one Up back onto the row above the keys; A only if that is not a key.)
+    if onkey ${TAG}_${n}_trophies_focus; then k DPAD_UP 0.8; shot ${n}_trophies_focus
+      if onkey ${TAG}_${n}_trophies_focus; then log "$lay: FAIL - two Downs from the page's first row reached a window key ($(focuslabel ${TAG}_${n}_trophies_focus | tr '\n' ';')), no achievement row - A NOT pressed"
+      else log "$lay: grid page - Down Down passed the last row, one Up back onto an achievement"; k BUTTON_A 1.0; fi
     else k BUTTON_A 1.0; fi; shot ${n}_trophies_open
     for i in 1 2 3 4 5 6 7; do k DPAD_DOWN 0.45; done; sleep 0.6; shot ${n}_trophies_scroll
     k BUTTON_R1 1.1; shot ${n}_options; k DPAD_DOWN 0.8; shot ${n}_options_focus

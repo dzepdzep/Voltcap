@@ -4120,6 +4120,30 @@
    "severity": "low",
    "status": "fixed 682y (noArtNameFits: the initials alone where the longest word can't fit; the name stays on the window's line)",
    "found": "2026-11-22 (PageSheet review)"
+  },
+  {
+   "id": "D366",
+   "title": "x1.0 (KONKR + RP Classic, fk10 / fr10, build 2763331): Play changed size / place between a window's own pages - Card binder (half on Details, a third on Achievements / Options), Console hub (wider seat on Details), Cube, Cinema, Record crate (a short key alone on Options), Resume (Options); Record crate x1.3 stack 2 px lower on Options",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "fixed 682ab (pages: two slots, measured with the 'Full details' reference key; Hub narrow seat on every page; Crate stack view height fixed) - PlayPlace682abRoboTest (KONKR + RP Classic screens, x1.0 + x1.3, 25 layouts) fails on the old code; hardware re-check pending",
+   "found": "2026-11-22 20:15 (fk10 / fr10 QaClip dumps)"
+  },
+  {
+   "id": "D367",
+   "title": "TV room pages x1.0 (KONKR + RP Classic): the strip under the TV (Play, page key, Back) scrolls in the narrow panel left by the figure keep-out (R27) - Play's width follows the page key's word (117 / 101 / 125 px on Details / Achievements / Options)",
+   "rule": "R23",
+   "severity": "low",
+   "status": "open - needs a decision: keep the strip scrolling, or drop Back from the pages' strip (B stays), or a narrower figure keep-out; queued for the owner's review",
+   "found": "2026-11-22 20:15 (fk10 / fr10)"
+  },
+  {
+   "id": "D368",
+   "title": "p2review: Icon bar's achievements are an icon grid - Down Down from the order icon passes the last row to the keys (fk10 / fr10 x1.0 'FAIL ... no achievement row', A NOT pressed)",
+   "rule": "R23",
+   "severity": "low",
+   "status": "QA tooling fixed 682ab (one Up back onto the grid's row, A only if not a key); not a product defect",
+   "found": "2026-11-22 19:28"
   }
  ]
 }

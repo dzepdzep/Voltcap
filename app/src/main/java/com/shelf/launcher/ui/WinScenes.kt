@@ -374,6 +374,8 @@ internal object WinClickProbe { @Volatile var clicks: Int = 0 }
  */
 @Composable
 internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp, content: @Composable BoxScope.(Boolean) -> Unit) {
+    // (682ab: a page row's measuring reference - drawn, never focused, touched or heard - UniformKeyRow)
+    if (LocalMeasureOnly.current) { Box(modifier, contentAlignment = Alignment.Center) { content(false) }; return }
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -1221,7 +1223,7 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
 private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean, twoLine: Boolean = true) {
         // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow) - was a wrapping FlowRow of keys of every width.)
         // (682y: two slots - Play keeps the first half with or without the page's own key)
-        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine, slots = 2) { a ->
+        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine, slots = PAGE_SLOTS) { a ->
                 SceneControl(a, Modifier) { on ->
                     Box(Modifier.uniformFill().heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
                         contentAlignment = Alignment.CenterStart) {

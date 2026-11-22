@@ -164,7 +164,7 @@ internal fun PageBars(keys: List<WinAction>, gap: Dp,
     // rows as kept every word whole with the bars sharing out the width by their words (529o).)
     // (682aa, batch 5 sheet: on Options - Play alone - Play was a short bar in the middle, on Details / Achievements the left
     // half. A page's row has two slots: Play keeps the first half with or without the page's own key.)
-    UniformKeyRow(keys.filterNot { it.status }, gap, slots = if (page) 2 else 0, key = key)
+    UniformKeyRow(keys.filterNot { it.status }, gap, slots = if (page) PAGE_SLOTS else 0, key = key)
 }
 
 /**

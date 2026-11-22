@@ -114,7 +114,7 @@ class PageSheetRoboTest(private val layout: HomeLayout, private val big: Boolean
             // Each page through its own control from a freshly opened window (as a touch would; behind More / ••• where the
             // window keeps it) - under Robolectric the window's L1 / R1 key path does not turn its pages.
             fun fresh() { gen.intValue++; frames(160) }
-            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot")); shot("2_details")
+            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text")); shot("2_details")
             fresh(); open(setOf("achievements", "trophies", "credits")); shot("3_achievements")
             fresh(); open(setOf("options", "config", "backstage")); shot("4_options")
             // the destructive row armed: A on it twice is never pressed - one click arms it (NativeConfirm)

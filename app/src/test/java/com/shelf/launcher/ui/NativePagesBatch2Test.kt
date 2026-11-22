@@ -123,14 +123,18 @@ class NativePagesBatch2Test {
     @Test fun pageRowsKeepTwoSlots() {
         assertEquals(1, pageKeySlots(WinPage.MAIN, 1))
         assertEquals(2, pageKeySlots(WinPage.OPTIONS, 1))
-        assertEquals(3, pageKeySlots(WinPage.TROPHIES, 3))
+        assertEquals(2, pageKeySlots(WinPage.TROPHIES, 3))
         val g = uniformSlotGeom(1, pageKeySlots(WinPage.OPTIONS, 1), need = 120, width = 826, gap = 10)!!
         assertEquals(408, g.keyW); assertEquals(0, g.viewStart)
-        // main page of six keys (scrolled): its slot is too narrow for Play - Play alone still takes the first half
-        assertEquals(null, uniformSlotGeom(1, 6, need = 120, width = 440, gap = 6))
-        val h = pageAloneGeom(1, 6, need = 120, width = 440, gap = 6)!!
-        assertEquals(217, h.keyW); assertEquals(0, h.viewStart)
-        assertEquals(null, pageAloneGeom(1, 1, need = 120, width = 440, gap = 6))
+        // 682ab: a page's keys take the two halves - Play the first, with or without the page's own key; two lines where a word
+        // doesn't fit half on one line; the usual row only where not even that fits
+        assertEquals(2, pageKeySlots(WinPage.OPTIONS, 6))
+        val one = pageRowGeom(1, need = 120, need2 = 0, width = 440, gap = 6)!!
+        val two = pageRowGeom(2, need = 120, need2 = 0, width = 440, gap = 6)!!
+        assertEquals(217, one.keyW); assertEquals(one.keyW, two.keyW); assertEquals(0, one.viewStart); assertEquals(0, two.viewStart)
+        assertEquals(217, pageRowGeom(2, need = 260, need2 = 150, width = 440, gap = 6)!!.keyW)
+        assertEquals(null, pageRowGeom(2, need = 260, need2 = 240, width = 440, gap = 6))
+        assertEquals(null, pageRowGeom(3, need = 50, need2 = 0, width = 440, gap = 6))
     }
 
     // 682y: "PlayStatio / n 2" on the Card binder's slim no-art plate - the console's name only where its longest word fits.

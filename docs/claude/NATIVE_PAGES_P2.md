@@ -380,3 +380,16 @@ Terminal, Dashboard, Library, Card binder.
 - Audit: class A 18 -> 25 of 53; class B 12 -> 5 (Night status, Blades, Tiles, Grid, Disc station).
 - Checked (cloud): NativePagesBatch2Test (shelfFamilyCardsAreTheirOwn), ShelfText, AchFirstRow (+ RP Classic), PageSheet x1.0 /
   x1.3 of the seven, static checks PASS.
+
+### 682ab - Play the same on every page, x1.0 too (KONKR + RP Classic fk10 / fr10 on 2763331, 22 Nov 19:25-20:17)
+- Hardware x1.0, all 18 P2 layouts, both handhelds: every page walked, 0 launches, fatal 0, restore diff 0. Batch 4 x1.0 (Side
+  menu, Icon bar, Arctic, Storage boxes): Play the same on every page (PASS); Icon bar's grid tripped the checker (D368, tooling).
+- Found (D366): at x1.0 Play changed between pages on Card binder, Console hub, Cube (KONKR), Cinema, Record crate, Resume -
+  the x1.3 fixes (682x-682z) did not hold at x1.0. Fixed 682ab: a page's keys always take two slots (Play the first half),
+  measured with a "Full details" reference key that is drawn outside the row (no focus, touch or semantics); Console hub's
+  narrow seat on every page; Record crate's stack keeps its view height. New regression test PlayPlace682abRoboTest (25 layouts,
+  KONKR + RP Classic screens, x1.0 + x1.3). TV room strip (D367) left open for a decision.
+- Production observation (Level 2, read-only, RP Classic): com.shelf.launcher updated 0.6.73 / 79 -> 0.6.73 / 80 at 18:36:43,
+  installer and initiator com.shelf.launcher (Voltcap's own updater; its Android install prompt had been waiting on screen
+  since before 16:52). No QA input was sent after 18:34:53 (run pr15 done) and the restore sends no keys. Recorded for the owner
+  to confirm it was their own confirmation.

@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.material.icons.filled.Description
+
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.horizontalScrollAxisRange
 import androidx.compose.ui.semantics.semantics
@@ -202,15 +205,29 @@ internal fun rememberKeySlots(page: WinPage, keys: List<WinAction>): Int {
  * key in the middle on Options (Play alone). A page's row has room for Play and the page's own key at least: Play keeps the
  * same slot on every page.
  */
-/**
- * 682y (Card binder sheet x1.3): where the main page's slots are too narrow for Play (its six keys scrolled), Play alone on a
- * page (Options) still stands where it does beside the page's own key (Details, Achievements: two halves) - the first half of
- * the row, not a short key in the middle. Only on a page ([slots] > 1 - a main page with Play alone keeps its own width).
- */
-internal fun pageAloneGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int): UniformRowGeom? =
-    if (n == 1 && slots > 1) uniformSlotGeom(1, 2, need, width, gap) else null
+internal fun pageKeySlots(page: WinPage, mainCount: Int): Int = if (page == WinPage.MAIN) mainCount else PAGE_SLOTS
 
-internal fun pageKeySlots(page: WinPage, mainCount: Int): Int = if (page == WinPage.MAIN) mainCount else maxOf(mainCount, 2)
+/** 682ab: a window's own page lays its keys out in two slots - Play and the page's own key (Full details, Full list). */
+internal const val PAGE_SLOTS = 2
+
+/** 682ab: the page key a page row is measured with (UniformKeyRow) - the widest of the pages' own keys. */
+internal val PAGE_KEY_REF = WinAction("Full details", androidx.compose.material.icons.Icons.Filled.Description, {})
+
+/** 682ab: a key drawn only to be measured - no focus, touch or sound (SceneControl). */
+internal val LocalMeasureOnly = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/**
+ * 682ab (pure; KONKR + RP Classic x1.0 fk10 / fr10: Play was a third on Achievements, half on Details and a short key in the
+ * middle on Options - Card binder, Console hub, Cube, Cinema, Record crate, Resume): a page's keys always take the two halves
+ * of the row - Play the first half, the page's own key the second; Play alone keeps the first half. Where a word doesn't fit
+ * half the row on one line the keys take two lines ([need2], the longest word); where not even that fits, null (the usual row).
+ */
+internal fun pageRowGeom(n: Int, need: Int, need2: Int, width: Int, gap: Int): UniformRowGeom? {
+    if (n !in 1..2) return null
+    val w = (width - gap) / 2
+    if (w <= 0 || (need > w && (need2 <= 0 || need2 > w))) return null
+    return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
+}
 
 /**
  * 674c (pure, item 4 of the 15 Nov directive - narrow windows at x1.3 showed one key at a time): [need] is the widest key's
@@ -269,7 +286,8 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
     }
     val keyW = remember { IntArray(2) }
     val mainFit = remember { BooleanArray(1) }
-    val inner = remember(gapPx) { uniformKeysPolicy(gapPx, keyW) { offset.value } }
+    val pageRef = slots == PAGE_SLOTS
+    val inner = remember(gapPx, pageRef) { uniformKeysPolicy(gapPx, keyW, { pageRef }) { offset.value } }
     androidx.compose.ui.layout.Layout(
         content = {
             // (The row says it scrolls, as a scrolling list does - accessibility, and the popup gate, which counts a key scrolled
@@ -279,6 +297,12 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
                     value = { offset.value }, maxValue = { (geom?.maxOffset ?: 0).toFloat() })
             }) {
                 androidx.compose.ui.layout.Layout(content = {
+                    // (682ab: on a window's own page the row is measured with the page key that asks the most room ("Full
+                    // details") even where the page has no such key - Play is the same size on Options as on Details. The
+                    // reference is drawn outside the row's view (clipped), without semantics, focus or touch - LocalMeasureOnly.)
+                    if (slots == PAGE_SLOTS) Box(Modifier.clearAndSetSemantics { }, propagateMinConstraints = true) {
+                        androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
+                    }
                     keys.forEachIndexed { i, a ->
                         Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i }, propagateMinConstraints = true) {
                             androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) }
@@ -312,7 +336,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0]) ?: pageAloneGeom(n, slots, need, width, gapPx) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        val g = (if (slots == PAGE_SLOTS) pageRowGeom(n, need, need2, width, gapPx) else uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0])) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
         // (682x: the main page's row - all its [slots] keys - showed them all whole, unscrolled: its pages may keep Play's slot)
         if (slots > 0 && n == slots) mainFit[0] = !g.scrolls && g.visible >= n
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
@@ -352,7 +376,7 @@ internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = fa
  * ([offset], read while placing only). Its intrinsic width is the widest key's, its intrinsic height the tallest key's at
  * the width asked (what UniformKeyRow sizes the group by).
  */
-private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = object : androidx.compose.ui.layout.MeasurePolicy {
+private fun uniformKeysPolicy(gap: Int, keyW: IntArray, refFirst: () -> Boolean = { false }, offset: () -> Float) = object : androidx.compose.ui.layout.MeasurePolicy {
     override fun androidx.compose.ui.layout.MeasureScope.measure(
         measurables: List<androidx.compose.ui.layout.Measurable>, constraints: androidx.compose.ui.unit.Constraints
     ): androidx.compose.ui.layout.MeasureResult {
@@ -361,10 +385,15 @@ private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = o
         val w = keyW[0].takeIf { it > 0 } ?: (measurables.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0)
         val first = keyW.getOrElse(1) { 0 }.takeIf { it > 0 } ?: w
         val h = constraints.maxHeight
-        val ps = measurables.mapIndexed { i, m -> m.measure(androidx.compose.ui.unit.Constraints.fixed(if (i == 0) first else w, h)) }
+        // (682ab: a page row's measuring reference comes first - it is measured with the keys and placed past the view's end)
+        val ref = if (refFirst()) 1 else 0
+        val ps = measurables.mapIndexed { i, m -> m.measure(androidx.compose.ui.unit.Constraints.fixed(if (i == ref) first else w, h)) }
         return layout(viewW, h) {
             val ox = offset().toInt()
-            ps.forEachIndexed { i, p -> p.place(if (i == 0) -ox else first + gap + (i - 1) * (w + gap) - ox, 0) }
+            ps.forEachIndexed { i, p ->
+                if (i < ref) p.place(viewW + w + gap, 0)
+                else { val k = i - ref; p.place(if (k == 0) -ox else first + gap + (k - 1) * (w + gap) - ox, 0) }
+            }
         }
     }
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
@@ -764,7 +793,10 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                     .let { if (ctx.page == WinPage.MAIN) it else it.coerceAtMost(1) }
                 // (674g, owner review prep f674f / k674f: the fade at the stack's foot hid the last key's lower edge - it read as cut.
                 // The view holds whole keys exactly, so no fade; a hair of room for the keys' borders.)
-                Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp).verticalScroll(keyScroll)) {
+                // (682ab, PlayPlace x1.3: on Options - Play alone - the stack's box was 2 dp shorter than on the pages with two keys
+                // and Play sat 2 px lower. A page's stack keeps its whole view height.)
+                val viewH = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp
+                Box(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.heightIn(max = viewH) else Modifier.height(viewH)).verticalScroll(keyScroll)) {
                     UniformKeyColumn(actions, 6.dp, fill = true) { a ->
                         SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red,
                             RoundedCornerShape(3.dp), upper = true, size = 11.sp, height = keyH, lineHeight = 14.sp)
