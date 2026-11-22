@@ -614,7 +614,7 @@ fun GameCard(
             ) {
                 Icon(Icons.Filled.EmojiEvents, null, tint = onAccentColor(), modifier = Modifier.size(9.dp))
                 Spacer(Modifier.width(2.dp))
-                Text("NEW", color = onAccentColor(), fontSize = 8.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(8.sp), maxFontSize = 8.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+                FullText("NEW", color = onAccentColor(), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
             }
         }
         // On the wide capsule the count is already in its progress line; a second pill in the corner
@@ -674,7 +674,7 @@ fun GameCard(
                         // Update 151: a small upright tick between the trophy and "0/69", so they read as two parts.
                         ProgressTick(height = 7.dp, gap = 2.dp)
                         val earned = progress.NumAchieved ?: 0
-                        Text(
+                        FullText(
                             // Always the count, the same on every card ("0/53", "12/120"); with room
                             // (the game you're on) the percentage joins it: "12/120 · 10%".
                             // (Update 211: the percentage only where the card has room for it — on the RP Classic's
@@ -687,10 +687,9 @@ fun GameCard(
                                 "${(earned * 100 / possible).coerceIn(0, 100)}%"
                             else "$earned/$possible",
                             color = Color.White,
-                            fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(9.sp), maxFontSize = 9.sp),
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
-                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                            softWrap = false
+                            maxLines = 1, reserve = false
                         )
                     }
                 }
@@ -804,17 +803,17 @@ fun GameCard(
                     )
                     .padding(horizontal = 6.dp, vertical = 5.dp)
             ) {
-                Text(
+                FullText(
                     text = title,
                     color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.SemiBold,
                     // (Update 501: three lines — a blank card has the room, and two cut "The Legend of Zelda - A Link to the
-                    // Past" to "…Link T…" on the Thor's row. The "…" stays only as the last resort for a really long name,
-                    // which the card shows whole as soon as it's focused.)
+                    // Past" to "…Link T…" on the Thor's row. Update 692a, rule 11: no "…" at all any more - a really long
+                    // name shrinks to a readable size, then slides; centred over the blank card, so nothing reserves room.)
                     maxLines = NO_ART_NAME_LINES,
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    reserve = false
                 )
             }
         }
@@ -894,14 +893,14 @@ fun GameCard(
                                 logoMaxWidth = if (instead) 220.dp else 120.dp,
                                 modifier = Modifier.weight(1f, fill = false)
                             ) { m ->
-                                Text(
+                                FullText(
                                     text = title,
                                     color = Color.White,
-                                    fontSize = if (veryTight) 16.sp else 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (veryTight) 16.sp else 18.sp), maxFontSize = if (veryTight) 16.sp else 18.sp),
+                                    fontSize = if (veryTight) 16.sp else 18.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     maxLines = if (tight) 1 else 2,
                                     lineHeight = androidx.compose.ui.unit.TextUnit(1.15f, androidx.compose.ui.unit.TextUnitType.Em),
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                    reserve = false,
                                     modifier = m
                                 )
                             }
@@ -914,24 +913,24 @@ fun GameCard(
                     // Off by default (Appearance › Game names): the category
                     // you're browsing already says which console it is.
                     if (titles.showConsoleName && !veryTight) {
-                        Text(
+                        FullText(
                             text = LocalTitleOptions.current.console(game.platform),
                             color = ShelfTheme.secondary,
-                            fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            reserve = false,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                     // The play timer isn't shown on the card — it sits under the
                     // row instead (Appearance › Home screen).
                     lastPlayedAt?.takeIf { look.lastPlayedOnBanner && !tight }?.let {
-                        Text(
+                        FullText(
                             text = "Played ${relativeTimeLabel(it)}",
                             color = Color.White.copy(alpha = 0.6f),
-                            fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
-                            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            fontSize = 12.sp,
+                            maxLines = 1, reserve = false,
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -1266,13 +1265,13 @@ private fun AchievementBadge(
                         tint = ShelfTheme.accent, modifier = Modifier.size(12.dp)
                     )
                     Spacer(Modifier.width(5.dp))
-                    Text(
+                    FullText(
                         recentUnlockTitle ?: "No recent unlocks",
                         color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        maxLines = 1, reserve = false,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                 }
             }

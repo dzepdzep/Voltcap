@@ -1448,6 +1448,18 @@ internal fun GameWindow(
             }
             if (qaInspect != null) TestHooks.winInspect.value = null
         }
+        // (682s, QA only: `--es voltcap_test_winpage details|options|trophies` turns to that page as its own button does -
+        // Options / Achievements through the same callbacks, so a window without the page does what its button does.)
+        val qaPage = TestHooks.winPage.value
+        LaunchedEffect(qaPage) {
+            when (qaPage) {
+                null -> return@LaunchedEffect
+                WinPage.OPTIONS -> extras.onOptions()
+                WinPage.TROPHIES -> extras.onAchievements()
+                else -> page = qaPage
+            }
+            TestHooks.winPage.value = null
+        }
         // Turning the window over swaps the buttons: the D-pad's place goes back to Play (the button it was on may be gone),
         // or to the first row of the options / achievements.
         var turned by remember { mutableStateOf(false) }
@@ -2938,6 +2950,11 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
     // the list starts with the achievements; nothing is dropped. Taller pages keep the order as the list's first row.)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(paper).padding(if (native) 4.dp else 10.dp)) {
     val tight = native || maxHeight < TROPHIES_TIGHT_BELOW.dp
+    // (688a, H16 TV room x1.3 at KONKR size: the window on the set's screen is ~190 dp wide - on the count's line "Set order" had
+    // 20 px and broke inside its words, and beside a 36 dp badge and the points an achievement's name had 80 px ("Unbreakable"
+    // broke). On a page this narrow the order takes its own line under the count, and the points go under a smaller badge, so the
+    // name gets the row's width. Wider pages are unchanged.)
+    val narrow = !native && maxWidth < TROPHIES_NARROW_BELOW.dp
     Column(Modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Filled.EmojiEvents, null, tint = look.accent, modifier = Modifier.size(18.dp))
@@ -2948,12 +2965,13 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                 fontWeight = FontWeight.Bold, fontFamily = if (look.mono) FontFamily.Monospace else null, maxLines = 1, lineHeight = 19.sp
             )
             Spacer(Modifier.width(10.dp))
-            if (tight) orderRow(Modifier.weight(1f), true) else progress(Modifier.weight(1f).height(5.dp))
+            if (tight && !narrow) orderRow(Modifier.weight(1f), true) else progress(Modifier.weight(1f).height(if (narrow) 3.dp else 5.dp))
         }
-        if (tight) { Spacer(Modifier.height(4.dp)); progress(Modifier.fillMaxWidth().height(3.dp)) }
+        if (narrow) { Spacer(Modifier.height(4.dp)); orderRow(Modifier.fillMaxWidth(), true) }
+        else if (tight) { Spacer(Modifier.height(4.dp)); progress(Modifier.fillMaxWidth().height(3.dp)) }
         Spacer(Modifier.height(if (native) 6.dp else 8.dp))
         Column(Modifier.fillMaxWidth().weight(1f).pageScroll(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            if (!tight) orderRow(Modifier, false)
+            if (!tight && !narrow) orderRow(Modifier, false)
             list.forEach { a ->
                 androidx.compose.runtime.key(a.id) {
                     val opened = openId == a.id
@@ -2961,12 +2979,17 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                     // of their own, fetched only when opened.)
                     WinRow(look, onClick = { openId = if (opened) null else a.id }) { on ->
                         val rowInk = if (on) look.btnOnInk else look.btnInk
-                        AsyncImage(
-                            com.shelf.launcher.data.RaBadges.url(a.badgeName), a.title, contentScale = ContentScale.Crop,
-                            colorFilter = if (a.isUnlocked) null else LockedGrey, alpha = if (a.isUnlocked) 1f else 0.55f,
-                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(6.dp))
-                        )
-                        Spacer(Modifier.width(10.dp))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            AsyncImage(
+                                com.shelf.launcher.data.RaBadges.url(a.badgeName), a.title, contentScale = ContentScale.Crop,
+                                colorFilter = if (a.isUnlocked) null else LockedGrey, alpha = if (a.isUnlocked) 1f else 0.55f,
+                                modifier = Modifier.size(if (narrow) 28.dp else 36.dp).clip(RoundedCornerShape(6.dp))
+                            )
+                            if (narrow) a.points?.let {
+                                androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 11.sp, fontWeight = FontWeight.Bold, lineHeight = 14.sp, maxLines = 1, softWrap = false)
+                            }
+                        }
+                        Spacer(Modifier.width(if (narrow) 6.dp else 10.dp))
                         Column(Modifier.weight(1f)) {
                             // (Rule 11, achievements hotfix 529: no "…" - the name wraps whole; the description is whole once the row is
                             // open (A), and while it's closed it fits two lines by shrinking readably, then slides.)
@@ -2982,7 +3005,7 @@ private fun WindowTrophies(look: WinLook, g: Game, state: LauncherUiState, listF
                                 ) else WinFullText(it, color = rowInk.copy(alpha = if (a.isUnlocked) 0.78f else 0.5f), fontSize = 11.sp, maxLines = 2, lineHeight = 14.sp)
                             }
                         }
-                        a.points?.let {
+                        if (!narrow) a.points?.let {
                             Spacer(Modifier.width(8.dp))
                             androidx.compose.material3.Text("$it", color = rowInk.copy(alpha = if (a.isUnlocked) 0.9f else 0.5f), fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp)
                         }
@@ -3280,6 +3303,8 @@ private fun WindowDetails(look: WinLook, g: Game, state: LauncherUiState, cover:
 
 /** 529r: a shared Achievements page shorter than this (dp) puts its order control on the count's line. */
 internal const val TROPHIES_TIGHT_BELOW = 330f
+/** 688a: below this width (dp) the achievements page gives the order its own line and the names the row (the TV room's set). */
+internal const val TROPHIES_NARROW_BELOW = 240f
 
 internal const val DETAILS_MIN_TEXT = 200f   // dp the details text column keeps, at least (≈ 28 characters of 13 sp)
 internal const val DETAILS_GAP = 14f

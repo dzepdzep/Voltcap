@@ -73,6 +73,132 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 18:30 UTC, 692a (cloud, v0.6.74 turn):** Verify 310 on 673012d (691a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
+(re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: GameCard.kt 7 TRUNCATE -> 0 via FullText
+(reserve = false). GameCardFullText692aTest. TRUNCATE 143 -> 136. NOT compiled in the cloud (plugin resolution blocked) - CI first
+compile. HW-24 692a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in GameCard / the new test -> fix). Then P2 turn if the owner has reviewed batch 1;
+v0.6.74: P13 next TRUNCATE files - MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one file per run with its FullText test;
+or H12 once the owner picks.
+
+**22 Nov 17:30 UTC, 691a (cloud, v0.6.74 turn):** Verify 310 on c166ca7 (690a): ubuntu-latest GREEN (690a compiles + passes),
+ubuntu-24.04 Maven 429 infra (re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: TwinIcons.kt 7 TRUNCATE
+-> 0 via FullText (reserve = false). TwinIconsFullText691aTest. TRUNCATE 150 -> 143. NOT compiled in the cloud (Maven 429 x2) - CI
+first compile. HW-24 691a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in TwinIcons / the new test -> fix). Then P2 turn if the owner has reviewed batch 1;
+v0.6.74: P13 next TRUNCATE files - GameCard (7), MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one file per run with its
+FullText test; or H12 once the owner picks.
+
+**22 Nov 16:40 UTC, 690a (cloud, v0.6.74 turn):** Verify 310 GREEN on 919d362 (689a). P2 left alone (batch 1 owner review still
+pending). P13 rule 11: SecondScreenVolt.kt (Volt second screen) 8 TRUNCATE -> 0 via FullText (reserve = false).
+SecondScreenVoltFullText690aTest. TRUNCATE 158 -> 150. NOT compiled in the cloud (Maven 429 x2) - CI is the first compile. HW-26 (Thor).
+NEXT: check Verify 310 on this push FIRST (red in SecondScreenVolt / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel (5) - one file per run
+with its FullText test; or H12 once the owner picks.
+
+**22 Nov 15:50 UTC, 689a (cloud, v0.6.74 turn):** Verify 310 on ce88244 (688b): ubuntu-latest GREEN (TV x1.3 guard passes),
+ubuntu-24.04 Maven 429 infra (re-run requested). H16 is now guarded on 53/53; D357 + item 6 done earlier; H12 waits on the owner's
+reveal choice -> P13 rule 11: GameDetailsOverlay.kt (Classic details window) 13 TRUNCATE -> 1 marked (FullText; comments wrap);
+summary no longer cut without a More chip. GameDetailsFullText689aTest 3/3 (cloud compiled). TRUNCATE 171 -> 158. HW-24 689a.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (leave a live session's P2
+branch alone); v0.6.74: P13 next TRUNCATE files - SecondScreenVolt (8), TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel
+(5) - one file per run with its FullText test; or H12 once the owner picks.
+
+**22 Nov 14:40 UTC, 688a (cloud, v0.6.74 turn):** Verify 310 GREEN on b44e5e0 (687a). H16: TV room added to WindowWordsSurvey682Test
+(NEXT_688; the test sets TvScreen.rect to the set's screen at KONKR size) + tvWindowOpensOnTheSet. 53/53 layouts listed. NOT
+compiled in the cloud (Maven Central 429 x2) - CI is the first compile.
+688b (same run): CI on b257ffe compiled it; TV x1.3 otherPages found a REAL cut (Achievements page on the set: 'Set order' 20 px,
+names 80 px) -> WindowTrophies narrow form < 240 dp (order on its own line, points under a 28 dp badge). Uncompiled in the cloud.
+NEXT: check Verify 310 on 688b FIRST. Red in WindowWordsSurvey682Test[TV ...] = either a harness slip (fix the test) or a real TV
+window cut (fix the window, keep the guard). Then P2 turn if the owner has reviewed batch 1 (a live session pushed P2 batch 3 at
+13:34 UTC - leave that branch to it); v0.6.74: item 5 badgecheck (D357) if still open, then H12.
+
+**22 Nov 13:50 UTC, 687a (cloud, v0.6.74 turn):** fcb4998's Verify 310 red = infra (one runner's dependency transform failed,
+no test ran; the other runner GREEN); cbf0226 (686a) Verify 310 was still running. H16: Terminal, Arcade, Arctic, Artlib, Custom +
+the shared-scene layouts Grid, Console stack, Coverflow details, Twin desk under all four window guards x1.0 + x1.3 (NEXT_687) -
+all clean, no app change. 52 of 53 layouts guarded (TV room left: needs tvRect).
+NEXT: check Verify 310 on cbf0226 and this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (else skip);
+v0.6.74: H16 TV room window (a test harness that opens it on a tvRect), then item 5 badgecheck (D357) if still open, then H12.
+
+**22 Nov 12:20 UTC, 686a (cloud, v0.6.74 turn):** Verify 310 GREEN on 5e76521 (685a). P2 left alone (a live session pushed the P2
+branch 12:03 UTC; its Verify 310 there is red - that session's to fix). H16: Orbit, Airy, Blades, Camera, Magazine, Shop under all
+four window guards x1.0 + x1.3 (NEXT_686) - Orbit x1.3 key label "ACHIEVEMENTS" broke inside the word: fixed (odLabelFit,
+OrbitKeyLabel686Test); Blades' turned edge name was a guard false positive - parent-clip guard now transform-aware (turned
+fixtures in ParentClipProbe683Test). 42 window scenes guarded. HW-24 686a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). If the P2 branch is still red and its last push is > 3 h old with no
+live session, look at its failure (report only; P2 pushes only per NATIVE_PAGES_P2.md). Then v0.6.74: H16 last windows - Terminal,
+Arcade, Arctic, Artlib, Custom, then Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
+**18 Nov 20:55 UTC, 685a (cloud, v0.6.74 turn):** Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its
+hardware re-check + the owner's look). H16: Cards, Greencore, Box, File select, Storage, Caseflow under all four window guards
+x1.0 + x1.3 (NEXT_685). Two real findings fixed: Storage's fact label "LAST PLAYED" lost "PLAYED" at x1.3 (labels WholeWordsText);
+Card binder's turned-away front stayed laid out at alpha 0 (no longer composed once away - cardFrontAway derived state;
+CardFront685Test). 36 window scenes guarded. HW-24 685a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Orbit, Airy, Blades, Camera, Magazine, Shop, then Terminal, Arcade, Arctic,
+Artlib, Custom, Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
+**18 Nov 19:55 UTC, 684a (cloud, v0.6.74 turn):** Verify 310 on 5f46185: ubuntu-24.04 GREEN, ubuntu-latest Maven 429 (infra;
+failed job re-run requested). P2 left alone: batch 1's 682s visual pass waits on its hardware re-check + the owner's look (owner
+"2" = batch 1 fixes first); Spotlight is "if wanted". H16: Circuit, Timeline, Shelf, Stacks, Crate, Discs, Cube under all four
+window guards x1.0 + x1.3 (NEXT_684) - Timeline's no-art plate broke "PlayStati / on 2": fixed (SceneNoArt drops a caption that
+cannot stay whole where the console is named beside it; NoArtCaption684Test). 30 window scenes guarded. HW-24 684a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Cards, Greencore, Box, File select, Storage, Caseflow, then Orbit, Airy, Blades,
+Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
+**18 Nov 18:40 UTC, 683a (cloud, v0.6.74 turn):** Verify 310 GREEN on 4784060 (682u). Live P2 push 18:16 UTC (< 1 h) -> v0.6.74
+turn. H16: Classic, Tiles (Grid shares its Tile card), Dash, Side, Spot, Library added to WindowWordsSurvey682Test (NEXT_683) -
+all four guards x1.0 + x1.3 clean (48 cases, cloud compiled), no app change. 24 window scenes guarded.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the last P2 push (18:16 UTC) is > 1 h old; else H16 next
+batch: Circuit (Chip sheet), Timeline, Shelf family (Index card), Crate (Record sleeve), Discs, Cube - then Cards, Greencore, Box,
+File select, Storage, Caseflow, Orbit, Airy, Blades, Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
+**18 Nov 17:25 UTC, 682u (cloud, CI fix):** Verify 310 on 4aa599a (682t) RED on both runners: Batch513Test.
+narrowWindowsKeepWholeWords searched Night's old `WholeWordsText(value ?: "—"` text (682t made it `shown`, beside or stacked).
+Guard updated to the same intent (val shown + exactly 2 WholeWordsText(shown ...)); app unchanged. Cloud Gradle blocked (Maven
+429) - CI runs it. NEXT: check Verify 310 on this push FIRST (red -> fix). Then the turn order from 682t's NEXT below (P2 turn if
+the live session's last P2 push - e45fe3e 17:13 UTC - is > 1 h old, else H16 next windows).
+
+**18 Nov 16:50 UTC, 682t (cloud, v0.6.74 turn):** Verify 310 GREEN on 1a66808 (both runners; 682s page guard clean). Live P2
+push 15:47 UTC (< 1 h) -> v0.6.74 turn. H16 high-priority set (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar) added to
+WindowWordsSurvey682Test (all four guards, x1.0 + x1.3): two real x1.3 word breaks fixed in code - Night SYSTEM value stacks under
+its label when it cannot fit beside it; SceneFactsBody values are WholeWordsText (Pocket ribbon CONSOLE fact). 18 windows clean
+(cloud compile + 144 cases). HW-24 extended (682t). Handheld NOT TESTED.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the live session's last P2 push (15:47 UTC) is > 1 h old
+(batch 2 review / batch 3 per NATIVE_PAGES_P2.md, merge the dev line into the P2 branch first); else v0.6.74 turn: H16 next
+windows not yet under the guards (the remaining 35 of 53: e.g. Classic, Tiles, Grid, Dash, Side, Spot, Library, Circuit,
+Timeline, Shelf family, Crate, Discs, Cube...) in batches of ~6, or H12 once the owner picks.
+
+**18 Nov 15:40 UTC, 682s (cloud, v0.6.74 turn):** Verify 310 on fb0cd09: ubuntu-latest GREEN (682m More guard passes, 6 windows
+clean), the other runner Maven infra. Live P2 push 15:13 UTC (< 1 h) -> v0.6.74 turn. H16: WindowWordsSurvey682Test.otherPages -
+Details / Options / Achievements of the 13 windows (Hero .. Cinema; Cross achievements = home column, skipped) under both guards,
+x1.0 + x1.3, real option rows + long achievement titles; opened by the new QA page hook (TestHooks.winPage /
+voltcap_test_winpage, through the window's own callbacks). Cloud compile BLOCKED (Maven x2) - CI compiles first.
+NEXT: check Verify 310 on this push FIRST: compile error / "page did not open" -> fix the test or hook; words / parent finding
+-> a real H16 cut on a page: fix that page (test fails on the old code). Then P2 turn if the live session's last P2 push is
+> 1 h old (batch 2 is implemented by the live session - next is its review / batch 3 per NATIVE_PAGES_P2.md); else v0.6.74 turn:
+H16 next is the owner's high-priority set (Pocket Classic, Pocket Ribbon, Night, Pocket, Bar) under the same three guards, or H12
+once the owner picks.
+
+**18 Nov 14:45 UTC, 682m (cloud, v0.6.74 turn):** Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.morePage - the 6 of the 13 windows with More (Hero, Hero tiles, Live, Hub, Twin icons, Twin
+showcase) opened, More opened via TestHooks.winMore, both guards on what it reveals, x1.0 + x1.3 (12 cases; 14 skipped, no
+More). Cloud compile BLOCKED (Maven 429 x2) - CI compiles + runs it first. Test only.
+NEXT: check Verify 310 on this push FIRST: compile error / "More did not open" -> fix the test; a words / parent finding -> a
+real H16 cut on a More section: fix the window (test fails on the old code). Then P2 turn (batch 2, Cube first; merge the dev
+line into the P2 branch first) if the live session's last P2 push (13:59 UTC) is > 1 h old. Following v0.6.74 turn: the same
+guards for the windows' own Details / Achievements / Options pages, or H12 once the owner picks.
+
+**18 Nov 13:20 UTC, 682l (cloud, v0.6.74 turn):** Verify 310 GREEN on eec7217. Live P2 push 12:40 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.parentClip - texts of the 13 windows (Hero .. Cinema) checked for a PARENT cutting them (box vs
+visible bounds in the root, beyond the box's empty room; sliding lines / scrolling content excluded). All 26 cases CLEAN (cloud
+compile + run), now a guard; ParentClipProbe683Test 2/2 proves it finds a real cut. Test only, no window changed.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first; merge the dev line into the P2
+branch first) if the live session's last P2 push (12:40 UTC) is > 1 h old - it will be. Following v0.6.74 turn: extend the H16
+survey to the More / second page of each window (the k678n13 sheet compares first / More pages), or the H12 reveal once the
+owner picks NOW / A / B.
+
 **18 Nov 12:40 UTC, 682k (cloud, v0.6.74 turn):** CI: Verify 310 on 16a1388 (682j) RED on code - Batch489Test: StageSlot's
 turned layer lacked flatTextFor3d() (D285). Fixed (AchievementFx.kt); cloud compile OK, Batch489Test 6/6 + RevealSheet682jTest 2/2,
 static PASS. Storyboard read: proposals draw correctly -> docs/evidence/h12_reveal_682k/storyboard.png + owner action (NOW / A / B /

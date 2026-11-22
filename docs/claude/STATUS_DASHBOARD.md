@@ -2,29 +2,29 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 682k · 2026-11-18 12:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 16a1388: RED (one guard test, both runners) - fixed in this push; targeted tests green in the cloud · effort: medium
+**1. LATEST UPDATE** - P2-22a · 2026-11-22 19:00 UTC · commit `this update (being pushed)` · CI: P2 branch: Verify 310 + QA app CI on 2763331 (see branch); this dev-line commit is docs + dashboard only · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
+**2. WHAT CLAUDE JUST FIXED** - Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
 
 **3. LAST 24 HOURS** (most important first)
-- **release** (v0.6.73): Voltcap 0.6.73 is published. Before publishing, your real Voltcap on the KONKR was upgraded with the exact release file: your data, profile, library and achievements stayed, and it starts without crashes. The files on GitHub are identical to the tested one. The merge used the new bridge check you approved, which waits for both test machines.
-- **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
-- **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
-- **App** (682k): Fixed the build check that went red on the last run: the new 'Trophy flip' preview turned the badge in 3D without the safety switch that keeps Android 13 from slowing down on turned text. The current achievement animation is unchanged. The comparison picture of the current unlock animation and the two candidates is ready for you to choose from (docs/evidence/h12_reveal_682k/storyboard.png).
-- **App** (682j): Started the achievements unlock-animation redesign the way you asked - comparison first. The current animation is unchanged; the build now draws a side-by-side storyboard of it next to two candidate new reveals ('Trophy flip': the badge turns over with a gold ring and shine; 'Glow burst': the badge lights up from a silhouette without flying). Once the build confirms the pictures look right, you'll be asked to pick one (or keep the current one). Not checked on a handheld.
+- **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
+- **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
+- **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
+- **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
+- **App** (692a): The game cards no longer cut any text with '...': long game names on cards without art, the wide card's title, console and 'Played' lines, the NEW pill, the trophy count and the recent achievement title now shrink a little or slide so everything can be read.
 
-**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
+**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
-| Area | Implemented | Verified on handhelds | Approved by you |
-|---|---|---|---|
-| Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 |
-| Native pages | `██░░░░░░░░` 13/53 | `██░░░░░░░░` 13/53 | `░░░░░░░░░░` 0/53 |
-| Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 |
-| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 |
-| Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
-| Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
+| Area | Implemented | Verified on handhelds | Approved by you | Released |
+|---|---|---|---|---|
+| Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
+| Native pages (own designs) | `███░░░░░░░` 18/53 · P2 branch only | `███░░░░░░░` 14/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
+| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
+| Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
+| Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Your pick for the achievement unlock animation (NOW / Trophy flip / Glow burst / mix); then: Native pages batch 2 (Cube first); More game-window polish from your review sheet
+**5. WORKING ON NEXT** - now: P2: batch 4 x1.0 on KONKR + RP Classic (running) and the 18-layout review package on the final build; then: P2 batch 5 (shelf family first, per the audit); Remove cut-off text from the next screens (mixer, row info panel, Twin desk)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,7 +183,9 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
 | HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) | OPEN (same KONKR session as HW-24, ~3 min) |
 | HW-24 Channel progress pill clear of the name plate (680a, D356) | OPEN (next KONKR session) |
 | HW-23 KONKR evening session 17 Nov (live, owner present) | DONE |
@@ -206,12 +208,12 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 14 of 22.
+Open hardware requests: 15 of 24.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
 <!-- GEN:areas -->
-_Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
+_Evidence file: docs/claude/progress.json (2026-11-22 (P2 audit + owner review decision)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
 
 **Home layouts (popup gate)**
 - Total: 53
@@ -226,14 +228,14 @@ _Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-
 
 **Native popup pages**
 - Total: 53
-- Implemented: 13 (24 %)
-- Unit-tested: 13 (24 %)
+- Implemented: 18 (33 %)
+- Unit-tested: 18 (33 %)
 - Emulator-tested: 0 (0 %)
-- Real-device verified: 13 (24 %)
+- Real-device verified: 14 (26 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 40 layouts still on the shared page (P2)
-- Source: REQUIREMENTS_MATRIX P2 (673j/k gates)
+- Remaining / blocked: 18 own designs: 0 visually approved. 12 layouts have native frames with SHARED page bodies (Night, Blades, Tiles, Grid, shelf family x4, Twin x3, Disc station) and count as NOT done; 23 still on the shared page. Batch 4 (Side menu, Icon bar, Arctic, Storage boxes) x1.0 on KONKR + RP Classic running 22 Nov.
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (22 Nov). impl = layouts drawing their own Details + Achievements + Options rows (class A of the audit). device = all pages walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app): the first 14 on b06044b (14:43-16:14) - batch 4 x1.3 only so far (d294cf2 / 3d6d46f). The old 13/53 counted native frames whose page bodies are shared; retired.
 
 **Physical pickup / return animations**
 - Total: 14

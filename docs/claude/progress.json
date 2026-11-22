@@ -1,6 +1,6 @@
 {
  "_rules": "Per-area evidence for STATUS_DASHBOARD.md. Numbers only from evidence named in 'source'; anything not counted is the string UNKNOWN. 'device' = real-handheld gate PASS on a dev-line build; 'emulator' never counts as device. Update a value only together with its source. tools/cloud/dashboard.py renders this file.",
- "updated": "2026-11-17 (live 678r, KONKR)",
+ "updated": "2026-11-22 (P2 audit + owner review decision)",
  "areas": [
   {
    "area": "Home layouts (popup gate)",
@@ -17,14 +17,16 @@
   {
    "area": "Native popup pages",
    "total": 53,
-   "impl": 13,
-   "unit": 13,
+   "impl": 18,
+   "unit": 18,
    "emulator": 0,
-   "device": 13,
+   "device": 14,
    "owner": 0,
    "released": 0,
-   "remaining": "40 layouts still on the shared page (P2)",
-   "source": "REQUIREMENTS_MATRIX P2 (673j/k gates)"
+   "remaining": "18 own designs: 0 visually approved. 12 layouts have native frames with SHARED page bodies (Night, Blades, Tiles, Grid, shelf family x4, Twin x3, Disc station) and count as NOT done; 23 still on the shared page. Batch 4 (Side menu, Icon bar, Arctic, Storage boxes) x1.0 on KONKR + RP Classic running 22 Nov.",
+   "source": "P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (22 Nov). impl = layouts drawing their own Details + Achievements + Options rows (class A of the audit). device = all pages walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app): the first 14 on b06044b (14:43-16:14) - batch 4 x1.3 only so far (d294cf2 / 3d6d46f). The old 13/53 counted native frames whose page bodies are shared; retired.",
+   "functional_owner": "14 accepted functionally 22 Nov (batches 1-3), not visual approval",
+   "branch": "P2 branch only"
   },
   {
    "area": "Physical pickup / return animations",

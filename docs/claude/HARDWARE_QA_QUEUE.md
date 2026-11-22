@@ -22,6 +22,30 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Build: commit <sha> on claude/qa-0672-repair; QA build = assembleQa / assembleDebug of that commit
 - Why not emulator: ...
 - Tests: exact gates / scripts (e.g. pop529.sh run <tag> <off|font=1.3,density=1.15> "<LAYOUTS>" OWN, then popclip.py)
+- Also (686a, H16, dev line 686a or later, ~1 min, KONKR x1.3): Orbit deck (ORBIT) at x1.3 in the narrow window: the key
+  labels under the round keys read whole - "ACHIEVEMENTS", "SAVE SYNC", "INSPECT" never broken inside the word (spacing a little
+  tighter / a step smaller there if they must); x1.0 looks as before. pop529 ORBIT OWN -> popclip.py. Unit evidence only
+  (WindowWordsSurvey682Test NEXT_686, OrbitKeyLabel686Test).
+- Also (688b, H16, dev line 688b or later, ~1 min, KONKR x1.3): TV room, open a game with achievements on the set, turn to
+  Achievements (R1): "Set order" whole on its own line under the count, achievement names whole (points under the badge), the
+  first achievement in view, A on the order row cycles it; x1.0 and a wide page (any other layout) look as before. pop529 TV OWN
+  -> popclip.py. Unit evidence only (WindowWordsSurvey682Test[TV x1.3] otherPages; CI).
+- Also (689a, rule 11, dev line 689a or later, ~2 min, KONKR x1.3 + x1.0): game popup style Classic (the full-screen details
+  window), a game with a long name, a long info line (year / developer / publisher / genres) and achievements: the title wraps to
+  two lines, then shrinks, then slides - never ends in an ellipsis; info line, 'Last session', the stat labels / values, the page
+  tabs, the milestone line, the trophy strip and the inline achievement names / descriptions whole (slide where they must); a
+  summary under ~260 characters shown whole (no More chip), a longer one 4 lines + More; RA comments whole. pop529 <layout> CLASSIC
+  -> popclip.py. Unit evidence only (GameDetailsFullText689aTest, static TRUNCATE 171 -> 158).
+- Also (691a, rule 11, dev line 691a or later, ~2 min, KONKR x1.3 + x1.0): home layout Twin icons, a game with a long name and a
+  long console name: the focused game's name and its console / playtime line shrink a little, then slide - never end in an
+  ellipsis; on the category page the category card's name + hint, the small labels under the category icons (cells >= 44 dp) and
+  the Open bar's 'Open · <category>' / 'Open · <game>' read whole (slide in the bar); the tray does not move when the focus moves.
+  Screenshots. Unit evidence only (TwinIconsFullText691aTest, static TRUNCATE 150 -> 143; first compile in CI).
+- Also (692a, rule 11, dev line 692a or later, ~2 min, KONKR x1.3 + x1.0): classic row (GameCard) with a game that has no art and
+  a very long name, a focused wide capsule (long title, console name on, 'Played ...' on), a card with a NEW unlock pill and a
+  trophy count, and the badge mode 'Recent unlock' with a long achievement title: every text whole (shrinks, then slides) - never
+  an ellipsis; the cards / capsule do not change size or jump when the focus moves. Screenshots. Unit evidence only
+  (GameCardFullText692aTest, static TRUNCATE 143 -> 136; first compile in CI).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
@@ -33,6 +57,18 @@ nothing, log a defect. Evidence is labelled QA or PRODUCTION. All requests below
 Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.qa only - its own test data) is always allowed.
 
 ## Requests
+
+### HW-26 Volt second screen text shown whole (690a, rule 11) - OPEN (Thor; batch with HW-19 when the owner says the Thor is back)
+- Device(s): AYN Thor (3140972f), USB, lower screen = second display. Level L1 (QA app only). Thor NOT with the owner since 17 Nov -
+  never poll / wake; only when he says it is back. Commit: dev line 690a or later. ~3 min, x1.0 + x1.3.
+- Why not emulator: the Volt companion draws on the Presentation of a second physical display; the emulator trial has one display.
+- Tests: second screen style Volt, a game with a long name and achievements with long titles / descriptions: the clock beside the
+  page tabs whole; on the achievements board the game name (2 lines, then shrink, then slide), the console line, the filter labels
+  with their counts, the list's titles / descriptions and the picked achievement's title (3 lines) never end in an ellipsis; the
+  game card's console label whole; nothing jumps when the focus moves. Screenshot of the lower screen at both scales.
+- Evidence so far: unit only (SecondScreenVoltFullText690aTest, static TRUNCATE 158 -> 150); not compiled in the cloud (Maven 429) -
+  CI is the first compile.
+- Result: (filled in by the hardware session)
 
 ### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED
 - Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
@@ -104,6 +140,20 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
   reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
   Unit evidence only (BarDockLabels681wTest).
+- Also (682t, H16, dev line 682t or later, ~2 min, KONKR x1.3): Night (NIGHT), a game on PlayStation 2: the SYSTEM value
+  "PlayStation 2" whole - under its label across the panel when it does not fit beside it (never "PlayStatio / n 2"); the other
+  values still beside their labels; x1.0 as before. Pocket ribbon (POCKET_RIBBON), same game, first page and More: the CONSOLE
+  fact "PlayStation 2" whole (smaller if it must, never broken inside the word). pop529 NIGHT OWN / POCKET_RIBBON OWN ->
+  popclip.py. Unit evidence only (WindowWordsSurvey682Test x1.3, NightValueStack682tTest).
+- Also (684a, H16, dev line 684a or later, ~1 min, KONKR x1.0 + x1.3): Timeline (TIMELINE), a PlayStation 2 game WITHOUT
+  cover art: the window's grey plate shows the console initials only (no "PlayStati / on" break), the entry line beside it names
+  "PlayStation 2" whole; a game with a short console name (e.g. "Wii") still shows its caption under the initials. pop529
+  TIMELINE OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test TIMELINE, NoArtCaption684Test).
+- Also (685a, H16, dev line 685a or later, ~1 min, KONKR x1.0 + x1.3): Storage boxes (STORAGE) at x1.3, a game played before:
+  the fact tab "LAST PLAYED" whole (two lines in its tab if it must, never just "LAST"); the other tabs one line as before.
+  Card binder (CARDS): open a game - the card still turns over (front away, back in) as before, no flicker or blank frame at
+  the half-turn; B - it turns back. pop529 STORAGE OWN / CARDS OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test
+  NEXT_685, CardFront685Test).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

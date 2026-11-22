@@ -53,7 +53,10 @@ class Batch513Test {
         assertTrue(c.contains("WholeWordsText(value, color = ink, fontSize = 14.sp, fontWeight = FontWeight.Medium)"))
         val n = src("ui/WinScenes.kt")
         assertTrue(n.contains("val labelW = nightLabelWidth(widestLabel, maxWidth)"))
-        assertTrue(n.contains("WholeWordsText(value ?: \"—\", color = Color.White, fontSize = 15.sp"))
+        // (682t: the value is `shown = value ?: "—"`; beside its label OR stacked under it when its longest word cannot fit -
+        // both places keep words whole, nothing reverts to a plain Text.)
+        assertTrue(n.contains("val shown = value ?: \"—\""))
+        assertEquals(2, Regex(Regex.escape("WholeWordsText(shown, color = Color.White, fontSize = 15.sp")).findAll(n).count())
     }
 
     /** "Who's playing?": the drifting light holds still with the home's idle settle and carries on from the same moment. */
