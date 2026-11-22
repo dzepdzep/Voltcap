@@ -2,29 +2,29 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 696a · 2026-11-22 23:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 492265c: ubuntu-latest GREEN, ubuntu-24.04 Robolectric jar-transform infra · effort: medium
+**1. LATEST UPDATE** - P2-23a · 2026-11-22 23:45 UTC · commit `this update (being pushed)` · CI: P2 branch ed20ef1: Verify 310 GREEN; 9192a89: one runner GREEN (full suite + debug APK), the other hit Maven's download limit (infra); local full suite 2941 / 0 failed on 9192a89 · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The sound widget on the home widget board no longer cuts an app's name with '...': long names shrink a little and then slide so they can be read whole, and the volume bars stay where they are.
+**2. WHAT CLAUDE JUST FIXED** - Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 
 **3. LAST 24 HOURS** (most important first)
+- **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 - **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 - **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
 - **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 - **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
-- **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
 | Area | Implemented | Verified on handhelds | Approved by you | Released |
 |---|---|---|---|---|
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
-| Native pages (own designs) | `███░░░░░░░` 18/53 · P2 branch only | `███░░░░░░░` 14/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Native pages (own designs) | `█████░░░░░` 29/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
 | Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
 | Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 batch 1 once the owner has reviewed it; Rule 11 full text: QuickMenuActivity
+**5. WORKING ON NEXT** - now: P2: your visual review of the 29-layout package; TV room strip decision (D367); then: P2 batch 8: Disc station's own pages, then the 23 shared-page layouts; PR #22: its CI on the current base (Maven download limit; re-run)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -213,7 +213,7 @@ Open hardware requests: 15 of 24.
 
 ## Progress by area (generated)
 <!-- GEN:areas -->
-_Evidence file: docs/claude/progress.json (2026-11-22 (P2 audit + owner review decision)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
+_Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batches 4-7 on hardware)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
 
 **Home layouts (popup gate)**
 - Total: 53
@@ -228,14 +228,14 @@ _Evidence file: docs/claude/progress.json (2026-11-22 (P2 audit + owner review d
 
 **Native popup pages**
 - Total: 53
-- Implemented: 18 (33 %)
-- Unit-tested: 18 (33 %)
+- Implemented: 29 (54 %)
+- Unit-tested: 29 (54 %)
 - Emulator-tested: 0 (0 %)
-- Real-device verified: 14 (26 %)
+- Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 18 own designs: 0 visually approved. 12 layouts have native frames with SHARED page bodies (Night, Blades, Tiles, Grid, shelf family x4, Twin x3, Disc station) and count as NOT done; 23 still on the shared page. Batch 4 (Side menu, Icon bar, Arctic, Storage boxes) x1.0 on KONKR + RP Classic running 22 Nov.
-- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (22 Nov). impl = layouts drawing their own Details + Achievements + Options rows (class A of the audit). device = all pages walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app): the first 14 on b06044b (14:43-16:14) - batch 4 x1.3 only so far (d294cf2 / 3d6d46f). The old 13/53 counted native frames whose page bodies are shared; retired.
+- Remaining / blocked: 29 own designs, 0 visually approved (review package published 23 Nov). TV room: Play changes width between its pages (D367, needs a decision). Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). impl = layouts drawing their own Details + Achievements + Options rows. device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; runs gk10 gr10 gk13 gr13 hk10 hr10 hk13 on 1ada6c8 / b316b8f / 9192a89; 0 launches, 0 crashes, restore diff 0). Play same size and place on every page: 28 of 29 (TV room D367).
 
 **Physical pickup / return animations**
 - Total: 14
