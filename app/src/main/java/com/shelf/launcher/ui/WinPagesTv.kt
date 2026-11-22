@@ -253,10 +253,25 @@ private fun TtxInfo(ctx: WinSceneCtx, live: Boolean, modifier: Modifier, withCon
     Column(modifier.nativeScroll(TTX_WHITE)) {
         // (681v: the tight masthead has no console - it is the first fact then.)
         val facts = nativeFacts(ctx, if (withConsole) setOf("Trophies") else setOf("Console", "Trophies"))
-        facts.forEach { f ->
-            Row(Modifier.fillMaxWidth()) {
-                Text(f.label.uppercase().padEnd(12, ' '), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp)
-                Text(f.value, color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp, modifier = Modifier.weight(1f))
+        // (682u: the label column as wide as the longest label + 1 (was 12 characters) and whole words in the values - at x1.3 on
+        // a small set "PlaySt / ation" broke inside the word, worse with the room's figure kept out of the screen's corner.)
+        val pad = (facts.maxOfOrNull { it.label.length } ?: 0) + 1
+        // (a set too narrow for label and value side by side - the label's column would leave the value under 14 characters - puts
+        // the value on the line under its label, as a teletext page's indented line)
+        val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 4)
+        val cell = measurer.measure("M", androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontFamily = TTX)).size.width
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val stacked = constraints.maxWidth < cell * (pad + 14)
+            Column {
+                facts.forEach { f ->
+                    if (stacked) {
+                        Text(f.label.uppercase(), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp, softWrap = false)
+                        WholeWordsText(f.value, color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp, modifier = Modifier.padding(start = 8.dp))
+                    } else Row(Modifier.fillMaxWidth()) {
+                        Text(f.label.uppercase().padEnd(pad, ' '), color = TTX_CYAN, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp, softWrap = false)
+                        WholeWordsText(f.value, color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp, modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
         if (ctx.total > 0) Text("ACHIEVEMENTS  ${ctx.earned}/${ctx.total}", color = TTX_GREEN, fontSize = 11.sp, fontFamily = TTX, lineHeight = 14.sp)

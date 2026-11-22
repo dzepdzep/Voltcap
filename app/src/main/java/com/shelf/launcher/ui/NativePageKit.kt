@@ -9,6 +9,13 @@ import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
@@ -208,3 +215,28 @@ internal class NativeConfirm {
 
 @Composable
 internal fun rememberNativeConfirm(ctx: WinSceneCtx): NativeConfirm = remember(ctx.g.stableKey) { NativeConfirm() }
+
+/**
+ * 682t (owner 18 Nov, RP Classic review: the Hub's medal discs were empty black icons - the badge pictures had not loaded there).
+ * An achievement's badge with a fallback that is always drawn first: the achievement's own mark - its first letter on a disc in
+ * the layout's colour (earned) or grey (to get) - and the picture over it when it loads. A badge that never loads (offline, no
+ * badge, a fixture) leaves a readable mark, never an empty black square. [locked] greys a picture that is not earned.
+ */
+@Composable
+internal fun NativeBadge(badgeName: String?, title: String?, earned: Boolean, accent: Color, modifier: Modifier,
+                         shape: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp), locked: Boolean = true) {
+    val ink = if (earned) accent else Color(0xFF6B6F78)
+    Box(modifier.clip(shape).background(ink.copy(alpha = if (earned) 0.32f else 0.22f))
+        .border(1.dp, ink.copy(alpha = 0.7f), shape), contentAlignment = Alignment.Center) {
+        Text(nativeBadgeMark(title), color = if (earned) Color.White else Color.White.copy(alpha = 0.6f), fontWeight = FontWeight.Black,
+            fontSize = 12.sp, maxLines = 1, softWrap = false)
+        com.shelf.launcher.data.RaBadges.url(badgeName)?.let { url ->
+            coil.compose.AsyncImage(url, title, contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                colorFilter = if (!earned && locked) androidx.compose.ui.graphics.ColorFilter.colorMatrix(androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(0f) }) else null,
+                alpha = if (!earned && locked) 0.6f else 1f, modifier = Modifier.matchParentSize())
+        }
+    }
+}
+
+/** The fallback mark: the title's first letter or digit, upper case; "★" with none. Pure. */
+internal fun nativeBadgeMark(title: String?): String = title?.firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "★"

@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -333,26 +334,40 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
         // drawn across the whole window: 2.7–3.8× upscaled, soft. Window-wide pictures in the scenes now use the backdrop
         // request (the screen's long side), as the classic window already did; the picture itself is the owner's choice.)
         (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = 0.75f }, request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+        // (682t, P2 batch 2: Spotlight's own pages - THE PLOT, THE CREDITS, BACKSTAGE - WinPagesSpot.kt. On them the pool of light
+        // moves down from the title onto the page, the title steps up small, and the Play pill row stays where it is.)
+        val onPage = ctx.page != WinPage.MAIN
+        val anim = rememberAnimationsEnabled()
+        val pool by androidx.compose.animation.core.animateFloatAsState(if (onPage) 0.62f else 0.3f,
+            if (anim) androidx.compose.animation.core.tween(420, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(),
+            label = "spotPool")
         // The spotlight: dark round the edges, a pool of light on the title.
         Canvas(Modifier.fillMaxSize()) {
-            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * 0.3f), radius = size.maxDimension * 0.7f))
-            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)), startY = size.height * 0.45f))
+            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * pool), radius = size.maxDimension * 0.7f))
+            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)), startY = size.height * (if (onPage) 0.2f else 0.45f)))
         }
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        // (Update 505: as on the Spotlight home — its light Play pill, the other keys on its dark themed cards, the one you're on
+        // lit in the theme's accent (was a fixed warm yellow), readable on the poster's dark.)
+        val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(if (onPage) Modifier.fillMaxSize() else Modifier).padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            if (onPage) Text(spotPageName(ctx.page), color = lit, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
             // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
             // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
             val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
-            ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.55f).height(minOf(h * 0.18f, 90.dp)),
+            ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
+                Modifier.fillMaxWidth(if (onPage) 0.4f else 0.55f).height(if (onPage) minOf(h * 0.10f, 44.dp) else minOf(h * 0.18f, 90.dp)),
                 contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
-                ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
+                ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = if (onPage) 17.sp else 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            if (!onPage) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
                 modifier = Modifier.padding(vertical = 6.dp))
-            if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().height(h * 0.4f))
-            // (Update 505: as on the Spotlight home — its light Play pill, the other keys on its dark themed cards, the one you're on
-            // lit in the theme's accent (was a fixed warm yellow), readable on the poster's dark.)
-            val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
+            else NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp), label = "spotPage", move = ::spotMove) { pg, pageLive ->
+                SpotPage(ctx, pg, pageLive, lit, Modifier.fillMaxSize())
+            }
             val card = themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)
-            KeyRow(sceneKeys(ctx), 8.dp) { k ->
+            // (682t, owner 18 Nov: Play the same size in the same place on every page - the pages keep the main page's slots)
+            val keys = sceneKeys(ctx)
+            KeyRow(keys, 8.dp, slots = rememberKeySlots(ctx.page, keys)) { k ->
                 SceneKeyStyled(k, if (k.primary) Color(0xFFE9E9EC) else card, lit, if (k.primary) Color(0xFF16181C) else Color.White,
                     com.shelf.launcher.ui.theme.textOn(lit, Color.Black), Color.White.copy(alpha = 0.35f), Color.White, RoundedCornerShape(50), height = 36.dp, upper = true, size = 11.sp)
             }

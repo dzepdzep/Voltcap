@@ -49,7 +49,7 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                 HomeLayout.CONSOLES, HomeLayout.COVERDETAILS, // (529k: the rest of the shelf family has native pages now)
                 HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, // (529l: the Twin family's touch-screen pages)
                 HomeLayout.MAGAZINE, HomeLayout.CINEMA, HomeLayout.ARCADE, HomeLayout.CUBE, // (P2 batch 2, 682n-q: their own pages)
-                HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME) // (682s: P2 batch 1's own pages too)
+                HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME, HomeLayout.SPOT) // (682s: P2 batch 1's own pages too)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)

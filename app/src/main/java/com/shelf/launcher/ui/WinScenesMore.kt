@@ -124,11 +124,13 @@ internal val KEY_ROW_GUTTER = 16.dp
 @Composable
 internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp,
     /** D354 (681p): two-line keys only where one-line keys would show a single key at a time (uniformRowPick). */
-    twoLineOnlyWhenAlone: Boolean = false, key: @Composable (WinAction) -> Unit) {
+    twoLineOnlyWhenAlone: Boolean = false,
+    /** 682t: the main page's key count - on the window's own pages the keys keep the main page's slots (rememberKeySlots). */
+    slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
-        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, key = key)
+        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, slots = slots, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -138,7 +140,9 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp,
  * room each side when it scrolls. Where all fit, every key gets an equal share of the whole width. Where not, as many whole keys
  * as fit show at once (each widened to fill that view exactly, never narrower than [need]) and the row scrolls by whole keys.
  */
-internal data class UniformRowGeom(val keyW: Int, val visible: Int, val scrolls: Boolean, val pitch: Int, val maxOffset: Int, val viewStart: Int, val viewW: Int)
+internal data class UniformRowGeom(val keyW: Int, val visible: Int, val scrolls: Boolean, val pitch: Int, val maxOffset: Int, val viewStart: Int, val viewW: Int,
+    /** 682t: the first key's own width (Play keeping the main page's slot) - 0: as every key. */
+    val firstW: Int = 0)
 
 internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
     if (n <= 0) return UniformRowGeom(need, 0, false, need + gap, 0, 0, 0)
@@ -155,6 +159,34 @@ internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int
     val w = if (k == 1) need else maxOf(need, (room - (k - 1) * gap) / k)
     val view = k * w + (k - 1) * gap
     return UniformRowGeom(w, k, true, w + gap, (n - k) * (w + gap), ((width - view) / 2).coerceAtLeast(0), view)
+}
+
+/**
+ * 682t (pure; owner 18 Nov: "keep Play button size and positioning consistent between native pages within each layout"): a page's
+ * key row that has fewer keys than the main page's [slots] keeps the main page's key size and starts where it does - Play stays
+ * the same size in the same place, the page's other keys in the main page's next slots. Null where the main page's row would
+ * not fit all its keys whole ([need] wider than a slot): the usual row then.
+ */
+internal fun uniformSlotGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int): UniformRowGeom? {
+    if (n <= 0 || slots <= n) return null
+    val w = (width - (slots - 1) * gap) / slots
+    if (w <= 0) return null
+    if (need <= w) return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
+    // A page key wider than a slot ("FULL DETAILS" at x1.3): Play keeps its slot, the page's other keys share the rest.
+    if (n < 2) return null
+    val rest = (width - w - gap - (n - 2) * gap) / (n - 1)
+    if (rest < need) return null
+    return UniformRowGeom(rest, n, false, rest + gap, 0, 0, width, firstW = w)
+}
+
+/** 682t: the main page's action-key count, kept while the window turns its own pages (KeyRow's slots) - counted on the main
+ *  page with More closed (its open list - "Less" - is not the row Play sits in). [keys] are this page's. */
+@Composable
+internal fun rememberKeySlots(page: WinPage, keys: List<WinAction>): Int {
+    val kept = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val count = keys.count { !it.status }
+    if (page == WinPage.MAIN && keys.none { it.label == "Less" } && kept.intValue != count) kept.intValue = count
+    return kept.intValue
 }
 
 /**
@@ -194,7 +226,7 @@ internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
  * clipped away (not drawn, not counted as shown). Each key is drawn by [key] - the layout's own look - at the group's size.
  */
 @Composable
-internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, twoLineOnlyWhenAlone: Boolean = false, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, twoLineOnlyWhenAlone: Boolean = false, slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
     val gutterPx = with(density) { KEY_ROW_GUTTER.roundToPx() }
@@ -212,7 +244,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         val g = geom
         if (g != null && g.scrolls) scope.launch { offset.snapTo((offset.value - d).coerceIn(0f, g.maxOffset.toFloat())) }
     }
-    val keyW = remember { IntArray(1) }
+    val keyW = remember { IntArray(2) }
     val inner = remember(gapPx) { uniformKeysPolicy(gapPx, keyW) { offset.value } }
     androidx.compose.ui.layout.Layout(
         content = {
@@ -256,10 +288,10 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        val g = uniformSlotGeom(n, slots, need, width, gapPx) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
             .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
-        keyW[0] = g.keyW
+        keyW[0] = g.keyW; keyW[1] = g.firstW
         val p = box.measure(androidx.compose.ui.unit.Constraints.fixed(g.viewW.coerceAtLeast(0), h))
         if (g != geom) geom = g
         layout(width, h) { p.place(g.viewStart, 0) }
@@ -301,11 +333,12 @@ private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = o
         val viewW = constraints.maxWidth
         // (the key width UniformKeyRow worked out in the same pass - the view holds whole keys exactly)
         val w = keyW[0].takeIf { it > 0 } ?: (measurables.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0)
+        val first = keyW.getOrElse(1) { 0 }.takeIf { it > 0 } ?: w
         val h = constraints.maxHeight
-        val ps = measurables.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
+        val ps = measurables.mapIndexed { i, m -> m.measure(androidx.compose.ui.unit.Constraints.fixed(if (i == 0) first else w, h)) }
         return layout(viewW, h) {
             val ox = offset().toInt()
-            ps.forEachIndexed { i, p -> p.place(i * (w + gap) - ox, 0) }
+            ps.forEachIndexed { i, p -> p.place(if (i == 0) -ox else first + gap + (i - 1) * (w + gap) - ox, 0) }
         }
     }
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =

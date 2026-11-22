@@ -324,6 +324,9 @@ internal object WinPlan {
 /** Update 119: where the TV room's screen is (in the window), so the game window opens on the TV itself. */
 internal object TvScreen {
     var rect: Rect? = null
+    /** 682u: the room's foreground figure standing in front of the set's screen (tv_room_front.png), in px relative to the
+     *  screen's top-left - the open window keeps its text and keys out of it (tvFrontKeepOut) and draws the figure in front. */
+    var front: Rect? = null
     /** The display it's on (the TV room drawn on the second screen, with the games below, doesn't count). */
     var displayId: Int = -1
 }
@@ -1615,6 +1618,11 @@ internal fun GameWindow(
                     val below = maxHeight - tvRect.bottom.toDp()
                     val outside = below >= 74.dp
                     // (682k: an armed removing row's confirmation - under the set when the panel is there, else on the set's masthead.)
+                    // (682u, owner 18 Nov: "the TV popup collides with the figure standing in front of it" - permanent rule R27:
+                    // a foreground character never covers a popup, its text or its keys. The figure stays where it stands in the
+                    // painting, drawn in front as in the room; the window's text and keys keep out of its corner and the panel
+                    // under the set starts past it. No movement, no disappearing - the room is unchanged when the window closes.)
+                    val keep = TvScreen.front?.let { tvFrontKeepOut(tvRect.width, tvRect.height, it, 6.dp.toPx()) }
                     val tvConfirm = remember(g.stableKey) { NativeConfirm() }
                     val tvRoom = remember(tvConfirm, outside) { TvConfirmRoom(tvConfirm, underSet = outside) }
                     Box(
@@ -1624,10 +1632,13 @@ internal fun GameWindow(
                             .pointerInput(Unit) { detectTapGestures { } }
                             .onFocusChanged { if (it.hasFocus) focusInside = true }
                     ) {
-                        androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners, LocalTvConfirm provides tvRoom) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
+                        Box(Modifier.fillMaxSize().padding(start = (keep?.screenStart ?: 0f).toDp())) {
+                            androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners, LocalTvConfirm provides tvRoom) { TvWindowBody(look, g, state, backdrop, cover, page, { page = it }, playFocus, listFocus, onClose, onPlay, onFullDetails, extras, options, controlsInside = !outside) }
+                        }
                     }
+                    val panelStart = keep?.panelStart ?: -6.dp.toPx()
                     if (outside) Box(
-                        Modifier.offset(tvRect.left.toDp() - 6.dp, tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 12.dp)
+                        Modifier.offset(tvRect.left.toDp() + panelStart.toDp(), tvRect.bottom.toDp() + 8.dp).width(tvRect.width.toDp() + 6.dp - panelStart.toDp())
                             .graphicsLayer { alpha = tvOn().coerceIn(0f, 1f) }
                             .clip(RoundedCornerShape(12.dp)).background(Color(0xFF15161A).copy(alpha = 0.94f))
                             .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
@@ -1640,6 +1651,9 @@ internal fun GameWindow(
                             androidx.compose.runtime.CompositionLocalProvider(LocalPageOpeners provides pageOpeners) { TvControls(look, g, page, { page = it }, playFocus, onClose, onPlay, onFullDetails, extras, roomy = tvRect.width.toDp() > 380.dp) }
                         }
                     }
+                    // (682u: the figure in front of the set, as in the room - over the window's black screen, dimmed as the room is.)
+                    TvScreen.front?.let { fr -> TvFrontFigure(Rect(tvRect.left + fr.left, tvRect.top + fr.top, tvRect.left + fr.right, tvRect.top + fr.bottom)) {
+                        0.35f * (if (tvFlight) grow.value.coerceIn(0f, 1f) else 1f) } }
                     // (529s: the case on its way into the set and back.)
                     if (tvFlight && originLayer != null && origin != null) TvCaseFlyer(origin, tvRect, originLayer) { grow.value }
                 }

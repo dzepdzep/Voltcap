@@ -61,4 +61,38 @@ class NativePagesBatch2Test {
         assertTrue(scene.contains("CubePage(ctx, pg, pageLive, a, faceBottom,"))
         assertEquals(1, src("WinPagesCube.kt").split("ctx.pageFor(").size - 1)
     }
+
+    @Test fun spotlightPrintsThePostersOwnParts() {
+        // (682t) THE PLOT / THE CREDITS / BACKSTAGE; the pool of light moves onto the page; Play's row is the same on every page.
+        assertTrue(nativePages(WinScene.SPOT_POSTER))
+        for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.SPOT_POSTER, p))
+        assertEquals("THE PLOT", spotPageName(WinPage.DETAILS)); assertEquals("THE CREDITS", spotPageName(WinPage.TROPHIES))
+        assertEquals("BACKSTAGE", spotPageName(WinPage.OPTIONS))
+        assertEquals("★ 10", spotBilling(10)); assertEquals("★", spotBilling(null))
+        assertEquals("MADE BY", spotCreditLabel("Developer")); assertEquals("GENRE", spotCreditLabel("Genres"))
+        val scene = between(src("WinScenesHomes2.kt"), "internal fun SpotPoster(", "// ───────────── Icon bar")
+        assertFalse(scene.contains("ctx.pageBody("))
+        assertTrue(scene.contains("SpotPage(ctx, pg, pageLive, lit,"))
+        // one key row for every page: the same KeyRow call, not one per page
+        assertEquals(1, scene.split("KeyRow(keys, 8.dp, slots = rememberKeySlots(ctx.page,").size - 1)
+        assertEquals(1, src("WinPagesSpot.kt").split("ctx.pageFor(").size - 1)
+    }
+
+    @Test fun badgeFallbackMark() {
+        // (682t) a badge that never loads leaves the achievement's own mark, never an empty black square
+        assertEquals("Q", nativeBadgeMark("QA achievement 1")); assertEquals("1", nativeBadgeMark("  100 points"))
+        assertEquals("★", nativeBadgeMark(null)); assertEquals("★", nativeBadgeMark("  ·  "))
+    }
+
+    @Test fun pageKeysKeepTheMainPagesSlots() {
+        // (682t, owner 18 Nov: Play the same size in the same place on every page) 4 slots in 400 px, 8 px apart: 94 px each
+        val g = uniformSlotGeom(2, 4, 90, 400, 8)!!
+        assertEquals(94, g.keyW); assertEquals(0, g.viewStart); assertEquals(0, g.firstW)
+        // a page key wider than a slot: Play keeps 94, the other takes the rest
+        val w = uniformSlotGeom(2, 4, 150, 400, 8)!!
+        assertEquals(94, w.firstW); assertEquals(400 - 94 - 8, w.keyW)
+        assertEquals(null, uniformSlotGeom(4, 4, 90, 400, 8))    // the main page itself: the usual row
+        assertEquals(null, uniformSlotGeom(2, 0, 90, 400, 8))    // no main page seen
+        assertEquals(null, uniformSlotGeom(3, 4, 200, 400, 8))   // nothing fits whole: the usual (scrolling) row
+    }
 }

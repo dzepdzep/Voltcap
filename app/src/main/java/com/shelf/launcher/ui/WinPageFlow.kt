@@ -59,7 +59,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (682p: Arcade cabinets - the machine's instruction card, high-score table and service mode, WinPagesArcade.kt.)
     WinScene.ARCADE_MENU,
     // (682q: Cube menu - the cube's other faces: specs tiles, a wall of little cubes, square control keys, WinPagesCube.kt.)
-    WinScene.CUBE_FACE)
+    WinScene.CUBE_FACE,
+    // (682t: Spotlight - the poster's billing block, the end credits and backstage, WinPagesSpot.kt.)
+    WinScene.SPOT_POSTER)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
