@@ -1,3 +1,14 @@
+# Update 696a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home widget board shows app names whole
+- CI first: Verify 310 on 492265c (695a): ubuntu-latest GREEN (695a compiles, full suite incl. TwinDeskFullText695aTest passes),
+  ubuntu-24.04 infra only (Robolectric nativeruntime jar transform, no test ran).
+- WidgetBoard.kt (home widget board, sound widget): 2 TRUNCATE places -> 0. The per-app rows and the single-app volume row show
+  the app's name through FullText (shrink to a readable size, then slide), one line, reserve = false so the volume bars under them
+  stay put. "Looking for apps playing sound…" is original text (kept). Unused TextOverflow import removed.
+- Test: WidgetBoardFullText696aTest (fails on 695a: 2 Ellipsis). Static checks PASS, TRUNCATE 120 -> 118.
+  Cloud compile blocked by Maven Central 429 (compose compiler plugin) - CI is the first compile.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/WidgetBoard.kt, app/src/test/java/com/shelf/launcher/ui/WidgetBoardFullText696aTest.kt.
+- Hardware NOT TESTED: HW-24 696a (KONKR, ~2 min).
+
 # Update 695a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the Twin desk layout shows every text whole
 - CI first: Verify 310 on 6e8e88b (694a): ubuntu-latest GREEN (694a compiles, RowInfoPanelFullText694aTest passes), ubuntu-24.04
   infra only (Maven Central 429 on the Robolectric jar) - re-run requested.

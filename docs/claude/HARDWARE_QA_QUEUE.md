@@ -59,6 +59,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   console · playtime line, list console names and the bar label read whole (shrink, then slide) - never an ellipsis; the desk
   keeps its layout; L2 / R2 swaps the bar label in the same frame. Screenshots. Unit evidence only (TwinDeskFullText695aTest,
   static TRUNCATE 124 -> 120; not compiled in the cloud).
+- Also (696a, rule 11, dev line 696a or later, ~2 min, KONKR x1.3 + x1.0): home widget board, sound widget (compact + expanded)
+  with an app whose name is long playing sound: the app name reads whole (shrink, then slide) beside its volume - never an
+  ellipsis; the volume bars stay put. Screenshots. Unit evidence only (WidgetBoardFullText696aTest, static TRUNCATE 120 -> 118;
+  not compiled in the cloud).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 

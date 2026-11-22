@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 23:20 UTC, 696a (cloud, v0.6.74 turn):** Verify 310 on 492265c (695a): ubuntu-latest GREEN (full suite), ubuntu-24.04
+Robolectric jar-transform infra. P2 left alone (batch 1 owner review pending). P13 rule 11: WidgetBoard.kt (sound widget app names)
+2 TRUNCATE -> 0 via FullText (reserve = false). WidgetBoardFullText696aTest. TRUNCATE 120 -> 118. NOT compiled in the cloud (Maven 429)
+- CI first compile. HW-24 696a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in WidgetBoard / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files (5 each: QuickMenuActivity, PlayerPages, HubScreens, GuideScreen) - one per run with its
+FullText test; or H12 once the owner picks.
+
 **22 Nov 22:20 UTC, 695a (cloud, v0.6.74 turn):** Verify 310 on 6e8e88b (694a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
 (re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: TwinDesk.kt (Twin desk home) 4 TRUNCATE -> 0 via
 FullText (reserve = false). TwinDeskFullText695aTest. TRUNCATE 124 -> 120. NOT compiled in the cloud (Maven 429) - CI first compile. HW-24 695a (KONKR).
