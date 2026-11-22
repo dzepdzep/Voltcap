@@ -54,6 +54,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   on, a game with long genres / developer / publisher and a long summary, and a long news headline: facts line, chips,
   summary, news source and headline read whole (shrink, then slide) - never an ellipsis; the panel keeps its height.
   Screenshots. Unit evidence only (RowInfoPanelFullText694aTest, static TRUNCATE 129 -> 124; not compiled in the cloud).
+- Also (695a, rule 11, dev line 695a or later, ~2 min, KONKR x1.3 + x1.0): Twin desk home layout, a long category name in the
+  bottom bar, a game with a long console name and long playtime, the calendar on a long month name (a long locale): month title,
+  console · playtime line, list console names and the bar label read whole (shrink, then slide) - never an ellipsis; the desk
+  keeps its layout; L2 / R2 swaps the bar label in the same frame. Screenshots. Unit evidence only (TwinDeskFullText695aTest,
+  static TRUNCATE 124 -> 120; not compiled in the cloud).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 

@@ -59,7 +59,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -405,7 +404,7 @@ private fun DeskCalendar(time: LongState, tz: java.util.TimeZone, accent: Color,
         val fs = with(density) { (minOf(cellH, cellW) * 0.44f).toSp() }
         Column(Modifier.fillMaxSize()) {
             Box(Modifier.fillMaxWidth().height(cellH), contentAlignment = Alignment.CenterStart) {
-                Text(month.title, color = DeskInk, fontSize = fs * 1.15f, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 4.dp))
+                FullText(month.title, color = DeskInk, fontSize = fs * 1.15f, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false, modifier = Modifier.padding(start = 4.dp))
             }
             Row(Modifier.fillMaxWidth().height(cellH)) {
                 for (col in 0 until 7) {
@@ -498,9 +497,9 @@ private fun DeskNameStrip(c: StyleCtx, compact: Boolean, modifier: Modifier) {
                     maxLines = 1, fontWeight = FontWeight.Bold,
                     maxHeight = with(androidx.compose.ui.platform.LocalDensity.current) { ((if (compact) 14.sp else 18.sp).toPx() * 1.3f).toInt() }
                 )
-                Text(
+                FullText(
                     titles.console(g.platform) + " · " + stylePlaytime(c.playtime(g), c.lastPlayed(g) != null),
-                    color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, reserve = false
                 )
             }
             Text("${c.focus + 1} / ${c.games.size}", color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1)
@@ -651,7 +650,7 @@ private fun DeskPanel(c: StyleCtx, i: Int, on: Boolean, inGames: Boolean, compac
                 titles.display(g.name), color = DeskInk, maxSize = if (compact) 12.sp else 15.sp, minSize = if (compact) 9.sp else 11.sp,
                 maxLines = 2, fontWeight = FontWeight.Bold, lineHeightRatio = 1.12f
             )
-            Text(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, lineHeight = 1.2.em)
+            FullText(titles.console(g.platform), color = DeskMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, lineHeight = 1.2.em, reserve = false)
         }
         if (on && playIcon) Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(if (compact) 16.dp else 20.dp)) // (Update 243, #55: an extra)
     }
@@ -694,12 +693,14 @@ private fun DeskBar(c: StyleCtx, h: Dp, modifier: Modifier) {
         Spacer(Modifier.width(6.dp))
         DeskRound(Icons.Filled.Settings, names[1], StyleNav.on(StyleNav.Zone.BAR, 1), round) { c.actions.settings() }
         if (c.state.appearance.categoryBarHere != com.shelf.launcher.data.CategoryBar.OFF) CategoryTitle.Native()
-        Text(
+        // (Update 695a, rule 11: the bar's category / zone name shrinks, then slides - never "…". No size animation on a
+        // category change: FullText swaps the text in the same frame - CLAUDE.md rule 14.)
+        FullText(
             if (inBar) names.getOrElse(StyleNav.index) { "" }
             else if (c.state.appearance.categoryBarHere == com.shelf.launcher.data.CategoryBar.OFF) ""
             else c.categoryLabel,
             color = if (inBar) DeskInk else DeskMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
-            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
+            maxLines = 1, textAlign = TextAlign.Center, reserve = false, modifier = Modifier.weight(1f).padding(horizontal = 6.dp)
         )
         DeskRound(Icons.Filled.Bedtime, names[2], StyleNav.on(StyleNav.Zone.BAR, 2), round) { c.actions.screensaver() }
         // Update 180: the second screen's own dashboard (its pages, dock, Games page); ↩ there comes back.

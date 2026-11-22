@@ -1,3 +1,15 @@
+# Update 695a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the Twin desk layout shows every text whole
+- CI first: Verify 310 on 6e8e88b (694a): ubuntu-latest GREEN (694a compiles, RowInfoPanelFullText694aTest passes), ubuntu-24.04
+  infra only (Maven Central 429 on the Robolectric jar) - re-run requested.
+- TwinDesk.kt (Twin desk home layout): 4 TRUNCATE places -> 0. Calendar month title, the focused game's console · playtime line,
+  a list row's console name and the bottom bar's category / zone name go through FullText (shrink to a readable size, then
+  slide), one line each, reserve = false so the desk keeps its layout; the bar label keeps its centred weight(1f) slot and
+  swaps in the same frame on a category change (rule 14). Unused TextOverflow import removed.
+- Test: TwinDeskFullText695aTest (fails on 694a: 4 Ellipsis, 0 FullText). Static checks PASS, TRUNCATE 124 -> 120.
+  Cloud compile blocked by Maven Central 429 (compose compiler plugin) - Python mirror of its regexes 1/1/1/1; CI is the first compile.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/TwinDesk.kt, app/src/test/java/com/shelf/launcher/ui/TwinDeskFullText695aTest.kt.
+- Hardware NOT TESTED: HW-24 695a (KONKR, ~2 min).
+
 # Update 694a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home row's info panel shows every text whole
 - CI first: Verify 310 on 24d51ab (693a): GREEN on both runners (ubuntu-latest + ubuntu-24.04; MixerFullText693aTest passes).
 - RowInfoPanel.kt (info panel beside the home row: game facts + news card): 5 TRUNCATE places -> 0. Facts line (year, genres,
