@@ -393,3 +393,10 @@ Terminal, Dashboard, Library, Card binder.
   installer and initiator com.shelf.launcher (Voltcap's own updater; its Android install prompt had been waiting on screen
   since before 16:52). No QA input was sent after 18:34:53 (run pr15 done) and the restore sends no keys. Recorded for the owner
   to confirm it was their own confirmation.
+
+### 682ad - P2 batch 6: Tile home + Grid (WinPagesTile.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The lifted card's other side in the home's own tile language: fact tiles (value big and light, field small), wide
+  achievement tiles (badge on its own square tile, the points as a big light number), flat option tiles with the accent edge;
+  Play keeps the first half on every page (PAGE_SLOTS). The card's turn stays its own.
+- Audit: class A 27 / 53, class B 3 (Night status, Blades, Disc station), class C 23.
+- Also 682ac: Storage boxes' coverless sprite card in the game's placeholder colour (D369).

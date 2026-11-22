@@ -472,13 +472,12 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
         }
         Spacer(Modifier.height(if (big) 4.dp else 8.dp))
         Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(if (big) 6.dp else 8.dp)) {
-            // (529r: with large text the page draws as the card's own native page - the heading names it, no second margin.)
-            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
-                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            // (682ad, P2 batch 6: the card's other side in the home's own tiles - WinPagesTile.kt; the shared rows are gone.)
+            TilePage(ctx, p, live, ink, muted, a, Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(if (big) 8.dp else 10.dp))
-        KeyRow(keys, 6.dp) { k ->
+        // (682ab: Play keeps the first half of the row on every page)
+        KeyRow(keys, 6.dp, slots = PAGE_SLOTS) { k ->
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = if (big) 32.dp else 36.dp)
         }

@@ -37,3 +37,7 @@ Then class C by family.
 ## Update 682aa (batch 5)
 Shelf family (4) and Twin family (3) now draw their own pages: class A 25, class B 5 (Night status, Blades, Tiles, Grid, Disc
 station), class C 23. Batch 5 is implemented only - hardware NOT TESTED, not visually approved.
+
+## Update 682ad (batch 6)
+Tile home and Grid draw their own pages: class A 27, class B 3 (Night status, Blades, Disc station), class C 23. Batches 5-6
+implemented only - hardware: batch 5 in the 22 Nov evening capture (gk10 / gr10), batch 6 NOT TESTED; none visually approved.

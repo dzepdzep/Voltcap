@@ -166,5 +166,8 @@ class NativePagesBatch2Test {
         val t = src("WinSceneTwin.kt"); val j = t.indexOf("internal fun TwinTouchPages("); val tb = t.substring(j, t.indexOf("\n}\n", j))
         assertFalse(tb.contains("ctx.pageFor(")); assertTrue(tb.contains("TwinPage(")); assertTrue(tb.contains("page = true"))
         for (fn in listOf("TwinFacts(", "TwinAchievements(", "TwinButtons(")) assertTrue(fn, src("WinPagesTwin.kt").contains("private fun $fn"))
+        // 682ad: Tiles / Grid - the lifted card's other side in the home's own tiles
+        val f = src("WinSceneFamilies.kt"); val k = f.indexOf("private fun TileLiftPage("); val tl = f.substring(k, f.indexOf("\n}\n", k))
+        assertFalse(tl.contains("ctx.pageFor(")); assertTrue(tl.contains("TilePage(")); assertTrue(tl.contains("slots = PAGE_SLOTS"))
     }
 }

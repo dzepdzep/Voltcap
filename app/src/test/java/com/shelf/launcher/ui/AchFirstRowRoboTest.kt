@@ -46,7 +46,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (682r: batch 2 - KONKR x1.3 showed the magazine's CHECKLIST with no row at all)
             HomeLayout.MAGAZINE, HomeLayout.CINEMA, HomeLayout.ARCADE, HomeLayout.CUBE, HomeLayout.SPOT,
             // (682w: batch 3)
-            HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE)
+            HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE,
+            // (682ad: batch 6)
+            HomeLayout.TILES, HomeLayout.GRID)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {
