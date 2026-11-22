@@ -345,3 +345,13 @@ Terminal, Dashboard, Library, Card binder.
 - Checked (cloud, Robolectric): AchFirstRow (NATIVE + RPC), ShelfText native pages incl. batch 4, NativePagesBatch2Test,
   WinPresentationTest, UniformKeys673, PopupMore452, CrateVertical674, CategoryStable394, TvFrontKeepOut682u; static checks
   PASS; PageSheet review of the four at x1.0 / x1.3.
+
+### 682y on hardware (QA app d294cf2, x1.3, 22 Nov 17:49-18:05) - NOT owner-approved
+| Run | Device | Layouts | Result |
+|---|---|---|---|
+| pk14 | KONKR | Side menu, Icon bar, Arctic, Storage boxes, Card binder | 5 / 5 walked; 0 launches; fatal 0; confirmations armed + left; restore OK / diff 0 |
+| pr14 | RP Classic | same | 5 / 5; 0 launches; fatal 0; restore OK / diff 0 |
+- Play on the pages (QaClip): Card binder now the same on Details / Achievements / Options (fixed, PASS); Icon bar and Arctic
+  the same on every page (PASS). Side menu - Options (Play alone) a row lower: FAIL -> 682z (two rows' room on pages).
+  Storage boxes - keys on the name line on some pages and under the sheet on others (Play jumped): FAIL -> 682z (every page
+  decides as for Play + "Full details"; two slots). 682z not on hardware yet.

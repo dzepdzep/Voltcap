@@ -292,7 +292,9 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
             // The menu's own rows, with the accent bar on the one you're on.
             // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
             // when there is room, down to 30 dp when not, scrolling only below that.)
-            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(min = if (nAct < 2) 40.dp * 2 + SIDE_KEY_GAP else 0.dp, max = 140.dp))) {
+            // (682y, KONKR / RPC pk14 / pr14: on Options - Play alone - the rows' box was one row shorter and Play sat a row lower
+            // than on Details / Achievements. A page keeps two rows' room, Play at the top of it.)
             // (674o, Flip 2 x1.0 f674o: the fit filled the room to the last dp and pixel rounding left the status line 51 px -
             // under its 24 dp (54 px) touch size. 2 dp stay free for rounding.)
             val rowRoom = maxHeight - statusNeed - SIDE_ROUNDING

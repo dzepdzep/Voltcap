@@ -1143,8 +1143,11 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
             // the room the name keeps beside the sprite, the console tag and the keys (their words measured as they are drawn)
             fun w(t: String, sp: androidx.compose.ui.unit.TextUnit, mono: Boolean = false) = measurer.measure(t, androidx.compose.ui.text.TextStyle(fontSize = sp,
                 fontWeight = FontWeight.Black, fontFamily = if (mono) FontFamily.Monospace else null)).size.width
-            val keysPx = ctx.buttons.sumOf { w("▶ ", 13.sp) + w(it.label.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
-                with(dens) { (8.dp * (ctx.buttons.size - 1).coerceAtLeast(0)).roundToPx() }
+            // (682y, KONKR / RPC pk14 / pr14: decided on each page's own keys, Options (Play alone) put its keys on the name line
+            // and Details under the sheet - Play jumped between pages. Every page decides as for Play and the page's own key.)
+            fun rowPx(labels: List<String>) = labels.sumOf { w("▶ ", 13.sp) + w(it.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
+                with(dens) { (8.dp * (labels.size - 1).coerceAtLeast(0)).roundToPx() }
+            val keysPx = maxOf(rowPx(ctx.buttons.map { it.label }), rowPx(listOf(ctx.buttons.firstOrNull()?.label ?: "Play", "Full details")))
             val tagPx = w(ctx.console.uppercase(), 10.sp) + with(dens) { 20.dp.roundToPx() }
             val rowPx = with(dens) { (ctx.maxW * 0.94f - 24.dp - 20.dp).roundToPx() }
             val room = rowPx - keysPx - with(dens) { (30.dp + 10.dp + 10.dp).roundToPx() }
@@ -1201,7 +1204,8 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
 @OptIn(ExperimentalLayoutApi::class)
 private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean, twoLine: Boolean = true) {
         // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow) - was a wrapping FlowRow of keys of every width.)
-        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine) { a ->
+        // (682y: two slots - Play keeps the first half with or without the page's own key)
+        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine, slots = 2) { a ->
                 SceneControl(a, Modifier) { on ->
                     Box(Modifier.uniformFill().heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
                         contentAlignment = Alignment.CenterStart) {
