@@ -369,3 +369,14 @@ Terminal, Dashboard, Library, Card binder.
   0 launches, fatal 0, restore diff 0; Play the same size and place on Details / Achievements / Options on both (PASS).
 - Found, pre-existing (not a native page): D364 Storage Info sheet "ACHIEVEMENT / S" at x1.3 on the RP Classic - queued.
 - Batch 4 x1.0 on hardware: NOT TESTED. Review page updated to 18 layouts (batch 4 strips x1.3). Approval: none yet.
+
+### 682aa - P2 batch 5 (owner 22 Nov "proceed with Batch 5 autonomously"; audit class B first) - implemented, NOT owner-approved, HW NOT TESTED
+- Shelf family (Game shelf, Case stacks, Console stack, Coverflow details - WinPagesShelf.kt): the next index card's catalogue
+  (facts typed on ruled lines, field in small monospace capitals in the card's label colour), the card's checklist (badge as a
+  ringed stamp, title, "N PTS" as the catalogue number), entries with the arrow; each window's own wood / slate / metal.
+- Twin family (Twin desk, Twin icons, Twin showcase - WinPagesTwin.kt): pages drawn for the touch screen - fact tiles, a touch
+  list of tall rounded tiles with a round points counter, big touch buttons; desk paper or dark glass.
+- Both families: Play keeps the first half of the page's row on every page (PageBars(page = true) - two slots).
+- Audit: class A 18 -> 25 of 53; class B 12 -> 5 (Night status, Blades, Tiles, Grid, Disc station).
+- Checked (cloud): NativePagesBatch2Test (shelfFamilyCardsAreTheirOwn), ShelfText, AchFirstRow (+ RP Classic), PageSheet x1.0 /
+  x1.3 of the seven, static checks PASS.

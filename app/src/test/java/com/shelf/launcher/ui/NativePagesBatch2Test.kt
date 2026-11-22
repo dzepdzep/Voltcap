@@ -148,4 +148,19 @@ class NativePagesBatch2Test {
         assertEquals(3, storageCellsPerRow(700f, 140f, 45f, 3f, 3))
         assertEquals(1, storageCellsPerRow(100f, 140f, 45f, 3f, 2))
     }
+
+    // 682aa (P2 batch 5, audit NATIVE_PAGES_AUDIT.md): the shelf family's cards draw their own catalogue, checklist and entries -
+    // no shared page body left in ShelfFamilyPages for Details / Achievements / Options.
+    @Test fun shelfFamilyCardsAreTheirOwn() {
+        val s = src("WinSceneShelfPages.kt"); val i = s.indexOf("internal fun ShelfFamilyPages("); val body = s.substring(i, s.indexOf("\n}\n", i))
+        assertFalse(body.contains("ctx.pageFor("))
+        assertTrue(body.contains("ShelfCardPage("))
+        val pages = src("WinPagesShelf.kt")
+        for (fn in listOf("ShelfCatalogue(", "ShelfChecklist(", "ShelfEntries(")) assertTrue(fn, pages.contains("private fun $fn"))
+        assertEquals("12\u00A0PTS", shelfPoints(12)); assertEquals("0\u00A0PTS", shelfPoints(null))
+        // the Twin family's touch screen: its own tiles, touch list and buttons
+        val t = src("WinSceneTwin.kt"); val j = t.indexOf("internal fun TwinTouchPages("); val tb = t.substring(j, t.indexOf("\n}\n", j))
+        assertFalse(tb.contains("ctx.pageFor(")); assertTrue(tb.contains("TwinPage(")); assertTrue(tb.contains("page = true"))
+        for (fn in listOf("TwinFacts(", "TwinAchievements(", "TwinButtons(")) assertTrue(fn, src("WinPagesTwin.kt").contains("private fun $fn"))
+    }
 }

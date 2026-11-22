@@ -33,3 +33,7 @@ Notes per class-B layout (all draw `ctx.pageFor` inside their own frame):
 Class B first where the shell already sets the identity (smaller risk, one family per batch can cover several layouts):
 1. Shelf family (4 layouts, one scene) 2. Twin family (3) 3. Tiles + Grid (2) 4. Night status, Blades, Disc station.
 Then class C by family.
+
+## Update 682aa (batch 5)
+Shelf family (4) and Twin family (3) now draw their own pages: class A 25, class B 5 (Night status, Blades, Tiles, Grid, Disc
+station), class C 23. Batch 5 is implemented only - hardware NOT TESTED, not visually approved.

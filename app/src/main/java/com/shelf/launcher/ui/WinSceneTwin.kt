@@ -225,12 +225,11 @@ internal fun TwinTouchPages(
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(10.dp))
                 .background(if (desk) Color(0xFFF2F5F8) else Color.White.copy(alpha = 0.05f))
                 .then(if (desk) Modifier.border(1.dp, DeskEdge, RoundedCornerShape(10.dp)) else Modifier).padding(6.dp)) {
-                androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = !desk, showsCover = true, showsName = true)) {
-                    ctx.pageFor(p, Modifier.fillMaxSize(), live)
-                }
+                // (682aa, P2 batch 5: the touch screen's own tiles, touch list and buttons - WinPagesTwin.kt; the shared rows are gone.)
+                TwinPage(ctx, p, live, desk, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(8.dp))
-            PageBars(keysOf(p, live), 6.dp) { k -> key(k) }
+            PageBars(keysOf(p, live), 6.dp, page = true) { k -> key(k) }
         }
         }
     }
