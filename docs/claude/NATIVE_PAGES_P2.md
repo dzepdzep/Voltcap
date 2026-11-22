@@ -400,3 +400,10 @@ Terminal, Dashboard, Library, Card binder.
   Play keeps the first half on every page (PAGE_SLOTS). The card's turn stays its own.
 - Audit: class A 27 / 53, class B 3 (Night status, Blades, Disc station), class C 23.
 - Also 682ac: Storage boxes' coverless sprite card in the game's placeholder colour (D369).
+
+### 682ae - P2 batch 7: Night menu + Blades - implemented, NOT owner-approved, HW NOT TESTED
+- Night menu (WinPagesNight.kt): STATUS tags on the slant, achievement / option rows as slanted command bars (white and pulled
+  out when it's yours, "N PT"); the commands column now turns about its top edge, so Play stays put on every page.
+- Blades (WinPagesBlade.kt): the dashboard's thin type, rows lit in the blade's white-to-glow gradient, "N G" points; the page
+  blade's keys in two page slots.
+- Audit: class A 29 / 53, class B 1 (Disc station - its LCD track pages, owner review pending), class C 23.

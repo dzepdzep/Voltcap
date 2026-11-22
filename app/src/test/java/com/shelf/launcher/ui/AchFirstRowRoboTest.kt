@@ -48,7 +48,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (682w: batch 3)
             HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE,
             // (682ad: batch 6)
-            HomeLayout.TILES, HomeLayout.GRID)
+            HomeLayout.TILES, HomeLayout.GRID,
+            // (682ae: batch 7)
+            HomeLayout.NIGHT, HomeLayout.BLADES)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

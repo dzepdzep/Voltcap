@@ -169,5 +169,10 @@ class NativePagesBatch2Test {
         // 682ad: Tiles / Grid - the lifted card's other side in the home's own tiles
         val f = src("WinSceneFamilies.kt"); val k = f.indexOf("private fun TileLiftPage("); val tl = f.substring(k, f.indexOf("\n}\n", k))
         assertFalse(tl.contains("ctx.pageFor(")); assertTrue(tl.contains("TilePage(")); assertTrue(tl.contains("slots = PAGE_SLOTS"))
+        // 682ae: Night menu and Blades
+        val w = src("WinScenes.kt"); val ni = w.indexOf("private fun NightPagePanel("); val nb = w.substring(ni, w.indexOf("\n}\n", ni))
+        assertFalse(nb.contains("ctx.pageFor(")); assertTrue(nb.contains("NightPage("))
+        val c = src("WinScenesConsole.kt"); val bi = c.indexOf("private fun BladePageBlade("); val bb = c.substring(bi, c.indexOf("\n}\n", bi))
+        assertFalse(bb.contains("ctx.pageFor(")); assertTrue(bb.contains("BladePage(")); assertTrue(bb.contains("slots = PAGE_SLOTS"))
     }
 }

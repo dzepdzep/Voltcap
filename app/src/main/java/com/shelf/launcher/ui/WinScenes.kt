@@ -2142,7 +2142,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
             // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
             // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
             slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f)
-                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
+                // (682ae, PlayPlace RP Classic: turned about its middle, the column's turn moved Play 2 px with the number of
+                // commands under it (Options: Play alone). It turns about its top edge: Play stays put on every page.)
+                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
+                    rotationZ = -4f; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f) },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEachIndexed { ci, a ->
@@ -2250,7 +2253,7 @@ private fun NightPagePanel(ctx: WinSceneCtx, p: WinPage, live: Boolean, w: Dp, h
         modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).graphicsLayer { rotationZ = -2f }
             .clip(slantShape(0.06f)).background(Brush.horizontalGradient(listOf(Color(col.top), Color(col.bottom))))
             .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.06f)).padding(start = 30.dp, end = 26.dp, top = 12.dp, bottom = 12.dp)
-    ) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
+    ) { NightPage(ctx, p, live, hi, Modifier.fillMaxSize()) } // (682ae, P2 batch 7: the status screen's own pages - WinPagesNight.kt)
 }
 
 /**

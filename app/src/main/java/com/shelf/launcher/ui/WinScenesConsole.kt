@@ -384,11 +384,13 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
             WinFullText(ctx.name, color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
             Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.22f))) {
-                ctx.pageFor(pg, Modifier.fillMaxSize(), live)
+                // (682ae, P2 batch 7: the blade's own rows - WinPagesBlade.kt; the shared rows are gone.)
+                BladePage(ctx, pg, live, p.glow, p.ink, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(8.dp))
             // (674b, owner brief 15 Nov: the page blade's keys one row of identical keys (UniformKeyRow) - was a wrapping FlowRow.)
-            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp) { a ->
+            // (682ae: two page slots - Play keeps the first half on every page)
+            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp, slots = PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgKey")
                         Row(

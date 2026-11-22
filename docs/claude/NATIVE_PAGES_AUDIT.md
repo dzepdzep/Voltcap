@@ -41,3 +41,6 @@ station), class C 23. Batch 5 is implemented only - hardware NOT TESTED, not vis
 ## Update 682ad (batch 6)
 Tile home and Grid draw their own pages: class A 27, class B 3 (Night status, Blades, Disc station), class C 23. Batches 5-6
 implemented only - hardware: batch 5 in the 22 Nov evening capture (gk10 / gr10), batch 6 NOT TESTED; none visually approved.
+
+## Update 682ae (batch 7)
+Night menu and Blades draw their own pages: class A 29, class B 1 (Disc station), class C 23. Batches 6-7 hardware NOT TESTED.
