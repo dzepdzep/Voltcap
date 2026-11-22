@@ -28,7 +28,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Game
@@ -100,14 +99,14 @@ private fun GameInfoCard(game: Game, m: GameMetadata?, progress: RaGameProgress?
             m?.publisher?.takeIf { it.isNotBlank() },
             LocalTitleOptions.current.console(game.platform)
         )
-        Text(
+        FullText(
             facts.joinToString("  ·  ").uppercase(),
             color = Color.White.copy(alpha = 0.65f),
-            fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
+            fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.8.sp,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            reserve = false
         )
         val tiles = buildList<Pair<String, Color?>> {
             m?.metacritic?.let { add(("MC $it") to scoreColor(it)) }
@@ -123,12 +122,12 @@ private fun GameInfoCard(game: Game, m: GameMetadata?, progress: RaGameProgress?
             // Onto a second line when the card is narrow (they used to be squeezed and cut).
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 tiles.forEach { (text, colour) ->
-                    Text(
+                    FullText(
                         text,
                         color = if (colour != null) Color.Black else Color.White,
-                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        maxLines = 1, reserve = false,
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
                             .background(colour ?: Color.White.copy(alpha = 0.12f))
@@ -140,13 +139,13 @@ private fun GameInfoCard(game: Game, m: GameMetadata?, progress: RaGameProgress?
         val summary = m?.summary?.takeIf { it.isNotBlank() }
         if (summary != null) {
             Spacer(Modifier.height(6.dp))
-            Text(
+            FullText(
                 summary,
                 color = Color.White.copy(alpha = 0.8f),
-                fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                fontSize = 12.sp,
                 lineHeight = androidx.compose.ui.unit.TextUnit(1.333f, androidx.compose.ui.unit.TextUnitType.Em),
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                reserve = false
             )
         } else if (tiles.isEmpty() && m == null) {
             Spacer(Modifier.height(4.dp))
@@ -210,24 +209,24 @@ private fun NewsCard(sources: Set<String>, modifier: Modifier) {
                         letterSpacing = 1.sp
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(
+                    FullText(
                         if (shown == null) "Loading…" else shown.source.uppercase() + ago(shown.publishedAt),
                         color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp),
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        reserve = false
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(
+                FullText(
                     shown?.title ?: "Headlines from your news sources show here.",
                     color = Color.White,
-                    fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.308f, androidx.compose.ui.unit.TextUnitType.Em),
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    reserve = false
                 )
             }
         }

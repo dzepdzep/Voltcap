@@ -73,6 +73,12 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 21:20 UTC, 694a (cloud, v0.6.74 turn):** Verify 310 GREEN on 24d51ab (693a, both runners). P2 left alone (batch 1 owner
+review pending). P13 rule 11: RowInfoPanel.kt (home row info panel + news card) 5 TRUNCATE -> 0 via FullText (reserve = false).
+RowInfoPanelFullText694aTest. TRUNCATE 129 -> 124. NOT compiled in the cloud (Maven 429) - CI first compile. HW-24 694a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in RowInfoPanel / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - TwinDesk (4), WidgetBoard - one per run with its FullText test; or H12 once the owner picks.
+
 **22 Nov 20:20 UTC, 693a (cloud, v0.6.74 turn):** Verify 310 on 74035e5 (692b): ubuntu-latest GREEN, ubuntu-24.04 infra (Robolectric
 jar transform). P2 left alone (batch 1 owner review pending). P13 rule 11: MixerActivity.kt (volume mixer) 7 TRUNCATE -> 0 via
 FullText (reserve = false). MixerFullText693aTest. TRUNCATE 136 -> 129. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it.

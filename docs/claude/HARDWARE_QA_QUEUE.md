@@ -50,6 +50,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   running game that has a long name and an app with a long label: title, status line, stream labels, app names, 'Playing ...'
   notes, volume values and the add-app picker's names read whole (shrink, then slide) - never an ellipsis; rows keep their
   height. Screenshots. Unit evidence only (MixerFullText693aTest, static TRUNCATE 136 -> 129; cloud compile PASS).
+- Also (694a, rule 11, dev line 694a or later, ~2 min, KONKR x1.3 + x1.0): a home layout with the row info panel + news card
+  on, a game with long genres / developer / publisher and a long summary, and a long news headline: facts line, chips,
+  summary, news source and headline read whole (shrink, then slide) - never an ellipsis; the panel keeps its height.
+  Screenshots. Unit evidence only (RowInfoPanelFullText694aTest, static TRUNCATE 129 -> 124; not compiled in the cloud).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
