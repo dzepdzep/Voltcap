@@ -255,6 +255,16 @@ shown) and left, never confirmed, 0 launches, fatal 0, restore OK / diff 0. Find
   a line apart from its name ("GENRE" /) - fixed after the run with no-break spaces (not re-run).
 - KONKR: NOT TESTED for all of 682t / 682u.
 
+### Owner review decision, 22 Nov 18:45 (recorded verbatim in substance)
+- FUNCTIONAL ACCEPTANCE of batches 1-3 (14 layouts): the recorded functional QA - L1/R1 focus handling, Play positioning, TV
+  foreground keep-out, safe confirmations - is accepted. NOT visual approval, NOT merge authorization.
+- All 18 P2 layouts stay NOT VISUALLY APPROVED. A review package (real-device Info / Details / Achievements / Options, x1.0 and
+  x1.3, short motion clips, final builds only) is being prepared.
+- Batch 4: focused x1.0 checks (Side menu, Icon bar, Arctic, Storage boxes) on KONKR + RP Classic; D364 fixed (682z2) and to
+  be re-checked. Then batch 5 autonomously.
+- The "31 / 53" count is retired: see NATIVE_PAGES_AUDIT.md - 18 own designs, 12 native frames with shared bodies (not done),
+  23 shared page.
+
 ### Status board (owner 18 Nov: implementation, hardware verification and visual approval kept apart)
 | Layout | Implemented | HW KONKR | HW RP Classic | Owner visual approval |
 |---|---|---|---|---|
