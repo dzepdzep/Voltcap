@@ -45,7 +45,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -103,7 +102,7 @@ internal fun VoltSecondHeader(
                 selected = pages.indexOf(page),
                 modifier = Modifier.weight(1f)
             ) { i -> pages.getOrNull(i)?.let(onPage) }
-            Text(time, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(time, color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
         }
         Box(Modifier.fillMaxWidth().height(5.dp)) {
             VoltageLine(Modifier.fillMaxWidth().align(Alignment.Center))
@@ -144,8 +143,8 @@ internal fun VoltAchievementBoard(
         // Progress.
         Row(verticalAlignment = Alignment.Bottom) {
             Column(Modifier.weight(1f)) {
-                Text(gameDisplayName(game.name), color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                FullText(gameDisplayName(game.name), color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+                FullText(com.shelf.launcher.data.ConsoleNames.display(game.platform), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1, reserve = false)
             }
             if (possible > 0) {
                 Text("$earned", color = ShelfTheme.accent, fontSize = 28.sp, fontWeight = FontWeight.Black)
@@ -181,7 +180,7 @@ internal fun VoltAchievementBoard(
                                     .padding(horizontal = 10.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(f.label, color = if (on) onAccentColor() else ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                FullText(f.label, color = if (on) onAccentColor() else ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), maxLines = 1, reserve = false)
                                 Text("$count", color = if (on) onAccentColor() else ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
@@ -256,8 +255,8 @@ private fun BoardList(shown: List<RaAchievementDetail>, pickedId: Int?, onPick: 
                 )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(a.description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    FullText(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+                    FullText(a.description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
                 }
                 if (a.isMissable) Icon(Icons.Filled.Warning, "Missable", tint = com.shelf.launcher.ui.theme.Ds.warning, modifier = Modifier.padding(horizontal = 4.dp).size(14.dp))
                 a.points?.let { Text("$it", color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
@@ -290,7 +289,7 @@ private fun AchievementDetail(a: RaAchievementDetail, modifier: Modifier, compac
         }
     }
     val facts = @Composable {
-        Text(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+        FullText(a.title.orEmpty(), color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 3, reserve = false)
         Spacer(Modifier.height(2.dp))
         Text(a.description.orEmpty(), color = ShelfTheme.textMuted, fontSize = 12.sp, lineHeight = 16.sp)
         Spacer(Modifier.height(8.dp))
@@ -360,9 +359,9 @@ internal fun ShowcaseArt(info: SecondHomeGame, modifier: Modifier = Modifier) {
                 }
                 Spacer(Modifier.width(16.dp))
                 Column(Modifier.weight(1f).fillMaxHeight().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.Center) {
-                    Text(
+                    FullText(
                         com.shelf.launcher.data.ConsoleNames.label(game.platform).uppercase(),
-                        color = ShelfTheme.accent, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 1, reserve = false
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(gameDisplayName(game.name), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)

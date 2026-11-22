@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 16:40 UTC, 690a (cloud, v0.6.74 turn):** Verify 310 GREEN on 919d362 (689a). P2 left alone (batch 1 owner review still
+pending). P13 rule 11: SecondScreenVolt.kt (Volt second screen) 8 TRUNCATE -> 0 via FullText (reserve = false).
+SecondScreenVoltFullText690aTest. TRUNCATE 158 -> 150. NOT compiled in the cloud (Maven 429 x2) - CI is the first compile. HW-26 (Thor).
+NEXT: check Verify 310 on this push FIRST (red in SecondScreenVolt / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel (5) - one file per run
+with its FullText test; or H12 once the owner picks.
+
 **22 Nov 15:50 UTC, 689a (cloud, v0.6.74 turn):** Verify 310 on ce88244 (688b): ubuntu-latest GREEN (TV x1.3 guard passes),
 ubuntu-24.04 Maven 429 infra (re-run requested). H16 is now guarded on 53/53; D357 + item 6 done earlier; H12 waits on the owner's
 reveal choice -> P13 rule 11: GameDetailsOverlay.kt (Classic details window) 13 TRUNCATE -> 1 marked (FullText; comments wrap);

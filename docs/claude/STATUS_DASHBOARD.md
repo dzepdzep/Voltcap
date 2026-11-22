@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 689a · 2026-11-22 15:50 UTC · commit `this update (being pushed)` · CI: Verify 310 on ce88244 (688b): ubuntu-latest GREEN (full suite); ubuntu-24.04 infra (Maven Central download limit), re-run requested · effort: medium
+**1. LATEST UPDATE** - 690a · 2026-11-22 16:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 919d362 (689a): GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
+**2. WHAT CLAUDE JUST FIXED** - The Volt-style second screen (the lower screen on dual-screen handhelds) no longer cuts any text with '...': the clock, the game's name and console, the achievement filters and the achievement names and descriptions now wrap, shrink a little or slide so everything can be read.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 - **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
 - **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
+- **App** (690a): The Volt-style second screen (the lower screen on dual-screen handhelds) no longer cuts any text with '...': the clock, the game's name and console, the achievement filters and the achievement names and descriptions now wrap, shrink a little or slide so everything can be read.
 - **QA tools** (688a): The automatic cut-off-text checks now include the TV room's game window too (it opens on the TV set's screen in the room, so the test now places it there the way the room does). That makes all 53 layouts covered. The check could not be built here because of a download limit, so the first result comes from the GitHub test run on this push.
-- **QA tools** (687a): The automatic cut-off-text checks now cover the last game windows too (Terminal, Arcade cabinets, Arctic hub, Artwork library, Layout Studio, and Grid, Console stack, Coverflow details and Twin desk). All of them came back clean at normal and larger text size, so nothing in the app needed changing. 52 of the 53 layouts are now checked automatically on every build; only the TV room is left.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm this push is green in the GitHub test run; then: Remove cut-off text from the next screens (second screen, Twin icons, game cards); Native pages: batch 1 owner review, then batch 2
+**5. WORKING ON NEXT** - now: Confirm this push is green in the GitHub test run (first compile of this change); then: Remove cut-off text from the next screens (Twin icons, game cards, mixer); Native pages: batch 1 owner review, then batch 2
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,6 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
 | HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) | OPEN (same KONKR session as HW-24, ~3 min) |
@@ -207,7 +208,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 14 of 23.
+Open hardware requests: 15 of 24.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

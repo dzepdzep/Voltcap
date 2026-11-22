@@ -48,6 +48,18 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-26 Volt second screen text shown whole (690a, rule 11) - OPEN (Thor; batch with HW-19 when the owner says the Thor is back)
+- Device(s): AYN Thor (3140972f), USB, lower screen = second display. Level L1 (QA app only). Thor NOT with the owner since 17 Nov -
+  never poll / wake; only when he says it is back. Commit: dev line 690a or later. ~3 min, x1.0 + x1.3.
+- Why not emulator: the Volt companion draws on the Presentation of a second physical display; the emulator trial has one display.
+- Tests: second screen style Volt, a game with a long name and achievements with long titles / descriptions: the clock beside the
+  page tabs whole; on the achievements board the game name (2 lines, then shrink, then slide), the console line, the filter labels
+  with their counts, the list's titles / descriptions and the picked achievement's title (3 lines) never end in an ellipsis; the
+  game card's console label whole; nothing jumps when the focus moves. Screenshot of the lower screen at both scales.
+- Evidence so far: unit only (SecondScreenVoltFullText690aTest, static TRUNCATE 158 -> 150); not compiled in the cloud (Maven 429) -
+  CI is the first compile.
+- Result: (filled in by the hardware session)
+
 ### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED
 - Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
 - Build: the merged dev line (af1867f or later; facet 677l merged 17 Nov, whole words NOT included): push a commit with
