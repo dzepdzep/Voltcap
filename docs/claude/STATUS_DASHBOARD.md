@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 691a · 2026-11-22 17:30 UTC · commit `this update (being pushed)` · CI: Verify 310 on c166ca7 (690a): GREEN on one runner (full suite); the other runner hit a download limit (infra, re-run) · effort: medium
+**1. LATEST UPDATE** - 692a · 2026-11-22 18:30 UTC · commit `this update (being pushed)` · CI: Verify 310 on 673012d (691a): GREEN on one runner (full suite); the other runner hit a download limit (infra, re-run) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Twin icons home layout no longer cuts any text with '...': the selected game's name and console, the category names and hints, the small labels under the category icons and the Open bar now shrink a little or slide so everything can be read.
+**2. WHAT CLAUDE JUST FIXED** - The game cards no longer cut any text with '...': long game names on cards without art, the wide card's title, console and 'Played' lines, the NEW pill, the trophy count and the recent achievement title now shrink a little or slide so everything can be read.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 - **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
 - **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
+- **App** (692a): The game cards no longer cut any text with '...': long game names on cards without art, the wide card's title, console and 'Played' lines, the NEW pill, the trophy count and the recent achievement title now shrink a little or slide so everything can be read.
 - **App** (691a): The Twin icons home layout no longer cuts any text with '...': the selected game's name and console, the category names and hints, the small labels under the category icons and the Open bar now shrink a little or slide so everything can be read.
-- **App** (690a): The Volt-style second screen (the lower screen on dual-screen handhelds) no longer cuts any text with '...': the clock, the game's name and console, the achievement filters and the achievement names and descriptions now wrap, shrink a little or slide so everything can be read.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm this push is green in the GitHub test run (first compile of this change); then: Remove cut-off text from the next screens (game cards, mixer, row info panel); Native pages: batch 1 owner review, then batch 2
+**5. WORKING ON NEXT** - now: Confirm this push is green in the GitHub test run (first compile of this change); then: Remove cut-off text from the next screens (mixer, row info panel, Twin desk); Native pages: batch 1 owner review, then batch 2
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

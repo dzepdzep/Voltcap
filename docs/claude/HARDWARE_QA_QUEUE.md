@@ -41,6 +41,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   ellipsis; on the category page the category card's name + hint, the small labels under the category icons (cells >= 44 dp) and
   the Open bar's 'Open · <category>' / 'Open · <game>' read whole (slide in the bar); the tray does not move when the focus moves.
   Screenshots. Unit evidence only (TwinIconsFullText691aTest, static TRUNCATE 150 -> 143; first compile in CI).
+- Also (692a, rule 11, dev line 692a or later, ~2 min, KONKR x1.3 + x1.0): classic row (GameCard) with a game that has no art and
+  a very long name, a focused wide capsule (long title, console name on, 'Played ...' on), a card with a NEW unlock pill and a
+  trophy count, and the badge mode 'Recent unlock' with a long achievement title: every text whole (shrinks, then slides) - never
+  an ellipsis; the cards / capsule do not change size or jump when the focus moves. Screenshots. Unit evidence only
+  (GameCardFullText692aTest, static TRUNCATE 143 -> 136; first compile in CI).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 

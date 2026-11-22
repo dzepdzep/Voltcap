@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 18:30 UTC, 692a (cloud, v0.6.74 turn):** Verify 310 on 673012d (691a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
+(re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: GameCard.kt 7 TRUNCATE -> 0 via FullText
+(reserve = false). GameCardFullText692aTest. TRUNCATE 143 -> 136. NOT compiled in the cloud (plugin resolution blocked) - CI first
+compile. HW-24 692a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in GameCard / the new test -> fix). Then P2 turn if the owner has reviewed batch 1;
+v0.6.74: P13 next TRUNCATE files - MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one file per run with its FullText test;
+or H12 once the owner picks.
+
 **22 Nov 17:30 UTC, 691a (cloud, v0.6.74 turn):** Verify 310 on c166ca7 (690a): ubuntu-latest GREEN (690a compiles + passes),
 ubuntu-24.04 Maven 429 infra (re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: TwinIcons.kt 7 TRUNCATE
 -> 0 via FullText (reserve = false). TwinIconsFullText691aTest. TRUNCATE 150 -> 143. NOT compiled in the cloud (Maven 429 x2) - CI
