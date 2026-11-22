@@ -55,7 +55,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -409,13 +408,13 @@ private fun IconsCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
             // (Update 307: the name and console fade over with the big icon instead of jumping to the next game's.)
             Crossfade(targetState = g, animationSpec = tween(160), label = "twinCard", modifier = Modifier.weight(1f)) { cg ->
                 Column(Modifier.fillMaxWidth()) {
-                    Text(
+                    FullText(
                         titles.display(cg.name), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis
+                        maxLines = 1, reserve = false
                     )
-                    Text(
+                    FullText(
                         titles.console(cg.platform) + " · " + stylePlaytime(c.playtime(cg), c.lastPlayed(cg) != null),
-                        color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, reserve = false
                     )
                 }
             }
@@ -527,10 +526,10 @@ private fun CatCard(c: StyleCtx, compact: Boolean, modifier: Modifier) {
         Spacer(Modifier.width(10.dp))
         Crossfade(targetState = st, animationSpec = tween(160), label = "twinCatCard", modifier = Modifier.weight(1f)) { s ->
             Column(Modifier.fillMaxWidth()) {
-                Text(s?.label.orEmpty(), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
+                FullText(s?.label.orEmpty(), color = TrayInk, fontSize = if (compact) 13.sp else 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
+                FullText(
                     if (i == c.stop) "You're here · ${c.games.size} games" else "A: its games · B: back",
-                    color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    color = TrayMuted, fontSize = if (compact) 10.sp else 12.sp, maxLines = 1, reserve = false
                 )
             }
         }
@@ -579,9 +578,9 @@ private fun CatGrid(c: StyleCtx, cols: Int, modifier: Modifier) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     CatArt(st, TrayInk, trayDark, Modifier.fillMaxWidth().weight(1f).padding(2.dp))
-                    if (cell >= 44.dp) Text(
-                        st.label, color = TrayMuted, fontSize = 8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        lineHeight = 9.sp
+                    if (cell >= 44.dp) FullText(
+                        st.label, color = TrayMuted, fontSize = 8.sp, maxLines = 1,
+                        lineHeight = 9.sp, reserve = false
                     )
                 }
             }
@@ -730,14 +729,14 @@ private fun TrayOpen(c: StyleCtx, tools: List<HomeShortcut>, modifier: Modifier)
             val ci = TwinNav.catCursor.intValue
             Icon(Icons.Filled.PlayArrow, null, tint = accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Open  ·  " + c.stops.getOrNull(ci)?.label.orEmpty(), color = TrayInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            FullText("Open  ·  " + c.stops.getOrNull(ci)?.label.orEmpty(), color = TrayInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false, modifier = Modifier.weight(1f, fill = false))
         } else {
             Icon(Icons.Filled.PlayArrow, null, tint = if (on) TrayInk else accent, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text("Open", color = TrayInk, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             if (g != null) {
-                Text(
-                    "  ·  " + titles.display(g.name), color = TrayMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                FullText(
+                    "  ·  " + titles.display(g.name), color = TrayMuted, fontSize = 12.sp, maxLines = 1, reserve = false,
                     modifier = Modifier.weight(1f, fill = false)
                 )
             }

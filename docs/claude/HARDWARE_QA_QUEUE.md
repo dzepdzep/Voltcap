@@ -36,6 +36,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   tabs, the milestone line, the trophy strip and the inline achievement names / descriptions whole (slide where they must); a
   summary under ~260 characters shown whole (no More chip), a longer one 4 lines + More; RA comments whole. pop529 <layout> CLASSIC
   -> popclip.py. Unit evidence only (GameDetailsFullText689aTest, static TRUNCATE 171 -> 158).
+- Also (691a, rule 11, dev line 691a or later, ~2 min, KONKR x1.3 + x1.0): home layout Twin icons, a game with a long name and a
+  long console name: the focused game's name and its console / playtime line shrink a little, then slide - never end in an
+  ellipsis; on the category page the category card's name + hint, the small labels under the category icons (cells >= 44 dp) and
+  the Open bar's 'Open · <category>' / 'Open · <game>' read whole (slide in the bar); the tray does not move when the focus moves.
+  Screenshots. Unit evidence only (TwinIconsFullText691aTest, static TRUNCATE 150 -> 143; first compile in CI).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
