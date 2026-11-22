@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 14:40 UTC, 688a (cloud, v0.6.74 turn):** Verify 310 GREEN on b44e5e0 (687a). H16: TV room added to WindowWordsSurvey682Test
+(NEXT_688; the test sets TvScreen.rect to the set's screen at KONKR size) + tvWindowOpensOnTheSet. 53/53 layouts listed. NOT
+compiled in the cloud (Maven Central 429 x2) - CI is the first compile.
+NEXT: check Verify 310 on this push FIRST. Red in WindowWordsSurvey682Test[TV ...] = either a harness slip (fix the test) or a real TV
+window cut (fix the window, keep the guard). Then P2 turn if the owner has reviewed batch 1 (a live session pushed P2 batch 3 at
+13:34 UTC - leave that branch to it); v0.6.74: item 5 badgecheck (D357) if still open, then H12.
+
 **22 Nov 13:50 UTC, 687a (cloud, v0.6.74 turn):** fcb4998's Verify 310 red = infra (one runner's dependency transform failed,
 no test ran; the other runner GREEN); cbf0226 (686a) Verify 310 was still running. H16: Terminal, Arcade, Arctic, Artlib, Custom +
 the shared-scene layouts Grid, Console stack, Coverflow details, Twin desk under all four window guards x1.0 + x1.3 (NEXT_687) -

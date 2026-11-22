@@ -69,6 +69,11 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
          *  reachable from GameWindow alone - not covered here.) */
         val NEXT_687 = listOf(HomeLayout.TERMINAL, HomeLayout.ARCADE, HomeLayout.ARCTIC, HomeLayout.ARTLIB, HomeLayout.CUSTOM,
             HomeLayout.GRID, HomeLayout.CONSOLES, HomeLayout.COVERDETAILS, HomeLayout.TWIN_DESK)
+        /** 688a: the 53rd layout - the TV room, whose window opens on the set's own screen. GameWindow reads that screen from
+         *  TvScreen.rect (set by the room's onGloballyPositioned); the harness places it where the room puts the set on a
+         *  full KONKR-size home (TvRoomArt.place over 640 x 427 dp, no bleed), so the body on the set and the controls under it
+         *  are measured as they open on the device. */
+        val NEXT_688 = listOf(HomeLayout.TV)
         /**
          * 682t: the owner's high-priority set first (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar - polished before the
          * survey existed, now under the same guards), then the owner's H16 order after Pocket / Night / Bar.
@@ -76,7 +81,7 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         val HIGH_PRIORITY = listOf(HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET, HomeLayout.NIGHT, HomeLayout.BAR)
         val LAYOUTS = HIGH_PRIORITY + listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
             HomeLayout.CHAN, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.MEMCARD, HomeLayout.BUBBLES, HomeLayout.PANELS,
-            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685 + NEXT_686 + NEXT_687
+            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685 + NEXT_686 + NEXT_687 + NEXT_688
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} x{1}")
@@ -106,9 +111,25 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
             raAchievementDetails = if (pageFixture) mapOf(g.stableKey to pageSurveyAchievements()) else emptyMap())
         val options = if (pageFixture) pageSurveyOptions() else emptyList()
         compose.mainClock.autoAdvance = false
+        if (layout == HomeLayout.TV) { TvScreen.rect = tvSurveyRect(); TvScreen.displayId = -1 }
         compose.setContent { com.shelf.launcher.ui.theme.ShelfLauncherTheme {
             GameWindow(layout, g, state, emptyMap(), onClose = {}, onPlay = {}, onFullDetails = {}, onNeedMedia = {}, options = options) } }
         frames(240)
+    }
+
+    @org.junit.After fun clearTv() { TvScreen.rect = null; TvScreen.displayId = -1 }
+
+    @Test fun tvWindowOpensOnTheSet() {
+        org.junit.Assume.assumeTrue(layout == HomeLayout.TV)
+        open()
+        // Proof the harness reached the TV path (not the ordinary window): with room under the set (KONKR size) the name and
+        // the keys sit in the strip just under the set's screen (TvControls, update 125), across the set's own width.
+        val r = tvSurveyRect()
+        val names = compose.onAllNodes(SemanticsMatcher("name") { it.config.getOrNull(SemanticsProperties.Text)?.any { t -> t.text == "Shadow of the Colossus" } == true }, useUnmergedTree = true)
+            .fetchSemanticsNodes()
+        assertTrue("TV x$scale: the game's name is not shown", names.isNotEmpty())
+        assertTrue("TV x$scale: the name is not in the strip under the set's screen (${names.map { it.boundsInRoot }} vs $r)",
+            names.any { n -> n.boundsInRoot.center.let { c -> c.y > r.bottom && c.x >= r.left - 6f && c.x <= r.right + 6f } })
     }
 
     @Test fun survey() {
@@ -237,6 +258,9 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         assertTrue("$layout x$scale H16 page findings:\n" + found.distinct().joinToString("\n"), found.isEmpty())
     }
 }
+
+/** 688a: where the TV room puts the set's screen on a full KONKR-size home (mdpi: 1 px = 1 dp). */
+internal fun tvSurveyRect(): androidx.compose.ui.geometry.Rect = TvRoomArt.place(640f, 427f, 0f, 0f, 0f, 0f).map(TvRoomArt.screen)
 
 /** 682s: the app's own option rows (LauncherScreen's list for a ROM game) and achievements with long titles, for the page survey. */
 internal fun pageSurveyOptions(): List<WinOption> = listOf(

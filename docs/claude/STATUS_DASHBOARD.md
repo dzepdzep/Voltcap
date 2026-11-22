@@ -2,12 +2,13 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 687a · 2026-11-22 13:39 UTC · commit `this update (being pushed)` · CI: Verify 310 on cbf0226 running at start; fcb4998 red was an infrastructure failure (dependency download), not a test · effort: medium
+**1. LATEST UPDATE** - 688a · 2026-11-22 14:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b44e5e0 (687a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now cover the last game windows too (Terminal, Arcade cabinets, Arctic hub, Artwork library, Layout Studio, and Grid, Console stack, Coverflow details and Twin desk). All of them came back clean at normal and larger text size, so nothing in the app needed changing. 52 of the 53 layouts are now checked automatically on every build; only the TV room is left.
+**2. WHAT CLAUDE JUST FIXED** - The automatic cut-off-text checks now include the TV room's game window too (it opens on the TV set's screen in the room, so the test now places it there the way the room does). That makes all 53 layouts covered. The check could not be built here because of a download limit, so the first result comes from the GitHub test run on this push.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
+- **QA tools** (688a): The automatic cut-off-text checks now include the TV room's game window too (it opens on the TV set's screen in the room, so the test now places it there the way the room does). That makes all 53 layouts covered. The check could not be built here because of a download limit, so the first result comes from the GitHub test run on this push.
 - **QA tools** (687a): The automatic cut-off-text checks now cover the last game windows too (Terminal, Arcade cabinets, Arctic hub, Artwork library, Layout Studio, and Grid, Console stack, Coverflow details and Twin desk). All of them came back clean at normal and larger text size, so nothing in the app needed changing. 52 of the 53 layouts are now checked automatically on every build; only the TV room is left.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
@@ -21,7 +22,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm the test run stays green; then: Cut-off-text check for the TV room window; Native pages: batch 1 hardware re-check / owner review, then batch 2
+**5. WORKING ON NEXT** - now: Confirm the TV room check passes in the GitHub test run; then: Badge checker: skip badges partly off-screen / behind the focused cover; Native pages: batch 1 owner review, then batch 2
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
