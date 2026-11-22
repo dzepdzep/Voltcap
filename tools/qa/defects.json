@@ -4110,7 +4110,7 @@
    "title": "Storage boxes Info sheet at x1.3 on the RP Classic: the menu key 'ACHIEVEMENTS' breaks inside the word ('ACHIEVEMENT / S') at its smallest size",
    "rule": "R18",
    "severity": "low",
-   "status": "open - pre-existing main-sheet key (StorageKey), not a native page; queued",
+   "status": "fixed 682z2 (storageCellsPerRow: cells a row from the measured word in the drawn style; StorageMenuWords682zRoboTest fails on the old code) - hardware recheck pending",
    "found": "2026-11-22 18:05 (pr14 STORAGE_info.png)"
   },
   {

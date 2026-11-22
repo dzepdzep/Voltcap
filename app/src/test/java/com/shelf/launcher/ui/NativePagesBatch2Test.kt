@@ -139,4 +139,13 @@ class NativePagesBatch2Test {
         assertTrue(noArtNameFits("PlayStation 2", 110f))
         assertTrue(noArtNameFits("Game Boy", 58f))
     }
+
+    // D364: "ACHIEVEMENT / S" on Storage's Info sheet (RP Classic x1.3) - fewer cells a row rather than a broken word.
+    @Test fun storageMenuCellsKeepTheLongestWordWhole() {
+        // two cells of (300 - 3) / 2 = 148 px can't hold a 140 px word + 45 px chrome: one a row
+        assertEquals(1, storageCellsPerRow(300f, 140f, 45f, 3f, 2))
+        assertEquals(2, storageCellsPerRow(400f, 140f, 45f, 3f, 2))
+        assertEquals(3, storageCellsPerRow(700f, 140f, 45f, 3f, 3))
+        assertEquals(1, storageCellsPerRow(100f, 140f, 45f, 3f, 2))
+    }
 }

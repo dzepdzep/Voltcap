@@ -1096,10 +1096,26 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                             }
                         } else
                             primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.fillMaxWidth()) }
-                        rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }
-                                repeat(storageKeysPerRow(w.value * 0.67f) - row.size) { Spacer(Modifier.weight(1f)) }
+                        // (682z, D364 - RP Classic x1.3 pr14: "ACHIEVEMENT / S" - two cells a row still left the longest word wider
+                        // than its cell at the smallest readable size. The cells a row are counted from the menu's measured width
+                        // and the longest word as drawn at that size: fewer cells a row (down to one) rather than a broken word.)
+                        val wordMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 4)
+                        val dens = androidx.compose.ui.platform.LocalDensity.current
+                        // (measured in the style WholeWordsText draws with - the theme's own letter spacing included)
+                        val baseStyle = androidx.compose.material3.LocalTextStyle.current
+                        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            val longest = rest.flatMap { it.label.uppercase().split(' ') }.maxByOrNull { it.length } ?: ""
+                            val wordPx = if (longest.isEmpty()) 0 else wordMeasurer.measure(longest, baseStyle.copy(fontSize = fitMin(12.sp),
+                                fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace), softWrap = false, maxLines = 1).size.width
+                            val perRow = storageCellsPerRow(with(dens) { maxWidth.toPx() }, wordPx.toFloat(), with(dens) { STORAGE_CELL_CHROME.toPx() },
+                                with(dens) { 2.dp.toPx() }, storageKeysPerRow(w.value * 0.67f))
+                            Column(verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
+                                rest.chunked(perRow).forEach { row ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }
+                                        repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
+                                    }
+                                }
                             }
                         }
                     }
@@ -1227,6 +1243,16 @@ private fun StackOrRow(row: Boolean, modifier: Modifier, gap: Dp, first: @Compos
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
 internal fun storageKeysPerRow(windowDp: Float): Int = if (windowDp < 560f) 2 else 3
+
+/** D364 (682z): a Storage menu cell's room besides its word - the pointer (16 dp) and the row's padding (4 dp each side), +2 dp for rounding. */
+internal val STORAGE_CELL_CHROME = 26.dp
+
+/** D364 (682z, pure): cells a row where the longest word ([wordPx] at its smallest readable size) stays whole - at most [most], at least 1. */
+internal fun storageCellsPerRow(rowPx: Float, wordPx: Float, chromePx: Float, gapPx: Float, most: Int): Int {
+    var n = most
+    while (n > 1 && (rowPx - (n - 1) * gapPx) / n < wordPx + chromePx) n--
+    return n.coerceAtLeast(1)
+}
 
 /** Batch 523: one key of Storage's menu - the pointer, the label in whole words (one size, two lines at most), an even height. */
 @Composable
