@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 692b · 2026-11-22 19:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 956b1d8: RED (2 tests in the new game-card check) · effort: medium
+**1. LATEST UPDATE** - 693a · 2026-11-22 20:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 74035e5: one runner GREEN, the other infra (download failure) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
+**2. WHAT CLAUDE JUST FIXED** - The volume mixer no longer cuts any text with '...': titles, app names, 'Playing ...' notes and volume values shrink a little and then slide so they can be read whole.
 
 **3. LAST 24 HOURS** (most important first)
 - **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 batch 1 once the owner has reviewed it; Rule 11 full text: MixerActivity
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 batch 1 once the owner has reviewed it; Rule 11 full text: RowInfoPanel
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

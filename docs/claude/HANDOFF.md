@@ -73,6 +73,12 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 20:20 UTC, 693a (cloud, v0.6.74 turn):** Verify 310 on 74035e5 (692b): ubuntu-latest GREEN, ubuntu-24.04 infra (Robolectric
+jar transform). P2 left alone (batch 1 owner review pending). P13 rule 11: MixerActivity.kt (volume mixer) 7 TRUNCATE -> 0 via
+FullText (reserve = false). MixerFullText693aTest. TRUNCATE 136 -> 129. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it.
+NEXT: check Verify 310 on this push FIRST (red in MixerActivity / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - RowInfoPanel (5), TwinDesk (4) - one per run with its FullText test; or H12 once the owner picks.
+
 **22 Nov 19:20 UTC, 692b (cloud, v0.6.74 turn):** Verify 310 on 956b1d8 RED on both runners: GameCardFullText692aTest 2 of 3
 failed (test harness slip - its `[^)]*` regex stopped at `copy(alpha = ...)` / `if (veryTight)`; GameCard.kt itself is right, the
 rest of the suite 2734 passed). Fixed the matcher (bounded to one FullText call, same assertions; Python mirror 1/1/1). Cloud compile

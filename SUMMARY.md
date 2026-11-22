@@ -1,3 +1,15 @@
+# Update 693a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the volume mixer shows every text whole
+- CI first: Verify 310 on 74035e5 (692b): ubuntu-latest GREEN (full suite, 692b's matcher fix holds), ubuntu-24.04 infra only
+  (Robolectric nativeruntime jar transform failed; no test ran there).
+- MixerActivity.kt (volume mixer): 7 TRUNCATE places -> 0. Title, status line (2 lines), stream labels, app names, app notes
+  ("Playing ..."), volume values and the app picker's names go through FullText (shrink to a readable size, then slide), same
+  line counts, reserve = false so the rows keep their layout. Unused TextOverflow import removed.
+- Test: MixerFullText693aTest (fails on 692b: 7 Ellipsis, 0 FullText). Static checks PASS, TRUNCATE 136 -> 129.
+  Cloud: :app:compileDebugUnitTestKotlin PASSED (first cloud compile in several runs); running the test blocked by Maven Central
+  429 (test runtime classpath) - Python mirror of its regexes 0/7/7, 1, 2; CI runs it.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/MixerActivity.kt, app/src/test/java/com/shelf/launcher/ui/MixerFullText693aTest.kt.
+- Hardware NOT TESTED: HW-24 693a (KONKR, ~2 min).
+
 # Update 692b (22 Nov 2026, cloud run) - CI fix: GameCardFullText692aTest matcher
 - CI first: Verify 310 on 956b1d8 RED on both runners - 2 of 2736 tests failed, both in 692a's own GameCardFullText692aTest
   (blankCardNameKeepsItsLineCount, recentUnlockSlidesInsideItsRow): their `[^)]*` regex stopped at the `)` of

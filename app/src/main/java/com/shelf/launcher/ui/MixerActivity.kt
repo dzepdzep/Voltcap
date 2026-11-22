@@ -74,7 +74,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.device.audio.AppMixer
@@ -212,15 +211,15 @@ internal fun MixerContent() {
         IconBadge(Icons.Filled.VolumeUp, size = 34.dp)
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text("Volume mixer", color = ShelfTheme.colors.textPrimary, fontSize = 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(17.sp), maxFontSize = 17.sp), fontWeight = FontWeight.Bold, fontFamily = headingFont(), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(
+            FullText("Volume mixer", color = ShelfTheme.colors.textPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = headingFont(), maxLines = 1, reserve = false)
+            FullText(
                 when {
                     !AppMixer.available(context) -> "Media volume only on this device"
                     status.method == null && apps != null -> "Per-app volume isn't working yet"
                     status.method != null -> "Per app · ${status.method.label}" + (status.source?.let { " · from $it" } ?: "")
                     else -> "Each app's volume, on top of the media volume"
                 },
-                color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false
             )
         }
     }
@@ -338,7 +337,7 @@ internal fun StreamRow(label: String, stream: Int, sync: Any?, modifier: Modifie
     val percent = level * 100 / max
     Column(modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            FullText(label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, reserve = false)
             Text("$percent %", color = ShelfTheme.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
         VolumeBar(
@@ -385,7 +384,7 @@ private fun MixerAppRow(
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(a.label, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                FullText(a.label, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (a.playing) { PlayingBars(); Spacer(Modifier.width(5.dp)) }
                     val note = listOfNotNull(
@@ -393,11 +392,11 @@ private fun MixerAppRow(
                         a.kind.takeIf { a.runningGame == null },
                         "quiet".takeIf { !a.playing && a.runningGame == null }
                     ).joinToString(" · ").replaceFirstChar { it.uppercase() } // Update 144: "Quiet" when it comes first.
-                    Text(note, color = if (a.playing) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(note, color = if (a.playing) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1, reserve = false)
                 }
             }
             Spacer(Modifier.width(8.dp))
-            Text(if (a.volume == 0) "Muted" else "${a.volume} %", color = if (a.volume == 100) ShelfTheme.textMuted else ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(if (a.volume == 0) "Muted" else "${a.volume} %", color = if (a.volume == 100) ShelfTheme.textMuted else ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
         }
         Spacer(Modifier.height(2.dp))
         VolumeBar(percent = a.volume, steps = 20, onChange = onVolume, onToggle = onMute)
@@ -515,7 +514,7 @@ private fun AddAppList(already: Set<String>, onPick: (String) -> Unit) {
                     val icon = rememberAppIcon(pkg)
                     if (icon != null) Image(icon, null, modifier = Modifier.size(24.dp)) else Spacer(Modifier.size(24.dp))
                     Spacer(Modifier.width(10.dp))
-                    Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    FullText(label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, maxLines = 1, reserve = false, modifier = Modifier.weight(1f))
                 }
             }
         }

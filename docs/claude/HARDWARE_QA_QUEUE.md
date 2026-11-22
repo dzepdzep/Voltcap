@@ -46,6 +46,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   trophy count, and the badge mode 'Recent unlock' with a long achievement title: every text whole (shrinks, then slides) - never
   an ellipsis; the cards / capsule do not change size or jump when the focus moves. Screenshots. Unit evidence only
   (GameCardFullText692aTest, static TRUNCATE 143 -> 136; first compile in CI).
+- Also (693a, rule 11, dev line 693a or later, ~2 min, KONKR x1.3 + x1.0): volume mixer (R1 / quick settings -> mixer) with a
+  running game that has a long name and an app with a long label: title, status line, stream labels, app names, 'Playing ...'
+  notes, volume values and the add-app picker's names read whole (shrink, then slide) - never an ellipsis; rows keep their
+  height. Screenshots. Unit evidence only (MixerFullText693aTest, static TRUNCATE 136 -> 129; cloud compile PASS).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
