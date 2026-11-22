@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - P2-22a · 2026-11-22 19:00 UTC · commit `this update (being pushed)` · CI: P2 branch: Verify 310 + QA app CI on 2763331 (see branch); this dev-line commit is docs + dashboard only · effort: medium
+**1. LATEST UPDATE** - 692b · 2026-11-22 19:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 956b1d8: RED (2 tests in the new game-card check) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
+**2. WHAT CLAUDE JUST FIXED** - Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 
 **3. LAST 24 HOURS** (most important first)
+- **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 - **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
 - **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 - **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
 - **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
-- **App** (692a): The game cards no longer cut any text with '...': long game names on cards without art, the wide card's title, console and 'Played' lines, the NEW pill, the trophy count and the recent achievement title now shrink a little or slide so everything can be read.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: P2: batch 4 x1.0 on KONKR + RP Classic (running) and the 18-layout review package on the final build; then: P2 batch 5 (shelf family first, per the audit); Remove cut-off text from the next screens (mixer, row info panel, Twin desk)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 batch 1 once the owner has reviewed it; Rule 11 full text: MixerActivity
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

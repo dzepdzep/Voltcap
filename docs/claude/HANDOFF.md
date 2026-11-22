@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 19:20 UTC, 692b (cloud, v0.6.74 turn):** Verify 310 on 956b1d8 RED on both runners: GameCardFullText692aTest 2 of 3
+failed (test harness slip - its `[^)]*` regex stopped at `copy(alpha = ...)` / `if (veryTight)`; GameCard.kt itself is right, the
+rest of the suite 2734 passed). Fixed the matcher (bounded to one FullText call, same assertions; Python mirror 1/1/1). Cloud compile
+blocked (Maven 429). No app change.
+NEXT: check Verify 310 on this push FIRST (still red in GameCardFullText692aTest -> fix the test again). Then P2 turn if the owner
+has reviewed batch 1; v0.6.74: P13 next TRUNCATE files - MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one per run.
+
 **22 Nov 18:30 UTC, 692a (cloud, v0.6.74 turn):** Verify 310 on 673012d (691a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
 (re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: GameCard.kt 7 TRUNCATE -> 0 via FullText
 (reserve = false). GameCardFullText692aTest. TRUNCATE 143 -> 136. NOT compiled in the cloud (plugin resolution blocked) - CI first
