@@ -1669,12 +1669,43 @@ private fun OdKey(a: WinAction, on: Boolean, glow: Color, keyD: Dp, labelW: Dp) 
             Icon(icon, a.label, tint = if (on) Color(0xFF07132A) else if (a.urgent) Color(0xFFFFB74D) else Color(0xFFDDE6F2), modifier = Modifier.size(keyD * 0.5f))
         }
         if (labelW > 0.dp) Spacer(Modifier.width(6.dp))
-        if (labelW > 0.dp) Text(
-            a.label.uppercase(), color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-            letterSpacing = 1.sp, modifier = Modifier.widthIn(max = labelW),
-            style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
-        )
+        // (686a, H16 survey: at x1.3 "ACHIEVEMENTS" did not fit the 104 dp label and broke inside the word. The label keeps its
+        // words whole: its spacing narrows first, then its size steps down to the readable minimum - measured here, not by a
+        // BoxWithConstraints, because the key row sizes its keys from their intrinsic widths.)
+        if (labelW > 0.dp) {
+            val label = a.label.uppercase()
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+            val base = androidx.compose.material3.LocalTextStyle.current
+            val maxPx = with(androidx.compose.ui.platform.LocalDensity.current) { labelW.roundToPx() }
+            val fit = remember(label, maxPx, base) {
+                odLabelFit(label, maxPx) { size, spacing ->
+                    label.split(' ').filter { it.isNotEmpty() }.maxOfOrNull { w ->
+                        measurer.measure(w, base.copy(fontSize = size, fontWeight = FontWeight.Bold, letterSpacing = spacing), softWrap = false, maxLines = 1).size.width
+                    } ?: 0
+                }
+            }
+            Text(
+                label, color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = fit.first, fontWeight = FontWeight.Bold, maxLines = 2,
+                letterSpacing = fit.second, modifier = Modifier.widthIn(max = labelW),
+                style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
+            )
+        }
     }
+}
+
+/**
+ * 686a (pure): the Orbit key label's size and spacing - the design's 11 sp with 1 sp spacing when its widest word fits [maxPx],
+ * else the spacing narrows (0.5, 0 sp), then the size steps down to the readable minimum ([fitMin]); [widest] measures the
+ * widest word at a size and spacing. At the minimum a word that still cannot fit is left to wrap (never cut).
+ */
+internal fun odLabelFit(label: String, maxPx: Int, widest: (androidx.compose.ui.unit.TextUnit, androidx.compose.ui.unit.TextUnit) -> Int):
+    Pair<androidx.compose.ui.unit.TextUnit, androidx.compose.ui.unit.TextUnit> {
+    val steps = buildList {
+        add(11.sp to 1.sp); add(11.sp to 0.5.sp); add(11.sp to 0.sp)
+        var v = 10.5f; while (v >= fitMin(11.sp).value - 0.01f) { add(v.sp to 0.sp); v -= 0.5f }
+    }
+    if (label.isEmpty() || maxPx <= 0) return steps.first()
+    return steps.firstOrNull { (size, spacing) -> widest(size, spacing) <= maxPx } ?: steps.last()
 }
 
 /** The dark glass console with chrome edges: the name, readouts, achievements as numbered tracks, the save / performance lines. */

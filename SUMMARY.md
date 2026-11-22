@@ -1,3 +1,24 @@
+# Update 686a (22 Nov 2026, cloud run, v0.6.74 turn) - H16: Orbit, Airy, Blades, Camera, Magazine, Shop under the window guards; Orbit key labels whole; parent-clip guard reads turned text
+- CI first: Verify 310 GREEN on 5e76521 (685a). P2 left alone: a live session pushed `claude/v0674-native-pages` at 12:03 UTC
+  today (its Verify 310 is red there - that branch's session owns it; nothing pushed to it from here).
+- WindowWordsSurvey682Test.NEXT_686: Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop joined all four guards
+  (first page words, parent clip, More, Details / Options / Achievements) at KONKR size x1.0 + x1.3. 42 window scenes guarded.
+- Findings:
+  1. Orbit x1.3 (real): the narrow window's key label "ACHIEVEMENTS" (11 sp bold, 1 sp spacing, 104 dp) broke inside the word.
+     OdKey's label now keeps words whole: odLabelFit narrows the spacing (1 -> 0.5 -> 0 sp), then steps the size down to the
+     readable minimum (10 sp) only as far as the widest word needs; x1.0 unchanged. Measured in place (a BoxWithConstraints
+     there collapsed the key row, which sizes keys from intrinsic widths - first attempt, reverted).
+  2. Blades pages (guard false positive): the game blade's name standing on its edge (rotated -90) was compared unturned and read
+     "cut by a parent" on Details / Options / Achievements while every letter showed. clipFindingOf now takes the box and ink through
+     the node's own transform into the root (inkInRoot, pure); untransformed texts give the old numbers. ParentClipProbe683Test
+     gained turned fixtures: a turned cut is still found, a turned text with room is clean.
+- Checks (cloud compiled): whole WindowWordsSurvey682Test + ParentClipProbe683Test 349 run, 0 failed after the fixes (Orbit x1.3
+  failed before); OrbitKeyLabel686Test 3/3 (new); Layouts330 / Batch675r / ArtLibRail396 / Batch513 green; static checks PASS.
+  Cloud infra note: Robolectric's android-all jar hit Maven Central 429 - fetched once from the Google Maven Central mirror into ~/.m2.
+  Handheld NOT TESTED - HW-24 686a (~1 min, KONKR x1.3).
+- Files: app/src/main/java/com/shelf/launcher/ui/WinScenes.kt, app/src/test/java/com/shelf/launcher/ui/WindowWordsSurvey682Test.kt,
+  app/src/test/java/com/shelf/launcher/ui/OrbitKeyLabel686Test.kt (new).
+
 # Update 685a (18 Nov 2026, cloud run, v0.6.74 turn) - H16: six more game windows under the window guards; Card binder hidden front, Storage label fixes
 - CI first: Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its hardware re-check and the owner's look).
 - WindowWordsSurvey682Test.NEXT_685: Card binder (CARDS), Greencore, Box, File select, Storage boxes, Case flow joined all four

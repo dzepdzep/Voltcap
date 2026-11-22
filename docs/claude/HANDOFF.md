@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 12:20 UTC, 686a (cloud, v0.6.74 turn):** Verify 310 GREEN on 5e76521 (685a). P2 left alone (a live session pushed the P2
+branch 12:03 UTC; its Verify 310 there is red - that session's to fix). H16: Orbit, Airy, Blades, Camera, Magazine, Shop under all
+four window guards x1.0 + x1.3 (NEXT_686) - Orbit x1.3 key label "ACHIEVEMENTS" broke inside the word: fixed (odLabelFit,
+OrbitKeyLabel686Test); Blades' turned edge name was a guard false positive - parent-clip guard now transform-aware (turned
+fixtures in ParentClipProbe683Test). 42 window scenes guarded. HW-24 686a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). If the P2 branch is still red and its last push is > 3 h old with no
+live session, look at its failure (report only; P2 pushes only per NATIVE_PAGES_P2.md). Then v0.6.74: H16 last windows - Terminal,
+Arcade, Arctic, Artlib, Custom, then Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
 **18 Nov 20:55 UTC, 685a (cloud, v0.6.74 turn):** Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its
 hardware re-check + the owner's look). H16: Cards, Greencore, Box, File select, Storage, Caseflow under all four window guards
 x1.0 + x1.3 (NEXT_685). Two real findings fixed: Storage's fact label "LAST PLAYED" lost "PLAYED" at x1.3 (labels WholeWordsText);

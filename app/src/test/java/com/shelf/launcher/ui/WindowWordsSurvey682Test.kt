@@ -6,6 +6,9 @@ import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -56,6 +59,9 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         /** 685a: H16 next batch - Cards, Greencore, Box, File select, Storage, Caseflow under the same four guards. */
         val NEXT_685 = listOf(HomeLayout.CARDS, HomeLayout.GREENCORE, HomeLayout.BOX, HomeLayout.FILESELECT, HomeLayout.STORAGE,
             HomeLayout.CASEFLOW)
+        /** 686a: H16 next batch - Orbit, Airy, Blades, Pocket camera, Game magazine, Rental shop under the same four guards. */
+        val NEXT_686 = listOf(HomeLayout.ORBIT, HomeLayout.AIRY, HomeLayout.BLADES, HomeLayout.CAMERA, HomeLayout.MAGAZINE,
+            HomeLayout.SHOP)
         /**
          * 682t: the owner's high-priority set first (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar - polished before the
          * survey existed, now under the same guards), then the owner's H16 order after Pocket / Night / Bar.
@@ -63,7 +69,7 @@ class WindowWordsSurvey682Test(private val layout: HomeLayout, private val scale
         val HIGH_PRIORITY = listOf(HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET, HomeLayout.NIGHT, HomeLayout.BAR)
         val LAYOUTS = HIGH_PRIORITY + listOf(HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.LIVE, HomeLayout.CROSS, HomeLayout.HUB, HomeLayout.RESUME,
             HomeLayout.CHAN, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE, HomeLayout.MEMCARD, HomeLayout.BUBBLES, HomeLayout.PANELS,
-            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685
+            HomeLayout.CINEMA) + NEXT_683 + NEXT_684 + NEXT_685 + NEXT_686
 
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} x{1}")
@@ -333,7 +339,6 @@ internal fun clipFindingOf(n: SemanticsNode): String? {
     val out = mutableListOf<TextLayoutResult>()
     n.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(out)
     val r = out.firstOrNull()
-    val pos = n.positionInRoot
     val inkW = if (r != null && r.lineCount > 0) inkedWidth((0 until r.lineCount).map { r.getLineLeft(it) }, (0 until r.lineCount).map { r.getLineRight(it) })
         else n.size.width.toFloat()
     val inkH = if (r != null) minOf(r.multiParagraph.height, n.size.height.toFloat()) else n.size.height.toFloat()
@@ -343,9 +348,25 @@ internal fun clipFindingOf(n: SemanticsNode): String? {
         it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null ||
             it.config.getOrNull(SemanticsProperties.HorizontalScrollAxisRange) != null
     }
-    return parentClipRule(text, pos.x, pos.y, pos.x + n.size.width, pos.y + n.size.height, minOf(inkW, n.size.width.toFloat()), inkH,
+    // (686a: a text turned on its side - Blades' name standing up on the game blade's edge - was compared unturned (its
+    // along-the-line width against the turned, narrow visible bounds) and read as "cut by a parent" while every letter showed.
+    // Box and ink are now both taken through the node's own transform into the root, so turned / scaled texts are measured
+    // like everything else; an untransformed text gives exactly the old numbers.)
+    val c = n.layoutInfo.coordinates
+    val root = c.findRootCoordinates()
+    val o = root.localPositionOf(c, androidx.compose.ui.geometry.Offset.Zero)
+    val ex = root.localPositionOf(c, androidx.compose.ui.geometry.Offset(1f, 0f)) - o
+    val ey = root.localPositionOf(c, androidx.compose.ui.geometry.Offset(0f, 1f)) - o
+    val box = root.localBoundingBoxOf(c, clipBounds = false)
+    val iw = minOf(inkW, n.size.width.toFloat())
+    val (rootInkW, rootInkH) = inkInRoot(iw, inkH, ex.x, ex.y, ey.x, ey.y)
+    return parentClipRule(text, box.left, box.top, box.right, box.bottom, rootInkW, rootInkH,
         v.left, v.top, v.right, v.bottom, sliding, inScroll)
 }
+
+/** 686a (pure): a text's ink (w x h in its own pixels) as it stands in the root, given where its own x / y unit steps land. */
+internal fun inkInRoot(w: Float, h: Float, exX: Float, exY: Float, eyX: Float, eyY: Float): Pair<Float, Float> =
+    (w * kotlin.math.abs(exX) + h * kotlin.math.abs(eyX)) to (w * kotlin.math.abs(exY) + h * kotlin.math.abs(eyY))
 
 /** 683: the parent-clip measure is not vacuous - a text a clipping box cuts is found, the same text in room is not. */
 @RunWith(org.robolectric.RobolectricTestRunner::class)
@@ -373,4 +394,33 @@ class ParentClipProbe683Test {
     }
 
     @Test fun theSameTextWithRoomIsClean() = assertEquals(emptyList<String>(), findings(400))
+
+    /** 686a: the same two cases turned on their side (as Blades' standing name): a cut is still found, room is still clean. */
+    private fun turnedFindings(alongDp: Int): List<String> {
+        compose.setContent {
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.size(40.dp, alongDp.dp).clipToBounds(),
+                contentAlignment = androidx.compose.ui.Alignment.Center) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.requiredSize(alongDp.dp, 40.dp)
+                    .graphicsLayer { rotationZ = -90f }) {
+                    androidx.compose.material3.Text("Achievements unlocked", softWrap = true,
+                        modifier = androidx.compose.ui.Modifier.wrapContentWidth(unbounded = true))
+                }
+            }
+        }
+        compose.waitForIdle()
+        return compose.onAllNodes(SemanticsMatcher("any text") { it.config.getOrNull(SemanticsProperties.Text) != null }, useUnmergedTree = true)
+            .fetchSemanticsNodes().mapNotNull { clipFindingOf(it) }
+    }
+
+    @Test fun aTurnedTextWithRoomIsClean() = assertEquals(emptyList<String>(), turnedFindings(400))
+
+    @Test fun aTurnedTextThatIsCutIsFound() {
+        val f = turnedFindings(60)
+        assertTrue("expected a parent cut, got $f", f.size == 1 && f[0].startsWith("'Achievements unlocked' cut by a parent"))
+    }
+
+    @Test fun aQuarterTurnSwapsTheInk() {
+        assertEquals(120f to 20f, inkInRoot(120f, 20f, 1f, 0f, 0f, 1f))
+        assertEquals(20f to 120f, inkInRoot(120f, 20f, 0f, -1f, 1f, 0f))
+    }
 }

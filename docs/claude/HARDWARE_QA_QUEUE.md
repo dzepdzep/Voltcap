@@ -22,6 +22,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Build: commit <sha> on claude/qa-0672-repair; QA build = assembleQa / assembleDebug of that commit
 - Why not emulator: ...
 - Tests: exact gates / scripts (e.g. pop529.sh run <tag> <off|font=1.3,density=1.15> "<LAYOUTS>" OWN, then popclip.py)
+- Also (686a, H16, dev line 686a or later, ~1 min, KONKR x1.3): Orbit deck (ORBIT) at x1.3 in the narrow window: the key
+  labels under the round keys read whole - "ACHIEVEMENTS", "SAVE SYNC", "INSPECT" never broken inside the word (spacing a little
+  tighter / a step smaller there if they must); x1.0 looks as before. pop529 ORBIT OWN -> popclip.py. Unit evidence only
+  (WindowWordsSurvey682Test NEXT_686, OrbitKeyLabel686Test).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
