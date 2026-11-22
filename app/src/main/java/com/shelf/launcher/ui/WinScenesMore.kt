@@ -167,15 +167,19 @@ internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int
  * the same size in the same place, the page's other keys in the main page's next slots. Null where the main page's row would
  * not fit all its keys whole ([need] wider than a slot): the usual row then.
  */
-internal fun uniformSlotGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int): UniformRowGeom? {
+internal fun uniformSlotGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int, mainFit: Boolean = false): UniformRowGeom? {
     if (n <= 0 || slots <= n) return null
     val w = (width - (slots - 1) * gap) / slots
     if (w <= 0) return null
     if (need <= w) return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
-    // A page key wider than a slot ("FULL DETAILS" at x1.3): the usual row. (682v: a "Play keeps its slot, the rest share the
-    // row" variant cut Play itself where the main page's row had scrolled - its slot was narrower than Play's word, ShelfText
-    // CUBE / CRATE x1.3 - so it is gone; [UniformRowGeom.firstW] stays 0.)
-    return null
+    // A page key wider than a slot ("FULL DETAILS" at x1.3, RP Classic 22 Nov: Dashboard, Library, Card binder): Play keeps its
+    // slot and the page's other keys share the rest - only where the main page's row showed all its keys whole in their slots
+    // ([mainFit]), so Play's word is known to fit its slot. (682v: without that check Play was cut where the main row had
+    // scrolled - ShelfText CUBE / CRATE x1.3.)
+    if (!mainFit || n < 2) return null
+    val rest = (width - w - gap - (n - 2) * gap) / (n - 1)
+    if (rest < need) return null
+    return UniformRowGeom(rest, n, false, rest + gap, 0, 0, width, firstW = w)
 }
 
 /** 682v: [rememberKeySlots] for a window's own key row (sceneKeys). */
@@ -248,6 +252,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         if (g != null && g.scrolls) scope.launch { offset.snapTo((offset.value - d).coerceIn(0f, g.maxOffset.toFloat())) }
     }
     val keyW = remember { IntArray(2) }
+    val mainFit = remember { BooleanArray(1) }
     val inner = remember(gapPx) { uniformKeysPolicy(gapPx, keyW) { offset.value } }
     androidx.compose.ui.layout.Layout(
         content = {
@@ -291,7 +296,9 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformSlotGeom(n, slots, need, width, gapPx) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        val g = uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0]) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        // (682x: the main page's row - all its [slots] keys - showed them all whole, unscrolled: its pages may keep Play's slot)
+        if (slots > 0 && n == slots) mainFit[0] = !g.scrolls && g.visible >= n
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
             .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
         keyW[0] = g.keyW; keyW[1] = g.firstW

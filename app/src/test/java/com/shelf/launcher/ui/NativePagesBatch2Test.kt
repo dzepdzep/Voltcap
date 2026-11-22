@@ -88,8 +88,11 @@ class NativePagesBatch2Test {
         // (682t, owner 18 Nov: Play the same size in the same place on every page) 4 slots in 400 px, 8 px apart: 94 px each
         val g = uniformSlotGeom(2, 4, 90, 400, 8)!!
         assertEquals(94, g.keyW); assertEquals(0, g.viewStart); assertEquals(0, g.firstW)
-        // a page key wider than a slot: the usual row (Play would be cut where the main row had scrolled)
+        // a page key wider than a slot: the usual row where the main row had scrolled (Play would be cut) ...
         assertEquals(null, uniformSlotGeom(2, 4, 150, 400, 8))
+        // ... and Play keeps its slot where the main row showed every key whole (682x)
+        val w = uniformSlotGeom(2, 4, 150, 400, 8, mainFit = true)!!
+        assertEquals(94, w.firstW); assertEquals(400 - 94 - 8, w.keyW)
         assertEquals(null, uniformSlotGeom(4, 4, 90, 400, 8))    // the main page itself: the usual row
         assertEquals(null, uniformSlotGeom(2, 0, 90, 400, 8))    // no main page seen
         assertEquals(null, uniformSlotGeom(3, 4, 200, 400, 8))   // nothing fits whole: the usual (scrolling) row
