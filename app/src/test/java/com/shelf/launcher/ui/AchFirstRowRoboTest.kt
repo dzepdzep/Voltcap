@@ -46,7 +46,7 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (682r: batch 2 - KONKR x1.3 showed the magazine's CHECKLIST with no row at all)
             HomeLayout.MAGAZINE, HomeLayout.CINEMA, HomeLayout.ARCADE, HomeLayout.CUBE, HomeLayout.SPOT,
             // (682w: batch 3)
-            HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS)
+            HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {
@@ -113,6 +113,8 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             if (rows.isEmpty()) println("ACHFIRST $layout: no page - clickable now: " + compose.onAllNodes(SemanticsMatcher("clickable") {
                 it.config.contains(SemanticsActions.OnClick) }).fetchSemanticsNodes().map { words(it).trim().take(30) }.filter { it.isNotBlank() })
             org.junit.Assume.assumeTrue("$layout: no Achievements page with rows reached", rows.isNotEmpty())
+            if (System.getenv("VOLTCAP_ACHPROBE") != null) compose.onAllNodes(SemanticsMatcher("clickable") { it.config.contains(SemanticsActions.OnClick) })
+                .fetchSemanticsNodes().forEach { println("ACHPROBE ${words(it).trim().take(40)} size=${it.size} at=${it.boundsInRoot} parent=${it.parent?.boundsInRoot}") }
             val r = rows.last()
             val full = r.size.height.toFloat(); val shown = r.boundsInRoot.height
             // (the page as drawn, for the review of a failure: build/achfirst/<case>.png)

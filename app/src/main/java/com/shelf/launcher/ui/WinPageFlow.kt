@@ -69,7 +69,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (682w: Library - About this game / Achievements / Manage under a tab strip, WinPagesLibrary.kt.)
     WinScene.LIBRARY_PAGE,
     // (682w: Card binder - CARD TEXT / MOVES / RULES in the card's text box, WinPagesCard.kt.)
-    WinScene.CARD_BACK)
+    WinScene.CARD_BACK,
+    // (682y, P2 batch 4: Side menu - the drawer's submenus, WinPagesSide.kt.)
+    WinScene.SIDE_DRAWER, WinScene.ARCTIC_DRAWER, WinScene.DOCK_FLYOUT)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

@@ -193,8 +193,24 @@ internal fun rememberKeySlots(page: WinPage, keys: List<WinAction>): Int {
     val kept = remember { androidx.compose.runtime.mutableIntStateOf(0) }
     val count = keys.count { !it.status }
     if (page == WinPage.MAIN && keys.none { it.label == "Less" } && kept.intValue != count) kept.intValue = count
-    return kept.intValue
+    return pageKeySlots(page, kept.intValue)
 }
+
+/**
+ * 682y (Card binder, KONKR / RP Classic x1.3, run pk13 / pr13): a main page with Play alone kept 1 slot, so its pages' rows
+ * were laid out each on its own - Play half the row on Details / Achievements (Play + Full details / Full list) but a short
+ * key in the middle on Options (Play alone). A page's row has room for Play and the page's own key at least: Play keeps the
+ * same slot on every page.
+ */
+/**
+ * 682y (Card binder sheet x1.3): where the main page's slots are too narrow for Play (its six keys scrolled), Play alone on a
+ * page (Options) still stands where it does beside the page's own key (Details, Achievements: two halves) - the first half of
+ * the row, not a short key in the middle. Only on a page ([slots] > 1 - a main page with Play alone keeps its own width).
+ */
+internal fun pageAloneGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int): UniformRowGeom? =
+    if (n == 1 && slots > 1) uniformSlotGeom(1, 2, need, width, gap) else null
+
+internal fun pageKeySlots(page: WinPage, mainCount: Int): Int = if (page == WinPage.MAIN) mainCount else maxOf(mainCount, 2)
 
 /**
  * 674c (pure, item 4 of the 15 Nov directive - narrow windows at x1.3 showed one key at a time): [need] is the widest key's
@@ -296,7 +312,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0]) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        val g = uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0]) ?: pageAloneGeom(n, slots, need, width, gapPx) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
         // (682x: the main page's row - all its [slots] keys - showed them all whole, unscrolled: its pages may keep Play's slot)
         if (slots > 0 && n == slots) mainFit[0] = !g.scrolls && g.visible >= n
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }

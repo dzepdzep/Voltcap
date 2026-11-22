@@ -275,6 +275,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
             }.background(Color(0xFF1B2633))
         ) {
             ctx.cover?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                ?: ArcticNoArt(ctx, Modifier.fillMaxSize()) // (682y: no picture - the console's plate, not an empty panel)
         }
         // The drawer.
         Column(
@@ -356,7 +357,10 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                     }
                 }
             } else {
-                Box(Modifier.weight(1f).fillMaxWidth()) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (682y, P2 batch 4: the drawer's own pages - its info list, its media-centre lists - WinPagesArctic.kt.)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "arcticPage", move = ::arcticMove) { pg, pageLive ->
+                    ArcticPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ctx.buttons.forEach { a ->
                         SceneControl(a, Modifier) { on ->

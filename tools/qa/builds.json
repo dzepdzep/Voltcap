@@ -1573,6 +1573,17 @@
    "base_commit": "claude/v0674-native-pages f816912",
    "tree_hash": "claude/v0674-native-pages f816912",
    "note": "682s batch-1 visual pass (Classic switches / chip, Hub tags first) - not on a device yet"
+  },
+  {
+   "id": "qa-682x-69aafaf-ci",
+   "apk_sha256": "93d12536f396701b20fa63eae09fae7fad7d58e8fc2584db880de3b0d0af53ed",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 69aafaf",
+   "tree_hash": "claude/v0674-native-pages 69aafaf",
+   "note": "682x Play slot (mainFit) - KONKR pk13 / RP Classic pr13 x1.3 Dashboard, Library, Card binder, Terminal"
   }
  ]
 }

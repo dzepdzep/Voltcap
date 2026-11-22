@@ -100,7 +100,7 @@ class NativePagesBatch2Test {
 
     @Test fun batch3PagesAreTheirOwn() {
         // (682w) Terminal, Dashboard, Library, Card binder: their own pages, no shared page body left in their scenes
-        for (sc in listOf(WinScene.TERM_RUN, WinScene.DASH_CARD, WinScene.LIBRARY_PAGE, WinScene.CARD_BACK)) {
+        for (sc in listOf(WinScene.TERM_RUN, WinScene.DASH_CARD, WinScene.LIBRARY_PAGE, WinScene.CARD_BACK, WinScene.SIDE_DRAWER, WinScene.ARCTIC_DRAWER, WinScene.DOCK_FLYOUT, WinScene.STORAGE_RECORD)) {
             assertTrue("$sc", nativePages(sc))
             for (p in WinPage.values()) assertFalse("$sc $p", sharedPageFor(sc, p))
         }
@@ -117,5 +117,26 @@ class NativePagesBatch2Test {
             assertFalse(fn, body.contains("ctx.pageBody("))
             assertTrue(fn, body.contains("slots = sceneKeySlots(ctx)"))
         }
+    }
+
+    // 682y: Play keeps its slot on a page with Play alone (Card binder Options) where the main page showed Play alone.
+    @Test fun pageRowsKeepTwoSlots() {
+        assertEquals(1, pageKeySlots(WinPage.MAIN, 1))
+        assertEquals(2, pageKeySlots(WinPage.OPTIONS, 1))
+        assertEquals(3, pageKeySlots(WinPage.TROPHIES, 3))
+        val g = uniformSlotGeom(1, pageKeySlots(WinPage.OPTIONS, 1), need = 120, width = 826, gap = 10)!!
+        assertEquals(408, g.keyW); assertEquals(0, g.viewStart)
+        // main page of six keys (scrolled): its slot is too narrow for Play - Play alone still takes the first half
+        assertEquals(null, uniformSlotGeom(1, 6, need = 120, width = 440, gap = 6))
+        val h = pageAloneGeom(1, 6, need = 120, width = 440, gap = 6)!!
+        assertEquals(217, h.keyW); assertEquals(0, h.viewStart)
+        assertEquals(null, pageAloneGeom(1, 1, need = 120, width = 440, gap = 6))
+    }
+
+    // 682y: "PlayStatio / n 2" on the Card binder's slim no-art plate - the console's name only where its longest word fits.
+    @Test fun noArtPlateNameOnlyWhereItsWordFits() {
+        assertFalse(noArtNameFits("PlayStation 2", 58f))
+        assertTrue(noArtNameFits("PlayStation 2", 110f))
+        assertTrue(noArtNameFits("Game Boy", 58f))
     }
 }

@@ -800,9 +800,9 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.fsBigStar(color: Co
 
 internal val RecNavy = Color(0xFF2C4766)
 private val RecBand = Color(0xFF4C6A8E)
-private val RecPanel = Color(0xFFF7F9FC)
-private val RecInk = Color(0xFF1E2A3A)
-private val RecMuted = Color(0xFF4C5E76)
+internal val RecPanel = Color(0xFFF7F9FC)
+internal val RecInk = Color(0xFF1E2A3A)
+internal val RecMuted = Color(0xFF4C5E76)
 private val RecRed = Color(0xFFFF5A4E)
 
 /** A pixel-style frame: a dark edge, a white line inside it, cut corners. */
@@ -1182,10 +1182,9 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
         Spacer(Modifier.height(if (big) 6.dp else 8.dp))
         // (529r: with large text the sheet's page draws as a native page of the record - its tab names it, the name line is above -
         // so it spends no room on a second title or margin.)
+        // (682y, P2 batch 4: the sheet's own pages - the record's cells, its list with the pointer, its menu - WinPagesStorage.kt.)
         Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) {
-            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = false, showsCover = true, showsName = true)) {
-                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            StoragePage(ctx, p, red, live, Modifier.fillMaxSize().padding(if (big) 6.dp else 8.dp))
         }
         if (!inline) {
             Spacer(Modifier.height(8.dp))

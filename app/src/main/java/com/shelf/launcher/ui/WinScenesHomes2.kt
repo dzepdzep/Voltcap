@@ -268,7 +268,9 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
     val nStat = keys.size - nAct
     val statusNeed = (SIDE_STATUS_H + SIDE_KEY_GAP) * nStat
     val rowsNeed = 30.dp * nAct + SIDE_KEY_GAP * (nAct - 1).coerceAtLeast(0) + statusNeed + SIDE_ROUNDING
-    val headerH = if (ctx.page != WinPage.MAIN) w / 2.1f else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
+    // (682y: on the drawer's submenus the picture steps back to a strip - the submenu gets the room; on a short screen
+    // (RP Classic x1.3: the first achievement was cut in half under the drawer's rows) only a top margin stays.)
+    val headerH = if (ctx.page != WinPage.MAIN) (if (ctx.maxH < 460.dp) 14.dp else maxOf(w / 5f, SIDE_ART_MIN)) else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.align(Alignment.CenterStart).width(w).fillMaxHeight().graphicsLayer {
             translationX = -(1f - sceneEase(ctx.reveal())) * size.width
@@ -283,7 +285,10 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString(" · "), color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
             }
             Spacer(Modifier.height(8.dp))
-            if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp))
+            // (682y, P2 batch 4: the drawer's submenus - ABOUT, ACHIEVEMENTS, OPTIONS - WinPagesSide.kt.)
+            if (ctx.page != WinPage.MAIN) NativePages(ctx, Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp), label = "sidePage", move = ::sideMove) { pg, pageLive ->
+                SidePage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
             // The menu's own rows, with the accent bar on the one you're on.
             // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
             // when there is room, down to 30 dp when not, scrolling only below that.)
@@ -391,11 +396,14 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
             translationY = (1f - e) * size.height * 0.6f
             alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         }, horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xFF20232A).copy(alpha = 0.96f))
+            // (682y: the card takes the room the pointer leaves - its page shares it with the header and the dock keys)
+            Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(18.dp)).background(Color(0xFF20232A).copy(alpha = 0.96f))
                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp)).padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(72.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
+                        // (682y, owner 18 Nov "avoid empty black areas when artwork is unavailable": the console's plate instead)
                         (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                            ?: SceneNoArt(ctx, Modifier.fillMaxSize())
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -403,7 +411,10 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                         Text(ctx.console + " · " + ctx.played, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
                     }
                 }
-                if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
+                // (682y, P2 batch 4: the flyout's own pages - grouped cards, round icons, a grouped list - WinPagesDock.kt.)
+                if (ctx.page != WinPage.MAIN) NativePages(ctx, Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp), label = "dockPage", move = { d -> dockMove(d) }) { pg, pageLive ->
+                    DockPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Spacer(Modifier.height(12.dp))
                 // The actions as round dock icons with their names under them.
                 // (Update 476, D258: a status key's whole text — "Balanced · AutoTDP Balanced · Device default", "Saves: up to
@@ -425,7 +436,8 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                     val widest = dockLabelWords(words).maxOfOrNull { measurer.measure(it, labelStyle, softWrap = false, maxLines = 1).size.width } ?: 0
                     dockKeyWidthDp(with(density) { widest.toDp() }.value).dp
                 }
-                KeyRow(keys, 10.dp) { k ->
+                // (682y: on the flyout's pages Play keeps its place - the first half - with or without the page's own key)
+                KeyRow(keys, 10.dp, slots = rememberKeySlots(ctx.page, keys)) { k ->
                     SceneControl(k, Modifier) { on ->
                         val whole = sceneLabel(k.label)
                         val short = dockShortLabel(whole)

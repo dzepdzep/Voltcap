@@ -315,3 +315,33 @@ Terminal, Dashboard, Library, Card binder.
   smaller) -> 682x: Play keeps its slot where the main row showed every key whole (not on hardware yet).
 - Not owner-approved: all 14. Device side: the RP Classic shows an Android install-confirmation prompt that was there before
   the run (not ours) - left untouched.
+
+### 682x re-check on hardware (QA app qa-682x-69aafaf-ci, x1.3, 22 Nov 16:25-16:52) - NOT owner-approved
+| Run | Device | Layouts | Result |
+|---|---|---|---|
+| pk13 | KONKR | Dashboard, Library, Card binder, Terminal | 4 / 4 walked; 0 launches; fatal 0; restore OK / diff 0 |
+| pr13 | RP Classic | same | 4 / 4; 0 launches; fatal 0; restore OK / diff 0 |
+- Terminal's confirmation now detected by the checker (armed + left, never confirmed) on both.
+- Play on the pages (QaClip dumps): Dashboard and Library - the same size and place on Details, Achievements and Options
+  (PASS). Terminal - RUN the same on every page (PASS). Card binder - Details / Achievements: Play the left half; Options
+  (Play alone): a short key in the middle - FAIL -> fixed in 682y (pageAloneGeom), not on hardware yet.
+- Review page of all 14 layouts (four run strips each) published for the owner's approval: artifact "P2 native pages - 14
+  layouts for approval".
+
+### 682y - P2 batch 4 (owner 22 Nov "All") - implemented, NOT owner-approved, HW NOT TESTED (31 / 53 layouts)
+- Side menu (SIDE_DRAWER, WinPagesSide.kt): the drawer's submenus - section header in the accent, rows with the accent bar
+  (drawn behind the row: a filled bar child took the whole page's height and left the list 0 px - AchFirstRow caught it);
+  submenu slides in from the right. Picture steps back to a strip on pages, a 14 dp margin on a short screen (RPC x1.3: the
+  first achievement was cut in half).
+- Icon bar (DOCK_FLYOUT, WinPagesDock.kt): grouped rounded cards (Details), the achievements as round dock icons with their
+  names (the one you're on grows with the ring; A shows its description in the line under them), grouped list (Options);
+  popover motion. Play keeps the first half on every page (KeyRow slots). No-art cover: the console plate.
+- Arctic (ARCTIC_DRAWER, WinPagesArctic.kt): the info list (92 dp field column) + plot; media-centre lists with the accent
+  band; vertical motion. No-art poster: the console's initials and name (ArcticNoArt).
+- Storage boxes (STORAGE_RECORD, WinPagesStorage.kt): the sheet's contents are the record's own - pixel-framed fact cells,
+  the list with the red pointer and "N PTS", the menu in monospace capitals with a pixel-framed red confirmation.
+- Fixes: Card binder Options Play (above); the no-art plate's console name only where its longest word fits
+  ("PlayStatio / n 2" on the Card binder's slim picture, noArtNameFits).
+- Checked (cloud, Robolectric): AchFirstRow (NATIVE + RPC), ShelfText native pages incl. batch 4, NativePagesBatch2Test,
+  WinPresentationTest, UniformKeys673, PopupMore452, CrateVertical674, CategoryStable394, TvFrontKeepOut682u; static checks
+  PASS; PageSheet review of the four at x1.0 / x1.3.

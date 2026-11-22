@@ -174,15 +174,24 @@ internal fun caseFlightCurve(k: Float): Float = k.coerceIn(0f, 1f)
 /** Update 508: how much larger the case is at the middle of its trip (it comes toward you). */
 internal const val CASE_FORWARD = 0.2f
 
+/** 682y (pure, estimate): whether the console's longest word fits [roomDp] at the plate's smallest readable size (~6.5 dp a letter). */
+internal fun noArtNameFits(console: String, roomDp: Float): Boolean =
+    (console.split(' ').maxOfOrNull { it.length } ?: 0) * 6.5f <= roomDp
+
 /** No picture: a purposeful plate — the console's initials big, the console's name under them — never an empty black box. */
 @Composable
 internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color.White) {
-    Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+        val room = maxWidth
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
             Text(studioInitials(ctx.console), color = ink, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             // (Batch 523, Inspect test: "Super Nintendo Entertainme" - a word wider than the plate was cut; whole words now, the size
             // stepping down until the longest one fits.)
-            WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
+            // (682y, Card binder pages x1.3: on the slim picture (16 %) "PlayStation" still broke inside the word at the smallest
+            // size - "PlayStatio / n 2". Where the plate's room can't hold the console's longest word, the initials stand alone:
+            // the console's whole name is on the window's own line beside it.)
+            if (noArtNameFits(ctx.console, (room - 12.dp).value)) WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
         }
     }
 }
