@@ -26,6 +26,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   labels under the round keys read whole - "ACHIEVEMENTS", "SAVE SYNC", "INSPECT" never broken inside the word (spacing a little
   tighter / a step smaller there if they must); x1.0 looks as before. pop529 ORBIT OWN -> popclip.py. Unit evidence only
   (WindowWordsSurvey682Test NEXT_686, OrbitKeyLabel686Test).
+- Also (688b, H16, dev line 688b or later, ~1 min, KONKR x1.3): TV room, open a game with achievements on the set, turn to
+  Achievements (R1): "Set order" whole on its own line under the count, achievement names whole (points under the badge), the
+  first achievement in view, A on the order row cycles it; x1.0 and a wide page (any other layout) look as before. pop529 TV OWN
+  -> popclip.py. Unit evidence only (WindowWordsSurvey682Test[TV x1.3] otherPages; CI).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 

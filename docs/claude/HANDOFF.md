@@ -76,7 +76,9 @@ blocking hardware, data-integrity risks or release authorization; no merge to ma
 **22 Nov 14:40 UTC, 688a (cloud, v0.6.74 turn):** Verify 310 GREEN on b44e5e0 (687a). H16: TV room added to WindowWordsSurvey682Test
 (NEXT_688; the test sets TvScreen.rect to the set's screen at KONKR size) + tvWindowOpensOnTheSet. 53/53 layouts listed. NOT
 compiled in the cloud (Maven Central 429 x2) - CI is the first compile.
-NEXT: check Verify 310 on this push FIRST. Red in WindowWordsSurvey682Test[TV ...] = either a harness slip (fix the test) or a real TV
+688b (same run): CI on b257ffe compiled it; TV x1.3 otherPages found a REAL cut (Achievements page on the set: 'Set order' 20 px,
+names 80 px) -> WindowTrophies narrow form < 240 dp (order on its own line, points under a 28 dp badge). Uncompiled in the cloud.
+NEXT: check Verify 310 on 688b FIRST. Red in WindowWordsSurvey682Test[TV ...] = either a harness slip (fix the test) or a real TV
 window cut (fix the window, keep the guard). Then P2 turn if the owner has reviewed batch 1 (a live session pushed P2 batch 3 at
 13:34 UTC - leave that branch to it); v0.6.74: item 5 badgecheck (D357) if still open, then H12.
 
