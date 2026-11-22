@@ -35,11 +35,11 @@ class PageBars529Test {
     // 529p: the pattern on Twin (both screens' keys) and Resume & discover
     @Test fun twinAndDiscoverUseTheBars() {
         val twin = java.io.File("src/main/java/com/shelf/launcher/ui/WinSceneTwin.kt").readText()
-        assertTrue(twin.contains("PageBars(keys, 6.dp) { k -> twinKey(k) }") && twin.contains("PageBars(keysOf(p, live), 6.dp) { k -> key(k) }"))
+        assertTrue(twin.contains("PageBars(keys, 6.dp) { k -> twinKey(k) }") && twin.contains("PageBars(keysOf(p, live), 6.dp, page = true) { k -> key(k) }"))
         assertFalse(twin.contains("KeyRow("))
         val h2 = java.io.File("src/main/java/com/shelf/launcher/ui/WinScenesHomes2.kt").readText()
         val card = h2.substring(h2.indexOf("internal fun DiscoverCard("), h2.indexOf("internal fun ChipSheet("))
-        assertTrue(card.contains("PageBars(sceneKeys(ctx), 6.dp)") && card.contains("wide = true"))
+        assertTrue(card.contains("PageBars(sceneKeys(ctx), 6.dp, page = ctx.page != WinPage.MAIN)") && card.contains("wide = true"))
     }
 
     // 529t: Cover details' panel never runs over the home's title (Flip 2 ×1.3), never under 40 % of the window
@@ -54,7 +54,7 @@ class PageBars529Test {
 
     @Test fun theShelfFamilyPagesUseTheBars() {
         val src = java.io.File("src/main/java/com/shelf/launcher/ui/WinSceneShelfPages.kt").readText()
-        assertTrue(src.contains("PageBars(keysOf(p, live), 6.dp)"))
+        assertTrue(src.contains("PageBars(keysOf(p, live), 6.dp, page = true)"))
         assertFalse(src.contains("KeyRow(keysOf(p, live)"))
         // each caller's page key is a bar (SceneKey wide) in the window's own make
         val fam = java.io.File("src/main/java/com/shelf/launcher/ui/WinSceneFamilies.kt").readText()
