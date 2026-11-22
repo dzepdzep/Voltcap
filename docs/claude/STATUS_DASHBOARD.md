@@ -2,11 +2,12 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 688b · 2026-11-22 14:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on b257ffe: ubuntu-latest 1 real failure (TV achievements page, fixed here); ubuntu-24.04 infra (test library download) · effort: medium
+**1. LATEST UPDATE** - 689a · 2026-11-22 15:50 UTC · commit `this update (being pushed)` · CI: Verify 310 on ce88244 (688b): ubuntu-latest GREEN (full suite); ubuntu-24.04 infra (Maven Central download limit), re-run requested · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
+**2. WHAT CLAUDE JUST FIXED** - The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 
 **3. LAST 24 HOURS** (most important first)
+- **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 - **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
 - **App** (686a): Six more game windows (Orbit deck, Airy, Blades, Pocket camera, Game magazine, Rental shop) are now under the automatic cut-off-text checks at normal and larger text size. One real problem was found and fixed: in Orbit deck at larger text the key name 'ACHIEVEMENTS' broke in the middle of the word; it now stays whole (slightly tighter letters there if needed). The checker itself was improved so a name shown sideways (Blades) is no longer wrongly reported as cut.
 - **QA tools** (688a): The automatic cut-off-text checks now include the TV room's game window too (it opens on the TV set's screen in the room, so the test now places it there the way the room does). That makes all 53 layouts covered. The check could not be built here because of a download limit, so the first result comes from the GitHub test run on this push.
@@ -23,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
 
-**5. WORKING ON NEXT** - now: Confirm the TV room check passes in the GitHub test run; then: Badge checker: skip badges partly off-screen / behind the focused cover; Native pages: batch 1 owner review, then batch 2
+**5. WORKING ON NEXT** - now: Confirm this push is green in the GitHub test run; then: Remove cut-off text from the next screens (second screen, Twin icons, game cards); Native pages: batch 1 owner review, then batch 2
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

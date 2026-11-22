@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**22 Nov 15:50 UTC, 689a (cloud, v0.6.74 turn):** Verify 310 on ce88244 (688b): ubuntu-latest GREEN (TV x1.3 guard passes),
+ubuntu-24.04 Maven 429 infra (re-run requested). H16 is now guarded on 53/53; D357 + item 6 done earlier; H12 waits on the owner's
+reveal choice -> P13 rule 11: GameDetailsOverlay.kt (Classic details window) 13 TRUNCATE -> 1 marked (FullText; comments wrap);
+summary no longer cut without a More chip. GameDetailsFullText689aTest 3/3 (cloud compiled). TRUNCATE 171 -> 158. HW-24 689a.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (leave a live session's P2
+branch alone); v0.6.74: P13 next TRUNCATE files - SecondScreenVolt (8), TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel
+(5) - one file per run with its FullText test; or H12 once the owner picks.
+
 **22 Nov 14:40 UTC, 688a (cloud, v0.6.74 turn):** Verify 310 GREEN on b44e5e0 (687a). H16: TV room added to WindowWordsSurvey682Test
 (NEXT_688; the test sets TvScreen.rect to the set's screen at KONKR size) + tvWindowOpensOnTheSet. 53/53 layouts listed. NOT
 compiled in the cloud (Maven Central 429 x2) - CI is the first compile.

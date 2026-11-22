@@ -30,6 +30,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Achievements (R1): "Set order" whole on its own line under the count, achievement names whole (points under the badge), the
   first achievement in view, A on the order row cycles it; x1.0 and a wide page (any other layout) look as before. pop529 TV OWN
   -> popclip.py. Unit evidence only (WindowWordsSurvey682Test[TV x1.3] otherPages; CI).
+- Also (689a, rule 11, dev line 689a or later, ~2 min, KONKR x1.3 + x1.0): game popup style Classic (the full-screen details
+  window), a game with a long name, a long info line (year / developer / publisher / genres) and achievements: the title wraps to
+  two lines, then shrinks, then slides - never ends in an ellipsis; info line, 'Last session', the stat labels / values, the page
+  tabs, the milestone line, the trophy strip and the inline achievement names / descriptions whole (slide where they must); a
+  summary under ~260 characters shown whole (no More chip), a longer one 4 lines + More; RA comments whole. pop529 <layout> CLASSIC
+  -> popclip.py. Unit evidence only (GameDetailsFullText689aTest, static TRUNCATE 171 -> 158).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
