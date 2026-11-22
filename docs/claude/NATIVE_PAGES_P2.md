@@ -407,3 +407,17 @@ Terminal, Dashboard, Library, Card binder.
 - Blades (WinPagesBlade.kt): the dashboard's thin type, rows lit in the blade's white-to-glow gradient, "N G" points; the page
   blade's keys in two page slots.
 - Audit: class A 29 / 53, class B 1 (Disc station - its LCD track pages, owner review pending), class C 23.
+
+### Review package + hardware, 22-23 Nov (owner decision 22 Nov 18:45) - NOT VISUALLY APPROVED
+QA app only, synthetic library, KONKR (GT78, USB) + RP Classic (USB). Runs: gk10 / gr10 (25 layouts x1.0, build 1ada6c8),
+gk13 (29 x1.3, b316b8f), gr13 (29 x1.3, 9192a89), hk10 / hr10 (Magazine, Arcade, Storage, Tiles, Grid, Night, Blades x1.0,
+9192a89), hk13 (Magazine, Arcade x1.3, 9192a89). Every run: every page walked, 0 launches, fatal 0, confirmations armed and left
+(never confirmed), owner snapshot restored diff 0. (~5 h of handheld time - the owner asked for the full package.)
+- Play the same size and place on Details / Achievements / Options (QaClip dumps): 28 / 29 layouts on both handhelds at both
+  scales. TV room NOT (D367, open - needs a decision).
+- Batch 4 x1.0 (owner's focused check): Side menu, Icon bar, Arctic, Storage boxes - PASS on both. D364 VERIFIED (RP Classic x1.3).
+- Review package (artifact "P2 native pages - review package (29 layouts, final builds)"): per layout x run (KONKR / RP Classic
+  x1.0 / x1.3) a strip Info · Details · Achievements · Options · confirm armed + the R1 walk clip; each strip names its build
+  (9192a89, or 1ada6c8 / b316b8f where the layout's code is unchanged in 9192a89).
+- Status: implemented 29 / 53 (own designs); hardware-walked 29 (both handhelds, both scales); functionally accepted 14
+  (batches 1-3, owner 22 Nov); visually approved 0; released 0. Remaining: Disc station (class B) + 23 shared-page layouts.

@@ -4126,7 +4126,7 @@
    "title": "x1.0 (KONKR + RP Classic, fk10 / fr10, build 2763331): Play changed size / place between a window's own pages - Card binder (half on Details, a third on Achievements / Options), Console hub (wider seat on Details), Cube, Cinema, Record crate (a short key alone on Options), Resume (Options); Record crate x1.3 stack 2 px lower on Options",
    "rule": "R23",
    "severity": "medium",
-   "status": "fixed 682ab (pages: two slots, measured with the 'Full details' reference key; Hub narrow seat on every page; Crate stack view height fixed) - PlayPlace682abRoboTest (KONKR + RP Classic screens, x1.0 + x1.3, 25 layouts) fails on the old code; hardware re-check pending",
+   "status": "fixed 682ab - VERIFIED KONKR + RP Classic x1.0 (gk10 / gr10) and x1.3 (gk13 / gr13): Play the same on Details / Achievements / Options for 28 of 29 layouts (TV room: D367)",
    "found": "2026-11-22 20:15 (fk10 / fr10 QaClip dumps)"
   },
   {
@@ -4142,7 +4142,7 @@
    "title": "p2review: Icon bar's achievements are an icon grid - Down Down from the order icon passes the last row to the keys (fk10 / fr10 x1.0 'FAIL ... no achievement row', A NOT pressed)",
    "rule": "R23",
    "severity": "low",
-   "status": "QA tooling fixed 682ab (one Up back onto the grid's row, A only if not a key); not a product defect",
+   "status": "QA tooling fixed 682ab - VERIFIED (gr10: \"grid page - one Up back onto an achievement\")",
    "found": "2026-11-22 19:28"
   },
   {
@@ -4150,7 +4150,7 @@
    "title": "Storage boxes: a coverless entry's sprite card was near-white under the name plate's white words (record's stand, RP Classic x1.3 fr13) - name barely readable",
    "rule": "R18",
    "severity": "low",
-   "status": "fixed 682ac (the game's placeholder colour, as every coverless card) - not in the review capture build 1ada6c8; hardware NOT TESTED",
+   "status": "fixed 682ac - VERIFIED RP Classic x1.3 gr13 + KONKR hk10 (the card in the game colour, name readable)",
    "found": "2026-11-22 21:12 (fr13 STORAGE_info.png)"
   },
   {
@@ -4158,7 +4158,7 @@
    "title": "Game magazine and Arcade pages x1.0 (KONKR gk10, build 1ada6c8): Play moved on Options - Magazine's PLAY IT! a short key in the middle, Arcade's PRESS START a row lower (one menu line fewer under the screen)",
    "rule": "R23",
    "severity": "medium",
-   "status": "fixed 682af (Magazine: two page slots; Arcade: the missing line held by an unseen measure-only row that keeps the 24 dp touch height) - PlayPlace682abRoboTest now covers both (its Play words: PLAY IT, PRESS START); hardware re-check pending",
+   "status": "fixed 682af - VERIFIED KONKR + RP Classic x1.0 (hk10 / hr10) and x1.3 (hk13 / gr13)",
    "found": "2026-11-22 22:10 (gk10)"
   }
  ]

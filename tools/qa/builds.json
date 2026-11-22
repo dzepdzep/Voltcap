@@ -1606,6 +1606,50 @@
    "base_commit": "claude/v0674-native-pages 3d6d46f",
    "tree_hash": "claude/v0674-native-pages 3d6d46f",
    "note": "682z Side / Storage Play place - KONKR pk15 / RP Classic pr15 x1.3"
+  },
+  {
+   "id": "qa-682z2-2763331-ci",
+   "apk_sha256": "a558651de613cd4cce272a5aba958ced6bbaf6c882d0f64dadf20bea9f8d271f",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 2763331",
+   "tree_hash": "claude/v0674-native-pages 2763331",
+   "note": "D364 - fk10/fr10 (18 layouts x1.0), fk13/fr13 (x1.3)"
+  },
+  {
+   "id": "qa-682ab-1ada6c8-ci",
+   "apk_sha256": "eab2b6e441856e13c4f2a02efda973a0fa1796311c8cb879b4f2cd2d54d4c9b2",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 1ada6c8",
+   "tree_hash": "claude/v0674-native-pages 1ada6c8",
+   "note": "Play on every page + batch 5 - gk10 / gr10 (25 layouts x1.0)"
+  },
+  {
+   "id": "qa-682ae-b316b8f-ci",
+   "apk_sha256": "23087d3fe2ec4accef1e61ca5fdaba40c29d3636e080084dc72ae581e2967c23",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages b316b8f",
+   "tree_hash": "claude/v0674-native-pages b316b8f",
+   "note": "batches 6-7 - gk13 (29 layouts x1.3, KONKR)"
+  },
+  {
+   "id": "qa-682af-9192a89-ci",
+   "apk_sha256": "998a807fe74fd21a6b65c723bf3cbe1a4541d676844834cdc50c71da16c0ba4c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 9192a89",
+   "tree_hash": "claude/v0674-native-pages 9192a89",
+   "note": "final review capture - gr13 (29 x1.3 RP Classic), hk10 / hr10 / hk13 deltas"
   }
  ]
 }
