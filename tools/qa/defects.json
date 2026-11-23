@@ -4272,6 +4272,14 @@
    "severity": "low",
    "status": "deliberate - the keys are the window's, not the page's: they change at once so the new page's key and the return focus (focusWhenAttached, 8 frames) are live from the first frame; delaying them would drop the D-pad back to Play. Magazine draws keys inside its sheet and keeps them (31f9593)",
    "found": "2026-11-23"
+  },
+  {
+   "id": "D385",
+   "title": "Magazine page change (RP Classic x1.3 rh13): the new sheet's key row rose into view over ~250 ms after the sheet appeared - AnimatedContent's default size animation clipped the page area while the masthead stepped down",
+   "rule": "R23",
+   "severity": "low",
+   "status": "fixed (682ai) - native page changes have no size animation (NativePages: move(...).using(null)); hardware recheck ri13 / ki13",
+   "found": "2026-11-23"
   }
  ]
 }

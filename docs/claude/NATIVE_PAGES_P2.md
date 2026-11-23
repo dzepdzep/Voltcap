@@ -481,3 +481,26 @@ The 16 layouts the owner called close to approval are untouched (except the shar
   Arcade's menu lines in whole words, the menu 60 % of the attract screen. Re-walked on both handhelds x1.3 (rdg13 / kdg13
   fc0590a, reg13 / keg13 1d37976): 0 launches, fatal 0, restore diff 0, Play same place on every page. Package updated.
   (A first fc0590a copy was a stale APK - its runs rcg13 / kcg13 are void.)
+
+### 682ah - owner 23 Nov 13:32 P2 items: finish + verify - IMPLEMENTED, hardware-checked, NOT VISUALLY APPROVED
+Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanket approval, no merge, no release GO.
+- **Spotlight (81a1c9e):** the title block over the art sits on a rounded 68 % black plate with a thin light line
+  (spotTitlePlate); the no-art stage unchanged. KONKR x1.3 kh13: title readable over the busiest cover.
+- **Terminal confirmation (81a1c9e, 3785f33):** number + pointer in their own column, description and confirmation indented by
+  layout, the confirmation as three short lines (termConfirmLines), the armed row scrolled into view with 16 dp under it
+  (TERM_CONFIRM_ROOM) - kh13 showed "MOVE AWAY = NO" in the dark bottom edge (D383); km13 (3785f33): all three lines clear.
+- **TV (owner decision kept):** one key at a time, Play first, others to the right, B = Back, Sonic keep-out, Play the same on
+  every page. Teletext: no continuous shrink - one step to 85 % only where under 24 characters fit a line (ttxGridScale).
+- **Coverflow details:** proposal only, OFF (CoverReadingProposal): the panel keeps its width; the facts as one wrapped line with
+  each value whole. Comparison images in the package; waits for the owner.
+- **Page-change audit (31f9593, 3785f33)** - real-device screen recordings, every frame (trans.py), KONKR x1.3 kh13 / km13:
+  Arctic, Library, Cube, Magazine never show two pages at once; headings / masthead / cube face label change when the old page
+  has gone (rememberHeadingPage, NATIVE_OUT_MS 90); no scroll jump while a page opens (nativeOpeningScroll, 600 ms hold).
+  Magazine's cover moved while the new sheet faded in (531 ms, text re-wrapped, keys under the edge - D382): it now moves while
+  the old sheet leaves (magCoverMs) - 331 ms; its key row can still settle ~50 ms after the sheet appears.
+  The window's key strip changes in the first frame (D384, deliberate: the D-pad's return focus needs the new key at once).
+- **Frame times (gfxdelta, read-only before/after dumps, KONKR x1.3):** Arctic 10 % janky (p50 18 ms), Magazine 11.4 -> 6.4 %,
+  Library 11 %, Cube 4 %, Spotlight 4 %, Terminal 2-4 %, TV 3.5 %. Arcade (D379, 48 % at x1.0) still open - not touched.
+- **x1.0 hardware:** KONKR kf10 (81a1c9e) and RP Classic rg10 (31f9593): Play the same place on every page, 12 / 12 on both.
+- Tests: Review682agTest (+ magCoverMs), PlayPlace KONKR + RPC, WinFocus, Readability476 - 0 failed. Static checks PASS.
+  QA tooling: D380 (gfxinfo reset crashed the QA app) fixed in 9ceab5c; selftests 241 OK.

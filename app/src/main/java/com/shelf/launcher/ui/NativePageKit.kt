@@ -106,7 +106,9 @@ internal fun NativePages(
         targetState = ctx.page,
         transitionSpec = {
             if (!anim) EnterTransition.None togetherWith ExitTransition.None
-            else move(pageDirection(tabs, initialState, targetState))
+            // (682ah, RP Classic x1.3 rh13: the default size animation clipped the new Magazine sheet while its header stepped
+            // down - its key row rose into view over ~250 ms. The page area is the layout's to size: no size animation.)
+            else move(pageDirection(tabs, initialState, targetState)).using(null)
         },
         contentKey = { it },
         modifier = modifier.nativeBumpers(ctx, tabs),
