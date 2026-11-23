@@ -13,6 +13,27 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 00000000. Owner 23 Nov 18:23 - P2 decisions, smoothness, then Tasks 1-5 (v0.6.74; newest - this order wins)
+CI green on P2 46ade24 acknowledged; functional + motion QA acknowledged; NO blanket visual approval (12 layouts, 29-layout batch),
+no merge / production install / publication without GO. Finish the P2 corrections + performance work first, then Tasks 1-5 in order.
+- **P2-g Coverflow details = option A** (QA trial, not visual approval): compact facts ON in the QA branch; panel width kept, title
+  visible (long titles too), facts whole words, story gains space, no overlap, controller scroll / focus right; x1.0 + x1.3
+  before / after shown. DONE on the P2 branch 682aj (dfdb561) - hardware before / after both handhelds; a very long title NOT TESTED.
+- **P2-h TV room:** keep the one-button strip (Play first, Full details / Full list reachable, B, Sonic's zone); no redesign unless
+  testing finds a genuine defect.
+- **P2-i Arcade stutter (priority):** profile recording on / off, still vs page change, idle vs navigation, GPU / CPU, recomposition,
+  earlier builds; fix real rendering problems keeping Arcade's look. DONE 682aj: KONKR x1.0 home navigation 48.7 -> 4.0 % slow,
+  window still 88 -> 0 % (D379). Found D386: every native page change has one 50-115 ms frame (all layouts) - OPEN, next.
+- **P2-j RP Classic slowdown (separately):** D387 - home moves on current builds are one 65-85 ms frame each, no glide (Lite turned
+  on by itself); the 17 Nov build glided with 2-20 ms per move. Not recording, not the P2 pages. OPEN - bisect 17 -> 23 Nov next.
+- **P2-k evidence ZIP** must physically contain the newest files - DONE 682aj (voltcap_p2_review_682aj.zip, 115 files).
+- Then Task 1 (row-position collisions; note: the hourly run already started it in 714a), Task 2 (R1 Focus Position tile + 53-layout
+  matrix), Task 3 (Recomps), Task 4 (START -> multiple categories), Task 5 (remaining 24 native-page layouts incl. Disc Station's
+  shared bodies; a shared page in a new frame never counts) - details as in the 13:32 section below plus the 18:23 refinements:
+  Task 1 also covers VoltCap Row, category bars, game info, Play controls, shortcuts, screen shapes, resized widgets, restart;
+  Task 3 reliable auto-suggestions + manual; Task 4 other apps / consoles / collections, persists across APK updates / rescans /
+  restarts. Targeted handheld tests, no needless full sweeps; statuses kept apart; report only blockers / design decisions.
+
 ## 0000000. Owner 23 Nov 13:32 - P2 finish, then Tasks 1-5 in order (v0.6.74; newest - this order wins)
 Owner accepted the Night menu + Arcade x1.3 corrections as improved. NOT granted: blanket visual approval of the 12 changed
 layouts, merge, release GO. Isolated v0.6.74 branches, QA app + synthetic data + targeted hardware, statuses kept apart
