@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 705a · 2026-11-23 08:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on f54a2f9 (704a): green on both runners · effort: medium
+**1. LATEST UPDATE** - 706a · 2026-11-23 09:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 503d679 (705a): red on both runners from Maven Central 429 only (code compiled) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The cross-bar trophy list now shows achievement titles, descriptions and the comments heading in full (they shrink or slide instead of ending in '...').
+**2. WHAT CLAUDE JUST FIXED** - The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 
 **3. LAST 24 HOURS** (most important first)
+- **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 - **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 - **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
-- **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 

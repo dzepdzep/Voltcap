@@ -72,6 +72,10 @@ if (debugIsProduction) logger.warn("Voltcap: qa_variant.properties debugIsProduc
 // Unit-test JVM settings shared by AGP's unit-test tasks and testDebugHeavyRoboUnitTest (675a).
 fun voltcapTestJvm(t: Test, firstOfBuild: Boolean) {
     t.maxHeapSize = "2g"
+    // (706a: Robolectric fetches android-all-instrumented itself, outside Gradle - the same mirror as settings.gradle.kts.)
+    System.getenv("VOLTCAP_MAVEN_MIRROR")?.trim()?.takeIf { it.startsWith("https://") }?.let {
+        t.systemProperty("robolectric.dependency.repo.url", it)
+    }
     // (674e, D325: CI 60fd7c4e - the test worker grew to 9.6 GB (native memory of the Compose / Robolectric UI tests, outside
     // the 2 GB heap) and the watchdog stopped the 16 GB runner. A fresh worker every 400 tests gives that memory back.)
     // (674o: CI c7ad53a7 - 9.6 GB again within ~320 tests of one worker (EndlessFillLitRoboTest's parameter rows) and

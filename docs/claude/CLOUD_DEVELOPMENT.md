@@ -45,6 +45,8 @@ python3 tools/qa/selftest/test_qa.py       # after touching any QA tool
 - No signing keys, `keystore.properties`, `screenscraper.properties`, `igdb.properties` or `voltcap_api.properties` exist in the
   cloud and none are needed for debug / QA builds and tests. Never add them.
 - Maven Central can answer 429 through the cloud proxy: rerun with `--max-workers=2`; one retry, not a loop.
+- (706a) Export `VOLTCAP_MAVEN_MIRROR=https://maven-central.storage-download.googleapis.com/maven2/` before Gradle: Gradle and
+  Robolectric then ask Google's Maven Central mirror first (Maven Central 429s this proxy often). CI sets it too; unset = unchanged.
 - Heavy Robolectric classes (675a: EndlessFillLitRoboTestShard0..5, EndlessOnceRoboTest) run in their own task,
   `:app:testDebugHeavyRoboUnitTest` (a fresh JVM per class); `testDebugUnitTest` runs it afterwards, except with `--tests`.
   To run one of them: `./gradlew $G :app:testDebugHeavyRoboUnitTest --tests 'com.shelf.launcher.ui.EndlessOnceRoboTest'`.
