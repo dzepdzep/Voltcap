@@ -91,9 +91,13 @@ run)
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     openw $lay $n || continue
     shot ${n}_info; k DPAD_RIGHT 0.9; shot ${n}_info_key2; k DPAD_LEFT 0.9
+    # (682ag, owner 23 Nov 13:32 - page-transition audit: the walk's frame times from the app's own renderer - gfxinfo reset before,
+    # framestats after - next to the recording; screenrecord fps is no frame-time evidence on the RP Classic.)
+    dumpsys gfxinfo $P reset >/dev/null 2>&1
     REC_SEG=12 rec_start $O/${n}_walk 12; sleep 0.6
     k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3
     rec_stop; sleep 0.3
+    dumpsys gfxinfo $P framestats > $O/${n}_walk_gfx.txt 2>/dev/null
     k BUTTON_R1 1.1; shot ${n}_details; k DPAD_UP 0.9; shot ${n}_details_focus
     k BUTTON_R1 1.1; shot ${n}_trophies; k DPAD_DOWN 0.8; k DPAD_DOWN 0.8; shot ${n}_trophies_focus
     # (682r, KONKR Magazine x1.3: the list had no row on screen, two Downs reached the window's "Full list" key and the A

@@ -109,6 +109,7 @@ open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Bo
         val before = com.shelf.launcher.data.Features.winScenes.state.value
         com.shelf.launcher.data.Features.winScenes.state.value = true
         TestHooks.scale.value = if (big) 1.3f to 1.15f else null
+        CoverReadingProposal.on.value = System.getenv("VOLTCAP_COVER_READING") != null
         val oldRect = TvScreen.rect; val oldId = TvScreen.displayId
         val oldFront = TvScreen.front
         if (layout == HomeLayout.TV) { TvScreen.rect = androidx.compose.ui.geometry.Rect(97f, 117f, 314f, 265f); TvScreen.displayId = -1
@@ -143,6 +144,7 @@ open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Bo
             shot("5_options_armed")
         } finally {
             TestHooks.scale.value = null; com.shelf.launcher.data.Features.winScenes.state.value = before
+            CoverReadingProposal.on.value = false
             TvScreen.rect = oldRect; TvScreen.displayId = oldId; TvScreen.front = oldFront
         }
     }

@@ -375,10 +375,12 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             }
             // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
             // (529o: the pages' card shows no second name - the home's big title beside the case already shows it in full.)
+            androidx.compose.runtime.CompositionLocalProvider(LocalCoverReading provides CoverReadingProposal.on.value) {
             ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), pageKey, nameOnCard = false,
                 // (529o: the pages take the panel's whole height - it was 86 % of it, the rest unused under the panel.)
                 pageHeight = (ctx.maxH - 32.dp).coerceAtLeast(200.dp)) { _, keys ->
                 CoverMainBody(ctx, keys, a, ink, muted, shortPanel, moreOpen)
+            }
             }
         }
     }

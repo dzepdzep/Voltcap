@@ -133,14 +133,15 @@ internal const val TTX_TIGHT_DP = 200f
 
 /** 682ag: the teletext grid's narrowest - characters a line at least (as far as [TTX_MIN_SCALE] allows). */
 internal const val TTX_MIN_COLS = 24
-/** 682ag: the teletext text never steps under this share of the size asked (x1.3 stays bigger than x1.0's 0.9 of it). */
-internal const val TTX_MIN_SCALE = 0.78f
+/** 682ag: the teletext's one narrow-set size - a single step down, never a size that keeps shrinking with the set (owner 23 Nov
+ *  13:32: "readability without continuously shrinking fonts"); x1.3 stays bigger than x1.0. */
+internal const val TTX_MIN_SCALE = 0.85f
 
-/** 682ag (pure): the teletext text's scale for a line [rowPx] wide where an "M" is [cellPx] - 1 while TTX_MIN_COLS fit. */
+/** 682ag (pure): the teletext text's scale for a line [rowPx] wide where an "M" is [cellPx] - 1 while TTX_MIN_COLS fit, else the
+ *  one narrow-set step ([TTX_MIN_SCALE]); two sizes only. */
 internal fun ttxGridScale(rowPx: Float, cellPx: Float): Float {
     if (cellPx <= 0f || rowPx <= 0f) return 1f
-    val cols = rowPx / cellPx
-    return if (cols >= TTX_MIN_COLS) 1f else (cols / TTX_MIN_COLS).coerceIn(TTX_MIN_SCALE, 1f)
+    return if (rowPx / cellPx >= TTX_MIN_COLS) 1f else TTX_MIN_SCALE
 }
 internal fun ttxTight(pageHeightDp: Float): Boolean = pageHeightDp < TTX_TIGHT_DP
 

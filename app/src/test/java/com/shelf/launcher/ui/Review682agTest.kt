@@ -22,8 +22,9 @@ class Review682agTest {
         val s = ttxGridScale(rowPx = 17 * 20f, cellPx = 20f)
         assertTrue(s < 1f)
         assertEquals(TTX_MIN_SCALE, s, 0.0001f)
-        val s2 = ttxGridScale(rowPx = 22 * 20f, cellPx = 20f)
-        assertEquals(22f / 24f, s2, 0.0001f)
+        // (owner 23 Nov 13:32: one step, never a size that keeps shrinking with the set)
+        assertEquals(TTX_MIN_SCALE, ttxGridScale(rowPx = 22 * 20f, cellPx = 20f), 0f)
+        assertEquals(TTX_MIN_SCALE, ttxGridScale(rowPx = 10 * 20f, cellPx = 20f), 0f)
         assertEquals(1f, ttxGridScale(0f, 20f), 0f)
         assertEquals(1f, ttxGridScale(100f, 0f), 0f)
     }
@@ -52,6 +53,11 @@ class Review682agTest {
         assertEquals("Untitled", n2)
         assertEquals("0 points · Not earned yet", l2)
         assertNull(d2)
+    }
+
+    @Test fun terminalConfirmationIsThreeShortLines() {
+        assertEquals(listOf("ARE YOU SURE? (Y/N)", "A AGAIN = YES", "MOVE AWAY = NO"), termConfirmLines())
+        assertTrue(termConfirmLines().all { it.length <= 20 })
     }
 
     @Test fun terminalLinesKeepPathsAndSwitchesWhole() {
@@ -85,5 +91,9 @@ class Review682agTest {
         assertEquals(180f * 0.0698f + 2f, nightCmdDrift(6).value, 0.01f)
         assertTrue(nightCmdDrift(2).value < nightCmdDrift(6).value)
         assertEquals(30f * 0.0698f + 2f, nightCmdDrift(0).value, 0.01f)
+    }
+
+    @Test fun coverflowProposalKeepsEachValueTogether() {
+        assertEquals("PlayStation\u00A02\u00A0\u00A0·  2005\u00A0\u00A0·  Team\u00A0Ico", coverFactsLine(listOf("PlayStation 2", " 2005 ", "Team Ico", " ")))
     }
 }

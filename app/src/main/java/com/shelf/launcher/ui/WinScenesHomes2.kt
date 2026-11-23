@@ -371,17 +371,22 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
         val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
         Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(if (onPage) Modifier.fillMaxSize() else Modifier).padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
-            if (onPage) Text(spotPageName(ctx.page), color = lit, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-            // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
-            // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
-            val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
-            if (!(noArt && !onPage)) ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
-                Modifier.fillMaxWidth(if (onPage) 0.4f else 0.55f).height(if (onPage) minOf(h * 0.10f, 44.dp) else minOf(h * 0.18f, 90.dp)),
-                contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
-                ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = if (onPage) 17.sp else 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            if (!onPage && !noArt) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
-                modifier = Modifier.padding(vertical = 6.dp))
-            else if (!onPage) Spacer(Modifier.height(6.dp))
+            // (682ag, owner 23 Nov 13:32 - "Spotlight's headings competing with busy cover artwork": over a picture the title
+            // block - the page's name, the logo or name, the facts line - sits on the bill's own dark plate, a lit hairline at
+            // its foot; the no-art stage keeps its open title.)
+            Column(Modifier.then(if (noArt) Modifier else Modifier.spotTitlePlate(lit)), horizontalAlignment = Alignment.CenterHorizontally) {
+                if (onPage) Text(spotPageName(ctx.page), color = lit, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
+                // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
+                val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
+                if (!(noArt && !onPage)) ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
+                    Modifier.fillMaxWidth(if (onPage) 0.4f else 0.55f).height(if (onPage) minOf(h * 0.10f, 44.dp) else minOf(h * 0.18f, 90.dp)),
+                    contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
+                    ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = if (onPage) 17.sp else 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                if (!onPage && !noArt) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
+                    modifier = Modifier.padding(vertical = 6.dp))
+            }
+            if (!onPage) Spacer(Modifier.height(6.dp))
             // (682ag, owner review 23 Nov - "content contrast over colourful artwork with a proper readable surface": the page sits
             // on a dark glass panel over the poster - the poster still shows round it.)
             else NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(10.dp))
@@ -808,3 +813,11 @@ internal fun NoArtBanner(ctx: WinSceneCtx, modifier: Modifier) {
             modifier = Modifier.padding(end = 18.dp))
     }
 }
+
+
+/** 682ag: Spotlight's title plate over a picture - dark glass, rounded, a hairline in the light's colour at its foot. */
+internal fun Modifier.spotTitlePlate(lit: Color): Modifier = this
+    .clip(RoundedCornerShape(10.dp))
+    .background(Color.Black.copy(alpha = 0.68f))
+    .drawBehind { drawRect(lit.copy(alpha = 0.55f), topLeft = Offset(size.width * 0.2f, size.height - 1.5.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width * 0.6f, 1.5.dp.toPx())) }
+    .padding(horizontal = 16.dp, vertical = 6.dp)

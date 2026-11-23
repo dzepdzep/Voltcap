@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -141,16 +142,34 @@ private fun TermSetup(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Col
                 androidx.compose.runtime.LaunchedEffect(on) { if (!on) confirm.leave(i) }
                 val armed = confirm.armed == i
                 val ink = if (on) hiInk else if (o.destructive) accent else fg
-                Column(Modifier.fillMaxWidth().background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 3.dp)) {
-                    WholeWordsText((if (on) "► " else "  ") + "${i + 1}. " + o.label.uppercase(), color = ink, fontSize = style.fontSize, fontFamily = style.fontFamily,
-                        lineHeight = style.fontSize * 1.3f)
-                    o.sub?.let { WinFullText("     " + it.uppercase(), color = if (on) hiInk else dim, fontSize = style.fontSize * 0.85f, maxLines = 2, style = style) }
-                    // (owner 18 Nov: the confirmation readable and spaced - its own line, a gap above, the monitor's warning colour)
-                    if (armed) Text("     ARE YOU SURE (Y/N)?  A AGAIN = YES  ·  MOVE AWAY = NO", style = style.copy(color = if (on) hiInk else accent, shadow = null),
-                        modifier = Modifier.padding(top = 6.dp))
+                // (682ag, owner 23 Nov 13:32 - "Terminal's destructive confirmation fully readable": the number and pointer in a column of
+                // their own so a wrapped name keeps its indent; the description and the confirmation indented by layout, not spaces;
+                // the confirmation as three short lines (no "(Y/ / N)" break) and the armed row scrolled whole into view.)
+                val bring = androidx.compose.runtime.remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
+                androidx.compose.runtime.LaunchedEffect(armed) { if (armed) { kotlinx.coroutines.delay(32); bring.bringIntoView() } }
+                Column(Modifier.fillMaxWidth().bringIntoViewRequester(bring).background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 3.dp)) {
+                    Row(Modifier.fillMaxWidth()) {
+                        Text((if (on) "► " else "  ") + "${i + 1}. ", style = style.copy(color = ink, shadow = if (on) null else style.shadow), softWrap = false,
+                            lineHeight = style.fontSize * 1.3f)
+                        WholeWordsText(o.label.uppercase(), color = ink, fontSize = style.fontSize, fontFamily = style.fontFamily,
+                            lineHeight = style.fontSize * 1.3f, modifier = Modifier.weight(1f))
+                    }
+                    o.sub?.let { WholeWordsText(it.uppercase(), color = if (on) hiInk else dim, fontSize = style.fontSize * 0.85f, fontFamily = style.fontFamily,
+                        lineHeight = style.fontSize * 0.85f * 1.3f, modifier = Modifier.padding(start = TERM_INDENT)) }
+                    if (armed) Column(Modifier.padding(start = TERM_INDENT, top = 6.dp)) {
+                        for (l in termConfirmLines()) WholeWordsText(termKeepTokens(l), color = if (on) hiInk else accent, fontSize = style.fontSize,
+                            fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
+                    }
                 }
             }
         }
         if (ctx.options.isEmpty()) Text("NOTHING TO SET UP.", style = style.copy(color = dim))
     }
 }
+
+
+/** 682ag: the Setup page's indent for an option's description and confirmation (where "► 1. " ends). */
+internal val TERM_INDENT = 28.dp
+
+/** 682ag (pure): the destructive confirmation, one short line each - never a break inside "(Y/N)". */
+internal fun termConfirmLines(): List<String> = listOf("ARE YOU SURE? (Y/N)", "A AGAIN = YES", "MOVE AWAY = NO")

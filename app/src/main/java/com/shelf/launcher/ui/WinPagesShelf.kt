@@ -80,7 +80,14 @@ private fun ShelfLine(on: Boolean, ink: Color, label: Color, content: @Composabl
 private fun ShelfCatalogue(ctx: WinSceneCtx, live: Boolean, ink: Color, label: Color, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
     Column(modifier.nativeScroll(ink)) {
-        nativeFacts(ctx, setOf("Trophies")).forEach { f ->
+        // (682ag PROPOSAL, owner 23 Nov 13:32 - Coverflow details' reading space, shown to the owner as a comparison first, OFF by
+        // default: the facts as one line of values, so the story starts near the top of the same panel - the panel
+        // keeps its width, the home's title stays in view. Coverflow only - LocalCoverReading; the shelf family keeps its rules.)
+        if (LocalCoverReading.current) {
+            // the facts as one line of values (the field names drop: each value says what it is), the story right under it
+            WholeWordsText(coverFactsLine(nativeFacts(ctx, setOf("Trophies")).map { it.value }), color = ink.copy(alpha = 0.78f), fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold, lineHeight = 17.sp, modifier = Modifier.fillMaxWidth().ruled(ink).padding(start = 14.dp, top = 4.dp, bottom = 8.dp))
+        } else nativeFacts(ctx, setOf("Trophies")).forEach { f ->
             Row(Modifier.fillMaxWidth().ruled(ink).padding(start = 14.dp, top = 5.dp, bottom = 5.dp), verticalAlignment = Alignment.Top) {
                 Text(f.label.uppercase(), color = label, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, fontFamily = FontFamily.Monospace,
                     modifier = Modifier.width(96.dp).padding(top = 2.dp))
@@ -167,3 +174,14 @@ private fun ShelfEntries(ctx: WinSceneCtx, live: Boolean, ink: Color, label: Col
         if (ctx.options.isEmpty()) Text("No options for this game.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp, modifier = Modifier.padding(start = 14.dp, top = 4.dp))
     }
 }
+
+
+/** 682ag: Coverflow details' reading proposal (the facts as one line of values) - provided only by its panel, and only while
+ *  [CoverReadingProposal] is on (OFF by default until the owner picks it from the comparison). */
+internal val LocalCoverReading = androidx.compose.runtime.compositionLocalOf { false }
+
+/** 682ag: the switch for the comparison (review sheets set it; no user setting until the owner approves). */
+internal object CoverReadingProposal { val on = androidx.compose.runtime.mutableStateOf(false) }
+
+/** 682ag (pure): the proposal's facts line - each value kept together (no break inside "Team Ico"), the dot held to the value before it (a line never starts with it). */
+internal fun coverFactsLine(values: List<String>): String = values.filter { it.isNotBlank() }.joinToString("\u00A0\u00A0·  ") { it.trim().replace(' ', '\u00A0') }
