@@ -94,6 +94,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
   row). A on the reached Play launches the game. Unit evidence only (HeaderReachDirection715aTest 3/3).
+- Also (716a, Task 1 Row-position, dev line 716a or later, ~3 min, KONKR x1.3 QA font scale, with 714a / 715a): Voltcap row,
+  game header ON + Next to the row "Game & news" + category bar Full, status bar on, legend on. R1 Row tile Middle, then Bottom:
+  the header's top line must sit fully below the clock / battery (it could start under them before); at x1.0 nothing moves
+  compared with 715a (same screenshots). Music player in the status bar (top left) once: same check. Unit evidence only
+  (RowColumnUnderBar716aTest 4/4).
 - Also (714a, Task 1 Row-position, dev line 714a or later, ~2 min, KONKR x1.0, with 713a): Tile home, round buttons "by the
   tiles" moved in Edit Home at Row Middle; R1 Row tile Middle -> Top -> Bottom -> Middle: at Top / Bottom the buttons sit at their
   normal spot (no overlap with the tiles or the profile row), back at Middle the hand-placed spot returns; the same with Settings

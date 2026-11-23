@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 715a · 2026-11-23 18:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on 37b32a1 (714a): green · effort: medium
+**1. LATEST UPDATE** - 716a · 2026-11-23 19:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on 2e865a2 (715a): green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Voltcap row with the game header switched off: if you added a Play / Continue button in Edit Home, the D-pad now reaches it in the direction it really is (with the row at the top, pressing down used to go to a Play drawn above the games).
+**2. WHAT CLAUDE JUST FIXED** - Voltcap row at Middle or Bottom: when the game header, game info and category bar together are taller than the space under the status bar (for example with larger text), the top of the row no longer slides under the clock and battery - it starts just below them. On ordinary screens nothing moves.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1 continued: music player / corner buttons vs Row place, Tile home Top at x1.3, Edit Home preview vs Home; Owner: final visual review of the P2 package
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1 continued: Tile home Top vs profile row at x1.3, corner buttons, Edit Home preview vs Home; Owner: final visual review of the P2 package
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 19:35 UTC, 716a (cloud):** Verify 310 on 2e865a2 (715a) GREEN. TASK 1 finding 3 fixed: Voltcap row Row Middle /
+Bottom placed its column on the whole screen, so a tall column (header + info + chips at x1.3) started under the status bar;
+RowColumnFit.keepUnderBar keeps its top below the bar (unchanged whenever it fits; Middle clears the legend too where both fit).
+RowColumnUnderBar716aTest 4/4 PASS (cloud). HW-24 716a. Matrix H18.
+Residual (noted, not changed): Row Top puts the bar at the bottom; a column taller than the screen there could still reach it.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
 **23 Nov 18:45 UTC, 715a (cloud):** Verify 310 on 37b32a1 (714a) GREEN. Owner 18:23 backlog read (P2-i / P2-j / D386 / D387 are
 on-device profiling - live session). TASK 1 finding 2 fixed: Voltcap row with the header off - ▲ / ▼ follow where an added Play /
 Continue part is drawn (HomeReach.headerAbove + PartRects.frac), not the row's place. HeaderReachDirection715aTest 3/3 PASS

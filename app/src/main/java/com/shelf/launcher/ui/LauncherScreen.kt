@@ -4556,7 +4556,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         com.shelf.launcher.data.DockPosition.MIDDLE -> Alignment.Center
                         com.shelf.launcher.data.DockPosition.BOTTOM -> Alignment.BottomCenter
                     }
-                ).onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }.then(
+                ).then(with(RowColumnFit) {
+                    // 716a: a column taller than the room the status bar leaves no longer starts under it (Middle / Bottom).
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
+                    val barTop = barHere && dockPosition != com.shelf.launcher.data.DockPosition.TOP && statusBarHeightPx > 0
+                    Modifier.keepUnderBar(
+                        dockPosition,
+                        topSafe = if (barTop) statusBarHeightPx + with(dens) { 4.dp.roundToPx() } else 0,
+                        bottomSafe = if (legendShown) with(dens) { 24.dp.roundToPx() } else 0
+                    )
+                }).onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }.then(
                     // The status bar moves to the bottom then, so the row can sit
                     // right at the top.
                     if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) Modifier.padding(top = 16.dp) else Modifier

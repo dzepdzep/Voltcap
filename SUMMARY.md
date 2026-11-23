@@ -1,3 +1,19 @@
+# Update 716a (23 Nov 2026, cloud run) - Task 1 Row-position: the Voltcap row never starts under the status bar
+- CI first: Verify 310 on 2e865a2 (715a) GREEN.
+- Audit finding (Voltcap row, status bar x Row place): Row Middle centred the row's column (game header, info / news, category
+  bar, games) on the whole screen and Row Bottom stood it on the bottom edge, ignoring the status bar along the top. A column
+  taller than the room the bar leaves (header + info + chips at x1.3 text, the music player in the bar) started under the clock /
+  battery / player. New ui/RowColumnFit.kt keepUnderBar (applied between the Row-place alignment and rowTopPx): when the column
+  fits, it stays exactly where it was (shift 0); otherwise its top stays below the bar (+4 dp), Middle also clears the legend
+  band where both fit, and only a column taller than the whole free room spills at the bottom (top readable). Row Top unchanged
+  (the bar is at the bottom there). Tile home and the other layouts unchanged.
+- Test: RowColumnUnderBar716aTest 4/4 PASS (Robolectric layout: the old centring put a 380 dp column at 10 dp under a 40 dp
+  bar, keepUnderBar at 40 dp; pure placement cases; source wiring); HeaderReachDirection715aTest 3/3 PASS. App + tests compiled
+  in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RowColumnFit.kt (new), ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowColumnUnderBar716aTest.kt.
+- Hardware NOT TESTED: HW-24 716a (KONKR x1.3).
+
 # Update 715a (23 Nov 2026, cloud run) - Task 1 Row-position: the D-pad reaches an added Play part where it is drawn
 - CI first: Verify 310 on 37b32a1 (714a) GREEN; e23c26c (owner 18:23 backlog, docs) running.
 - Audit finding (Voltcap row, Play controls x Row place): with the game header off, an added "Play / Continue" (or "Play &

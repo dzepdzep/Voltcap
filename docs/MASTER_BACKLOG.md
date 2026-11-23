@@ -58,7 +58,7 @@ release without the owner's explicit GO. Finish the P2 items first; then Tasks 1
 Row Position, TileRows, TileHome, Edit Home, manually saved placements. Rows and neighbours rearrange naturally where supported; no
 collisions of tiles / covers, titles / info, category bars, Play buttons, round shortcuts, profile / status, moved / resized widgets.
 Saved customizations kept (never silently erased); Edit Home preview = real Home; Undo and Reset. Test every position at x1.0 /
-x1.3, small screens, enlarged elements, custom placements. IN PROGRESS (714a: Tile home Row change keeps the round buttons' hand-placed spot per place instead of deleting it; 715a: Voltcap row with the header off - ▲ / ▼ go where an added Play part is drawn, not by the row's place; next: Voltcap row Top / Middle / Bottom vs game header, music player, corner shortcuts; Edit Home preview vs Home).
+x1.3, small screens, enlarged elements, custom placements. IN PROGRESS (714a: Tile home Row change keeps the round buttons' hand-placed spot per place instead of deleting it; 715a: Voltcap row with the header off - ▲ / ▼ go where an added Play part is drawn, not by the row's place; 716a: Voltcap row Middle / Bottom - a column taller than the room the status bar leaves no longer starts under the bar; next: Tile home Top vs the profile row at x1.3, corner shortcuts, Edit Home preview vs Home).
 
 **TASK 2 - New R1 Focus Position tile:** a separate R1 control for where the highlighted game stays horizontally while browsing (NOT
 the vertical Row Position tile). Audit all 53 layouts first; candidates: VoltCap row / Classic (reuse its Focus Position setting),
