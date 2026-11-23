@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 22:20 UTC, 718a (cloud, Task 1):** Verify 310 on bbe5c98 GREEN. Owner 22:43 order read (items 1-2 = P2 on-device
+profiling / Coverflow x1.3 on the P2 branch - live session with hardware). Task 1 "verify it is the exact handler": R1's Row
+tile and `voltcap_test_dock` now share rowTilePress (ui/QuickSettings.kt); `voltcap_test_dock NEXT` = one tile press;
+row714.sh s8-s10 press round the cycle. RowTileExactHandler718aTest 3/3 + 714a / 717a / 521 tests PASS (cloud). HW-24 714a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): a safe QA path for the real Edit
+Home D-pad movement of the added Play part (715a; HomeEditState select: + real D-pad keys only while Edit Home is open in the
+QA app, no R1), and a QA hook for the 716a combination (game header + Game & news + category bar Full + music player) so it can
+be checked at x1.3; then Tile home Top vs the profile row at x1.3, Edit Home preview vs the real Home.
+
 **23 Nov 21:55 UTC, 717a (cloud, QA tooling):** Verify 310 on 7bd1dea (716b) GREEN. 714a's hardware check unblocked without R1
 (its Quick row has system tiles): `voltcap_test_dock` (the Row tile's own handler, preview only) now logs one `rowtile` line;
 tools/qa/device/row714.sh + tools/qa/tools/row714.py grade it (selftest 5/5). RowTileQaLine717aTest 3/3 PASS (cloud). HW-24 714a.

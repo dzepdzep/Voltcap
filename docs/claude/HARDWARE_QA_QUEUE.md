@@ -102,6 +102,9 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   `python3 tools/qa/tools/row714.py <dir>` (PASS / FAIL / INFRA; screenshots + QaClip dumps beside it show the buttons
   at each step). Covers: placed at Middle -> Top (normal spot) -> Middle (spot back) -> Bottom, placed at Bottom, Top -> Bottom
   (its own spot) -> Middle (Middle's spot) -> Middle again (unchanged). The real R1 tile tap stays a by-hand owner check.
+- **718a (cloud): the hook IS now the exact handler.** R1's Row tile and `voltcap_test_dock` call the same step (rowTilePress;
+  RowTileExactHandler718aTest guards it); `voltcap_test_dock NEXT` = one tile press. row714.sh (dev line 718a or later) adds
+  s8-s10, three NEXT presses Middle -> Bottom -> Top -> Middle, graded on the landing place too. Same run commands as 717a.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

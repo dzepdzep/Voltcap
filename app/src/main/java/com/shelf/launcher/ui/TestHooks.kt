@@ -12,7 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 internal object TestHooks {
     /** The layout asked for (by its enum name), taken by the home screen. */
     val layout = mutableStateOf<String?>(null)
-    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
+    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM|NEXT` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved; 718a NEXT = one tile press, rowTilePress). */
     val dock = mutableStateOf<String?>(null)
     /** Batch 523r: `--es voltcap_test_loop true|false` — Endless (Home › the row goes round) for a preview only (nothing saved). */
     val loop = mutableStateOf<Boolean?>(null)
@@ -348,7 +348,7 @@ internal object TestHooks {
             }.onFailure { android.util.Log.w("VoltcapTest", "edithome $v: ${it.message}") }
             android.util.Log.i("VoltcapTest", "edithome $v active=${HomeEditState.active}")
         }
-        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
+        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && (d == "NEXT" || com.shelf.launcher.data.DockPosition.values().any { it.name == d })) dock.value = d }
         intent?.getStringExtra("voltcap_test_loop")?.let { v -> if (enabled(context) && (v == "true" || v == "false")) loop.value = v == "true" }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")

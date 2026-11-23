@@ -43,9 +43,12 @@ def grade(run):
         if layout != 'TILES' or spot != 'ROW':
             out.append(('INFRA', '%s: layout=%s spot=%s (needs Tile home, buttons by the tiles)' % (step, layout, spot)))
             continue
-        ok = (want_sc == 'any' or sc == want_sc) and (want_kept == 'any' or kept == want_kept)
+        # (718a: an optional 4th field = the place the change must land on; a NEXT press checks the tile's own cycle.)
+        want_to = e[3] if len(e) > 3 else 'any'
+        ok = (want_sc == 'any' or sc == want_sc) and (want_kept == 'any' or kept == want_kept) and (want_to == 'any' or to == want_to)
         out.append(('PASS' if ok else 'FAIL', '%-4s %s->%s shortcuts=%s kept=%s%s' % (
-            step, frm, to, sc, kept, '' if ok else '   (expected shortcuts=%s kept=%s)' % (want_sc, want_kept))))
+            step, frm, to, sc, kept, '' if ok else '   (expected %sshortcuts=%s kept=%s)' % (
+                '' if want_to == 'any' else 'to=%s ' % want_to, want_sc, want_kept))))
     restore = next((l for l in log if l.startswith('restore:')), None)
     if restore is None or not restore[8:].strip():
         out.append(('INFRA', 'restore result missing'))

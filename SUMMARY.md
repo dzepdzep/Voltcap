@@ -1,3 +1,19 @@
+# Update 718a (23 Nov 2026, cloud run) - Task 1: the Row tile QA hook now runs R1's exact Row tile handler
+- CI first: Verify 310 on bbe5c98 (owner backlog 22:43, contains 717a) GREEN; 0d7b630 / 886835d cancelled by the newer push.
+- Owner 22:43 Task 1: "verify it is the exact handler". It was not quite: the R1 Row tile and the hook `voltcap_test_dock`
+  each had their own copy of the change (Tile home reset + new place). Now both call one step, rowTilePress(a, to)
+  (ui/QuickSettings.kt), and rowTileNext(a) gives the tile's cycle (Top -> Middle -> Bottom -> Top). The tile saves the result
+  (unchanged behaviour), the hook previews it. `--es voltcap_test_dock NEXT` = one press of the tile (its own cycle).
+- row714.sh: three NEXT presses added (Middle -> Bottom -> Top -> Middle), each graded on the place it lands on as well as the
+  buttons' spots (row714.py: optional 4th expect field; older logs still grade).
+- Tests: RowTileExactHandler718aTest 3/3 (new: the tile and the hook both call rowTilePress, no private copy, NEXT follows the
+  cycle), RowTileQaLine717aTest 3/3, TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4 PASS (cloud, compiled; two source-shape
+  assertions moved to the shared step, same check); QA selftest 223/223 incl. TestRow714NextPress718a 2/2; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowTileExactHandler718aTest.kt (new), RowTileQaLine717aTest.kt, TileRowPlaceSpots714aTest.kt,
+  Batch521Test.kt, tools/qa/device/row714.sh, tools/qa/tools/row714.py, tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 714a (row714.sh x1.0 + x1.3 on the KONKR, now incl. the three tile presses).
+
 # Update 717a (23 Nov 2026, cloud run) - Task 1: the Tile home Row-place check (714a) can run on a handheld without R1
 - CI first: Verify 310 on 7bd1dea (716b) GREEN; the later docs-only pushes (HW notes, locks) were cancelled by newer pushes.
 - Answers the live session's 22:15 note (714a NOT TESTED: R1 opens on its Quick row of system tiles, so no script may open it).

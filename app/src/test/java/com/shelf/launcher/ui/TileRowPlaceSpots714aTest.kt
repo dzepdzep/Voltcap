@@ -60,6 +60,8 @@ class TileRowPlaceSpots714aTest {
         assertFalse("the old code deleted the spot", fn.contains("HomeWidgets.reset(HomeWidgets.SHORTCUTS)"))
         assertTrue(fn.contains("tileRowPlaceSpots(now, a.tileDockPosition, to)"))
         assertTrue(src("ui/SettingsDialog.kt").contains("tileRowPlaceReset(appearance, it)"))
-        assertTrue(src("ui/LauncherScreen.kt").contains("tileRowPlaceReset(state.appearance, d)"))
+        // (718a: the QA hook runs the tile's own step, rowTilePress, which makes this reset - RowTileExactHandler718aTest.)
+        assertTrue(src("ui/LauncherScreen.kt").contains("rowTilePress(a0, d)"))
+        assertTrue(qs.substringAfter("internal fun rowTilePress(").substringBefore("\n}\n").contains("tileRowPlaceReset(a, to)"))
     }
 }

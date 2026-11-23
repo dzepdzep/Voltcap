@@ -35,7 +35,8 @@ class RowTileQaLine717aTest {
     @Test fun hookLogsAfterTheRowTilesOwnChange() {
         val fx = src("ui/LauncherScreen.kt").substringAfter("val testDock = TestHooks.dock.value").substringBefore("// (Pass 5:")
         assertTrue("still preview-only", fx.contains("if (TestHooks.previewOnly)"))
-        val reset = fx.indexOf("tileRowPlaceReset(state.appearance, d)"); val log = fx.indexOf("QaTrace.event(\"rowtile\"")
-        assertTrue("the Row tile's own reset, then the log line", reset in 0 until log)
+        // (718a: the reset now lives in rowTilePress, the one step the R1 tile and the hook share - RowTileExactHandler718aTest.)
+        val reset = fx.indexOf("rowTilePress(a0, d)"); val log = fx.indexOf("QaTrace.event(\"rowtile\"")
+        assertTrue("the Row tile's own change, then the log line", reset in 0 until log)
     }
 }

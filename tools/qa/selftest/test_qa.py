@@ -2819,5 +2819,23 @@ class TestRow714Grader717a(unittest.TestCase):
         self.assertIn("voltcap_test_snapshot restore", sh)
 
 
+
+class TestRow714NextPress718a(unittest.TestCase):
+    """718a: row714.sh's NEXT steps (one press of the Row tile, the exact R1 handler) are graded on the place they land on:
+    a press that skips a place in the tile's own cycle FAILs even with the right spots."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s8 0.7000,0.7000 MIDDLE:0.3000,0.2000 BOTTOM", "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROW = "E VoltcapQA: 1 rowtile TILES MIDDLE->BOTTOM spot=ROW shortcuts=0.7000,0.7000 kept=MIDDLE:0.3000,0.2000"
+
+    def test_press_lands_on_the_next_place(self):
+        g = TestRow714Grader717a._grade
+        self.assertEqual(g(self, self.LOG, [self.ROW]), "PASS")
+        self.assertEqual(g(self, self.LOG, [self.ROW.replace("->BOTTOM", "->TOP")]), "FAIL")
+
+    def test_script_presses_round_the_whole_cycle(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            nxt = [ln.split()[-1] for ln in f.read().splitlines() if ln.startswith("dock ") and " NEXT " in ln]
+        self.assertEqual(nxt, ["BOTTOM", "TOP", "MIDDLE"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

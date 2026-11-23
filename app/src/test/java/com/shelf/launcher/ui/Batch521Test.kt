@@ -26,7 +26,9 @@ class Batch521Test {
 
     @Test fun bothPlacePickersResetTheTileRow() {
         val qs = src("ui/QuickSettings.kt")
-        assertTrue(qs.contains("if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, next)"))
+        // (718a: the R1 tile's reset lives in rowTilePress, shared with the QA hook - RowTileExactHandler718aTest checks both call it.)
+        assertTrue(qs.substringAfter("internal fun rowTilePress(").substringBefore("\n}\n")
+            .contains("if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, to)"))
         assertTrue(qs.contains("LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, \"row\"))"))
         // (714a: the buttons' spot by the tiles is put aside for its place, not thrown away - TileRowPlaceSpots714aTest.)
         assertTrue("buttons by the tiles leave their old spot", qs.contains("val next = tileRowPlaceSpots(now, a.tileDockPosition, to)"))

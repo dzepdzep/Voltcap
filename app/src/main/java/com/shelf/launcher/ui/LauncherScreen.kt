@@ -1289,11 +1289,12 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     LaunchedEffect(testDock) {
         val name = testDock ?: return@LaunchedEffect
         TestHooks.dock.value = null
-        com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
+        // (718a: `NEXT` = one press of the tile, its own cycle; a place name = the tile's change to that place.)
+        (if (name == "NEXT") rowTileNext(state.appearance) else com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name })?.let { d ->
             if (TestHooks.previewOnly) {
                 val a0 = state.appearance
-                if (a0.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance, d)
-                viewModel.previewAppearance(a0.withDockHere(d))
+                // (718a: the Row tile's exact change - rowTilePress, the same call the R1 tile makes - previewed, not saved.)
+                viewModel.previewAppearance(rowTilePress(a0, d))
                 // (717a: one line per Row tile change, so tools/qa/device/row714.sh can grade 714a without the R1 panel - its
                 // Quick row holds system tiles a script must never reach.)
                 QaTrace.event("rowtile", rowTileQaLine(a0.homeLayout.name, a0.dockHere.name, d.name, a0.shortcutSpot.name,

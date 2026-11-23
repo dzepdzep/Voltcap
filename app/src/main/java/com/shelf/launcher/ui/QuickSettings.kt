@@ -853,12 +853,10 @@ fun QuickSettingsCard(
                 } else
                 // (Update 315: Tile home's own place — in the middle by default; the Voltcap row keeps its own.)
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockHere.label, false) {
-                    val all = com.shelf.launcher.data.DockPosition.values()
                     // (Batch 521: on Tile home a new Row place also drops the game row's Edit Home move up / down and the
-                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.)
-                    val next = all[(a.dockHere.ordinal + 1) % all.size]
-                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, next)
-                    home.setAppearance(a.withDockHere(next))
+                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.
+                    // 718a: one shared step - rowTilePress - so the QA hook `voltcap_test_dock` runs this exact change.)
+                    home.setAppearance(rowTilePress(a, rowTileNext(a)))
                 })
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).
@@ -2227,6 +2225,22 @@ internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings, to
         val next = tileRowPlaceSpots(now, a.tileDockPosition, to)
         if (next != now) com.shelf.launcher.data.Features.widgetPositions.value = next
     }
+}
+
+/** 718a: the place one press of R1's Row tile moves to (Top -> Middle -> Bottom -> Top). Shared by the tile and the QA hook. */
+internal fun rowTileNext(a: com.shelf.launcher.data.AppearanceSettings): com.shelf.launcher.data.DockPosition {
+    val all = com.shelf.launcher.data.DockPosition.values()
+    return all[(a.dockHere.ordinal + 1) % all.size]
+}
+
+/**
+ * 718a: R1's Row tile change to [to] - Tile home's per-place reset ([tileRowPlaceReset]) and the new place - returning the
+ * appearance to apply. The tile saves it; the QA hook (`voltcap_test_dock`, LauncherScreen) previews it, so the hook runs the
+ * exact handler (owner 23 Nov 22:43: "verify it is the exact handler") without opening the R1 panel and its system tiles.
+ */
+internal fun rowTilePress(a: com.shelf.launcher.data.AppearanceSettings, to: com.shelf.launcher.data.DockPosition): com.shelf.launcher.data.AppearanceSettings {
+    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, to)
+    return a.withDockHere(to)
 }
 
 /** 714a: the key the round buttons' hand-placed spot is kept under while the tiles sit at another place than [place]. */

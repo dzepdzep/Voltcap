@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 717a · 2026-11-23 21:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on 7bd1dea (716b): green; later docs-only pushes cancelled by newer ones · effort: medium
+**1. LATEST UPDATE** - 718a · 2026-11-23 22:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on bbe5c98: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The handheld check for 'the round buttons keep their hand-placed spot when the Tile home row moves' can now run on its own without opening the R1 panel (which holds Wi-Fi / Bluetooth switches a test script must never touch). The app writes one test-log line per row move in test builds only; a new script and grader check every step.
+**2. WHAT CLAUDE JUST FIXED** - The handheld test for moving the Tile home row now runs exactly the same code as the R1 Row button (one shared step instead of two copies), and the test script also presses that button's own Top / Middle / Bottom cycle, so a pass on the device proves the real button's behaviour.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1 continued: Tile home Top vs profile row at x1.3, corner buttons, Edit Home preview vs Home; Owner / live session: HW-24 714a with row714.sh on the KONKR
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1: safe QA path for Edit Home moving the added Play part, and the header + news + full category bar + music combination at x1.3; Owner / live session: HW-24 714a with row714.sh on the KONKR
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

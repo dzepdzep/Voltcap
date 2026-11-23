@@ -3,7 +3,7 @@
 # (Wi-Fi, Bluetooth, Do not disturb...), so no script opens it: the Row tile's own change (tileRowPlaceReset + withDockHere)
 # runs through `--es voltcap_test_dock`, which logs `rowtile ...` (rowTileQaLine). Tile home, the round buttons placed by the
 # tiles at Middle, then Top -> Middle -> Bottom, placed again at Bottom, Top -> Bottom -> Middle -> Middle: each place gets its
-# own spot back, the others stay put aside. Preview session; the QA app's settings saved first (snapshot) and restored.
+# own spot back, the others stay put aside; then three tile presses (NEXT, 718a) round the tile's own cycle. Preview session; the QA app's settings saved first (snapshot) and restored.
 # No key / tap except B on the first-start picker, and only while the QA app is in front. Grade: tools/qa/tools/row714.py RUN_DIR
 #   sh row714.sh TAG [font=1.3]
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; SC=${2:-off}; O=/sdcard/pc/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt
@@ -15,8 +15,9 @@ gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 picker() { grep -q "^PICKER" $F/voltcap_qa_screen 2>/dev/null && { gate; input keyevent KEYCODE_BUTTON_B; sleep 1.5; log "picker dismissed"; }; }
 shot() { sleep 2; gate; screencap -p $O/$1.png; A --es voltcap_test_clip "$1"; sleep 1.3; cp "$F/qa_clip/$1.json" $O/ 2>/dev/null; }
-# expect STEP SHORTCUTS KEPT, then the Row tile's change to PLACE
-dock() { log "expect $1 $3 $4"; A --es voltcap_test_dock $2; shot "$1_$2"; }
+# expect STEP SHORTCUTS KEPT TO, then the Row tile's change to PLACE (718a: NEXT = one tile press, its own cycle; TO = the
+# place it must land on - $5, or PLACE itself)
+dock() { log "expect $1 $3 $4 ${5:-$2}"; A --es voltcap_test_dock $2; shot "$1_$2"; }
 pm path $P >/dev/null 2>&1 || stop "$P not installed - nothing pressed"
 touch $F/voltcap_test_hooks $F/qa_nolaunch
 REAL=$(pidof com.shelf.launcher)
@@ -38,6 +39,10 @@ dock s4 TOP none "MIDDLE:0.3000,0.2000;BOTTOM:0.7000,0.7000"
 dock s5 BOTTOM 0.7000,0.7000 MIDDLE:0.3000,0.2000
 dock s6 MIDDLE 0.3000,0.2000 BOTTOM:0.7000,0.7000
 dock s7 MIDDLE 0.3000,0.2000 BOTTOM:0.7000,0.7000
+# 718a: three presses of the tile's own cycle (Middle -> Bottom -> Top -> Middle), the exact handler R1 runs (rowTilePress)
+dock s8 NEXT 0.7000,0.7000 MIDDLE:0.3000,0.2000 BOTTOM
+dock s9 NEXT none "MIDDLE:0.3000,0.2000;BOTTOM:0.7000,0.7000" TOP
+dock s10 NEXT 0.3000,0.2000 BOTTOM:0.7000,0.7000 MIDDLE
 A --es voltcap_test_scale off; A --ez voltcap_test_preview false; sleep 1; A --es voltcap_test_snapshot restore; sleep 3
 log "restore: $(cut -c1-60 $F/voltcap_test_snapshot_verify.txt 2>/dev/null)"
 logcat -d -s VoltcapQA | grep " rowtile " > $O/rowtile.txt
