@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 697a · 2026-11-23 00:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 47ebe9b / ff677c5: ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra · effort: medium
+**1. LATEST UPDATE** - 698a · 2026-11-23 01:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on f1050e8 (697a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The quick menu you open over a running game no longer cuts text with '...': the game's title, achievement names and descriptions, missable achievements and Bluetooth device names shrink a little and then slide so they can be read whole.
+**2. WHAT CLAUDE JUST FIXED** - The music player's pages no longer cut text with '...': the Spotify connect hint, playlist names (in the strip and in the grid) and the current and next lyric line shrink a little and then slide so they can be read whole.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: PlayerPages
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HubScreens
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

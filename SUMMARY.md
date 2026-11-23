@@ -1,3 +1,15 @@
+# Update 698a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the music player pages show their text whole
+- CI first: Verify 310 on f1050e8 (697a): ubuntu-latest GREEN (697a compiles, full suite incl. QuickMenuFullText697aTest
+  passes), ubuntu-24.04 infra only (Maven Central 429 on a Robolectric jar).
+- PlayerPages.kt (music player pages): 5 TRUNCATE places -> 0. Spotify connect hint (2 lines), playlist names in the strip (2)
+  and the grid (2, centred) and the current / next synced lyric line (1 each) go through FullText (shrink to a readable size,
+  then slide), reserve = false so the rows keep their spacing. Player designs unchanged. Unused TextOverflow import removed.
+- Test: PlayerPagesFullText698aTest (fails on 697a: 5 Ellipsis). Static checks PASS, TRUNCATE 113 -> 108.
+  Cloud compile PASSED (:app:compileDebugUnitTestKotlin, after one Maven 429 retry); test run blocked by Maven Central 429 -
+  CI runs it (Python mirror of its regexes 1/2/1/1).
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/PlayerPages.kt, app/src/test/java/com/shelf/launcher/ui/PlayerPagesFullText698aTest.kt.
+- Hardware NOT TESTED: HW-24 698a (KONKR, ~2 min).
+
 # Update 697a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the in-game quick menu shows its text whole
 - CI first: Verify 310 on 47ebe9b (696a) and ff677c5: ubuntu-latest GREEN (696a compiles, full suite passes), ubuntu-24.04
   infra only (Maven Central 429 on Robolectric jars).
