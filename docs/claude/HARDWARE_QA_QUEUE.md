@@ -90,6 +90,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   menu), and chips in a narrow row (Settings chip rows, RA "Play as") - whole (shrink, then slide), never an ellipsis; chips
   keep their size, focus ring and touch target. D-pad + touch still work. Screenshots.
   Unit evidence only (DialogChromeFullText713aTest; static TRUNCATE 69 -> 66).
+- Also (714a, Task 1 Row-position, dev line 714a or later, ~2 min, KONKR x1.0, with 713a): Tile home, round buttons "by the
+  tiles" moved in Edit Home at Row Middle; R1 Row tile Middle -> Top -> Bottom -> Middle: at Top / Bottom the buttons sit at their
+  normal spot (no overlap with the tiles or the profile row), back at Middle the hand-placed spot returns; the same with Settings
+  "Where the tiles sit". Screenshots of each place. Unit evidence only (TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4).
 - Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
   (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
   page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.

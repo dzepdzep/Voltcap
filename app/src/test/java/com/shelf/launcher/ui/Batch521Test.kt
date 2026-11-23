@@ -26,11 +26,12 @@ class Batch521Test {
 
     @Test fun bothPlacePickersResetTheTileRow() {
         val qs = src("ui/QuickSettings.kt")
-        assertTrue(qs.contains("if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a)"))
+        assertTrue(qs.contains("if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, next)"))
         assertTrue(qs.contains("LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, \"row\"))"))
-        assertTrue("buttons by the tiles go back", qs.contains("a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && HomeWidgets.position(HomeWidgets.SHORTCUTS) != null"))
+        // (714a: the buttons' spot by the tiles is put aside for its place, not thrown away - TileRowPlaceSpots714aTest.)
+        assertTrue("buttons by the tiles leave their old spot", qs.contains("val next = tileRowPlaceSpots(now, a.tileDockPosition, to)"))
         val settings = src("ui/SettingsDialog.kt")
-        assertTrue(settings.contains("if (it != appearance.tileDockPosition) tileRowPlaceReset(appearance)"))
+        assertTrue(settings.contains("if (it != appearance.tileDockPosition) tileRowPlaceReset(appearance, it)"))
     }
 
     @Test fun middleCentresTheUnmovedTilesAndTopClearsTheProfiles() {

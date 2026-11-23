@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 17:25 UTC, 714a (cloud):** Verify 310 on 8598c1c (713a) GREEN. P2 finish handed over by the live session (P2-23c) ->
+owner TASK 1 (Row-position collisions) started. Finding 1 fixed: Tile home Row place change deleted the round buttons' Edit Home
+spot by the tiles (Batch 521) - now kept aside per place ("shortcuts@<PLACE>" in widget_positions) and restored there.
+TileRowPlaceSpots714aTest 4/4 + Batch521Test 4/4 PASS (cloud). HW-24 714a. Matrix H18.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (cloud audit, one finding per run with its
+test): Voltcap row (CLASSIC) Top / Middle / Bottom vs the game header (headerUp in LauncherScreen.prepareReach), the small music
+player in the status bar at Top, corner round shortcuts (ShortcutCorner.resolve), Tile home Top vs the profile row at x1.3
+(Batch 521 / Sprint 527 minimum), Edit Home preview vs the real Home. Hardware checks batched into HW-24.
+
 **23 Nov 16:35 UTC, 713a (cloud):** Verify 310 on 2f17a84 (712a) GREEN; 711a rerun 45195727121 GREEN (NDK failure was infra).
 P2 finish still in the live session (claude/v0674-native-pages pushes to 15:23 UTC) - left alone. Filler: P13 rule 11
 DialogChrome.kt 3 TRUNCATE -> 0 (ShelfTextField value, ShelfMenuDialog title, Chip label FullText). DialogChromeFullText713aTest

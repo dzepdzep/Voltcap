@@ -19,7 +19,7 @@ layouts, merge, release GO. Isolated v0.6.74 branches, QA app + synthetic data +
 (implemented / hardware-tested / visually approved / released), CI on exact final commits, no merge / production install /
 release without the owner's explicit GO. Finish the P2 items first; then Tasks 1-4 in order without asking again; Task 5 runs on.
 
-**P2 finish (branch claude/v0674-native-pages) - IN PROGRESS (live session 23 Nov):**
+**P2 finish (branch claude/v0674-native-pages) - HANDED OVER (live session P2-23c, 17:15 UTC; owner review / Coverflow proposal pending):**
 - P2-a x1.0 hardware checks of the changed layouts (TV, Spotlight, Arctic, Arcade, Icon bar, Magazine, Cinema, Cube, Terminal,
   Library, Side, Night), KONKR + RP Classic. OPEN.
 - P2-b real-device page-transition audit: Arctic, Game magazine, Library, Cube - old / new page overlap, flicker, clipping, jumps,
@@ -37,7 +37,7 @@ release without the owner's explicit GO. Finish the P2 items first; then Tasks 1
 Row Position, TileRows, TileHome, Edit Home, manually saved placements. Rows and neighbours rearrange naturally where supported; no
 collisions of tiles / covers, titles / info, category bars, Play buttons, round shortcuts, profile / status, moved / resized widgets.
 Saved customizations kept (never silently erased); Edit Home preview = real Home; Undo and Reset. Test every position at x1.0 /
-x1.3, small screens, enlarged elements, custom placements. OPEN.
+x1.3, small screens, enlarged elements, custom placements. IN PROGRESS (714a: Tile home Row change keeps the round buttons' hand-placed spot per place instead of deleting it; next: Voltcap row Top / Middle / Bottom vs game header, music player, corner shortcuts; Edit Home preview vs Home).
 
 **TASK 2 - New R1 Focus Position tile:** a separate R1 control for where the highlighted game stays horizontally while browsing (NOT
 the vertical Row Position tile). Audit all 53 layouts first; candidates: VoltCap row / Classic (reuse its Focus Position setting),

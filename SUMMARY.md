@@ -1,3 +1,17 @@
+# Update 714a (23 Nov 2026, cloud run) - Task 1 Row-position: Tile home keeps the round buttons' hand-placed spot per Row place
+- CI first: Verify 310 on 8598c1c (713a code) GREEN; 3113e24 (P2-23c docs) running. P2 finish handed over by the live session
+  (P2-23c) -> owner Task 1 (Row-position collisions) starts.
+- Audit finding: changing Tile home's Row place (R1 Row tile, Settings "Where the tiles sit", the QA dock hook) DELETED the round
+  buttons' spot saved "by the tiles" in Edit Home (Batch 521) - a silent erase of a saved customization (owner: never). Now the
+  spot is kept aside for the place it was made at (widget_positions key "shortcuts@<PLACE>") and comes back when the tiles return
+  there; at another place the buttons sit at their normal spot, so the Batch 521 collision fix stays. Other widgets untouched;
+  Reset Layout clears everything as before. The row's old up / down move (no effect since Sprint 527) is still dropped.
+- Test: TileRowPlaceSpots714aTest 4/4 PASS (fails on 713a: the spot was reset); Batch521Test 4/4 PASS (source strings updated).
+  App + tests compiled in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/SettingsDialog.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/TileRowPlaceSpots714aTest.kt, ui/Batch521Test.kt.
+- Hardware NOT TESTED: HW-24 714a (KONKR).
+
 # Update 713a (23 Nov 2026, cloud run) - rule 11: shared dialog chrome shows field values, menu titles and chip labels whole
 - CI first: Verify 310 on 2f17a84 (712a) GREEN; the 711a rerun (run 45195727121, attempt 2) GREEN too - the NDK failure was infra.
 - P2 finish still in the live session on claude/v0674-native-pages (pushes to 15:23 UTC) - left alone; Tasks 1-4 wait for P2.

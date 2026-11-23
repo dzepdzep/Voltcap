@@ -1291,7 +1291,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.dock.value = null
         com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
             if (TestHooks.previewOnly) {
-                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance)
+                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance, d)
                 viewModel.previewAppearance(state.appearance.withDockHere(d))
             }
         }

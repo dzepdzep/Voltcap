@@ -856,8 +856,9 @@ fun QuickSettingsCard(
                     val all = com.shelf.launcher.data.DockPosition.values()
                     // (Batch 521: on Tile home a new Row place also drops the game row's Edit Home move up / down and the
                     // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.)
-                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a)
-                    home.setAppearance(a.withDockHere(all[(a.dockHere.ordinal + 1) % all.size]))
+                    val next = all[(a.dockHere.ordinal + 1) % all.size]
+                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, next)
+                    home.setAppearance(a.withDockHere(next))
                 })
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).
@@ -2213,10 +2214,34 @@ internal enum class PopupStyle(val label: String, val short: String) {
 
 /**
  * Batch 521: Tile home's Row place (R1 Row tile, Top / Middle / Bottom) is the one that counts: the game row's Edit Home move
- * up / down and the round buttons' spot saved "by the tiles" are dropped (an "Anywhere" spot of the buttons stays).
+ * up / down is dropped (since Sprint 527 it no longer moves the row anyway) and the round buttons' spot saved "by the tiles"
+ * does not stay at its old screen spot while the tiles move (an "Anywhere" spot of the buttons stays).
+ * 714a (owner Task 1, "saved customizations kept, never silently erased"): that spot is no longer thrown away - it is put
+ * aside for the place it was made at ([tileRowPlaceSpots]) and comes back when the tiles return there, so Top -> Middle ->
+ * Top gives the buttons their hand-placed spot again. A place without one of its own shows the buttons at their normal spot.
  */
-internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings) {
+internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings, to: com.shelf.launcher.data.DockPosition) {
     LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))
-    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && HomeWidgets.position(HomeWidgets.SHORTCUTS) != null)
-        HomeWidgets.reset(HomeWidgets.SHORTCUTS)
+    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW) {
+        val now = com.shelf.launcher.data.Features.widgetPositions.value
+        val next = tileRowPlaceSpots(now, a.tileDockPosition, to)
+        if (next != now) com.shelf.launcher.data.Features.widgetPositions.value = next
+    }
+}
+
+/** 714a: the key the round buttons' hand-placed spot is kept under while the tiles sit at another place than [place]. */
+internal fun tileRowSpotKey(place: com.shelf.launcher.data.DockPosition): String = "${HomeWidgets.SHORTCUTS}@${place.name}"
+
+/**
+ * 714a: [stored] (the widget_positions value) after the tiles move [from] one place [to] another: the round buttons' spot
+ * (if any) is kept aside for [from], and [to]'s own kept spot (if any) becomes the buttons' spot again; with none they sit
+ * at their normal spot. Every other widget is untouched; the same place twice changes nothing.
+ */
+internal fun tileRowPlaceSpots(stored: String, from: com.shelf.launcher.data.DockPosition, to: com.shelf.launcher.data.DockPosition): String {
+    if (from == to) return stored
+    val m = HomeWidgets.parse(stored).toMutableMap()
+    val now = m.remove(HomeWidgets.SHORTCUTS)
+    if (now != null) m[tileRowSpotKey(from)] = now else m.remove(tileRowSpotKey(from))
+    m.remove(tileRowSpotKey(to))?.let { m[HomeWidgets.SHORTCUTS] = it }
+    return HomeWidgets.format(m)
 }

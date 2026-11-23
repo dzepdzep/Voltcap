@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - P2-23c · 2026-11-23 17:15 UTC · commit `P2 46ade24 (branch claude/v0674-native-pages)` · CI: Verify 46ade24 green · effort: high
+**1. LATEST UPDATE** - 714a · 2026-11-23 17:25 UTC · commit `this update (being pushed)` · CI: Verify 310 on 8598c1c (last code): green; 3113e24 docs commit running · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
+**2. WHAT CLAUDE JUST FIXED** - Row position on the Tile home: moving the tiles to Top, Middle or Bottom no longer deletes where you placed the round buttons in Edit Home - each place remembers its own spot and gives it back when the tiles return there (first fix of the Row-position task).
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
+- **App** (714a): Row position on the Tile home: moving the tiles to Top, Middle or Bottom no longer deletes where you placed the round buttons in Edit Home - each place remembers its own spot and gives it back when the tiles return there (first fix of the Row-position task).
 - **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
-- **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Task 1: Row-position collisions (owner 13:32 order); then: Owner: final visual review of the updated package (12 layouts + page changes); Coverflow details: approve or reject the proposal
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1 continued: Voltcap row Top / Middle / Bottom vs game header, music player, corner buttons; Owner: final visual review of the P2 package; Coverflow details proposal
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
