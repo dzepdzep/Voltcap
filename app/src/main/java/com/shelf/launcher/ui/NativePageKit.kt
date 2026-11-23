@@ -39,6 +39,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.RaAchievementDetail
 
@@ -324,3 +326,63 @@ internal fun rememberHeadingPage(page: WinPage): WinPage {
     }
     return if (anim) shown.value else page
 }
+
+/** 682ap (D386 / D389 profiling): [vcTrace] (PerfTrace.kt) for a composable [content] - its composition as a named section. */
+@Composable
+internal inline fun vcTraceC(name: String, content: @Composable () -> Unit) {
+    val on = android.os.Build.VERSION.SDK_INT >= 29 && android.os.Trace.isEnabled()
+    if (on) android.os.Trace.beginSection(name)
+    content()
+    if (on) android.os.Trace.endSection()
+}
+
+/**
+ * 682aq (owner 22:43 - D389 / D386: "efficient or lazy row composition ... no blocking, no visible staggered filling"): a native
+ * page's achievement rows built lazily - only the rows on screen (and the one the D-pad moves to next) are composed and measured,
+ * so a 120-achievement page costs what its first screen costs. Same look as [nativeScroll]: the page's scroll cue and faded
+ * edges; the D-pad scrolls it as it scrolled the column (bring-into-view; beyond-bounds focus).
+ */
+@Composable
+internal fun NativeRows(
+    ink: androidx.compose.ui.graphics.Color, modifier: Modifier, spacing: androidx.compose.ui.unit.Dp = 0.dp,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
+) {
+    val state = androidx.compose.foundation.lazy.rememberLazyListState()
+    androidx.compose.foundation.lazy.LazyColumn(
+        modifier.nativeLazyCue(state, ink), state = state,
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(spacing), content = content
+    )
+}
+
+/** 682aq: [pageScrollCue] + faded edges for a lazy list - the thumb from the rows laid out so far (their average height). */
+internal fun Modifier.nativeLazyCue(state: androidx.compose.foundation.lazy.LazyListState, ink: androidx.compose.ui.graphics.Color): Modifier =
+    this.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val info = state.layoutInfo
+            val shown = info.visibleItemsInfo
+            if (shown.isEmpty()) return@drawWithContent
+            val vh = size.height
+            val avg = shown.sumOf { it.size }.toFloat() / shown.size + info.mainAxisItemSpacing
+            val total = avg * info.totalItemsCount
+            val max = (total - vh).coerceAtLeast(0f)
+            if (max > 0.5f && (state.canScrollForward || state.canScrollBackward)) {
+                val w = 3.dp.toPx(); val inset = 1.dp.toPx()
+                val thumb = (vh * vh / (vh + max)).coerceAtLeast(18.dp.toPx()).coerceAtMost(vh)
+                val off = (state.firstVisibleItemIndex * avg + state.firstVisibleItemScrollOffset).coerceIn(0f, max)
+                val y = (vh - thumb) * (off / max)
+                val x = size.width - w - inset
+                drawRoundRect(ink.copy(alpha = 0.16f), androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Size(w, vh),
+                    androidx.compose.ui.geometry.CornerRadius(w / 2f))
+                drawRoundRect(ink.copy(alpha = 0.7f), androidx.compose.ui.geometry.Offset(x, y), androidx.compose.ui.geometry.Size(w, thumb),
+                    androidx.compose.ui.geometry.CornerRadius(w / 2f))
+            }
+            val e = 22.dp.toPx().coerceAtMost(vh / 3f)
+            if (state.canScrollBackward) drawRect(
+                androidx.compose.ui.graphics.Brush.verticalGradient(0f to androidx.compose.ui.graphics.Color.Transparent, 1f to androidx.compose.ui.graphics.Color.Black, startY = 0f, endY = e),
+                size = androidx.compose.ui.geometry.Size(size.width, e), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+            if (state.canScrollForward) drawRect(
+                androidx.compose.ui.graphics.Brush.verticalGradient(0f to androidx.compose.ui.graphics.Color.Black, 1f to androidx.compose.ui.graphics.Color.Transparent, startY = vh - e, endY = vh),
+                topLeft = androidx.compose.ui.geometry.Offset(0f, vh - e), size = androidx.compose.ui.geometry.Size(size.width, e),
+                blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
+        }

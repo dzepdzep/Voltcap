@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -204,8 +205,8 @@ private fun HubMedals(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                         .border(1.dp, if (on) a else Color.White.copy(alpha = 0.2f), RoundedCornerShape(3.dp)).padding(horizontal = 6.dp, vertical = 3.dp))
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(HUB_ENGRAVE), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(HUB_ENGRAVE, Modifier.weight(1f).fillMaxWidth(), 3.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -243,7 +244,9 @@ private fun HubMedals(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No service record - this game has no achievements.", color = HUB_ENGRAVE.copy(alpha = 0.6f), fontSize = 12.sp)
+            if (t.all.isEmpty()) item {
+            Text("No service record - this game has no achievements.", color = HUB_ENGRAVE.copy(alpha = 0.6f), fontSize = 12.sp)
+            }
         }
     }
 }

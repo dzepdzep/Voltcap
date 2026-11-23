@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -94,8 +95,8 @@ private fun NightAchievements(ctx: WinSceneCtx, live: Boolean, hi: Color, modifi
             }
         }
         Spacer(Modifier.heightIn(min = 6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(Color.White), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 4.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -119,8 +120,10 @@ private fun NightAchievements(ctx: WinSceneCtx, live: Boolean, hi: Color, modifi
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("NO ACHIEVEMENTS FOR THIS GAME.", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
+            if (t.all.isEmpty()) item {
+            Text("NO ACHIEVEMENTS FOR THIS GAME.", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = FontStyle.Italic,
                 modifier = Modifier.padding(start = 10.dp))
+            }
         }
     }
 }

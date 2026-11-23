@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.LinearEasing
@@ -104,8 +105,8 @@ private fun TermDir(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color
             Text((if (on) "► " else "  ") + "/O:" + t.order.label.uppercase(), style = if (on) style.copy(color = hiInk, shadow = null) else style.copy(color = accent),
                 modifier = Modifier.fillMaxWidth().background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 2.dp))
         }
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(fg)) {
-            t.list.forEach { ach ->
+        NativeRows(fg, Modifier.weight(1f).fillMaxWidth()) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -125,7 +126,9 @@ private fun TermDir(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("FILE NOT FOUND", style = style.copy(color = dim))
+            if (t.all.isEmpty()) item {
+            Text("FILE NOT FOUND", style = style.copy(color = dim))
+            }
         }
         Text("    ${t.earned} FILE(S) EARNED   ${t.total} FILE(S) TOTAL", style = style.copy(color = dim))
     }

@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -161,8 +162,8 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
             }
         }
         Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(st.ink))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(st.ink), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(st.ink, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -213,7 +214,9 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No checklist for this game - it has no achievements.", color = st.muted, fontFamily = st.body, fontSize = 12.sp)
+            if (t.all.isEmpty()) item {
+            Text("No checklist for this game - it has no achievements.", color = st.muted, fontFamily = st.body, fontSize = 12.sp)
+            }
         }
     }
 }

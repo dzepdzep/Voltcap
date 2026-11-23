@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -93,8 +94,8 @@ private fun BladeAchievements(ctx: WinSceneCtx, live: Boolean, glow: Color, ink:
             }, darkInk = ink)
         }
         Spacer(Modifier.heightIn(min = 4.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(Color.White), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 3.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -117,7 +118,9 @@ private fun BladeAchievements(ctx: WinSceneCtx, live: Boolean, glow: Color, ink:
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(start = 6.dp))
+            if (t.all.isEmpty()) item {
+            Text("No achievements for this game.", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(start = 6.dp))
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -108,8 +109,8 @@ private fun CardMoves(ctx: WinSceneCtx, live: Boolean, ink: Color, frame: Color,
             }
         }
         Spacer(Modifier.height(4.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ink)) {
-            t.list.forEachIndexed { i, ach ->
+        NativeRows(ink, Modifier.weight(1f).fillMaxWidth()) {
+            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -130,10 +131,12 @@ private fun CardMoves(ctx: WinSceneCtx, live: Boolean, ink: Color, frame: Color,
                             }
                         }
                     }
-                    if (i < t.list.size - 1) Spacer(Modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.12f)))
+                    if (i < t.all.size - 1) Spacer(Modifier.fillMaxWidth().height(1.dp).background(ink.copy(alpha = 0.12f)))
                 }
             }
-            if (t.list.isEmpty()) Text("This card has no moves.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp)
+            if (t.all.isEmpty()) item {
+            Text("This card has no moves.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp)
+            }
         }
     }
 }

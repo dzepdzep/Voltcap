@@ -125,7 +125,68 @@ qtap() { # tap the centre of the first QaClip node whose label starts with $1 in
 rowtile() { k_home R1; sleep 1.6; shot r1_$1; qtap "Row" ${TAG}_r1_$1 || return 1; sleep 1.2; shot r1_after_$1; k_home_any B; sleep 1.2; }
 k_home() { gate; case "$(wg_focus)" in *"$P/"*) ;; *) stop "key: QA app lost the focus";; esac; input keyevent KEYCODE_BUTTON_$1; }
 k_home_any() { k_home $1; }
+# (682ap, D379): atrace of the home moving through games (6 right, 6 left) - QA app sections + RenderThread. Level 1.
+tracehome_layout() {
+  n=$1; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Shadow of the Colossus}}"; sleep 2
+  A --ez voltcap_test_preview true; A --es voltcap_test_layout $1; sleep 4; gate; wg_home
+  atrace --async_start -a $P -b 16384 gfx view input am dalvik > /dev/null 2>&1; sleep 0.5
+  for i in 1 2 3 4 5 6; do wg_key_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do wg_key_home L; sleep 0.5; done; sleep 0.5
+  atrace --async_dump -o $O/${n}_tracehome.txt > /dev/null 2>&1; atrace --async_stop > /dev/null 2>&1
+  log "$1: tracehome done ($(wc -c < $O/${n}_tracehome.txt 2>/dev/null) bytes)"; }
+# (682aq, owner 22:43 - D389 lazy rows: "Test 0, 1, 10 and 120 achievements, including rapid input and early closure ... Back /
+# reopen"): per layout and fixture game (LZ_GAMES: "name|name"), the Achievements page (R1 R1) opened with its frames read
+# (gfxinfo), D-pad bursts of 10 inside the confirmed window (focus checked before every burst) down to the end and back up,
+# the focused row read from QaClip each time, B and the page reopened (recorded), and an early close (R1 R1 B straight away).
+# Level 1.   sh p2review.sh lazywalk TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+rowlabel() { tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | sed -n 's/.*"label":"\([^"]*\)".*/\1/p' | head -2 | tr '\n' '|'; }
+burst() { # $1 key, $2 bursts of 10 - each burst only while the game window has the focus (winguard's own check)
+  kc=KEYCODE_$1; b=0; while [ $b -lt $2 ]; do
+    h=$(wg_hash "$(wg_focus)"); [ "$h" = "$WG_WIN" ] || wg_abort "burst $1: the game window lost the focus"
+    input keyevent $kc $kc $kc $kc $kc $kc $kc $kc $kc $kc; b=$((b + 1)); done; }
+lazy_layout() {
+  lay=$1; gi=0
+  # (no `while read` over a file: am / cmd read the loop's stdin - the second game's name went to the first am start)
+  OIFS=$IFS; IFS='|'; set -- $LZ_GAMES; IFS=$OIFS
+  for gname in "$@"; do
+    [ -n "$gname" ] || continue; gi=$((gi + 1)); n=${lay}_g$gi
+    A --es voltcap_test_game "$gname"; sleep 2
+    openw $lay ${n}_lz || continue
+    log "$lay g$gi '$gname': window open"
+    sleep 1; phase lz_open; k BUTTON_R1 1.1; k BUTTON_R1 1.6; phase_end lz_open; shot ${n}_lz_page
+    log "$lay g$gi: page focus [$(rowlabel ${TAG}_${n}_lz_page)]"
+    phase lz_down; burst DPAD_DOWN 14; sleep 1.6; phase_end lz_down; shot ${n}_lz_end
+    log "$lay g$gi: after 140 Down [$(rowlabel ${TAG}_${n}_lz_end)]"
+    phase lz_up; burst DPAD_UP 14; sleep 1.6; phase_end lz_up; shot ${n}_lz_top
+    log "$lay g$gi: after 140 Up [$(rowlabel ${TAG}_${n}_lz_top)]"
+    k BUTTON_B 1.3; shot ${n}_lz_back; log "$lay g$gi: B -> [$(rowlabel ${TAG}_${n}_lz_back)] popup=$(wg_popup | head -c 40)"
+    if [ "$(wg_popup)" != null ]; then
+      phase lz_reopen; REC_SEG=6 rec_start $O/${n}_lz_reopen 6; sleep 0.5; k BUTTON_R1 1.1; k BUTTON_R1 1.8; rec_stop; phase_end lz_reopen
+      shot ${n}_lz_reopen; log "$lay g$gi: reopened [$(rowlabel ${TAG}_${n}_lz_reopen)]"
+    fi
+    closewin
+    # early close: the page asked for and the window closed before it settles
+    A --es voltcap_test_game "$gname"; sleep 1.5
+    if openw $lay ${n}_lze; then k BUTTON_R1 0.25; k BUTTON_R1 0.12; wg_key_win B; sleep 0.25; closewin; shot ${n}_lz_early
+      log "$lay g$gi: early close - popup=$(wg_popup | head -c 20) crash=$(logcat -d -b crash | grep -c "$P")"; fi
+  done; }
 case $MODE in
+tracehome)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do logcat -c; tracehome_layout $lay; done
+  log "tracehome done"; echo DONE >> $L;;
 r714)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
@@ -162,6 +223,25 @@ rows)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   for lay in $LAYS; do rows_layout $lay; done
   log "rows done"; echo DONE >> $L;;
+lazywalk)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  [ -n "$LZ_GAMES" ] || LZ_GAMES="$(pick "achfix n=0 ")|$(pick "achfix n=1 ")|$MIX|$BIG"
+  log "lazywalk games: $LZ_GAMES"
+  for lay in $LAYS; do logcat -c; lazy_layout $lay; done
+  log "lazywalk done"; echo DONE >> $L;;
 trace)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

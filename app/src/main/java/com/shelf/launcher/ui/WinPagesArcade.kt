@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -166,8 +167,8 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
             }
         }
         Spacer(Modifier.height(4.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            t.list.forEachIndexed { i, ach ->
+        NativeRows(ArcPgCyan, Modifier.weight(1f).fillMaxWidth(), 4.dp) {
+            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -209,7 +210,9 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("NO HIGH SCORES ON THIS MACHINE.", color = ArcPgDim, fontSize = small, style = glow)
+            if (t.all.isEmpty()) item {
+            Text("NO HIGH SCORES ON THIS MACHINE.", color = ArcPgDim, fontSize = small, style = glow)
+            }
         }
     }
 }

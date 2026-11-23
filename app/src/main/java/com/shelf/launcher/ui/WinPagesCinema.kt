@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -138,12 +139,12 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
             }
         }
         Spacer(Modifier.height(6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(Color.White), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            t.list.forEachIndexed { i, ach ->
+        NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
+            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
-                    NativeItem(onClick = { openId = if (opened) null else ach.id }, Modifier.fillMaxWidth(), live = live) { on ->
+                    vcTraceC("VC:cinemaRow") { NativeItem(onClick = { openId = if (opened) null else ach.id }, Modifier.fillMaxWidth(), live = live) { on ->
                         Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(4.dp)).background(if (on) Color(0xFF333333) else Color.Transparent)
                             .padding(horizontal = 6.dp, vertical = 5.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -152,9 +153,9 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
                                 Column(Modifier.width(52.dp)) {
                                     Box(Modifier.size(52.dp, 32.dp).clip(RoundedCornerShape(2.dp)).background(Color.Black)) {
                                         NativeBadgeMark(ach.title, earned)
-                                        AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
+                                        vcTraceC("VC:badgeImg") { AsyncImage(com.shelf.launcher.data.RaBadges.url(ach.badgeName), ach.title, contentScale = ContentScale.Crop,
                                             colorFilter = if (earned) null else ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }),
-                                            alpha = if (earned) 1f else 0.6f, modifier = Modifier.fillMaxSize())
+                                            alpha = if (earned) 1f else 0.6f, modifier = Modifier.fillMaxSize()) }
                                     }
                                     Box(Modifier.fillMaxWidth().height(3.dp).background(Color(0xFF4D4D4D))) {
                                         if (earned) Box(Modifier.fillMaxSize().background(if (accent == Color.Unspecified) CINEMA_PAGE_RED else accent))
@@ -179,10 +180,10 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
                                     modifier = Modifier.padding(start = 90.dp, top = 2.dp))
                             }
                         }
-                    }
+                    } }
                 }
             }
-            if (t.list.isEmpty()) Text("No episodes - this title has no achievements.", color = CINEMA_LABEL, fontSize = 12.sp)
+            if (t.all.isEmpty()) item { Text("No episodes - this title has no achievements.", color = CINEMA_LABEL, fontSize = 12.sp) }
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -105,8 +106,8 @@ private fun TwinAchievements(ctx: WinSceneCtx, live: Boolean, k: TwinInk, modifi
                         .border(if (on) 2.dp else 1.dp, if (on) a else k.edge, RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 7.dp))
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(k.ink), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(k.ink, Modifier.weight(1f).fillMaxWidth(), 6.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -132,7 +133,9 @@ private fun TwinAchievements(ctx: WinSceneCtx, live: Boolean, k: TwinInk, modifi
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = k.muted, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp))
+            if (t.all.isEmpty()) item {
+            Text("No achievements for this game.", color = k.muted, fontSize = 12.sp, modifier = Modifier.padding(start = 6.dp))
+            }
         }
     }
 }

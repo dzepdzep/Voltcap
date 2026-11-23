@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -98,6 +99,10 @@ private val DISCOVER_RED = Color(0xFFE5484D)
 private fun inkOnDiscover(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else Color.White
 
 /** A card's slide up into the feed: card [i] arrives a little after the one above it. */
+/** 682aq: each row's place in its run of earned / still-to-get rows (0 starts a shelf). */
+internal fun discoverRuns(earned: List<Boolean>): List<Int> { var run = 0; var was: Boolean? = null
+    return earned.map { e -> if (was != e) { was = e; run = 0 }; run++ } }
+
 private fun Modifier.feedIn(p: () -> Float, i: Int): Modifier = this.graphicsLayer {
     val k = ((p() * (1f + 0.15f * i)) - 0.15f * i).coerceIn(0f, 1f)
     translationY = (1f - k) * (28.dp.toPx() + i * 10.dp.toPx()); alpha = k
@@ -228,24 +233,24 @@ private fun DiscoverProgress(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
             }
         }
         Spacer(Modifier.height(6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(a), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // (682aq, D389: lazy rows - each row's place in its run worked out once, so a row built later knows its shelf heading)
+        val runs = androidx.compose.runtime.remember(t.all) { discoverRuns(t.all.map { it.isUnlocked }) }
+        NativeRows(a, Modifier.weight(1f).fillMaxWidth(), 6.dp) {
             // (681f, AchFirstRowRoboTest RESUME: shelves that repeated achievements - next up, recent, then everything - put the
             // list's first one below the fold at x1.3. Each achievement once, in the chosen order; the shelves are the runs.)
-            var run = 0; var was: Boolean? = null
-            t.list.forEachIndexed { n, ach ->
+            itemsIndexed(t.all, key = { _, it -> it.id }) { n, ach -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 val earned = ach.isUnlocked
-                if (was != earned) { was = earned; run = 0 }
+                val run = runs[n]
                 discoverShelf(earned, run)?.let { Text(it, color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp,
                     modifier = Modifier.padding(top = 4.dp).feedIn(rise, minOf(n + 1, 6))) }
-                run++
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
                     FeedTrophy(ach, a, live, opened, { openId = if (opened) null else ach.id }, Modifier.feedIn(rise, minOf(n + 1, 6)))
                 }
-            }
-            if (t.list.isEmpty()) FeedCard("NOTHING TO TRACK", a, Modifier.feedIn(rise, 1)) {
+            } }
+            if (t.all.isEmpty()) item { FeedCard("NOTHING TO TRACK", a, Modifier.feedIn(rise, 1)) {
                 Text("This game has no achievements.", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
-            }
+            } }
         }
     }
 }

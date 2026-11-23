@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -192,8 +193,8 @@ private fun VoltCells(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
             }
         }
         Spacer(Modifier.height(6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(a), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(a, Modifier.weight(1f).fillMaxWidth(), 3.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -248,7 +249,9 @@ private fun VoltCells(ctx: WinSceneCtx, live: Boolean, modifier: Modifier) {
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No cells on this game - it has no achievements.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            if (t.all.isEmpty()) item {
+            Text("No cells on this game - it has no achievements.", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+            }
         }
     }
 }

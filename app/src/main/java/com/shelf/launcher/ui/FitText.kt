@@ -237,8 +237,12 @@ internal fun StableFullText(
     textAlign: TextAlign? = null,
     style: TextStyle = androidx.compose.material3.LocalTextStyle.current,
     /** Update 478: keep the height of [maxLines] lines whatever the text needs (home rows); a window's own text: false. */
-    reserve: Boolean = true
+    reserve: Boolean = true,
+    /** 682aq (D386): the fit worked out inside the text's own measure ([StableFitAutoSize]) - no subcomposition per text. The
+     *  same steps and result; the reserved height keeps the old way (its height follows the lines the fit chose). */
+    inMeasure: Boolean = !reserve
 ) {
+    if (inMeasure) { StableFitText(text, color, fontSize, modifier, maxLines, fontWeight, lineHeight, letterSpacing, fontFamily, textAlign, style); return }
     BoxWithConstraints(modifier) {
         val measurer = rememberTextMeasurer(cacheSize = 8)
         val base = if (fontFamily != null) style.copy(fontFamily = fontFamily) else style
@@ -250,7 +254,7 @@ internal fun StableFullText(
         // (Update 470, long-name run: "From TV Animation One Piece Yume No Luffy Kaizokudan Tanjou!" still overflowed three lines at
         // the smallest readable size and slid sideways in Pocket Quest, Cover details, Resume and Bubbles although the room
         // under it was free. Where the height allows, one more line is used before the text slides.)
-        val fit = remember(text, w, h, top, bottom, maxLines, fontWeight, base, ratio, letterSpacing) {
+        val fit = remember(text, w, h, top, bottom, maxLines, fontWeight, base, ratio, letterSpacing) { vcTrace("VC:stableFit") {
             fun over(s: Float, lines: Int) = measurer.measure(
                 // (Update 470: the theme's own letter spacing when none is given — copy(letterSpacing = Unspecified) measured
                 // the name without it, narrower than the Text draws it: "fits in 3 lines" here, 4 on screen, and it slid.)
@@ -265,12 +269,66 @@ internal fun StableFullText(
             }
             val lines = if (maxLines in 2..3 && w > 0 && w != Constraints.Infinity && over(s, maxLines) && !over(s, maxLines + 1)) maxLines + 1 else maxLines
             s to lines
-        }
+        } }
         FullText(
             text, color = color, fontSize = fit.first.sp, maxLines = fit.second, fontWeight = fontWeight,
             lineHeight = (fit.first * ratio).sp, letterSpacing = letterSpacing, autoFit = false,
             fontFamily = fontFamily, textAlign = textAlign, style = style, reserve = reserve
         )
+    }
+}
+
+/**
+ * 682aq (D386, owner 22:43: "continue investigating StableFullText ... don't change text appearance just to improve measurements"):
+ * [StableFullText]'s fit without its BoxWithConstraints - the size steps down 1 sp at a time from the full size to [fitMin] until
+ * the text fits [maxLines] lines (one more line, for 2-3 lines, where the room allows and it still doesn't fit), measured by the
+ * Text itself in its layout pass. Past the minimum it slides, at the minimum, as before.
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun StableFitText(
+    text: String, color: Color, fontSize: TextUnit, modifier: Modifier, maxLines: Int, fontWeight: FontWeight?, lineHeight: TextUnit,
+    letterSpacing: TextUnit, fontFamily: androidx.compose.ui.text.font.FontFamily?, textAlign: TextAlign?, style: TextStyle
+) {
+    val top = fontSize.value
+    val bottom = fitMin(fontSize).value
+    val ratio = if (lineHeight.isSp && top > 0f) lineHeight.value / top else 1.2f
+    val extra = maxLines in 2..3
+    var slideAt by androidx.compose.runtime.remember(text, fontSize, maxLines) { androidx.compose.runtime.mutableIntStateOf(-1) }
+    val cw = androidx.compose.runtime.remember { IntArray(1) }
+    val widthMod = Modifier.layout { m, c ->
+        cw[0] = c.maxWidth
+        if (slideAt >= 0 && c.maxWidth > slideAt) slideAt = -1
+        val pl = m.measure(c); layout(pl.width, pl.height) { pl.place(0, 0) }
+    }
+    if (slideAt >= 0) FullTextMarquee(text, color, bottom.sp, modifier.then(widthMod), fontWeight, fontFamily, letterSpacing, (bottom * ratio).sp, textAlign, style)
+    else Text(
+        text, color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, letterSpacing = letterSpacing,
+        lineHeight = ratio.em, textAlign = textAlign, style = style, maxLines = if (extra) maxLines + 1 else maxLines, overflow = TextOverflow.Clip,
+        autoSize = StableFitAutoSize(top, bottom, maxLines),
+        onTextLayout = { if (it.hasVisualOverflow) slideAt = cw[0].coerceAtLeast(0) },
+        modifier = modifier.then(widthMod)
+    )
+}
+
+/** 682aq: [StableFullText]'s steps as a [androidx.compose.foundation.text.TextAutoSize]: the largest size, 1 sp apart from [max]
+ *  down to [min], whose text has no overflow in [lines] lines. The text's own maxLines may allow one line more (used only at
+ *  [min]). The last layout is always the size returned (the scope keeps the last one it made). */
+internal data class StableFitAutoSize(val max: Float, val min: Float, val lines: Int) : androidx.compose.foundation.text.TextAutoSize {
+    override fun androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope.getFontSize(
+        constraints: Constraints, text: androidx.compose.ui.text.AnnotatedString
+    ): TextUnit {
+        val w = constraints.maxWidth
+        var s = max
+        if (w > 0 && w != Constraints.Infinity) {
+            while (s > min) {
+                val r = performLayout(constraints, text, s.sp)
+                if (!r.hasVisualOverflow && r.lineCount <= lines) break
+                s = maxOf(min, s - 1f)
+            }
+        }
+        performLayout(constraints, text, s.sp)
+        return s.sp
     }
 }
 

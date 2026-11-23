@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -122,8 +123,8 @@ private fun SideAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
                 }
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(Color.White), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -147,7 +148,9 @@ private fun SideAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = SIDE_MUTED, fontSize = 12.sp, modifier = Modifier.padding(start = 13.dp))
+            if (t.all.isEmpty()) item {
+            Text("No achievements for this game.", color = SIDE_MUTED, fontSize = 12.sp, modifier = Modifier.padding(start = 13.dp))
+            }
         }
     }
 }

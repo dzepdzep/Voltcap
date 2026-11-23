@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -324,8 +325,8 @@ private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier,
             }
         }
         Spacer(Modifier.height(3.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(TTX_WHITE)) {
-            t.list.forEach { ach ->
+        NativeRows(TTX_WHITE, Modifier.weight(1f).fillMaxWidth()) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -359,7 +360,9 @@ private fun TtxAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier,
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("NO ACHIEVEMENTS ON THIS SERVICE.", color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX)
+            if (t.all.isEmpty()) item {
+            Text("NO ACHIEVEMENTS ON THIS SERVICE.", color = TTX_WHITE, fontSize = 11.sp, fontFamily = TTX)
+            }
         }
     }
 }

@@ -487,8 +487,8 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
                     val a = cabAspect(cabModel(b), big)
                     val hh = minOf(cabH, cabW / a)
                     Box(Modifier.size(cabW, cabH), contentAlignment = Alignment.BottomCenter) {
-                        ArcadeMachine(c, shown, b, { color }, hh * a, hh, { big }, { litAnim.value }, { 0f }, live = shown.stableKey == g.stableKey, detail = true,
-                            cacheBody = true)
+                        vcTraceC("VC:arcBig") { ArcadeMachine(c, shown, b, { color }, hh * a, hh, { big }, { litAnim.value }, { 0f }, live = shown.stableKey == g.stableKey, detail = true,
+                            cacheBody = true) }
                     }
                 }
             }
@@ -578,7 +578,7 @@ private fun ArcadeRow(c: StyleCtx, miniH: Dp, modifier: Modifier) {
                 val lift = styleLift(on && inGames)
                 val b = cabBuildFor(pick, gg.platform)
                 val col = arcadeColorOf(gg)
-                ArcadeMachine(
+                vcTraceC("VC:arcMini") { ArcadeMachine(
                     c, gg, b, { col }, miniW, miniH, { small }, { if (on) 0.9f else 0.25f }, { if (on) 0f else 0.25f }, live = false, detail = false,
                     cache = !on,
                     modifier = Modifier
@@ -586,7 +586,7 @@ private fun ArcadeRow(c: StyleCtx, miniH: Dp, modifier: Modifier) {
                         .zIndex(if (on) 2f else 1f)
                         .graphicsLayer { val s = 1f + 0.1f * lift; scaleX = s; scaleY = s; transformOrigin = TransformOrigin(0.5f, 1f) }
                         .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
-                )
+                ) }
             }
         }
     }

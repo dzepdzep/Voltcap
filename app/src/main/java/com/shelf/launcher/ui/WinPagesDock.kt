@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -107,6 +108,9 @@ private fun DockIcon(on: Boolean, name: String, sub: String?, dim: Boolean, icon
     }
 }
 
+/** 682aq: the dock's lines - slot -1 is the order key (first), then the achievements' indexes, [per] cells to a line. */
+internal fun dockLines(count: Int, per: Int): List<List<Int>> = (listOf(-1) + (0 until count)).chunked(maxOf(1, per))
+
 /** (682ag) The icon grid's cell width - room for "999 pts" at 12 sp. */
 internal const val DOCK_ICON_CELL = 70
 
@@ -133,15 +137,24 @@ private fun DockAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
         val side = maxHeight < 250.dp && maxWidth >= 340.dp
         val plateSideW = minOf(maxWidth * 0.4f, 220.dp)
         @Composable fun grid(gridMod: Modifier) {
-        Column(gridMod.nativeScroll(Color.White)) {
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        // (682aq, D389: lazy - the dock's lines of icons are rows of a lazy list, each line the cells that fit the width, centred
+        // as the flowing grid centred them; only the lines on screen are built.)
+        androidx.compose.foundation.layout.BoxWithConstraints(gridMod) {
+        val per = maxOf(1, (maxWidth.value / DOCK_ICON_CELL).toInt())
+        val lines = androidx.compose.runtime.remember(t.all, per) { dockLines(t.all.size, per) }
+        NativeRows(Color.White, Modifier.fillMaxWidth().fillMaxHeight()) {
+            items(lines.size, key = { lines[it][0] }) { li ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            for (slot in lines[li]) {
+              if (slot < 0) {
                 NativeItem(onClick = t.nextOrder, Modifier, focus = focus, live = live) { on ->
                     androidx.compose.runtime.LaunchedEffect(on) { if (on) shownId = null }
                     DockIcon(on, "Order: " + t.order.label, "${t.earned}/${t.total}", dim = false) {
                         Text("⇅", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-                t.list.forEach { ach ->
+              } else {
+                val ach = t.all[slot]
                     val earned = ach.isUnlocked
                     androidx.compose.runtime.key(ach.id) {
                         NativeItem(onClick = { openId = if (openId == ach.id) null else ach.id; shownId = ach.id }, Modifier, live = live) { on ->
@@ -152,8 +165,11 @@ private fun DockAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
                         }
                     }
                 }
+              }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = DOCK_MUTED, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 6.dp))
+            }
+            if (t.all.isEmpty()) item { Text("No achievements for this game.", color = DOCK_MUTED, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) }
+        }
         }
         }
         @Composable fun plate(plateMod: Modifier) {

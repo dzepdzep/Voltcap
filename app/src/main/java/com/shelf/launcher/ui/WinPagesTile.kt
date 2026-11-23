@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -97,8 +98,8 @@ private fun TileAchievements(ctx: WinSceneCtx, live: Boolean, ink: Color, muted:
             }
         }
         Spacer(Modifier.heightIn(min = 6.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ink), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            t.list.forEach { ach ->
+        NativeRows(ink, Modifier.weight(1f).fillMaxWidth(), 6.dp) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -124,7 +125,9 @@ private fun TileAchievements(ctx: WinSceneCtx, live: Boolean, ink: Color, muted:
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = muted, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+            if (t.all.isEmpty()) item {
+            Text("No achievements for this game.", color = muted, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+            }
         }
     }
 }

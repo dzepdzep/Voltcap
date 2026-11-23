@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -119,8 +120,8 @@ private fun ShelfChecklist(ctx: WinSceneCtx, live: Boolean, ink: Color, label: C
                 }
             }
         }
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ink)) {
-            t.list.forEach { ach ->
+        NativeRows(ink, Modifier.weight(1f).fillMaxWidth()) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -147,7 +148,9 @@ private fun ShelfChecklist(ctx: WinSceneCtx, live: Boolean, ink: Color, label: C
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("No achievements for this game.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp, modifier = Modifier.padding(start = 14.dp, top = 4.dp))
+            if (t.all.isEmpty()) item {
+            Text("No achievements for this game.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp, modifier = Modifier.padding(start = 14.dp, top = 4.dp))
+            }
         }
     }
 }

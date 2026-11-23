@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,8 +99,8 @@ private fun StorageList(ctx: WinSceneCtx, red: Color, live: Boolean, modifier: M
             }
         }
         Box(Modifier.fillMaxWidth().padding(vertical = 4.dp).heightIn(min = 2.dp).background(RecNavy.copy(alpha = 0.25f)))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(RecInk)) {
-            t.list.forEach { ach ->
+        NativeRows(RecInk, Modifier.weight(1f).fillMaxWidth()) {
+            items(t.all, key = { it.id }) { ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
@@ -125,8 +126,10 @@ private fun StorageList(ctx: WinSceneCtx, red: Color, live: Boolean, modifier: M
                     }
                 }
             }
-            if (t.list.isEmpty()) Text("NO ACHIEVEMENTS FOR THIS ENTRY.", color = RecMuted, fontSize = 12.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
+            if (t.all.isEmpty()) item {
+            Text("NO ACHIEVEMENTS FOR THIS ENTRY.", color = RecMuted, fontSize = 12.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(start = 20.dp, top = 4.dp))
+            }
         }
     }
 }
