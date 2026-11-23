@@ -1,3 +1,14 @@
+# Update 708a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the second screen's folder games page shows game names whole
+- CI first: Verify 310 on 673a1e0 (707a) GREEN.
+- P2 left alone (owner review of the before/after package pending).
+- SecondGamesPage.kt (second screen, a console folder's games): 3 TRUNCATE places -> 0. The List row name (2 lines), the
+  missing-cover placeholder name (4 lines, centred, reserve = false) and the name under a tile (1 line, reserved so grid rows
+  stay even) go through FullText (wrap, shrink readably, then slide). Unused TextOverflow import removed.
+- Test: SecondGamesPageFullText708aTest 2/2 PASS in the cloud (fails on 707a: 3 Ellipsis); :app:compileDebugUnitTestKotlin
+  BUILD SUCCESSFUL (mirror on). Static checks PASS, TRUNCATE 84 -> 81.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/SecondGamesPage.kt, app/src/test/java/com/shelf/launcher/ui/SecondGamesPageFullText708aTest.kt.
+- Hardware NOT TESTED: HW-26 708a (Thor lower screen, with 690a).
+
 # Update 707a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home editor's toolbar shows its title and scope line whole
 - CI first: Verify 310 on c917a78 (P2-23b, includes 706a's Maven mirror) GREEN - the mirror fix is confirmed.
 - P2 left alone (owner review of the before/after package pending).

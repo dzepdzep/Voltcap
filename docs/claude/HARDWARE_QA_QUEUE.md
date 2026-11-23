@@ -120,6 +120,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   game card's console label whole; nothing jumps when the focus moves. Screenshot of the lower screen at both scales.
 - Evidence so far: unit only (SecondScreenVoltFullText690aTest, static TRUNCATE 158 -> 150); not compiled in the cloud (Maven 429) -
   CI is the first compile.
+- Also (708a, rule 11, dev line 708a or later, ~1 min, x1.0 + x1.3): second screen folder games page (open a console folder on the
+  lower screen) in each look - List (name 2 lines, then shrink, then slide), Tiles / Covers / Wide (name under the tile shrinks,
+  then slides; grid rows stay even) and a game without a cover (its name centred in the tile, up to 4 lines) - never an
+  ellipsis; D-pad + touch still pick a game. Screenshots. Unit evidence only (SecondGamesPageFullText708aTest, cloud compiled +
+  PASS; static TRUNCATE 84 -> 81).
 - Result: (filled in by the hardware session)
 
 ### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED

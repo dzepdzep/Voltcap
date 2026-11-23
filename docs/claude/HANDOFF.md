@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 11:20 UTC, 708a (cloud, v0.6.74 turn):** Verify 310 on 673a1e0 (707a) GREEN. P2 left alone (owner review pending).
+P13 rule 11: SecondGamesPage.kt (second screen folder games: list row, missing-cover name, tile label) 3 TRUNCATE -> 0 via
+FullText. SecondGamesPageFullText708aTest 2/2 PASS in the cloud (compiled; export VOLTCAP_MAVEN_MIRROR or plugin resolution
+fails). TRUNCATE 84 -> 81. HW-26 708a (Thor, with 690a).
+NEXT: check Verify 310 on this push FIRST. Then P2 turn if the owner has answered the package / Coverflow reading space;
+otherwise v0.6.74: P13 next TRUNCATE file (3 each: QuickSettings, GameWindow, GameJourneyUi, RetroAchievementsDialog,
+DialogChrome) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 10:20 UTC, 707a (cloud, v0.6.74 turn):** Verify 310 on c917a78 (P2-23b, with 706a's mirror) GREEN - mirror confirmed.
 P2 left alone (owner review of the 12-layout before/after package pending). P13 rule 11: HomeEditLegend.kt (edit toolbar title
 + scope line) 2 TRUNCATE -> 0 via FullText (reserve = false). HomeEditLegendFullText707aTest 2/2 PASS in the cloud (compiled).

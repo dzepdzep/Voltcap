@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 707a · 2026-11-23 10:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on c917a78: green (both runners) · effort: medium
+**1. LATEST UPDATE** - 708a · 2026-11-23 11:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 673a1e0: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Home edit mode: the toolbar now shows the selected widget's name and its scope line in full instead of cutting them off with dots. The build checks are green again since last run's download fix.
+**2. WHAT CLAUDE JUST FIXED** - Second screen: a console folder's games page now shows long game names in full (wrapping, shrinking a little, then sliding) instead of cutting them off with dots, in list, tile and cover views.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the before/after package (12 layouts) + Coverflow reading space; Rule 11 full text: next screen (SecondGamesPage / QuickSettings / GameWindow)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the before/after package (12 layouts) + Coverflow reading space; Rule 11 full text: next screen (QuickSettings / GameWindow / GameJourneyUi)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
