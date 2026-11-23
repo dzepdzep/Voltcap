@@ -2022,7 +2022,9 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val nightCmdNeed = (ctx.buttons + ctx.tools).maxOfOrNull { a ->
         with(nightCmdDens) { nightCmdMeasurer.measure(a.label.uppercase(), nightCmdBase.copy(fontSize = if (a.primary) 16.sp else 13.sp), softWrap = false, maxLines = 1).size.width.toDp() }
     } ?: 0.dp
-    val nightCmdW = nightCommandWidth(w, nightCmdNeed)
+    // (one margin on every page - the Status page's full column - so Play never moves between pages; PlayPlace 682ab)
+    val nightCmdRows = NIGHT_CMD_ROWS
+    val nightCmdW = nightCommandWidth(w - nightCmdDrift(nightCmdRows), nightCmdNeed)
     // Update 529 (owner: Persona 3 Reload-like motion): the panels come in along the menu's slant, layer after layer (banner,
     // cover, stats, commands - 70 ms apart), each easing out with a small turn that settles; closing runs the same way back,
     // the last in leaving first. A light edge crosses the window as it opens and closes, over slanted ribbons of the night at
@@ -2112,7 +2114,10 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
-                    Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    // (682ag, owner 23 Nov 11:21, RP Classic x1.3: the lines under the panel's foot read as cut - the panel shows
+                    // that it scrolls (fading edge + the pages' scroll cue) and is a D-pad stop while it does, as Arctic's info list.)
+                    val nightStats = androidx.compose.foundation.rememberScrollState()
+                    Column(Modifier.sceneReadable(nightStats, hi, onlyWhenScrolls = true).pageScrollCue(nightStats, hi).sceneFadeEdges(nightStats).verticalScroll(nightStats)) {
                         val statIdx = intArrayOf(0)
                         // (681t, H16 KONKR x1.3 k678n13: "ACHIEVED" / "RELEASED" broke inside the word in the fixed 96 dp / 40 %
                         // label column. The column is as wide as the widest label needs (40 % of the row at least, as before;
@@ -2214,7 +2219,9 @@ private fun NightStatus(ctx: WinSceneCtx) {
         Column(
             // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
             // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
-            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(nightCmdW)
+            // (682ag, owner 23 Nov 11:21, RP Classic x1.3: turned 4° about its top, the column's lower keys drift right by
+            // ~7 % of its height - ACHIEVEMENTS / SAVE SYNC ran off the screen's edge. The end margin takes that drift.)
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp + nightCmdDrift(nightCmdRows), top = h * 0.2f).width(nightCmdW)
                 // (682ae, PlayPlace RP Classic: turned about its middle, the column's turn moved Play 2 px with the number of
                 // commands under it (Options: Play alone). It turns about its top edge: Play stays put on every page.)
                 .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
@@ -2384,3 +2391,10 @@ internal fun nightLabelSize(widestWord: androidx.compose.ui.unit.Dp, column: and
  *  slant and its end (26 dp); 26 % of the window at least, 34 % at most. */
 internal fun nightCommandWidth(window: androidx.compose.ui.unit.Dp, longestLabel: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
     (longestLabel + 18.dp + 22.dp + 26.dp).coerceIn(window * 0.26f, window * 0.34f)
+
+
+/** 682ag (pure): how far right the Night command column's last key drifts - the column turns 4° about its top edge, so a key
+ *  [rows] x 30 dp down moves right by that height x sin 4° (+2 dp for its slanted end). */
+internal const val NIGHT_CMD_ROWS = 7
+
+internal fun nightCmdDrift(rows: Int): androidx.compose.ui.unit.Dp = (30.dp * rows.coerceAtLeast(1)) * 0.0698f + 2.dp

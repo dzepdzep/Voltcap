@@ -114,7 +114,7 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     // The picture, INSERT COIN under it.
                     // (682r: on the cabinet's own screens the picture steps back - the table had a third of the width at x1.3)
-                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.46f else 0.32f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.40f else 0.32f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcPink.copy(alpha = 0.7f), RoundedCornerShape(4.dp)).padding(3.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black)) {
                             val shot = ctx.state.screenshots[ctx.g.stableKey]?.firstOrNull()
                             val pic = shot ?: ctx.backdrop ?: ctx.wide ?: ctx.cover
@@ -140,7 +140,8 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                             modifier = Modifier.graphicsLayer { alpha = blink?.value?.let { if (it > 0.5f) 1f else 0.15f } ?: 1f })
                     }
                     Spacer(Modifier.width(if (compact) 10.dp else 18.dp))
-                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.54f else 0.68f).fillMaxHeight()) {
+                    // (682ag: on the attract screen the menu takes 60 % - its words had 54 % at x1.3)
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.60f else 0.68f).fillMaxHeight()) {
                         if (ctx.page == WinPage.MAIN) {
                             val s = rememberScrollState()
                             Column(Modifier.weight(1f).sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 3.dp)) {
@@ -214,9 +215,13 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
             Text("▶", color = if (on) Color(0xFF1A1300) else Color.Transparent, fontSize = size, style = TextStyle(fontFamily = font),
                 modifier = Modifier.clearAndSetSemantics {})
             Spacer(Modifier.width(6.dp))
-            Text(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
-                fontSize = size, maxLines = 2,
-                style = TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f)))
+            // (682ag, owner 23 Nov 11:21, RP Classic x1.3: "ACHIEVEMEN / TS" - the line keeps its words whole, a size down where
+            // the longest one doesn't fit, with the pixel font's own line height.)
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides
+                TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f))) {
+                WholeWordsText(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
+                    fontSize = size, fontFamily = font, lineHeight = size * ARCADE_LINE, modifier = Modifier.weight(1f))
+            }
         }
     }
 }

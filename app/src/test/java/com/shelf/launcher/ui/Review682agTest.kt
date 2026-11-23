@@ -79,4 +79,11 @@ class Review682agTest {
         assertEquals(0.62f, sideDrawerShare(620f, 540f, 1.3f), 0.0001f) // capped
         assertEquals(0.59f, sideDrawerShare(1280f, 720f, 1.3f), 0.0001f)
     }
+
+    @Test fun nightCommandEndMarginTakesTheColumnsTurn() {
+        // six commands on the Status page: ~180 dp of column, turned 4 deg - the last key drifts ~12.6 dp right (+2 dp)
+        assertEquals(180f * 0.0698f + 2f, nightCmdDrift(6).value, 0.01f)
+        assertTrue(nightCmdDrift(2).value < nightCmdDrift(6).value)
+        assertEquals(30f * 0.0698f + 2f, nightCmdDrift(0).value, 0.01f)
+    }
 }
