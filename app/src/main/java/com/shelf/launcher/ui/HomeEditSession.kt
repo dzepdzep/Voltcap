@@ -45,7 +45,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Features
@@ -414,8 +413,8 @@ private fun InspectorBody(id: String, folded: Boolean, onFold: (() -> Unit)?, on
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(HomeWidgets.label(id), color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(HomeEditSession.scopeOf(id), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(HomeWidgets.label(id), color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
+                FullText(HomeEditSession.scopeOf(id), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
             }
             if (onFold != null) Chip(if (folded) "▴ Open" else "▾ Fold", accent = false) { onFold() }
             Spacer(Modifier.width(6.dp))
@@ -523,13 +522,13 @@ internal fun HomeElementsSheet(onDismiss: () -> Unit) {
                         .shelfClickable { HomeEditState.selected = id; onDismiss(); HomeEditState.inspectorTab = 0; HomeEditState.styling = id }
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Text(
+                    FullText(
                         (if (sel) "● " else "") + HomeWidgets.label(id), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false
                     )
-                    Text(
+                    FullText(
                         listOfNotNull(if (!on) "Hidden" else null, if (off) "Off the screen" else null, HomeEditSession.scopeOf(id)).joinToString(" · "),
-                        color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1, reserve = false
                     )
                 }
                 Spacer(Modifier.width(8.dp))

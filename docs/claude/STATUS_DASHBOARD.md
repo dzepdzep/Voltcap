@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 702a · 2026-11-23 05:25 UTC · commit `this update (being pushed)` · CI: Verify 310 on 9073da2 (701a): ubuntu-latest green (all tests), ubuntu-24.04 red from Maven Central rate limiting only · effort: medium
+**1. LATEST UPDATE** - 703a · 2026-11-23 06:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 628d827 (702a): green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
+**2. WHAT CLAUDE JUST FIXED** - The home screen's edit mode no longer cuts text with '...': widget names and their status lines (hidden, off the screen, where they apply) shrink a little and then slide so they can be read whole.
 
 **3. LAST 24 HOURS** (most important first)
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push (a 429 must now show a retry); then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HomeEditSession
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: CrossTrophies
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

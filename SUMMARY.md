@@ -1,3 +1,13 @@
+# Update 703a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home editor shows widget names and status lines whole
+- CI first: Verify 310 on 628d827 (702a) GREEN.
+- HomeEditSession.kt (home edit mode): 4 TRUNCATE places -> 0. The inspector's widget name and scope line, and the widget
+  list's names and Hidden / Off the screen / scope lines go through FullText (shrink to a readable size, then slide),
+  reserve = false so the panel keeps its spacing. Unused TextOverflow import removed.
+- Test: HomeEditFullText703aTest (fails on 702a: 4 Ellipsis). Static checks PASS, TRUNCATE 94 -> 90.
+  Cloud :app:compileDebugUnitTestKotlin PASSED; the test run was blocked by Maven Central 429 - CI runs it.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HomeEditSession.kt, app/src/test/java/com/shelf/launcher/ui/HomeEditFullText703aTest.kt.
+- Hardware NOT TESTED: HW-24 703a (KONKR, ~2 min).
+
 # Update 702a (23 Nov 2026, cloud run, CI fix) - Verify 310 now retries when Maven Central refuses a test dependency
 - CI first: Verify 310 on 9073da2 (701a): ubuntu-latest GREEN (whole suite, incl. RaSocialFullText701aTest); ubuntu-24.04 RED
   from Maven Central 429 only (Robolectric nativeruntime-dist-compat jar). Fourth Verify run in a row lost a runner this way.

@@ -68,6 +68,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with a long title / description / game · console: every text reads whole (shrink, then slide) - never an ellipsis; cards keep
   their spacing; D-pad + touch reach the weekly card. Screenshots. Unit evidence only (RaSocialFullText701aTest, static TRUNCATE
   98 -> 94; NOT cloud compiled - CI first compile).
+- Also (703a, rule 11, dev line 703a or later, ~2 min, KONKR x1.3 + x1.0): home edit mode - open the inspector on a widget
+  with a long name / scope line, and the widget list with a hidden + an off-screen widget: every name and status line reads
+  whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach Hide / Show and Fold / Close.
+  Screenshots. Unit evidence only (HomeEditFullText703aTest, static TRUNCATE 94 -> 90; cloud compiled, test run in CI).
 - Also (700a, rule 11, dev line 700a or later, ~2 min, KONKR x1.3 + x1.0): game guide screen - a game whose guide has a
   long title and long attribution / source URL, a deep contents list with long section titles, and the guide picker with
   long guide titles / subtitles: every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing;
