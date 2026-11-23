@@ -1992,7 +1992,10 @@ private fun WinInfo(
             Spacer(Modifier.height(6.dp))
             androidx.compose.material3.Text(
                 summary, color = ink.copy(alpha = 0.88f), fontSize = 12.sp, lineHeight = 16.sp, maxLines = descLines,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = align, fontFamily = family
+                // (Update 710a, rule 11: a short story preview by design; the Details page - its button / a tap on the window -
+                // shows the whole story, WindowDetails.)
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, // qa-ok: TRUNCATE (story preview; Details page shows it whole)
+                textAlign = align, fontFamily = family
             )
         }
     }
@@ -2820,13 +2823,14 @@ private fun WindowPerformance(look: WinLook, listFocus: FocusRequester, modifier
             WinRow(look, if (i == 0) Modifier.focusRequester(listFocus) else Modifier, onClick = { row.onClick?.invoke() }) { on ->
                 Column(Modifier.weight(1f)) {
                     val c = when { on -> look.btnOnInk; row.destructive -> com.shelf.launcher.ui.theme.dangerOn(look.btnInk); else -> look.btnInk }
-                    androidx.compose.material3.Text(
+                    // (Update 710a, rule 11: a performance row's name and value show whole - wrap, a readable size, then a slide.)
+                    FullText(
                         if (look.caps) row.label.uppercase() else row.label, color = c, fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        maxLines = 1, fontFamily = if (look.mono) FontFamily.Monospace else null, reserve = false
                     )
-                    androidx.compose.material3.Text(
+                    FullText(
                         row.value, color = c.copy(alpha = 0.72f), fontSize = 11.sp, maxLines = 2,
-                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontFamily = if (look.mono) FontFamily.Monospace else null
+                        fontFamily = if (look.mono) FontFamily.Monospace else null, reserve = false
                     )
                 }
             }

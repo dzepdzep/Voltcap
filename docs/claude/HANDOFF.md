@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 13:30 UTC, 710a (cloud):** Verify 310 on 8f1ac4f (owner backlog 13:32) GREEN. Owner order 13:32: P2 finish (P2-a..f) is in
+the live session on claude/v0674-native-pages (pushes 13:23) - left alone; Tasks 1-4 start after P2. Filler: P13 rule 11
+GameWindow.kt 3 TRUNCATE -> 0 (perf rows FullText; story preview qa-ok, Details page whole). GameWindowFullText710aTest 3/3 PASS
+(cloud compiled). TRUNCATE 78 -> 75. HW-24 710a (KONKR).
+NEXT: check Verify 310 on this push FIRST. If the live session has finished P2 (backlog 0000000 P2 items DONE / handed over):
+start TASK 1 (Row-position collisions audit: R1 Row Position x TileRows / TileHome / Edit Home - cloud code audit + a test first).
+Otherwise P13 next TRUNCATE file (3 each: GameJourneyUi, RetroAchievementsDialog, DialogChrome), one per run with its test.
+
 **23 Nov 12:20 UTC, 709a (cloud, v0.6.74 turn):** Verify 310 on d0e153e (708a) GREEN. P2 left alone (owner review pending).
 P13 rule 11: QuickSettings.kt (R1 panel undo strip, tile editor name, spaced tile caption) 3 TRUNCATE -> 0 via FullText.
 QuickSettingsFullText709aTest 2/2 PASS in the cloud (compiled, mirror on). TRUNCATE 81 -> 78. HW-24 709a (KONKR).

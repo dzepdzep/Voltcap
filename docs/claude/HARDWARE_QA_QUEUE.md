@@ -77,6 +77,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with a long name (undo strip "Changed: ..." shrinks, then slides), open the tile editor and pick a tile with a long name (2 lines,
   then shrink, then slide) and look at captions with spaces - never an ellipsis; Undo / swipe-away, D-pad + touch still work.
   Screenshots. Unit evidence only (QuickSettingsFullText709aTest, cloud compiled + PASS; static TRUNCATE 81 -> 78).
+- Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
+  (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
+  page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.
+  Unit evidence only (GameWindowFullText710aTest, cloud compiled + PASS; static TRUNCATE 78 -> 75).
 - Also (707a, rule 11, dev line 707a or later, ~1 min, KONKR x1.3 + x1.0, with 703a below): home edit mode toolbar - select a
   widget with a long name (and a hidden one): "Edit Home · <name> (hidden)" and its scope line read whole (shrink, then slide) -
   never an ellipsis; toolbar keeps its size at top and bottom; narrow layout keeps the actions row. Screenshots. Unit evidence

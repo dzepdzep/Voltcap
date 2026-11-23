@@ -1,3 +1,14 @@
+# Update 710a (23 Nov 2026, cloud run) - rule 11: game window performance rows show their text whole
+- CI first: Verify 310 on 8f1ac4f (owner backlog 23 Nov 13:32) GREEN.
+- P2 finish items (owner 13:32) left to the live session on claude/v0674-native-pages (pushes running there); Tasks 1-4 wait for P2.
+- GameWindow.kt: 3 TRUNCATE places -> 0. Performance page rows: name (1 line) and value (2 lines) go through FullText (wrap,
+  shrink readably, then slide; reserve = false). Main page story: kept as a short preview by design, marked qa-ok: the Details
+  page (its button / a tap on the window) shows the whole story (WindowDetails, no line limit) - guarded by the test.
+- Test: GameWindowFullText710aTest 3/3 PASS in the cloud (fails on 709a: 3 unmarked Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 78 -> 75.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GameWindow.kt, app/src/test/java/com/shelf/launcher/ui/GameWindowFullText710aTest.kt.
+- Hardware NOT TESTED: HW-24 710a (KONKR, with 709a).
+
 # Update 709a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the R1 quick panel shows its text whole
 - CI first: Verify 310 on d0e153e (708a) GREEN.
 - P2 left alone (owner review of the before/after package pending).
