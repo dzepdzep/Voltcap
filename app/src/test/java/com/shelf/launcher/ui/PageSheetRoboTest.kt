@@ -83,6 +83,15 @@ open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Bo
         compose.onAllNodes(m)[found.size - 1].performSemanticsAction(click); frames(60)
     }
 
+    private fun openNoSettle(page: Set<String>) {
+        val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
+        val m = androidx.compose.ui.test.SemanticsMatcher("page") { n -> n.config.contains(click) &&
+            words(n).split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
+        val found = compose.onAllNodes(m).fetchSemanticsNodes()
+        if (found.isEmpty()) { println("PAGESHEET $layout: no control for $page"); return }
+        compose.onAllNodes(m)[found.size - 1].performSemanticsAction(click)
+    }
+
     private val gen = androidx.compose.runtime.mutableIntStateOf(0)
 
     @Test fun drawThePages() {
@@ -113,6 +122,13 @@ open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Bo
                     options = listOf(WinOption("Add to favorites") {}, WinOption("Game settings") {},
                         WinOption("Hide from library", "Takes it off your library", destructive = true) {})) } } }
             frames(180); shot("1_info")
+            // (682ag, owner review 23 Nov - page-change audit: VOLTCAP_SHEET_FRAMES=1 draws the Info -> Details change every 32 ms
+            // (2 frames), t_00 .. t_17, so a new heading over the old page's still-visible content shows frame by frame.)
+            if (System.getenv("VOLTCAP_SHEET_FRAMES") != null) {
+                openNoSettle(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text"))
+                for (i in 0 until 18) { shot("t_%02d".format(i)); frames(2) }
+                return
+            }
             // Each page through its own control from a freshly opened window (as a touch would; behind More / ••• where the
             // window keeps it) - under Robolectric the window's L1 / R1 key path does not turn its pages.
             fun fresh() { gen.intValue++; frames(160) }
@@ -132,7 +148,7 @@ open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Bo
     }
 }
 
-/** 682ag: the same sheet on the RP Classic's screen (620 x 516 dp, xhdpi) - files rpc_<layout>_... */
+/** 682ag: the same sheet on the RP Classic's screen (620 x 540 dp, xhdpi - the hardware's own size) - files rpc_<layout>_... */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w620dp-h540dp-land-xhdpi")

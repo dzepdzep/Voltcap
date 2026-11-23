@@ -2203,11 +2203,11 @@ private fun TvControls(
                     UniformKeyRow(tvItems.indices.map { i -> WinAction(labels[i], androidx.compose.material.icons.Icons.Filled.PlayArrow, tvItems[i].second, primary = tvItems[i].third) }, 6.dp,
                         slots = if (page != WinPage.MAIN) PAGE_SLOTS else 0) { a ->
                         val i = labels.indexOf(a.label)
-                        // (the page row's measuring reference - not one of this page's keys)
-                        if (i < 0) { WinButton(look, if (look.caps) a.label.uppercase() else a.label, Modifier, wideButton = false, stretch = true, compact = true, onClick = {}); return@UniformKeyRow }
-                        val (l, f, isPlay) = tvItems[i]
+                        // (i < 0: the page row's measuring reference - not one of this page's keys; drawn by the same key, measure
+                        // only - LocalMeasureOnly - and pressing nothing)
+                        val (l, f, isPlay) = if (i >= 0) tvItems[i] else Triple(a.label, {}, false)
                         WinButton(
-                            look, labels[i],
+                            look, if (i >= 0) labels[i] else if (look.caps) a.label.uppercase() else a.label,
                             if (isPlay) Modifier.focusRequester(playFocus)
                                 else if (openers != null && page == WinPage.MAIN && l == look.details) Modifier.focusRequester(openers.requester(OPENER_DETAILS)) else Modifier,
                             wideButton = false, stretch = true, compact = true, onClick = f
