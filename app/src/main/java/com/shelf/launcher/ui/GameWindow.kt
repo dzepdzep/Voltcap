@@ -2211,6 +2211,10 @@ private fun TvControls(
             // strip's keys are a uniform group now - no longer 672a's widths by word or Play | Back over Full details.)
             Box(Modifier.weight(1f)) {
                 val labels = tvItems.map { if (look.caps) it.first.uppercase() else it.first }
+                // (682ag, RP Classic / KONKR x1.3 hardware rag13 / kag13: the strip shows one key at a time and kept the scroll of the
+                // page before - Info's 2nd key - so a page opened with "Full details" in view and Play scrolled out (Play 232 px
+                // off its Options place). Each page's strip starts fresh: Play in view, in the same place on every page.)
+                androidx.compose.runtime.key(page) {
                 ButtonRow(tvItems.map { it.first }) {
                     UniformKeyRow(tvItems.indices.map { i -> WinAction(labels[i], androidx.compose.material.icons.Icons.Filled.PlayArrow, tvItems[i].second, primary = tvItems[i].third) }, 6.dp,
                         slots = if (page != WinPage.MAIN) PAGE_SLOTS else 0) { a ->
@@ -2225,6 +2229,7 @@ private fun TvControls(
                             wideButton = false, stretch = true, compact = true, onClick = f
                         )
                     }
+                }
                 }
             }
             // (Update 213: Performance as a round button in the TV's small strip.)

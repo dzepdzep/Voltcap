@@ -199,7 +199,9 @@ internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color
                 val word = ctx.console.split(' ', '\n').maxByOrNull { it.length } ?: ""
                 if (word.isEmpty()) 0 else measurer.measure(word, style, softWrap = false, maxLines = 1).size.width
             }
-            if (noArtCaptionShown(consoleNamedBeside, longest, room))
+            // (merge of 682y and 684a: and never where even the readable minimum can't hold the longest word - the Icon bar's
+            // 60 dp plate with "Super Nintendo Entertainment System" - the initials stand alone there)
+            if (noArtCaptionShown(consoleNamedBeside, longest, room) && noArtNameFits(ctx.console, with(androidx.compose.ui.platform.LocalDensity.current) { room.toDp().value }))
                 WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
         }
         }

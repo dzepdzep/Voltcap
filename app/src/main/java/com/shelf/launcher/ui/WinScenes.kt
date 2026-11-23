@@ -2152,8 +2152,16 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                 Text(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                     modifier = m)
                             }
-                            if (nightValueStacks(valueWord, maxWidth - labelW)) Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                                labelText(Modifier.fillMaxWidth())
+                            // (682ag: also where the row itself is narrow - the stats panel gives the command column its room - the label
+                            // column there can't hold "ACHIEVED" whole at the readable minimum: under 96 dp for the value, stack.)
+                            if (nightValueStacks(valueWord, maxWidth - labelW) || maxWidth - labelW < 96.dp) Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                                // (682ag: over its value the label keeps its word whole too - the stats panel gives the wider command
+                                // column its room, and at KONKR x1.3 "ACHIEVED" broke at the panel's edge; the line's width keeps the
+                                // italic's lean inside it.)
+                                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides
+                                    androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) {
+                                    WholeWordsText(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                                }
                                 WholeWordsText(shown, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
                             } else Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                 labelText(Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
