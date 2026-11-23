@@ -2997,5 +2997,35 @@ echo REACHED_END >> {d}/log.txt
         for dep in ("winguard.sh", "rec.sh"):
             if dep in src: self.assertIn(dep, push, dep + " sourced by p2review.sh but not pushed to the emulator")
 
+class TestGfxDelta682ag(unittest.TestCase):
+    """682ag: the walk's frame times are the difference of two read-only gfxinfo dumps - never gfxinfo reset (it aborted the QA
+    app in hwui on the KONKR, run kg13)."""
+    DUMP = ("** Graphics info for pid 1 [com.shelf.launcher.qa] **\nStats since: 1ns\nTotal frames rendered: {f}\n"
+            "Janky frames: {j} (x%)\n90th percentile: 9ms\nHISTOGRAM: 5ms={a} 6ms=0 10ms={b} 20ms={c} 50ms={d}\n")
+
+    def setUp(self):
+        sys.path.insert(0, TOOLS)
+        import gfxdelta
+        self.g = gfxdelta
+
+    def test_the_walk_is_after_minus_before(self):
+        b = self.g.parse(self.DUMP.format(f=100, j=10, a=50, b=30, c=15, d=5))
+        a = self.g.parse(self.DUMP.format(f=200, j=30, a=80, b=60, c=40, d=20))
+        s = self.g.summary(self.g.delta(b, a))
+        self.assertEqual(100, s["frames"]); self.assertEqual(20.0, s["janky_pct"])
+        self.assertEqual(10, s["p50"]); self.assertEqual(50, s["p90"])
+
+    def test_a_restarted_process_counts_from_zero(self):
+        b = self.g.parse(self.DUMP.format(f=500, j=10, a=490, b=0, c=10, d=0))
+        a = self.g.parse(self.DUMP.format(f=40, j=4, a=30, b=6, c=4, d=0))
+        self.assertEqual(40, self.g.summary(self.g.delta(b, a))["frames"])
+
+    def test_p2review_never_resets_gfxinfo(self):
+        src = open(os.path.join(os.path.dirname(TOOLS), "device", "p2review.sh")).read()
+        code = "\n".join(l for l in src.splitlines() if not l.lstrip().startswith("#"))
+        self.assertNotIn("gfxinfo $P reset", code)
+        self.assertIn("_walk_gfx0.txt", code)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
