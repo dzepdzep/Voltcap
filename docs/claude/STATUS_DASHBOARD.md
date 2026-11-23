@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 713a · 2026-11-23 16:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on 2f17a84: green (and the earlier infra failure's rerun is green) · effort: medium
+**1. LATEST UPDATE** - P2-23c · 2026-11-23 17:15 UTC · commit `P2 46ade24 (branch claude/v0674-native-pages)` · CI: Verify 46ade24 green · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - Shared dialog pieces: a text field's value, a menu sheet's title and the label on every chip button now show in full (shrinking a little, then sliding) instead of ending in dots.
+**2. WHAT CLAUDE JUST FIXED** - Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 
 **3. LAST 24 HOURS** (most important first)
+- **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
 - **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
-- **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 finish (live session): hardware checks, page-transition audit, Spotlight / Terminal / TV room / Coverflow decisions; Then Task 1: Row-position collisions; meanwhile rule 11 next screen (CompanionActivity)
+**5. WORKING ON NEXT** - now: Task 1: Row-position collisions (owner 13:32 order); then: Owner: final visual review of the updated package (12 layouts + page changes); Coverflow details: approve or reject the proposal
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -234,8 +234,8 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 29 own designs, 0 visually approved. Owner review 23 Nov 07:28: 16 close to approval (unchanged), 12 changed in 682ag (TV option 2, Spotlight, Arctic, Arcade, Icon bar + 7 polish) - before/after package published 23 Nov; Coverflow details reading space and the page-change frame audit still open. Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.
-- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; 22-23 Nov runs on 1ada6c8 / b316b8f / 9192a89); the 12 layouts changed in 682ag re-walked at x1.3 on both handhelds (kag13 / rag13 d29e05c, kbg13 / rbg13 f17dfb8; 0 launches, 0 crashes, restore diff 0) - x1.0 of the changed 12 not re-run on hardware. Play same size and place on every page: 29 of 29 (TV fixed f17dfb8).
+- Remaining / blocked: 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 24 layouts still on the shared page.
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**
 - Total: 14
