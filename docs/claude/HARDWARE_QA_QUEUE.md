@@ -68,6 +68,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with a long title / description / game · console: every text reads whole (shrink, then slide) - never an ellipsis; cards keep
   their spacing; D-pad + touch reach the weekly card. Screenshots. Unit evidence only (RaSocialFullText701aTest, static TRUNCATE
   98 -> 94; NOT cloud compiled - CI first compile).
+- Also (705a, rule 11, dev line 705a or later, ~2 min, KONKR x1.3 + x1.0): cross-bar trophy list (CrossTrophies) - a game
+  with long achievement titles / descriptions, scroll through the list and open the comments panel: every title, the focused
+  description (2 lines), the meta line and the comments title read whole (shrink or slide) - never an ellipsis; rows keep their
+  spacing while focus grows a row; D-pad + touch scroll the list and comments. Screenshots. Unit evidence only
+  (CrossTrophiesFullText705aTest, static TRUNCATE 90 -> 86; NOT cloud compiled (Maven 429) - CI first compile).
 - Also (703a, rule 11, dev line 703a or later, ~2 min, KONKR x1.3 + x1.0): home edit mode - open the inspector on a widget
   with a long name / scope line, and the widget list with a hidden + an off-screen widget: every name and status line reads
   whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach Hide / Show and Fold / Close.

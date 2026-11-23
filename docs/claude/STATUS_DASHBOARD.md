@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 704a · 2026-11-23 07:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 0288490 (703a): ubuntu-24.04 green (whole suite), ubuntu-latest red from Maven 429 only · effort: medium
+**1. LATEST UPDATE** - 705a · 2026-11-23 08:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on f54a2f9 (704a): green on both runners · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic check now retries when the test library's own download is refused by Maven Central (it made all 1134 affected tests fail and kept the check red although the code was fine); a single real test failure still turns it red at once.
+**2. WHAT CLAUDE JUST FIXED** - The cross-bar trophy list now shows achievement titles, descriptions and the comments heading in full (they shrink or slide instead of ending in '...').
 
 **3. LAST 24 HOURS** (most important first)
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: CrossTrophies
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HomeEditLegend
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

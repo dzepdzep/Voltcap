@@ -1,3 +1,13 @@
+# Update 705a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the cross-bar trophy list shows achievement text whole
+- CI first: Verify 310 on f54a2f9 (704a) GREEN on both runners.
+- CrossTrophies.kt: 4 TRUNCATE places -> 0. Each row's achievement title (slides when long; no auto-fit, its size grows with
+  focus), the focused row's description (2 lines) and meta line, and the comments panel title go through FullText,
+  reserve = false so rows keep their spacing. Unused TextOverflow import removed.
+- Test: CrossTrophiesFullText705aTest (fails on 704a: 4 Ellipsis). Static checks PASS, TRUNCATE 90 -> 86.
+  Cloud :app:compileDebugUnitTestKotlin BLOCKED twice by Maven Central 429 - CI is the first compile.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/CrossTrophies.kt, app/src/test/java/com/shelf/launcher/ui/CrossTrophiesFullText705aTest.kt.
+- Hardware NOT TESTED: HW-24 705a (KONKR, ~2 min).
+
 # Update 704a (23 Nov 2026, cloud run, CI fix) - Verify 310 also retries when Robolectric itself is refused by Maven Central
 - CI first: Verify 310 on 0288490 (703a): ubuntu-24.04 GREEN (whole suite, incl. HomeEditFullText703aTest); ubuntu-latest RED
   with 1134 failing tests - every one "Failed to fetch maven artifact org.robolectric:android-all-instrumented ... Server

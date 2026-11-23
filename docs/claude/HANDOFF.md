@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 08:20 UTC, 705a (cloud, v0.6.74 turn):** Verify 310 on f54a2f9 (704a) GREEN on both runners. P2 left alone (29-layout
+package owner review pending). P13 rule 11: CrossTrophies.kt (trophy row titles - slide, no auto-fit since the size grows with
+focus; focused description 2 lines + meta line; comments panel title) 4 TRUNCATE -> 0 via FullText (reserve = false).
+CrossTrophiesFullText705aTest. TRUNCATE 90 -> 86. Cloud compile BLOCKED twice by Maven 429 - CI is the first compile. HW-24 705a.
+NEXT: check Verify 310 on this push FIRST (a real compile error in CrossTrophies - e.g. weight() scope - or the new test -> fix).
+Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE file
+(HomeEditLegend 2) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 07:20 UTC, 704a (cloud, CI fix):** Verify 310 on 0288490 (703a): ubuntu-24.04 GREEN (whole suite), ubuntu-latest RED
 from 1134 tests that each failed on Robolectric's own 429 fetch of android-all-instrumented ("There were failing tests" -> 702a
 still called it code). retry_infra.py now counts failed tests while streaming: infra only when every one is a 429 / 5xx fetch
