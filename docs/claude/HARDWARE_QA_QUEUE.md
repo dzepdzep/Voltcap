@@ -63,6 +63,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with an app whose name is long playing sound: the app name reads whole (shrink, then slide) beside its volume - never an
   ellipsis; the volume bars stay put. Screenshots. Unit evidence only (WidgetBoardFullText696aTest, static TRUNCATE 120 -> 118;
   not compiled in the cloud).
+- Also (697a, rule 11, dev line 697a or later, ~2 min, KONKR x1.3 + x1.0): in-game quick menu over a RetroAchievements game
+  with long achievement titles / descriptions (Achievements tab) and a paired Bluetooth device with a long name (Bluetooth tab):
+  every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch still reach every row.
+  Screenshots. Unit evidence only (QuickMenuFullText697aTest, static TRUNCATE 118 -> 113; cloud compiled).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 

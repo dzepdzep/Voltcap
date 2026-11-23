@@ -1,3 +1,16 @@
+# Update 697a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the in-game quick menu shows its text whole
+- CI first: Verify 310 on 47ebe9b (696a) and ff677c5: ubuntu-latest GREEN (696a compiles, full suite passes), ubuntu-24.04
+  infra only (Maven Central 429 on Robolectric jars).
+- QuickMenuActivity.kt (quick menu over a running game): 5 TRUNCATE places -> 0. Achievements tab - game title (2 lines),
+  missable lines (2), each achievement's title (1) and description (2) - and the Bluetooth tab's paired device names (1) go
+  through FullText (shrink to a readable size, then slide), reserve = false so the rows keep their spacing. Unused TextOverflow
+  import removed.
+- Test: QuickMenuFullText697aTest (fails on 696a: 5 Ellipsis). Static checks PASS, TRUNCATE 118 -> 113.
+  Cloud compile PASSED (:app:compileDebugUnitTestKotlin); test run blocked by Maven Central 429 - CI runs it (Python mirror of its
+  regexes 5/5).
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickMenuActivity.kt, app/src/test/java/com/shelf/launcher/ui/QuickMenuFullText697aTest.kt.
+- Hardware NOT TESTED: HW-24 697a (KONKR, ~2 min).
+
 # Update 696a (22 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home widget board shows app names whole
 - CI first: Verify 310 on 492265c (695a): ubuntu-latest GREEN (695a compiles, full suite incl. TwinDeskFullText695aTest passes),
   ubuntu-24.04 infra only (Robolectric nativeruntime jar transform, no test ran).

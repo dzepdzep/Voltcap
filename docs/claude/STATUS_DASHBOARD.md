@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - P2-23a · 2026-11-22 23:45 UTC · commit `this update (being pushed)` · CI: P2 branch ed20ef1: Verify 310 GREEN; 9192a89: one runner GREEN (full suite + debug APK), the other hit Maven's download limit (infra); local full suite 2941 / 0 failed on 9192a89 · effort: high
+**1. LATEST UPDATE** - 697a · 2026-11-23 00:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on 47ebe9b / ff677c5: ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
+**2. WHAT CLAUDE JUST FIXED** - The quick menu you open over a running game no longer cuts text with '...': the game's title, achievement names and descriptions, missable achievements and Bluetooth device names shrink a little and then slide so they can be read whole.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: P2: your visual review of the 29-layout package; TV room strip decision (D367); then: P2 batch 8: Disc station's own pages, then the 23 shared-page layouts; PR #22: its CI on the current base (Maven download limit; re-run)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: PlayerPages
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
