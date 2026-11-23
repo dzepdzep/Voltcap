@@ -110,7 +110,41 @@ rows_layout() {
   A --ez voltcap_test_preview true; A --es voltcap_test_layout $1; sleep 3.5; gate
   for D in TOP MIDDLE BOTTOM; do A --es voltcap_test_dock $D; sleep 2.5; gate; shot ${n}_row_$D; done
   A --es voltcap_test_dock MIDDLE; sleep 1; log "$1: row places shot"; }
+# (682ao, owner Task 1 - 714a on hardware): Tile home's round buttons placed by hand at Row Middle, then the REAL R1 Row tile
+# tapped Middle -> Bottom -> Top -> Middle: the hand spot is kept aside for Middle and comes back there; at Bottom / Top the
+# buttons sit at their normal spot. Taps only on the QA app's own R1 tile, found by its QaClip bounds, while the QA app has the
+# focus (gate). Settings come back with the snapshot (restore).   sh p2review.sh r714 TAG SCALE   then  restore TAG
+wpos() { run-as $P sh -c 'cat shared_prefs/voltcap_features.xml' 2>/dev/null | tr -d '\n' | grep -o '"widget_positions">[^<]*' | cut -d'>' -f2; }
+qtap() { # tap the centre of the first QaClip node whose label starts with $1 in dump $2
+  tr -d '\n' < $O/$2.json | tr '{' '\n' | grep -F "\"label\":\"$1" | head -1 | grep -o '"full":\[[0-9.,-]*\]' | tr -d '"full:[]' > $O/tap.txt
+  d=$(grep -o '"density":[0-9.]*' $O/$2.json | head -1 | cut -d: -f2)
+  [ -s $O/tap.txt ] || { log "no '$1' in $2 - nothing tapped"; return 1; }
+  xy=$(awk -F, -v d=$d '{printf "%d %d", ($1+$3/2)*d, ($2+$4/2)*d}' $O/tap.txt)
+  gate; case "$(wg_focus)" in *"$P/"*) ;; *) stop "tap: QA app lost the focus";; esac
+  input tap $xy; log "tapped '$1' at $xy"; }
+rowtile() { k_home R1; sleep 1.6; shot r1_$1; qtap "Row" ${TAG}_r1_$1 || return 1; sleep 1.2; shot r1_after_$1; k_home_any B; sleep 1.2; }
+k_home() { gate; case "$(wg_focus)" in *"$P/"*) ;; *) stop "key: QA app lost the focus";; esac; input keyevent KEYCODE_BUTTON_$1; }
+k_home_any() { k_home $1; }
 case $MODE in
+r714)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  A --ez voltcap_test_preview false; A --es voltcap_test_layout TILES; sleep 3.5; gate; wg_home
+  A --es voltcap_test_pref "widget_positions=shortcuts=0.3000,0.2000"; sleep 2; shot m0_hand
+  log "start: widget_positions='$(wpos)'"
+  for step in 1 2 3; do rowtile $step || break; shot after_$step; log "after tap $step: widget_positions='$(wpos)'"; done
+  log "r714 done"; echo DONE >> $L;;
 rows)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
