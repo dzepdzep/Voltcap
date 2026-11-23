@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 701a · 2026-11-23 04:30 UTC · commit `this update (being pushed)` · CI: Verify 310 on 0b13a64 (700a): red from Maven Central rate limiting (download errors only); the app and tests compiled in CI · effort: medium
+**1. LATEST UPDATE** - 702a · 2026-11-23 05:25 UTC · commit `this update (being pushed)` · CI: Verify 310 on 9073da2 (701a): ubuntu-latest green (all tests), ubuntu-24.04 red from Maven Central rate limiting only · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The RetroAchievements cards in Settings > Profile no longer cut text with '...': a friend's latest award, and the Achievement of the Week's name, description and game, shrink a little and then slide so they can be read whole.
+**2. WHAT CLAUDE JUST FIXED** - The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 
 **3. LAST 24 HOURS** (most important first)
+- **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 - **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
 - **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
 - **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
-- **App** (688b): The new TV room check found a real problem right away: with larger text, the achievements page shown on the TV set's screen was so narrow that 'Set order' and long achievement names broke in the middle of words. On such a narrow page the order button now gets its own line and the points sit under a slightly smaller badge, so names have the full row. Wider pages look the same as before.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HomeEditSession
+**5. WORKING ON NEXT** - now: Verify 310 green on this push (a 429 must now show a retry); then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HomeEditSession
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

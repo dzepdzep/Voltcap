@@ -2189,6 +2189,37 @@ class TestCiRetryInfra681q(unittest.TestCase):
             self.assertEqual(r.classify(self.LOG429 + code + "\n")[0], "code", code)
         self.assertEqual(r.classify("Received status code 404 from server: Not Found")[0], None)  # a missing artifact is ours
 
+    # 702a: 9073da2 ubuntu-24.04 - the test task failed only because Maven Central refused a Robolectric jar (no test ran).
+    BLOCK429 = ("* What went wrong:\nExecution failed for task ':app:%s'.\n"
+                "> Could not resolve all files for configuration ':app:debugUnitTestRuntimeClasspath'.\n"
+                "   > Could not download nativeruntime-dist-compat-1.0.18.jar (org.robolectric:nativeruntime-dist-compat:1.0.18)\n"
+                "      > Could not GET 'https://repo.maven.apache.org/maven2/org/robolectric/x.jar'. "
+                "Received status code 429 from server: Too Many Requests\n\n* Try:\n> Run with --info\n\n"
+                "* Exception is:\norg.gradle.api.tasks.TaskExecutionException: x\n\n")
+    LOG702 = ("> Task :app:testDebugUnitTest FAILED\n> Task :app:testDebugHeavyRoboUnitTest FAILED\n\n"
+              "FAILURE: Build completed with 2 failures.\n\n1: Task failed with an exception.\n-----------\n"
+              + BLOCK429 % "testDebugUnitTest" + "==============\n\n2: Task failed with an exception.\n-----------\n"
+              + BLOCK429 % "testDebugHeavyRoboUnitTest" + "BUILD FAILED in 4m 8s\n")
+
+    def test_a_test_task_failed_only_by_a_429_download_is_infra(self):
+        r = self.mod()
+        self.assertEqual(r.classify(self.LOG702), ("infra", "HTTP 429 from a package server"))
+        # GitHub's log view puts a timestamp before every line - the same verdict.
+        stamped = "".join("2026-11-23T04:30:41.0472139Z " + ln for ln in self.LOG702.splitlines(True))
+        self.assertEqual(r.classify(stamped)[0], "infra")
+
+    def test_a_429_block_never_hides_a_real_failure_beside_it(self):
+        r = self.mod()
+        real = ("* What went wrong:\nExecution failed for task ':app:testDebugUnitTest'.\n"
+                "> Process 'Gradle Test Executor 3' finished with non-zero exit value 137\n\n* Try:\n> x\n")
+        self.assertEqual(r.classify(self.LOG702.replace("BUILD FAILED", real + "BUILD FAILED"))[0], "code")
+        self.assertEqual(r.classify(self.LOG702 + "There were failing tests. See the report\n")[0], "code")
+        self.assertEqual(r.classify(self.LOG702 + "e: file:///a/B.kt:3:1 Unresolved reference\n")[0], "code")
+        # a download that is OUR fault (404: wrong coordinates) is never infra
+        self.assertEqual(r.classify(self.LOG702.replace("429", "404").replace("Too Many Requests", "Not Found"))[0], "code")
+        # a failed task with no Gradle explanation at all stays code
+        self.assertEqual(r.classify("> Task :app:testDebugUnitTest FAILED\n" + self.LOG429)[0], "code")
+
     def test_retries_only_infra_and_keeps_the_exit_code(self):
         r = self.mod()
         runs, slept = [], []

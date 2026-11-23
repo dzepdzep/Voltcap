@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 05:20 UTC, 702a (cloud, CI fix):** Verify 310 on 9073da2 (701a): ubuntu-latest GREEN (whole suite), ubuntu-24.04
+Maven 429 only. Root cause of the four red runs: retry_infra.py ruled "> Task :app:testDebugUnitTest FAILED" a code failure
+even when its only cause was the 429 download, so no retry ever ran. Fixed: a failed task is infra only when every Gradle
+"What went wrong" block is a 429 / 5xx download; selftest +2 (fails on the old script), test_qa 213/213. No app code.
+NEXT: check Verify 310 on this push FIRST - if a 429 appears, the log must now show "Retrying after a package-server failure"
+(if it does not, look at the tail kept / the block parser). Then P2 turn once the owner has reviewed the 29-layout package
+(P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (4 each: HomeEditSession, CrossTrophies) - one per run with its
+FullText test; or H12 once the owner picks.
+
 **23 Nov 04:30 UTC, 701a (cloud, v0.6.74 turn):** Verify 310 on 0b13a64 (700a) RED on both runners from Maven Central 429 only
 (Robolectric nativeruntime jar); compileDebugKotlin + compileDebugUnitTestKotlin PASSED in CI. P2 left alone (29-layout package
 owner review pending). P13 rule 11: RaSocialUi.kt (friend award line, Achievement of the Week title / description / game line)

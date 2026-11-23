@@ -9,8 +9,9 @@ This runs the command, streams its output unchanged and keeps the tail. When it 
 doubled each time, at most --attempts runs) ONLY if:
   - the output names a repository answer that is the server's fault: HTTP 429 / 500 / 502 / 503 / 504 on a Could not
     GET / HEAD / download / resolve line, or "Too Many Requests", and
-  - the output shows no sign of the code failing: no failing test, no Kotlin / Java compile error, no failed compile / test /
-    lint task, no watchdog stop.
+  - the output shows no sign of the code failing: no failing test, no Kotlin / Java compile error, no watchdog stop, and no
+    failed compile / test / lint task - except one whose every Gradle "What went wrong" block is a dependency download
+    refused with 429 / 5xx (702a: the test task fails that way when Maven Central refuses a Robolectric jar; no test ran).
 Anything else keeps its own exit code on the first run - a real failure is never retried into green. Each retry is a public
 warning annotation naming the server answer, so a green run that needed one stays visible.
     python3 tools/ci/retry_infra.py [--attempts 3] [--wait 60] -- bash ./gradlew ...
@@ -33,9 +34,33 @@ CODE = [
     re.compile(r"^e: ", re.M),                                  # Kotlin compiler error
     re.compile(r"\.java:\d+: error:"),                       # javac error
     re.compile(r"Compilation (?:error|failed)", re.I),
-    re.compile(r"> Task (?:\S*:)?(?:compile\w*|test\w*UnitTest|lint\w*) FAILED"),  # not mergeDebugUnitTestManifest
     re.compile(r"Unit tests stopped by the watchdog"),
 ]
+# 702a: a failed compile / test / lint task is a code failure - unless Gradle says the task failed only because a dependency
+# could not be downloaded. 9073da2 (23 Nov, ubuntu-24.04): ":app:testDebugUnitTest FAILED" because Maven Central answered 429
+# for a Robolectric runtime jar while the task resolved its classpath, so no test ran - and the line above made it "code", so
+# four Verify runs in a row went red without the retry ever starting.
+TASK_FAILED = re.compile(r"> Task (?:\S*:)?(?:compile\w*|test\w*UnitTest|lint\w*) FAILED")  # not mergeDebugUnitTestManifest
+WHAT_WENT_WRONG = re.compile(r"^\S*\s*\* What went wrong:", re.M)
+BLOCK_END = re.compile(r"^\S*\s*\* (?:Try|Exception is|Get more help):", re.M)
+RESOLVE = re.compile(r"Could not (?:resolve all (?:files|dependencies|artifacts)|download|get resource)\b", re.I)
+
+
+def _failure_blocks(text):
+    """The text of each Gradle "* What went wrong:" block (to the next "* Try:" / block)."""
+    starts = [m.start() for m in WHAT_WENT_WRONG.finditer(text)]
+    out = []
+    for i, st in enumerate(starts):
+        nxt = starts[i + 1] if i + 1 < len(starts) else len(text)
+        end = BLOCK_END.search(text, st + 1, nxt)
+        out.append(text[st:end.start() if end else nxt])
+    return out
+
+
+def only_downloads_failed(text):
+    """True when Gradle reports failures and EVERY one is a dependency download refused with 429 / 5xx."""
+    blocks = _failure_blocks(text)
+    return bool(blocks) and all(RESOLVE.search(b) and any(rx.search(b) for rx in INFRA) for b in blocks)
 
 
 def classify(text):
@@ -44,6 +69,9 @@ def classify(text):
         m = rx.search(text)
         if m:
             return "code", m.group(0).strip()[:120]
+    m = TASK_FAILED.search(text)
+    if m and not only_downloads_failed(text):
+        return "code", m.group(0).strip()[:120]
     for rx in INFRA:
         m = rx.search(text)
         if m:

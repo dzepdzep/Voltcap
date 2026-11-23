@@ -1,3 +1,18 @@
+# Update 702a (23 Nov 2026, cloud run, CI fix) - Verify 310 now retries when Maven Central refuses a test dependency
+- CI first: Verify 310 on 9073da2 (701a): ubuntu-latest GREEN (whole suite, incl. RaSocialFullText701aTest); ubuntu-24.04 RED
+  from Maven Central 429 only (Robolectric nativeruntime-dist-compat jar). Fourth Verify run in a row lost a runner this way.
+- Cause found: tools/ci/retry_infra.py (681q) never retried these runs. When the 429 hits while :app:testDebugUnitTest
+  resolves its classpath, Gradle prints "> Task :app:testDebugUnitTest FAILED" - and that line was a "code failure" sign, so
+  the 429 was ruled code and the run stayed red after one attempt (the log shows no "Retrying" line). No test had run.
+- Fix: a failed compile / test / lint task now counts as infra only when EVERY Gradle "What went wrong" block is a dependency
+  download refused with 429 / 5xx. Failing tests, Kotlin / javac errors, the watchdog stop, a 404, a crashed test JVM or a
+  failed task without any Gradle explanation all stay code - a real failure is still never retried into green.
+- Checked: the real 9073da2 ubuntu-24.04 step output - old classifier "code", new "infra". Selftest TestCiRetryInfra681q
+  +2 tests (the 23 Nov log shape, plain and with GitHub timestamps; five "never hide a real failure" cases); the new infra
+  test FAILS on the old script. test_qa.py 213/213 OK. Static checks PASS (TRUNCATE 94, unchanged). No app code changed.
+- Files: tools/ci/retry_infra.py, tools/qa/selftest/test_qa.py (CI tooling only - nothing to copy into app/).
+- Hardware: none needed.
+
 # Update 701a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the RetroAchievements social cards show their text whole
 - CI first: Verify 310 on 0b13a64 (700a): RED on both runners from Maven Central 429 only (Robolectric nativeruntime jar download);
   :app:compileDebugKotlin and :app:compileDebugUnitTestKotlin PASSED in CI, so 700a's GuideScreen change compiles. No code failure.
