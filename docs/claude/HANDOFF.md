@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 02:20 UTC, 699a (cloud, v0.6.74 turn):** Verify 310 on ab8dd64 (698a) GREEN. P2 left alone (29-layout package owner review
+pending). P13 rule 11: HubScreens.kt (achievement hub progress rows + recent-unlocks timeline) 5 TRUNCATE -> 0 via FullText
+(reserve = false). HubScreensFullText699aTest. TRUNCATE 108 -> 103. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 699a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in HubScreens / the new test -> fix). Then P2 turn once the owner has reviewed
+the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (5: GuideScreen; then 4 each: RaSocialUi,
+HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 01:20 UTC, 698a (cloud, v0.6.74 turn):** Verify 310 on f1050e8 (697a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra. P2 left alone (29-layout package owner review
 pending). P13 rule 11: PlayerPages.kt (music player pages: Spotify hint, playlist names, lyric lines) 5 TRUNCATE -> 0 via FullText
 (reserve = false). PlayerPagesFullText698aTest. TRUNCATE 113 -> 108. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 698a (KONKR).

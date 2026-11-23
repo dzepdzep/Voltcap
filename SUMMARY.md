@@ -1,3 +1,15 @@
+# Update 699a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the achievement hub screens show their text whole
+- CI first: Verify 310 on ab8dd64 (698a): GREEN.
+- HubScreens.kt (achievement hub): 5 TRUNCATE places -> 0. Progress rows (game title, 2 lines; progress line and its note such
+  as "Mastered", 1 line each) and the recent-unlocks timeline (achievement title and its game · console line, 2 lines each) go
+  through FullText (shrink to a readable size, then slide), reserve = false so the rows keep their spacing. Unused
+  TextOverflow import removed.
+- Test: HubScreensFullText699aTest (fails on 698a: 5 Ellipsis). Static checks PASS, TRUNCATE 108 -> 103.
+  Cloud compile PASSED (:app:compileDebugUnitTestKotlin); test run blocked by Maven Central 429 - CI runs it (Python mirror of
+  its regexes 1/1/1/1/1, and of the Ellipsis check on the 698a source: fails as intended).
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HubScreens.kt, app/src/test/java/com/shelf/launcher/ui/HubScreensFullText699aTest.kt.
+- Hardware NOT TESTED: HW-24 699a (KONKR, ~2 min).
+
 # Update 698a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the music player pages show their text whole
 - CI first: Verify 310 on f1050e8 (697a): ubuntu-latest GREEN (697a compiles, full suite incl. QuickMenuFullText697aTest
   passes), ubuntu-24.04 infra only (Maven Central 429 on a Robolectric jar).

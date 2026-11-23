@@ -63,6 +63,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with an app whose name is long playing sound: the app name reads whole (shrink, then slide) beside its volume - never an
   ellipsis; the volume bars stay put. Screenshots. Unit evidence only (WidgetBoardFullText696aTest, static TRUNCATE 120 -> 118;
   not compiled in the cloud).
+- Also (699a, rule 11, dev line 699a or later, ~2 min, KONKR x1.3 + x1.0): achievement hub - a game with a long title in the
+  progress rows (with "Mastered" / progress note) and a recent unlock with a long achievement title and long game · console
+  line: every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach each row.
+  Screenshots. Unit evidence only (HubScreensFullText699aTest, static TRUNCATE 108 -> 103; cloud compiled).
 - Also (698a, rule 11, dev line 698a or later, ~2 min, KONKR x1.3 + x1.0): music player pages - Spotify disconnected (connect
   hint), a playlist with a long name (strip + grid) and a song with long synced lyric lines: every text reads whole (shrink,
   then slide) - never an ellipsis; rows keep their spacing; D-pad + touch still reach every playlist. Screenshots.
