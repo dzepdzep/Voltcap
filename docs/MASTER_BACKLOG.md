@@ -13,6 +13,52 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 0000000. Owner 23 Nov 13:32 - P2 finish, then Tasks 1-5 in order (v0.6.74; newest - this order wins)
+Owner accepted the Night menu + Arcade x1.3 corrections as improved. NOT granted: blanket visual approval of the 12 changed
+layouts, merge, release GO. Isolated v0.6.74 branches, QA app + synthetic data + targeted hardware, statuses kept apart
+(implemented / hardware-tested / visually approved / released), CI on exact final commits, no merge / production install /
+release without the owner's explicit GO. Finish the P2 items first; then Tasks 1-4 in order without asking again; Task 5 runs on.
+
+**P2 finish (branch claude/v0674-native-pages) - IN PROGRESS (live session 23 Nov):**
+- P2-a x1.0 hardware checks of the changed layouts (TV, Spotlight, Arctic, Arcade, Icon bar, Magazine, Cinema, Cube, Terminal,
+  Library, Side, Night), KONKR + RP Classic. OPEN.
+- P2-b real-device page-transition audit: Arctic, Game magazine, Library, Cube - old / new page overlap, flicker, clipping, jumps,
+  focus hand-off. Needs on-device frame capture (not RP Classic screenrecord fps; not Robolectric - animations off there). OPEN.
+- P2-c Spotlight: headings must not compete with busy cover art; keep the no-art stage. OPEN.
+- P2-d Terminal: the destructive confirmation stays fully readable. OPEN.
+- P2-e TV room (owner decision): KEEP the one-key-at-a-time strip, Play first in view, other actions horizontally; never Play-only;
+  B = Back; Sonic's safe zone kept; Play consistent between pages. Teletext readability WITHOUT continuously shrinking fonts. OPEN.
+- P2-f Coverflow details (owner decision): do NOT widen the reading panel over the only visible game title. Better reading area by
+  responsive internal layout / scrolling / another arrangement that keeps the physical coverflow; show the owner a comparison
+  before changing its look significantly. OPEN.
+- Keep the improvements made; no redesign of layouts that work.
+
+**TASK 1 - Row-position collisions (after P2):** Row Position Top / Middle / Bottom (R1) sometimes makes other UI collide. Audit R1
+Row Position, TileRows, TileHome, Edit Home, manually saved placements. Rows and neighbours rearrange naturally where supported; no
+collisions of tiles / covers, titles / info, category bars, Play buttons, round shortcuts, profile / status, moved / resized widgets.
+Saved customizations kept (never silently erased); Edit Home preview = real Home; Undo and Reset. Test every position at x1.0 /
+x1.3, small screens, enlarged elements, custom placements. OPEN.
+
+**TASK 2 - New R1 Focus Position tile:** a separate R1 control for where the highlighted game stays horizontally while browsing (NOT
+the vertical Row Position tile). Audit all 53 layouts first; candidates: VoltCap row / Classic (reuse its Focus Position setting),
+Tile home (reuse Edges / Left / Center / Right). Others only if they genuinely support it; Hero's cover side is not focus position.
+A cycles, long-press opens direct choices, shows the current choice, keeps R1 customization / order. Test focus movement, endless
+scrolling, animations, category-label alignment, unusual game counts. Deliver a compatibility matrix. OPEN.
+
+**TASK 3 - Recomps category:** separate category for native recompiled games / compatible ports: installed Android recomp APKs and
+manual shortcuts (never assume Windows builds run on Android). Auto-suggest only when reliable. Shown when it has games, hidden from
+auto navigation when empty, assignments kept. OPEN.
+
+**TASK 4 - START -> Classification & categories:** on an installed game / Android app, START picks its categories - MULTIPLE at once
+(Recomps, Android games, Other apps, N64, GameCube, other consoles, user collections where supported; e.g. a Zelda recomp in Recomps +
+Android games + N64). Manual beats automatic; never changes how it launches; kept across rescans, restarts, APK updates; no duplicate
+records in All Games; artwork, saves, favorites, achievements, playtime, emulator settings and metadata untouched; visible at once
+and editable later. OPEN.
+
+**TASK 5 - All 53 native page designs:** the 29 are not the end; track the remaining 24 (incl. Disc station's shared page bodies).
+Every layout gets genuinely individual Details / Achievements / Options in its own identity. The count stays on the dashboard
+(progress.json "Native popup pages"). OPEN (29 / 53 implemented, 0 visually approved).
+
 ## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
 Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
 PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule

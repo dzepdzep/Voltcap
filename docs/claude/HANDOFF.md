@@ -593,6 +593,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- OWNER 23 Nov 13:32 (newest, wins): docs/MASTER_BACKLOG.md section 0000000 - finish P2 (P2-a..f, live session on
+  claude/v0674-native-pages), THEN Tasks 1-4 in order without asking again (Row-position collisions, R1 Focus Position tile, Recomps
+  category, START classification), Task 5 (53 native pages) runs on. Hardware steps -> HARDWARE_QA_QUEUE.md. No merge / production
+  install / release without the owner's GO.
 - OWNER PRIORITIES 17 Nov (backlog section 00 - this order wins over the rule 11 filler below; one item per run, smallest safe
   step first; notify the owner only for hardware, a design decision or a release GO; never a new scheduled task):
   1. DONE 678k (GREEN on b76e3ef). v0.6.73: read "Verify Android update 310" on the merge commit (facet 677l merged into this line, 17 Nov). If red: fix it
