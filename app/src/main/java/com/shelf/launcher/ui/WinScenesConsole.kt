@@ -1,6 +1,7 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.snap
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -835,7 +836,13 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             // The cover, taped on.
             // (682r, RP Classic x1.3: on the magazine's own pages the taped cover steps back - its column left the checklist so
             // narrow that titles broke inside words)
-            Box(Modifier.fillMaxHeight(if (ctx.page == WinPage.MAIN) 0.78f else 0.5f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
+            // (682ag, transition audit KONKR x1.3: the cover, the masthead's page name and the headline all changed in the first frame
+            // while the feature was still on the page. They follow the heading page - the moment the old sheet has gone - and the
+            // cover steps back smoothly.)
+            val headPage = rememberHeadingPage(ctx.page)
+            val coverFrac by androidx.compose.animation.core.animateFloatAsState(if (headPage == WinPage.MAIN) 0.78f else 0.5f,
+                if (rememberAnimationsEnabled()) tween(NATIVE_PAGE_MS - NATIVE_OUT_MS, easing = FastOutSlowInEasing) else snap(), label = "magCover")
+            Box(Modifier.fillMaxHeight(coverFrac).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
                     if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
                     // (682ag, owner review 23 Nov: no picture was an empty grey card - the issue's own printed cover now: its
@@ -847,11 +854,11 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 // (682n: the page's own name - THE REVIEW, CHECKLIST, READER SERVICES - WinPagesMag.kt)
-                Text(st.masthead + "  ·  " + magPageName(ctx.page), color = st.accent, fontFamily = st.head,
+                Text(st.masthead + "  ·  " + magPageName(headPage), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
                 // (Update 424, rule 11: the headline wraps and shrinks a step when long; update 478, D271: then slides — it was cut.)
                 // (682n: on its own pages the headline steps down, so the page has the room)
-                val onPage = ctx.page != WinPage.MAIN
+                val onPage = headPage != WinPage.MAIN
                 WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight,
                     fontSize = if (onPage) 16.sp else if (compact) 20.sp else 26.sp, lineHeight = if (onPage) 18.sp else if (compact) 22.sp else 28.sp,
                     maxLines = if (onPage) 2 else 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
@@ -863,8 +870,11 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                 // (682n, P2 batch 2: the magazine's own pages - WinPagesMag.kt; the feature itself is the first page.)
                 NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "magPage", move = ::magMove) { pg, pageLive ->
                 // (the copy on its way out keeps no focus requesters and presses nothing - WinAction.inert)
-                val btns = ctx.buttons.map { if (pageLive) it else it.inert() }
-                val tls = ctx.tools.map { if (pageLive) it else it.inert() }
+                // (682ag: and keeps the keys it had - the feature leaving showed the next page's keys for its last frames)
+                val kept = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(ctx.buttons to ctx.tools) }
+                if (pageLive) androidx.compose.runtime.SideEffect { kept.value = ctx.buttons to ctx.tools }
+                val btns = (if (pageLive) ctx.buttons else kept.value.first).map { if (pageLive) it else it.inert() }
+                val tls = (if (pageLive) ctx.tools else kept.value.second).map { if (pageLive) it else it.inert() }
                 Column(Modifier.fillMaxSize()) {
                 if (pg == WinPage.MAIN) {
                     Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {

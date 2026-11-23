@@ -75,8 +75,9 @@ internal fun magScore(earned: Int, total: Int, pts: Int, ptsAll: Int): Pair<Stri
     "$earned / $total" to (if (ptsAll > 0) "$pts OF $ptsAll PTS" else "NO POINTS")
 
 internal fun magMove(dir: Int): ContentTransform =
-    (slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> w * dir / 3 } + fadeIn(tween(160, delayMillis = 60))) togetherWith
-        (slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> -w * dir / 8 } + fadeOut(tween(100)))
+    // (682ag: the next sheet shows once the last one has gone - no two pages' print at once)
+    (slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> w * dir / 3 } + fadeIn(tween(160, delayMillis = NATIVE_OUT_MS))) togetherWith
+        (slideOutHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> -w * dir / 8 } + fadeOut(tween(NATIVE_OUT_MS)))
 
 /** One of the magazine's own pages (Info is the feature itself, drawn by MagazinePage). */
 @Composable

@@ -45,8 +45,9 @@ import androidx.compose.ui.unit.sp
 
 internal fun arcticMove(dir: Int): ContentTransform {
     val d = if (dir < 0) -1 else 1
-    return (fadeIn(tween(160)) + slideInVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> d * h / 5 }) togetherWith
-        (fadeOut(tween(110)) + slideOutVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> -d * h / 10 })
+    // (682ag: the old page is gone before the new one shows - no two pages' text at once)
+    return (fadeIn(tween(160, delayMillis = NATIVE_OUT_MS)) + slideInVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> d * h / 5 }) togetherWith
+        (fadeOut(tween(NATIVE_OUT_MS)) + slideOutVertically(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { h -> -d * h / 10 })
 }
 
 private val ARC_RED = Color(0xFFE5484D)

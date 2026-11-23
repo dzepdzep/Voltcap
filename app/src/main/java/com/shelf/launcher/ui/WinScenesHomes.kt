@@ -299,7 +299,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                 .padding(horizontal = 22.dp, vertical = 16.dp)
         ) {
             LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 36.dp else 52.dp).fillMaxWidth()) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
-            Text(homeWinPageName(ctx.page).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+            Text(homeWinPageName(rememberHeadingPage(ctx.page)).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
             if (ctx.page == WinPage.MAIN) { androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f)) {
                 // (682ag, owner review 23 Nov - Arctic, RP Classic x1.3: "Achievements" was cut in the menu and the info values

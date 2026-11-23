@@ -59,8 +59,9 @@ internal fun libraryRate(percent: Float?): Float = ((percent ?: 0f) / 100f).coer
 
 internal fun libraryMove(dir: Int): ContentTransform {
     val d = if (dir < 0) -1 else 1
-    return (fadeIn(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) + slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> d * w / 14 }) togetherWith
-        fadeOut(tween(120))
+    // (682ag, KONKR x1.3 clip: the story and the list's rows were both on screen for ~40 ms - the old page fades out first)
+    return (fadeIn(tween(NATIVE_PAGE_MS - NATIVE_OUT_MS, delayMillis = NATIVE_OUT_MS, easing = FastOutSlowInEasing)) + slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> d * w / 14 }) togetherWith
+        fadeOut(tween(NATIVE_OUT_MS))
 }
 
 private val LIB_MUTED = Color.White.copy(alpha = 0.6f)
@@ -69,9 +70,10 @@ private val LIB_RED = Color(0xFFE5484D)
 /** The tab strip over the sections, the page's tab underlined in [lit]. */
 @Composable
 internal fun LibraryTabs(ctx: WinSceneCtx, lit: Color) {
+    val shownPage = rememberHeadingPage(ctx.page) // (682ag: the tab moves when the old section is gone)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         listOf(WinPage.DETAILS, WinPage.TROPHIES, WinPage.OPTIONS).filter { it in ctx.pages }.forEach { p ->
-            val on = p == ctx.page
+            val on = p == shownPage
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(libraryTab(p), color = if (on) Color.White else LIB_MUTED, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, softWrap = false)
                 Box(Modifier.padding(top = 3.dp).width(28.dp).height(2.dp).background(if (on) lit else Color.Transparent))

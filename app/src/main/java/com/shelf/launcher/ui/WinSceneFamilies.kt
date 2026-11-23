@@ -666,7 +666,8 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(if (ctx.page == WinPage.MAIN) ctx.console.uppercase() else cubePageName(ctx.page), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                    val facePage = rememberHeadingPage(ctx.page) // (682ag: the face's name turns with the face, not before it)
+                    Text(if (facePage == WinPage.MAIN) ctx.console.uppercase() else cubePageName(facePage), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
                     StableFullText(ctx.name, color = Color.White, fontSize = if (ctx.page == WinPage.MAIN) 20.sp else 15.sp, maxLines = if (ctx.page == WinPage.MAIN) 3 else 2,
                         fontWeight = FontWeight.Black, reserve = false)
                 }

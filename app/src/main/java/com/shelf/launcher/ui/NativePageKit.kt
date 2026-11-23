@@ -112,7 +112,7 @@ internal fun NativePages(
         modifier = modifier.nativeBumpers(ctx, tabs),
         label = label
     ) { p ->
-        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) { this@AnimatedContent.content(p, p == ctx.page) }
+        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) { NativePageOpening { this@AnimatedContent.content(p, p == ctx.page) } }
     }
 }
 
@@ -247,4 +247,51 @@ internal fun nativeBadgeMark(title: String?): String = title?.firstOrNull { it.i
 internal fun androidx.compose.foundation.layout.BoxScope.NativeBadgeMark(title: String?, earned: Boolean, ink: Color = Color.White) {
     Text(nativeBadgeMark(title), color = ink.copy(alpha = if (earned) 0.85f else 0.45f), fontWeight = FontWeight.Black, fontSize = 11.sp,
         maxLines = 1, softWrap = false, modifier = Modifier.align(Alignment.Center))
+}
+
+
+/** 682ag: how long after a page appears its first focus does not scroll it (ms). */
+internal const val NATIVE_OPEN_HOLD_MS = 600L
+
+/** 682ag (pure): the scroll a focus asks for while the page is opening - none in the first [NATIVE_OPEN_HOLD_MS]. */
+internal fun nativeOpeningScroll(sinceOpenMs: Long, wanted: Float): Float = if (sinceOpenMs < NATIVE_OPEN_HOLD_MS) 0f else wanted
+
+/**
+ * 682ag (owner 23 Nov 13:32, page-transition audit on the KONKR x1.3 clips): a page's first focus is often below its top (the
+ * story under the facts on Details), and focusing it scrolled the page for ~250 ms right after it had appeared - the content
+ * jumped up under the new heading. While a page opens its first focus scrolls nothing: the page appears at its top and stays
+ * there; D-pad Down / a touch scroll it afterwards as before (a row that grows still brings itself into view after that).
+ */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun NativePageOpening(content: @Composable () -> Unit) {
+    val openedAt = remember { android.os.SystemClock.uptimeMillis() }
+    val default = androidx.compose.foundation.gestures.LocalBringIntoViewSpec.current
+    val spec = remember(default, openedAt) {
+        object : androidx.compose.foundation.gestures.BringIntoViewSpec {
+            override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
+                nativeOpeningScroll(android.os.SystemClock.uptimeMillis() - openedAt, default.calculateScrollDistance(offset, size, containerSize))
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides spec, content = content)
+}
+
+/** 682ag: how long a native page's outgoing copy takes to fade out (ms) - the incoming one starts after it, and a page's heading
+ *  changes then: never a new heading over the old page's content, never both pages' text at once. */
+internal const val NATIVE_OUT_MS = 90
+
+/**
+ * 682ag (owner 23 Nov 13:32, transition audit KONKR x1.3: Magazine's masthead said THE REVIEW, Library's tab moved and Arctic's
+ * heading changed in the first frame while the old page was still on screen): the page a heading shows - [page], [NATIVE_OUT_MS]
+ * after it changed (the moment the old content is gone); at once with animations off.
+ */
+@Composable
+internal fun rememberHeadingPage(page: WinPage): WinPage {
+    val anim = rememberAnimationsEnabled()
+    val shown = remember { androidx.compose.runtime.mutableStateOf(page) }
+    LaunchedEffect(page, anim) {
+        if (anim && shown.value != page) kotlinx.coroutines.delay(NATIVE_OUT_MS.toLong())
+        shown.value = page
+    }
+    return if (anim) shown.value else page
 }
