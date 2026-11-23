@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
@@ -297,24 +298,36 @@ internal fun WholeWordsText(
     /** Batch 523: the lines' alignment (a centred plate); default as before. */
     textAlign: TextAlign? = null
 ) {
-    BoxWithConstraints(modifier) {
-        val measurer = rememberTextMeasurer(cacheSize = 8)
-        val base = androidx.compose.material3.LocalTextStyle.current
+    // (682al, D386 - owner 23 Nov 18:23 "the launcher must feel smooth": a native page change spent 50-140 ms composing and
+    // laying out its new page on the KONKR, most of it these texts - each one a BoxWithConstraints (a composition of its own at
+    // layout time) plus its own text measurer. The same step-down now runs inside the text's own layout ([WholeWordsAutoSize]):
+    // same sizes, same whole words, no subcomposition.)
+    val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
+    val longest = remember(text) { text.split(' ', '\n').maxByOrNull { it.length } ?: "" }
+    val auto = remember(fontSize, longest) { WholeWordsAutoSize(fontSize.value, fitMin(fontSize).value, longest) }
+    // (682ag: an aligned text takes the line's width - laid out at its content's width a centred line measured past its own
+    // right edge, a false "cut" in the text checks.)
+    Text(text, color = color, fontSize = fontSize, lineHeight = ratio.em, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign,
+        autoSize = auto, modifier = if (textAlign != null) modifier.fillMaxWidth() else modifier)
+}
+
+/**
+ * 682al: [WholeWordsText]'s size - from [max] down 1 sp at a time while the longest word is wider than the line, never under [min]
+ * (its readable minimum). Runs in the text's own layout pass. The last layout it asks for is always the whole text at the chosen
+ * size: Compose keeps the search's last layout when its size matches, and that must be the text, never the lone word.
+ */
+internal data class WholeWordsAutoSize(val max: Float, val min: Float, val longest: String) : androidx.compose.foundation.text.TextAutoSize {
+    override fun androidx.compose.foundation.text.modifiers.TextAutoSizeLayoutScope.getFontSize(
+        constraints: Constraints, text: androidx.compose.ui.text.AnnotatedString
+    ): TextUnit {
         val w = constraints.maxWidth
-        val size = remember(text, w, fontSize, fontWeight, fontFamily, base) {
-            val longest = text.split(' ', '\n').maxByOrNull { it.length } ?: ""
-            var s = fontSize.value
-            val bottom = fitMin(fontSize).value
-            fun width(v: Float) = measurer.measure(longest, base.copy(fontSize = v.sp, fontWeight = fontWeight ?: base.fontWeight,
-                fontFamily = fontFamily ?: base.fontFamily), softWrap = false, maxLines = 1).size.width
-            if (w > 0 && w != Constraints.Infinity && longest.isNotEmpty()) while (s > bottom && width(s) > w) s = maxOf(bottom, s - 1f)
-            s
+        var s = max
+        if (w > 0 && w != Constraints.Infinity && longest.isNotEmpty()) {
+            val word = androidx.compose.ui.text.AnnotatedString(longest)
+            while (s > min && performLayout(Constraints(), word, s.sp).size.width > w) s = maxOf(min, s - 1f)
         }
-        val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
-        // (682ag: an aligned text takes the line's width - laid out at its content's width a centred line measured past its own
-        // right edge, a false "cut" in the text checks.)
-        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign,
-            modifier = if (textAlign != null) Modifier.fillMaxWidth() else Modifier)
+        performLayout(constraints, text, s.sp)
+        return s.sp
     }
 }
 

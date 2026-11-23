@@ -4230,7 +4230,7 @@
    "title": "Arcade cabinets window: KONKR x1.0 walk 48 % janky frames (p50 20 ms, gfxinfo kf10, 81a1c9e) - the other changed layouts 4-15 %; RP Classic slow too (Magazine 51 %, Cube 41 %, Arctic 34 % janky, rg10). Likely the glow shadows on every pixel-font line and per-frame scanline rects; not investigated yet",
    "rule": "perf",
    "severity": "medium",
-   "status": "fixed (682aj) - KONKR x1.0 kpn10 vs kp10, no recording: Arcade home navigation 48.7 % -> 4.0 % janky (GPU p50 12 -> 4 ms, frame p50 20 -> 10 ms); game window idle 88 % -> 0 %. Cause: the home repaints every frame and the room, the row's machines and the big machine's body were drawn from scratch each time; the window's INSERT COIN blink asked for every frame. Fix: offscreen layers for the static parts (arcadeCached), the blink as two state changes a second. Recording on still costs the KONKR ~40 % janky frames on any moving home (Cinema too) - recording overhead, not the app",
+   "status": "partly fixed (682aj/682al). CORRECTION 23 Nov 20:45: the first before / after (kp10 -> kpn10, '48.7 -> 4.0 %') started on Tetris, the only game in its category - the presses did not move between games. Fair runs (kpm_ai -> kpm_al, start game in a 30-game category, KONKR x1.0, no recording): home navigation frame p50 28 -> 20 ms, p99 85 -> 42 ms, GPU 12 -> 5 ms, but still 19 -> 24 % frames over the 60 fps budget (RenderThread ~8 ms issuing per frame); window page walk 17.2 -> 2.0 % (p99 129 -> 38 ms). Tried: scan lines as one tiled paint (682am) - no measurable change (RenderThread 8.2 -> 8.7 ms, slow 24.5 -> 18.2 % within run-to-run noise), reverted. Remaining cost: ~8-9 ms RenderThread per glide frame, source not yet isolated - open",
    "found": "2026-11-23"
   },
   {
@@ -4286,7 +4286,7 @@
    "title": "Native page change (KONKR x1.0 kpn10, every layout measured - Arcade, Cinema): the first frames of a page change take 50-115 ms on the main thread (composing / recording the new page), one visible hitch per R1 / L1",
    "rule": "perf",
    "severity": "medium",
-   "status": "open - measured (framestats), next P2 performance item",
+   "status": "partly fixed (682al): WholeWordsText sizes inside its own layout (no BoxWithConstraints) - Arcade's worst page-change frame 78 -> 46 ms (atrace kt10 -> kt10b); Cinema unchanged (130-140 ms: its cost is elsewhere, StableFullText suspected). Open",
    "found": "2026-11-23"
   },
   {
@@ -4302,7 +4302,7 @@
    "title": "RP Classic, Classic row, home starting on Tetris (fixture 'achmix' game): 12 D-pad moves gave 12 frames of 40-70 ms with no glide (rpn10, rb_2ca4, rb_0fe0); started on another game the same build glides. Cause not known yet (FrameWatch turning Lite on early? the row's end?)",
    "rule": "perf",
    "severity": "low",
-   "status": "open - to check with a capture of the home during those moves",
+   "status": "closed - not a defect: Tetris is the only game in its category (Game Boy), so the D-pad has nowhere to go; each press is one recomposition with no glide",
    "found": "2026-11-23"
   }
  ]

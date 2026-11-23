@@ -92,7 +92,35 @@ perf_layout() {
   phase win_walk_rec; REC_SEG=12 rec_start $O/${n}_P_walk 12; sleep 0.6; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3; rec_stop; sleep 0.3; phase_end win_walk_rec
   phase win_nav; for i in 1 2 3; do k DPAD_RIGHT 0.5; done; for i in 1 2 3; do k DPAD_LEFT 0.5; done; sleep 0.6; phase_end win_nav
   closewin; log "$1: perf phases done (launches: $(launches))"; }
+# (682al, D386 - the hitch at a page change: what the main thread does. atrace of the QA app's own sections (Recomposer,
+# AndroidOwner measure / layout, input, view, gfx) over one page walk inside the confirmed window. Level 1, nothing else traced.)
+#   sh p2review.sh trace TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+trace_layout() {
+  n=$1; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Shadow of the Colossus}}"; sleep 2
+  openw $1 ${n}_trace || return 1
+  sleep 1.5
+  atrace --async_start -a $P -b 16384 gfx view input am dalvik > /dev/null 2>&1
+  sleep 0.5; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3
+  atrace --async_dump -o $O/${n}_trace.txt > /dev/null 2>&1; atrace --async_stop > /dev/null 2>&1
+  closewin; log "$1: trace done ($(wc -c < $O/${n}_trace.txt 2>/dev/null) bytes, launches: $(launches))"; }
 case $MODE in
+trace)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do logcat -c; trace_layout $lay; done
+  log "trace done"; echo DONE >> $L;;
 perf)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

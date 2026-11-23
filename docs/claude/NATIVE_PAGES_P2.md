@@ -575,3 +575,20 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
 - **TV room:** unchanged (owner: no redesign without a genuine defect).
 - **Evidence ZIP:** voltcap_p2_review_682aj.zip - 115 files incl. 9 page-change sheets, 24 x1.0 strips, the Coverflow hardware
   before / after and the smoothness table; artifact version 1795457328-5953.
+
+### 682al - smoothness follow-up (23 Nov evening, autonomous) - CORRECTION + partial fixes
+- **Correction (Arcade numbers):** the 682aj before / after (kp10 -> kpn10, "48.7 -> 4.0 % slow while moving through games") started
+  on Tetris, the only game of its category - the presses never moved between games. Fair runs (`PERF_GAME="Shadow of the
+  Colossus"`, a 30-game category, KONKR x1.0, no recording), 682ai -> 682al: home navigation frame p50 28 -> 20 ms, p99 85 ->
+  42 ms, GPU 12 -> 5 ms; slow-frame share 19 -> 24 % (the RenderThread still issues ~8-9 ms per glide frame - not yet isolated;
+  a scan-line batching try, 682am, changed nothing measurable and was reverted). Game window page walk 17.2 -> 2.0 % slow (p99 129 ->
+  38 ms). Window still: depends on what is behind it; with the 30-game category 1 -> 6 % (noise-level).
+- **D386 (page-change hitch), partly fixed:** atrace (`p2review.sh trace`) shows the page change's long frame is composition +
+  layout of the new page. WholeWordsText no longer runs a BoxWithConstraints + its own text measurer per text: the same step-down
+  runs inside the text's own layout (Compose TextAutoSize, `WholeWordsAutoSize`, the last layout always the whole text). Arcade's
+  worst page-change frame 78 -> 46 ms; Cinema unchanged (130-140 ms - cost elsewhere, StableFullText suspected). ShelfTextRoboTest
+  672 / AchFirstRow 220 / PlayPlace 112 green; PageChange682alTest (fails on 682ak). Hardware kam10: Arcade walked, Play same place,
+  0 launches, restore diff 0.
+- **D388 closed:** Tetris is alone in its category - nothing to move to. CI: b6a66bb's first Verify run failed on two unrelated
+  heavy Robolectric tests (ConcurrentModificationException / Endless BLADES count, different on each runner); the rerun of the
+  same commit passed - flaky.
