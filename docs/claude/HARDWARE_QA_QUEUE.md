@@ -94,6 +94,14 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
   row). A on the reached Play launches the game. Unit evidence only (HeaderReachDirection715aTest 3/3).
+- **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
+  opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
+  D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions
+  "shortcuts=0.3000,0.2000" - drawn there), nothing in the panel was pressed or tapped, restore diff 0. To test without touching
+  system tiles: a QA-only hook that runs the Row tile's own handler (tileRowPlaceReset + withDockHere(next)) - e.g.
+  `--ez voltcap_test_rowtile true` - then p2review.sh r714 (P2 branch 682ao) reads the result from the snapshot JSON (run-as is
+  refused: the QA app is not debuggable). Device note: Wi-Fi went off at 22:18 while the KONKR slept - the vendor home
+  (com.ayaneo.home) switches it off in sleep and back on at wake ("Set WiFi enabled" at every wake); not caused by the QA tools.
 - **RESULT 23 Nov 22:03 (live session, KONKR GT78 USB, QA app built from dev line 7bd1dea = 716b, Level 1):** 716a PASS for the
   QA app's own settings - Voltcap row and Tile home at Row Top / Middle / Bottom, x1.0 (kr10) and x1.3 (kr13): every text of the
   home whole and on screen (QaClip dumps, nothing cut, nothing under the status bar); at Middle / Bottom the game header starts
