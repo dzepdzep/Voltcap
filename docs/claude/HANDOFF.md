@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 20:35 UTC, 716b (cloud, CI fix):** Verify 310 on 5d96b3d (716a) RED on both runners: RoboFramesApply529Test caught
+RowColumnUnderBar716aTest stepping frames without Snapshot.sendApplyNotifications() (test hygiene, app code fine). Fixed the
+test loop; 716a 4/4 + RoboFramesApply529Test 1/1 PASS (cloud). Reminder for new Robolectric tests: every
+mainClock.advanceTimeByFrame() line also calls Snapshot.sendApplyNotifications().
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
 **23 Nov 19:35 UTC, 716a (cloud):** Verify 310 on 2e865a2 (715a) GREEN. TASK 1 finding 3 fixed: Voltcap row Row Middle /
 Bottom placed its column on the whole screen, so a tall column (header + info + chips at x1.3) started under the status bar;
 RowColumnFit.keepUnderBar keeps its top below the bar (unchanged whenever it fits; Middle clears the legend too where both fit).

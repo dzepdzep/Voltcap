@@ -1,3 +1,12 @@
+# Update 716b (23 Nov 2026, cloud run) - CI fix: 716a's layout test stepped frames without the apply guard
+- CI first: Verify 310 on 5d96b3d (716a) RED on both runners, same single failure (not infra): RoboFramesApply529Test - the
+  716a test RowColumnUnderBar716aTest stepped Robolectric frames without Snapshot.sendApplyNotifications() (the 529 rule that
+  keeps manual frames from reading stale state). App code unaffected; 2786 tests ran, 1 failed.
+- Fix: the frame loop in RowColumnUnderBar716aTest sends apply notifications before each frame (same pattern as the other
+  Robolectric tests). RowColumnUnderBar716aTest 4/4 + RoboFramesApply529Test 1/1 PASS (cloud, Maven mirror). Static checks PASS.
+- Files to copy: app/src/test/java/com/shelf/launcher/ui/RowColumnUnderBar716aTest.kt.
+- Hardware: none needed (test-only).
+
 # Update 716a (23 Nov 2026, cloud run) - Task 1 Row-position: the Voltcap row never starts under the status bar
 - CI first: Verify 310 on 2e865a2 (715a) GREEN.
 - Audit finding (Voltcap row, status bar x Row place): Row Middle centred the row's column (game header, info / news, category

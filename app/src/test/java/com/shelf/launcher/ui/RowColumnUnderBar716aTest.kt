@@ -81,7 +81,7 @@ class RowColumnUnderBar716aTest {
                 }
             }
         }
-        repeat(3) { compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
+        repeat(3) { androidx.compose.runtime.snapshots.Snapshot.sendApplyNotifications(); compose.mainClock.advanceTimeByFrame(); shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(16)) }
         compose.waitForIdle()
         assertEquals(10f, top, 0.5f)       // the old centring: under the bar
         assertEquals(40f, fitTop, 0.5f)    // 716a: right below it

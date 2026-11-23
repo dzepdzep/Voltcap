@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 716a · 2026-11-23 19:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on 2e865a2 (715a): green · effort: medium
+**1. LATEST UPDATE** - 716b · 2026-11-23 20:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on 5d96b3d (716a): red (one test-hygiene failure, fixed here) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Voltcap row at Middle or Bottom: when the game header, game info and category bar together are taller than the space under the status bar (for example with larger text), the top of the row no longer slides under the clock and battery - it starts just below them. On ordinary screens nothing moves.
+**2. WHAT CLAUDE JUST FIXED** - The automatic checks went red after the last change because its new test skipped a safety step the test suite requires when it advances the screen frame by frame. The test now does it; the app itself was not affected.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
