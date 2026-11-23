@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 718a · 2026-11-23 22:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on bbe5c98: green · effort: medium
+**1. LATEST UPDATE** - 719a · 2026-11-23 23:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on d1c70cd (718a): green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The handheld test for moving the Tile home row now runs exactly the same code as the R1 Row button (one shared step instead of two copies), and the test script also presses that button's own Top / Middle / Bottom cycle, so a pass on the device proves the real button's behaviour.
+**2. WHAT CLAUDE JUST FIXED** - The handheld check for 'the game row never slides under the status bar' can now be run in its hardest setup automatically: game header, game info and news, the full category bar and a song in the status bar's player all switched on for the test only (nothing saved). The app writes where the row landed into the test log, and a new script and grader check Middle, Bottom and Top.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1: safe QA path for Edit Home moving the added Play part, and the header + news + full category bar + music combination at x1.3; Owner / live session: HW-24 714a with row714.sh on the KONKR
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1: safe QA path for Edit Home moving the added Play part; Task 1: Tile home Top vs profile row at x1.3, Edit Home preview vs Home
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

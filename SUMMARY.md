@@ -1,3 +1,24 @@
+# Update 719a (23 Nov 2026, cloud run) - Task 1: QA path for 716a's real combination (header + news + every category + bar player)
+- CI first: Verify 310 on d1c70cd (718a) GREEN.
+- Owner 22:43 item 3: "716a passed with defaults - still the combination game header + game / news + full category bar + music /
+  status widgets". The 22:03 live result said no QA hook could set those options. New (QA builds with the hooks file only,
+  normal use unchanged): `--es voltcap_test_rowcombo on|off` previews that combination on the layout in use (RowCombo719.appearance:
+  Game info + news, category bar of every category incl. the layout's own choice; Features.homeHeader on, held in memory
+  during the preview; a fake song so the status bar's player shows; off puts the header and the song back) and
+  `--ez voltcap_test_rowcol true` logs one `rowcol` line: where the Voltcap row's column landed (top / bottom) vs the status
+  bar's bottom edge and the screen, in dp, plus which parts were really on.
+- tools/qa/device/row716.sh (LEVEL 1, QA app only, snapshot saved / restored, no key / tap except B on a first-start picker):
+  Classic, defaults at Middle / Bottom / Top, then the combination at Middle / Bottom / Top / Middle through the R1 tile's own
+  step (voltcap_test_dock = rowTilePress). tools/qa/tools/row716.py: FAIL when the column starts under the bar or runs off the
+  bottom although it fits; a taller-than-the-room column spilling at the bottom is noted (716a's design); combination not on,
+  wrong layout or an old build = INFRA.
+- Tests: RowCombo719aTest 3/3 (new), RowColumnUnderBar716aTest 4/4, RowTileQaLine717aTest 3/3, RowTileExactHandler718aTest 3/3 PASS
+  (cloud, compiled); QA selftest 229/229 incl. TestRow716Grader719a 6/6; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RowCombo719.kt (new), ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowCombo719aTest.kt (new), tools/qa/device/row716.sh (new), tools/qa/tools/row716.py (new),
+  tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 719a (row716.sh x1.0 + x1.3 on the KONKR; RP Classic too if connected).
+
 # Update 718a (23 Nov 2026, cloud run) - Task 1: the Row tile QA hook now runs R1's exact Row tile handler
 - CI first: Verify 310 on bbe5c98 (owner backlog 22:43, contains 717a) GREEN; 0d7b630 / 886835d cancelled by the newer push.
 - Owner 22:43 Task 1: "verify it is the exact handler". It was not quite: the R1 Row tile and the hook `voltcap_test_dock`

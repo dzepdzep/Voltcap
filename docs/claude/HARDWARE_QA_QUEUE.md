@@ -105,6 +105,13 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - **718a (cloud): the hook IS now the exact handler.** R1's Row tile and `voltcap_test_dock` call the same step (rowTilePress;
   RowTileExactHandler718aTest guards it); `voltcap_test_dock NEXT` = one tile press. row714.sh (dev line 718a or later) adds
   s8-s10, three NEXT presses Middle -> Bottom -> Top -> Middle, graded on the landing place too. Same run commands as 717a.
+- **719a (cloud): 716a's combination now has its QA path** (answers the 22:03 result's "no QA hook sets those options").
+  `--es voltcap_test_rowcombo on|off` previews game header + "Game info + news" + category bar of every category + a song in
+  the status bar's player (nothing saved; off puts the header and the song back); `--ez voltcap_test_rowcol true` logs one
+  `rowcol` line (column top / bottom vs the bar's bottom edge, dp). Run (LEVEL 1, QA app only, dev line 719a or later, ~2 min,
+  no key / tap except B on a first-start picker, snapshot saved and restored): `sh tools/qa/device/row716.sh r716` (x1.0) and
+  `sh tools/qa/device/row716.sh r716b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/row716.py <dir>`. Steps:
+  baseline Middle / Bottom / Top, then the combination Middle / Bottom / Top / Middle through the R1 tile's own step.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

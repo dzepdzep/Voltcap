@@ -2837,5 +2837,59 @@ class TestRow714NextPress718a(unittest.TestCase):
             nxt = [ln.split()[-1] for ln in f.read().splitlines() if ln.startswith("dock ") and " NEXT " in ln]
         self.assertEqual(nxt, ["BOTTOM", "TOP", "MIDDLE"])
 
+class TestRow716Grader719a(unittest.TestCase):
+    """719a: row716.py grades 716a's real combination (game header + info / news + every category + a song in the bar's
+    player): a column under the status bar FAILs, a combination that did not apply or an old build is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=font=1.3 real_pid=4242",
+           "expect b1 MIDDLE off", "expect c1 MIDDLE on", "expect c3 TOP on",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowcol CLASSIC MIDDLE top=120.0 bottom=330.0 bar=40.0 screen=448.0 legend=on header=off info=OFF cats=FULL player=off",
+            "E VoltcapQA: 2 rowcombo on header=true info=BOTH",
+            "E VoltcapQA: 3 rowcol CLASSIC MIDDLE top=44.0 bottom=420.0 bar=44.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on",
+            "E VoltcapQA: 4 rowcol CLASSIC TOP top=8.0 bottom=400.0 bar=0.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row716
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowcol.txt"), "w").write("\n".join(rows) + "\n")
+        return row716.grade(d)[1]
+
+    def test_column_below_the_bar_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_column_under_the_bar_fails(self):
+        under = [r.replace("top=44.0 bottom=420.0", "top=20.0 bottom=396.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, under), "FAIL")
+
+    def test_tall_column_may_spill_at_the_bottom(self):
+        tall = [r.replace("top=44.0 bottom=420.0", "top=44.0 bottom=470.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, tall), "PASS")
+
+    def test_combo_missing_old_build_or_wrong_layout_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("player=on", "player=off") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [self.ROWS[0]]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [r.replace("CLASSIC", "TILES") for r in self.ROWS]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_targets_the_qa_app_and_never_opens_r1(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row716.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("A --es voltcap_test_rowcombo on"))
+        self.assertLess(sh.index("A --es voltcap_test_rowcombo off"), sh.index("A --es voltcap_test_snapshot restore"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

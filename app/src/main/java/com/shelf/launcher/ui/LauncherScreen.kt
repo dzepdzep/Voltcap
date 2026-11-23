@@ -1284,6 +1284,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(loopRow = v))
     }
 
+    var rowComboHeaderWas by remember { mutableStateOf<Boolean?>(null) } // (719a)
     // (Batch 521: the R1 Row tile's own change - withDockHere - asked for by a QA run, shown only during a preview.)
     val testDock = TestHooks.dock.value
     LaunchedEffect(testDock) {
@@ -1301,6 +1302,26 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     com.shelf.launcher.data.Features.widgetPositions.value))
             }
         }
+    }
+
+    // (719a: the 716a combination for a QA run - RowCombo719 - shown only during a preview; `off` puts the header and the song back.)
+    val testRowCombo = TestHooks.rowCombo.value
+    LaunchedEffect(testRowCombo) {
+        val v = testRowCombo ?: return@LaunchedEffect
+        TestHooks.rowCombo.value = null
+        if (!TestHooks.previewOnly) return@LaunchedEffect
+        if (v == "on") {
+            if (rowComboHeaderWas == null) rowComboHeaderWas = com.shelf.launcher.data.Features.homeHeader.value
+            com.shelf.launcher.data.Features.homeHeader.value = true // (held in memory during a preview - Features.holdWrites)
+            viewModel.previewAppearance(RowCombo719.appearance(state.appearance))
+            TestHooks.fakeNowPlaying = com.shelf.launcher.data.NowPlaying("Row check", "Voltcap test", "com.shelf.launcher", isPlaying = true)
+        } else {
+            rowComboHeaderWas?.let { com.shelf.launcher.data.Features.homeHeader.value = it }
+            rowComboHeaderWas = null
+            TestHooks.fakeNowPlaying = null
+        }
+        viewModel.refreshNowPlaying()
+        QaTrace.event("rowcombo", "$v header=${com.shelf.launcher.data.Features.homeHeader.value} info=${state.appearance.rowInfo.name}")
     }
 
     // (Pass 5: theme / performance mode asked for by a QA run — TestHooks.kt, off without its flag file.)
@@ -4112,6 +4133,24 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // legend always stays along the bottom edge.
         val dockPosition = state.appearance.dockHere
         val legendShown = state.appearance.legendOn
+        // (719a: `voltcap_test_rowcol` - one QA line: where the Voltcap row's column landed vs the status bar, RowCombo719.line.)
+        val rowColAsk = TestHooks.rowCol.intValue
+        if (rowColAsk > 0 && QaTrace.on) {
+            val dens = androidx.compose.ui.platform.LocalDensity.current.density
+            val a = state.appearance
+            val barTopPx = if (barHere && dockPosition != com.shelf.launcher.data.DockPosition.TOP) statusBarHeightPx.toFloat() else 0f
+            val headerOn = com.shelf.launcher.data.Features.homeHeader.state.value && focusedGame != null
+            // (read when the line is written, so it reports the frame after the last change - not the one that asked)
+            val rowColLine by androidx.compose.runtime.rememberUpdatedState(RowCombo719.line(
+                a.homeLayout.name, dockPosition, rowTopPx, rowBottomPx, barTopPx, homeHeightPx, dens, legendShown,
+                headerOn, a.rowInfo, a.categoryBarFor(a.homeLayout), state.nowPlaying != null
+            ))
+            LaunchedEffect(rowColAsk) {
+                kotlinx.coroutines.delay(600) // (the column measured after the last change)
+                QaTrace.event("rowcol", rowColLine)
+            }
+        }
+
         @Composable
         fun BoxScope.GameRows() {
         if (styleLayout) {

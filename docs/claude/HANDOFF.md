@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 23:35 UTC, 719a (cloud, Task 1):** Verify 310 on d1c70cd (718a) GREEN. 716a's real combination now has a QA path:
+`voltcap_test_rowcombo on|off` (header + Game info / news + every category + a song in the bar's player, preview only) and
+`voltcap_test_rowcol` (one `rowcol` line: column vs status bar, dp); row716.sh + row716.py (selftest 6/6). RowCombo719aTest 3/3
+PASS (cloud). HW-24 719a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): a safe QA path for the real Edit
+Home D-pad movement of the added Play part (715a; HomeEditState select: + real D-pad keys only while Edit Home is open in the QA
+app, no R1); then Tile home Top vs the profile row at x1.3, Edit Home preview vs the real Home.
+
 **23 Nov 22:20 UTC, 718a (cloud, Task 1):** Verify 310 on bbe5c98 GREEN. Owner 22:43 order read (items 1-2 = P2 on-device
 profiling / Coverflow x1.3 on the P2 branch - live session with hardware). Task 1 "verify it is the exact handler": R1's Row
 tile and `voltcap_test_dock` now share rowTilePress (ui/QuickSettings.kt); `voltcap_test_dock NEXT` = one tile press;
