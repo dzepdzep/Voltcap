@@ -4304,6 +4304,14 @@
    "severity": "low",
    "status": "closed - not a defect: Tetris is the only game in its category (Game Boy), so the D-pad has nowhere to go; each press is one recomposition with no glide",
    "found": "2026-11-23"
+  },
+  {
+   "id": "D389",
+   "title": "Native Achievements pages compose every row at once: on a 120-achievement game the page change took one 1031 ms frame in Cinema and 194 ms in Arcade (KONKR x1.0, atrace kt_big) - a visible freeze; every native layout draws its rows the same way (t.list.forEach in a scrolling Column)",
+   "rule": "perf",
+   "severity": "high",
+   "status": "fixed 682am - KONKR x1.0 atrace kt_big -> kt_big2 (120-achievement game): Cinema's page change 1031 -> 132 ms longest frame, Arcade 194 -> 56 ms; the remaining rows then arrive in ~40 ms frames for ~1.5 s (Cinema ~13 ms per row - row cost itself still open under D386). Walk kbig13 (x1.3, Cinema + Terminal): 24 Downs reach row 24, totals 120, Play same place, 0 launches, restore diff 0",
+   "found": "2026-11-23"
   }
  ]
 }

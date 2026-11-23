@@ -59,25 +59,52 @@ internal fun nativeFacts(ctx: WinSceneCtx, omit: Set<String> = emptySet()): List
 
 /** The achievements a native page shows: in the window's chosen order (Features.winTrophyOrder), and how to step that order. */
 internal class NativeTrophies(
+    /** The rows to draw now - the first [NATIVE_ROWS_FIRST] at once, the rest added a few a frame once the page has opened
+     *  ([nativeRowsShown]). Counts, totals and look-ups use [all]. */
     val list: List<RaAchievementDetail>,
     val order: Features.TrophyOrder,
-    val nextOrder: () -> Unit
+    val nextOrder: () -> Unit,
+    val all: List<RaAchievementDetail> = list
 ) {
-    val earned: Int get() = list.count { it.isUnlocked }
-    val total: Int get() = list.size
-    val gained: List<RaAchievementDetail> get() = list.filter { it.isUnlocked }
-    val toGet: List<RaAchievementDetail> get() = list.filterNot { it.isUnlocked }
+    val earned: Int get() = all.count { it.isUnlocked }
+    val total: Int get() = all.size
+    val gained: List<RaAchievementDetail> get() = all.filter { it.isUnlocked }
+    val toGet: List<RaAchievementDetail> get() = all.filterNot { it.isUnlocked }
 }
+
+/** 682am (D389): rows composed in the page's first frame. */
+internal const val NATIVE_ROWS_FIRST = 10
+/** 682am (D389): rows added each frame after the page has opened. */
+internal const val NATIVE_ROWS_STEP = 3
+
+/** 682am (D389, pure): how many rows to draw - never fewer than were already shown (a list that refreshes or re-sorts keeps
+ *  the rows the D-pad may be on), never more than there are. */
+internal fun nativeRowsShown(had: Int, total: Int): Int = maxOf(had, minOf(NATIVE_ROWS_FIRST, total)).coerceAtMost(total)
 
 @Composable
 internal fun rememberNativeTrophies(ctx: WinSceneCtx): NativeTrophies {
     val order = Features.winTrophyOrder.state.value
     val details = ctx.state.raAchievementDetails[ctx.g.stableKey]
     val list = remember(details, order) { trophyOrder(details.orEmpty(), order) }
-    return NativeTrophies(list, order) {
+    // (682am, D389 - KONKR atrace kt_big: a 120-achievement game's Achievements page took one 1031 ms frame in Cinema, 194 ms in
+    // Arcade - every row composed at once, each with its badge picture and fitted texts. The first rows come at once, the rest a
+    // few a frame after the page has slid in: same rows, same order, same look.)
+    val shown = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val n = nativeRowsShown(shown.intValue, list.size)
+    if (n != shown.intValue) androidx.compose.runtime.SideEffect { shown.intValue = n }
+    LaunchedEffect(list) {
+        if (shown.intValue >= list.size) return@LaunchedEffect
+        kotlinx.coroutines.delay(NATIVE_PAGE_MS.toLong())
+        while (shown.intValue < list.size) {
+            androidx.compose.runtime.withFrameNanos { }
+            shown.intValue = minOf(list.size, maxOf(shown.intValue, NATIVE_ROWS_FIRST) + NATIVE_ROWS_STEP)
+        }
+    }
+    val rows = if (n >= list.size) list else list.subList(0, n)
+    return NativeTrophies(rows, order, {
         val all = Features.TrophyOrder.values()
         Features.winTrophyOrder.value = all[(order.ordinal + 1) % all.size]
-    }
+    }, all = list)
 }
 
 /** The pages a native window walks with L1 / R1, in key order - only those the window offers (ctx.pages). Pure. */

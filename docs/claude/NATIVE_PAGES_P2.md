@@ -592,3 +592,9 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
 - **D388 closed:** Tetris is alone in its category - nothing to move to. CI: b6a66bb's first Verify run failed on two unrelated
   heavy Robolectric tests (ConcurrentModificationException / Endless BLADES count, different on each runner); the rerun of the
   same commit passed - flaky.
+- **682am - D389 (high, fixed):** every native Achievements page composed all its rows at once - a 120-achievement game froze the
+  KONKR for one 1031 ms frame in Cinema (194 ms Arcade). rememberNativeTrophies now hands the page its first 10 rows at once and
+  3 more each frame once the page has slid in (counts / totals / look-ups from the whole list; a refresh or re-sort never takes
+  rows away). kt_big -> kt_big2: Cinema 1031 -> 132 ms, Arcade 194 -> 56 ms; the rest fill in ~40 ms frames for ~1.5 s (a Cinema
+  row costs ~13 ms - still D386). Walk kbig13 x1.3: 24 Downs reach row 24, "120 FILE(S) TOTAL", Play same place, restore diff 0.
+  CI green on af8ae8c (682al).

@@ -172,7 +172,7 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
         // them took the first achievement's room at x1.3).
         val cube = if (t.total > 16) 9.dp else 12.dp
         if (t.total > 0) FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            t.list.forEach { LittleCube(it.isUnlocked, a, Modifier.size(cube)) }
+            t.all.forEach { LittleCube(it.isUnlocked, a, Modifier.size(cube)) }
         }
         Spacer(Modifier.height(4.dp))
         Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(a), verticalArrangement = Arrangement.spacedBy(3.dp)) {

@@ -142,8 +142,8 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
     Column(modifier) {
         // The SCORE box beside the order key (a printed "SORTED BY" tab; A steps it).
         Row(verticalAlignment = Alignment.CenterVertically) {
-            val pts = t.list.filter { it.isUnlocked }.sumOf { it.points ?: 0 }
-            val (score, points) = magScore(t.earned, t.total, pts, t.list.sumOf { it.points ?: 0 })
+            val pts = t.all.filter { it.isUnlocked }.sumOf { it.points ?: 0 }
+            val (score, points) = magScore(t.earned, t.total, pts, t.all.sumOf { it.points ?: 0 })
             // (682r, KONKR x1.3: the points sat between the box and the order key and broke a word per line - "26 / OF / 95 /
             // PT" - pushing the list off the page; they are the box's own last line now.)
             Column(Modifier.border(2.dp, st.ink).padding(horizontal = 8.dp, vertical = 3.dp)) {

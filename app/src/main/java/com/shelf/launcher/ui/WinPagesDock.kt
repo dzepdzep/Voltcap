@@ -126,7 +126,7 @@ private fun DockAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
     // plate under the dock, its points and whether it's earned, its description whole. The plate keeps at least two lines of room,
     // so moving along the dock doesn't make the grid jump.)
     var shownId by androidx.compose.runtime.remember(ctx.g.stableKey) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    val shown = t.list.firstOrNull { it.id == shownId } ?: t.list.firstOrNull { it.id == openId }
+    val shown = t.all.firstOrNull { it.id == shownId } ?: t.all.firstOrNull { it.id == openId }
     // (682ag: where the flyout is short - KONKR x1.3 - the plate stands beside the dock instead of under it, so the first row
     // of icons keeps its whole height.)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {

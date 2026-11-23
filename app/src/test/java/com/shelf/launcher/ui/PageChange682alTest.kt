@@ -24,4 +24,13 @@ class PageChange682alTest {
         assertEquals(WholeWordsAutoSize(13f, 10f, "ACHIEVEMENTS"), WholeWordsAutoSize(13f, 10f, "ACHIEVEMENTS"))
         assertNotEquals(WholeWordsAutoSize(13f, 10f, "ACHIEVEMENTS"), WholeWordsAutoSize(13f, 10f, "RELEASED"))
     }
+
+    @Test fun achievementRowsArriveFirstTenThenGrowAndNeverShrink() {
+        // 682am (D389): fails on 682al - every row was composed in one frame (1031 ms for 120 rows in Cinema on the KONKR)
+        assertEquals(10, nativeRowsShown(0, 120))
+        assertEquals(4, nativeRowsShown(0, 4))
+        assertEquals(40, nativeRowsShown(40, 120))   // a refresh or re-sort keeps the rows already shown
+        assertEquals(30, nativeRowsShown(40, 30))    // never more than there are
+        assertEquals(0, nativeRowsShown(0, 0))
+    }
 }
