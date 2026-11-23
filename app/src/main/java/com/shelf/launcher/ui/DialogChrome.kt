@@ -328,16 +328,16 @@ internal fun ShelfTextField(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp)
-                Text(
+                // 713a (rule 11): the typed value whole - readable size, then slide (was cut with an ellipsis).
+                FullText(
                     when {
                         value.isBlank() -> "Press A to type"
                         password -> "•".repeat(value.length.coerceAtMost(16))
                         else -> value
                     },
                     color = if (value.isBlank()) ShelfTheme.textMuted else ShelfTheme.colors.textPrimary,
-                    fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp),
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    fontSize = 14.sp,
+                    reserve = false
                 )
             }
         }
@@ -525,9 +525,10 @@ fun ShelfMenuDialog(
                         Spacer(Modifier.width(14.dp))
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(
-                            title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold,
-                            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        // 713a (rule 11): the menu's title whole - 2 lines, readable size, then slide.
+                        FullText(
+                            title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                            maxLines = 2, reserve = false
                         )
                         if (subtitle != null) {
                             Spacer(Modifier.height(2.dp))
@@ -901,17 +902,17 @@ internal fun Chip(label: String, accent: Boolean = true, enabled: Boolean = true
             .shelfClickable(uiRounded(50), enabled = enabled) { onClick() }
             .padding(horizontal = 16.dp, vertical = 9.dp)
     ) {
-        Text(
+        // 713a (rule 11): a chip's label whole - readable size, then slide when its row leaves too little room.
+        FullText(
             label,
             color = when {
                 !enabled -> ShelfTheme.textMuted
                 accent -> onAccentColor()
                 else -> ShelfTheme.colors.textPrimary
             },
-            fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            softWrap = false
+            reserve = false
         )
     }
 }

@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 16:35 UTC, 713a (cloud):** Verify 310 on 2f17a84 (712a) GREEN; 711a rerun 45195727121 GREEN (NDK failure was infra).
+P2 finish still in the live session (claude/v0674-native-pages pushes to 15:23 UTC) - left alone. Filler: P13 rule 11
+DialogChrome.kt 3 TRUNCATE -> 0 (ShelfTextField value, ShelfMenuDialog title, Chip label FullText). DialogChromeFullText713aTest
+2/2 PASS (cloud). TRUNCATE 69 -> 66. HW-24 713a. Cloud Gradle needs VOLTCAP_MAVEN_MIRROR (Maven 429 without it).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). If P2 is finished / handed over: TASK 1 (Row-position collisions
+audit). Otherwise P13 next TRUNCATE file (CompanionActivity 3), one per run with its test.
+
 **23 Nov 15:25 UTC, 712a (cloud):** Verify 310 on 38cd4fb (711a) RED on ubuntu-24.04 only: NDK 28 download was a bad zip
 before any build (infra); ubuntu-latest passed the full suite; failed jobs rerun requested (run 45195727121). P2 finish still in
 the live session (claude/v0674-native-pages pushes to 14:24 UTC) - left alone. Filler: P13 rule 11 RetroAchievementsDialog.kt

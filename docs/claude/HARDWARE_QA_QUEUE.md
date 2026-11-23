@@ -85,6 +85,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   long-titled recent achievement and a long account name - name, game and account name whole (wrap, shrink, then slide),
   never an ellipsis; "Play as" / "Remove" chips stay whole and reachable. D-pad + touch still work. Screenshots.
   Unit evidence only (RaDialogFullText712aTest; static TRUNCATE 72 -> 69).
+- Also (713a, rule 11, dev line 713a or later, ~2 min, KONKR x1.3 + x1.0, with 712a): shared dialog chrome - a text field
+  holding a long value (e.g. a long ROM folder path / server address), a menu sheet with a long title (e.g. a long game name's
+  menu), and chips in a narrow row (Settings chip rows, RA "Play as") - whole (shrink, then slide), never an ellipsis; chips
+  keep their size, focus ring and touch target. D-pad + touch still work. Screenshots.
+  Unit evidence only (DialogChromeFullText713aTest; static TRUNCATE 69 -> 66).
 - Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
   (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
   page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.

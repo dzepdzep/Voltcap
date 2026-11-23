@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 712a · 2026-11-23 15:25 UTC · commit `this update (being pushed)` · CI: Verify 310 on 38cd4fb: red on one runner only (Android NDK download broken - infrastructure, other runner green); rerun requested · effort: medium
+**1. LATEST UPDATE** - 713a · 2026-11-23 16:35 UTC · commit `this update (being pushed)` · CI: Verify 310 on 2f17a84: green (and the earlier infra failure's rerun is green) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - RetroAchievements screen: a recent achievement's name, its game and each saved account's name now show in full (wrapping, shrinking a little, then sliding) instead of ending in dots.
+**2. WHAT CLAUDE JUST FIXED** - Shared dialog pieces: a text field's value, a menu sheet's title and the label on every chip button now show in full (shrinking a little, then sliding) instead of ending in dots.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push and the rerun; then: P2 finish (live session): hardware checks, page-transition audit, Spotlight / Terminal / TV room / Coverflow decisions; Then Task 1: Row-position collisions; meanwhile rule 11 next screen (DialogChrome)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2 finish (live session): hardware checks, page-transition audit, Spotlight / Terminal / TV room / Coverflow decisions; Then Task 1: Row-position collisions; meanwhile rule 11 next screen (CompanionActivity)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

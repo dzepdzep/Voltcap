@@ -1,3 +1,14 @@
+# Update 713a (23 Nov 2026, cloud run) - rule 11: shared dialog chrome shows field values, menu titles and chip labels whole
+- CI first: Verify 310 on 2f17a84 (712a) GREEN; the 711a rerun (run 45195727121, attempt 2) GREEN too - the NDK failure was infra.
+- P2 finish still in the live session on claude/v0674-native-pages (pushes to 15:23 UTC) - left alone; Tasks 1-4 wait for P2.
+- DialogChrome.kt (shared UI): 3 TRUNCATE places -> 0. ShelfTextField's shown value (1 line), the ShelfMenuDialog sheet title
+  (2 lines) and every Chip label (1 line) go through FullText (shrink readably, then slide; reserve = false so sizes stay).
+  Chips size to their label as before; they only slide where their row leaves too little room.
+- Test: DialogChromeFullText713aTest 2/2 PASS in the cloud (fails on 712a: 3 Ellipsis); compiled with the Maven mirror on
+  (Maven Central 429 without it). Static checks PASS, TRUNCATE 69 -> 66.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt, app/src/test/java/com/shelf/launcher/ui/DialogChromeFullText713aTest.kt.
+- Hardware NOT TESTED: HW-24 713a (KONKR, with 712a).
+
 # Update 712a (23 Nov 2026, cloud run) - rule 11: RetroAchievements dialog shows its names whole
 - CI first: Verify 310 on 38cd4fb (711a) FAILED on one runner only - infra: the ubuntu-24.04 runner's NDK 28 download was a bad
   zip ("Error on ZipFile unknown archive") before any build; the ubuntu-latest runner passed the full suite. Failed jobs rerun
