@@ -553,17 +553,20 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   the window's INSERT COIN blink requested every frame. Fix: offscreen layers for the static parts (arcadeCached: room, light,
   row machines you're not on, big machine's body / side; never while the camera zooms into the monitor, never in the hall where
   machines turn and scale), the blink as two state changes a second (ARCADE_BLINK_MS). Look and animations unchanged.
-  ArcadePerf682ajTest (fails on 682ai). Earlier build 679c (17 Nov) on the KONKR: home navigation 34.6 % slow at RT 14 ms -
-  the Arcade home was already heavy before P2.
+  ArcadePerf682ajTest (fails on 682ai). (Earlier build 679c on the KONKR: RenderThread 14 ms per Arcade home frame - heavy
+  before P2 too; its slow-frame % is not comparable, other start game - see D387.)
 - **Recording overhead:** on the KONKR a recording costs a moving home ~40-50 % slow frames on its own (Cinema 49 %, Arcade 41 %
   after the fix) - the earlier "48 %" came from a walk recorded on a screen that never stops moving. Page walks: about the same
   with and without. RP Classic: recording changes little.
 - **D386 (open, next):** every native page change on the KONKR has one main-thread frame of 50-115 ms (composing the new page) -
   one hitch per R1 / L1, Cinema as much as Arcade.
-- **RP Classic (D387, open, next):** a home move on the Classic row or Arcade is one 65-85 ms frame (30-45 ms composition), no
-  glide; the 17 Nov build glided (Classic 473 frames 7 % slow, Arcade 401 / 13 %) with 2-20 ms composition per move. Automatic
-  performance mode turned Lite on after slow frames, so the real cause is the heavier composition per move - not the P2 pages (the
-  Classic row has none), not recording. Bisect of the QA builds 17 -> 23 Nov next.
+- **RP Classic (D387, closed - not a regression):** frame latency ~26-30 ms on every build (GPU-bound device), 17 Nov build
+  included. The "moves no longer glide" seen in rp10 / rpn10 was the test's start game: since 681b the scripts start on the
+  "achmix" game (Tetris), older builds on the fallback. Same start game (PERF_GAME, perf mode): 682aj glides like 679c (17 Nov)
+  and the dev line 19bc1e0 - 466 / 473 / 474 frames, 7.9 / 7.0 / 7.6 % slow. Bisect builds: 679c, a4382ac, 19bc1e0 (built here),
+  2ca480f, 73d6766, f816912, 0ac1f95, 0fe071a (built here). D388 (open, low): starting on Tetris the RP Classic's row gives one
+  40-70 ms frame per move with no glide - cause not known yet. The KONKR old-build Arcade numbers (kpold10) had the same start-game
+  difference and are not a fair comparison; 682ai -> 682aj (same start game) is.
 - **Coverflow details (owner option A):** compact facts ON in the QA branch (CoverReadingProposal default true). Hardware before
   (682ai kcb / rcb) / after (682aj kca / rca), x1.0 + x1.3, both handhelds: panel width unchanged, title beside it visible (home with
   Crazy Taxi shown), facts whole words, KONKR x1.0 now shows all facts and the whole story without scrolling; at x1.3 the page opens

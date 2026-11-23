@@ -77,7 +77,9 @@ openw() { # layout name -> 0 when the game window is open
 phase() { dumpsys gfxinfo $P > $O/${n}_P_$1_gfx0.txt 2>/dev/null; }
 phase_end() { dumpsys gfxinfo $P > $O/${n}_P_$1_gfx.txt 2>/dev/null; dumpsys gfxinfo $P framestats > $O/${n}_P_$1_fs.txt 2>/dev/null; }
 perf_layout() {
-  n=$1; A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
+  # (PERF_GAME: the game the home starts on - comparing builds needs the same one; builds before 681b had no "achmix" game
+  # and started on the fallback, so a build comparison sets PERF_GAME="Shadow of the Colossus" for both.)
+  n=$1; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Shadow of the Colossus}}"; sleep 2
   A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout $1; sleep 4; gate
   [ "$(qawins)" = 1 ] || { log "$1: PRECONDITION FAILED - $(qawins) QA windows on the home"; return 1; }
   wg_home

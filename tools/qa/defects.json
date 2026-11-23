@@ -4291,10 +4291,18 @@
   },
   {
    "id": "D387",
-   "title": "RP Classic slowdown (perf runs rp10 / rpn10 vs rpold10 on the 17 Nov build 679c, x1.0, no recording): on the current builds a home move on the Classic row or Arcade is ONE frame of 65-85 ms (30-45 ms of it composition) with no glide - 12 presses gave 12-15 frames; on 17 Nov the same moves glided (Classic 473 frames, 7 % janky; Arcade 401, 13 %) and a move cost 2-20 ms of composition. The glide is off because Automatic performance mode turned Lite on after slow frames (FrameWatch) - so the root is the heavier composition per move. Recording on / off changes little on this device. Not caused by the P2 page designs (the Classic row has none); a regression somewhere between 17 and 23 Nov",
+   "title": "RP Classic slowdown (owner 18:23): per-frame latency on the RP Classic is ~26-30 ms (mostly GPU, swap -> complete 12-17 ms) on EVERY build tested, 17 Nov included - the device, not a regression. The apparent 'home moves no longer glide' (12-15 frames, 40 ms composition per press, runs rp10 / rpn10 and the P2 builds in the bisect) was a test artefact: since P2 681b the perf / review scripts start the home on the 'achmix' game (Tetris) while older builds started on the fallback game; with the same start game (PERF_GAME) the current build 682aj glides exactly like the 17 Nov build (466 vs 473 frames, 7.9 vs 7.0 % slow) and the dev line 19bc1e0 (474, 7.6 %)",
    "rule": "perf",
    "severity": "low",
-   "status": "open - next: bisect the QA builds between 679c (17 Nov) and 682aj on the RP Classic (Classic row home_nav), then fix",
+   "status": "closed - not a regression (bisect: 679c / a4382ac / 19bc1e0 good; P2 builds 'bad' only through the start game). Recording on / off changes little on this device. Follow-up D388",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D388",
+   "title": "RP Classic, Classic row, home starting on Tetris (fixture 'achmix' game): 12 D-pad moves gave 12 frames of 40-70 ms with no glide (rpn10, rb_2ca4, rb_0fe0); started on another game the same build glides. Cause not known yet (FrameWatch turning Lite on early? the row's end?)",
+   "rule": "perf",
+   "severity": "low",
+   "status": "open - to check with a capture of the home during those moves",
    "found": "2026-11-23"
   }
  ]
