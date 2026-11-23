@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -130,6 +131,9 @@ private fun TermDir(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color
     }
 }
 
+/** Room kept under an armed row when it scrolls into view - clear of the screen's dark bottom edge (682ag kh13). */
+internal val TERM_CONFIRM_ROOM = 16.dp
+
 @Composable
 private fun TermSetup(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color, dim: Color, accent: Color, hi: Color, hiInk: Color, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
@@ -146,8 +150,13 @@ private fun TermSetup(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Col
                 // their own so a wrapped name keeps its indent; the description and the confirmation indented by layout, not spaces;
                 // the confirmation as three short lines (no "(Y/ / N)" break) and the armed row scrolled whole into view.)
                 val bring = androidx.compose.runtime.remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
-                androidx.compose.runtime.LaunchedEffect(armed) { if (armed) { kotlinx.coroutines.delay(32); bring.bringIntoView() } }
-                Column(Modifier.fillMaxWidth().bringIntoViewRequester(bring).background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 3.dp)) {
+                // (682ag kh13, KONKR x1.3: scrolled just into view, the last line "MOVE AWAY = NO" sat in the screen's dark bottom edge -
+                // the row comes up with [TERM_CONFIRM_ROOM] under it.)
+                val rowSize = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+                val roomPx = with(androidx.compose.ui.platform.LocalDensity.current) { TERM_CONFIRM_ROOM.toPx() }
+                androidx.compose.runtime.LaunchedEffect(armed) { if (armed) { kotlinx.coroutines.delay(32)
+                    bring.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, rowSize.value.width.toFloat(), rowSize.value.height + roomPx)) } }
+                Column(Modifier.fillMaxWidth().onSizeChanged { rowSize.value = it }.bringIntoViewRequester(bring).background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 3.dp)) {
                     Row(Modifier.fillMaxWidth()) {
                         Text((if (on) "► " else "  ") + "${i + 1}. ", style = style.copy(color = ink, shadow = if (on) null else style.shadow), softWrap = false,
                             lineHeight = style.fontSize * 1.3f)
@@ -164,6 +173,7 @@ private fun TermSetup(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Col
             }
         }
         if (ctx.options.isEmpty()) Text("NOTHING TO SET UP.", style = style.copy(color = dim))
+        else if (confirm.armed != null) Spacer(Modifier.height(TERM_CONFIRM_ROOM)) // (the last row too can come up off the edge)
     }
 }
 

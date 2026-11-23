@@ -840,8 +840,11 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             // while the feature was still on the page. They follow the heading page - the moment the old sheet has gone - and the
             // cover steps back smoothly.)
             val headPage = rememberHeadingPage(ctx.page)
-            val coverFrac by androidx.compose.animation.core.animateFloatAsState(if (headPage == WinPage.MAIN) 0.78f else 0.5f,
-                if (rememberAnimationsEnabled()) tween(NATIVE_PAGE_MS - NATIVE_OUT_MS, easing = FastOutSlowInEasing) else snap(), label = "magCover")
+            // (682ag, KONKR x1.3 kh13: stepping back after the old sheet had gone, the cover still moved while the new sheet faded in -
+            // its text re-wrapped and the key row slid under the page's edge for ~150 ms. It moves while the old sheet leaves
+            // [magCoverMs], so the new sheet arrives into a still column.)
+            val coverFrac by androidx.compose.animation.core.animateFloatAsState(if (ctx.page == WinPage.MAIN) 0.78f else 0.5f,
+                if (rememberAnimationsEnabled()) tween(magCoverMs(), easing = FastOutSlowInEasing) else snap(), label = "magCover")
             Box(Modifier.fillMaxHeight(coverFrac).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
                     if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))

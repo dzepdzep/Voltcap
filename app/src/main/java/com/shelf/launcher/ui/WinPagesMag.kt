@@ -74,6 +74,9 @@ internal fun magPageName(p: WinPage): String = when (p) {
 internal fun magScore(earned: Int, total: Int, pts: Int, ptsAll: Int): Pair<String, String> =
     "$earned / $total" to (if (ptsAll > 0) "$pts OF $ptsAll PTS" else "NO POINTS")
 
+/** The taped cover's step back / forward: done before the next sheet is past a fifth of its fade-in (682ag kh13). */
+internal fun magCoverMs(): Int = NATIVE_OUT_MS + 30
+
 internal fun magMove(dir: Int): ContentTransform =
     // (682ag: the next sheet shows once the last one has gone - no two pages' print at once)
     (slideInHorizontally(tween(NATIVE_PAGE_MS, easing = FastOutSlowInEasing)) { w -> w * dir / 3 } + fadeIn(tween(160, delayMillis = NATIVE_OUT_MS))) togetherWith

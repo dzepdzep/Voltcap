@@ -4224,6 +4224,54 @@
    "severity": "medium",
    "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
    "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D379",
+   "title": "Arcade cabinets window: KONKR x1.0 walk 48 % janky frames (p50 20 ms, gfxinfo kf10, 81a1c9e) - the other changed layouts 4-15 %; RP Classic slow too (Magazine 51 %, Cube 41 %, Arctic 34 % janky, rg10). Likely the glow shadows on every pixel-font line and per-frame scanline rects; not investigated yet",
+   "rule": "perf",
+   "severity": "medium",
+   "status": "open - measured only",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D380",
+   "title": "QA tooling: 'dumpsys gfxinfo <qa> reset' during a p2review walk aborted the QA app in hwui JankTracker ('Impossible totalDuration 0') on the KONKR (run kg13) - the production Voltcap came to the front; the guard pressed nothing and put the snapshot back (diff 0)",
+   "rule": "QA",
+   "severity": "high",
+   "status": "fixed 9ceab5c - read-only before/after dumps (gfxdelta.py) + selftest; production untouched",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D381",
+   "title": "Page changes (KONKR x1.3 clips kag13): Magazine's masthead / headline / cover changed in the first frame while the feature was still showing and the leaving feature showed the next page's keys; Library's story and achievement rows were both on screen ~40 ms; Arctic / Magazine Details scrolled ~250 ms right after opening (first focus below the facts)",
+   "rule": "R23",
+   "severity": "medium",
+   "status": "fixed 31f9593 - old page fades first, headings change when it has gone, first focus doesn't scroll while a page opens; hardware KONKR x1.3 kh13: Arctic / Library / Cube / Magazine no two pages at once, heading after the old page (Magazine follow-up D382); RP Classic x1.0 rg10 the same",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D382",
+   "title": "Magazine page change (KONKR x1.3 kh13): the taped cover stepped back after the old sheet had gone, so the new sheet's text re-wrapped and its key row slid under the page edge for ~150 ms while it faded in (whole change 531 ms)",
+   "rule": "R23",
+   "severity": "low",
+   "status": "fixed (682ah) - the cover moves while the old sheet leaves (magCoverMs = NATIVE_OUT_MS + 30); hardware recheck km13 / rh13",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D383",
+   "title": "Terminal Setup armed confirmation (KONKR x1.3 kh13): scrolled just into view, its last line MOVE AWAY = NO sat in the screen's dark bottom edge",
+   "rule": "R18",
+   "severity": "low",
+   "status": "fixed (682ah) - armed row comes up with 16 dp under it (TERM_CONFIRM_ROOM, a spacer after the last row while armed); hardware recheck km13 / rh13",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D384",
+   "title": "Arctic / Library / Cube page change: the window's key strip (Full details -> Full list) changes in the first frame while the old page is still fading (~120 ms)",
+   "rule": "R23",
+   "severity": "low",
+   "status": "deliberate - the keys are the window's, not the page's: they change at once so the new page's key and the return focus (focusWhenAttached, 8 frames) are live from the first frame; delaying them would drop the D-pad back to Play. Magazine draws keys inside its sheet and keeps them (31f9593)",
+   "found": "2026-11-23"
   }
  ]
 }

@@ -96,4 +96,10 @@ class Review682agTest {
     @Test fun coverflowProposalKeepsEachValueTogether() {
         assertEquals("PlayStation\u00A02\u00A0\u00A0·  2005\u00A0\u00A0·  Team\u00A0Ico", coverFactsLine(listOf("PlayStation 2", " 2005 ", "Team Ico", " ")))
     }
+
+    @Test fun magazineCoverSettlesBeforeTheNextSheetIsReadable() {
+        // the new sheet fades in over 160 ms from NATIVE_OUT_MS: the cover is done within its first fifth
+        assertTrue(magCoverMs() >= NATIVE_OUT_MS)
+        assertTrue(magCoverMs() <= NATIVE_OUT_MS + 160 / 5)
+    }
 }
