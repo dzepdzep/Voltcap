@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 10:20 UTC, 707a (cloud, v0.6.74 turn):** Verify 310 on c917a78 (P2-23b, with 706a's mirror) GREEN - mirror confirmed.
+P2 left alone (owner review of the 12-layout before/after package pending). P13 rule 11: HomeEditLegend.kt (edit toolbar title
++ scope line) 2 TRUNCATE -> 0 via FullText (reserve = false). HomeEditLegendFullText707aTest 2/2 PASS in the cloud (compiled).
+TRUNCATE 86 -> 84. HW-24 707a (KONKR, with 703a).
+NEXT: check Verify 310 on this push FIRST. Then P2 turn if the owner has answered the package / Coverflow reading space;
+otherwise v0.6.74: P13 next TRUNCATE file (3 each: SecondGamesPage, QuickSettings, GameWindow, GameJourneyUi,
+RetroAchievementsDialog, DialogChrome) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 09:20 UTC, 706a (cloud, CI fix):** Verify 310 on 503d679 (705a) RED on both runners from Maven Central 429 only (3 attempts
 each; app + tests compiled). VOLTCAP_MAVEN_MIRROR (Google's Maven Central mirror, CI / cloud only): settings.gradle.kts asks it
 before mavenCentral(); Robolectric's android-all fetch too. Cloud with the mirror: compile + 705a test 2/2 + 681y 5/5 PASS.

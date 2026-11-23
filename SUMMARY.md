@@ -1,3 +1,14 @@
+# Update 707a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home editor's toolbar shows its title and scope line whole
+- CI first: Verify 310 on c917a78 (P2-23b, includes 706a's Maven mirror) GREEN - the mirror fix is confirmed.
+- P2 left alone (owner review of the before/after package pending).
+- HomeEditLegend.kt (home edit mode toolbar): 2 TRUNCATE places -> 0. "Edit Home · <widget>" (+ " (hidden)") and the
+  widget's scope line go through FullText (shrink, then slide), reserve = false so the toolbar keeps its size. Unused
+  TextOverflow import removed.
+- Test: HomeEditLegendFullText707aTest 2/2 (fails on 706a: 2 Ellipsis) + HomeEditFullText703aTest 2/2 PASS in the cloud;
+  :app:compileDebugUnitTestKotlin BUILD SUCCESSFUL (mirror on). Static checks PASS, TRUNCATE 86 -> 84.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HomeEditLegend.kt, app/src/test/java/com/shelf/launcher/ui/HomeEditLegendFullText707aTest.kt.
+- Hardware NOT TESTED: HW-24 707a (KONKR, ~1 min, with 703a's home edit check).
+
 # Update 706a (23 Nov 2026, cloud run, CI fix) - CI and cloud runs fetch Maven Central artifacts from Google's mirror
 - CI first: Verify 310 on 503d679 (705a) RED on both runners - Maven Central answered 429 to all three attempts (60 s / 120 s
   retries) for Robolectric's nativeruntime-dist-compat jar. App + tests COMPILED on both (compileDebugUnitTestKotlin ran); no
