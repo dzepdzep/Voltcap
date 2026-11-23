@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 18:45 UTC, 715a (cloud):** Verify 310 on 37b32a1 (714a) GREEN. Owner 18:23 backlog read (P2-i / P2-j / D386 / D387 are
+on-device profiling - live session). TASK 1 finding 2 fixed: Voltcap row with the header off - ▲ / ▼ follow where an added Play /
+Continue part is drawn (HomeReach.headerAbove + PartRects.frac), not the row's place. HeaderReachDirection715aTest 3/3 PASS
+(cloud). HW-24 715a. Matrix H18.
+Audited and consistent (no change): header above / below the row per Row place vs prepareReach; the status-bar music player at Top
+(bar moves to the bottom, playerUp follows); ShortcutCorner.resolve vs the row edge.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), Row Middle with header + info + chips taller than the screen at
+x1.3 (the centred column can run under the status bar), Edit Home preview vs the real Home.
+
 **23 Nov 17:25 UTC, 714a (cloud):** Verify 310 on 8598c1c (713a) GREEN. P2 finish handed over by the live session (P2-23c) ->
 owner TASK 1 (Row-position collisions) started. Finding 1 fixed: Tile home Row place change deleted the round buttons' Edit Home
 spot by the tiles (Batch 521) - now kept aside per place ("shortcuts@<PLACE>" in widget_positions) and restored there.

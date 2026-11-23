@@ -1,3 +1,16 @@
+# Update 715a (23 Nov 2026, cloud run) - Task 1 Row-position: the D-pad reaches an added Play part where it is drawn
+- CI first: Verify 310 on 37b32a1 (714a) GREEN; e23c26c (owner 18:23 backlog, docs) running.
+- Audit finding (Voltcap row, Play controls x Row place): with the game header off, an added "Play / Continue" (or "Play &
+  buttons") part is the only thing that publishes Play to the D-pad, but ▲ / ▼ were chosen from the row's place (Row Top -> ▼)
+  or from a stored spot of the switched-off header - ▼ went to a Play drawn above the games (it sits upper right by default).
+  Now HomeReach.headerAbove decides: header off + added Play part -> where that part is drawn (MovableWidget records its drawn
+  fractions in PartRects.frac, a plain map read on key presses only); everything else as before. Other layouts unchanged.
+- Test: HeaderReachDirection715aTest 3/3 PASS (fails on 714a: no headerAbove / frac); TileRowPlaceSpots714aTest 4/4 PASS.
+  App + tests compiled in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HomeReach.kt, ui/HomeEdit.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/HeaderReachDirection715aTest.kt.
+- Hardware NOT TESTED: HW-24 715a (KONKR, with 714a).
+
 # Update 714a (23 Nov 2026, cloud run) - Task 1 Row-position: Tile home keeps the round buttons' hand-placed spot per Row place
 - CI first: Verify 310 on 8598c1c (713a code) GREEN; 3113e24 (P2-23c docs) running. P2 finish handed over by the live session
   (P2-23c) -> owner Task 1 (Row-position collisions) starts.

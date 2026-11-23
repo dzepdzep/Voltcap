@@ -2675,7 +2675,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val classic = !tileLayout && !heroLayout && !gridLayout && !tvLayout && !styleLayout
         // The game header's buttons (classic row), or its Play & buttons part on Hero / Spotlight / Icon bar.
         val actionsAt = HomeWidgets.position(HomeWidgets.H_ACTIONS) ?: HomeWidgets.position(HomeWidgets.HEADER)
-        val headerUp = actionsAt?.let { it.second < 0.5f } ?: if (classic) dock != com.shelf.launcher.data.DockPosition.TOP else true
+        // (715a, Task 1: with the header off, an added "Play / Continue" or "Play & buttons" part is what ▲ / ▼ reach - its own
+        // place decides, not the row's; Row at the top put ▼ on a Play drawn above the row.)
+        val addedPlayAt = com.shelf.launcher.data.HomeLayout.CLASSIC.let { l ->
+            PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_PLAY)] ?: PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_ACTIONS)]
+        }?.second
+        val headerUp = HomeReach.headerAbove(
+            classic = classic, headerOn = com.shelf.launcher.data.Features.homeHeader.state.value,
+            dockTop = dock == com.shelf.launcher.data.DockPosition.TOP, headerMovedY = actionsAt?.second, addedPlayY = addedPlayAt
+        )
         // The round shortcuts in a corner ☰ or floating (the Tile home's bar by the tiles has its own keys).
         val spot = a.shortcutSpot
         val scOn = a.tileShortcuts && tileShortcuts.isNotEmpty() && spot != com.shelf.launcher.data.ShortcutSpot.ROW &&
