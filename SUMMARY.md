@@ -1,3 +1,14 @@
+# Update 700a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the game guide screen shows its text whole
+- CI first: Verify 310 on a08de4f (699a): RED on both runners from Maven Central 429 only (1134/1134 failures are Robolectric artifact downloads; no code failure); rerun on the lock commit 3d003e4 running.
+- GuideScreen.kt (game guides): 5 TRUNCATE places -> 0. The guide's title and its attribution / source line (header), the
+  section titles in the contents list, and a guide's title and subtitle in the guide picker (2 lines each) go through FullText
+  (shrink to a readable size, then slide), reserve = false so rows keep their spacing. Unused TextOverflow import removed.
+- Test: GuideScreenFullText700aTest (fails on 699a: 5 Ellipsis). Static checks PASS, TRUNCATE 103 -> 98.
+  NOT compiled in the cloud: :app:compileDebugUnitTestKotlin failed twice on Maven Central 429 (dependency download) - CI is the
+  first compile. Python mirror of the test's regexes: 1/1/1/1/1 on the new source, 0/0/0/0/0 on 699a (fails as intended).
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GuideScreen.kt, app/src/test/java/com/shelf/launcher/ui/GuideScreenFullText700aTest.kt.
+- Hardware NOT TESTED: HW-24 700a (KONKR, ~2 min).
+
 # Update 699a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the achievement hub screens show their text whole
 - CI first: Verify 310 on ab8dd64 (698a): GREEN.
 - HubScreens.kt (achievement hub): 5 TRUNCATE places -> 0. Progress rows (game title, 2 lines; progress line and its note such

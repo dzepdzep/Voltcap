@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 03:20 UTC, 700a (cloud, v0.6.74 turn):** Verify 310 on a08de4f (699a) RED on both runners from Maven Central 429
+only (every failure a Robolectric artifact download; no code failure) - rerun is the lock commit 3d003e4's run. P2 left alone
+(29-layout package owner review pending). P13 rule 11: GuideScreen.kt (guide title, source line, contents section titles,
+guide picker rows) 5 TRUNCATE -> 0 via FullText (reserve = false). GuideScreenFullText700aTest. TRUNCATE 103 -> 98. Cloud
+compile BLOCKED twice by Maven 429 - CI is the first compile. HW-24 700a (KONKR).
+NEXT: check Verify 310 on this push FIRST (a real compile / test failure in GuideScreen or the new test -> fix; 429 again ->
+infra, carry on). Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next
+TRUNCATE files (4 each: RaSocialUi, HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the
+owner picks.
+
 **23 Nov 02:20 UTC, 699a (cloud, v0.6.74 turn):** Verify 310 on ab8dd64 (698a) GREEN. P2 left alone (29-layout package owner review
 pending). P13 rule 11: HubScreens.kt (achievement hub progress rows + recent-unlocks timeline) 5 TRUNCATE -> 0 via FullText
 (reserve = false). HubScreensFullText699aTest. TRUNCATE 108 -> 103. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 699a (KONKR).

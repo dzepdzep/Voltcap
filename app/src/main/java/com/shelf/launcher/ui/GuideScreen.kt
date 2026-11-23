@@ -51,7 +51,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -188,15 +187,15 @@ internal fun GuideScreen(
                 .padding(horizontal = 20.dp, vertical = 14.dp)
         ) {
             // ---- header ----
-            Text(
+            FullText(
                 guide?.title ?: ("Guide · " + gameDisplayName(game.name)),
-                color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis
+                color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                maxLines = 2, reserve = false
             )
             if (guide != null) {
-                Text(
+                FullText(
                     listOfNotNull(guide.attribution.takeIf { it.isNotBlank() }, guide.sourceUrl).joinToString(" · "),
-                    color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                    color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -318,12 +317,12 @@ internal fun GuideScreen(
                                         .padding(start = (8 + 8 * (s.level - 1).coerceIn(0, 4)).dp, end = 8.dp, top = 7.dp, bottom = 7.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
+                                    FullText(
                                         (if (isCur) "● " else if (vis == SectionVisibility.COLLAPSED) "▸ " else "") + s.title.ifBlank { "Introduction" },
                                         color = if (isCur) ShelfTheme.accent else ShelfTheme.colors.textPrimary,
-                                        fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                                        fontSize = 12.sp,
                                         fontWeight = if (isCur) FontWeight.Bold else FontWeight.Normal,
-                                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                        maxLines = 2, reserve = false,
                                         modifier = Modifier.alpha(if (vis == SectionVisibility.TITLE_ONLY) 0.6f else 1f)
                                     )
                                 }
@@ -414,8 +413,8 @@ private fun GuideRow(title: String, subtitle: String?, onClick: () -> Unit) {
         Modifier.fillMaxWidth().clip(shape).background(ShelfTheme.colors.surfaceRaised).shelfClickable(shape) { onClick() }
             .padding(horizontal = 12.dp, vertical = 9.dp)
     ) {
-        Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        subtitle?.let { Text(it, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis) }
+        FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+        subtitle?.let { FullText(it, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false) }
     }
 }
 

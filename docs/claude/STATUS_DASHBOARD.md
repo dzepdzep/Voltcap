@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 699a · 2026-11-23 02:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on ab8dd64 (698a): GREEN · effort: medium
+**1. LATEST UPDATE** - 700a · 2026-11-23 03:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on a08de4f (699a): red from Maven Central rate limiting (download errors only, no code failure) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The achievements hub no longer cuts text with '...': game titles, progress lines and notes like 'Mastered', and recently unlocked achievement names with their game and console shrink a little and then slide so they can be read whole.
+**2. WHAT CLAUDE JUST FIXED** - The game guide screen no longer cuts text with '...': the guide's title and source, the section names in its contents list, and guide names in the guide picker shrink a little and then slide so they can be read whole.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: GuideScreen
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: RaSocialUi
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
