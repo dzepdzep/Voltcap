@@ -1,3 +1,13 @@
+# Update 711a (23 Nov 2026, cloud run) - rule 11: Game Journey timeline shows its text whole
+- CI first: Verify 310 on 838af2e (710a) GREEN.
+- P2 finish still in the live session on claude/v0674-native-pages (pushes 13:23-13:57 UTC) - left alone; Tasks 1-4 wait for P2.
+- GameJourneyUi.kt (GameJourneyTimeline: game popup journey + Hero carousel journey): 3 TRUNCATE places -> 0. Step title
+  (2 lines), date (1 line) and detail (3 lines, was 2) go through FullText (wrap, shrink readably, then slide; reserve = false).
+- Test: GameJourneyFullText711aTest 2/2 PASS in the cloud (fails on 710a: 3 Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 75 -> 72.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GameJourneyUi.kt, app/src/test/java/com/shelf/launcher/ui/GameJourneyFullText711aTest.kt.
+- Hardware NOT TESTED: HW-24 711a (KONKR, with 710a).
+
 # Update 710a (23 Nov 2026, cloud run) - rule 11: game window performance rows show their text whole
 - CI first: Verify 310 on 8f1ac4f (owner backlog 23 Nov 13:32) GREEN.
 - P2 finish items (owner 13:32) left to the live session on claude/v0674-native-pages (pushes running there); Tasks 1-4 wait for P2.

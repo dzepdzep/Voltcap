@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 14:25 UTC, 711a (cloud):** Verify 310 on 838af2e (710a) GREEN. P2 finish still in the live session on
+claude/v0674-native-pages (pushes to 13:57 UTC) - left alone. Filler: P13 rule 11 GameJourneyUi.kt 3 TRUNCATE -> 0 (journey step
+title / date / detail FullText). GameJourneyFullText711aTest 2/2 PASS (cloud compiled). TRUNCATE 75 -> 72. HW-24 711a (KONKR).
+NEXT: check Verify 310 on this push FIRST. If the live session has finished P2 (backlog 0000000 P2 items DONE / handed over):
+start TASK 1 (Row-position collisions audit). Otherwise P13 next TRUNCATE file (RetroAchievementsDialog 3, DialogChrome 3), one
+per run with its test.
+
 **23 Nov 13:30 UTC, 710a (cloud):** Verify 310 on 8f1ac4f (owner backlog 13:32) GREEN. Owner order 13:32: P2 finish (P2-a..f) is in
 the live session on claude/v0674-native-pages (pushes 13:23) - left alone; Tasks 1-4 start after P2. Filler: P13 rule 11
 GameWindow.kt 3 TRUNCATE -> 0 (perf rows FullText; story preview qa-ok, Details page whole). GameWindowFullText710aTest 3/3 PASS

@@ -77,6 +77,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with a long name (undo strip "Changed: ..." shrinks, then slides), open the tile editor and pick a tile with a long name (2 lines,
   then shrink, then slide) and look at captions with spaces - never an ellipsis; Undo / swipe-away, D-pad + touch still work.
   Screenshots. Unit evidence only (QuickSettingsFullText709aTest, cloud compiled + PASS; static TRUNCATE 81 -> 78).
+- Also (711a, rule 11, dev line 711a or later, ~1 min, KONKR x1.3 + x1.0, with 710a): a game with RetroAchievements progress -
+  game popup's Journey and the Hero carousel journey: every step's title, date and detail whole (wrap, shrink, then slide),
+  never an ellipsis; nothing overlaps the rail. D-pad + touch still work. Screenshots.
+  Unit evidence only (GameJourneyFullText711aTest, cloud compiled + PASS; static TRUNCATE 75 -> 72).
 - Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
   (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
   page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.
