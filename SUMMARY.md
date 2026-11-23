@@ -1,3 +1,17 @@
+# Update 706a (23 Nov 2026, cloud run, CI fix) - CI and cloud runs fetch Maven Central artifacts from Google's mirror
+- CI first: Verify 310 on 503d679 (705a) RED on both runners - Maven Central answered 429 to all three attempts (60 s / 120 s
+  retries) for Robolectric's nativeruntime-dist-compat jar. App + tests COMPILED on both (compileDebugUnitTestKotlin ran); no
+  test ran. Not a code failure. Maven Central refused this cloud container too (429 on the same .pom); Google's Maven Central
+  mirror served it (200).
+- Fix (CI / cloud only, off on the owner's PC): env VOLTCAP_MAVEN_MIRROR. settings.gradle.kts asks that mirror before
+  mavenCentral() (plugins and dependencies; a 404 there still falls back to Maven Central); app/build.gradle.kts passes it to
+  Robolectric's own android-all fetch (robolectric.dependency.repo.url). verify-update-310.yml sets it to
+  https://maven-central.storage-download.googleapis.com/maven2/. Unset = the old repositories exactly.
+- Evidence (cloud, mirror on): :app:compileDebugUnitTestKotlin BUILD SUCCESSFUL; CrossTrophiesFullText705aTest 2/2 (705a's
+  test, its first run anywhere) + AchProgressCount681yTest 5/5 (Robolectric) PASS. Static checks PASS (TRUNCATE 86).
+- Files to copy: settings.gradle.kts, app/build.gradle.kts, .github/workflows/verify-update-310.yml (project_copy paths).
+- Hardware: none needed.
+
 # Update 705a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the cross-bar trophy list shows achievement text whole
 - CI first: Verify 310 on f54a2f9 (704a) GREEN on both runners.
 - CrossTrophies.kt: 4 TRUNCATE places -> 0. Each row's achievement title (slides when long; no auto-fit, its size grows with

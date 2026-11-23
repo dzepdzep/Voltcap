@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 09:20 UTC, 706a (cloud, CI fix):** Verify 310 on 503d679 (705a) RED on both runners from Maven Central 429 only (3 attempts
+each; app + tests compiled). VOLTCAP_MAVEN_MIRROR (Google's Maven Central mirror, CI / cloud only): settings.gradle.kts asks it
+before mavenCentral(); Robolectric's android-all fetch too. Cloud with the mirror: compile + 705a test 2/2 + 681y 5/5 PASS.
+Cloud runs: export VOLTCAP_MAVEN_MIRROR=https://maven-central.storage-download.googleapis.com/maven2/ (CLOUD_DEVELOPMENT.md).
+NEXT: check Verify 310 on this push FIRST (red from the mirror itself -> fix; 429 gone = confirmed). Then the v0.6.74 / P2
+alternation (next v0.6.74 turn: rule 11 HomeEditLegend; same mirror env for emulator-qa-trial.yml / qa.yml if they 429).
+
 **23 Nov 08:20 UTC, 705a (cloud, v0.6.74 turn):** Verify 310 on f54a2f9 (704a) GREEN on both runners. P2 left alone (29-layout
 package owner review pending). P13 rule 11: CrossTrophies.kt (trophy row titles - slide, no auto-fit since the size grows with
 focus; focused description 2 lines + meta line; comments panel title) 4 TRUNCATE -> 0 via FullText (reserve = false).

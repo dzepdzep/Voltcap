@@ -14,6 +14,11 @@ on:
 permissions:
   contents: read
 
+# (706a: Maven Central answered 429 to all three attempts on both runners (503d679). Google's Maven Central mirror is asked
+# first by Gradle (settings.gradle.kts) and by Robolectric's own android-all fetch (app/build.gradle.kts); 404 falls back.)
+env:
+  VOLTCAP_MAVEN_MIRROR: https://maven-central.storage-download.googleapis.com/maven2/
+
 concurrency:
   group: android-verify-${{ github.ref }}
   cancel-in-progress: true

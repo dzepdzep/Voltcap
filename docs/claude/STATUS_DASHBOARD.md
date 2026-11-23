@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 705a · 2026-11-23 08:20 UTC · commit `this update (being pushed)` · CI: Verify 310 on f54a2f9 (704a): green on both runners · effort: medium
+**1. LATEST UPDATE** - P2-23b · 2026-11-23 09:47 UTC · commit `P2 f17dfb8 / 5e7c327 (branch claude/v0674-native-pages)` · CI: Verify f17dfb8: ubuntu-24.04 green, ubuntu-latest Maven 429 (rerun) · effort: high
 
-**2. WHAT CLAUDE JUST FIXED** - The cross-bar trophy list now shows achievement titles, descriptions and the comments heading in full (they shrink or slide instead of ending in '...').
+**2. WHAT CLAUDE JUST FIXED** - Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
 
 **3. LAST 24 HOURS** (most important first)
+- **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
+- **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 - **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 - **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
 - **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
-- **Docs** (P2-22a): Native pages: an audit showed only 18 layouts truly draw their own Details, Achievements and Options (all on the P2 feature branch); 12 more have their own frame around the shared page and no longer count as done, so the old 13/53 is replaced by 18 implemented, 14 verified on both handhelds at both text sizes, 0 visually approved, 0 released. Your 22 Nov functional acceptance of batches 1-3 is recorded separately from visual approval.
-- **App** (689a): The full-screen game details window (popup style Classic) no longer cuts any text with '...': the game's name, the info line, last session, the stats, the tabs, the trophy line and achievement names now wrap, shrink a little or slide so everything can be read, and achievement comments show in full. Found on the way: a medium-length game summary could be cut off with no 'More' button to read the rest - it now shows whole.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: P2: owner visual review of the 29-layout package + TV room decision (D367); Rule 11 full text: HomeEditLegend
+**5. WORKING ON NEXT** - now: Owner: visual review of the before/after package (12 layouts); then: Coverflow details: reading space decision; Page-change frame audit (on-device capture)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -234,8 +234,8 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 29 own designs, 0 visually approved (review package published 23 Nov). TV room: Play changes width between its pages (D367, needs a decision). Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.
-- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). impl = layouts drawing their own Details + Achievements + Options rows. device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; runs gk10 gr10 gk13 gr13 hk10 hr10 hk13 on 1ada6c8 / b316b8f / 9192a89; 0 launches, 0 crashes, restore diff 0). Play same size and place on every page: 28 of 29 (TV room D367).
+- Remaining / blocked: 29 own designs, 0 visually approved. Owner review 23 Nov 07:28: 16 close to approval (unchanged), 12 changed in 682ag (TV option 2, Spotlight, Arctic, Arcade, Icon bar + 7 polish) - before/after package published 23 Nov; Coverflow details reading space and the page-change frame audit still open. Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; 22-23 Nov runs on 1ada6c8 / b316b8f / 9192a89); the 12 layouts changed in 682ag re-walked at x1.3 on both handhelds (kag13 / rag13 d29e05c, kbg13 / rbg13 f17dfb8; 0 launches, 0 crashes, restore diff 0) - x1.0 of the changed 12 not re-run on hardware. Play same size and place on every page: 29 of 29 (TV fixed f17dfb8).
 
 **Physical pickup / return animations**
 - Total: 14
