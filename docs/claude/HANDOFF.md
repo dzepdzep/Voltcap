@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 04:30 UTC, 701a (cloud, v0.6.74 turn):** Verify 310 on 0b13a64 (700a) RED on both runners from Maven Central 429 only
+(Robolectric nativeruntime jar); compileDebugKotlin + compileDebugUnitTestKotlin PASSED in CI. P2 left alone (29-layout package
+owner review pending). P13 rule 11: RaSocialUi.kt (friend award line, Achievement of the Week title / description / game line)
+4 TRUNCATE -> 0 via FullText (reserve = false). RaSocialFullText701aTest. TRUNCATE 98 -> 94. Cloud compile BLOCKED twice by
+Maven 429 - CI is the first compile. HW-24 701a (KONKR). Note: three Verify runs in a row have lost their test step to Maven 429;
+if it keeps happening, a CI-only item is worth it (a dependency cache / retry for the Robolectric runtime jars - never skip tests).
+NEXT: check Verify 310 on this push FIRST (a real compile / test failure in RaSocialUi or the new test -> fix; 429 again ->
+infra, carry on). Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next
+TRUNCATE files (4 each: HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 03:20 UTC, 700a (cloud, v0.6.74 turn):** Verify 310 on a08de4f (699a) RED on both runners from Maven Central 429
 only (every failure a Robolectric artifact download; no code failure) - rerun is the lock commit 3d003e4's run. P2 left alone
 (29-layout package owner review pending). P13 rule 11: GuideScreen.kt (guide title, source line, contents section titles,

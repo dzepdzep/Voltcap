@@ -63,6 +63,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   with an app whose name is long playing sound: the app name reads whole (shrink, then slide) beside its volume - never an
   ellipsis; the volume bars stay put. Screenshots. Unit evidence only (WidgetBoardFullText696aTest, static TRUNCATE 120 -> 118;
   not compiled in the cloud).
+- Also (701a, rule 11, dev line 701a or later, ~2 min, KONKR x1.3 + x1.0): Settings > Profile with a RetroAchievements
+  account - the friends card with a friend whose last award has a long title + console, and the Achievement of the Week card
+  with a long title / description / game · console: every text reads whole (shrink, then slide) - never an ellipsis; cards keep
+  their spacing; D-pad + touch reach the weekly card. Screenshots. Unit evidence only (RaSocialFullText701aTest, static TRUNCATE
+  98 -> 94; NOT cloud compiled - CI first compile).
 - Also (700a, rule 11, dev line 700a or later, ~2 min, KONKR x1.3 + x1.0): game guide screen - a game whose guide has a
   long title and long attribution / source URL, a deep contents list with long section titles, and the guide picker with
   long guide titles / subtitles: every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing;
