@@ -1,5 +1,31 @@
 # VoltCap handoff (read first, update last)
 
+**18 Nov ~10:45 Berlin - OWNER DECISIONS 08:11 + NEW RULE 09:44 (newest; before everything below).**
+- RESCAN FIX (`claude/v0674-rescan-fix`, 0c49f03, Verify 310 GREEN on 3ec7e45): stays on its branch until HW-25 passes. HW-25
+  hardware: KONKR (GT78, Android 12, 36-game QA library) + RP Classic (Android 14) rescan681r.sh 18/18 PASS each (only game of a
+  console deleted -> gone, console no category, All selected; twice; restart; one of two; whole game folder; re-added same
+  identity; QA-app crashes 0). Your own collections kept empty and refilled on re-add (unit). SD card physically out: NOT TESTED
+  (owner "not now") - rescan681r.sh run TAG 453E-4658 on the RP Classic waits for the card. No console-category feature invented.
+  Ready for the owner's merge GO apart from that one step.
+- P2 (`claude/v0674-native-pages`, Verify 310 GREEN eb3eb91): batch 1 NOT visually approved. RELEASE-BLOCKING Play defect found
+  and fixed (682a): an A within ~30-200 ms of an L1/R1 turn onto Details started the game on all 5 layouts - 300 ms page-turn
+  guard, NoStrayPlay682aTest 10/10 (fails without the guard). KONKR popup gate (pop529 + popclip, build qa-682c-2ca480f-ci)
+  x1.0 PASS 5/5 and x1.3 PASS 5/5, 0 launches. Armed-confirmation capture: review 44264372593's "armed" shots were the Info page
+  (script pressed the B Back hint) - p2review 682f fixed (A only on a focused "Hide from library", claimed only from the dump);
+  re-review 44272567211 running. TV room's armed state still NOT captured. Next P2 layouts only after the owner sees batch 1.
+- 682e-i UPDATE (owner: "whatever looks best" at the list's end -> exact alignment kept; "yes, all three"): Bar (tab on Play's
+  column, was 2 dp vs 6), Library (lit tab leads its strip after L2, WholeChipRow leadFocused), Dash (labels + Play on one inner
+  column DASH_INNER, KONKR had measured -8 dp) done on `claude/v0674-play-anchor` a4382ac (Verify 310 GREEN). KONKR kc682
+  anchorcheck PASS 6/6 (Dash, Bar, Classic x All / Xbox 360); Library adapted (review by eye); Tiles / Hero tiles no home Play.
+  P2 682h: an armed / grown native row now brings itself into view (confirmation line was cut; NativeConfirm681Test fails
+  without, 8/8 with). Emulator re-review 44280831400 running.
+- NEW SYSTEM RULE 682e (owner 09:44): the home's Play button and the selected category chip share one anchor - own branch
+  `claude/v0674-play-anchor` (cd5c921, Verify 310 GREEN). HomeAnchor.kt; anchorcheck.py; anchors682.sh before/after from one
+  build (voltcap_test_anchor_off, QA only). KONKR all 53 layouts x All / Xbox 360: CLASSIC before -8 dp / +522 dp, after 0.0 /
+  0.0 (PASS); every layout that shows the shared header + chip row gets it. Own Play / chips (rule not reached, by eye):
+  CINEMA, CUSTOM already one column; BAR, DASH small offsets; LIBRARY selected chip runs to the far right (needs the adapted
+  rule); ARTLIB has no chip row (n/a). Trade-off for the owner: the last console selected leaves it alone at Play's edge.
+
 **17 Nov ~23:10 Berlin - OWNER: LIBRARY RESCAN BUG 681r (data integrity - newest, before everything below).** A deleted game
 that was the only one of its console stayed listed after Rescan library, and the console stayed a category. Focused v0.6.74 fix
 on branch `claude/v0674-rescan-fix` (from this line at c71c8cb): RomScanner.rootState (OK / GONE on readable storage /
@@ -46,6 +72,295 @@ never disturb apps running on connected devices; dashboard / matrix / handoff af
 hardware reruns without need; experiments on separate v0.6.74 branches; interrupt the owner only for design decisions,
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
+
+**23 Nov 08:20 UTC, 705a (cloud, v0.6.74 turn):** Verify 310 on f54a2f9 (704a) GREEN on both runners. P2 left alone (29-layout
+package owner review pending). P13 rule 11: CrossTrophies.kt (trophy row titles - slide, no auto-fit since the size grows with
+focus; focused description 2 lines + meta line; comments panel title) 4 TRUNCATE -> 0 via FullText (reserve = false).
+CrossTrophiesFullText705aTest. TRUNCATE 90 -> 86. Cloud compile BLOCKED twice by Maven 429 - CI is the first compile. HW-24 705a.
+NEXT: check Verify 310 on this push FIRST (a real compile error in CrossTrophies - e.g. weight() scope - or the new test -> fix).
+Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE file
+(HomeEditLegend 2) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 07:20 UTC, 704a (cloud, CI fix):** Verify 310 on 0288490 (703a): ubuntu-24.04 GREEN (whole suite), ubuntu-latest RED
+from 1134 tests that each failed on Robolectric's own 429 fetch of android-all-instrumented ("There were failing tests" -> 702a
+still called it code). retry_infra.py now counts failed tests while streaming: infra only when every one is a 429 / 5xx fetch
+and the count matches Gradle's totals. Selftest +3 (fail on the old script), test_qa 216/216. No app code.
+NEXT: check Verify 310 on this push FIRST (a 429 run must now print "Retrying after a package-server failure"; a real red ->
+fix). Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files
+(CrossTrophies 4, HomeEditLegend 2) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 06:20 UTC, 703a (cloud, v0.6.74 turn):** Verify 310 on 628d827 (702a) GREEN. P2 left alone (29-layout package owner
+review pending). P13 rule 11: HomeEditSession.kt (home edit inspector widget name + scope line, widget list names + status
+lines) 4 TRUNCATE -> 0 via FullText (reserve = false). HomeEditFullText703aTest. TRUNCATE 94 -> 90. Cloud compile PASSED;
+test run blocked by Maven 429 - CI runs it. HW-24 703a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in HomeEditSession / the new test -> fix; a 429 must show the 702a retry). Then
+P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files
+(CrossTrophies 4, HomeEditLegend 2) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 05:20 UTC, 702a (cloud, CI fix):** Verify 310 on 9073da2 (701a): ubuntu-latest GREEN (whole suite), ubuntu-24.04
+Maven 429 only. Root cause of the four red runs: retry_infra.py ruled "> Task :app:testDebugUnitTest FAILED" a code failure
+even when its only cause was the 429 download, so no retry ever ran. Fixed: a failed task is infra only when every Gradle
+"What went wrong" block is a 429 / 5xx download; selftest +2 (fails on the old script), test_qa 213/213. No app code.
+NEXT: check Verify 310 on this push FIRST - if a 429 appears, the log must now show "Retrying after a package-server failure"
+(if it does not, look at the tail kept / the block parser). Then P2 turn once the owner has reviewed the 29-layout package
+(P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (4 each: HomeEditSession, CrossTrophies) - one per run with its
+FullText test; or H12 once the owner picks.
+
+**23 Nov 04:30 UTC, 701a (cloud, v0.6.74 turn):** Verify 310 on 0b13a64 (700a) RED on both runners from Maven Central 429 only
+(Robolectric nativeruntime jar); compileDebugKotlin + compileDebugUnitTestKotlin PASSED in CI. P2 left alone (29-layout package
+owner review pending). P13 rule 11: RaSocialUi.kt (friend award line, Achievement of the Week title / description / game line)
+4 TRUNCATE -> 0 via FullText (reserve = false). RaSocialFullText701aTest. TRUNCATE 98 -> 94. Cloud compile BLOCKED twice by
+Maven 429 - CI is the first compile. HW-24 701a (KONKR). Note: three Verify runs in a row have lost their test step to Maven 429;
+if it keeps happening, a CI-only item is worth it (a dependency cache / retry for the Robolectric runtime jars - never skip tests).
+NEXT: check Verify 310 on this push FIRST (a real compile / test failure in RaSocialUi or the new test -> fix; 429 again ->
+infra, carry on). Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next
+TRUNCATE files (4 each: HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 03:20 UTC, 700a (cloud, v0.6.74 turn):** Verify 310 on a08de4f (699a) RED on both runners from Maven Central 429
+only (every failure a Robolectric artifact download; no code failure) - rerun is the lock commit 3d003e4's run. P2 left alone
+(29-layout package owner review pending). P13 rule 11: GuideScreen.kt (guide title, source line, contents section titles,
+guide picker rows) 5 TRUNCATE -> 0 via FullText (reserve = false). GuideScreenFullText700aTest. TRUNCATE 103 -> 98. Cloud
+compile BLOCKED twice by Maven 429 - CI is the first compile. HW-24 700a (KONKR).
+NEXT: check Verify 310 on this push FIRST (a real compile / test failure in GuideScreen or the new test -> fix; 429 again ->
+infra, carry on). Then P2 turn once the owner has reviewed the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next
+TRUNCATE files (4 each: RaSocialUi, HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the
+owner picks.
+
+**23 Nov 02:20 UTC, 699a (cloud, v0.6.74 turn):** Verify 310 on ab8dd64 (698a) GREEN. P2 left alone (29-layout package owner review
+pending). P13 rule 11: HubScreens.kt (achievement hub progress rows + recent-unlocks timeline) 5 TRUNCATE -> 0 via FullText
+(reserve = false). HubScreensFullText699aTest. TRUNCATE 108 -> 103. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 699a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in HubScreens / the new test -> fix). Then P2 turn once the owner has reviewed
+the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (5: GuideScreen; then 4 each: RaSocialUi,
+HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 01:20 UTC, 698a (cloud, v0.6.74 turn):** Verify 310 on f1050e8 (697a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra. P2 left alone (29-layout package owner review
+pending). P13 rule 11: PlayerPages.kt (music player pages: Spotify hint, playlist names, lyric lines) 5 TRUNCATE -> 0 via FullText
+(reserve = false). PlayerPagesFullText698aTest. TRUNCATE 113 -> 108. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 698a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in PlayerPages / the new test -> fix). Then P2 turn once the owner has reviewed
+the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (5 each: HubScreens, GuideScreen; then 4 each:
+RaSocialUi, HomeEditSession, CrossTrophies) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 00:20 UTC, 697a (cloud, v0.6.74 turn):** Verify 310 on 47ebe9b (696a) / ff677c5: ubuntu-latest GREEN, ubuntu-24.04
+Maven 429 infra. P2 left alone (29-layout package owner review pending). P13 rule 11: QuickMenuActivity.kt (in-game quick menu: achievements
+tab + Bluetooth device names) 5 TRUNCATE -> 0 via FullText (reserve = false). QuickMenuFullText697aTest. TRUNCATE 118 -> 113.
+Cloud compile PASSED; test run blocked by Maven 429 - CI runs it. HW-24 697a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in QuickMenuActivity / the new test -> fix). Then P2 turn once the owner has reviewed
+the 29-layout package (P2-23a; TV room D367); v0.6.74: P13 next TRUNCATE files (5 each: PlayerPages, HubScreens, GuideScreen) - one per run with its FullText test;
+or H12 once the owner picks.
+
+**22 Nov 23:20 UTC, 696a (cloud, v0.6.74 turn):** Verify 310 on 492265c (695a): ubuntu-latest GREEN (full suite), ubuntu-24.04
+Robolectric jar-transform infra. P2 left alone (batch 1 owner review pending). P13 rule 11: WidgetBoard.kt (sound widget app names)
+2 TRUNCATE -> 0 via FullText (reserve = false). WidgetBoardFullText696aTest. TRUNCATE 120 -> 118. NOT compiled in the cloud (Maven 429)
+- CI first compile. HW-24 696a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in WidgetBoard / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files (5 each: QuickMenuActivity, PlayerPages, HubScreens, GuideScreen) - one per run with its
+FullText test; or H12 once the owner picks.
+
+**22 Nov 22:20 UTC, 695a (cloud, v0.6.74 turn):** Verify 310 on 6e8e88b (694a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
+(re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: TwinDesk.kt (Twin desk home) 4 TRUNCATE -> 0 via
+FullText (reserve = false). TwinDeskFullText695aTest. TRUNCATE 124 -> 120. NOT compiled in the cloud (Maven 429) - CI first compile. HW-24 695a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in TwinDesk / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - WidgetBoard (2), then the next file static_checks lists - one per run with its FullText test; or H12 once the owner picks.
+
+**22 Nov 21:20 UTC, 694a (cloud, v0.6.74 turn):** Verify 310 GREEN on 24d51ab (693a, both runners). P2 left alone (batch 1 owner
+review pending). P13 rule 11: RowInfoPanel.kt (home row info panel + news card) 5 TRUNCATE -> 0 via FullText (reserve = false).
+RowInfoPanelFullText694aTest. TRUNCATE 129 -> 124. NOT compiled in the cloud (Maven 429) - CI first compile. HW-24 694a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in RowInfoPanel / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - TwinDesk (4), WidgetBoard - one per run with its FullText test; or H12 once the owner picks.
+
+**22 Nov 20:20 UTC, 693a (cloud, v0.6.74 turn):** Verify 310 on 74035e5 (692b): ubuntu-latest GREEN, ubuntu-24.04 infra (Robolectric
+jar transform). P2 left alone (batch 1 owner review pending). P13 rule 11: MixerActivity.kt (volume mixer) 7 TRUNCATE -> 0 via
+FullText (reserve = false). MixerFullText693aTest. TRUNCATE 136 -> 129. Cloud compile PASSED; test run blocked by Maven 429 - CI runs it.
+NEXT: check Verify 310 on this push FIRST (red in MixerActivity / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - RowInfoPanel (5), TwinDesk (4) - one per run with its FullText test; or H12 once the owner picks.
+
+**22 Nov 19:20 UTC, 692b (cloud, v0.6.74 turn):** Verify 310 on 956b1d8 RED on both runners: GameCardFullText692aTest 2 of 3
+failed (test harness slip - its `[^)]*` regex stopped at `copy(alpha = ...)` / `if (veryTight)`; GameCard.kt itself is right, the
+rest of the suite 2734 passed). Fixed the matcher (bounded to one FullText call, same assertions; Python mirror 1/1/1). Cloud compile
+blocked (Maven 429). No app change.
+NEXT: check Verify 310 on this push FIRST (still red in GameCardFullText692aTest -> fix the test again). Then P2 turn if the owner
+has reviewed batch 1; v0.6.74: P13 next TRUNCATE files - MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one per run.
+
+**22 Nov 18:30 UTC, 692a (cloud, v0.6.74 turn):** Verify 310 on 673012d (691a): ubuntu-latest GREEN, ubuntu-24.04 Maven 429 infra
+(re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: GameCard.kt 7 TRUNCATE -> 0 via FullText
+(reserve = false). GameCardFullText692aTest. TRUNCATE 143 -> 136. NOT compiled in the cloud (plugin resolution blocked) - CI first
+compile. HW-24 692a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in GameCard / the new test -> fix). Then P2 turn if the owner has reviewed batch 1;
+v0.6.74: P13 next TRUNCATE files - MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one file per run with its FullText test;
+or H12 once the owner picks.
+
+**22 Nov 17:30 UTC, 691a (cloud, v0.6.74 turn):** Verify 310 on c166ca7 (690a): ubuntu-latest GREEN (690a compiles + passes),
+ubuntu-24.04 Maven 429 infra (re-run requested). P2 left alone (batch 1 owner review pending). P13 rule 11: TwinIcons.kt 7 TRUNCATE
+-> 0 via FullText (reserve = false). TwinIconsFullText691aTest. TRUNCATE 150 -> 143. NOT compiled in the cloud (Maven 429 x2) - CI
+first compile. HW-24 691a (KONKR).
+NEXT: check Verify 310 on this push FIRST (red in TwinIcons / the new test -> fix). Then P2 turn if the owner has reviewed batch 1;
+v0.6.74: P13 next TRUNCATE files - GameCard (7), MixerActivity (7), RowInfoPanel (5), TwinDesk (4) - one file per run with its
+FullText test; or H12 once the owner picks.
+
+**22 Nov 16:40 UTC, 690a (cloud, v0.6.74 turn):** Verify 310 GREEN on 919d362 (689a). P2 left alone (batch 1 owner review still
+pending). P13 rule 11: SecondScreenVolt.kt (Volt second screen) 8 TRUNCATE -> 0 via FullText (reserve = false).
+SecondScreenVoltFullText690aTest. TRUNCATE 158 -> 150. NOT compiled in the cloud (Maven 429 x2) - CI is the first compile. HW-26 (Thor).
+NEXT: check Verify 310 on this push FIRST (red in SecondScreenVolt / the new test -> fix). Then P2 turn if the owner has reviewed
+batch 1; v0.6.74: P13 next TRUNCATE files - TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel (5) - one file per run
+with its FullText test; or H12 once the owner picks.
+
+**22 Nov 15:50 UTC, 689a (cloud, v0.6.74 turn):** Verify 310 on ce88244 (688b): ubuntu-latest GREEN (TV x1.3 guard passes),
+ubuntu-24.04 Maven 429 infra (re-run requested). H16 is now guarded on 53/53; D357 + item 6 done earlier; H12 waits on the owner's
+reveal choice -> P13 rule 11: GameDetailsOverlay.kt (Classic details window) 13 TRUNCATE -> 1 marked (FullText; comments wrap);
+summary no longer cut without a More chip. GameDetailsFullText689aTest 3/3 (cloud compiled). TRUNCATE 171 -> 158. HW-24 689a.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (leave a live session's P2
+branch alone); v0.6.74: P13 next TRUNCATE files - SecondScreenVolt (8), TwinIcons (7), GameCard (7), MixerActivity (7), RowInfoPanel
+(5) - one file per run with its FullText test; or H12 once the owner picks.
+
+**22 Nov 14:40 UTC, 688a (cloud, v0.6.74 turn):** Verify 310 GREEN on b44e5e0 (687a). H16: TV room added to WindowWordsSurvey682Test
+(NEXT_688; the test sets TvScreen.rect to the set's screen at KONKR size) + tvWindowOpensOnTheSet. 53/53 layouts listed. NOT
+compiled in the cloud (Maven Central 429 x2) - CI is the first compile.
+688b (same run): CI on b257ffe compiled it; TV x1.3 otherPages found a REAL cut (Achievements page on the set: 'Set order' 20 px,
+names 80 px) -> WindowTrophies narrow form < 240 dp (order on its own line, points under a 28 dp badge). Uncompiled in the cloud.
+NEXT: check Verify 310 on 688b FIRST. Red in WindowWordsSurvey682Test[TV ...] = either a harness slip (fix the test) or a real TV
+window cut (fix the window, keep the guard). Then P2 turn if the owner has reviewed batch 1 (a live session pushed P2 batch 3 at
+13:34 UTC - leave that branch to it); v0.6.74: item 5 badgecheck (D357) if still open, then H12.
+
+**22 Nov 13:50 UTC, 687a (cloud, v0.6.74 turn):** fcb4998's Verify 310 red = infra (one runner's dependency transform failed,
+no test ran; the other runner GREEN); cbf0226 (686a) Verify 310 was still running. H16: Terminal, Arcade, Arctic, Artlib, Custom +
+the shared-scene layouts Grid, Console stack, Coverflow details, Twin desk under all four window guards x1.0 + x1.3 (NEXT_687) -
+all clean, no app change. 52 of 53 layouts guarded (TV room left: needs tvRect).
+NEXT: check Verify 310 on cbf0226 and this push FIRST (red -> fix). Then P2 turn if the owner has reviewed batch 1 (else skip);
+v0.6.74: H16 TV room window (a test harness that opens it on a tvRect), then item 5 badgecheck (D357) if still open, then H12.
+
+**22 Nov 12:20 UTC, 686a (cloud, v0.6.74 turn):** Verify 310 GREEN on 5e76521 (685a). P2 left alone (a live session pushed the P2
+branch 12:03 UTC; its Verify 310 there is red - that session's to fix). H16: Orbit, Airy, Blades, Camera, Magazine, Shop under all
+four window guards x1.0 + x1.3 (NEXT_686) - Orbit x1.3 key label "ACHIEVEMENTS" broke inside the word: fixed (odLabelFit,
+OrbitKeyLabel686Test); Blades' turned edge name was a guard false positive - parent-clip guard now transform-aware (turned
+fixtures in ParentClipProbe683Test). 42 window scenes guarded. HW-24 686a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). If the P2 branch is still red and its last push is > 3 h old with no
+live session, look at its failure (report only; P2 pushes only per NATIVE_PAGES_P2.md). Then v0.6.74: H16 last windows - Terminal,
+Arcade, Arctic, Artlib, Custom, then Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
+**18 Nov 20:55 UTC, 685a (cloud, v0.6.74 turn):** Verify 310 GREEN on 86f15c7 (684a). P2 left alone (batch 1 waits on its
+hardware re-check + the owner's look). H16: Cards, Greencore, Box, File select, Storage, Caseflow under all four window guards
+x1.0 + x1.3 (NEXT_685). Two real findings fixed: Storage's fact label "LAST PLAYED" lost "PLAYED" at x1.3 (labels WholeWordsText);
+Card binder's turned-away front stayed laid out at alpha 0 (no longer composed once away - cardFrontAway derived state;
+CardFront685Test). 36 window scenes guarded. HW-24 685a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Orbit, Airy, Blades, Camera, Magazine, Shop, then Terminal, Arcade, Arctic,
+Artlib, Custom, Grid / TV / Consoles / Twin desk / Cover details if they have their own scene.
+
+**18 Nov 19:55 UTC, 684a (cloud, v0.6.74 turn):** Verify 310 on 5f46185: ubuntu-24.04 GREEN, ubuntu-latest Maven 429 (infra;
+failed job re-run requested). P2 left alone: batch 1's 682s visual pass waits on its hardware re-check + the owner's look (owner
+"2" = batch 1 fixes first); Spotlight is "if wanted". H16: Circuit, Timeline, Shelf, Stacks, Crate, Discs, Cube under all four
+window guards x1.0 + x1.3 (NEXT_684) - Timeline's no-art plate broke "PlayStati / on 2": fixed (SceneNoArt drops a caption that
+cannot stay whole where the console is named beside it; NoArtCaption684Test). 30 window scenes guarded. HW-24 684a (~1 min).
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn only if the owner has reviewed batch 1 / named batch 2's next
+layout (else skip it); v0.6.74: H16 next batch - Cards, Greencore, Box, File select, Storage, Caseflow, then Orbit, Airy, Blades,
+Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
+**18 Nov 18:40 UTC, 683a (cloud, v0.6.74 turn):** Verify 310 GREEN on 4784060 (682u). Live P2 push 18:16 UTC (< 1 h) -> v0.6.74
+turn. H16: Classic, Tiles (Grid shares its Tile card), Dash, Side, Spot, Library added to WindowWordsSurvey682Test (NEXT_683) -
+all four guards x1.0 + x1.3 clean (48 cases, cloud compiled), no app change. 24 window scenes guarded.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the last P2 push (18:16 UTC) is > 1 h old; else H16 next
+batch: Circuit (Chip sheet), Timeline, Shelf family (Index card), Crate (Record sleeve), Discs, Cube - then Cards, Greencore, Box,
+File select, Storage, Caseflow, Orbit, Airy, Blades, Camera, Magazine, Shop, Terminal, Arcade, Arctic, Artlib, Custom.
+
+**18 Nov 17:25 UTC, 682u (cloud, CI fix):** Verify 310 on 4aa599a (682t) RED on both runners: Batch513Test.
+narrowWindowsKeepWholeWords searched Night's old `WholeWordsText(value ?: "—"` text (682t made it `shown`, beside or stacked).
+Guard updated to the same intent (val shown + exactly 2 WholeWordsText(shown ...)); app unchanged. Cloud Gradle blocked (Maven
+429) - CI runs it. NEXT: check Verify 310 on this push FIRST (red -> fix). Then the turn order from 682t's NEXT below (P2 turn if
+the live session's last P2 push - e45fe3e 17:13 UTC - is > 1 h old, else H16 next windows).
+
+**18 Nov 16:50 UTC, 682t (cloud, v0.6.74 turn):** Verify 310 GREEN on 1a66808 (both runners; 682s page guard clean). Live P2
+push 15:47 UTC (< 1 h) -> v0.6.74 turn. H16 high-priority set (Pocket Classic, Pocket Ribbon, Pocket Quest, Night, Bar) added to
+WindowWordsSurvey682Test (all four guards, x1.0 + x1.3): two real x1.3 word breaks fixed in code - Night SYSTEM value stacks under
+its label when it cannot fit beside it; SceneFactsBody values are WholeWordsText (Pocket ribbon CONSOLE fact). 18 windows clean
+(cloud compile + 144 cases). HW-24 extended (682t). Handheld NOT TESTED.
+NEXT: check Verify 310 on this push FIRST (red -> fix). Then P2 turn if the live session's last P2 push (15:47 UTC) is > 1 h old
+(batch 2 review / batch 3 per NATIVE_PAGES_P2.md, merge the dev line into the P2 branch first); else v0.6.74 turn: H16 next
+windows not yet under the guards (the remaining 35 of 53: e.g. Classic, Tiles, Grid, Dash, Side, Spot, Library, Circuit,
+Timeline, Shelf family, Crate, Discs, Cube...) in batches of ~6, or H12 once the owner picks.
+
+**18 Nov 15:40 UTC, 682s (cloud, v0.6.74 turn):** Verify 310 on fb0cd09: ubuntu-latest GREEN (682m More guard passes, 6 windows
+clean), the other runner Maven infra. Live P2 push 15:13 UTC (< 1 h) -> v0.6.74 turn. H16: WindowWordsSurvey682Test.otherPages -
+Details / Options / Achievements of the 13 windows (Hero .. Cinema; Cross achievements = home column, skipped) under both guards,
+x1.0 + x1.3, real option rows + long achievement titles; opened by the new QA page hook (TestHooks.winPage /
+voltcap_test_winpage, through the window's own callbacks). Cloud compile BLOCKED (Maven x2) - CI compiles first.
+NEXT: check Verify 310 on this push FIRST: compile error / "page did not open" -> fix the test or hook; words / parent finding
+-> a real H16 cut on a page: fix that page (test fails on the old code). Then P2 turn if the live session's last P2 push is
+> 1 h old (batch 2 is implemented by the live session - next is its review / batch 3 per NATIVE_PAGES_P2.md); else v0.6.74 turn:
+H16 next is the owner's high-priority set (Pocket Classic, Pocket Ribbon, Night, Pocket, Bar) under the same three guards, or H12
+once the owner picks.
+
+**18 Nov 14:45 UTC, 682m (cloud, v0.6.74 turn):** Verify 310 GREEN on 4460aa3. Live P2 push 13:59 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.morePage - the 6 of the 13 windows with More (Hero, Hero tiles, Live, Hub, Twin icons, Twin
+showcase) opened, More opened via TestHooks.winMore, both guards on what it reveals, x1.0 + x1.3 (12 cases; 14 skipped, no
+More). Cloud compile BLOCKED (Maven 429 x2) - CI compiles + runs it first. Test only.
+NEXT: check Verify 310 on this push FIRST: compile error / "More did not open" -> fix the test; a words / parent finding -> a
+real H16 cut on a More section: fix the window (test fails on the old code). Then P2 turn (batch 2, Cube first; merge the dev
+line into the P2 branch first) if the live session's last P2 push (13:59 UTC) is > 1 h old. Following v0.6.74 turn: the same
+guards for the windows' own Details / Achievements / Options pages, or H12 once the owner picks.
+
+**18 Nov 13:20 UTC, 682l (cloud, v0.6.74 turn):** Verify 310 GREEN on eec7217. Live P2 push 12:40 UTC (< 1 h) -> v0.6.74 turn.
+H16: WindowWordsSurvey682Test.parentClip - texts of the 13 windows (Hero .. Cinema) checked for a PARENT cutting them (box vs
+visible bounds in the root, beyond the box's empty room; sliding lines / scrolling content excluded). All 26 cases CLEAN (cloud
+compile + run), now a guard; ParentClipProbe683Test 2/2 proves it finds a real cut. Test only, no window changed.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first; merge the dev line into the P2
+branch first) if the live session's last P2 push (12:40 UTC) is > 1 h old - it will be. Following v0.6.74 turn: extend the H16
+survey to the More / second page of each window (the k678n13 sheet compares first / More pages), or the H12 reveal once the
+owner picks NOW / A / B.
+
+**18 Nov 12:40 UTC, 682k (cloud, v0.6.74 turn):** CI: Verify 310 on 16a1388 (682j) RED on code - Batch489Test: StageSlot's
+turned layer lacked flatTextFor3d() (D285). Fixed (AchievementFx.kt); cloud compile OK, Batch489Test 6/6 + RevealSheet682jTest 2/2,
+static PASS. Storyboard read: proposals draw correctly -> docs/evidence/h12_reveal_682k/storyboard.png + owner action (NOW / A / B /
+mix). H12 reveal waits on the owner; nothing wired.
+NEXT: check Verify 310 on this push (red -> fix first). Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push
+(11:54 UTC, 682j focus hand-over) is > 1 h old; else v0.6.74 turn: more H16 windows from the k678n13 sheet (parent clipping / More
+pages, which the survey does not cover) or item 5 badgecheck (D357) if not done.
+
+**18 Nov 11:50 UTC, 682j (cloud, v0.6.74 turn):** CI: Verify 310 on 67b08fd red = Maven 429 on one runner (infra; the other
+ran the full suite GREEN). H12 reveal / trophy redesign comparison: StageSlot now draws a pure pose (RevealPose, voltRevealPose =
+the old formulas, unchanged look); RevealSheet682jTest renders NOW vs proposals A "Trophy flip" / B "Glow burst" (test-only) to
+app/build/reports/tests/h12-reveal/storyboard.png (CI test-results artifact). Cloud compile blocked (Maven 429 x2) - CI compiles.
+NEXT: check Verify 310 on this push (compile / RevealSheet682jTest red -> fix first); if green, download the storyboard, look at it
+and fix any drawing problems in the proposals; then it goes to the owner as a design decision (A / B / keep NOW / mix) - an
+owner action, not decided by the run. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push (10:39 UTC)
+is > 1 h old.
+
+**18 Nov 11:05 UTC, 682g (cloud, v0.6.74 turn):** H16 survey read again (Verify 310 GREEN on cc229b9): all 187 "cuts" had
+"text" = the max width - MultiParagraph.width is the layout width, not the glyphs. Survey now measures the inked width (widest
+line); cloud compile + run: all 13 windows (Hero .. Cinema) CLEAN at x1.0 and x1.3 on their first page; the survey is now a guard
+(any finding fails). Test only; no window needed a change by this measure (parent clipping / More pages not covered).
+NEXT: check Verify 310 on this push. Next run = P2 turn (batch 2, Cube first) if the live session's last P2 push is > 1 h old;
+else v0.6.74 turn: H12 reveal / trophy redesign comparison (the 682e anchor for Library / Bar / Dash was done by the live
+session, a4382ac). Also read P2 re-review 44280831400 on the next P2 turn.
+
+**18 Nov 09:40 UTC, 682b (cloud, v0.6.74 turn):** read the 682 survey (Verify 310 GREEN on ebe8e55): nearly every label of all 13
+windows listed as "cut at its box's edge", identical at x1.0 / x1.3, no broken word - an unreliable signal, so NO window was
+changed. WindowWordsSurvey682Test now counts a cut only at >= 1 px past the box or dropped lines (cutAtEdge, pure test) and prints
+each finding's numbers. Cloud compile failed (Maven resolution x2) - CI compiles it.
+NEXT: check Verify 310 on this push (compile / SurveyRule682Test red -> fix first). Then read the new findings from the
+"update-310-test-results-*" artifact (TEST-...WindowWordsSurvey682Test.xml system-out): if findings remain with text width <= box
+width they are still artefacts (compare against a node-bounds check before fixing anything); real ones -> fix in list order (Hero,
+Hero tiles, Live, Cross ...) with a test that fails on the old code. Next run = P2 turn only if the live session's last P2 push
+(09:04 UTC) is > 1 h old.
+
+**18 Nov 08:45 UTC, 682 (cloud, v0.6.74 turn):** H16 next windows. The k678n13 review PDF is not in the repo and the cloud could
+not compile (Maven Central 429 x3), so this run added WindowWordsSurvey682Test (test only, app unchanged): Hero, Hero tiles, Live,
+Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema at KONKR 640 x 427 dp, x1.0 + x1.3 -
+every text broken inside a word or cut at its edge (one-line sliding text excluded) -> app/build/reports/h16-survey/findings.txt in
+CI's "update-310-test-results-*" artifact + the test stdout. A live session pushed P2 682a / 682c to `claude/v0674-native-pages`
+at ~08:07 UTC - left alone.
+NEXT: check Verify 310 on this push (first compile of the survey: a compile / "no text reached" failure -> fix first). Next run =
+P2 turn ONLY if the live session's last P2 push is > 1 h old (else another v0.6.74 turn). Next v0.6.74 turn: download the survey
+findings (gh api .../actions/runs/<id>/artifacts) and fix the first windows in list order, each with a test that fails on the old
+code (pattern: BarDockLabels681wTest / NightStatLabels681tTest); "clean" windows need no change.
+
+**18 Nov 07:45 UTC, 681z (cloud, P2 turn):** dev line merged into `claude/v0674-native-pages`; emulator review 44247782675 READ
+(TV Fastext keys whole at both scales - 681x confirmed; Play guard held; App category still empty on the emulator -> destructive
+confirmation NOT TESTED there). (c) DONE on the P2 branch (d14710b): grade_trial.py grades review runs on their own walks (P2:
+p2r13 / p2r10, font reviews: e679r13 / e679r10) + P2 contact sheets; p2review.sh restore no false diff=1 on an empty keep folder,
+App category checked. Selftest 224/224. Dev CI: Verify 310 GREEN on 19bc1e0 (681y); 79bb40d red = Maven 429 (infra, lock commit).
+NEXT: check Verify 310 on this push and on d14710b (P2). Next run = v0.6.74 turn: H12 rest (reveal / trophy animation redesign -
+comparison for the owner first) or more H16 windows from the k678n13 sheet (Hero, Hero tiles, Live, Cross). Next P2 turn: batch 2
+(Cube first) + dispatch "P2:TV CUBE" review (expect NOT TESTED until an app fixture exists for the confirmation).
 
 **18 Nov 06:50 UTC, 681y (cloud, v0.6.74 turn):** item 7 H12 - the Achievements page's progress (Power cells battery, Trophy
 header, summary bar) now counts each new unlock as its badge locks in on the stage and fills up to it; nothing new = no fill. The

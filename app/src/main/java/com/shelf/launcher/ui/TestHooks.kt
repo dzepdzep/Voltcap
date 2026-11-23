@@ -287,6 +287,9 @@ internal object TestHooks {
     @Volatile var appProbe: ((String) -> String)? = null
     /** Update 452: `--es voltcap_test_winmore on` — the open game window's More opened (as its button does), for the More QA. */
     val winMore = mutableStateOf<Boolean?>(null)
+    /** 682s: `--es voltcap_test_winpage details|options|trophies` — the open game window turns to that page as its own button
+     *  does (Options / Achievements through the window's own callbacks), for the H16 page survey and page QA. */
+    val winPage = mutableStateOf<WinPage?>(null)
     /** 673b: `--es voltcap_test_wininspect on` — the open game window's Inspect pressed (as its key does), QA only. (A request file
      *  written by adb's shell user could not be read by the app on the KONKR's Android 12 - pkk673j: never seen.) */
     val winInspect = mutableStateOf<Boolean?>(null)
@@ -322,6 +325,7 @@ internal object TestHooks {
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
+        intent?.getStringExtra("voltcap_test_winpage")?.let { v -> if (enabled(context)) winPage.value = qaWinPage(v) }
         intent?.getStringExtra("voltcap_test_wininspect")?.let { v -> if (enabled(context)) winInspect.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
@@ -899,4 +903,13 @@ internal fun WithTestScale(content: @androidx.compose.runtime.Composable () -> U
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * s.second, base.fontScale * s.first)
         ) { content() }
     }
+}
+
+/** 682s: the page named by `voltcap_test_winpage` (details / options / trophies, or main); anything else is no request. Pure. */
+internal fun qaWinPage(v: String): WinPage? = when (v.trim().lowercase()) {
+    "main" -> WinPage.MAIN
+    "details" -> WinPage.DETAILS
+    "options" -> WinPage.OPTIONS
+    "trophies", "achievements" -> WinPage.TROPHIES
+    else -> null
 }

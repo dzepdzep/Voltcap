@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
@@ -69,10 +68,10 @@ internal fun RaFriendsCard() {
                                         AsyncImage(aw.icon, null, Modifier.size(18.dp).clip(RoundedCornerShape(4.dp)))
                                         Spacer(Modifier.width(6.dp))
                                     }
-                                    Text(
+                                    FullText(
                                         "${aw.kind}: ${aw.title}" + if (aw.console.isNotBlank()) " · ${aw.console}" else "",
                                         color = if (aw.kind == "Mastered") Color(0xFFF5C542) else ShelfTheme.colors.textPrimary.copy(alpha = 0.8f),
-                                        fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                                        fontSize = 11.sp, maxLines = 2, reserve = false
                                     )
                                 }
                             }
@@ -115,11 +114,11 @@ internal fun RaWeeklyCard(onOpenGame: (Int) -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("ACHIEVEMENT OF THE WEEK", color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                Text(w.title, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (w.description.isNotBlank()) Text(w.description, color = ShelfTheme.textMuted, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
+                FullText(w.title, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
+                if (w.description.isNotBlank()) FullText(w.description, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
+                FullText(
                     listOf(w.gameTitle, w.console).filter { it.isNotBlank() }.joinToString(" · "),
-                    color = ShelfTheme.colors.textPrimary.copy(alpha = 0.8f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis
+                    color = ShelfTheme.colors.textPrimary.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 2, reserve = false
                 )
                 Text(
                     "${w.unlocks} of ${w.players} players have it" + if (w.youHaveIt) "  ·  you do!" else "",

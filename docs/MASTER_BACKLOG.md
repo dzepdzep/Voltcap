@@ -13,15 +13,46 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
+Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
+PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
+for layouts with their own Play / chips - DONE 682g/i (a4382ac): BAR, DASH exact (KONKR PASS), LIBRARY adapted (lit tab leads
+after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware 18 Nov, KONKR + RP Classic (QA app, a4382ac; before =
+the rule off / 3ec7e45): anchorcheck 33/33 PASS at every L2 / R2 step (end of the list included) + 9/9 sheet shots each;
+category order off vs on identical 14/14 x 4 layouts x 2 (catorder682.py); catswitch frames 15/16 PASS, 1 INFRA (an RP Classic
+recording not written whole). Before / after sheet published for the owner ("Play and chip alignment review"). QA tooling:
+catswitch.sh / picker.sh pointed at the real app - fixed before any run (D358). Owner 18 Nov 14:54: APPROVED WITH ONE
+ADJUSTMENT (keep Classic, Bar, Dash, Cinema, Custom; the strip starts on Play's edge but scrolls naturally, neighbours kept;
+Library's L2 / R2 placement approved, keep context). DONE 682m (2c688ce): PlayChipAnchor.natural, no end room, ChipLead one
+chip of context; hardware KONKR + RP Classic: walk order same 4/4, selected chip whole 10/10 per walk, Xbox 360 on the right
+with its neighbours; sheet "Category strip scroll review" for the owner. Not merged; no merge without GO.
+
 ## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
 Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
-end-to-end PASS 15/15 (run 44190749178, QA app, synthetic stand-ins); hardware NOT TESTED; owner NOT approved; no merge without GO.
+end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out:
+NOT TESTED (owner 18 Nov 12:12: no physical pull now - record NOT TESTED, never PASS; the protection stays: unit tests
+RescanPrune681rTest unreadable / unmounted roots + emulator unreadable-folder case). READY FOR REVIEW (owner 18 Nov 12:12):
+draft PR into claude/qa-0672-repair; no merge / release without GO.
 Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
 favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
 
 ## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
 docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
 Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
+18 Nov 14:54 owner GO for batch 2 (batch 1 NOT visually approved, its visual fixes remain): Game magazine, Cinema, Arcade,
+Cube implemented (682n-q) = 22/53 implemented. 682r (branch claude/v0674-native-pages e45fe3e): x1.3 room fixed after KONKR /
+RP Classic walks (Magazine checklist had no rows, Arcade's title 0 px on the RP Classic, Cinema / Cube first row part-cut - D360);
+AchFirstRow now at the KONKR and RP Classic sizes for every native layout. HW (QA app, x1.3): Magazine, Cinema, Arcade walked on
+both, 0 launches, restore OK; Cube first walk OK, its 2nd open aborted safely (script fixed, not re-run); x1.0 NOT TESTED on HW.
+Not owner-approved (neither batch). Owner 18 Nov 18:20 chose batch-1 visual fixes first: hardware walk x1.3 KONKR + RP Classic
+(all five layouts, every page, 0 launches, restore OK); 682s fixed Classic's misleading ON / OFF switch words, the no-art chip
+("SNES" one letter a line) and Hub ENGRAVED scrolling its tags away; ShelfText now covers batch 1. Build qa-682s-f816912-ci
+is NOT on a device yet - re-check of Classic / Hub on hardware and x1.0 pending.
+QA safety (owner 14:54): winguard.sh - nav682j / p2review / catswitch / anchors682 press keys only while the QA app's confirmed
+window has the focus; picker / Android quick settings / production / other window = ABORT, no blind retries (D359 follow-up).
+18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
+TV teletext / crate confirmations whole at x1.0 / x1.3 (682k). Hardware: nav682j.sh KONKR + RP Classic 8/8 PASS (0 stray
+launches, deliberate A = 1); D359 (script reached the QA quick-settings Wi-Fi tile on the first run, nothing changed, fixed).
 
 ## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
 1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+

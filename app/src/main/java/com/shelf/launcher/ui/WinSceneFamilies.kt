@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -180,26 +182,39 @@ internal fun noArtNameFits(console: String, roomDp: Float): Boolean =
 
 /** No picture: a purposeful plate — the console's initials big, the console's name under them — never an empty black box. */
 @Composable
-internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color.White) {
-    androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
-        val room = maxWidth
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
+internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color.White, consoleNamedBeside: Boolean = false) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+        BoxWithConstraints(Modifier.padding(6.dp), contentAlignment = Alignment.Center) {
+        val room = constraints.maxWidth
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(studioInitials(ctx.console), color = ink, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             // (Batch 523, Inspect test: "Super Nintendo Entertainme" - a word wider than the plate was cut; whole words now, the size
             // stepping down until the longest one fits.)
-            // (682y, Card binder pages x1.3: on the slim picture (16 %) "PlayStation" still broke inside the word at the smallest
-            // size - "PlayStatio / n 2". Where the plate's room can't hold the console's longest word, the initials stand alone:
-            // the console's whole name is on the window's own line beside it.)
-            if (noArtNameFits(ctx.console, (room - 12.dp).value)) WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
+            // (684a, H16 survey: Timeline's compact plate is 52 dp inside - "PlayStation" at the readable minimum broke as
+            // "PlayStati / on 2". Where the window names the console beside the plate, a caption whose longest word cannot fit
+            // whole is left out: the initials stay, the full name is right beside it - never a word broken, never cut.)
+            val measurer = rememberTextMeasurer(cacheSize = 4)
+            val style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            val longest = remember(ctx.console, room, style) {
+                val word = ctx.console.split(' ', '\n').maxByOrNull { it.length } ?: ""
+                if (word.isEmpty()) 0 else measurer.measure(word, style, softWrap = false, maxLines = 1).size.width
+            }
+            if (noArtCaptionShown(consoleNamedBeside, longest, room))
+                WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
+        }
         }
     }
 }
 
+/** 684a: the no-art plate's console caption is shown unless the window names the console beside the plate and the caption's
+ *  longest word (at its readable size, [longestPx]) is wider than the plate's room ([roomPx]). Pure. */
+internal fun noArtCaptionShown(consoleNamedBeside: Boolean, longestPx: Int, roomPx: Int): Boolean =
+    !consoleNamedBeside || roomPx == androidx.compose.ui.unit.Constraints.Infinity || longestPx <= roomPx
+
 /** The game's picture filling its room (Smart Fill, Batch 523: a light crop, else whole over its soft copy — never bars), or [SceneNoArt]. */
 @Composable
-private fun SceneArt(ctx: WinSceneCtx, url: String?, modifier: Modifier, well: Color) {
-    SmartArt(url, ctx.name, modifier, well = well, noArt = { m -> SceneNoArt(ctx, m) })
+private fun SceneArt(ctx: WinSceneCtx, url: String?, modifier: Modifier, well: Color, consoleNamedBeside: Boolean = false) {
+    SmartArt(url, ctx.name, modifier, well = well, noArt = { m -> SceneNoArt(ctx, m, consoleNamedBeside = consoleNamedBeside) })
 }
 
 private fun inkOn(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else Color.White
@@ -487,6 +502,9 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
 // ───────────────────────────── Card binder: the card turns over ─────────────────────────────
 
 /** Update 508: the card front's bottom line — the console, and the year when it is known (no stray dash). Pure. */
+/** 685a (pure): the binder card's front is out of sight - turned edge-on (first half of the turn done) or not yet shown. */
+internal fun cardFrontAway(reveal: Float): Boolean = sceneStage(reveal, 0f, 0.5f) >= 0.999f || reveal < 0.02f
+
 internal fun cardFrontLine(console: String, year: String?): String = console.uppercase() + (year?.takeIf { it.isNotBlank() }?.let { "  ·  $it" } ?: "")
 
 @Composable
@@ -500,14 +518,19 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
     // (529t, owner P3: with a pickup the binder's own card comes out of its pocket and turns (PickupOverlay); this front isn't
     // drawn then, and the back turns in from edge-on once the card is here - flipBackTurn.)
     val pickedUp = LocalSceneOrigin.current != null
+    // (685a, H16 parent-clip guard: once the front had turned edge-on it was drawn at alpha 0 but stayed laid out, its texts
+    // still in the tree - name, console and trophies twice, "hidden by a parent" in QA dumps. Out of sight, it is not composed:
+    // frontAway changes only when the turn crosses its ends (open: in at 2 %, out at half; close: back in at half, edge-on),
+    // never per frame.)
+    val frontAway by remember(ctx.reveal) { androidx.compose.runtime.derivedStateOf { cardFrontAway(ctx.reveal()) } }
     Box(Modifier.width(w).heightIn(max = h).pickupFlipTarget(pickedUp), contentAlignment = Alignment.Center) {
         // The front, as it sits in the binder, turning away (first half of the turn)…
-        if (!pickedUp) Box(Modifier.matchParentSize().graphicsLayer {
+        if (!pickedUp && !frontAway) Box(Modifier.matchParentSize().graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.5f)
             rotationY = k * 90f
             cameraDistance = 14f * density
             flatTextFor3d()
-            alpha = if (k >= 0.999f || ctx.reveal() < 0.02f) 0f else 1f
+            alpha = if (cardFrontAway(ctx.reveal())) 0f else 1f
             shape = cardShape; clip = true
         }.background(pal.frame).padding(7.dp).clip(RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             // (Update 508, owner: "the front face shows almost only the cover". The binder card's front as a collectable card
@@ -779,7 +802,7 @@ internal fun TimelineHang(ctx: WinSceneCtx) {
         }.background(themeDark(Color(0xFF1A1D23))).border(1.dp, a.copy(alpha = 0.45f), RoundedCornerShape(10.dp)).padding(14.dp)) {
             Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
                 val aw = if (compact) 64.dp else 86.dp
-                Box(Modifier.width(aw).aspectRatio(0.72f).clip(RoundedCornerShape(4.dp))) { SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color.Black) }
+                Box(Modifier.width(aw).aspectRatio(0.72f).clip(RoundedCornerShape(4.dp))) { SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color.Black, consoleNamedBeside = ctx.console.isNotBlank()) }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     StableFullText(ctx.name, color = Color.White, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)

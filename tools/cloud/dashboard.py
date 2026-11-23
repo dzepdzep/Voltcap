@@ -265,7 +265,7 @@ def gen_release():
     return "\n".join(out).rstrip()
 
 
-SUMMARY_AREAS = [("Home layouts (popup gate)", "Home layouts"), ("Native popup pages", "Native pages"),
+SUMMARY_AREAS = [("Home layouts (popup gate)", "Home layouts"), ("Native popup pages", "Native pages (own designs)"),
                  ("Physical pickup / return animations", "Pickup animations"), ("Category styles (looks)", "Category styles"),
                  ("Save Vault + Save Sync 529", "Save Vault + Sync")]
 
@@ -305,18 +305,20 @@ def gen_summary():
         for r in recent[:5]:
             out.append(f"- **{label.get(r.get('kind'), r.get('kind'))}** ({r['update']}): {r['plain']}")
         out.append("")
-    out += ["**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)", "",
-            "| Area | Implemented | Verified on handhelds | Approved by you |", "|---|---|---|---|"]
+    out += ["**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)", "",
+            "| Area | Implemented | Verified on handhelds | Approved by you | Released |", "|---|---|---|---|---|"]
     for key, name in SUMMARY_AREAS:
         a = prog.get(key)
         if not a:
             continue
         t = a.get("total")
-        out.append(f"| {name} | {bar(a.get('impl'), t)} | {bar(a.get('device'), t)} | {bar(a.get('owner'), t)} |")
+        note = f" · {a['branch']}" if a.get("branch") else ""
+        func = f" · functional: {a['functional_owner']}" if a.get("functional_owner") else ""
+        out.append(f"| {name} | {bar(a.get('impl'), t)}{note} | {bar(a.get('device'), t)} | {bar(a.get('owner'), t)}{func} | {bar(a.get('released'), t)} |")
     emu = prog.get("Cloud emulator QA coverage")
     if emu:
         home = prog.get("Home layouts (popup gate)", {})
-        out.append(f"| Emulator QA (layouts) | {bar(home.get('emulator'), home.get('total'))} | emulator never counts as handheld | - |")
+        out.append(f"| Emulator QA (layouts) | {bar(home.get('emulator'), home.get('total'))} | emulator never counts as handheld | - | - |")
     out.append("")
     if reps and reps[-1].get("next"):
         nx = reps[-1]["next"]

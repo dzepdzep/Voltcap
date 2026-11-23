@@ -1,6 +1,6 @@
 {
  "_rules": "Per-area evidence for STATUS_DASHBOARD.md. Numbers only from evidence named in 'source'; anything not counted is the string UNKNOWN. 'device' = real-handheld gate PASS on a dev-line build; 'emulator' never counts as device. Update a value only together with its source. tools/cloud/dashboard.py renders this file.",
- "updated": "2026-11-17 (live 678r, KONKR)",
+ "updated": "2026-11-23 (P2 review package, batches 4-7 on hardware)",
  "areas": [
   {
    "area": "Home layouts (popup gate)",
@@ -17,14 +17,16 @@
   {
    "area": "Native popup pages",
    "total": 53,
-   "impl": 13,
-   "unit": 13,
+   "impl": 29,
+   "unit": 29,
    "emulator": 0,
-   "device": 13,
+   "device": 29,
    "owner": 0,
    "released": 0,
-   "remaining": "40 layouts still on the shared page (P2)",
-   "source": "REQUIREMENTS_MATRIX P2 (673j/k gates)"
+   "remaining": "29 own designs, 0 visually approved (review package published 23 Nov). TV room: Play changes width between its pages (D367, needs a decision). Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.",
+   "source": "P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). impl = layouts drawing their own Details + Achievements + Options rows. device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; runs gk10 gr10 gk13 gr13 hk10 hr10 hk13 on 1ada6c8 / b316b8f / 9192a89; 0 launches, 0 crashes, restore diff 0). Play same size and place on every page: 28 of 29 (TV room D367).",
+   "functional_owner": "14 accepted functionally 22 Nov (batches 1-3), not visual approval",
+   "branch": "P2 branch only"
   },
   {
    "area": "Physical pickup / return animations",

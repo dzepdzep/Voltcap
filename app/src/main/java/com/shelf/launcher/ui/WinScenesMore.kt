@@ -618,7 +618,9 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     // run showed three facts of four.)
                     Text(if (upperLabels) l.uppercase() else l, color = label, style = labelStyle,
                         softWrap = true, modifier = Modifier.width(labelW).padding(top = 3.dp, end = 4.dp))
-                    Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
+                    // (682t, H16 survey x1.3: Pocket ribbon's pixel font broke "PlayStation 2" inside the word - the value's
+                    // words stay whole, stepping down to the readable minimum only when the longest one does not fit.)
+                    WholeWordsText(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
                 }
               } }
             } else facts.chunked(2).forEach { pair ->
@@ -626,7 +628,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     pair.forEach { (l, v) ->
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
                             Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font, softWrap = false)
-                            Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font)
+                            WholeWordsText(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font)
                         }
                     }
                     if (pair.size == 1) Spacer(Modifier.weight(1f))

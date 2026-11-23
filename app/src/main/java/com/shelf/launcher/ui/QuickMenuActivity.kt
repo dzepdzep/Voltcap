@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -136,7 +135,7 @@ class QuickMenuActivity : ComponentActivity() {
             MutedNote("No achievements to show: either the game running now isn't linked to RetroAchievements, or no game is running through Voltcap.")
             return
         }
-        Text(s.gameTitle, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(15.sp), maxFontSize = 15.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(s.gameTitle, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
         Text("${s.unlocked} of ${s.total} unlocked · ${s.points} / ${s.totalPoints} points", color = ShelfTheme.textMuted, fontSize = 12.sp)
         s.lastUnlock?.let {
             Spacer(Modifier.height(6.dp))
@@ -150,7 +149,7 @@ class QuickMenuActivity : ComponentActivity() {
         if (s.missablesLeft.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Text("MISSABLE", color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-            s.missablesLeft.take(6).forEach { Text("• $it", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            s.missablesLeft.take(6).forEach { FullText("• $it", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, maxLines = 2, reserve = false) }
         }
         if (s.left.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
@@ -171,8 +170,8 @@ class QuickMenuActivity : ComponentActivity() {
                 AsyncImage(model = badge, contentDescription = null, modifier = Modifier.padding(end = 10.dp).widthIn(max = 40.dp).height(40.dp))
             }
             Column(Modifier.weight(1f)) {
-                Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (description.isNotBlank()) Text(description, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
+                if (description.isNotBlank()) FullText(description, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
                 if (!note.isNullOrBlank()) Text(note, color = ShelfTheme.textMuted.copy(alpha = 0.8f), fontSize = 10.sp, maxLines = 1)
             }
         }
@@ -232,7 +231,7 @@ class QuickMenuActivity : ComponentActivity() {
             val on = d.address in connected.value
             Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(runCatching { d.name }.getOrNull() ?: d.address, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(runCatching { d.name }.getOrNull() ?: d.address, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
                     Text(kindOf(d) + if (on) " · connected" else "", color = if (on) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 11.sp)
                 }
                 Chip(if (on) "Disconnect" else "Connect", accent = !on) {

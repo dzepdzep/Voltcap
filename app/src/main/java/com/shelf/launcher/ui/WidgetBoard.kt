@@ -65,7 +65,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -653,7 +652,7 @@ private fun VolumeMixerWidget(size: WidgetSize) {
                                 val icon = rememberAppIcon(a.packageName)
                                 if (icon != null) androidx.compose.foundation.Image(icon, null, modifier = Modifier.size(20.dp).clip(RoundedCornerShape(5.dp)))
                                 Spacer(Modifier.width(6.dp))
-                                Text(a.label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                                FullText(a.label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false, modifier = Modifier.weight(1f))
                                 Text(if (v == 0) "Muted" else "$v %", color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                             VolumeBar(
@@ -757,7 +756,7 @@ private fun SoundPerScreenWidget(size: WidgetSize) {
                             val icon = rememberOwnAppIcon(pkg)
                             if (icon != null) androidx.compose.foundation.Image(icon, null, modifier = Modifier.size(20.dp).clip(RoundedCornerShape(5.dp)))
                             Spacer(Modifier.width(6.dp))
-                            Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            FullText(label, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false, modifier = Modifier.weight(1f))
                             Text(if (v == 0) "Muted" else "$v %", color = ShelfTheme.textMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                         VolumeBar(

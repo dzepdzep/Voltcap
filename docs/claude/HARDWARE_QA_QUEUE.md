@@ -22,6 +22,78 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Build: commit <sha> on claude/qa-0672-repair; QA build = assembleQa / assembleDebug of that commit
 - Why not emulator: ...
 - Tests: exact gates / scripts (e.g. pop529.sh run <tag> <off|font=1.3,density=1.15> "<LAYOUTS>" OWN, then popclip.py)
+- Also (686a, H16, dev line 686a or later, ~1 min, KONKR x1.3): Orbit deck (ORBIT) at x1.3 in the narrow window: the key
+  labels under the round keys read whole - "ACHIEVEMENTS", "SAVE SYNC", "INSPECT" never broken inside the word (spacing a little
+  tighter / a step smaller there if they must); x1.0 looks as before. pop529 ORBIT OWN -> popclip.py. Unit evidence only
+  (WindowWordsSurvey682Test NEXT_686, OrbitKeyLabel686Test).
+- Also (688b, H16, dev line 688b or later, ~1 min, KONKR x1.3): TV room, open a game with achievements on the set, turn to
+  Achievements (R1): "Set order" whole on its own line under the count, achievement names whole (points under the badge), the
+  first achievement in view, A on the order row cycles it; x1.0 and a wide page (any other layout) look as before. pop529 TV OWN
+  -> popclip.py. Unit evidence only (WindowWordsSurvey682Test[TV x1.3] otherPages; CI).
+- Also (689a, rule 11, dev line 689a or later, ~2 min, KONKR x1.3 + x1.0): game popup style Classic (the full-screen details
+  window), a game with a long name, a long info line (year / developer / publisher / genres) and achievements: the title wraps to
+  two lines, then shrinks, then slides - never ends in an ellipsis; info line, 'Last session', the stat labels / values, the page
+  tabs, the milestone line, the trophy strip and the inline achievement names / descriptions whole (slide where they must); a
+  summary under ~260 characters shown whole (no More chip), a longer one 4 lines + More; RA comments whole. pop529 <layout> CLASSIC
+  -> popclip.py. Unit evidence only (GameDetailsFullText689aTest, static TRUNCATE 171 -> 158).
+- Also (691a, rule 11, dev line 691a or later, ~2 min, KONKR x1.3 + x1.0): home layout Twin icons, a game with a long name and a
+  long console name: the focused game's name and its console / playtime line shrink a little, then slide - never end in an
+  ellipsis; on the category page the category card's name + hint, the small labels under the category icons (cells >= 44 dp) and
+  the Open bar's 'Open · <category>' / 'Open · <game>' read whole (slide in the bar); the tray does not move when the focus moves.
+  Screenshots. Unit evidence only (TwinIconsFullText691aTest, static TRUNCATE 150 -> 143; first compile in CI).
+- Also (692a, rule 11, dev line 692a or later, ~2 min, KONKR x1.3 + x1.0): classic row (GameCard) with a game that has no art and
+  a very long name, a focused wide capsule (long title, console name on, 'Played ...' on), a card with a NEW unlock pill and a
+  trophy count, and the badge mode 'Recent unlock' with a long achievement title: every text whole (shrinks, then slides) - never
+  an ellipsis; the cards / capsule do not change size or jump when the focus moves. Screenshots. Unit evidence only
+  (GameCardFullText692aTest, static TRUNCATE 143 -> 136; first compile in CI).
+- Also (693a, rule 11, dev line 693a or later, ~2 min, KONKR x1.3 + x1.0): volume mixer (R1 / quick settings -> mixer) with a
+  running game that has a long name and an app with a long label: title, status line, stream labels, app names, 'Playing ...'
+  notes, volume values and the add-app picker's names read whole (shrink, then slide) - never an ellipsis; rows keep their
+  height. Screenshots. Unit evidence only (MixerFullText693aTest, static TRUNCATE 136 -> 129; cloud compile PASS).
+- Also (694a, rule 11, dev line 694a or later, ~2 min, KONKR x1.3 + x1.0): a home layout with the row info panel + news card
+  on, a game with long genres / developer / publisher and a long summary, and a long news headline: facts line, chips,
+  summary, news source and headline read whole (shrink, then slide) - never an ellipsis; the panel keeps its height.
+  Screenshots. Unit evidence only (RowInfoPanelFullText694aTest, static TRUNCATE 129 -> 124; not compiled in the cloud).
+- Also (695a, rule 11, dev line 695a or later, ~2 min, KONKR x1.3 + x1.0): Twin desk home layout, a long category name in the
+  bottom bar, a game with a long console name and long playtime, the calendar on a long month name (a long locale): month title,
+  console · playtime line, list console names and the bar label read whole (shrink, then slide) - never an ellipsis; the desk
+  keeps its layout; L2 / R2 swaps the bar label in the same frame. Screenshots. Unit evidence only (TwinDeskFullText695aTest,
+  static TRUNCATE 124 -> 120; not compiled in the cloud).
+- Also (696a, rule 11, dev line 696a or later, ~2 min, KONKR x1.3 + x1.0): home widget board, sound widget (compact + expanded)
+  with an app whose name is long playing sound: the app name reads whole (shrink, then slide) beside its volume - never an
+  ellipsis; the volume bars stay put. Screenshots. Unit evidence only (WidgetBoardFullText696aTest, static TRUNCATE 120 -> 118;
+  not compiled in the cloud).
+- Also (701a, rule 11, dev line 701a or later, ~2 min, KONKR x1.3 + x1.0): Settings > Profile with a RetroAchievements
+  account - the friends card with a friend whose last award has a long title + console, and the Achievement of the Week card
+  with a long title / description / game · console: every text reads whole (shrink, then slide) - never an ellipsis; cards keep
+  their spacing; D-pad + touch reach the weekly card. Screenshots. Unit evidence only (RaSocialFullText701aTest, static TRUNCATE
+  98 -> 94; NOT cloud compiled - CI first compile).
+- Also (705a, rule 11, dev line 705a or later, ~2 min, KONKR x1.3 + x1.0): cross-bar trophy list (CrossTrophies) - a game
+  with long achievement titles / descriptions, scroll through the list and open the comments panel: every title, the focused
+  description (2 lines), the meta line and the comments title read whole (shrink or slide) - never an ellipsis; rows keep their
+  spacing while focus grows a row; D-pad + touch scroll the list and comments. Screenshots. Unit evidence only
+  (CrossTrophiesFullText705aTest, static TRUNCATE 90 -> 86; NOT cloud compiled (Maven 429) - CI first compile).
+- Also (703a, rule 11, dev line 703a or later, ~2 min, KONKR x1.3 + x1.0): home edit mode - open the inspector on a widget
+  with a long name / scope line, and the widget list with a hidden + an off-screen widget: every name and status line reads
+  whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach Hide / Show and Fold / Close.
+  Screenshots. Unit evidence only (HomeEditFullText703aTest, static TRUNCATE 94 -> 90; cloud compiled, test run in CI).
+- Also (700a, rule 11, dev line 700a or later, ~2 min, KONKR x1.3 + x1.0): game guide screen - a game whose guide has a
+  long title and long attribution / source URL, a deep contents list with long section titles, and the guide picker with
+  long guide titles / subtitles: every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing;
+  D-pad + touch reach each row and section. Screenshots. Unit evidence only (GuideScreenFullText700aTest, static TRUNCATE
+  103 -> 98; NOT cloud compiled - CI first compile).
+- Also (699a, rule 11, dev line 699a or later, ~2 min, KONKR x1.3 + x1.0): achievement hub - a game with a long title in the
+  progress rows (with "Mastered" / progress note) and a recent unlock with a long achievement title and long game · console
+  line: every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach each row.
+  Screenshots. Unit evidence only (HubScreensFullText699aTest, static TRUNCATE 108 -> 103; cloud compiled).
+- Also (698a, rule 11, dev line 698a or later, ~2 min, KONKR x1.3 + x1.0): music player pages - Spotify disconnected (connect
+  hint), a playlist with a long name (strip + grid) and a song with long synced lyric lines: every text reads whole (shrink,
+  then slide) - never an ellipsis; rows keep their spacing; D-pad + touch still reach every playlist. Screenshots.
+  Unit evidence only (PlayerPagesFullText698aTest, static TRUNCATE 113 -> 108; cloud compiled).
+- Also (697a, rule 11, dev line 697a or later, ~2 min, KONKR x1.3 + x1.0): in-game quick menu over a RetroAchievements game
+  with long achievement titles / descriptions (Achievements tab) and a paired Bluetooth device with a long name (Bluetooth tab):
+  every text reads whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch still reach every row.
+  Screenshots. Unit evidence only (QuickMenuFullText697aTest, static TRUNCATE 118 -> 113; cloud compiled).
 - Result: (filled in by the hardware session: run tags, PASS / FAIL counts, evidence path)
 ```
 
@@ -33,6 +105,18 @@ nothing, log a defect. Evidence is labelled QA or PRODUCTION. All requests below
 Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.qa only - its own test data) is always allowed.
 
 ## Requests
+
+### HW-26 Volt second screen text shown whole (690a, rule 11) - OPEN (Thor; batch with HW-19 when the owner says the Thor is back)
+- Device(s): AYN Thor (3140972f), USB, lower screen = second display. Level L1 (QA app only). Thor NOT with the owner since 17 Nov -
+  never poll / wake; only when he says it is back. Commit: dev line 690a or later. ~3 min, x1.0 + x1.3.
+- Why not emulator: the Volt companion draws on the Presentation of a second physical display; the emulator trial has one display.
+- Tests: second screen style Volt, a game with a long name and achievements with long titles / descriptions: the clock beside the
+  page tabs whole; on the achievements board the game name (2 lines, then shrink, then slide), the console line, the filter labels
+  with their counts, the list's titles / descriptions and the picked achievement's title (3 lines) never end in an ellipsis; the
+  game card's console label whole; nothing jumps when the focus moves. Screenshot of the lower screen at both scales.
+- Evidence so far: unit only (SecondScreenVoltFullText690aTest, static TRUNCATE 158 -> 150); not compiled in the cloud (Maven 429) -
+  CI is the first compile.
+- Result: (filled in by the hardware session)
 
 ### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED
 - Device(s): RP Classic (MC94516AQF091001112) + RP Nova (d3641c41), USB. Level L1 (QA app only).
@@ -49,7 +133,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   ticker rows whole while sliding (screenshot + homecut on HUB; 678k or later build).
 - Result: DONE 17 Nov (live session) - 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR.
 
-### HW-25 Library rescan: deleted last game / empty console / SD card out (681r) - OPEN (next session with a USB device)
+### HW-25 Library rescan: deleted last game / empty console / SD card out (681r) - DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says)
 - Branch `claude/v0674-rescan-fix` (d082e7f or later), its CI QA APK; L1 QA app only, synthetic stand-ins only (never the owner's
   ROMs or saves). Emulator: PASS 15/15 (run 44190749178).
 - Tests: `sh rescan681r.sh run <tag>` then `restore <tag>` (tools/qa/device) - every case PASS. Plus, on a device with an SD card:
@@ -104,6 +188,20 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   words; the keys equal width; where they no longer all fit, the row shows whole keys with the arrows and D-pad right / a swipe
   reaches the rest; the focused status key's whole text on its line under the dock. x1.0 as before. pop529 BAR OWN -> popclip.py.
   Unit evidence only (BarDockLabels681wTest).
+- Also (682t, H16, dev line 682t or later, ~2 min, KONKR x1.3): Night (NIGHT), a game on PlayStation 2: the SYSTEM value
+  "PlayStation 2" whole - under its label across the panel when it does not fit beside it (never "PlayStatio / n 2"); the other
+  values still beside their labels; x1.0 as before. Pocket ribbon (POCKET_RIBBON), same game, first page and More: the CONSOLE
+  fact "PlayStation 2" whole (smaller if it must, never broken inside the word). pop529 NIGHT OWN / POCKET_RIBBON OWN ->
+  popclip.py. Unit evidence only (WindowWordsSurvey682Test x1.3, NightValueStack682tTest).
+- Also (684a, H16, dev line 684a or later, ~1 min, KONKR x1.0 + x1.3): Timeline (TIMELINE), a PlayStation 2 game WITHOUT
+  cover art: the window's grey plate shows the console initials only (no "PlayStati / on" break), the entry line beside it names
+  "PlayStation 2" whole; a game with a short console name (e.g. "Wii") still shows its caption under the initials. pop529
+  TIMELINE OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test TIMELINE, NoArtCaption684Test).
+- Also (685a, H16, dev line 685a or later, ~1 min, KONKR x1.0 + x1.3): Storage boxes (STORAGE) at x1.3, a game played before:
+  the fact tab "LAST PLAYED" whole (two lines in its tab if it must, never just "LAST"); the other tabs one line as before.
+  Card binder (CARDS): open a game - the card still turns over (front away, back in) as before, no flicker or blank frame at
+  the half-turn; B - it turns back. pop529 STORAGE OWN / CARDS OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test
+  NEXT_685, CardFront685Test).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

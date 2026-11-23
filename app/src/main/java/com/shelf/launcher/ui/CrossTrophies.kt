@@ -51,7 +51,6 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -334,23 +333,25 @@ private fun TrophyRow(
                     modifier = Modifier.size((10f + 3f * near).dp * k)
                 )
                 Spacer(Modifier.width(5.dp * k))
-                Text(
+                // (705a, rule 11: whole title - slides when long; no auto-fit because the size grows with focus.)
+                FullText(
                     a.title ?: "Achievement", color = Color.White.copy(alpha = if (earned) 1f else 0.78f),
                     fontSize = (13f + 4f * near).sp * k, fontWeight = if (on) FontWeight.Medium else FontWeight.Normal,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW)
+                    maxLines = 1, style = nameTextStyle(NameBackdrop.SHADOW), autoFit = false, reserve = false,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
             }
             if (on) {
                 a.description?.takeIf { it.isNotBlank() }?.let {
-                    Text(
+                    FullText(
                         it, color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp * k, lineHeight = 14.sp * k,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis, style = nameTextStyle(NameBackdrop.SHADOW),
+                        maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW), reserve = false,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
-                Text(
+                FullText(
                     trophyMeta(a), color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp * k, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp)
+                    reserve = false, modifier = Modifier.padding(top = 2.dp)
                 )
             }
         }
@@ -478,9 +479,9 @@ private fun CrossComments(
         modifier.clip(shape).background(Color.Black.copy(alpha = 0.78f)).border(1.dp, Color.White.copy(alpha = 0.45f), shape)
             .padding(horizontal = 14.dp * k, vertical = 10.dp * k)
     ) {
-        Text(
+        FullText(
             a.title ?: "Achievement", color = Color.White, fontSize = 14.sp * k, fontWeight = FontWeight.Medium,
-            maxLines = 1, overflow = TextOverflow.Ellipsis
+            maxLines = 1, reserve = false
         )
         Text(
             if (a.isMissable) "Comments  ·  Missable" else "Comments", color = Color.White.copy(alpha = 0.6f),
