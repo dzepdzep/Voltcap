@@ -514,3 +514,30 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   Play same place, 0 launches, restore diff 0.
 - Package (artifact "P2 visual corrections - before / after", version 1795451646-b145): page-change sheets at the top, x1.0
   strips for both handhelds, the Coverflow proposal at the bottom (not applied).
+
+### Owner 23 Nov 18:23 - decisions and queue (recorded verbatim in substance; dev-line backlog copy pending its lock)
+- **Coverflow details: option A** - enable the compact facts line on the isolated QA branch; the reading panel keeps its width, the
+  visible title stays (long titles too); facts readable without broken words; the story gains usable space; nothing overlaps cover,
+  title or navigation; controller scrolling and focus correct. Test x1.0 + x1.3, show the actual before / after. QA trial only -
+  NOT final visual approval, NOT merge.
+- **TV room:** keep the one-button strip (Play first, Full details / Full list reachable, B works, Sonic's safe zone). No redesign
+  unless testing finds a genuine defect.
+- **Arcade stutter (priority):** profile KONKR x1.0 48 % slow frames - recording on vs off, stable screen vs page change, idle vs
+  navigation, GPU / CPU frame times, recomposition and overdraw where measurable, current vs earlier builds. Separate app stutter
+  from recording overhead; fix confirmed rendering problems without removing Arcade's look or animations; no "60 FPS" claims from
+  the video's encode rate. **RP Classic general slowdown:** investigate separately; recording overhead is not a launcher regression.
+- **Evidence ZIP:** the downloadable ZIP must physically contain the newest frame-by-frame sheets, x1.0 strips and the Coverflow
+  comparison (the last one received was the old x1.3-only package).
+- Functional and motion QA acknowledged; NO blanket visual approval of the 12 layouts or the 29-layout batch.
+- **Then, in order:** Task 1 row-position collisions (Tile Home, VoltCap Row, Edit Home positions, moved widgets, category bars,
+  game info, Play, shortcuts; neighbours rearrange; custom placements kept; Edit Home preview = Home; x1.0 / x1.3, screen shapes,
+  large tiles, resized widgets, Undo / Reset / restart) - Task 2 R1 Focus Position tile (horizontal; audit all 53; Classic +
+  Tile Home candidates; only on compatible layouts; A cycles, long-press direct; keep R1 order, prefs, smooth scrolling, selected
+  game, category-label alignment; compatibility matrix) - Task 3 Recomps category (reliable auto-suggest + manual; APK launching
+  unchanged; Windows-only builds never assumed to run) - Task 4 START -> classification, multiple categories (Recomps + Android
+  games + N64 example; other apps / consoles / collections; manual beats automatic; persists across updates / rescans / restarts;
+  no duplicate records; saves, achievements, art, favourites, settings, playtime untouched) - Task 5 remaining 24 native-page
+  layouts incl. Disc Station's shared bodies; a shared page in a new frame does not count.
+- Rules: v0.6.74 isolated branches, QA app, synthetic data, targeted hardware tests (no needless full sweeps); implementation /
+  hardware / animation-performance / owner approval kept separate; no production install, merge or publication without GO;
+  continue autonomously, report only real blockers or design decisions.
