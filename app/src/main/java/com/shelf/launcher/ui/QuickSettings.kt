@@ -2245,3 +2245,15 @@ internal fun tileRowPlaceSpots(stored: String, from: com.shelf.launcher.data.Doc
     m.remove(tileRowSpotKey(to))?.let { m[HomeWidgets.SHORTCUTS] = it }
     return HomeWidgets.format(m)
 }
+
+/**
+ * 717a: the QA log line of one Row tile change (`voltcap_test_dock`, logged as `rowtile <this>`), read by
+ * tools/qa/tools/row714.py: `TILES MIDDLE->TOP spot=ROW shortcuts=0.3000,0.2000 kept=MIDDLE:0.3000,0.2000`. `shortcuts=none`:
+ * the round buttons at their normal spot; `kept=` lists every place's put-aside spot (place order), `-` when none. Pure.
+ */
+internal fun rowTileQaLine(layout: String, from: String, to: String, spot: String, positions: String): String {
+    val m = HomeWidgets.parse(positions)
+    fun xy(p: Pair<Float, Float>) = "%.4f,%.4f".format(java.util.Locale.US, p.first, p.second)
+    val kept = com.shelf.launcher.data.DockPosition.values().mapNotNull { d -> m[tileRowSpotKey(d)]?.let { "${d.name}:${xy(it)}" } }
+    return "$layout $from->$to spot=$spot shortcuts=${m[HomeWidgets.SHORTCUTS]?.let(::xy) ?: "none"} kept=${kept.joinToString(";").ifEmpty { "-" }}"
+}

@@ -1291,8 +1291,13 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         TestHooks.dock.value = null
         com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
             if (TestHooks.previewOnly) {
-                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance, d)
-                viewModel.previewAppearance(state.appearance.withDockHere(d))
+                val a0 = state.appearance
+                if (a0.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance, d)
+                viewModel.previewAppearance(a0.withDockHere(d))
+                // (717a: one line per Row tile change, so tools/qa/device/row714.sh can grade 714a without the R1 panel - its
+                // Quick row holds system tiles a script must never reach.)
+                QaTrace.event("rowtile", rowTileQaLine(a0.homeLayout.name, a0.dockHere.name, d.name, a0.shortcutSpot.name,
+                    com.shelf.launcher.data.Features.widgetPositions.value))
             }
         }
     }

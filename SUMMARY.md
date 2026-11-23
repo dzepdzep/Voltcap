@@ -1,3 +1,20 @@
+# Update 717a (23 Nov 2026, cloud run) - Task 1: the Tile home Row-place check (714a) can run on a handheld without R1
+- CI first: Verify 310 on 7bd1dea (716b) GREEN; the later docs-only pushes (HW notes, locks) were cancelled by newer pushes.
+- Answers the live session's 22:15 note (714a NOT TESTED: R1 opens on its Quick row of system tiles, so no script may open it).
+  The Row tile's own handler already had a QA hook (Batch 521, `--es voltcap_test_dock`, preview only); 717a makes it gradable:
+  one QA log line per change, `rowtile TILES MIDDLE->TOP spot=ROW shortcuts=none kept=MIDDLE:0.3000,0.2000`
+  (rowTileQaLine in ui/QuickSettings.kt, logged in LauncherScreen's testDock effect; QA builds with the hooks file only -
+  normal use unchanged).
+- New tools/qa/device/row714.sh (LEVEL 1, QA app only, no key / tap except B on a first-start picker while the QA app is in
+  front, snapshot saved / restored, the owner's Voltcap process checked unchanged) and tools/qa/tools/row714.py (PASS / FAIL /
+  INFRA; an old build without the line = INFRA, never PASS). HW-24 714a now names the exact run.
+- Tests: RowTileQaLine717aTest 3/3, TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4 PASS (cloud, compiled); QA selftest 221/221
+  incl. TestRow714Grader717a 5/5; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowTileQaLine717aTest.kt (new), tools/qa/device/row714.sh (new),
+  tools/qa/tools/row714.py (new), tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 714a (row714.sh x1.0 + x1.3 on the KONKR).
+
 # Update 716b (23 Nov 2026, cloud run) - CI fix: 716a's layout test stepped frames without the apply guard
 - CI first: Verify 310 on 5d96b3d (716a) RED on both runners, same single failure (not infra): RoboFramesApply529Test - the
   716a test RowColumnUnderBar716aTest stepped Robolectric frames without Snapshot.sendApplyNotifications() (the 529 rule that

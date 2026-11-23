@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**23 Nov 21:55 UTC, 717a (cloud, QA tooling):** Verify 310 on 7bd1dea (716b) GREEN. 714a's hardware check unblocked without R1
+(its Quick row has system tiles): `voltcap_test_dock` (the Row tile's own handler, preview only) now logs one `rowtile` line;
+tools/qa/device/row714.sh + tools/qa/tools/row714.py grade it (selftest 5/5). RowTileQaLine717aTest 3/3 PASS (cloud). HW-24 714a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
 **23 Nov 20:35 UTC, 716b (cloud, CI fix):** Verify 310 on 5d96b3d (716a) RED on both runners: RoboFramesApply529Test caught
 RowColumnUnderBar716aTest stepping frames without Snapshot.sendApplyNotifications() (test hygiene, app code fine). Fixed the
 test loop; 716a 4/4 + RoboFramesApply529Test 1/1 PASS (cloud). Reminder for new Robolectric tests: every

@@ -94,6 +94,14 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
   row). A on the reached Play launches the game. Unit evidence only (HeaderReachDirection715aTest 3/3).
+- **717a (cloud, answers the 22:15 note): 714a is testable WITHOUT the R1 panel.** The Row tile's own handler already has a
+  QA hook (Batch 521, `--es voltcap_test_dock TOP|MIDDLE|BOTTOM`, preview only: tileRowPlaceReset + withDockHere); 717a adds
+  one `rowtile` log line per change (layout, from->to, buttons' spot, every kept spot). Run (LEVEL 1, KONKR, QA app from the
+  dev line 717a or later, ~2 min, no key / tap except B on a first-start picker, snapshot saved and restored):
+  `sh tools/qa/device/row714.sh r714` (x1.0) and `sh tools/qa/device/row714.sh r714b font=1.3`, pull /sdcard/pc/<tag>, then
+  `python3 tools/qa/tools/row714.py <dir>` (PASS / FAIL / INFRA; screenshots + QaClip dumps beside it show the buttons
+  at each step). Covers: placed at Middle -> Top (normal spot) -> Middle (spot back) -> Bottom, placed at Bottom, Top -> Bottom
+  (its own spot) -> Middle (Middle's spot) -> Middle again (unchanged). The real R1 tile tap stays a by-hand owner check.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

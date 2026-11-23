@@ -2771,5 +2771,53 @@ class TestCrateChecklist678o(unittest.TestCase):
         self.assertIn("grep -q '^PICKER' $F/voltcap_qa_screen", sh)  # (k678c: the profile picker closed before the first A)
 
 
+class TestRow714Grader717a(unittest.TestCase):
+    """717a: row714.py grades the Tile home Row place / round buttons' spot run (HW-24 714a) from the QA app's rowtile lines;
+    a lost spot FAILs, an old build without the line is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s1 none MIDDLE:0.3000,0.2000", "expect s2 0.3000,0.2000 -",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowtile TILES MIDDLE->TOP spot=ROW shortcuts=none kept=MIDDLE:0.3000,0.2000",
+            "E VoltcapQA: 2 rowtile TILES TOP->MIDDLE spot=ROW shortcuts=0.3000,0.2000 kept=-"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row714
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowtile.txt"), "w").write("\n".join(rows) + "\n")
+        return row714.grade(d)[1]
+
+    def test_spot_back_at_its_place_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_spot_lost_fails(self):
+        lost = [self.ROWS[0], self.ROWS[1].replace("shortcuts=0.3000,0.2000", "shortcuts=none")]
+        self.assertEqual(self._grade(self.LOG, lost), "FAIL")
+
+    def test_old_build_or_wrong_setup_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, []), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        classic = [r.replace("TILES", "CLASSIC") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, classic), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_never_opens_r1_and_targets_the_qa_app(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("voltcap_test_pref"))
+        self.assertIn("voltcap_test_snapshot restore", sh)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
