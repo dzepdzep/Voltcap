@@ -2220,6 +2220,58 @@ class TestCiRetryInfra681q(unittest.TestCase):
         # a failed task with no Gradle explanation at all stays code
         self.assertEqual(r.classify("> Task :app:testDebugUnitTest FAILED\n" + self.LOG429)[0], "code")
 
+    # 704a: 0288490 ubuntu-latest - Robolectric fetched android-all-instrumented itself, so the 429 became failing tests.
+    FAIL429 = ("%s > [%s] > classMethod FAILED\n"
+               "    java.lang.AssertionError: Failed to fetch maven artifact org.robolectric:android-all-instrumented:14-x\n\n"
+               "        Caused by:\n        java.util.concurrent.ExecutionException: java.io.IOException: Server returned HTTP "
+               "response code: 429 for URL: https://repo1.maven.org/maven2/org/robolectric/x.jar\n\n")
+    TESTS_BLOCK = ("* What went wrong:\nExecution failed for task ':app:testDebugUnitTest'.\n> There were failing tests. "
+                   "See the report at: file:///x/index.html\n\n* Try:\n> Run with --scan\n\n")
+
+    def log704(self, fails, total=None):
+        body = "".join(self.FAIL429 % (c, n) for c, n in fails)
+        n = len(fails) if total is None else total
+        return ("> Task :app:testDebugUnitTest\n\n" + body + "1783 tests completed, %d failed\n\n" % n
+                + "> Task :app:testDebugUnitTest FAILED\n\nFAILURE: Build failed with an exception.\n\n" + self.TESTS_BLOCK
+                + "BUILD FAILED in 5m\n")
+
+    def test_failing_tests_that_only_hit_a_robolectric_429_are_infra(self):
+        r = self.mod()
+        fails = [("AchFirstRowRoboTest", "CLASSIC n=1"), ("WindowWordsSurvey682Test", "TV x1.3")]
+        self.assertEqual(r.classify(self.log704(fails)), ("infra", "HTTP 429 from a package server"))
+        stamped = "".join("2026-11-23T06:33:43.7650372Z " + ln for ln in self.log704(fails).splitlines(True))
+        self.assertEqual(r.classify(stamped)[0], "infra")
+        # counted over the whole stream: a tail that lost the early stack traces still gets the whole-run verdict
+        whole = r.TestFailures.of(self.log704(fails * 50, 100))
+        self.assertEqual((whole.headers, whole.infra, whole.reported), (100, 100, 100))
+        self.assertEqual(r.classify(self.log704(fails * 50, 100)[-400:], whole)[0], "infra")
+
+    def test_one_real_test_failure_among_429s_stays_code(self):
+        r = self.mod()
+        fails = [("AchFirstRowRoboTest", "CLASSIC n=1")]
+        real = ("HomeEditFullText703aTest > widgetNamesWhole FAILED\n    java.lang.AssertionError: expected:<4> but was:<3>\n"
+                "        at org.junit.Assert.fail(Assert.java:89)\n\n")
+        log = self.log704(fails, 2).replace("1783 tests", real + "1783 tests")
+        self.assertEqual(r.classify(log)[0], "code")
+        # more failures reported than printed (a failure we cannot see) -> code
+        self.assertEqual(r.classify(self.log704(fails, 3))[0], "code")
+        # a 404 (our wrong coordinates) is never infra
+        self.assertEqual(r.classify(self.log704(fails).replace("code: 429", "code: 404"))[0], "code")
+        # a compile error beside 429 test failures -> code
+        self.assertEqual(r.classify(self.log704(fails) + "e: file:///a/B.kt:3:1 Unresolved reference\n")[0], "code")
+        # the whole-stream count wins over a tail that only shows 429s
+        mixed = r.TestFailures.of(log)
+        self.assertEqual(r.classify(self.log704(fails), mixed)[0], "code")
+
+    def test_run_once_counts_test_failures_while_streaming(self):
+        r = self.mod()
+        import io, contextlib
+        log = self.log704([("A", "1"), ("B", "2")])
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc, tail, tests = r.run_once([sys.executable, "-c", "import sys; sys.stdout.write(%r); sys.exit(1)" % log], 5)
+        self.assertEqual((rc, tests.headers, tests.infra, tests.reported), (1, 2, 2, 2))
+        self.assertEqual(r.classify(tail, tests)[0], "infra")
+
     def test_retries_only_infra_and_keeps_the_exit_code(self):
         r = self.mod()
         runs, slept = [], []

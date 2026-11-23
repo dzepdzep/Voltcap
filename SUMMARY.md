@@ -1,3 +1,16 @@
+# Update 704a (23 Nov 2026, cloud run, CI fix) - Verify 310 also retries when Robolectric itself is refused by Maven Central
+- CI first: Verify 310 on 0288490 (703a): ubuntu-24.04 GREEN (whole suite, incl. HomeEditFullText703aTest); ubuntu-latest RED
+  with 1134 failing tests - every one "Failed to fetch maven artifact org.robolectric:android-all-instrumented ... Server
+  returned HTTP response code: 429". Robolectric downloads that jar itself when a test class starts, so the 429 shows up as
+  failing tests ("There were failing tests"), which 702a still ruled a code failure - no retry.
+- tools/ci/retry_infra.py: counts every failed test while the output streams (TestFailures; the 4000-line tail is far shorter
+  than 1134 stack traces). Failing tests are infra only when EVERY printed failure is a 429 / 5xx fetch AND their number equals
+  the "N tests completed, M failed" totals; one real failure, a hidden failure, a 404, a compile error -> code, no retry.
+  The real 0288490 log classifies as infra.
+- Selftest TestCiRetryInfra681q +3 (2 fail / error on the old script); test_qa 216/216. Static checks PASS. No app code.
+- Files to copy: tools/ci/retry_infra.py, tools/qa/selftest/test_qa.py.
+- Hardware: none needed.
+
 # Update 703a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home editor shows widget names and status lines whole
 - CI first: Verify 310 on 628d827 (702a) GREEN.
 - HomeEditSession.kt (home edit mode): 4 TRUNCATE places -> 0. The inspector's widget name and scope line, and the widget
