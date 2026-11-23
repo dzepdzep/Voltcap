@@ -103,7 +103,31 @@ trace_layout() {
   sleep 0.5; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3
   atrace --async_dump -o $O/${n}_trace.txt > /dev/null 2>&1; atrace --async_stop > /dev/null 2>&1
   closewin; log "$1: trace done ($(wc -c < $O/${n}_trace.txt 2>/dev/null) bytes, launches: $(launches))"; }
+# (682an, owner Task 1 row-position checks): the home only, per layout, at each Row place (R1 Row tile's own hook) - a screenshot +
+# QaClip dump each, no key pressed. Level 1.   sh p2review.sh rows TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+rows_layout() {
+  n=$1; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Shadow of the Colossus}}"; sleep 2
+  A --ez voltcap_test_preview true; A --es voltcap_test_layout $1; sleep 3.5; gate
+  for D in TOP MIDDLE BOTTOM; do A --es voltcap_test_dock $D; sleep 2.5; gate; shot ${n}_row_$D; done
+  A --es voltcap_test_dock MIDDLE; sleep 1; log "$1: row places shot"; }
 case $MODE in
+rows)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do rows_layout $lay; done
+  log "rows done"; echo DONE >> $L;;
 trace)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
