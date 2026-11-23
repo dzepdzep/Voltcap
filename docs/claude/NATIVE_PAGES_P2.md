@@ -504,3 +504,13 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
 - **x1.0 hardware:** KONKR kf10 (81a1c9e) and RP Classic rg10 (31f9593): Play the same place on every page, 12 / 12 on both.
 - Tests: Review682agTest (+ magCoverMs), PlayPlace KONKR + RPC, WinFocus, Readability476 - 0 failed. Static checks PASS.
   QA tooling: D380 (gfxinfo reset crashed the QA app) fixed in 9ceab5c; selftests 241 OK.
+- **682ai (248e766):** RP Classic x1.3 rh13 showed the new Magazine sheet's key row rising into view over ~250 ms (AnimatedContent's
+  default size animation clipping the page area while the masthead stepped down - D385). Native page changes no longer animate
+  the area's size. Re-walked ki13 (KONKR: Magazine, Arctic) / ri13 (RP Classic: Magazine, Library): keys in place from the first
+  frame, Feature -> Review 282 ms on the KONKR (was 531), fatal 0, 0 launches, restore diff 0, Play same place on every page.
+- RP Classic x1.3 rh13 (3785f33, all 7 changed): fatal 0, 0 launches, restore diff 0, Play same place 7 / 7; Terminal
+  confirmation clear; frame times p50 25-31 ms on every layout (the RP Classic records its own screen while walking) -
+  janky Arctic 28 %, Magazine 12 %, Library 6 %, Cube 8 %, Spotlight 8 %, Terminal 4 %, TV 10 %. RP Classic x1.0 Night rh10:
+  Play same place, 0 launches, restore diff 0.
+- Package (artifact "P2 visual corrections - before / after", version 1795451646-b145): page-change sheets at the top, x1.0
+  strips for both handhelds, the Coverflow proposal at the bottom (not applied).
