@@ -1,11 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,9 +74,12 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
     // The coin dropping in (Layout options › Arcade sounds; nothing when off).
     androidx.compose.runtime.LaunchedEffect(Unit) { LayoutKitSounds.play(LayoutKit.ARCADE, KitSound.OPEN, null) }
     // INSERT COIN blinks (about once a second; still on Lite / with animations off).
-    val blink = if (reduced) null else rememberInfiniteTransition(label = "coin").animateFloat(
-        1f, 0f, infiniteRepeatable(tween(560, easing = LinearEasing), RepeatMode.Reverse), label = "coinBlink"
-    )
+    // (682aj, owner 23 Nov 18:23 - Arcade stutter: the blink was an endless animation stepped to on / off - it asked for a new
+    // frame of the whole cabinet, glowing text and all, 60+ times a second while only two changes a second show. Now the two
+    // changes are the only frames: the same 560 ms on, 560 ms dim.)
+    val blink = if (reduced) null else androidx.compose.runtime.produceState(1f) {
+        while (true) { kotlinx.coroutines.delay(ARCADE_BLINK_MS); value = if (value > 0.5f) 0f else 1f }
+    }
     Box(
         Modifier.size(w, h).graphicsLayer {
             // The tube switching on: a line across, then the picture opening out of it; off: back to the line, then a dot.
@@ -230,3 +227,6 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
 
 /** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
 internal const val ARCADE_LINE = 1.35f
+
+/** 682aj: INSERT COIN's half blink (ms) - one state change each, no frames between. */
+internal const val ARCADE_BLINK_MS = 560L

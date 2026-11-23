@@ -3026,6 +3026,16 @@ class TestGfxDelta682ag(unittest.TestCase):
         self.assertNotIn("gfxinfo $P reset", code)
         self.assertIn("_walk_gfx0.txt", code)
 
+    def test_detail_splits_ui_thread_and_gpu(self):
+        d0 = self.DUMP.format(f=100, j=10, a=50, b=30, c=15, d=5) + "Number Slow UI thread: 7\nGPU HISTOGRAM: 1ms=10 3ms=80 12ms=10\n"
+        d1 = self.DUMP.format(f=200, j=30, a=80, b=60, c=40, d=20) + "Number Slow UI thread: 27\nGPU HISTOGRAM: 1ms=10 3ms=120 12ms=70\n"
+        s = self.g.detail(self.g.delta(self.g.parse(d0), self.g.parse(d1)))
+        self.assertEqual(20, s["slow_ui"]); self.assertEqual(12, s["gpu_p90"]); self.assertIsNone(s["slow_draw"])
+
+    def test_a_dump_without_gpu_counters_reports_none(self):
+        s = self.g.detail(self.g.delta(None, self.g.parse(self.DUMP.format(f=10, j=1, a=9, b=1, c=0, d=0))))
+        self.assertNotIn("gpu_p50", s); self.assertIsNone(s["slow_ui"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

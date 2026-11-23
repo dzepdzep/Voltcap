@@ -177,11 +177,11 @@ private fun ShelfEntries(ctx: WinSceneCtx, live: Boolean, ink: Color, label: Col
 
 
 /** 682ag: Coverflow details' reading proposal (the facts as one line of values) - provided only by its panel, and only while
- *  [CoverReadingProposal] is on (OFF by default until the owner picks it from the comparison). */
+ *  [CoverReadingProposal] is on - owner 23 Nov 18:23: option A, ON in the QA branch as a trial (not visual approval). */
 internal val LocalCoverReading = androidx.compose.runtime.compositionLocalOf { false }
 
 /** 682ag: the switch for the comparison (review sheets set it; no user setting until the owner approves). */
-internal object CoverReadingProposal { val on = androidx.compose.runtime.mutableStateOf(false) }
+internal object CoverReadingProposal { val on = androidx.compose.runtime.mutableStateOf(true) }
 
 /** 682ag (pure): the proposal's facts line - each value kept together (no break inside "Team Ico"), the dot held to the value before it (a line never starts with it). */
 internal fun coverFactsLine(values: List<String>): String = values.filter { it.isNotBlank() }.joinToString("\u00A0\u00A0·  ") { it.trim().replace(' ', '\u00A0') }

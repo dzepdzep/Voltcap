@@ -70,7 +70,44 @@ openw() { # layout name -> 0 when the game window is open
     log "$1: console opened (two-step home)"; wg_home;; esac
   wg_key_home A; sleep 1.9
   wg_window; }   # (no window = ABORT: winguard stops the run, nothing more pressed)
+# (682aj, owner 23 Nov 18:23 - "Investigate the 48% slow frames ... with screen recording enabled and disabled, stable screen versus
+# page transitions, idle versus active navigation"): frame-time phases per layout, each between two read-only gfxinfo dumps
+# (tools/gfxdelta.py --detail) plus the last 120 frames' framestats. Recording only in the *_rec phases.
+#   sh p2review.sh perf TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+phase() { dumpsys gfxinfo $P > $O/${n}_P_$1_gfx0.txt 2>/dev/null; }
+phase_end() { dumpsys gfxinfo $P > $O/${n}_P_$1_gfx.txt 2>/dev/null; dumpsys gfxinfo $P framestats > $O/${n}_P_$1_fs.txt 2>/dev/null; }
+perf_layout() {
+  n=$1; A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
+  A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout $1; sleep 4; gate
+  [ "$(qawins)" = 1 ] || { log "$1: PRECONDITION FAILED - $(qawins) QA windows on the home"; return 1; }
+  wg_home
+  phase home_idle; sleep 6; phase_end home_idle
+  phase home_idle_rec; REC_SEG=8 rec_start $O/${n}_P_home_idle 8; sleep 6.5; rec_stop; phase_end home_idle_rec
+  phase home_nav; for i in 1 2 3 4 5 6; do wg_key_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do wg_key_home L; sleep 0.5; done; sleep 0.8; phase_end home_nav
+  openw $1 ${n}_perf || return 1
+  sleep 1.5; phase win_idle; sleep 6; phase_end win_idle
+  phase win_walk; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3; phase_end win_walk
+  phase win_walk_rec; REC_SEG=12 rec_start $O/${n}_P_walk 12; sleep 0.6; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3; rec_stop; sleep 0.3; phase_end win_walk_rec
+  phase win_nav; for i in 1 2 3; do k DPAD_RIGHT 0.5; done; for i in 1 2 3; do k DPAD_LEFT 0.5; done; sleep 0.6; phase_end win_nav
+  closewin; log "$1: perf phases done (launches: $(launches))"; }
 case $MODE in
+perf)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do logcat -c; perf_layout $lay; done
+  log "perf done"; echo DONE >> $L;;
 run)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

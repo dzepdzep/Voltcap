@@ -4230,7 +4230,7 @@
    "title": "Arcade cabinets window: KONKR x1.0 walk 48 % janky frames (p50 20 ms, gfxinfo kf10, 81a1c9e) - the other changed layouts 4-15 %; RP Classic slow too (Magazine 51 %, Cube 41 %, Arctic 34 % janky, rg10). Likely the glow shadows on every pixel-font line and per-frame scanline rects; not investigated yet",
    "rule": "perf",
    "severity": "medium",
-   "status": "open - measured only",
+   "status": "fixed (682aj) - KONKR x1.0 kpn10 vs kp10, no recording: Arcade home navigation 48.7 % -> 4.0 % janky (GPU p50 12 -> 4 ms, frame p50 20 -> 10 ms); game window idle 88 % -> 0 %. Cause: the home repaints every frame and the room, the row's machines and the big machine's body were drawn from scratch each time; the window's INSERT COIN blink asked for every frame. Fix: offscreen layers for the static parts (arcadeCached), the blink as two state changes a second. Recording on still costs the KONKR ~40 % janky frames on any moving home (Cinema too) - recording overhead, not the app",
    "found": "2026-11-23"
   },
   {
@@ -4279,6 +4279,22 @@
    "rule": "R23",
    "severity": "low",
    "status": "fixed (682ai) - native page changes have no size animation (NativePages: move(...).using(null)); hardware recheck ri13 / ki13",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D386",
+   "title": "Native page change (KONKR x1.0 kpn10, every layout measured - Arcade, Cinema): the first frames of a page change take 50-115 ms on the main thread (composing / recording the new page), one visible hitch per R1 / L1",
+   "rule": "perf",
+   "severity": "medium",
+   "status": "open - measured (framestats), next P2 performance item",
+   "found": "2026-11-23"
+  },
+  {
+   "id": "D387",
+   "title": "RP Classic slowdown (perf runs rp10 / rpn10 vs rpold10 on the 17 Nov build 679c, x1.0, no recording): on the current builds a home move on the Classic row or Arcade is ONE frame of 65-85 ms (30-45 ms of it composition) with no glide - 12 presses gave 12-15 frames; on 17 Nov the same moves glided (Classic 473 frames, 7 % janky; Arcade 401, 13 %) and a move cost 2-20 ms of composition. The glide is off because Automatic performance mode turned Lite on after slow frames (FrameWatch) - so the root is the heavier composition per move. Recording on / off changes little on this device. Not caused by the P2 page designs (the Classic row has none); a regression somewhere between 17 and 23 Nov",
+   "rule": "perf",
+   "severity": "low",
+   "status": "open - next: bisect the QA builds between 679c (17 Nov) and 682aj on the RP Classic (Classic row home_nav), then fix",
    "found": "2026-11-23"
   }
  ]

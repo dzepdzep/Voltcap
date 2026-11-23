@@ -541,3 +541,34 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
 - Rules: v0.6.74 isolated branches, QA app, synthetic data, targeted hardware tests (no needless full sweeps); implementation /
   hardware / animation-performance / owner approval kept separate; no production install, merge or publication without GO;
   continue autonomously, report only real blockers or design decisions.
+
+### 682aj - owner 18:23 items: Coverflow A, Arcade smoothness, RP Classic, evidence ZIP - IMPLEMENTED, hardware-measured, NOT VISUALLY APPROVED
+- **Profiling tool:** `p2review.sh perf TAG SCALE "LAYOUTS"` - per layout, read-only gfxinfo dumps around each phase (home still,
+  home still while recording, home navigation, window still, page walk, page walk while recording, window navigation) + the last
+  frames' framestats; `gfxdelta.py --detail` adds slow-UI-thread / slow-issue-draw / missed-vsync counts and GPU p50-p99
+  (selftests +2). Level 1 only (QA app), launches blocked, owner snapshot restored (diff 0 on every run).
+- **Arcade (D379, fixed):** KONKR x1.0, no recording, 682ai kp10 -> 682aj kpn10: home navigation 48.7 % -> 4.0 % slow frames,
+  GPU p50 12 -> 4 ms, RenderThread issue 7.9 -> 4.2 ms; game window still 88 % -> 0 %. Cause: the home repaints every frame
+  (the scene behind keeps moving) and the room, every row machine and the big machine's body were drawn from scratch each time;
+  the window's INSERT COIN blink requested every frame. Fix: offscreen layers for the static parts (arcadeCached: room, light,
+  row machines you're not on, big machine's body / side; never while the camera zooms into the monitor, never in the hall where
+  machines turn and scale), the blink as two state changes a second (ARCADE_BLINK_MS). Look and animations unchanged.
+  ArcadePerf682ajTest (fails on 682ai). Earlier build 679c (17 Nov) on the KONKR: home navigation 34.6 % slow at RT 14 ms -
+  the Arcade home was already heavy before P2.
+- **Recording overhead:** on the KONKR a recording costs a moving home ~40-50 % slow frames on its own (Cinema 49 %, Arcade 41 %
+  after the fix) - the earlier "48 %" came from a walk recorded on a screen that never stops moving. Page walks: about the same
+  with and without. RP Classic: recording changes little.
+- **D386 (open, next):** every native page change on the KONKR has one main-thread frame of 50-115 ms (composing the new page) -
+  one hitch per R1 / L1, Cinema as much as Arcade.
+- **RP Classic (D387, open, next):** a home move on the Classic row or Arcade is one 65-85 ms frame (30-45 ms composition), no
+  glide; the 17 Nov build glided (Classic 473 frames 7 % slow, Arcade 401 / 13 %) with 2-20 ms composition per move. Automatic
+  performance mode turned Lite on after slow frames, so the real cause is the heavier composition per move - not the P2 pages (the
+  Classic row has none), not recording. Bisect of the QA builds 17 -> 23 Nov next.
+- **Coverflow details (owner option A):** compact facts ON in the QA branch (CoverReadingProposal default true). Hardware before
+  (682ai kcb / rcb) / after (682aj kca / rca), x1.0 + x1.3, both handhelds: panel width unchanged, title beside it visible (home with
+  Crazy Taxi shown), facts whole words, KONKR x1.0 now shows all facts and the whole story without scrolling; at x1.3 the page opens
+  on the story as before; Play same place 4 / 4; 0 launches, restore diff 0. Longest title on hardware: "Crazy Taxi (USA)" - a much
+  longer one NOT TESTED.
+- **TV room:** unchanged (owner: no redesign without a genuine defect).
+- **Evidence ZIP:** voltcap_p2_review_682aj.zip - 115 files incl. 9 page-change sheets, 24 x1.0 strips, the Coverflow hardware
+  before / after and the smoothness table; artifact version 1795457328-5953.
