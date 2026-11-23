@@ -94,6 +94,14 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
   row). A on the reached Play launches the game. Unit evidence only (HeaderReachDirection715aTest 3/3).
+- **RESULT 23 Nov 22:03 (live session, KONKR GT78 USB, QA app built from dev line 7bd1dea = 716b, Level 1):** 716a PASS for the
+  QA app's own settings - Voltcap row and Tile home at Row Top / Middle / Bottom, x1.0 (kr10) and x1.3 (kr13): every text of the
+  home whole and on screen (QaClip dumps, nothing cut, nothing under the status bar); at Middle / Bottom the game header starts
+  below the clock / battery at x1.3; at Top the status bar sits at the bottom, clear. Header ON + "Game & news" + category bar
+  Full + music player: NOT TESTED (no QA hook sets those appearance options - next step: drive Settings or extend the snapshot
+  hook). 714a (R1 Row tile + hand-placed round buttons) and 715a (Edit Home Play part reach): NOT TESTED - they need the real R1
+  tile and Edit Home moves (the voltcap_test_dock hook bypasses 714a's tile handler). Restore diff 0, 0 launches; the KONKR is
+  back on the P2 QA build 682am. Tool: p2review.sh rows (P2 branch).
 - Also (716a, Task 1 Row-position, dev line 716a or later, ~3 min, KONKR x1.3 QA font scale, with 714a / 715a): Voltcap row,
   game header ON + Next to the row "Game & news" + category bar Full, status bar on, legend on. R1 Row tile Middle, then Bottom:
   the header's top line must sit fully below the clock / battery (it could start under them before); at x1.0 nothing moves
