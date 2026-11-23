@@ -2186,7 +2186,11 @@ private fun TvControls(
         val status = LocalWinStatus.current
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             val openers = LocalPageOpeners.current
+            // (682ag, owner review 23 Nov, TV room option 2 / D367: on the TV's own pages the strip holds Play and the page's own
+            // key only - the Back key is gone (B still goes back, the B hint says so); two page slots with the "Full details"
+            // reference keep Play the same width and place on Details, Achievements and Options. The figure's keep-out stays.)
             val tvItems = winButtonItems(look, page, setPage, onClose, onPlay, onFullDetails, extras, openers = openers)
+                .filterNot { page != WinPage.MAIN && it.first == "Back" }
             // (672a, Flip 2 x1.3 popup gate f672e: three equal keys left "Full details" a third of the strip - cut even at the
             // smallest size the keys shrink to. Each key now asks for its word's width at the keys' own size: equal keys while
             // every word fits its third (as before), else widths by word, else Play | Back over a whole-width Full details -
@@ -2196,8 +2200,11 @@ private fun TvControls(
             Box(Modifier.weight(1f)) {
                 val labels = tvItems.map { if (look.caps) it.first.uppercase() else it.first }
                 ButtonRow(tvItems.map { it.first }) {
-                    UniformKeyRow(tvItems.indices.map { i -> WinAction(labels[i], androidx.compose.material.icons.Icons.Filled.PlayArrow, tvItems[i].second, primary = tvItems[i].third) }, 6.dp) { a ->
+                    UniformKeyRow(tvItems.indices.map { i -> WinAction(labels[i], androidx.compose.material.icons.Icons.Filled.PlayArrow, tvItems[i].second, primary = tvItems[i].third) }, 6.dp,
+                        slots = if (page != WinPage.MAIN) PAGE_SLOTS else 0) { a ->
                         val i = labels.indexOf(a.label)
+                        // (the page row's measuring reference - not one of this page's keys)
+                        if (i < 0) { WinButton(look, if (look.caps) a.label.uppercase() else a.label, Modifier, wideButton = false, stretch = true, compact = true, onClick = {}); return@UniformKeyRow }
                         val (l, f, isPlay) = tvItems[i]
                         WinButton(
                             look, labels[i],
@@ -3216,7 +3223,8 @@ private fun WinButton(look: WinLook, label: String, modifier: Modifier, wideButt
             .clip(shape)
             .background(if (focused) look.btnOnFill else look.btnFill)
             .then(if (look.btnBorder != null) Modifier.border(if (focused && look.btn != Btn.SQUARE) 2.5.dp else 1.5.dp, if (focused) look.accent else look.btnBorder, shape) else Modifier)
-            .clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() }
+            // (682ag: a page row's measuring reference is drawn, never focused, touched or heard - LocalMeasureOnly)
+            .then(if (LocalMeasureOnly.current) Modifier else Modifier.clickable(interactionSource = source, indication = null) { sounds?.play(UiSound.SELECT); onClick() })
             .padding(horizontal = if (look.btn == Btn.TEXT) 6.dp else if (compact) 6.dp else 14.dp),
         contentAlignment = if (look.btn == Btn.TEXT) Alignment.CenterStart else Alignment.Center
     ) {

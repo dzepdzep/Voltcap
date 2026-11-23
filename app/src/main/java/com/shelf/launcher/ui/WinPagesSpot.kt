@@ -216,3 +216,47 @@ private fun SpotBackstage(ctx: WinSceneCtx, live: Boolean, light: Color, modifie
         if (ctx.options.isEmpty()) Text("Nothing backstage for this title.", color = SPOT_DIM, fontSize = 12.sp)
     }
 }
+
+/**
+ * 682ag (owner review 23 Nov - Spotlight: "an intentional no-art layout instead of a huge black empty screen"): a game without
+ * a picture plays on a stage - deep red curtains drawn in at both sides, a warm pool of light on the middle, and on the main
+ * page the bill in that light: "NOW SHOWING", the title large in whole words, the console and year under it. The pages keep
+ * the curtains and the light; their own words sit on the stage.
+ */
+@Composable
+internal fun SpotNoArtStage(ctx: WinSceneCtx, modifier: Modifier) {
+    val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
+    Box(modifier) {
+        androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+            drawRect(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color(0xFF2B0B10), Color(0xFF120407), Color.Black)))
+            // the curtains: soft vertical folds, darker toward the middle edge
+            val cw = size.width * 0.16f
+            for (side in 0..1) {
+                val x0 = if (side == 0) 0f else size.width - cw
+                val folds = 6
+                for (i in 0 until folds) {
+                    val fx = x0 + cw * i / folds
+                    drawRect(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color(0xFF5A1018), Color(0xFF2A060B), Color(0xFF5A1018)), startX = fx, endX = fx + cw / folds),
+                        topLeft = androidx.compose.ui.geometry.Offset(fx, 0f), size = androidx.compose.ui.geometry.Size(cw / folds, size.height))
+                }
+                val edge = if (side == 0) x0 + cw else x0
+                drawRect(androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    if (side == 0) listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent) else listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f)),
+                    startX = if (side == 0) edge else edge - cw * 0.5f, endX = if (side == 0) edge + cw * 0.5f else edge),
+                    topLeft = androidx.compose.ui.geometry.Offset(if (side == 0) edge else edge - cw * 0.5f, 0f), size = androidx.compose.ui.geometry.Size(cw * 0.5f, size.height))
+            }
+            // the pool of light on the stage
+            drawRect(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0xFFFFE2A8).copy(alpha = 0.22f), Color.Transparent),
+                center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.36f), radius = size.minDimension * 0.55f))
+        }
+        if (ctx.page == WinPage.MAIN) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth(0.62f).padding(top = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("NOW SHOWING", color = lit, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 4.sp)
+            Spacer(Modifier.height(8.dp))
+            WholeWordsText(ctx.name.uppercase(), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, lineHeight = 34.sp, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
+            Text(listOfNotNull(ctx.console, ctx.year).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, letterSpacing = 3.sp)
+            ctx.genres?.let { Text(it.uppercase(), color = Color.White.copy(alpha = 0.55f), fontSize = 10.sp, letterSpacing = 2.sp, modifier = Modifier.padding(top = 4.dp)) }
+        }
+    }
+}

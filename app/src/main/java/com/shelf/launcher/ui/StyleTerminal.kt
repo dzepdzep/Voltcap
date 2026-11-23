@@ -110,10 +110,12 @@ internal class TermEntry(val name: String, val dir: Boolean, val note: String, v
 /** Update 344: a monitor's colours. */
 internal class TermColors(val bg: Color, val fg: Color, val dim: Color, val hi: Color, val hiInk: Color, val accent: Color)
 
+// (682ag, owner review 23 Nov - Terminal readability: the green, amber and white sets' dim lines (the story, the prompt, the
+// listing's head) a step brighter - 5.5:1 or better on their ground (green was 4.5:1); the bright lines and the highlight unchanged.)
 internal fun termColors(t: Features.TmTheme): TermColors = when (t) {
-    Features.TmTheme.GREEN -> TermColors(Color(0xFF020A04), Color(0xFF39FF7A), Color(0xFF1C8A43), Color(0xFF39FF7A), Color(0xFF021006), Color(0xFFB6FFCB))
-    Features.TmTheme.AMBER -> TermColors(Color(0xFF0D0700), Color(0xFFFFB000), Color(0xFF8A5E00), Color(0xFFFFB000), Color(0xFF140B00), Color(0xFFFFE0A0))
-    Features.TmTheme.WHITE -> TermColors(Color(0xFF07080A), Color(0xFFE6ECF0), Color(0xFF7D868D), Color(0xFFE6ECF0), Color(0xFF07080A), Color(0xFFFFFFFF))
+    Features.TmTheme.GREEN -> TermColors(Color(0xFF020A04), Color(0xFF39FF7A), Color(0xFF2DB45C), Color(0xFF39FF7A), Color(0xFF021006), Color(0xFFB6FFCB))
+    Features.TmTheme.AMBER -> TermColors(Color(0xFF0D0700), Color(0xFFFFB000), Color(0xFFB47C00), Color(0xFFFFB000), Color(0xFF140B00), Color(0xFFFFE0A0))
+    Features.TmTheme.WHITE -> TermColors(Color(0xFF07080A), Color(0xFFE6ECF0), Color(0xFF9AA3AA), Color(0xFFE6ECF0), Color(0xFF07080A), Color(0xFFFFFFFF))
     Features.TmTheme.DOS -> TermColors(Color(0xFF0000A8), Color(0xFFFFFFFF), Color(0xFFA8A8A8), Color(0xFF00A8A8), Color(0xFF000000), Color(0xFFFFFF55))
     Features.TmTheme.CGA -> TermColors(Color(0xFF000000), Color(0xFF55FFFF), Color(0xFF00A8A8), Color(0xFFFF55FF), Color(0xFF000000), Color(0xFFFFFFFF))
 }

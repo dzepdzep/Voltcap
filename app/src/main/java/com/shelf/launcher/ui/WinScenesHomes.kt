@@ -96,6 +96,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         val k = ctx.reveal().coerceIn(0f, 1f); val z = 1.14f - 0.14f * k; scaleX = z; scaleY = z
                     }, request = if (art == ctx.cover) rememberStyleArtRequest(art) else rememberBackdropRequest(art), maxCrop = SmartFill.maxCropFor(art, ctx.cover)
                 )
+                // (682ag, owner review 23 Nov: no picture left the opening scene an empty dark band - a title card instead: the
+                // projector's beam over the game's colour, the console as the studio's card.)
+                else CinemaNoArtBand(ctx, Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.55f to Color(0xFF181818).copy(alpha = 0.35f), 1f to Color(0xFF181818))))
                 Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF181818).copy(alpha = 0.7f), 0.5f to Color.Transparent)))
             }
@@ -244,6 +247,13 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
 // Arctic info drawer
 // ---------------------------------------------------------------------------------------------------------------------
 
+/** 682ag (pure): Arctic's menu width - the split's share (45 %), more where its longest word needs it, never over 60 %. */
+internal fun arcticMenuWidth(totalDp: Float, needDp: Float, splitGap: Float): Float =
+    maxOf((totalDp - splitGap) * 0.45f, needDp).coerceAtMost((totalDp - splitGap) * 0.6f)
+
+/** 682ag (pure): the info list puts the field over its value where a 92 dp field column leaves the value under 120 dp. */
+internal fun arcticStackFacts(infoDp: Float): Boolean = infoDp - 92f < 120f
+
 @Composable
 internal fun ArcticDrawer(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 900.dp)
@@ -291,11 +301,21 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
             LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 36.dp else 52.dp).fillMaxWidth()) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
             Text(homeWinPageName(ctx.page).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
-            if (ctx.page == WinPage.MAIN) {
-                Row(Modifier.weight(1f)) {
+            if (ctx.page == WinPage.MAIN) { androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f)) {
+                // (682ag, owner review 23 Nov - Arctic, RP Classic x1.3: "Achievements" was cut in the menu and the info values
+                // wrapped almost letter by letter beside a fixed 92 dp field column. The menu takes the width its longest word
+                // needs (from the split's share up to 60 % of the drawer); the info list gets the rest and, where that is too
+                // narrow for the field column and a value side by side, puts the field over its value - same text sizes.)
+                val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                val arcMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+                val arcDens = androidx.compose.ui.platform.LocalDensity.current
+                val arcStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                val longestPx = acts.flatMap { it.label.split(' ') }.maxOfOrNull { arcMeasurer.measure(it, arcStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                val totalW = maxWidth
+                val menuW = arcticMenuWidth(maxWidth.value, with(arcDens) { longestPx.toDp() }.value + 20f + 12f + 24f + 4f, splitGap = 18f).dp
+                Row(Modifier.fillMaxSize()) {
                     // The actions as a media-centre list.
                     val s = rememberScrollState()
-                    val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                     @Composable fun actionRow(a: WinAction, m: Modifier, fixed: Boolean = false) {
                             SceneControl(a, m) { on ->
                                 Row(
@@ -321,7 +341,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.9f).fillMaxHeight()) {
+                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.then(if (compact) Modifier.weight(0.9f) else Modifier.width(menuW)).fillMaxHeight()) {
                         // (Update 488, D284: the rows share the drawer's room — on the Thor (1080p) Back was cut 57 px at the bottom of
                         // the scrolling list. Each row its design height when there is room, down to a 26 dp row; scrolling below that.)
                         val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
@@ -335,12 +355,17 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                         // The info list and the plot.
                         val s2 = rememberScrollState()
                         // (Update 428, D107: the plot reachable with the D-pad — its last rows were cut for a controller.)
-                        Column(Modifier.weight(1.1f).fillMaxHeight().sceneReadable(s2, accent).sceneFadeEdges(s2).verticalScroll(s2)) {
+                        val infoW = totalW - menuW - 18.dp
+                        val stack = arcticStackFacts(infoW.value)
+                        Column(Modifier.weight(1f).fillMaxHeight().sceneReadable(s2, accent).sceneFadeEdges(s2).verticalScroll(s2)) {
                             @Composable fun line(k: String, v: String?) {
                                 if (v.isNullOrBlank()) return
-                                Row(Modifier.padding(vertical = 2.dp)) {
+                                if (stack) Column(Modifier.padding(vertical = 2.dp)) {
+                                    Text(k, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp)
+                                    WholeWordsText(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp)
+                                } else Row(Modifier.padding(vertical = 2.dp)) {
                                     Text(k, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, modifier = Modifier.width(92.dp))
-                                    Text(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    WholeWordsText(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                                 }
                             }
                             line("System", ctx.console)
@@ -356,6 +381,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                             }
                         }
                     }
+                }
                 }
             } else {
                 // (682y, P2 batch 4: the drawer's own pages - its info list, its media-centre lists - WinPagesArctic.kt.)

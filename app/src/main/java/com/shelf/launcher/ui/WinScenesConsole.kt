@@ -838,6 +838,9 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
             Box(Modifier.fillMaxHeight(if (ctx.page == WinPage.MAIN) 0.78f else 0.5f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
                     if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
+                    // (682ag, owner review 23 Nov: no picture was an empty grey card - the issue's own printed cover now: its
+                    // masthead, the console's plate in the game's colour.)
+                    else MagNoArtCover(ctx, st, Modifier.fillMaxSize())
                 }
                 Box(Modifier.align(Alignment.TopCenter).offset(y = (-8).dp).size(60.dp, 18.dp).graphicsLayer { rotationZ = -6f }.background(Color(0x99F3E9C6)))
             }
@@ -886,10 +889,19 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         // (Update 346: the "see page" callouts run in two columns, down then across, as a contents box would —
                         // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
                         val callouts = btns.filter { !it.primary && !it.back } + tls + btns.filter { it.back }
-                        val half = (callouts.size + 1) / 2
+                        // (682ag, owner review 23 Nov, RP Classic x1.3: "ACHIEVEM / ENTS" - two columns only where each holds the
+                        // longest callout word at its size; otherwise one column, the words whole, the box scrolling as before.)
+                        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val cm = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+                        val cd = androidx.compose.ui.platform.LocalDensity.current
+                        val cStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold, fontFamily = st.head)
+                        val longestPx = callouts.flatMap { it.label.uppercase().split(' ') }.maxOfOrNull { cm.measure(it, cStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                        val arrowPx = cm.measure("▸ ", cStyle, softWrap = false, maxLines = 1).size.width
+                        val twoCols = magTwoColumns(constraints.maxWidth.toFloat(), longestPx.toFloat(), arrowPx.toFloat(), with(cd) { 8.dp.toPx() }, with(cd) { 20.dp.toPx() })
+                        val half = if (twoCols) (callouts.size + 1) / 2 else callouts.size
                         // (Update 470: a gutter between the two columns — at font 1.3 a wrapped callout reached the next column's edge.)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (col in listOf(callouts.take(half), callouts.drop(half))) {
+                            for (col in listOf(callouts.take(half), callouts.drop(half)).filter { it.isNotEmpty() }) {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     col.forEach { a ->
                                         // (674f: the callouts keep their own size - the magazine's contents-box links; as wide as the column
@@ -910,6 +922,7 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                     }
                                 }
                             }
+                        }
                         }
                     }
                     Text(listOfNotNull(if (ctx.playtime == null && ctx.lastPlayed == null) "NOT PLAYED YET" else "PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
@@ -1183,6 +1196,11 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         }
         Text(" RUN " + TermNav.alias(ctx.g) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter)
             .graphicsLayer { alpha = if (termFrame(ctx.reveal()).top >= 0.6f) 1f else 0f }.background(tc.hi))
+        val termMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 16)
+        val termDens = androidx.compose.ui.platform.LocalDensity.current
+        val termNeed = (ctx.buttons + ctx.tools).map { it.label } .plus(listOf("Full details", "Full list", "Run"))
+            .maxOf { with(termDens) { termMeasurer.measure("► " + it.uppercase(), style, softWrap = false, maxLines = 1).size.width.toDp() } } + 8.dp
+        val termMenuW = termMenuWidth(w - 44.dp - 16.dp, termNeed)
         Row(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 22.dp).drawWithContent {
             // The lines come up one at a time from the top (a whole text line at a step).
             val shown = termFrame(k).text
@@ -1194,14 +1212,17 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         }) {
             // (682w, P2 batch 3: the pages are commands typed at the prompt, their output here - WinPagesTerm.kt; the menu on
             // the right stays as it is on every page.)
-            if (ctx.page != WinPage.MAIN) Column(Modifier.weight(0.55f).fillMaxHeight()) {
-                Text("C:\\> " + termCommand(ctx.page, TermNav.alias(ctx.g)), style = style.copy(color = tc.dim), maxLines = 2)
+            // (682ag, owner review 23 Nov - Terminal on a narrow screen: the menu is as wide as its longest command needs (any
+            // page's - one width on every page, so Play never moves; 30-45 % of the box), the output gets the rest; the typed
+            // command keeps its words / switches whole.)
+            if (ctx.page != WinPage.MAIN) Column(Modifier.weight(1f).fillMaxHeight()) {
+                WholeWordsText(termKeepTokens("C:\\> " + termCommand(ctx.page, TermNav.alias(ctx.g))), color = tc.dim, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
                 // (whole, wrapped in its column - a one-line sliding name ran under the command menu, ShelfText)
                 WholeWordsText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
                 NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(top = 4.dp), label = "termPage", move = ::termMove) { pg, pageLive ->
                     TermPage(ctx, pg, pageLive, style, tc.fg, tc.dim, tc.accent, tc.hi, tc.hiInk, Modifier.fillMaxSize())
                 }
-            } else Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
+            } else Column(Modifier.weight(1f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
                 WinFullText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, lineHeight = style.lineHeight, maxLines = 3, style = style)
@@ -1220,7 +1241,7 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                 }
             }
             Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll())) {
+            Column(Modifier.width(termMenuW).fillMaxHeight().then(fadeScroll())) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                 // (674e, owner brief 15 Nov - vertical menus: identical rows - a label that takes two lines makes every row that tall.)
                 UniformKeyColumn(rows, 0.dp, fill = true) { a ->
@@ -1241,3 +1262,9 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         }
     }
 }
+
+
+/** 682ag (pure): Terminal's command menu width - its longest command ([need], every page's), 30 % of the row at least and
+ *  45 % at most; the output column takes the rest. */
+internal fun termMenuWidth(row: androidx.compose.ui.unit.Dp, need: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
+    need.coerceIn(row * 0.3f, row * 0.45f)

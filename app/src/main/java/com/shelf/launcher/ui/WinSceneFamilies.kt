@@ -633,7 +633,10 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
                 Box(Modifier.size(inset).storageFlightSlot(true).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
                     // (682q: the small mark on the other faces is the picture only - a game without one shows the face's glass,
                     // never its console's name squeezed into 52 dp)
-                    if (ctx.page != WinPage.MAIN && (ctx.cover ?: ctx.wide) == null) Box(Modifier.fillMaxSize().background(faceBottom))
+                    // (682ag: not an empty square - the console's initials on the game's colour, as the no-art plates)
+                    if (ctx.page != WinPage.MAIN && (ctx.cover ?: ctx.wide) == null) Box(Modifier.fillMaxSize().background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+                        Text(studioInitials(ctx.console), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false) // qa-ok: TRUNCATE-CLIP (2-4 initials in a 52 dp mark)
+                    }
                     else SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }, faceBottom)
                 }
                 Spacer(Modifier.width(12.dp))

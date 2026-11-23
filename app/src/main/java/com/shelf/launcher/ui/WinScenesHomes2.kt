@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -256,7 +257,10 @@ internal val SIDE_ART_MIN = 44.dp
 @Composable
 internal fun SideDrawer(ctx: WinSceneCtx) {
     val a = ctx.accent
-    val w = minOf(ctx.maxW * 0.5f, 420.dp).coerceAtLeast(minOf(ctx.maxW, 300.dp))
+    // (682ag, owner review 23 Nov - "responsive drawer width": half the window on a wide screen; a squarer screen (RP Classic
+    // 4:3-ish) and larger text give the drawer more of it - sideDrawerShare.)
+    val w = minOf(ctx.maxW * sideDrawerShare(ctx.maxW.value, ctx.maxH.value, androidx.compose.ui.platform.LocalDensity.current.fontScale), 460.dp)
+        .coerceAtLeast(minOf(ctx.maxW, 300.dp))
     // (Update 514, RP Nova 4:3, 480 dp high: the picture at the top took its full 2.1 : 1 (152 dp) and the menu below scrolled —
     // Inspect sat under the drawer's edge. On a short screen the picture gives up height first, down to 64 dp, so every row
     // fits at its smallest readable height (30 dp); where there is room (the Thor) it keeps its whole 2.1 : 1.)
@@ -278,6 +282,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
         }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
             Box(Modifier.fillMaxWidth().height(headerH)) {
                 (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                    ?: NoArtBanner(ctx, Modifier.fillMaxSize()) // (682ag: not an empty dark header)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
             }
             Column(Modifier.padding(horizontal = 14.dp)) {
@@ -345,6 +350,10 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
         // drawn across the whole window: 2.7–3.8× upscaled, soft. Window-wide pictures in the scenes now use the backdrop
         // request (the screen's long side), as the classic window already did; the picture itself is the owner's choice.)
         (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = 0.75f }, request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+        // (682ag, owner review 23 Nov - "an intentional no-art layout instead of a huge black empty screen": without a picture the
+        // poster is a stage - curtains at its sides, the light on the bill (WinPagesSpot.SpotNoArtStage).)
+        val noArt = (ctx.backdrop ?: ctx.wide) == null
+        if (noArt) SpotNoArtStage(ctx, Modifier.fillMaxSize())
         // (682t, P2 batch 2: Spotlight's own pages - THE PLOT, THE CREDITS, BACKSTAGE - WinPagesSpot.kt. On them the pool of light
         // moves down from the title onto the page, the title steps up small, and the Play pill row stays where it is.)
         val onPage = ctx.page != WinPage.MAIN
@@ -366,13 +375,18 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
             // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
             // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
             val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
-            ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
+            if (!(noArt && !onPage)) ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
                 Modifier.fillMaxWidth(if (onPage) 0.4f else 0.55f).height(if (onPage) minOf(h * 0.10f, 44.dp) else minOf(h * 0.18f, 90.dp)),
                 contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
                 ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = if (onPage) 17.sp else 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            if (!onPage) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
+            if (!onPage && !noArt) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
                 modifier = Modifier.padding(vertical = 6.dp))
-            else NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp), label = "spotPage", move = ::spotMove) { pg, pageLive ->
+            else if (!onPage) Spacer(Modifier.height(6.dp))
+            // (682ag, owner review 23 Nov - "content contrast over colourful artwork with a proper readable surface": the page sits
+            // on a dark glass panel over the poster - the poster still shows round it.)
+            else NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(10.dp))
+                .background(Color.Black.copy(alpha = if (noArt) 0.35f else 0.72f)).border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp), label = "spotPage", move = ::spotMove) { pg, pageLive ->
                 SpotPage(ctx, pg, pageLive, lit, Modifier.fillMaxSize())
             }
             val card = themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)
@@ -607,6 +621,9 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
         // (682w, P2 batch 3: on the page's own sections the banner steps back to a strip - the sections get the room.)
         Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * (if (ctx.page == WinPage.MAIN) 0.36f else 0.2f), 200.dp)).background(Color.Black)) {
             (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                // (682ag, owner review 23 Nov: no wide picture left the hero banner an empty black band - the game's colour with
+                // its console's mark, the name on it as before)
+                ?: NoArtBanner(ctx, Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, ground))))
             Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                 ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
@@ -771,4 +788,23 @@ internal fun circuitSheetColorsFor(mode: com.shelf.launcher.data.Features.Circui
     val silk = if (pcb.luminance() > 0.45f) Color(0xFF15171C) else Color(0xFFEAF2EC)
     val trace = com.shelf.launcher.ui.theme.legibleArtAccent(accent, pcb, pcb)
     return Triple(pcb, trace, silk)
+}
+
+
+/** 682ag (pure): Side menu's drawer share of the window - half on a wide screen, more on a squarer one (width / height under
+ *  1.4: +8 %) and with larger text (up to +9 % at x1.3), 62 % at most. */
+internal fun sideDrawerShare(maxWdp: Float, maxHdp: Float, fontScale: Float): Float {
+    val square = if (maxHdp > 0f && maxWdp / maxHdp < 1.4f) 0.08f else 0f
+    val text = ((fontScale - 1f).coerceIn(0f, 0.3f)) * 0.3f
+    return (0.5f + square + text).coerceAtMost(0.62f)
+}
+
+/** 682ag: a banner with no wide picture - the game's colour, the console's initials large and faint at its right, decorative
+ *  (the name is drawn over it by the layout). */
+@Composable
+internal fun NoArtBanner(ctx: WinSceneCtx, modifier: Modifier) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)).clearAndSetSemantics { }, contentAlignment = Alignment.CenterEnd) {
+        Text(studioInitials(ctx.console), color = Color.White.copy(alpha = 0.16f), fontSize = 48.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false, // qa-ok: TRUNCATE-CLIP (2-4 initials, a decorative watermark)
+            modifier = Modifier.padding(end = 18.dp))
+    }
 }

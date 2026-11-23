@@ -101,10 +101,13 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 // The top line: the game, like a high-score table's header.
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // (Update 478, D271: shrinks, then slides — a long name was cut at 2 lines.)
-                    WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
+                    WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.22f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
                 }
                 // (682p: the page's name on a line of its own - beside a long name at x1.3 the two ran over each other)
-                if (ctx.page != WinPage.MAIN) Text(arcadeNativePageName(ctx.page), color = ArcPink, fontSize = small, style = glow, maxLines = 1)
+                Spacer(Modifier.height(3.dp)) // (682ag: the title's pixel glyphs touched the line under it)
+                // (682ag, owner review 23 Nov: the cabinet's own screens carry their name as the panel's head - INSTRUCTIONS, HIGH
+                // SCORES, SERVICE MODE - so the line here only names the shared Performance page; its glyphs touched the title.)
+                if (ctx.page == WinPage.PERF) Text(arcadeNativePageName(ctx.page), color = ArcPink, fontSize = small, style = glow, maxLines = 1, lineHeight = small * ARCADE_LINE)
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
                     lineHeight = small * ARCADE_LINE, style = glow)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
@@ -118,9 +121,12 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                             if (pic != null) AsyncImage(rememberStyleArtRequest(pic), ctx.name, Modifier.fillMaxSize().pixelArtwork(),
                                 contentScale = if (shot != null) ContentScale.Fit else ContentScale.Crop)
                             // (682r: in the narrower picture of the cabinet's own screens the no-art name a size down - "COLOSS / US")
-                            else Text(ctx.name.uppercase(), color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, style = glow,
-                                lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
-                                modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            // (682ag, owner review 23 Nov: "COLOSSU / S" on RP Classic x1.3 - whole words, a size down where one doesn't fit)
+                            else androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                                WholeWordsText(ctx.name.uppercase(), color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, fontFamily = font,
+                                    lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
+                                    modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            }
                             Canvas(Modifier.fillMaxSize()) {
                                 var y = 0f
                                 while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.2f), Offset(0f, y), Size(size.width, 1.5f)); y += 3.5f }
@@ -174,7 +180,8 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Text(
                     listOfNotNull("PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null, ctx.last?.let { "LAST " + it.uppercase() })
                         .joinToString("   "),
-                    color = ArcInk, fontSize = small, maxLines = 2, style = glow
+                    // (682ag: the pixel glyphs need their own line height - the two lines ran into each other at x1.3)
+                    color = ArcInk, fontSize = small, maxLines = 2, style = glow, lineHeight = small * ARCADE_LINE
                 )
             }
             // The tube: scan lines, its curve, the glass.

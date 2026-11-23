@@ -421,3 +421,39 @@ gk13 (29 x1.3, b316b8f), gr13 (29 x1.3, 9192a89), hk10 / hr10 (Magazine, Arcade,
   (9192a89, or 1ada6c8 / b316b8f where the layout's code is unchanged in 9192a89).
 - Status: implemented 29 / 53 (own designs); hardware-walked 29 (both handhelds, both scales); functionally accepted 14
   (batches 1-3, owner 22 Nov); visually approved 0; released 0. Remaining: Disc station (class B) + 23 shared-page layouts.
+
+### 682ag - owner visual review of all 29 (23 Nov 07:28): critical + polish fixes - IMPLEMENTED, emulator only, NOT hardware-verified
+The 16 layouts the owner called close to approval are untouched (except the shared WholeWordsText fix below). Changed:
+- **TV room (option 2):** the native-page strips no longer draw a Back key (B still goes back - the window's own handling);
+  the page row keeps two page slots, Play first. Teletext grid: where fewer than 24 characters fit a line (RP Classic x1.3 ~17)
+  the grid's text steps down (ttxGridScale, never under 78 % of its size). Sonic keep-out unchanged. D367 -> fixed in code.
+- **Spotlight:** pages on a rounded dark plate (72 % black; 35 % over the no-art stage); no art: a stage of its own (curtains,
+  the pool of light, NOW SHOWING, the name centred in whole words, console · year, genres).
+- **Arctic:** the menu as wide as its longest word needs (45-60 % of the drawer), the info list the rest; where that is under
+  ~212 dp the field goes over its value (no 92 dp column). The RP Classic sheet is now 620 x 540 dp, the hardware's real size -
+  at 516 dp the drawer was "compact" and the bug never showed.
+- **Arcade:** High Scores' head, count and order key on lines of their own, whole words, the pixel font's line height; the
+  description whole on the entry you're on (or opened); Instructions stack NAME .... over its value where the card is under
+  300 dp; Service mode lines in whole words with a gap; the duplicate page name under the title dropped (the panel heads it);
+  no-art cabinet name in whole words.
+- **Icon bar:** icons keep their points (12 sp); a detail plate names the key you're on - name, points + earned, description
+  whole (A adds date / rarity); beside the dock where the flyout is short (KONKR x1.3), under it otherwise.
+- **Magazine:** callouts in one column where two can't hold the longest word ("ACHIEVEM / ENTS"); FACT FILE values in whole
+  words (field over value under 240 dp); no art: the issue's printed cover (masthead band, console plate, colour strip).
+- **Cinema:** no art: a title card (projector beam over the game's colour, console initials + name). **Cube:** the order key
+  is "⇅ SET ORDER" in whole words; the pages' small mark shows the console initials, not an empty square.
+- **Terminal:** the menu as wide as its longest command (30-45 %, one width on every page so Play never moves); paths and
+  switches never break after "/", "\" or ":" (word joiners); dim lines brighter (green 4.5 -> 7.4 : 1, amber 5.6, white 7.8).
+- **Library / Side menu:** no-art banners (game colour + initials). Side drawer width responsive (sideDrawerShare: +8 % on a
+  squarer screen, + up to 9 % with large text, 62 % max).
+- **Night menu:** no-art cover plate; the command column as wide as its longest command (26-34 %), the stats panel giving up the
+  same; a stat whose value would get under 96 dp goes under its label (whole words).
+- **Shared:** WholeWordsText with a textAlign takes the line's width (a centred line measured past its own edge).
+- **Not changed yet:** Coverflow Details reading space (needs a decision: widening the panel on the pages covers the home's
+  title, the only place the name shows there); the page-transition frame audit (Arctic, Magazine, Library, Cube) - not started.
+- Tests: Review682agTest (pure helpers - fails on 682af: they did not exist), PlayPlace (KONKR + RPC), AchFirstRow (both),
+  ShelfText, NightStatLabels, Terminal, Arcade, Storage words, UniformKeys, PageBars, NativePagesBatch2, BarDockLabels -
+  1093 tests, 0 failed (local, this commit's sources). Static checks PASS, no new findings.
+- PRODUCTION (Level 2, read-only, 23 Nov): RP Classic `com.shelf.launcher` is 0.6.73 (versionCode 80), signing digest 1903d14a
+  (= the KONKR's production v80), lastUpdate 2026-11-22 18:36, firstInstall 2026-10-12 kept (in-place update, data kept).
+  dumpsys only; the app was not started, touched or changed. Who confirmed the installer prompt is not known from the device.

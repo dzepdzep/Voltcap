@@ -31,6 +31,9 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.TextUnit
@@ -107,14 +110,28 @@ internal fun AnimatedVisibilityScope.ArcadePage(ctx: WinSceneCtx, p: WinPage, li
 private fun ArcadeInstructions(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, line: TextUnit, small: TextUnit, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
     Column(modifier.nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text("INSTRUCTIONS", color = ArcPgPink, fontSize = line, style = glow)
-        nativeFacts(ctx, setOf("Trophies")).forEach { f ->
-            // NAME ..... VALUE: the label, a dot leader, the value (wraps under itself).
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Text(f.label.uppercase(), color = ArcPgCyan, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE)
-                Text(" ....", color = ArcPgDim, fontSize = small, style = glow, maxLines = 1, lineHeight = small * ARCADE_LINE)
-                Spacer(Modifier.width(4.dp))
-                Text(f.value.uppercase(), color = ArcPgInk, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.weight(1f))
+        Text("INSTRUCTIONS", color = ArcPgPink, fontSize = line, style = glow, lineHeight = line * ARCADE_LINE)
+        val facts = nativeFacts(ctx, setOf("Trophies"))
+        // (682ag, owner review 23 Nov, RP Classic x1.3: "PLAYST / ATION / 2" beside the label and its dot leader - where the card
+        // is narrow the value goes under its NAME ....., in whole words.)
+        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val narrow = maxWidth < 300.dp
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                facts.forEach { f ->
+                    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                        if (narrow) Column(Modifier.fillMaxWidth()) {
+                            Text(f.label.uppercase() + " ....", color = ArcPgCyan, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE)
+                            WholeWordsText(f.value.uppercase(), color = ArcPgInk, fontSize = small, fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE,
+                                modifier = Modifier.padding(start = 12.dp, top = 3.dp))
+                        } else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                            // NAME ..... VALUE: the label, a dot leader, the value (wraps under itself).
+                            Text(f.label.uppercase(), color = ArcPgCyan, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE)
+                            Text(" ....", color = ArcPgDim, fontSize = small, style = glow, maxLines = 1, lineHeight = small * ARCADE_LINE)
+                            Spacer(Modifier.width(4.dp))
+                            WholeWordsText(f.value.uppercase(), color = ArcPgInk, fontSize = small, fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
         }
         Spacer(Modifier.height(4.dp))
@@ -132,21 +149,24 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            // (682r, KONKR x1.3: "HIG / H SCO / RES" - the table's head and its rows keep whole words, the glow kept)
-            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+        // (682ag, owner review 23 Nov - "rework High Scores": the head, the count and the order key each on a line of their own, in
+        // whole words with the pixel font's line height - beside each other at x1.3 they broke mid-word and ran into one another.)
+        androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
                 WholeWordsText("HIGH SCORES", color = ArcPgPink, fontSize = line, modifier = Modifier.weight(1f), fontFamily = glow.fontFamily, lineHeight = line * ARCADE_LINE)
-            }
-            // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
-            // line, pushing the list off the page - the key gets at most its share, as the TV's)
-            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
-                Text((if (on) "▶ " else "  ") + "SORT " + t.order.label.uppercase(), color = if (on) ArcPgYellow else ArcPgCyan, fontSize = small, style = glow,
-                    lineHeight = small * ARCADE_LINE)
+                Text("${t.earned}/${t.total}", color = ArcPgDim, fontSize = small, style = glow, softWrap = false, lineHeight = small * ARCADE_LINE,
+                    modifier = Modifier.padding(start = 6.dp).semantics { contentDescription = "${t.earned} of ${t.total} cleared" })
             }
         }
-        Text("${t.earned} OF ${t.total} CLEARED", color = ArcPgDim, fontSize = small, style = glow)
-        Spacer(Modifier.height(3.dp))
-        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+        NativeItem(onClick = t.nextOrder, Modifier.fillMaxWidth().padding(top = 2.dp), focus = focus, live = live) { on ->
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                WholeWordsText((if (on) "▶ " else "  ") + "SORT: " + t.order.label.uppercase(), color = if (on) ArcPgYellow else ArcPgCyan, fontSize = small,
+                    fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE,
+                    modifier = Modifier.fillMaxWidth().background(if (on) ArcPgPink.copy(alpha = 0.16f) else Color.Transparent))
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             t.list.forEachIndexed { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
@@ -163,14 +183,18 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
                                     androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
                                         WholeWordsText((ach.title ?: "UNTITLED").uppercase(), color = ink, fontSize = small, fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE)
                                     }
-                                    Text(arcadeScore(ach.points, earned), color = ink, fontSize = small, style = glow, softWrap = false)
+                                    Text(arcadeScore(ach.points, earned), color = ink, fontSize = small, style = glow, softWrap = false, lineHeight = small * ARCADE_LINE,
+                                        modifier = Modifier.padding(top = 4.dp))
                                 }
                             }
                             ach.description?.let { d ->
-                                if (opened) Text(d.uppercase(), color = ArcPgInk, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.padding(start = 44.dp, top = 1.dp))
-                                // (682r, RP Classic x1.3: one sliding line while closed - A opens the whole text, as the TV's rows)
-                                else WinFullText(d.uppercase(), color = ArcPgDim, fontSize = small, maxLines = 1, lineHeight = small * ARCADE_LINE, fontFamily = glow.fontFamily,
-                                    modifier = Modifier.padding(start = 44.dp, top = 1.dp))
+                                // (682ag, owner review 23 Nov: one sliding line cut the description mid-word - it is shown whole, in whole
+                                // words, on the entry you're on (or opened with A); the table keeps one entry's room otherwise, so the
+                                // first entry stays whole on the RP Classic at x1.3.)
+                                if (on || opened) androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                                    WholeWordsText(d.uppercase(), color = if (opened) ArcPgInk else ArcPgDim, fontSize = small, fontFamily = glow.fontFamily,
+                                        lineHeight = small * ARCADE_LINE, modifier = Modifier.padding(start = 44.dp, top = 2.dp))
+                                }
                             }
                             if (opened) {
                                 val facts = listOfNotNull(
@@ -194,19 +218,26 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
 private fun ArcadeService(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, line: TextUnit, small: TextUnit, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
     val confirm = rememberNativeConfirm(ctx)
-    Column(modifier.nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text("SERVICE MODE", color = ArcPgPink, fontSize = line, style = glow)
+    Column(modifier.nativeScroll(ArcPgCyan), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("SERVICE MODE", color = ArcPgPink, fontSize = line, style = glow, lineHeight = line * ARCADE_LINE)
         ctx.options.forEachIndexed { i, o ->
             NativeItem(onClick = { if (confirm.press(i, o.destructive)) o.onClick() }, Modifier.fillMaxWidth(), focus = if (i == 0) focus else null, live = live) { on ->
                 androidx.compose.runtime.LaunchedEffect(on) { if (!on) confirm.leave(i) }
                 val armed = confirm.armed == i
                 val ink = if (o.destructive) ArcPgPink else if (on) ArcPgYellow else ArcPgInk
-                Column(Modifier.fillMaxWidth().padding(vertical = 1.dp)) {
-                    Row(verticalAlignment = Alignment.Top) {
-                        Text(if (on) "▶ " else "  ", color = ArcPgYellow, fontSize = line, style = glow)
-                        Text(o.label.uppercase(), color = ink, fontSize = line, style = glow, lineHeight = line * ARCADE_LINE, modifier = Modifier.weight(1f))
+                // (682ag, owner review 23 Nov: the lines in whole words with the pixel font's line height and a gap between items -
+                // "ADD TO / FAVORITES" and a description ran into the next line at x1.3.)
+                Column(Modifier.fillMaxWidth().background(if (on) ArcPgPink.copy(alpha = 0.16f) else Color.Transparent).padding(vertical = 3.dp)) {
+                    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text("▶", color = if (on) ArcPgYellow else Color.Transparent, fontSize = line, style = if (on) glow else glow.copy(shadow = null), lineHeight = line * ARCADE_LINE,
+                                modifier = Modifier.clearAndSetSemantics {})
+                            Spacer(Modifier.width(6.dp))
+                            WholeWordsText(o.label.uppercase(), color = ink, fontSize = line, fontFamily = glow.fontFamily, lineHeight = line * ARCADE_LINE, modifier = Modifier.weight(1f))
+                        }
+                        o.sub?.let { WholeWordsText(it.uppercase(), color = ArcPgDim, fontSize = small, fontFamily = glow.fontFamily, lineHeight = small * ARCADE_LINE,
+                            modifier = Modifier.padding(start = 18.dp, top = 2.dp)) }
                     }
-                    o.sub?.let { Text(it.uppercase(), color = ArcPgDim, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE, modifier = Modifier.padding(start = 18.dp)) }
                     if (armed) Text("PRESS A AGAIN TO CONFIRM", color = ArcPgPink, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE,
                         modifier = Modifier.padding(start = 18.dp, top = 2.dp).border(1.dp, ArcPgPink).padding(horizontal = 4.dp, vertical = 1.dp))
                     if (armed) Text("MOVE AWAY TO CANCEL", color = ArcPgCyan, fontSize = small, style = glow, lineHeight = small * ARCADE_LINE,

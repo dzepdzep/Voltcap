@@ -32,6 +32,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -157,9 +159,12 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
             // (682r, RP Classic x1.3: unbounded, the order key took the row and the title beside it went to 0 px wide, one letter a
             // line, pushing the list off the page - the key gets at most its share, as the TV's)
             NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
-                Text("ORDER · " + t.order.label.uppercase(), color = if (on) cubeInkOn(a) else a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp,
-                    modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(if (on) a else Color.Transparent).border(1.dp, a, RoundedCornerShape(3.dp))
-                        .padding(horizontal = 6.dp, vertical = 3.dp))
+                // (682ag, owner review 23 Nov, KONKR x1.3: "ORDER · SET / ORDER" - the key is the order itself behind the order
+                // mark, in whole words; its name stays its spoken label)
+                Box(Modifier.clip(RoundedCornerShape(3.dp)).background(if (on) a else Color.Transparent).border(1.dp, a, RoundedCornerShape(3.dp))
+                    .padding(horizontal = 6.dp, vertical = 3.dp).semantics(mergeDescendants = true) { contentDescription = "Order: " + t.order.label }) {
+                    WholeWordsText("⇅ " + t.order.label.uppercase(), color = if (on) cubeInkOn(a) else a, fontSize = 10.sp, fontWeight = FontWeight.Black, lineHeight = 13.sp)
+                }
             }
         }
         Spacer(Modifier.height(4.dp))

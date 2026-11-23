@@ -98,13 +98,23 @@ private fun MagReview(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier: M
         if (facts.isNotEmpty()) Column(Modifier.fillMaxWidth().border(2.dp, st.ink)) {
             Text("FACT FILE", color = st.paper, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.5.sp,
                 modifier = Modifier.fillMaxWidth().background(st.ink).padding(horizontal = 6.dp, vertical = 2.dp))
+            // (682ag, owner review 23 Nov: whole words - a narrow box puts the field over its value instead of a word a line beside a
+            // fixed 104 dp field column)
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val stack = maxWidth < 240.dp
+            Column {
             facts.forEachIndexed { i, f ->
-                Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.Top) {
+                if (stack) Column(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp)) {
+                    Text(f.label.uppercase(), color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 10.sp, letterSpacing = 0.5.sp)
+                    WholeWordsText(f.value, color = st.ink, fontFamily = st.body, fontSize = 12.sp, lineHeight = 15.sp)
+                } else Row(Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.Top) {
                     Text(f.label.uppercase(), color = st.accent, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 10.sp,
                         letterSpacing = 0.5.sp, modifier = Modifier.width(104.dp).padding(top = 1.dp))
-                    Text(f.value, color = st.ink, fontFamily = st.body, fontSize = 12.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
+                    WholeWordsText(f.value, color = st.ink, fontFamily = st.body, fontSize = 12.sp, lineHeight = 15.sp, modifier = Modifier.weight(1f))
                 }
                 if (i < facts.size - 1) Box(Modifier.fillMaxWidth().padding(horizontal = 6.dp).height(1.dp).background(st.ink.copy(alpha = 0.18f)))
+            }
+            }
             }
         }
         Spacer(Modifier.height(8.dp))
@@ -246,4 +256,33 @@ private fun Modifier.drawCoupon(c: Color, solid: Boolean): Modifier = this.drawB
     drawCircle(c, r, Offset(cx + 3.dp.toPx(), cy + 2.dp.toPx()), style = Stroke(1.2.dp.toPx()))
     drawLine(c, Offset(cx - 1.dp.toPx(), cy), Offset(cx + 5.dp.toPx(), cy - 7.dp.toPx()), 1.2.dp.toPx())
     drawLine(c, Offset(cx + 1.dp.toPx(), cy), Offset(cx - 5.dp.toPx(), cy - 7.dp.toPx()), 1.2.dp.toPx())
+}
+
+
+/** 682ag (pure): the feature's "see page" callouts in two columns only where each column holds the longest word, its arrow and
+ *  the callout's padding ([padPx], both sides) beside a [gapPx] gutter. */
+internal fun magTwoColumns(widthPx: Float, longestWordPx: Float, arrowPx: Float, gapPx: Float, padPx: Float): Boolean =
+    (widthPx - gapPx) / 2f - padPx - arrowPx >= longestWordPx
+
+/** 682ag (owner review 23 Nov): no cover picture - the issue's own printed cover: the masthead in a band of the issue's colour,
+ *  the console's plate in the game's colour (initials, name), a strip of the issue's second colour. Never an empty card. */
+@Composable
+internal fun MagNoArtCover(ctx: WinSceneCtx, st: MagStyle, modifier: Modifier) {
+    Column(modifier.background(st.paper).border(1.dp, st.ink.copy(alpha = 0.25f))) {
+        // (the masthead shrinks, then slides, in the pages' small cover - never cut)
+        WinFullText(st.masthead, color = st.paper, fontFamily = st.head, fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp, maxLines = 1,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().background(st.accent).padding(vertical = 3.dp))
+        Box(Modifier.weight(1f).fillMaxWidth().background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
+                Text(studioInitials(ctx.console), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, maxLines = 1, softWrap = false) // qa-ok: TRUNCATE-CLIP (2-4 initials)
+                // (the console's name on the feature's big cover; the pages' small one keeps the initials alone)
+                if (ctx.page == WinPage.MAIN) WholeWordsText(ctx.console, color = Color.White.copy(alpha = 0.85f), fontSize = 10.sp, lineHeight = 13.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            }
+        }
+        // (the cover line: the issue's own strip - the game's name is the headline beside the cover, whole; on the pages' small
+        // cover a long name had no room)
+        Box(Modifier.fillMaxWidth().height(10.dp).background(st.accent2))
+    }
 }

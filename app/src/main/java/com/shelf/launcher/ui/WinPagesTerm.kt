@@ -47,6 +47,13 @@ internal fun termCommand(p: WinPage, alias: String, order: String = "SET"): Stri
     WinPage.PERF -> "MEM /C"
 }
 
+/** 682ag (pure): a typed line kept whole at its path / switch marks - a word joiner (U+2060, drawn as nothing) after "/", "\\"
+ *  and ":" inside a token, so "/O:SET_ORDER" and "C:\\ACHIEVE" never break after their slash or colon (the line breaker
+ *  treats those as break points; RP Classic x1.3 showed "DIR ACHIEVE\\ /" over "O:SET"). */
+internal fun termKeepTokens(s: String): String = buildString {
+    s.forEachIndexed { i, c -> append(c); if ((c == '/' || c == '\\' || c == ':') && i + 1 < s.length && s[i + 1] != ' ') append('\u2060') }
+}
+
 /** A directory listing line for an achievement: "[X] TITLE", the points as the size column. Pure. */
 internal fun termDirLine(earned: Boolean, title: String?): String = (if (earned) "[X] " else "[ ] ") + (title ?: "UNTITLED").uppercase()
 
@@ -89,7 +96,7 @@ private fun TermDir(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
-        Text(" DIRECTORY OF C:\\ACHIEVE", style = style.copy(color = dim))
+        WholeWordsText(termKeepTokens(" DIRECTORY OF C:\\ACHIEVE"), color = dim, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
         // The sort switch, as the command's own /O: - A steps it.
         NativeItem(onClick = t.nextOrder, Modifier.fillMaxWidth(), focus = focus, live = live) { on ->
             Text((if (on) "► " else "  ") + "/O:" + t.order.label.uppercase(), style = if (on) style.copy(color = hiInk, shadow = null) else style.copy(color = accent),

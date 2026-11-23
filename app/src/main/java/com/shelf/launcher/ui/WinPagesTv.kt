@@ -130,6 +130,18 @@ private fun Modifier.doubleHeight(): Modifier = this.layout { m, c ->
  * sliding beside it; the console joins the Info facts) and the Fastext keys are one line of short key words. Pure.
  */
 internal const val TTX_TIGHT_DP = 200f
+
+/** 682ag: the teletext grid's narrowest - characters a line at least (as far as [TTX_MIN_SCALE] allows). */
+internal const val TTX_MIN_COLS = 24
+/** 682ag: the teletext text never steps under this share of the size asked (x1.3 stays bigger than x1.0's 0.9 of it). */
+internal const val TTX_MIN_SCALE = 0.78f
+
+/** 682ag (pure): the teletext text's scale for a line [rowPx] wide where an "M" is [cellPx] - 1 while TTX_MIN_COLS fit. */
+internal fun ttxGridScale(rowPx: Float, cellPx: Float): Float {
+    if (cellPx <= 0f || rowPx <= 0f) return 1f
+    val cols = rowPx / cellPx
+    return if (cols >= TTX_MIN_COLS) 1f else (cols / TTX_MIN_COLS).coerceIn(TTX_MIN_SCALE, 1f)
+}
 internal fun ttxTight(pageHeightDp: Float): Boolean = pageHeightDp < TTX_TIGHT_DP
 
 /** The Fastext key word for a page: the set's short key names, one line each. Pure. */
@@ -173,6 +185,14 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
     val room = LocalTvConfirm.current
     val confirm = room?.confirm ?: rememberNativeConfirm(ctx)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.background(TTX_BLACK)) {
+    // (682ag, owner review 23 Nov - "teletext must not be squeezed into extremely narrow columns": a teletext set is a grid of
+    // characters; where the set is too narrow for TTX_MIN_COLS of them at the chosen text size (RP Classic x1.3: ~17), the grid's
+    // text steps down - never under TTX_MIN_SCALE of the size asked - so lines hold whole words and titles.)
+    val ttxDens = androidx.compose.ui.platform.LocalDensity.current
+    val ttxCell = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 2).measure("M", androidx.compose.ui.text.TextStyle(fontSize = 11.sp, fontFamily = TTX)).size.width
+    val ttxScale = ttxGridScale(with(ttxDens) { (maxWidth - 16.dp).toPx() }, ttxCell.toFloat())
+    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides
+        androidx.compose.ui.unit.Density(ttxDens.density, ttxDens.fontScale * ttxScale)) {
     val tight = ttxTight((maxHeight - footRoom).value)
     Column(Modifier.fillMaxSize().padding(start = 8.dp, end = 8.dp, top = if (tight) 4.dp else 6.dp, bottom = footRoom)) {
         val pageNo = "P" + no.take(typed.toInt().coerceIn(1, 3)).padEnd(3, ' ')
@@ -244,7 +264,8 @@ internal fun AnimatedVisibilityScope.TvTeletext(ctx: WinSceneCtx, p: WinPage, li
         }
         }
     }
-    }
+        }
+}
 }
 
 @Composable

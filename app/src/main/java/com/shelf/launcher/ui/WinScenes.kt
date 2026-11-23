@@ -1980,6 +1980,16 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val w = ctx.maxW; val h = ctx.maxH
     val anim = rememberAnimationsEnabled()
     val tabs = NIGHT_TABS
+    // (682ag, owner review 23 Nov, RP Classic x1.3: "ACHIEVEMENTS" / "SAVE SYNC" were cut in the fixed 26 % command column - the
+    // column is as wide as its longest command needs (26 % of the window at least, 34 % at most), the stats panel giving up
+    // the same width; the label still shrinks / slides only past that.)
+    val nightCmdMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 12)
+    val nightCmdDens = androidx.compose.ui.platform.LocalDensity.current
+    val nightCmdBase = androidx.compose.material3.LocalTextStyle.current.copy(fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+    val nightCmdNeed = (ctx.buttons + ctx.tools).maxOfOrNull { a ->
+        with(nightCmdDens) { nightCmdMeasurer.measure(a.label.uppercase(), nightCmdBase.copy(fontSize = if (a.primary) 16.sp else 13.sp), softWrap = false, maxLines = 1).size.width.toDp() }
+    } ?: 0.dp
+    val nightCmdW = nightCommandWidth(w, nightCmdNeed)
     // Update 529 (owner: Persona 3 Reload-like motion): the panels come in along the menu's slant, layer after layer (banner,
     // cover, stats, commands - 70 ms apart), each easing out with a small turn that settles; closing runs the same way back,
     // the last in leaving first. A light edge crosses the window as it opens and closes, over slanted ribbons of the night at
@@ -2056,6 +2066,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
                     Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
                     Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
                         if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
+                        // (682ag, owner review 23 Nov: no picture was an empty dark frame - the console's plate in the game's colour)
+                        else SceneNoArt(ctx, Modifier.fillMaxSize())
                     }
                 }
                 // The stats panel.
@@ -2063,7 +2075,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 // settled panel should show it. The panel keeps its size while everything fits (×1.0 unchanged) and grows down
                 // to the cover frame's foot when the lines need it; only beyond that does it scroll.)
                 Box(
-                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
+                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f - (nightCmdW - w * 0.26f)).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
                         .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
@@ -2094,7 +2106,16 @@ private fun NightStatus(ctx: WinSceneCtx) {
                             }) {
                             val labelW = nightLabelWidth(widestLabel, maxWidth)
                             val labelSize = nightLabelSize(widestWord, labelW)
-                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // (682ag, owner review 23 Nov, RP Classic x1.3: "Adventur / e" beside the label column - where the value would
+                            // have under 96 dp the label goes over its value, the value whole words at its size.)
+                            if (maxWidth - labelW < 96.dp) Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides
+                                    androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) {
+                                    // (the line's width: laid out at its own width the italic's lean ran past its edge)
+                                    WholeWordsText(label, color = hi, fontSize = 11.sp, fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                                }
+                                WholeWordsText(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            } else Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                     modifier = Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
                                 // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
@@ -2146,7 +2167,7 @@ private fun NightStatus(ctx: WinSceneCtx) {
         Column(
             // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
             // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
-            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f)
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(nightCmdW)
                 // (682ae, PlayPlace RP Classic: turned about its middle, the column's turn moved Play 2 px with the number of
                 // commands under it (Options: Play alone). It turns about its top edge: Play stays put on every page.)
                 .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
@@ -2302,3 +2323,9 @@ internal fun nightLabelSize(widestWord: androidx.compose.ui.unit.Dp, column: and
     if (widestWord.value <= room || widestWord.value <= 0f) return 12f
     return maxOf(fitMin(12.sp).value, kotlin.math.floor(12f * room / widestWord.value * 2f) / 2f)
 }
+
+
+/** 682ag (pure): Night menu's command column - room for the arrow (18 dp), the key's inset (22 dp), the longest label and the
+ *  slant and its end (26 dp); 26 % of the window at least, 34 % at most. */
+internal fun nightCommandWidth(window: androidx.compose.ui.unit.Dp, longestLabel: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
+    (longestLabel + 18.dp + 22.dp + 26.dp).coerceIn(window * 0.26f, window * 0.34f)

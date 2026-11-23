@@ -4134,7 +4134,7 @@
    "title": "TV room pages x1.0 (KONKR + RP Classic): the strip under the TV (Play, page key, Back) scrolls in the narrow panel left by the figure keep-out (R27) - Play's width follows the page key's word (117 / 101 / 125 px on Details / Achievements / Options)",
    "rule": "R23",
    "severity": "low",
-   "status": "open - needs a decision: keep the strip scrolling, or drop Back from the pages' strip (B stays), or a narrower figure keep-out; queued for the owner's review",
+   "status": "fixed in code 682ag (owner option 2: no visible Back on the page strips, B still works; teletext grid scale) - NOT hardware-verified",
    "found": "2026-11-22 20:15 (fk10 / fr10)"
   },
   {
@@ -4160,6 +4160,70 @@
    "severity": "medium",
    "status": "fixed 682af - VERIFIED KONKR + RP Classic x1.0 (hk10 / hr10) and x1.3 (hk13 / gr13)",
    "found": "2026-11-22 22:10 (gk10)"
+  },
+  {
+   "id": "D371",
+   "title": "Arctic RP Classic x1.3: main-page facts wrapped almost letter by letter beside a fixed 92 dp field column; 'Achievements' cut in the menu",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D372",
+   "title": "Arcade High Scores / Service mode x1.3: pixel-font lines ran into each other (no line height), 'COLOSSU / S' no-art name, INSTRUCTIONS 'PLAYST / ATION', descriptions cut to one sliding line",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D373",
+   "title": "Icon bar Achievements: names under the icons at 10 sp, no readable place for the focused achievement's name / points / description",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D374",
+   "title": "Game magazine RP Classic x1.3: 'ACHIEVEM / ENTS' in a two-column callout box; no-art cover an empty grey card",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D375",
+   "title": "Night menu RP Classic x1.3: commands 'ACHIEVEMENTS' / 'SAVE SYNC' cut in the fixed 26 % column; 'Adventur / e'; empty no-art cover",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D376",
+   "title": "Terminal pages: 'DIR ACHIEVE\\ /' over 'O:SET' and 'C:' over '\\ACHIEVE' (line breaks after path marks); dim text 4.5:1",
+   "rule": "R18",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D377",
+   "title": "No-art scenes empty: Cinema opening band, Library banner, Side drawer header, Spotlight stage, Cube page mark",
+   "rule": "R25",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
+  },
+  {
+   "id": "D378",
+   "title": "PageSheetRpc sheets at 620 x 516 dp hid hardware-only layouts (RP Classic is 620 x 540 dp): Arctic's x1.3 bug never showed in the sheet",
+   "rule": "QA",
+   "severity": "medium",
+   "status": "fixed in code 682ag - emulator sheets + Robolectric only, NOT hardware-verified",
+   "found": "2026-11-23 (owner visual review 07:28)"
   }
  ]
 }

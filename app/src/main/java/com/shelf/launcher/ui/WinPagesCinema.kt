@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -217,5 +218,30 @@ private fun CinemaMyList(ctx: WinSceneCtx, live: Boolean, accent: Color, modifie
             }
         }
         if (ctx.options.isEmpty()) Text("Nothing more for this title.", color = CINEMA_LABEL, fontSize = 12.sp)
+    }
+}
+
+
+/** 682ag: Cinema's opening scene without a picture - a studio title card: the game's colour, a projector's beam from the top
+ *  corner, the console's initials large and faint, its name in spaced capitals. Decorative (no semantics: the title line
+ *  under it names the game). */
+@Composable
+internal fun CinemaNoArtBand(ctx: WinSceneCtx, modifier: Modifier) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.CenterEnd) {
+        androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+            val beam = androidx.compose.ui.graphics.Path().apply {
+                moveTo(size.width * 0.92f, 0f); lineTo(size.width * 0.18f, size.height); lineTo(size.width * 0.62f, size.height); close()
+            }
+            drawPath(beam, androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.02f))))
+            // the film's grain: a few faint scratches
+            for (i in 0 until 5) {
+                val x = size.width * (0.12f + i * 0.19f)
+                drawLine(Color.White.copy(alpha = 0.05f), androidx.compose.ui.geometry.Offset(x, 0f), androidx.compose.ui.geometry.Offset(x + 6f, size.height), 1f)
+            }
+        }
+        Column(Modifier.padding(end = 28.dp).clearAndSetSemantics { }, horizontalAlignment = Alignment.End) {
+            Text(studioInitials(ctx.console), color = Color.White.copy(alpha = 0.22f), fontSize = 44.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false) // qa-ok: TRUNCATE-CLIP (2-4 initials, a decorative watermark)
+            Text(ctx.console.uppercase(), color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp, letterSpacing = 3.sp, fontWeight = FontWeight.Bold)
+        }
     }
 }

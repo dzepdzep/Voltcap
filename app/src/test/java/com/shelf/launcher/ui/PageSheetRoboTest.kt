@@ -30,7 +30,9 @@ import java.time.Duration
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
-class PageSheetRoboTest(private val layout: HomeLayout, private val big: Boolean) {
+open class PageSheetRoboTest(private val layout: HomeLayout, private val big: Boolean) {
+    /** 682ag: the file prefix of a subclass on another screen (PageSheetRpcRoboTest: "rpc_"). */
+    protected open val tag = ""
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1}")
@@ -59,7 +61,7 @@ class PageSheetRoboTest(private val layout: HomeLayout, private val big: Boolean
         val bmp = android.graphics.Bitmap.createBitmap(v.width, v.height, android.graphics.Bitmap.Config.ARGB_8888)
         v.draw(android.graphics.Canvas(bmp))
         val dir = java.io.File("build/pagesheet").apply { mkdirs() }
-        java.io.FileOutputStream(java.io.File(dir, "${layout}_${if (big) "x13" else "x10"}_$step.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+        java.io.FileOutputStream(java.io.File(dir, "$tag${layout}_${if (big) "x13" else "x10"}_$step.png")).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
     }.onFailure { println("PAGESHEET capture failed: $it") }
 
     private fun words(n: androidx.compose.ui.semantics.SemanticsNode) = (n.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.Text)
@@ -127,5 +129,18 @@ class PageSheetRoboTest(private val layout: HomeLayout, private val big: Boolean
             TestHooks.scale.value = null; com.shelf.launcher.data.Features.winScenes.state.value = before
             TvScreen.rect = oldRect; TvScreen.displayId = oldId; TvScreen.front = oldFront
         }
+    }
+}
+
+/** 682ag: the same sheet on the RP Classic's screen (620 x 516 dp, xhdpi) - files rpc_<layout>_... */
+@RunWith(ParameterizedRobolectricTestRunner::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(qualifiers = "w620dp-h540dp-land-xhdpi")
+class PageSheetRpcRoboTest(layout: HomeLayout, big: Boolean) : PageSheetRoboTest(layout, big) {
+    override val tag = "rpc_"
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1}")
+        fun cases(): List<Array<Any>> = PageSheetRoboTest.cases()
     }
 }

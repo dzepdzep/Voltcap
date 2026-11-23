@@ -311,7 +311,10 @@ internal fun WholeWordsText(
             s
         }
         val ratio = if (lineHeight.isSpecified && lineHeight.isSp && fontSize.value > 0f) lineHeight.value / fontSize.value else 1.25f
-        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign)
+        // (682ag: an aligned text takes the line's width - laid out at its content's width a centred line measured past its own
+        // right edge, a false "cut" in the text checks.)
+        Text(text, color = color, fontSize = size.sp, lineHeight = (size * ratio).sp, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign,
+            modifier = if (textAlign != null) Modifier.fillMaxWidth() else Modifier)
     }
 }
 
