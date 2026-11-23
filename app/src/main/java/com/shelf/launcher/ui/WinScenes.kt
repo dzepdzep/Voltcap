@@ -2252,7 +2252,9 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                     }
                                 }
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
-                                .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
+                                // (682ag, RP Classic x1.3 rdg13: the word ran under the key's slanted end - "ACHIEVEMENT/" - the end keeps
+                                // the slant's room, so the label shrinks to fit whole before it ever slides)
+                                .padding(start = 22.dp, end = 14.dp), contentAlignment = Alignment.CenterStart
                         ) {
                             // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
                             // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
