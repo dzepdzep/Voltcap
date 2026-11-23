@@ -81,6 +81,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   game popup's Journey and the Hero carousel journey: every step's title, date and detail whole (wrap, shrink, then slide),
   never an ellipsis; nothing overlaps the rail. D-pad + touch still work. Screenshots.
   Unit evidence only (GameJourneyFullText711aTest, cloud compiled + PASS; static TRUNCATE 75 -> 72).
+- Also (712a, rule 11, dev line 712a or later, ~1 min, KONKR x1.3 + x1.0, with 711a): RetroAchievements dialog with a
+  long-titled recent achievement and a long account name - name, game and account name whole (wrap, shrink, then slide),
+  never an ellipsis; "Play as" / "Remove" chips stay whole and reachable. D-pad + touch still work. Screenshots.
+  Unit evidence only (RaDialogFullText712aTest; static TRUNCATE 72 -> 69).
 - Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
   (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
   page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.

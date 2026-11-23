@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -158,20 +157,19 @@ private fun RecentAchievementRow(achievement: RaRecentAchievement) {
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            // 712a (rule 11): the achievement's name and its game whole - wrap to 2 lines, readable size, then slide.
+            FullText(
                 achievement.Title ?: "Unknown achievement",
                 color = ShelfTheme.colors.textPrimary,
-                fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                maxLines = 2, reserve = false
             )
-            Text(
+            FullText(
                 achievement.GameTitle ?: "",
                 color = ShelfTheme.textMuted,
-                fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                fontSize = 11.sp,
+                maxLines = 2, reserve = false
             )
         }
         achievement.Points?.let {
@@ -201,7 +199,7 @@ private fun AccountsCard(
             if (name == null) return@forEachIndexed
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(name, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, reserve = false)
                     Text(if (slot == activeSlot) "Playing now" else "Saved", color = if (slot == activeSlot) ShelfTheme.accent else ShelfTheme.textMuted, fontSize = 12.sp)
                 }
                 if (slot != activeSlot) Chip("Play as", onClick = { onSwitch(slot) })

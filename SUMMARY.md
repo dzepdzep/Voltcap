@@ -1,3 +1,15 @@
+# Update 712a (23 Nov 2026, cloud run) - rule 11: RetroAchievements dialog shows its names whole
+- CI first: Verify 310 on 38cd4fb (711a) FAILED on one runner only - infra: the ubuntu-24.04 runner's NDK 28 download was a bad
+  zip ("Error on ZipFile unknown archive") before any build; the ubuntu-latest runner passed the full suite. Failed jobs rerun
+  requested (run 45195727121).
+- P2 finish still in the live session on claude/v0674-native-pages (pushes to 14:24 UTC) - left alone; Tasks 1-4 wait for P2.
+- RetroAchievementsDialog.kt: 3 TRUNCATE places -> 0. Recent achievement's name + its game (2 lines each) and a saved account's
+  name go through FullText (wrap, shrink readably, then slide; reserve = false).
+- Test: RaDialogFullText712aTest (fails on 711a: 3 Ellipsis). App + tests compiled in the cloud; the Gradle test run here was blocked
+  by Maven Central 429 (twice) - its assertions checked by an equivalent script (new code pass, 711a code fails); CI runs it. Static checks PASS, TRUNCATE 72 -> 69.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RetroAchievementsDialog.kt, app/src/test/java/com/shelf/launcher/ui/RaDialogFullText712aTest.kt.
+- Hardware NOT TESTED: HW-24 712a (KONKR, with 710a / 711a).
+
 # Update 711a (23 Nov 2026, cloud run) - rule 11: Game Journey timeline shows its text whole
 - CI first: Verify 310 on 838af2e (710a) GREEN.
 - P2 finish still in the live session on claude/v0674-native-pages (pushes 13:23-13:57 UTC) - left alone; Tasks 1-4 wait for P2.
