@@ -13,6 +13,29 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000000000. Owner 23 Nov 22:43 - continue from 682am / Task 1 (newest - this order wins; do not repeat finished work)
+1. **P2 performance first.** D379 Arcade navigation: the fair 30-game run is the baseline (the single-game run is void); 24 % slow
+   frames is not an acceptable final result - find the remaining CPU / drawing cost with comparable tests, no 60 fps claim without
+   real frame pacing. D386 Cinema page change 130-140 ms: keep investigating (StableFullText / layout), compare with earlier builds,
+   never change how text looks just for numbers. D389 120 achievements: 1031 -> 132 ms is progress, not final - efficient / lazy
+   rows without blocking or visible staggered filling; keep full counts and order, immediate access to the selected row, fast
+   D-pad scrolling, stable focus, Back / reopen, native styling and details; test 0, 1, 10 and 120 achievements with fast input and
+   early close; realistic categories and equal recording conditions.
+2. **Coverflow details:** option A stays on for QA. Confirm at x1.3 every fact is reachable by scrolling and the synopsis is not
+   hidden under the fixed key bar. Not final visual approval.
+3. **Task 1:** continue from 714a / 715a / 716a (no second implementation). 716a passed with defaults - still the combination
+   game header + game / news + full category bar + music / status widgets. 714a / 715a NOT TESTED: a QA-only path that runs the EXACT
+   R1 Row handler without the panel or any Wi-Fi / Bluetooth tile (717a's row714.sh - verify it is the exact handler), and a safe
+   path for the real Edit Home D-pad movement and the added Play part. KONKR + RP Classic, x1.0 / x1.3. Saved placements, Undo /
+   Reset, widget bounds and Edit Home previews kept; no collision after Top / Middle / Bottom.
+4. **Then R1 Focus Position** (audit 53 layouts; reuse the Voltcap row / Classic and Tile home focus-anchor prefs; only where
+   genuinely supported; A cycles, long-press direct; R1 order and smooth navigation kept).
+5. **Then Recomps + START -> Classification & Categories** (multiple categories per installed game / app, manual beats automatic,
+   no duplicate records, launching / metadata / saves unchanged).
+6. **Native pages:** keep the remaining 24 tracked toward 53 / 53; functional QA is not visual approval; the 29 stay on the P2 branch.
+Rules: bounded tests (no needless full sweeps), no system quick-setting toggles, no production Voltcap, QA safety checks + restore,
+CI on the exact final code commit, no merge / production install / release without GO, continue autonomously in this order.
+
 ## 00000000. Owner 23 Nov 18:23 - P2 decisions, smoothness, then Tasks 1-5 (v0.6.74; newest - this order wins)
 CI green on P2 46ade24 acknowledged; functional + motion QA acknowledged; NO blanket visual approval (12 layouts, 29-layout batch),
 no merge / production install / publication without GO. Finish the P2 corrections + performance work first, then Tasks 1-5 in order.
