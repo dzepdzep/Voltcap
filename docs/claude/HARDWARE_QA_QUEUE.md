@@ -73,6 +73,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   description (2 lines), the meta line and the comments title read whole (shrink or slide) - never an ellipsis; rows keep their
   spacing while focus grows a row; D-pad + touch scroll the list and comments. Screenshots. Unit evidence only
   (CrossTrophiesFullText705aTest, static TRUNCATE 90 -> 86; NOT cloud compiled (Maven 429) - CI first compile).
+- Also (709a, rule 11, dev line 709a or later, ~1 min, KONKR x1.3 + x1.0, with 707a / 703a): R1 quick panel - change a setting
+  with a long name (undo strip "Changed: ..." shrinks, then slides), open the tile editor and pick a tile with a long name (2 lines,
+  then shrink, then slide) and look at captions with spaces - never an ellipsis; Undo / swipe-away, D-pad + touch still work.
+  Screenshots. Unit evidence only (QuickSettingsFullText709aTest, cloud compiled + PASS; static TRUNCATE 81 -> 78).
 - Also (707a, rule 11, dev line 707a or later, ~1 min, KONKR x1.3 + x1.0, with 703a below): home edit mode toolbar - select a
   widget with a long name (and a hidden one): "Edit Home · <name> (hidden)" and its scope line read whole (shrink, then slide) -
   never an ellipsis; toolbar keeps its size at top and bottom; narrow layout keeps the actions row. Screenshots. Unit evidence

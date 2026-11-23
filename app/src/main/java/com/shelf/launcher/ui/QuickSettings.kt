@@ -1267,9 +1267,10 @@ fun QuickSettingsCard(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                // (Update 709a, rule 11: the changed setting's name shows whole - a readable size, then a slide.)
+                FullText(
                     "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f), reserve = false
                 )
                 R1UndoPill("↶ Undo", accent = true) { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
                 Spacer(Modifier.width(6.dp))
@@ -1404,8 +1405,9 @@ fun QuickSettingsCard(
                     RoundStep(if (p.id in hidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         if (p.id in hidden) "Show" else "Hide") { toggleHidden(p.id) }
                     Spacer(Modifier.width(8.dp))
-                    Text(p.label + if (p.id in hidden) " (hidden)" else "", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    // (Update 709a, rule 11: the picked tile's name wraps, shrinks readably, then slides - never "…".)
+                    FullText(p.label + if (p.id in hidden) " (hidden)" else "", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp,
+                        maxLines = 2, modifier = Modifier.weight(1f), reserve = false)
                 }
                 Spacer(Modifier.height(4.dp))
             }
@@ -1554,25 +1556,33 @@ private fun QuickTile(
         // Two caption lines at the system's font size too (a bigger font ran the second line into the row below).
         val captionH = maxOf(22.dp, with(androidx.compose.ui.platform.LocalDensity.current) { (10.5.sp * 2).toDp() } + 1.dp)
         Box(Modifier.fillMaxWidth().height(captionH), contentAlignment = Alignment.TopCenter) {
-            Text(
+            val capStyle = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+            ))
+            val capLh = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em)
+            val spaced = label.trim().contains(' ') && !label.trim().contains('\n')
+            // (Update 709a, rule 11: a caption with spaces wrapped to two lines and ended in "…" when that was not enough -
+            // it now goes through FullText: two lines, a readable size, then a slide. The caption box has a fixed height,
+            // so no reserve.)
+            if (spaced) FullText(
+                label, color = ShelfTheme.colors.textPrimary, fontSize = 9.sp, lineHeight = capLh, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, textAlign = TextAlign.Center, style = capStyle, modifier = Modifier.fillMaxWidth(), reserve = false
+            ) else Text(
                 label,
                 color = ShelfTheme.colors.textPrimary,
                 fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = 9.sp),
-                lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+                lineHeight = capLh,
                 fontWeight = FontWeight.SemiBold,
                 // (Update 274: a one-word label on one line, made smaller to fit — "Achievements" broke as "Achievement / s".)
                 // (Update 285, Toni: "a lot of stuff still written with …": a two-line caption ("Edit\nhome", "Look\nCovers",
-                // "Achievements\nFocus") has no space, so it was cut to one line — "Edit…", "Look…". A line break now gets its
-                // two lines, each kept on one line and made smaller to fit.)
-                maxLines = if (label.trim().contains(' ') || label.trim().contains('\n')) 2 else 1,
-                softWrap = label.trim().contains(' ') && !label.trim().contains('\n'),
+                // "Achievements\nFocus") gets its two lines, each kept on one line and made smaller to fit.)
+                maxLines = if (label.trim().contains('\n')) 2 else 1,
+                softWrap = false,
                 // (Compose lays a text that doesn't wrap and ends in "…" out as one line, whatever its line breaks —
-                // so the unwrapped captions are clipped instead; the font shrinks until each line fits.)
-                overflow = if (label.trim().contains(' ') && !label.trim().contains('\n')) TextOverflow.Ellipsis else TextOverflow.Clip,
+                // so the unwrapped captions are clipped; the font shrinks until each line fits.)
+                overflow = TextOverflow.Clip,
                 textAlign = TextAlign.Center,
-                style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
-                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
-                )),
+                style = capStyle,
                 modifier = Modifier.fillMaxWidth()
             )
         }

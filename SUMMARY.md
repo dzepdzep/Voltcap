@@ -1,3 +1,14 @@
+# Update 709a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the R1 quick panel shows its text whole
+- CI first: Verify 310 on d0e153e (708a) GREEN.
+- P2 left alone (owner review of the before/after package pending).
+- QuickSettings.kt (R1 quick panel): 3 TRUNCATE places -> 0. The undo strip's "Changed: <setting>" (1 line), the picked tile's
+  name in the tile editor (2 lines) and a tile caption with spaces (2 lines in its fixed caption box) go through FullText
+  (wrap, shrink readably, then slide; reserve = false). One-word and line-break captions keep their existing clip-and-shrink path.
+- Test: QuickSettingsFullText709aTest 2/2 PASS in the cloud (fails on 708a: 3 Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 81 -> 78.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, app/src/test/java/com/shelf/launcher/ui/QuickSettingsFullText709aTest.kt.
+- Hardware NOT TESTED: HW-24 709a (KONKR, with 707a / 703a).
+
 # Update 708a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the second screen's folder games page shows game names whole
 - CI first: Verify 310 on 673a1e0 (707a) GREEN.
 - P2 left alone (owner review of the before/after package pending).
