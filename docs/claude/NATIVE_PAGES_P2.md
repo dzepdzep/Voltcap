@@ -474,3 +474,10 @@ The 16 layouts the owner called close to approval are untouched (except the shar
   stacks when its value's word doesn't fit (682t) or the row leaves under 96 dp (682ag).
 - Local full suite on d29e05c: 2952 tests, 1 failed (Readability476: the TV row's measuring key was a second WinButton call -
   fixed in f17dfb8, re-run green with the TV / focus / PlayPlace / Night / ShelfText groups).
+- Owner 23 Nov 11:21 (RP Classic x1.3 shots of the package): Night's command keys ran off the right edge (the column turns 4°
+  about its top, its lower keys drift right) and ACHIEVEMENTS ran under a key's slanted end; Arcade's attract menu broke
+  "ACHIEVEMEN / TS". Fixed in fc0590a / 1d37976: an end margin for the turn (nightCmdDrift, one value on every page), the label
+  keeps clear of the slant, the stats panel shows that it scrolls (fading edge + scroll cue, a D-pad stop while it scrolls);
+  Arcade's menu lines in whole words, the menu 60 % of the attract screen. Re-walked on both handhelds x1.3 (rdg13 / kdg13
+  fc0590a, reg13 / keg13 1d37976): 0 launches, fatal 0, restore diff 0, Play same place on every page. Package updated.
+  (A first fc0590a copy was a stale APK - its runs rcg13 / kcg13 are void.)
