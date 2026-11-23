@@ -422,7 +422,7 @@ gk13 (29 x1.3, b316b8f), gr13 (29 x1.3, 9192a89), hk10 / hr10 (Magazine, Arcade,
 - Status: implemented 29 / 53 (own designs); hardware-walked 29 (both handhelds, both scales); functionally accepted 14
   (batches 1-3, owner 22 Nov); visually approved 0; released 0. Remaining: Disc station (class B) + 23 shared-page layouts.
 
-### 682ag - owner visual review of all 29 (23 Nov 07:28): critical + polish fixes - IMPLEMENTED, emulator only, NOT hardware-verified
+### 682ag - owner visual review of all 29 (23 Nov 07:28): critical + polish fixes - IMPLEMENTED, hardware-walked x1.3, NOT VISUALLY APPROVED
 The 16 layouts the owner called close to approval are untouched (except the shared WholeWordsText fix below). Changed:
 - **TV room (option 2):** the native-page strips no longer draw a Back key (B still goes back - the window's own handling);
   the page row keeps two page slots, Play first. Teletext grid: where fewer than 24 characters fit a line (RP Classic x1.3 ~17)
@@ -457,3 +457,20 @@ The 16 layouts the owner called close to approval are untouched (except the shar
 - PRODUCTION (Level 2, read-only, 23 Nov): RP Classic `com.shelf.launcher` is 0.6.73 (versionCode 80), signing digest 1903d14a
   (= the KONKR's production v80), lastUpdate 2026-11-22 18:36, firstInstall 2026-10-12 kept (in-place update, data kept).
   dumpsys only; the app was not started, touched or changed. Who confirmed the installer prompt is not known from the device.
+- Hardware (QA app, Level 1, 23 Nov): KONKR (GT78, USB) + RP Classic (USB), x1.3, 12 changed layouts - runs kag13 / rag13
+  (build d29e05c) and kbg13 / rbg13 (TV, Night, Icon bar on f17dfb8). Every page walked, 0 launches, fatal 0, confirmations armed
+  and left, owner snapshot restored diff 0 (all four runs). Play the same size and place on Details / Achievements / Options:
+  12 / 12 on both handhelds - TV now included (the strip's scroll was kept from Info; each page's strip starts fresh, f17dfb8).
+  x1.0 not re-run on hardware (emulator sheets + Robolectric only). ~30 min of handheld time, two handhelds in parallel.
+- TV still: the strip under the small TV shows one key at a time at x1.3 (Full details one press right of Play); the teletext text
+  is small because the set is small in the room art; its header's game name slides. Owner's call.
+- Page-change frame audit: the review sheet's frame mode (VOLTCAP_SHEET_FRAMES) showed the change settled by the 2nd frame -
+  the window runs with animations off under Robolectric, so it is not transition evidence. Needs an on-device frame capture
+  (not the RP Classic's screenrecord). NOT DONE.
+- Before / after package (artifact "P2 visual corrections - before / after (12 layouts)"): per layout, KONKR and RP Classic x1.3,
+  the 22-23 Nov strip over the 23 Nov strip + the after walk clip.
+- Merged the dev line (503d679: 684a no-art caption rule, 704a CI 429 retry); SceneNoArt keeps both rules (caption only where the
+  window doesn't name the console or the word fits, and never where even the readable minimum can't hold it); Night's stat
+  stacks when its value's word doesn't fit (682t) or the row leaves under 96 dp (682ag).
+- Local full suite on d29e05c: 2952 tests, 1 failed (Readability476: the TV row's measuring key was a second WinButton call -
+  fixed in f17dfb8, re-run green with the TV / focus / PlayPlace / Night / ShelfText groups).
