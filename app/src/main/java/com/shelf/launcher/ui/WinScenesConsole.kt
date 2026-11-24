@@ -1044,6 +1044,8 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
             translationX = (1f - k) * (1f - k) * size.width * 0.35f
             alpha = (k * 2f).coerceIn(0f, 1f)
         }
+            // (739a, P2 class C: L1 / R1 from anywhere on the tag - its own pages CATALOGUE CARD / REWARDS CARD / COUNTER, WinPagesShop.kt.)
+            .nativeBumpers(ctx)
     ) {
         Canvas(Modifier.matchParentSize()) {
             translate(left = 8f, top = 10f) { drawRect(Color.Black.copy(alpha = 0.35f)) }
@@ -1130,13 +1132,14 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
                     }
                 }
             } else {
-                Box(Modifier.weight(1f, fill = false).fillMaxWidth().heightIn(min = (h * 0.45f).coerceAtMost(260.dp)).border(2.dp, ink)) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (739a, P2 class C: the tag's own pages printed under its title - CATALOGUE CARD / REWARDS CARD / COUNTER in its black
+                // capitals, lit in the neon (WinPagesShop.kt); was the shared pages in a black frame with "▸" words under it. The tag
+                // takes its whole height on its pages and its keys keep one row of two page slots, Play first, so Play stays put.)
+                val k = ShopInk(yellow, ink, neon, onNeon, stamp)
+                ShopPageArea(ctx, k, Modifier.weight(1f).fillMaxWidth(), short)
                 Spacer(Modifier.height(4.dp))
-                ctx.buttons.forEach { a ->
-                    SceneControl(a, Modifier) { on ->
-                        Text("▸ " + a.label.uppercase(), color = if (on) stamp else ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                    }
-                }
+                val btns = ctx.buttons.filter { it.primary } + ctx.buttons.filter { !it.primary && !it.back } + ctx.buttons.filter { it.back }
+                UniformKeyRow(btns, 4.dp, slots = PAGE_SLOTS) { a -> ShopPageKey(a, k, if (h < 440.dp) 30.dp else 36.dp) }
             }
         }
     }

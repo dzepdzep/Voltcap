@@ -1013,3 +1013,23 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   WinFocus, Layouts344, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, UniformKeys673, NativePages*: 2,575 tests, 0
   failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 13 scenes done (own designs 43 / 53).
+### 739a - P2 class C, fourteenth scene: Rental shop (SHOP_TAG, WinPagesShop.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The yellow rental tag hanging beside the case you took off the shelf (title in heavy black capitals, barcode, tear-off, black
+  punched keys lit in the shop's neon) stays as it is; its pages are printed on the tag under the title in the same ink:
+  CATALOGUE CARD (the tag's own CATALOGUE CARD key opens it: each fact label over value in black capitals between dashed rules,
+  then the story under a black bar headed THE STORY - a D-pad stop), REWARDS CARD (the shop's member punch card: cup, "N / M",
+  ten punch holes - one earned always punches one, all only when every one is earned - and the order as a black stamp; each
+  achievement a line with its square badge, the title in capitals, "EARNED <date>" / "NOT YET", "+N PTS"; the line you are on in
+  the neon; A opens the whole text + how rare it is; lazy rows), COUNTER (the choices as black punched rows; removing ones in the
+  tag's orange, "PRESS A AGAIN TO REMOVE" - second A). Heading: the page's name in black capitals (wraps, never cut) and a punch
+  hole per page (the shown one punched), after the old page has gone. Motion: the next page drops in from above like the next
+  card slipped onto the tag's string (fading in); none with Motion Off. No made-up rental period, due date or price (update 346).
+  Was: the shared pages in a black frame with "▸" words under it.
+- L1 / R1 anywhere on the tag. On its pages the tag takes its whole height and its keys are one row of punched keys with two
+  page slots, Play (RENT & PLAY) first, so Play stays put: PlayPlace SHOP x1.0 / x1.3 found Play at the same place on all three
+  pages (it could not find the shop's RENT & PLAY / CATALOGUE CARD keys before - the test now knows both words).
+- Tests (cloud): NativePagesShop739aTest 4/4 (new; fails before: no shopPageName, SHOP_TAG not native); SHOP added to AchFirstRow
+  (+ Rpc, PlayPlace via NATIVE) + ShelfText (its details matcher learned "catalogue"); with PlayPlace*, NoStrayPlay682j, Layouts344,
+  WindowWordsSurvey682, Batch505, PopupShade461, Pickups672, ShopTag673, NativeConfirm, PopupNativeStorage, WinFocus, UniformKeys673,
+  NativePages*: 2,639 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 14 scenes done (own designs 44 / 53).

@@ -97,7 +97,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (737a, P2 class C: Pocket camera - the cartridge menu's DATA, ALBUM and SETUP in its pixel font and four shades, WinPagesCamera.kt.)
     WinScene.CAMERA_MENU,
     // (738a, P2 class C: Panel dashboard - the swung-round panel's OVERVIEW, ACHIEVEMENTS and MANAGE as flat tiles, WinPagesPanels.kt.)
-    WinScene.PANEL_DETAIL)
+    WinScene.PANEL_DETAIL,
+    // (739a, P2 class C: Rental shop - the rental tag's BOX BACK, REWARDS CARD and COUNTER in its black capitals, WinPagesShop.kt.)
+    WinScene.SHOP_TAG)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
