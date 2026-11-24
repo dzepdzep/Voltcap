@@ -72,7 +72,9 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
             words(n).split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
         var found = compose.onAllNodes(m).fetchSemanticsNodes()
         if (found.isEmpty()) {
-            val more = androidx.compose.ui.test.SemanticsMatcher("More") { n -> n.config.contains(click) && words(n).trim().let { w -> w == "•••" || w == "more" } }
+            val more = androidx.compose.ui.test.SemanticsMatcher("More") { n -> n.config.contains(click) && words(n).trim().let { w -> w == "•••" ||
+                // (733a: a More key that is labelled and described - "more more", Case flow - is More too, as AchFirstRow reads it)
+                w.split(Regex("[^a-z•]+")).filter { it.isNotEmpty() }.let { ws -> ws.isNotEmpty() && ws.all { it == "more" } } } }
             val ms = compose.onAllNodes(more).fetchSemanticsNodes()
             if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(click); frames(20) }
             found = compose.onAllNodes(m).fetchSemanticsNodes()

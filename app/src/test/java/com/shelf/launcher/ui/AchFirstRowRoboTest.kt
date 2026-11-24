@@ -64,7 +64,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (731a: class C - the Cardboard box insert's own sheets)
             HomeLayout.BOX,
             // (732a: class C - the File select file's own screens)
-            HomeLayout.FILESELECT)
+            HomeLayout.FILESELECT,
+            // (733a: class C - the Case flow case's own pages)
+            HomeLayout.CASEFLOW)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

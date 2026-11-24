@@ -1346,6 +1346,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
     val flip = LocalSceneOrigin.current != null
     Column(
         Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+            // (733a, PlayPlace682ab CASEFLOW: a page sized by its content moved Play between Details and Extras - on its pages
+            // the case keeps one size, the whole stage, so the pills stay where they are.)
+            .then(if (ctx.page != WinPage.MAIN) Modifier.width(w).height(ctx.maxH) else Modifier)
             .pickupFlipTarget(flip)
             .graphicsLayer {
                 if (!flip) return@graphicsLayer
@@ -1359,13 +1362,18 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
             .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
+            // (733a, P2 class C: L1 / R1 turn the case's own pages wherever the D-pad is.)
+            .nativeBumpers(ctx)
             .padding(14.dp)
     ) {
         // (Update 467, owner's Pokémon Stadium 2 screenshot: the whole window scrolled, so on the KONKR (960×640) with a
         // three-line story the Play / Details / Back / More row sat below the window's bottom edge, cut in half, reachable
         // only by scrolling. Now only the picture, screenshots, facts and story scroll — in the room the action row leaves;
         // the actions are measured first and always shown whole. QA gate: tools/qa/tools/geomcheck.py --clip, R26.)
-        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+        // (733a, P2 class C: on its pages the picture's glass well shows the case's own pages - DETAILS / EXTRAS / SETUP,
+        // WinPagesCase.kt - under a heading that names the page after the old one has gone; Info as before.)
+        if (ctx.page != WinPage.MAIN) CaseFlowPageArea(ctx, accent, Modifier.weight(1f, fill = false))
+        else Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
         // (Update 467: the picture gives way first — it leaves ~270 dp for the screenshots, facts, story and the action row —
         // so on a short screen the story still shows rather than scrolling away; on a tall one it's as before.)
         val mediaH = minOf(ctx.maxH * 0.42f, ctx.maxH - 270.dp).coerceIn(110.dp, 300.dp)
@@ -1414,7 +1422,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 }
                 // The glass's shine.
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
-            } else ctx.pageBody(Modifier.fillMaxSize())
+            }
         }
         if (ctx.page == WinPage.MAIN) {
             // The name band: its own room under the picture, an accent edge on the case's side.
@@ -1476,7 +1484,8 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             alpha = 0.25f + 0.75f * e
             translationY = (1f - e) * 14.dp.toPx()
         }, 10.dp, { m -> Box(m) {
-            UniformKeyRow(ctx.buttons, 8.dp) { a ->
+            // (733a: on a page the pills keep two slots, Play the first, with or without the page's own pill - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                 SceneControl(a, Modifier) { on ->
                     // Update 487 (E7, owner-approved): Play is the glossy accent pill even while another key is lit (it looked
                     // like the glass keys), and the word on a lit pill is checked against its lighter top (white on lilac
