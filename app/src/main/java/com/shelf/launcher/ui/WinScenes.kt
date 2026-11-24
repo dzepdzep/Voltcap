@@ -1931,8 +1931,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     // (674e, D332 - x1.3: on the KONKR (a 334 dp panel) and with More open on the Flip 2 the name's two 28 sp lines, the console
     // and the LCD left the two fact lines 0 px. A tight panel writes the name smaller, the LCD smaller and the gaps closer.)
     val tight = h < 340.dp || (secondary.isNotEmpty() && h < 400.dp)
+    // (735a, P2 class C: L1 / R1 from anywhere in the panel - its own pages ABOUT / STARS / SETTINGS, WinPagesAiry.kt.)
     Column(
-        Modifier.size(w, h)
+        Modifier.size(w, h).nativeBumpers(ctx)
             .graphicsLayer { val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx() }
             .drawBehind {
                 drawRoundRect(Color(0xFF1C3150).copy(alpha = 0.18f), Offset(0f, 18f), size, androidx.compose.ui.geometry.CornerRadius(32.dp.toPx()))
@@ -1977,7 +1978,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         Spacer(Modifier.height(10.dp))
                         StoryLines(it, Color(0xFF66707E), 13.sp, 18.sp, 4, Modifier.weight(1f, fill = false))
                     }
-                } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (735a, P2 class C: on its pages the panel's right column shows its own pages - ABOUT / STARS / SETTINGS in the
+                // same soft bubbles, under a heading that names the page after the old one has gone. Info as before.)
+                } else AiryPageArea(ctx, accent, Modifier.fillMaxSize(), tight)
             }
         }
         Spacer(Modifier.height(if (tight) 6.dp else if (secondary.isEmpty()) 14.dp else 10.dp))
@@ -1988,7 +1991,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         // scrolls a whole key at a time; the pills under them likewise - both were wrapping FlowRows.)
         // (674g, KONKR x1.3 k674f with More open: still ~20 dp short for the facts' second line - the round keys take their small
         // size there, Play's circle with them.)
-        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent, small = tight && secondary.isNotEmpty()) }
+        // (735a: on its own pages the round keys keep two page slots, Play the first - it stays put from page to page; a tight
+        // panel's pages take the small keys, as More open does, so the first star on STARS stays whole at x1.3.)
+        UniformKeyRow(ctx.buttons + primaryTools, 14.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> AiryKey(a, accent, small = tight && (secondary.isNotEmpty() || ctx.page != WinPage.MAIN)) }
         if (secondary.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) } }
         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             ctx.chips.forEach { a ->

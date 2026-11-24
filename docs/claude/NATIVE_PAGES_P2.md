@@ -896,3 +896,22 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; PlayPlace* all layouts, NoStrayPlay682j all 40 layouts, every
   ORBIT / Orbit case (AchFirstRow, ShelfText, WindowWordsSurvey, WinFocus, LazyRows, OrbitSpin, OrbitKeyLabel) + PopupNativeStorage
   + Layouts330: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+### 735a - P2 class C, tenth scene: Airy home (AIRY_PANEL, WinPagesAiry.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The floating white 1999 panel (soft rounded corners, pale blue-grey well, the cover in its rounded frame, the name in the
+  light face, the pixel LCD, big round keys with their word under them) stays as it is; its pages take the panel's right column
+  in the same soft language: ABOUT (each fact a white round-ended bubble - small accent label, the value in the dark ink - then
+  the story in a white speech bubble with a little tail, a D-pad stop), STARS (one line: "★ N of M", a bubble meter filled in the
+  accent for what you have - as many bubbles as the room holds, in proportion past a dozen - and the order as a round pill whose
+  words slide; each achievement a white rounded card - the badge in a round bubble, the title, "Got it <date>" / "Still to get",
+  the points in a small round accent bubble; A opens the whole text + how rare it is; lazy rows), SETTINGS (big round-ended
+  pills with a round dot at the start, filled when lit; removing ones soft red with "Press A again to remove" - second A).
+  Heading: the page's name in the light face and a dot per page (the shown one a longer accent pill) after the old page has
+  gone; the next page floats up like a bubble (from below forward, from above back, from 97 %); none with Motion Off.
+- L1 / R1 on the panel's root. On a page the round keys keep two page slots (Play the first), so Play stays put (PlayPlace
+  AIRY x1.0 / x1.3 identical on all three pages). A tight panel (640 x 427, the KONKR) takes the small round keys on its pages,
+  a smaller heading and closer edges - AchFirstRow caught the first star half a card (16 px, then 46 px of 73) at x1.3 before.
+- Tests (cloud): NativePagesAiry735aTest 4/4 (new; fails before: no airyPageName, AIRY_PANEL not native); AIRY added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow* / ShelfText / PlayPlace* AIRY, Airy477, WinFocus
+  AIRY, NoStrayPlay682j all layouts, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, Layouts330, UniformKeys,
+  NativePages*: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 11 scenes done (own designs 40 / 53).
