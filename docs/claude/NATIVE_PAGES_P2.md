@@ -623,3 +623,9 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   started the game. Crate goes back to its eager tracklist (D389 open for Crate). The rows' move queue no longer scrolls the list
   itself (Compose threw "uncancelled requests present" when a scroll cut a bring-into-view short): each move waits for the glide to
   end; while presses wait, rows come into view without a glide. NoStrayPlay 60 / LazyRows 216 / AchFirstRow 220 / WinFocus 448 green.
+- **682aq9 / aq10:** D392 (Coverflow / shelf-family Details at x1.3) - the story, one D-pad stop taller than the panel, opened with
+  the facts scrolled out and its last lines below, and Up / Down moved nothing; now Up / Down on the story scroll the page while
+  there is more. Hardware x1.3 (kcw13 / rcw13): one Up shows the whole facts line, one Down the story's last line above Play.
+  D389 move queue: the glide-wait version (aq8 / aq9) landed Downs back on the row above; aq10 keeps aq7's reveal-before-move,
+  only when no other scroll runs - Back reached on KONKR (Cinema, Resume, Bar) and RP Classic (Cinema, Resume), Up back to the top,
+  0 crashes, restore diff 0. D390: the first cover walk looped ~30 min (shared shell variable) - QA app only, stopped by hand.

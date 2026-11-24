@@ -356,11 +356,12 @@ internal fun NativeRows(
     // Play and a quick A started the game. The page opens at its top, where its first focus is, as the column effectively did.)
     val state = remember { androidx.compose.foundation.lazy.LazyListState() }
     // (682aq, KONKR + RP Classic lazywalk: 140 quick Downs - bursts of ten - stopped on row 30 / 52 of 120 where the eager column
-    // reached the end. Diagnostics (682aq6): every press reached the rows and every focus move "succeeded" - a move made while the
-    // list was still gliding to the row before landed, by position, on a row it had passed. So Up / Down inside the rows go
-    // through a queue, in order: each move waits until the list has stopped gliding, and while more presses wait the list
-    // brings the focused row into view at once (no glide) - a single press still glides as before. The list is never scrolled
-    // from here: a scroll that cut a bring-into-view short threw "uncancelled requests present" (Compose, NoStrayPlay682jTest).
+    // reached the end. Diagnostics (682aq6 / aq9): every press reached the rows and every focus move "succeeded" - but a move made
+    // while the list was gliding, or onto a row not yet laid out, landed by position on a row already passed (Down 5 -> 4, again
+    // and again). So Up / Down inside the rows go through a queue, in order, and before each move the row it goes to is put whole
+    // in view - at once while more presses wait, gliding for a single press - so the move is made as the eager column made it: to
+    // a row laid out and on screen (682aq7: Back reached on KONKR and RP Classic). The list is only scrolled from here when no
+    // other scroll runs (a scroll that cut a bring-into-view short can throw "uncancelled requests present" in Compose).
     // Leaving the rows - the first row's Up, the last row's Down - is the same focus move as before, through the window.)
     val fm = androidx.compose.ui.platform.LocalFocusManager.current
     val moves = remember { kotlinx.coroutines.channels.Channel<androidx.compose.ui.focus.FocusDirection>(kotlinx.coroutines.channels.Channel.UNLIMITED) }
@@ -369,21 +370,21 @@ internal fun NativeRows(
     LaunchedEffect(moves) {
         val qa = com.shelf.launcher.data.QaVariant.isolatedNow
         for (d in moves) {
+            val down = d == androidx.compose.ui.focus.FocusDirection.Down
             val from = ctl.focused
             var settle = 0
             while (state.isScrollInProgress && settle < 30) { androidx.compose.runtime.withFrameNanos { }; settle++ }
+            if (from >= 0 && !state.isScrollInProgress)
+                runCatching { nativeRowsReveal(state, if (down) from + 1 else from - 1, down, glide = queued[0] <= 1) }
             var ok = fm.moveFocus(d); var waited = 0
             // (a move after the rows were left - the presses past the last row - is made once, as the window would, not retried)
             while (!ok && from >= 0 && waited < 6) { androidx.compose.runtime.withFrameNanos { }; waited++; ok = fm.moveFocus(d) }
             queued[0]--
-            val down = d == androidx.compose.ui.focus.FocusDirection.Down
             if (qa && (waited > 0 || !ok || (ctl.focused >= 0 && from >= 0 && ctl.focused != from + (if (down) 1 else -1))))
                 android.util.Log.e("VoltcapQA", "rows move $d $from->${ctl.focused} ok=$ok frames=$waited settle=$settle queued=${queued[0]}")
         }
     }
-    val parentSpec = androidx.compose.foundation.gestures.LocalBringIntoViewSpec.current
-    val spec = remember(parentSpec) { NativeRowsBringSpec(parentSpec, queued) }
-    androidx.compose.runtime.CompositionLocalProvider(androidx.compose.foundation.gestures.LocalBringIntoViewSpec provides spec) {
+    run {
     androidx.compose.runtime.CompositionLocalProvider(LocalNativeRows provides ctl) {
     androidx.compose.foundation.lazy.LazyColumn(
         modifier.onPreviewKeyEvent { e ->
@@ -402,17 +403,6 @@ internal fun NativeRows(
     }
 }
 
-/** 682aq7: the list's bring-into-view - at once while D-pad presses wait in [queued] (more than the one being made), else the
- *  surrounding spec's own glide. Same distances as the surrounding spec. */
-@Suppress("DEPRECATION")
-internal class NativeRowsBringSpec(private val parent: androidx.compose.foundation.gestures.BringIntoViewSpec, private val queued: IntArray) :
-    androidx.compose.foundation.gestures.BringIntoViewSpec {
-    override val scrollAnimationSpec: androidx.compose.animation.core.AnimationSpec<Float>
-        get() = if (queued[0] > 1) androidx.compose.animation.core.snap() else parent.scrollAnimationSpec
-    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
-        parent.calculateScrollDistance(offset, size, containerSize)
-}
-
 /** 682aq7: which row of a [NativeRows] list has the focus (its index; -1 none) - kept by [nativeItems]' rows. */
 internal class NativeRowsCtl { var focused = -1 }
 internal val LocalNativeRows = androidx.compose.runtime.staticCompositionLocalOf<NativeRowsCtl?> { null }
@@ -425,6 +415,26 @@ internal fun <T> androidx.compose.foundation.lazy.LazyListScope.nativeItems(
     androidx.compose.foundation.layout.Box(Modifier.onFocusChanged { f ->
         if (f.hasFocus) ctl?.focused = i else if (ctl != null && ctl.focused == i) ctl.focused = -1
     }) { content(i, list[i]) }
+}
+
+/** 682aq7: puts row [target] whole inside the list's view (nothing when it already is, or past either end). */
+internal suspend fun nativeRowsReveal(state: androidx.compose.foundation.lazy.LazyListState, target: Int, down: Boolean, glide: Boolean) {
+    val info = state.layoutInfo
+    if (target !in 0 until info.totalItemsCount) return
+    val end = info.viewportEndOffset - info.afterContentPadding
+    val t = info.visibleItemsInfo.firstOrNull { it.index == target }
+    val delta = when {
+        t == null -> {
+            state.scrollToItem(target)
+            val n = state.layoutInfo
+            val r = n.visibleItemsInfo.firstOrNull { it.index == target } ?: return
+            if (down) (r.offset + r.size - (n.viewportEndOffset - n.afterContentPadding)).coerceAtMost(0).toFloat() else 0f
+        }
+        down -> (t.offset + t.size - end).coerceAtLeast(0).toFloat()
+        else -> (t.offset - info.viewportStartOffset).coerceAtMost(0).toFloat()
+    }
+    if (delta == 0f) return
+    if (glide) state.animateScrollBy(delta) else state.scrollBy(delta)
 }
 
 /** 682aq: [pageScrollCue] + faded edges for a lazy list - the thumb from the rows laid out so far (their average height). */
