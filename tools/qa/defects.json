@@ -4342,7 +4342,15 @@
    "title": "SAFETY (P2 branch QA builds 682aq-682aq10, never production): Record crate and Dock (BAR) Achievements pages - after the lazy list was scrolled or re-sorted, a quick L1 / R1 turn away and back with A pressed during the turn started the game",
    "rule": "safety",
    "severity": "critical",
-   "status": "fixed in code 682ar: root cause - both pages print their order key (the page's first focus) inside the lazy list's first row; a lazy list keeps its place by key (re-sort) and its scroll (page turned back), so that row was not built, the window's 8-frame request for the page's first focus failed and fell back to Play, and the A kept by the page hand-over (682j) was delivered to Play. Fix 1 (cause): NativeRows head lists go back to their head when the page is turned to again or the order changes; the crate's head line with the stamp is the list's own keyed first item (a re-sort no longer rebuilds the lit stamp in another row). Fix 2 (safety net): PageHandoff.release never hands a confirm key (A / Center / Enter / Start / Space) kept during a page change to Play - only presses made once Play is lit start the game. Tests: ListHeadTurn682arTest (fails 4/4 on 7110d79, passes), PageHandoff682arTest, NoStrayPlay682jTest 60 with Crate lazy. Hardware: p2review storm pending",
+   "status": "fixed in code 682ar: root cause - both pages print their order key (the page's first focus) inside the lazy list's first row; a lazy list keeps its place by key (re-sort) and its scroll (page turned back), so that row was not built, the window's 8-frame request for the page's first focus failed and fell back to Play, and the A kept by the page hand-over (682j) was delivered to Play. Fix 1 (cause): NativeRows head lists go back to their head when the page is turned to again or the order changes; the crate's head line with the stamp is the list's own keyed first item (a re-sort no longer rebuilds the lit stamp in another row). Fix 2 (safety net): PageHandoff.release never hands a confirm key (A / Center / Enter / Start / Space) kept during a page change to Play - only presses made once Play is lit start the game. Tests: ListHeadTurn682arTest (fails 4/4 on 7110d79, passes), PageHandoff682arTest, NoStrayPlay682jTest 60 with Crate lazy. Hardware: p2review storm pending Hardware 682ar (QA app, synthetic games): p2review storm - 14 bursts (L1 R1 A, R1 L1 A, L1 R1 R1 L1 A, L1 R1 A B, A L1 R1 A, L1 R1 A A, R1 R1 R1 R1 A) on Crate and Dock, KONKR + RP Classic: 0 launches. Crate lazywalk (0 / 1 / 10 / 120 KONKR, 120 RP Classic): Back reached, Up to the stamp, early close clean. Found there: after a burst that ends on the page it started from, the hand-over was never released (keyed by the page) - the A was lost and the D-pad did nothing until the next real turn; fixed 682ar3 (keyed by every turn, PageHandoff682arTest), hardware re-check pending.",
+   "found": "2026-11-24"
+  },
+  {
+   "id": "D394",
+   "title": "QA tool: the D390 watchdog of a run that ended normally stayed alive and, a minute after the deadline, put the QA app back (force-stop) - KONKR kst10 12:08, after the run (no harm that time)",
+   "rule": "qa-tool",
+   "severity": "medium",
+   "status": "fixed 682ar3 (trap EXIT kills the watchdog; selftest a finished run takes its watchdog with it)",
    "found": "2026-11-24"
   }
  ]

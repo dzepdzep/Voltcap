@@ -1493,7 +1493,7 @@ internal fun GameWindow(
             .onFocusChanged { handoff.focused = it.isFocused }
             .onKeyEvent { handoff.keep(it.nativeKeyEvent) }
             .focusable())
-        LaunchedEffect(page) {
+        LaunchedEffect(page, pageBox.turns.intValue) {
             if (!turned) { turned = true; return@LaunchedEffect }
             val opener = pageOpener[0]
             // (682ar: whether the focus ends on Play - then the confirm presses kept while the page changed are not handed to it)

@@ -2974,6 +2974,23 @@ echo REACHED_END >> {d}/log.txt
         rc, keys, log = self.run_guard([self.QA], 'wg_window; WG_DEADLINE=$(( $(date +%s) - 1 )); wg_key_win A', popup="/r/game.sfc")
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("max run time", log)
 
+    def test_682ar_d390_a_finished_run_takes_its_watchdog_with_it(self):
+        import tempfile, time
+        d = tempfile.mkdtemp()
+        try:
+            script = f"""P=com.shelf.launcher.qa; F={d}; TAG=t; WG_LOG={d}/log.txt; WG_GRACE_S=1; WG_DEADLINE=$(( $(date +%s) + 1 ))
+done_marker() {{ echo PUTBACK >> {d}/log.txt; }}; WG_ONABORT=done_marker
+. {self.DEV}/winguard.sh
+wg_watchdog
+echo FINISHED >> {d}/log.txt
+"""
+            subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=20)
+            time.sleep(4)
+            log = open(os.path.join(d, "log.txt")).read()
+            self.assertIn("FINISHED", log); self.assertNotIn("WATCHDOG", log); self.assertNotIn("PUTBACK", log)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_682ar_d390_default_deadline_is_the_15_minute_limit(self):
         src = open(f"{self.DEV}/winguard.sh").read()
         self.assertIn("WG_MAX_S:-900", src)

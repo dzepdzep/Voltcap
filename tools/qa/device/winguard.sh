@@ -23,7 +23,10 @@ wg_watchdog() { # end this script (and its children) WG_GRACE_S after the deadli
   me=$$; ( sleep $(( WG_DEADLINE - $(date +%s) + ${WG_GRACE_S:-60} )); echo "$(date +%T) WATCHDOG: past the deadline - script ended" >> $WG_LOG
     pkill -P $me 2>/dev/null; kill -TERM $me 2>/dev/null
     type "$WG_ONABORT" > /dev/null 2>&1 && $WG_ONABORT; echo DONE >> $WG_LOG ) >/dev/null 2>&1 &
-  WG_DOG=$!; }
+  WG_DOG=$!
+  # (682ar: a run that ends on its own takes its watchdog with it - one left running put the QA app back (force-stop) over the
+  # next run's work, KONKR kst10 12:08)
+  trap 'kill $WG_DOG 2>/dev/null' EXIT; }
 wg_focus() { dumpsys window | grep mCurrentFocus | tail -1; }
 wg_hash() { echo "$1" | sed -n 's/.*Window{\([0-9a-f]*\) .*/\1/p'; }
 wg_mark() { cut -d' ' -f1 $F/voltcap_qa_screen 2>/dev/null; }

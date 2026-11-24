@@ -229,10 +229,14 @@ internal val HANDOFF_CONFIRM_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_DPA
 /** The window's page with [PageHandoff]: a change in a window with its own pages ([own]) hands the focus over as it happens. */
 internal class HandoffPage(initial: WinPage, private val h: PageHandoff) {
     private val s = androidx.compose.runtime.mutableStateOf(initial)
+    /** 682ar: one more for every page change that took the focus for the hand-over - the window's hand-over effect is keyed by it,
+     *  not by the page alone: an L1 and an R1 in the same frame end on the page they started from, the page "did not change",
+     *  the effect never ran again and the holder kept every press after it (a storm on the KONKR: the D-pad did nothing). */
+    val turns = androidx.compose.runtime.mutableIntStateOf(0)
     var own = false
     operator fun getValue(r: Any?, p: kotlin.reflect.KProperty<*>): WinPage = s.value
     operator fun setValue(r: Any?, p: kotlin.reflect.KProperty<*>, v: WinPage) {
-        if (v != s.value && own) h.hold()
+        if (v != s.value && own) { h.hold(); turns.intValue++ }
         s.value = v
     }
 }

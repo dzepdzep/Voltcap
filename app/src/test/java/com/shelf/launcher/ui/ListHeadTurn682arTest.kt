@@ -127,4 +127,50 @@ class ListHeadTurn682arTest(private val layout: HomeLayout, private val big: Boo
             com.shelf.launcher.data.Features.winScenes.state.value = before
         }
     }
+
+    /** Keys straight after each other, no frame between (a burst the way `input keyevent A B C` sends them). */
+    private fun burst(vararg codes: Int) {
+        val d = ShadowDialog.getLatestDialog() ?: return
+        codes.forEach { c -> d.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, c)); d.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, c)) }
+    }
+
+    /**
+     * 682ar (KONKR storm kst10): L1 and R1 in the same frame end on the page they started from; the hand-over's holder took the
+     * focus, but its release was keyed by the page - which "did not change" - so every press after it was kept for ever: the
+     * D-pad did nothing and the A meant for the order key was lost. Now the release follows every turn.
+     */
+    @Test fun anL1R1BurstInOneFrameLeavesTheDpadWorking() {
+        val before = com.shelf.launcher.data.Features.winScenes.state.value
+        com.shelf.launcher.data.Features.winScenes.state.value = true
+        TestHooks.scale.value = if (big) 1.3f to 1.15f else null
+        try {
+            val g = Game("Probe Quest", "PS2", 1, SourceType.ROM, romPath = "/r/probe.iso")
+            val list = (1..40).map { i -> RaAchievementDetail(i, "Probe achievement $i", "A synthetic description, number $i.", 5 + i, null, null,
+                if (i % 3 == 0) "2026-11-01 10:00:00" else null, null, unlockPercent = 10f + i, displayOrder = i) }
+            val state = LauncherUiState().copy(raAchievementDetails = mapOf(g.stableKey to list),
+                raProgress = mapOf(g.stableKey to RaGameProgress(NumPossibleAchievements = 40, NumAchieved = list.count { it.isUnlocked })))
+            compose.mainClock.autoAdvance = false
+            compose.setContent { com.shelf.launcher.ui.theme.ShelfLauncherTheme {
+                GameWindow(layout, g, state, emptyMap(), onClose = { closes++ }, onPlay = { plays++ }, onFullDetails = {}, onNeedMedia = {},
+                    options = listOf(WinOption("Add to favorites") { optionRuns++ }))
+            } }
+            frames(160)
+            val tag = "$layout x${if (big) "1.3" else "1.0"}"
+            key(KeyEvent.KEYCODE_BUTTON_R1, 20); key(KeyEvent.KEYCODE_BUTTON_R1, 40)
+            org.junit.Assume.assumeTrue("$tag: achievements page reached", orderLit())
+            val order0 = focusedText()
+            burst(KeyEvent.KEYCODE_BUTTON_L1, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_DPAD_CENTER)
+            frames(30)
+            ok("an L1 R1 A burst")
+            assertTrue("$tag: the order key is lit after the burst (on '${focusedText()}')", orderLit())
+            // (the crate's stamp names its order: the A kept through the burst stepped it; the Dock's key shows only ⇅)
+            if (layout == HomeLayout.CRATE) assertTrue("$tag: the A kept through the burst stepped the order (was $order0, now ${focusedText()})", focusedText() != order0)
+            repeat(3) { key(KeyEvent.KEYCODE_DPAD_DOWN, 4) }
+            frames(10)
+            assertTrue("$tag: the D-pad works after the burst (still on '${focusedText()}')", !orderLit() && focusedText().isNotBlank() && focusedText() != "[]")
+        } finally {
+            TestHooks.scale.value = null
+            com.shelf.launcher.data.Features.winScenes.state.value = before
+        }
+    }
 }
