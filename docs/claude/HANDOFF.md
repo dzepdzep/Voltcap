@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 14:20 UTC, 732a (cloud, Task 5):** Verify 310 on c157066 (dev) + ee74963 (P2) GREEN. P2 branch 91247df: File select
+(FILE_CARD) has the file's own screens on its inset - DETAILS / STARS / OPTIONS (WinPagesFile.kt; class C 7 scenes done, own designs
+37 / 53); its page row keeps Play in the first of two slots (PlayPlace caught it before the push). Robolectric 628 tests 0 failures
+(FILESELECT cases). HW-28 extended. Not approved. Cloud Gradle: export VOLTCAP_MAVEN_MIRROR (Maven Central 429 this run).
+NEXT: check Verify 310 on this push AND on 91247df (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Case flow, Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket
+family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design
+choice). New P2 pages: run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow for the layout before pushing.
+
 **24 Nov 13:20 UTC, 731a (cloud, Task 5 + P2 CI fix):** Verify 310 on b2c90cc (dev) GREEN; P2 branch was RED on 911681e
 (PlayPlace682ab MEMCARD - 730a's Memory card put Play alone in the middle on COMMANDS): fixed (two page slots), the owner's session
 pushed the same fix (682as, theirs kept). P2 branch ee74963: Cardboard box (BOX_SHEET) has the insert's own sheets - CONTENTS /

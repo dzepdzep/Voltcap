@@ -1,3 +1,24 @@
+# Update 732a (24 Nov 2026, cloud run) - P2 class C: File select gets the file's own screens (native-pages branch)
+- CI first: Verify 310 on c157066 (dev line) GREEN; on ee74963 (731a, P2 branch) GREEN (run 45402171675).
+- Task 5 on `claude/v0674-native-pages` (worktree), ee74963 -> 91247df: the seventh class C scene. The turned-over save file keeps
+  its chunky bevelled block, outlined capitals, yellow lit state and dark inset; its pages are the file's own screens on that
+  inset: DETAILS (each fact a fat rounded slot - yellow label, white value - and the story in its own slot), STARS (big star +
+  "N / M STARS", a row of little stars, yellow for yours, outlined still to get, one standing for several past 24; each
+  achievement a rounded row - star, round badge, outlined title, "GOT IT <date>" / "NOT YET", "+N"; A opens the whole text +
+  rarity; lazy rows), OPTIONS (fat round slots like the file's buttons; removing ones red with "ERASE? PRESS A AGAIN"). The top row
+  names the page with a round pip per page after the old page has gone (it showed the shared page name at once); the next screen
+  pops in from 94 %; none with Motion Off.
+- Found by the tests: Play moved between pages (PlayPlace682ab FILESELECT x1.0 + x1.3) -> two page slots, Play the first (as
+  Box / Memory card); x1.3 tight file left the first achievement 62 of 73 px (AchFirstRow) -> the star row gives way there, the
+  count line stays; no double padding in the inset.
+- Checked (cloud): compile OK; NativePagesFile732aTest 5/5 (new; fails on the old code: no filePageName, FILE_CARD not native);
+  FILESELECT added to AchFirstRow + ShelfText; FILESELECT cases of 8 Robolectric suites + NativeConfirm / PageHandoff / ListHeadTurn
+  / UniformKeys / PopupMore451 / Layouts330 / WindowWordsSurvey / CubeFacet: 628 tests 0 failures; NativePages* + PopupNativeStorage
+  + DiscTracks green. Static PASS. Gradle needed VOLTCAP_MAVEN_MIRROR (Maven Central 429).
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 37 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesFile.kt (new), ui/WinScenes.kt (FileCardBack), ui/WinPageFlow.kt, test NativePagesFile732aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md. Dev line: hand-off docs only.
+
 # Update 731a (24 Nov 2026, cloud run) - P2 class C: Cardboard box gets the insert's own sheets + P2 branch CI fix (native-pages branch)
 - CI first: Verify 310 on b2c90cc (dev line) GREEN. P2 branch RED on 911681e (run 45393737656): PlayPlace682ab / PlayPlaceRpc682ab
   MEMCARD x1.0 + x1.3 (4 of 4,139) - 730a's Memory card pages put Play alone in the middle on COMMANDS. Fixed here (two page slots,
