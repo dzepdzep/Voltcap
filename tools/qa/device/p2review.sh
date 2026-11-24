@@ -208,6 +208,15 @@ storm_layout() {
     k BUTTON_B 1.2; [ "$(wg_popup)" != null ] || { A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5; openw $lay ${n}_re2 || break; }
     k BUTTON_R1 1.1; k BUTTON_R1 1.6
   done
+  # (paced as a thumb presses them - each key checked by winguard, ~0.3 s apart: the A must act on what the turn lit)
+  for seq in "L1 R1 A" "R1 L1 A" "L1 R1 A B"; do
+    [ "$(wg_popup)" != null ] || break
+    o0=$(rowlabel ${TAG}_${n}_s); wg_seq_win "$seq"; sleep 1.5; shot ${n}_p; lc=$(launches)
+    log "$lay paced '$seq': launches=$lc focus [$(rowlabel ${TAG}_${n}_p)] (before [$o0])"
+    [ "$lc" = 0 ] || { log "FAIL $lay: paced '$seq' launched a game"; break; }
+    k BUTTON_B 1.2; [ "$(wg_popup)" != null ] || { A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5; openw $lay ${n}_rp || break; }
+    k BUTTON_R1 1.1; k BUTTON_R1 1.6; shot ${n}_s
+  done
   closewin; log "$lay storm done (launches: $(launches))"; }
 # (682ar, D391 - owner 24 Nov: "activity inside a game window must prevent the launcher behind it from dimming or going black"):
 # the screensaver's idle time set to 40 s for the session (voltcap_test_saveridle, QA app only, nothing saved), a Cover details
