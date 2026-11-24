@@ -1,3 +1,23 @@
+# Update 728a (24 Nov 2026, cloud run) - P2 class C: Timeline gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 678c10e (727a lock commit, dev line; 974c7bb itself was cancelled by the newer push) GREEN; on 8a73d96
+  (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 864e293: the third class C layout. Timeline's entry (hanging from the year
+  line) keeps its cover, name and console line; on its pages the facts area becomes the page, each its own small vertical
+  timeline in the accent: CHRONICLE (facts as stops down the line, whole words; THE STORY SO FAR at its end, a D-pad stop),
+  MILESTONES (each achievement a stop - filled node + "Reached <date>" when yours, open ring + "Ahead" when not - badge, title,
+  "N pts"; "N of M milestones reached", order pill, A opens whole text + rarity; lazy rows), BRANCHES (each option a branch tick
+  to a rounded tag; removing ones red, second A). Page name + a short page line (one tick per page) beside it after the old page
+  has gone; pages come along the line of time (from the right forward, from the left back). Steady entry height on pages
+  (max 480 dp); Play keeps its slot; L1 / R1 anywhere. The line is drawn behind each stop (no intrinsic measuring).
+- Checked (cloud): compile OK; NativePagesTime728aTest 4/4 (new; fails on the old code - no timePageName, TIMELINE_ENTRY not
+  native); TIMELINE added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace (+ RPC) /
+  WinPresentation / Batch508 / Visual426: 1,850 tests 0 failures (52 Timeline cases, none skipped); Hierarchy529 /
+  CategoryStable394 / WindowWordsSurvey682 / NativePages681a / Batch2 / UniformKeys / NativeConfirm / PopupNativeStorage /
+  Popup421 / NoArtCaption684: 597 tests 0 failures. Static PASS. Hardware NOT TESTED (HW-28), not visually approved. Not on
+  the dev line.
+  Files (P2 branch): ui/WinPagesTime.kt (new), ui/WinSceneFamilies.kt (TimelineHang), ui/WinPageFlow.kt, tests
+  NativePagesTime728aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
 # Update 727a (24 Nov 2026, cloud run) - P2 class C: Channel grid gets its own Details / Achievements / Options (native-pages branch)
 - CI first: Verify 310 on 045fac8 (726a, dev line) GREEN; on 5d53277 (P2 branch) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 8a73d96: the second class C layout. Channel grid's window (the rounded

@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 09:50 UTC, 728a (cloud, Task 5):** Verify 310 on 678c10e (dev) + 8a73d96 (P2) GREEN. P2 branch 864e293: Timeline
+(TIMELINE_ENTRY) has its own pages along its line - CHRONICLE / MILESTONES / BRANCHES (WinPagesTime.kt; class C 3 of 23, own
+designs 32 / 53). Robolectric: NativePagesTime728aTest 4/4 + TIMELINE in AchFirstRow / ShelfText / WinFocus / NoStrayPlay /
+LazyRows / PlayPlace - 52 cases green, 0 skipped (cloud). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 864e293 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (suggested: Hero / Hero tiles (HERO_BANNER, two layouts one scene); the Pocket family (POCKET_LCD) needs all three faces
+in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+
 **24 Nov 08:55 UTC, 727a (cloud, Task 5):** Verify 310 on 045fac8 + 5d53277 GREEN. P2 branch 8a73d96: Channel grid (WII_PREVIEW)
 has the channel's own screens in its preview well - CHANNEL INFO / STAMPS / SETTINGS (WinPagesChan.kt; class C 2 of 23, own designs
 31 / 53). Three focus bugs fixed in the Channel scene on the way (More-page focus effect, one key row, closed More answers for its
