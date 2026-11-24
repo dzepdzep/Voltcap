@@ -1,3 +1,16 @@
+# Update 721a (24 Nov 2026, cloud run) - Task 1: Tile home Top keeps clear of the profile pictures AND a top-corner music player
+- CI first: Verify 310 on a8a3ef6 (720a) GREEN.
+- Owner 22:43 item 3 (Tile home Top vs the profile row, Batch 521 / Sprint 527 minimum): audited. Middle already keeps both
+  floors (badgeFloor, musicFloor). Top did not: with Switch-style profile pictures shown it used maxOf(60 dp, pictures + 8 dp) and
+  ignored the music player Home shows in a top corner (Sprint 528's floor applied only without the pictures), so a player at the
+  top right (~112 dp bottom) sat on the tiles / first pill. New pure TileRows.topPadDp: 8 dp under whichever reaches lower; with
+  only one of them (or neither) the result is exactly as before (60 / measured pictures / 10 dp / music + 8).
+- Tests: TileTopMusic721aTest 3/3 (new; the old rule gives 60 dp for the 120 dp case), Batch521Test 4/4 + TileRowsTest 12/12
+  (source checks moved to the helper), TileRowPlaceSpots714aTest 4/4 PASS (cloud, compiled); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt, ui/TileRows.kt,
+  app/src/test/java/com/shelf/launcher/ui/TileTopMusic721aTest.kt (new), Batch521Test.kt, TileRowsTest.kt.
+- Hardware NOT TESTED: HW-24 721a (by eye, KONKR x1.0 / x1.3).
+
 # Update 720a (24 Nov 2026, cloud run) - Task 1: QA path for the real Edit Home D-pad move of the added Play part (715a)
 - CI first: Verify 310 on d11266d (719a) GREEN.
 - Owner 22:43 item 3: "a safe path for the real Edit Home D-pad movement and the added Play part". New (QA app / hooks file only,

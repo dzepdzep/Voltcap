@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 01:40 UTC, 721a (cloud, Task 1):** Verify 310 on a8a3ef6 (720a) GREEN. Tile home Top vs the profile row audited: Top
+with the Switch-style pictures ignored a top-corner music player (Middle already kept both floors) - TileRows.topPadDp now keeps
+the rows 8 dp under whichever reaches lower; unchanged when only one is shown. TileTopMusic721aTest 3/3 + 521 / TileRows / 714a
+tests PASS (cloud). HW-24 721a (by eye).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1: Edit Home preview (PresetPreview.kt rowTop fractions)
+vs the real Home at Top / Middle / Bottom; then item 4 R1 Focus Position audit (53 layouts, reuse the Classic / Tile home
+focus-anchor prefs).
+
 **24 Nov 00:40 UTC, 720a (cloud, Task 1):** Verify 310 on d11266d (719a) GREEN. 715a's real Edit Home D-pad move of the added
 Play part now has a QA path: voltcap_qa_edit mark (EDIT <part> / HOME) + `voltcap_test_reach` line (from the home's own
 prepareReach); play720.sh + play720.py (selftest 6/6). PlayReach720aTest 3/3 PASS (cloud). HW-24 720a.

@@ -120,6 +120,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   `sh tools/qa/device/play720.sh p720b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/play720.py <dir>`. Steps: header
   off + Play added at y 0.44 -> ▲ reaches it; Edit Home 5 real ▼ -> Done -> ▼ reaches it; ▲ ▲ Y (Undo) -> one step; Discard
   keeps the saved place; restart keeps it; Reset this part; Row Top (tile handler, preview) -> ▲ reaches Play. KONKR + RP Classic.
+- **721a (cloud): Tile home Top with the profile pictures AND a music player in a top corner.** Top kept the rows clear of the
+  pictures only (60 dp), so a player Home shows top-right (~52 dp down) could sit on the tiles / first pill; now 8 dp under
+  whichever reaches lower (TileRows.topPadDp; TileTopMusic721aTest 3/3 cloud). By eye (LEVEL 1, QA app, ~2 min, dev line 721a or
+  later): Tile home, Switch-style profiles on, music player top-right with a song playing, R1 Row -> Top, x1.0 and x1.3 - the
+  first pill / tiles start under the player, nothing overlaps; player off -> rows back up under the pictures. KONKR.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

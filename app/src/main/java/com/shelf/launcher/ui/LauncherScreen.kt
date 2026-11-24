@@ -4479,11 +4479,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // (Batch 521, Flip 2: with Switch-style profiles top-left, Top put the categories / first tile under them -
                         // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
                         // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
-                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
-                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty())
-                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)
-                            // (Sprint 528: and below a music player Home shows in a top corner)
-                            else maxOf(10.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.musicBottomPx.toDp() } + 8.dp)) else 0.dp,
+                        // (Sprint 528: and below a music player Home shows in a top corner.)
+                        // (721a, Task 1: with the profile pictures shown, Top kept clear of them only - a music player in the
+                        // other top corner sat on the tiles / first pill. Both floors now, as Middle has them - TileRows.topPadDp.)
+                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) with(androidx.compose.ui.platform.LocalDensity.current) {
+                            TileRows.topPadDp(
+                                profilesShown = TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty(),
+                                badgeBottomDp = TileRowEdit.badgeBottomPx.toDp().value,
+                                musicBottomDp = TileRowEdit.musicBottomPx.toDp().value
+                            ).dp
+                        } else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }

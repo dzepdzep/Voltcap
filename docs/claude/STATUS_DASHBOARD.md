@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 720a · 2026-11-24 00:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on d11266d (719a): green · effort: medium
+**1. LATEST UPDATE** - 721a · 2026-11-24 01:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on a8a3ef6 (720a): green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The handheld check for 'the D-pad finds the added Play button wherever you put it' can now be run automatically with the real Edit Home controls: the test moves Play with real D-pad presses inside Edit Home (and only while Edit Home is really open), saves, undoes, discards, restarts and resets, and after each step checks that up / down on the home lands on Play. Nothing is saved for good - the QA app's settings are put back.
+**2. WHAT CLAUDE JUST FIXED** - Tile home with the row at the top: when the profile pictures are shown and a music player sits in a top corner, the tiles and category pills now start below both instead of only below the pictures, so the player no longer covers the first pill or tiles. Nothing changes when only one of them is shown.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1: Tile home Top vs profile row at x1.3, Edit Home preview vs Home; Owner / live session: HW-24 (row714.sh, row716.sh, play720.sh) on the KONKR
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Task 1: Edit Home preview vs the real Home at Top / Middle / Bottom; R1 Focus Position audit across the 53 layouts
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
