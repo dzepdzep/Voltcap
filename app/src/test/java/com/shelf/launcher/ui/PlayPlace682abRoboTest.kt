@@ -108,7 +108,7 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
             frames(180)
             fun fresh() { gen.intValue++; frames(160) }
             val at = LinkedHashMap<String, androidx.compose.ui.geometry.Rect?>()
-            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text")); at["details"] = playAt()
+            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text", "contents")); at["details"] = playAt() // (731a: the Cardboard box's CONTENTS)
             fresh(); open(setOf("achievements", "trophies", "credits")); at["achievements"] = playAt()
             fresh(); open(setOf("options", "config", "backstage")); at["options"] = playAt()
             val seen = at.filterValues { it != null }

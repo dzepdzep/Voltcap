@@ -785,3 +785,9 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   AchFirstRow + WinFocus + NoStrayPlay682j + PageHandoff682ar + ListHeadTurn682ar + PopupMore451 + Layouts330 + Popup421 +
   WindowWordsSurvey682: 1,306 tests 0 failures (166 skipped by the suites' own assumptions). Static PASS.
 - Audit: class A 36 / 53 (+ Cardboard box), class B 1 (Disc station), class C 16. Hardware NOT TESTED (HW-28), not visually approved.
+- **731a CI fix (P2 branch was RED on 911681e, run 45393737656 - PlayPlace682ab / PlayPlaceRpc682ab MEMCARD x1.0 + x1.3, 4 of
+  4,139):** 730a's Memory card pages kept Play in the first half on Details but alone in the middle on Options. The page row now
+  has two slots (PAGE_SLOTS, Play the first) on every page - Memory card and the Cardboard box sheets. PlayPlace could not reach
+  the box's CONTENTS stamp (it then compared the first page's Play) - "contents" added to its Details words. PlayPlace +
+  PlayPlaceRpc 151 / 0 (incl. BOX, MEMCARD); AchFirstRowRpc682r + LazyRows682aq 315 / 0; ShelfText + AchFirstRow 1,213 run
+  with only those 4 PlayPlace BOX failures before the word fix.

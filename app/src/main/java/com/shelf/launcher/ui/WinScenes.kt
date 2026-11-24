@@ -584,7 +584,8 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             // The actions, stamped.
             // (673g, owner brief 15 Nov: the stamps one row of identical stamps (UniformKeyRow) - Play shown by its icon and ink, not its
             // size; a lit stamp still tilts, never grows; the round stickers after them as a group of their own.)
-            UniformKeyRow(ctx.buttons, 10.dp) { a ->
+            // (731a: on a sheet the stamps keep two slots, Play the first, with or without the page's own stamp - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 10.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val tilt by animateFloatAsState(if (on) -2.5f else 0f, spring(dampingRatio = 0.5f), label = "stampTilt")
                         Box(
