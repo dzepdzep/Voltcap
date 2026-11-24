@@ -276,7 +276,7 @@ private fun ArcadeMachine(
         AffineBox(sW, sH, { frame().screenQuad() }, Modifier.then(if (live) Modifier.gameOrigin(g.stableKey, true) else Modifier)) {
             ArcadeScreen(c, g, live, detail, dim)
         }
-        AffineBox(mW, mH, { frame().marqueeQuad() }) { ArcadeMarqueeSign(c, g, lit, glow, detail) }
+        AffineBox(mW, mH, { frame().marqueeQuad() }) { ArcadeMarqueeSign(c, g, lit, glow, detail, live) }
         Canvas(Modifier.fillMaxSize().arcadeCached(cacheBody && !cache)) { drawCabSide(frame(), cabPaint(build, color()), side, lit(), dim()) }
     }
 }
@@ -343,7 +343,7 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
             }
         } else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) {
             AppIconArt(g.packageName, wide = true, modifier = Modifier.fillMaxSize())
-        } else ArcadeAttract(g, detail)
+        } else ArcadeAttract(g, detail, live)
         if (clip != null) androidx.compose.runtime.key(clip) {
             VideoBackdrop(clip, withSound = false, modifier = Modifier.fillMaxSize(), paused = HomeIdle.calm, fit = true, shade = false)
         }
@@ -373,7 +373,7 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
 
 /** A machine with no picture: its name in big letters on the tube, the console under it — an attract screen. */
 @Composable
-private fun ArcadeAttract(g: Game, detail: Boolean) {
+internal fun ArcadeAttract(g: Game, detail: Boolean, live: Boolean) {
     val titles = LocalTitleOptions.current
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF14104A), Color(0xFF05040F)))).padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -381,16 +381,27 @@ private fun ArcadeAttract(g: Game, detail: Boolean) {
         // when even the smallest size doesn't fit.)
         // (676y, D342 - Nova x1.3: the console line under the name ran off the tube's foot. The name fits in what the console
         // line leaves.)
+        // (682as, owner 24 Nov - Arcade, RP Classic: a slide on any tube kept the whole home repainting at 60 fps for 30 s after
+        // every press (GPU 15 ms a frame). The tubes' words now wrap whole and size down to the tube's smallest size; only the
+        // machine you're on may still slide (a name that fits nowhere - it rests with the home), the others stay still - the
+        // whole name is on the machine you move onto and beside it. ArcadeTubeText.legacy: the old behaviour, QA A/B only.)
+        val legacy = ArcadeTubeText.legacy.value
         FitText(titles.display(g.name).uppercase(), Color(0xFFFFE15A), maxSize = if (detail) 20.sp else 10.sp, minSize = 6.sp, maxLines = 3,
             fontWeight = FontWeight.Black, textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont(), shadow = Shadow(Color(0xFFFF3D7F), Offset(2f, 2f), 0f)),
-            slideWhenCut = true, modifier = Modifier.weight(1f, fill = false))
-        if (detail) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
+            slideWhenCut = legacy || live, wholeWords = !legacy, stillWhenCut = !legacy && !live, modifier = Modifier.weight(1f, fill = false))
+        // (The console line: "PLAYSTATION 2" was a few px wider than the tube at 9 sp and slid for good. It steps down to 7 sp,
+        // then wraps at a space.)
+        if (detail) {
+            if (legacy) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
+            else FitText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), maxSize = 9.sp, minSize = 7.sp, maxLines = 2, extraLine = false,
+                textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont()), slideWhenCut = live, wholeWords = true, stillWhenCut = !live)
+        }
     }
 }
 
 /** The marquee's sign: the game's logo (Game names › Logos on), else its name in bold letters; dimmer while unlit. */
 @Composable
-private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Boolean, detail: Boolean) {
+private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Boolean, detail: Boolean, live: Boolean) {
     val titles = LocalTitleOptions.current
     val logo = if (titles.showLogos) c.logo(g) else null
     var failed by remember(logo) { mutableStateOf(false) }
@@ -411,7 +422,8 @@ private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Bool
                 titles.display(g.name).uppercase(), Color.White, maxSize = if (detail) 22.sp else 10.sp, minSize = 5.sp, maxLines = 2,
                 fontWeight = FontWeight.Black, textAlign = TextAlign.Center,
                 style = uiFontStyle().copy(fontStyle = FontStyle.Italic, shadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(0f, 2f), 6f)),
-                lineHeightRatio = 1.05f, slideWhenCut = true
+                lineHeightRatio = 1.05f, slideWhenCut = ArcadeTubeText.legacy.value || live,
+                wholeWords = !ArcadeTubeText.legacy.value, stillWhenCut = !ArcadeTubeText.legacy.value && !live
             )
         }
     }
@@ -913,3 +925,7 @@ internal fun Modifier.arcadeCached(on: Boolean): Modifier =
         compositingStrategy = if (ArcadeNav.zoom.value > 0f) androidx.compose.ui.graphics.CompositingStrategy.Auto
             else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
     }
+
+/** 682as: QA-only same-build A/B for the Arcade tubes' and signs' text (`--es voltcap_test_arattract legacy|new`, isolated QA app,
+ *  session only): legacy = every tube and sign slides where its words don't fit (before 682as). */
+internal object ArcadeTubeText { val legacy = androidx.compose.runtime.mutableStateOf(false) }

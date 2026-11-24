@@ -134,6 +134,16 @@ k_home() { gate; wg_key_home $1; }
 # look options changed at a time (Features prefs, the same switches as Layout options; the snapshot restores them all), each
 # with a still phase and a home-navigation phase between read-only gfxinfo dumps. Level 1, QA app, synthetic games only.
 #   sh p2review.sh arbisect TAG SCALE   then  sh p2review.sh restore TAG
+# (682as, owner 24 Nov "Arcade A: measure the RP Classic with the same 30-game category, recording disabled, before and after"):
+# the same build, the tubes' text legacy (before) and new (after) by the QA-only switch, interleaved twice; each: one press and
+# back, then 8 s still (frames drawn with nothing pressed), then 12 home moves. Level 1, QA app, synthetic games.
+#   sh p2review.sh arab TAG SCALE   then  sh p2review.sh restore TAG
+ar_ab() {
+  n=AB_$1_$2; A --es voltcap_test_arattract $1; sleep 2; gate; wg_home
+  k_home R; sleep 0.7; k_home L; sleep 1.2
+  phase still; sleep 8; phase_end still
+  phase nav; for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; sleep 0.8; phase_end nav
+  log "ab $n done"; }
 ar_variant() {
   n=AR_$1; shift
   for kv in "$@"; do A --es voltcap_test_pref "$kv"; sleep 0.4; done
@@ -415,6 +425,24 @@ arbisect)
   ar_variant hall $B ar_mode=HALL
   ar_variant base2 $B
   log "arbisect done (launches: $(launches))"; echo DONE >> $L;;
+arab)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
+  for kv in ar_mode=SHOWCASE arcade_glow=true ar_side_art=true ar_video=true arcade_lines=true ar_motion=true; do A --es voltcap_test_pref "$kv"; sleep 0.3; done
+  ar_ab legacy 1; ar_ab new 1; ar_ab legacy 2; ar_ab new 2
+  A --es voltcap_test_arattract new
+  log "arab done (launches: $(launches))"; echo DONE >> $L;;
 stilldiff)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

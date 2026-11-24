@@ -59,7 +59,17 @@ internal fun FitText(
      * 678r (D350): false = never take the extra line - where the smallest size doesn't fit [maxLines], slide (needs
      * [slideWhenCut]). For a plate of fixed height over art (the Channel grid's name), where a second line rose over the badges.
      */
-    extraLine: Boolean = true
+    extraLine: Boolean = true,
+    /**
+     * 682as (owner 24 Nov, Arcade): a size fits only when the longest word fits a line too - words wrap whole, never split.
+     */
+    wholeWords: Boolean = false,
+    /**
+     * 682as (owner 24 Nov, Arcade - "prefer static text for unfocused machines"): where nothing fits and [slideWhenCut] is off, the
+     * text stays still at the smallest size - whole lines only, no "…" - instead of the lyrics' ellipsis. For text whose whole
+     * wording is reachable elsewhere (the machine you move onto shows it in full, and the game's name is beside it).
+     */
+    stillWhenCut: Boolean = false
 ) {
     // Centred / end-aligned text fills the width, so it's placed the same way while it fades in and out
     // (it used to start at the left edge and then jump to the middle once the old line was gone).
@@ -69,10 +79,12 @@ internal fun FitText(
         val w = constraints.maxWidth
         val parentH = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
         val h = if (maxHeight > 0) minOf(maxHeight, parentH) else parentH
-        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio, extraLine) {
+        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio, extraLine, wholeWords) {
             fun styled(s: Float) = style.copy(fontSize = s.sp, lineHeight = (s * lineHeightRatio).sp, fontWeight = fontWeight ?: style.fontWeight)
+            val longest = if (wholeWords) text.split(' ', '\n').maxByOrNull { it.length }.orEmpty() else ""
             fun fits(s: Float, lines: Int): Boolean {
                 if (w <= 0 || w == Constraints.Infinity) return true
+                if (longest.isNotEmpty() && measurer.measure(longest, styled(s), softWrap = false, maxLines = 1).size.width > w) return false
                 val r = measurer.measure(
                     text, styled(s), overflow = TextOverflow.Clip, maxLines = lines,
                     constraints = Constraints(maxWidth = w, maxHeight = h)
@@ -86,7 +98,9 @@ internal fun FitText(
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
             while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
             if (extraLine && !fits(s, lines)) lines = maxLines + 1
-            Triple(s, lines, slideWhenCut && !fits(s, lines))
+            val wordFits = longest.isEmpty() || w <= 0 || w == Constraints.Infinity ||
+                measurer.measure(longest, styled(s), softWrap = false, maxLines = 1).size.width <= w
+            FitPick(s, lines, slideWhenCut && !fits(s, lines), wordFits)
         }
         @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
         // (676y: it slides at the size it shrank to - a far arcade machine's sign is a few px tall; at the full size its letters
@@ -99,7 +113,9 @@ internal fun FitText(
             fontSize = fit.first.sp, lineHeight = (fit.first * lineHeightRatio).sp,
             fontWeight = fontWeight, textAlign = textAlign, style = style,
             // qa-ok: TRUNCATE (lyrics / song titles in a fixed box: only after the smallest readable size AND an extra line)
-            maxLines = fit.second, overflow = TextOverflow.Ellipsis,
+            maxLines = fit.second, overflow = if (stillWhenCut) TextOverflow.Clip else TextOverflow.Ellipsis,
+            // (682as: a word wider than the line even at the smallest size is never split - it stays on its one line.)
+            softWrap = !(stillWhenCut && !fit.fourth),
             modifier = if (wide) Modifier.fillMaxWidth() else Modifier
         )
     }
@@ -411,3 +427,6 @@ private fun wordChar(c: Char): Boolean {
         else -> true
     }
 }
+
+/** 682as: [FitText]'s choice - size, lines, slide, and whether its longest word fits a line at that size. */
+private data class FitPick(val first: Float, val second: Int, val third: Boolean, val fourth: Boolean)
