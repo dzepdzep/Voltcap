@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 16:50 UTC, 734b (cloud, Task 5):** Verify 310 on 00d7e9b (dev) GREEN; P2 ec5addf RED was the owner session's (Arcade),
+fixed by its 6a9e2d4 (GREEN). P2 branch 6e8c897: Orbit deck (ORBIT_TERMINAL) has the console's own screens - DATA / TRACKS / COMMANDS
+(WinPagesOrbit.kt; class C 9 scenes done, own designs 39 / 53). Arc keeps PAGE_SLOTS places on pages (Play stayed put only after
+that); console name on its own line (ran under READY at x1.3). PlayPlace + NoStrayPlay now name icon-only / labelled keys. HW-28
+extended. Not approved. The owner's live session is pushing to the P2 branch (682as) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on 6e8c897 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD)
+needs all three faces in one batch) - or the Task 1 residual. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab +
+AchFirstRow + NoStrayPlay682j for the layout AND every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
 **24 Nov 15:45 UTC, 734a (cloud, CI fix):** Verify 310 on 194557a (dev) GREEN; P2 branch RED on d3907c7 (PopupNativeStorageTest
 still named Case flow as a shared-page scene after 733a converted it). Fixed test-only on the P2 branch (50cfb3f): the check follows
 NATIVE_PAGE_SCENES, so future conversions cannot break it. PopupNativeStorageTest 9/9 (cloud). Not approved; HW-28 unchanged.

@@ -1,3 +1,23 @@
+# Update 734b (24 Nov 2026, cloud run) - P2 class C: Orbit deck gets the console's own screens (native-pages branch)
+- CI first: Verify 310 on 00d7e9b (dev line) GREEN; P2 branch: ec5addf (owner session, Arcade) RED, fixed by the owner session's
+  6a9e2d4 (GREEN, includes 734a's test fix) - nothing left for this run.
+- Task 5 on `claude/v0674-native-pages` (worktree), 6a9e2d4 -> 6e8c897: the ninth class C scene. Orbit deck's console (chrome
+  edge, scan lines, glow caps, mono readouts) shows its own screens: DATA (fact readouts + the story as a LOG panel), TRACKS (the
+  count + lit-cell strip, each achievement a numbered track cell + badge + mono UNLOCKED / LOCKED line + "+N PTS"), COMMANDS
+  ("▸ LABEL" command lines; removing ones amber-red, second A). Heading = page code + page cells + READY lamp, after the old page
+  has gone; pages roll up like a terminal; none with Motion Off. Own designs 39 / 53 (class C 13 left).
+- Found by tests and fixed before the push: Play moved on Options (the arc fan had one key fewer; it now keeps PAGE_SLOTS places
+  on pages, the narrow row two slots); an existing defect - at x1.3 a long console name ran under READY (own line now).
+  Test fixes: PlayPlace682ab's Play matcher missed Orbit's labelled + described narrow key ("play play"); NoStrayPlay682j named
+  the focus by its text only, so on the icon-only arc it "reached Play" anywhere - a key with no text is named by its description.
+- Checked (cloud): NativePagesOrbit734bTest 4/4 (new); PlayPlace + PlayPlaceRpc all native layouts; NoStrayPlay682j 80/80; every
+  ORBIT / Orbit case (AchFirstRow, ShelfText 24, WindowWordsSurvey, WinFocus, LazyRows, OrbitSpin, OrbitKeyLabel); PopupNativeStorage;
+  Layouts330 - 0 failures. Static PASS. Full suite: GitHub CI on the push.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesOrbit.kt (new), ui/WinScenes.kt, ui/WinPageFlow.kt; tests NativePagesOrbit734bTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest, NoStrayPlay682jTest; docs NATIVE_PAGES_P2.md, NATIVE_PAGES_AUDIT.md.
+  Dev line: hand-off docs only.
+
 # Update 734a (24 Nov 2026, cloud run) - CI fix on the native-pages branch (Case flow test expectation)
 - CI first: Verify 310 on 194557a (dev line) GREEN; on d3907c7 (733a, P2 branch) RED - both runners: 4286 tests, 1 failed,
   PopupNativeStorageTest.storageKeepsItsOwnPages. The test named Case flow (CASE_MEDIA) as an example of a scene still on the
