@@ -932,3 +932,21 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   AIRY, NoStrayPlay682j all layouts, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, Layouts330, UniformKeys,
   NativePages*: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 11 scenes done (own designs 40 / 53).
+### 736a - P2 class C, eleventh scene: Bubble home (BUBBLE_CARD, WinPagesBubble.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The LiveArea card (the game's art behind, the round bubble and name, the white Start plate and round-ended white keys down the
+  left, the white info panel on the right) stays as it is; its pages take the white panel in the same language: INFO (the facts
+  as label / value lines with hairlines between, then the description in a pale blue-grey box - a D-pad stop), AWARDS (one line:
+  the gold cup, "N / M", a slim round-ended meter in the card's blue, the order as a round-ended white key whose words slide; each
+  award a round-ended white key - badge in a round bubble, title, "Earned <date>" / "Not yet", the points in a gold ring; A opens
+  the whole text + how rare it is, the key rounding into a card; lazy rows), SETTINGS (round-ended white keys with the card's own
+  white-to-grey face and blue ring; removing ones write in the warning orange, "Press A again to remove" - second A).
+  Heading: the page's name and a bubble per page (the shown one filled in the blue with a white ring) after the old page has
+  gone; the next page swells out like a bubble from the heading's corner (from 94 %); none with Motion Off. The page panel was a
+  dark see-through box around the shared pages - now white like the card's first page.
+- L1 / R1 on the card's root. The keys stay down the left (Play the first; the tools only on the first page, as before), so Play
+  stays put (PlayPlace BUBBLES x1.0 / x1.3 + Rpc PASS). A short card (under 380 dp) takes a smaller heading and closer edges.
+- Tests (cloud): NativePagesBubble736aTest 4/4 (new; fails before: no bubblePageName, BUBBLE_CARD not native); BUBBLES added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow* / PlayPlace* / NoStrayPlay682j / ShelfText BUBBLES,
+  WindowWordsSurvey682, PopupMore451, Layouts344, Batch505, Batch489, Visual426, PopupNativeStorage, NativeConfirm, UniformKeys,
+  NativePages*: 694 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 11 scenes done (own designs 41 / 53).
