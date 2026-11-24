@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 11:55 UTC, 730a (cloud, Task 5):** Verify 310 on d2d508f (dev) + 546f5b99 (P2) GREEN. P2 branch e59f3c6: Memory card
+(MEMCARD_INFO) has the save browser's own screens on its glass panel - INFORMATION / MEMORY BLOCKS / COMMANDS (WinPagesMemCard.kt;
+class C 5 scenes done, own designs 35 / 53); the panel now spans title-to-choices (measured). Existing defect fixed: a long console
+name ran under the title at x1.3 (ShelfText MEMCARD). Robolectric 581 tests 0 failures. HW-28 extended. Not approved. The owner's
+live session pushed 682ar3 to the P2 branch meanwhile (merged) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on e59f3c6 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (remaining single scenes: Box, File select, Case flow, Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library,
+Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top
+column vs the bottom clock bar; design choice).
+
 **24 Nov 10:55 UTC, 729a (cloud, Task 5):** Verify 310 on e9092e9 (dev) + 864e293 (P2) GREEN. P2 branch 546f5b99: Hero carousel +
 Hero tiles (HERO_BANNER, one scene) have the banner's own pages - THE FEATURE / HALL OF FAME / QUICK ACTIONS (WinPagesHero.kt;
 class C 4 scenes done, own designs 34 / 53). Compact heading on pages (x1.3 AchFirstRow found 0 px for the first achievement).

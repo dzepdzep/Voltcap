@@ -1,3 +1,23 @@
+# Update 730a (24 Nov 2026, cloud run) - P2 class C: Memory card gets the save browser's own screens (native-pages branch)
+- CI first: Verify 310 on d2d508f (dev line) GREEN; on 546f5b99 (729a, P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 57ddc94 (merged with the owner session's 682ar3 push -> 579d131, doc e59f3c6):
+  the fifth class C scene. The save browser keeps its grey screen, turning icon, yellow title and glowing choice words; its pages
+  are the browser's own screens on the dark glass panel at the right: INFORMATION (label / value lines + the story as Notes),
+  MEMORY BLOCKS ("N / M blocks saved" over one row of memory blocks, lit yellow for yours; each achievement a save entry - square
+  badge, "Saved <date>" / "Empty block", points; A opens the whole text + rarity; lazy rows), COMMANDS (word lines with the
+  choices' glow; removing ones red, second A). Heading: page name in yellow + one small block per page, the shown one lit, after
+  the old page has gone. The panel now runs from under the title to above the choices (measured), the facts make way on a page.
+- Found by the tests (Memory card was in no text suite before): at x1.3 a long console name ran one line under the save's title
+  and was cut - also on the Info page (existing defect, ShelfText MEMCARD x1.3 6/24 FAIL) -> the card block keeps left of the
+  title column and the name wraps; a wrapping 40-block strip left the first achievement 2 px short at x1.3 (AchFirstRow n=40) ->
+  one row of blocks.
+- Checked (cloud): compile OK; NativePagesMemCard730aTest 5/5 (new; fails on the old code); MEMCARD added to AchFirstRow +
+  ShelfText; with WinFocus / NoStrayPlay / PopupMore451 / Layouts330 / WindowWordsSurvey682 / CubeFacet676i 581 tests 0 failures;
+  after the merge 730a + WinFocus / NoStrayPlay MEMCARD + PageHandoff682ar + ListHeadTurn682ar green; QA selftest OK; static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 35 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesMemCard.kt (new), ui/StyleMemoryCard.kt, ui/WinPageFlow.kt, test NativePagesMemCard730aTest.kt (new),
+  AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 729a (24 Nov 2026, cloud run) - P2 class C: Hero carousel / Hero tiles get the banner's own pages (native-pages branch)
 - CI first: Verify 310 on e9092e9 (728a, dev line) GREEN; on 864e293 (P2 branch) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), b70895f0 (merged with the owner session's 682ar / 682ar2 pushes -> 546f5b99):
