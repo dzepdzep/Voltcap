@@ -1,3 +1,26 @@
+# Update 737a (24 Nov 2026, cloud run) - P2 class C: Pocket camera gets the cartridge menu's own pages (native-pages branch)
+- CI first: Verify 310 on 32e3610 (dev line) and 445fd1f (P2, Bubble home) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 445fd1f -> f2e65f0, merged with the owner session's 682au (Arcade FitText,
+  p2review safety mode) -> 5e1b096: the twelfth class C scene. Pocket camera's cartridge menu shows its own pages under the name
+  on its light screen, in the pixel font and the palette's four shades: DATA (LABEL / VALUE lines with dotted pixel rules + the
+  story in a one-pixel frame headed ABOUT), ALBUM (pixel cup, "03/12", a meter of pixel cells - one earned always shows a cell,
+  full only when all are earned - and the order as a menu row; each award a numbered album entry "NO.01" with its badge in a
+  square pixel frame, the title, "GOT <date>" / "NOT YET" and the points; the row you are on dark, as on the menu; A shows the
+  whole text and how rare it is), SETUP (menu rows with the arrow cursor; removing ones marked "!" and ask for a second A).
+  Heading = the page's name + a pixel square per page, after the old page has gone; pages draw down the little screen in the
+  window's own switch-on steps with a scan line; none with Motion Off. Was the shared pages in a dark box. Own designs 42 / 53.
+- Found by tests and fixed before the push: Play sat a key lower on Options (Play alone there) - the camera's key column keeps
+  two keys' room on every page (UniformKeyColumn slots, default unchanged for the other callers); at x1.3 on the RP Classic
+  size the first award stood 346 dp tall (number + badge + points beside the title left it a letter wide) - the number and
+  points now share the entry's first line.
+- Checked (cloud): NativePagesCamera737aTest 4/4 (new; fails on the old code); AchFirstRow + Rpc, ShelfText, WinFocus,
+  NoStrayPlay682j CAMERA; PlayPlace + PlayPlaceRpc all layouts; UniformKeys673, WindowWordsSurvey682, Layouts344,
+  PopupNativeStorage, NativeConfirm, NativePages* - 848 tests, 0 failures. Post-merge (5e1b096): NativePagesCamera737aTest, AchFirstRowRpc + PlayPlaceRpc CAMERA, FitSearch682au 8/8. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCamera.kt (new), ui/WinScenesConsole.kt (CameraMenu), ui/WinPageFlow.kt, ui/WinScenesMore.kt
+  (UniformKeyColumn slots), ui/StylePocketCamera.kt (PX_TROPHY internal); tests NativePagesCamera737aTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 736a (24 Nov 2026, cloud run) - P2 class C: Bubble home gets the card's own pages (native-pages branch)
 - CI first: Verify 310 on 18d8051 (dev line) and 2e18249 (P2, Airy home + owner's 682at) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 2e18249 -> 445fd1f: the eleventh class C scene. Bubble home's LiveArea card
