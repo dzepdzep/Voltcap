@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -148,7 +147,7 @@ private fun SpotCredits(ctx: WinSceneCtx, live: Boolean, light: Color, modifier:
         }
         Spacer(Modifier.height(6.dp))
         NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

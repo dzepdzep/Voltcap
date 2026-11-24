@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -234,7 +233,7 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
         val marks = androidx.compose.runtime.remember(t.all) { crateMarks(t.all.map { it.isUnlocked }) }
         NativeRows(ink, Modifier.weight(1f).fillMaxWidth()) {
             if (t.all.isEmpty()) item { stamp() }
-            itemsIndexed(t.all, key = { _, it -> it.id }) { idx, ach -> androidx.compose.foundation.layout.Column {
+            nativeItems(t.all, { it.id }) { idx, ach -> androidx.compose.foundation.layout.Column {
                 val earned = ach.isUnlocked
                 val mk = marks[idx]
                 if (mk.heading) {

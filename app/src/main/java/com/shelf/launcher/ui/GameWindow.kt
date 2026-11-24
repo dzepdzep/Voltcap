@@ -1412,6 +1412,9 @@ internal fun GameWindow(
             val again = booleanArrayOf(false)
             val rehome = androidx.core.view.ViewCompat.OnUnhandledKeyEventListenerCompat { v, ev ->
                 val code = ev.keyCode
+                // (682aq5 diagnostics, QA app only: a D-pad press nothing in the window took)
+                if (ev.action == android.view.KeyEvent.ACTION_DOWN && code in NAV_KEYS && com.shelf.launcher.data.QaVariant.isolatedNow)
+                    android.util.Log.e("VoltcapQA", "win unhandled ${android.view.KeyEvent.keyCodeToString(code)} seen=${focusSeen[0]} focus=${v.findFocus()?.javaClass?.simpleName}")
                 if (again[0] || focusSeen[0] || closingFlag[0] || ev.action != android.view.KeyEvent.ACTION_DOWN || ev.repeatCount > 0 ||
                     code !in WIN_REHOME_LIGHT && code !in WIN_REHOME_DELIVER) return@OnUnhandledKeyEventListenerCompat false
                 KeyInput.lastWasKey = true

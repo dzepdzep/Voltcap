@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -177,7 +176,7 @@ private fun CubeWall(ctx: WinSceneCtx, live: Boolean, a: Color, glass: Color, mo
         }
         Spacer(Modifier.height(4.dp))
         NativeRows(a, Modifier.weight(1f).fillMaxWidth(), 3.dp) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -168,7 +167,7 @@ private fun ArcadeHighScores(ctx: WinSceneCtx, live: Boolean, glow: TextStyle, l
         }
         Spacer(Modifier.height(4.dp))
         NativeRows(ArcPgCyan, Modifier.weight(1f).fillMaxWidth(), 4.dp) {
-            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
+            nativeItems(t.all, { it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

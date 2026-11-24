@@ -4230,7 +4230,7 @@
    "title": "Arcade cabinets window: KONKR x1.0 walk 48 % janky frames (p50 20 ms, gfxinfo kf10, 81a1c9e) - the other changed layouts 4-15 %; RP Classic slow too (Magazine 51 %, Cube 41 %, Arctic 34 % janky, rg10). Likely the glow shadows on every pixel-font line and per-frame scanline rects; not investigated yet",
    "rule": "perf",
    "severity": "medium",
-   "status": "partly fixed (682aj/682al). CORRECTION 23 Nov 20:45: the first before / after (kp10 -> kpn10, '48.7 -> 4.0 %') started on Tetris, the only game in its category - the presses did not move between games. Fair runs (kpm_ai -> kpm_al, start game in a 30-game category, KONKR x1.0, no recording): home navigation frame p50 28 -> 20 ms, p99 85 -> 42 ms, GPU 12 -> 5 ms, but still 19 -> 24 % frames over the 60 fps budget (RenderThread ~8 ms issuing per frame); window page walk 17.2 -> 2.0 % (p99 129 -> 38 ms). Tried: scan lines as one tiled paint (682am) - no measurable change (RenderThread 8.2 -> 8.7 ms, slow 24.5 -> 18.2 % within run-to-run noise), reverted. Remaining cost: ~8-9 ms RenderThread per glide frame, source not yet isolated - open",
+   "status": "partly fixed (682aq): the cabinet side panels drew through anti-aliased clipPath - a CPU mask uploaded as a texture every glide frame (atrace kah10: ~4.5 uploads / frame). Path fills / a shader-filled print instead (same picture). Fair KONKR x1.0 runs (30-game category, no recording), 682al -> 682aq2: home navigation slow frames 24.5 -> 0.6 % (gfxinfo, 502 frames), RenderThread issue p50 13.0 -> 7.5 ms, window page walk 2.0 -> 4.9 % (noise level, p99 38 -> 40 ms). RP Classic (682am -> 682aq2, same run): home navigation 12.2 -> 12.6 % (unchanged - GPU-bound there, GPU p50 15 ms even still; frame p50 32 ms), window walk 23.2 -> 5.3 %. Open: RP Classic GPU cost; the big machine still uploads two side masks per frame (81x522 / 66x516). 60 FPS not claimed.",
    "found": "2026-11-23"
   },
   {
@@ -4286,7 +4286,7 @@
    "title": "Native page change (KONKR x1.0 kpn10, every layout measured - Arcade, Cinema): the first frames of a page change take 50-115 ms on the main thread (composing / recording the new page), one visible hitch per R1 / L1",
    "rule": "perf",
    "severity": "medium",
-   "status": "partly fixed (682al): WholeWordsText sizes inside its own layout (no BoxWithConstraints) - Arcade's worst page-change frame 78 -> 46 ms (atrace kt10 -> kt10b); Cinema unchanged (130-140 ms: its cost is elsewhere, StableFullText suspected). Open",
+   "status": "partly fixed (682aq): Cinema page-change longest frame 133.7 -> 32 ms (Tetris, kap10 -> kas10) and 84 -> 35 ms on the 120 game (KONKR x1.0 atrace) - lazy rows + StableFullText for window text (reserve = false) fitting inside the Text own measure (StableFitAutoSize: same 1 sp steps, same extra line, same slide; StableFit682aqTest compares line ends / widths / bottoms old vs new, 128 cases, identical). Remaining: ~20-27 ms layout of the new page (text measure). Open until the other layouts are traced.",
    "found": "2026-11-23"
   },
   {
@@ -4310,7 +4310,7 @@
    "title": "Native Achievements pages compose every row at once: on a 120-achievement game the page change took one 1031 ms frame in Cinema and 194 ms in Arcade (KONKR x1.0, atrace kt_big) - a visible freeze; every native layout draws its rows the same way (t.list.forEach in a scrolling Column)",
    "rule": "perf",
    "severity": "high",
-   "status": "fixed 682am - KONKR x1.0 atrace kt_big -> kt_big2 (120-achievement game): Cinema's page change 1031 -> 132 ms longest frame, Arcade 194 -> 56 ms; the remaining rows then arrive in ~40 ms frames for ~1.5 s (Cinema ~13 ms per row - row cost itself still open under D386). Walk kbig13 (x1.3, Cinema + Terminal): 24 Downs reach row 24, totals 120, Play same place, 0 launches, restore diff 0",
+   "status": "fixed in code 682aq (lazy rows) - owner: not final until reviewed. NativeRows (LazyColumn, page scroll cue + faded edges) on all 26 native Achievements pages: only on-screen rows composed (Robolectric LazyRows682aqTest: 120 achievements -> a screenful composed, counts 80 / 120 intact, 0 / 1 / 10 / 120 x1.0 / x1.3, 224 cases, fails on 682am). Hardware lazywalk (140 quick Downs in bursts of 10, then 140 Ups, B, reopen, early close): first lazy build stopped on row 30 (KONKR) / 52 (RP Classic) where the eager column reached the end - fixed in 682aq7 (each move first puts the next row whole in view, presses queued in order); 682aq7 reaches Back on KONKR (Cinema, Crate, Resume, Bar) and RP Classic (Cinema, Resume), Up returns to the top, B / reopen land on the page first control, early close leaves no window and no crash. Page change on the 120 game (KONKR Cinema atrace): 1031 (682ak) -> 132 (682am) -> 35 ms longest frame (kasb10), no staggered filling.",
    "found": "2026-11-23"
   }
  ]

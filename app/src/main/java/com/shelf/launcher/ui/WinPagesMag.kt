@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -163,7 +162,7 @@ private fun MagChecklist(ctx: WinSceneCtx, st: MagStyle, live: Boolean, modifier
         }
         Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(st.ink))
         NativeRows(st.ink, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

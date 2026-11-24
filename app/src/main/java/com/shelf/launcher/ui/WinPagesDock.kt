@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -143,7 +142,7 @@ private fun DockAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
         val per = maxOf(1, (maxWidth.value / DOCK_ICON_CELL).toInt())
         val lines = androidx.compose.runtime.remember(t.all, per) { dockLines(t.all.size, per) }
         NativeRows(Color.White, Modifier.fillMaxWidth().fillMaxHeight()) {
-            items(lines.size, key = { lines[it][0] }) { li ->
+            nativeItems(lines, { it[0] }) { li, _ ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             for (slot in lines[li]) {
               if (slot < 0) {

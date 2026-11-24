@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -140,7 +139,7 @@ private fun CinemaEpisodes(ctx: WinSceneCtx, live: Boolean, accent: Color, modif
         }
         Spacer(Modifier.height(6.dp))
         NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 2.dp) {
-            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
+            nativeItems(t.all, { it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

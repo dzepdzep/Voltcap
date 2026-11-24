@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.LinearEasing
@@ -106,7 +105,7 @@ private fun TermDir(ctx: WinSceneCtx, live: Boolean, style: TextStyle, fg: Color
                 modifier = Modifier.fillMaxWidth().background(if (on) hi else Color.Transparent).padding(horizontal = 2.dp, vertical = 2.dp))
         }
         NativeRows(fg, Modifier.weight(1f).fillMaxWidth()) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

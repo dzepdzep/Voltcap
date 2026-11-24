@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -110,7 +109,7 @@ private fun CardMoves(ctx: WinSceneCtx, live: Boolean, ink: Color, frame: Color,
         }
         Spacer(Modifier.height(4.dp))
         NativeRows(ink, Modifier.weight(1f).fillMaxWidth()) {
-            itemsIndexed(t.all, key = { _, it -> it.id }) { i, ach ->
+            nativeItems(t.all, { it.id }) { i, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

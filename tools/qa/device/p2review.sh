@@ -156,6 +156,7 @@ lazy_layout() {
     log "$lay g$gi: page focus [$(rowlabel ${TAG}_${n}_lz_page)]"
     phase lz_down; burst DPAD_DOWN 14; sleep 1.6; phase_end lz_down; shot ${n}_lz_end
     log "$lay g$gi: after 140 Down [$(rowlabel ${TAG}_${n}_lz_end)]"
+    sleep 3; shot ${n}_lz_end2; log "$lay g$gi: 3 s later [$(rowlabel ${TAG}_${n}_lz_end2)] rows-move log: $(logcat -d -s VoltcapQA | grep -c 'rows move') fails: $(logcat -d -s VoltcapQA | grep -c 'rows move.*ok=false') in: $(logcat -d -s VoltcapQA | grep -c 'rows key Down in') ends: $(logcat -d -s VoltcapQA | grep -c 'passed on') unhandled: $(logcat -d -s VoltcapQA | grep -c 'win unhandled')"
     phase lz_up; burst DPAD_UP 14; sleep 1.6; phase_end lz_up; shot ${n}_lz_top
     log "$lay g$gi: after 140 Up [$(rowlabel ${TAG}_${n}_lz_top)]"
     k BUTTON_B 1.3; shot ${n}_lz_back; log "$lay g$gi: B -> [$(rowlabel ${TAG}_${n}_lz_back)] popup=$(wg_popup | head -c 40)"

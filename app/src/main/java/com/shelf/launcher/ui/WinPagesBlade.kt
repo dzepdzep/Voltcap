@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -95,7 +94,7 @@ private fun BladeAchievements(ctx: WinSceneCtx, live: Boolean, glow: Color, ink:
         }
         Spacer(Modifier.heightIn(min = 4.dp))
         NativeRows(Color.White, Modifier.weight(1f).fillMaxWidth(), 3.dp) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id

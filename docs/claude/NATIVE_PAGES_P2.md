@@ -598,3 +598,23 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   rows away). kt_big -> kt_big2: Cinema 1031 -> 132 ms, Arcade 194 -> 56 ms; the rest fill in ~40 ms frames for ~1.5 s (a Cinema
   row costs ~13 ms - still D386). Walk kbig13 x1.3: 24 Downs reach row 24, "120 FILE(S) TOTAL", Play same place, restore diff 0.
   CI green on af8ae8c (682al).
+
+### 682aq - P2 performance, owner 23 Nov 22:43 (24 Nov night, autonomous) - QA app only, KONKR + RP Classic over USB
+- **D389 - lazy rows (fixed in code, not final):** `NativeRows` (kit) - a LazyColumn with the page's own scroll cue and faded edges -
+  on all 26 native Achievements pages (Crate's sides, Dock's icon lines and Discover's shelves worked out per row up front:
+  `crateMarks`, `dockLines`, `discoverRuns`). Only on-screen rows are composed; counts, order and look-ups use the whole list.
+  Robolectric LazyRows682aqTest (every native layout x 0 / 1 / 10 / 120 x x1.0 / x1.3, 224 cases, fails on 682am). Hardware
+  `p2review.sh lazywalk` (140 quick Downs in bursts of ten, 140 Ups, B, reopen, early close): the first lazy build lost presses
+  (KONKR stopped on row 30, RP Classic 52; the eager column reached the end). Diagnostics (682aq6) showed every press arrived and
+  every move "succeeded" - moves made mid-glide landed on rows already passed. 682aq7: before each queued move the next row is put
+  whole in view (at once while presses wait, gliding for one press); reaches Back on KONKR (Cinema, Crate, Resume, Bar) and RP
+  Classic (Cinema, Resume); Up back to the top; reopen and early close clean, 0 crashes, restore diff 0.
+- **D386 - page change:** Cinema's worst page-change frame 133.7 -> 32 ms (Tetris) and 84 -> 35 ms (120 achievements), KONKR
+  atrace. Window text (StableFullText, reserve = false) now fits inside the Text's own measure (`StableFitAutoSize`): same 1 sp
+  steps to the readable minimum, same extra line, same slide - StableFit682aqTest compares every line's end, width and bottom
+  old vs new (128 cases, identical). Text appearance unchanged.
+- **D379 - Arcade:** the cabinet sides used anti-aliased clipPath -> a CPU mask uploaded every glide frame. Now path fills and a
+  shader-filled print (same picture). KONKR fair run (30-game category, no recording) 682al -> 682aq2: home navigation slow frames
+  24.5 -> 0.6 % (502 frames), RenderThread p50 13.0 -> 7.5 ms. RP Classic: home navigation 12.2 -> 12.6 % (GPU-bound, GPU p50
+  15 ms even when still), window walk 23.2 -> 5.3 %. 60 FPS not claimed; RP Classic GPU cost open.
+- Builds: QA APKs qa682aq .. qa682aq7 (QA app only). Production Voltcap untouched (versionCode 80 on both devices).

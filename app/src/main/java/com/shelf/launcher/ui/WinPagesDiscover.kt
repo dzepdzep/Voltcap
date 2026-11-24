@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterExitState
@@ -238,7 +237,7 @@ private fun DiscoverProgress(ctx: WinSceneCtx, live: Boolean, rise: () -> Float,
         NativeRows(a, Modifier.weight(1f).fillMaxWidth(), 6.dp) {
             // (681f, AchFirstRowRoboTest RESUME: shelves that repeated achievements - next up, recent, then everything - put the
             // list's first one below the fold at x1.3. Each achievement once, in the chosen order; the shelves are the runs.)
-            itemsIndexed(t.all, key = { _, it -> it.id }) { n, ach -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            nativeItems(t.all, { it.id }) { n, ach -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 val earned = ach.isUnlocked
                 val run = runs[n]
                 discoverShelf(earned, run)?.let { Text(it, color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp,

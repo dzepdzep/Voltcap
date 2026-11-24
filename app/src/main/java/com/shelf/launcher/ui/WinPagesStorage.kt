@@ -1,6 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -100,7 +99,7 @@ private fun StorageList(ctx: WinSceneCtx, red: Color, live: Boolean, modifier: M
         }
         Box(Modifier.fillMaxWidth().padding(vertical = 4.dp).heightIn(min = 2.dp).background(RecNavy.copy(alpha = 0.25f)))
         NativeRows(RecInk, Modifier.weight(1f).fillMaxWidth()) {
-            items(t.all, key = { it.id }) { ach ->
+            nativeItems(t.all, { it.id }) { _, ach ->
                 val earned = ach.isUnlocked
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
