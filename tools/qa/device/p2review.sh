@@ -242,6 +242,47 @@ cover_walk() {
 # (or LZ_GAMES), its Achievements page scrolled deep, then quick bursts in one input call each - L1 R1 A, R1 L1 A, L1 R1 R1 A,
 # L1 R1 A B, A L1 R1 A, B R1 R1 A ... - with the focused control and the launch count read after each. A launch fails the run.
 # Level 1, synthetic games only (the QA app's launch block records, never starts).   sh p2review.sh storm TAG SCALE "LAYOUTS"
+# (682au, owner 24 Nov - "complete the Record Crate / Dock-BAR safety verification": scrolled AND re-sorted 120-achievement lists,
+# rapid L1 / R1 + A, rapid Back / reopen, and deliberate Play still working): after the storm (storm_layout), per layout: the
+# Achievements page, A on the ORDER stamp (its first focus) twice - two re-sorts - then deep down and quick bursts; B B and the
+# window reopened at once, R1 R1 A; then a fresh window, its focus read, and ONE deliberate A on Play - exactly one launch must be
+# recorded (the QA app's launch block records, never starts). Any other launch fails. Level 1, synthetic games only.
+#   sh p2review.sh safety TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+safety_layout() {
+  lay=$1; n=${lay}_sf; l0=$(launches)
+  # (the plain storm first only with STORM=1 - it passed on both handhelds in 682ar2 / ar3; the 15-minute limit per task)
+  if [ "${STORM:-0}" = 1 ]; then storm_layout $lay; [ "$(launches)" = "$l0" ] || { log "FAIL $lay: the storm launched"; return 1; }; fi
+  A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 2
+  openw $lay $n || return 1
+  k BUTTON_R1 1.1; k BUTTON_R1 1.6; shot ${n}_page; log "$lay safety: page focus [$(rowlabel ${TAG}_${n}_page)]"
+  for r in 1 2; do
+    k BUTTON_A 1.4; shot ${n}_sort$r; log "$lay safety: re-sort $r focus [$(rowlabel ${TAG}_${n}_sort$r)] launches=$(launches)"
+    burst DPAD_DOWN 2; sleep 1.2
+    for seq in "L1 R1 A" "R1 L1 A" "L1 R1 A A"; do
+      [ "$(wg_popup)" != null ] || { log "$lay safety: window closed before '$seq'"; break; }
+      wg_keys_win "$seq"; sleep 1.5; lc=$(launches)
+      log "$lay safety sorted$r '$seq': launches=$((lc - l0)) popup=$(wg_popup | head -c 12)"
+      [ "$lc" = "$l0" ] || { log "FAIL $lay: sorted$r '$seq' launched a game"; return 1; }
+      k BUTTON_B 1.2; [ "$(wg_popup)" != null ] || { A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5; openw $lay ${n}_r || return 1; }
+      k BUTTON_R1 1.1; k BUTTON_R1 1.6
+    done
+    burst DPAD_UP 3; sleep 1.2
+  done
+  # rapid Back / reopen: B B (to the home), the window again at once, R1 R1 A in one call
+  wg_key_win B; sleep 0.3; [ "$(wg_popup)" = null ] || { wg_key_win B; sleep 0.6; }
+  A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.2
+  if openw $lay ${n}_bo; then wg_keys_win "R1 R1 A"; sleep 1.5; lc=$(launches)
+    log "$lay safety back/reopen 'R1 R1 A': launches=$((lc - l0))"
+    [ "$lc" = "$l0" ] || { log "FAIL $lay: back/reopen launched a game"; return 1; }
+    closewin; fi
+  # deliberate Play: a fresh window, its first focus read (Play), one A - exactly one launch recorded
+  A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5
+  openw $lay ${n}_pl || return 1
+  shot ${n}_play_focus; f=$(rowlabel ${TAG}_${n}_play_focus); log "$lay safety: fresh window focus [$f]"
+  k BUTTON_A 2; lc=$(launches)
+  log "$lay safety deliberate Play: launches=$((lc - l0)) (want 1)"
+  [ "$((lc - l0))" = 1 ] || log "FAIL $lay: deliberate Play recorded $((lc - l0)) launches"
+  closewin; log "$lay safety done"; }
 storm_layout() {
   lay=$1; n=${lay}_st
   A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 2
@@ -395,6 +436,23 @@ storm)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   for lay in $LAYS; do logcat -c; storm_layout $lay; done
   log "storm done"; echo DONE >> $L;;
+safety)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do logcat -c; safety_layout $lay; done
+  log "safety done (launches: $(launches))"; echo DONE >> $L;;
 awake)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

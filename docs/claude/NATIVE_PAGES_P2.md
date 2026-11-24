@@ -932,3 +932,16 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   AIRY, NoStrayPlay682j all layouts, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, Layouts330, UniformKeys,
   NativePages*: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 11 scenes done (own designs 40 / 53).
+
+### 682au - Arcade B (owner 24 Nov 19:23: reduce the ~100 ms game-change stall) - IN PROGRESS, no frame-level gain yet
+- **Profile (RP Classic, compose-tracing QA builds qa682au_cp / cp2 with timestamp marks, 30-game category, 12 moves, Level 1):**
+  per game change ~97-101 ms on the main thread: composition ~50 ms (the screen's content body - LauncherScreenContent, which
+  collects the whole UI state, so every move re-runs its ~7300 lines - ~15 ms spread evenly in small pieces, no hot spot; the
+  Arcade showcase: big machine's new content 6 ms, info 2.6 ms, row ~1.4 ms; applying changes 5 ms), layout ~35 ms (layout-time
+  sub-compositions 13 ms, text measurement 11 ms), draw recording ~9 ms. FitText's size search: **10.9 ms per change** (7 texts).
+- **Change:** FitText's step-down now gallops then halves (`fitStepSize`, the same step as before - FitSearch682auTest checks every
+  threshold). Same-build A/B (`p2review.sh fsab`, qa682au, legacy / new twice, 24 moves each): p95 121 / 105 -> 101 / 101 ms, p99
+  150 / 125 -> 125 / 121 ms, slow UI frames 96 / 69 -> 79 / 69, slow 14.8 / 10.4 % -> 12.0 / 10.8 % - **within run-to-run noise:
+  no measurable frame-level gain claimed.** The remaining cost is structural (the whole screen body re-composing on every focus
+  step); next step proposed: keep the focused index out of LauncherScreenContent's own reads (its children read it), measured the
+  same way.
