@@ -664,3 +664,22 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   "Start") green - 104 tests, 0 failures; Hierarchy529 (source shape updated to the one row), Batch494 / 496 / 506 / 507,
   Popup421, Visual426, WindowWordsSurvey682, CategoryStable394 green. Static checks PASS.
 - Audit: class A 31 / 53 (+ Channel), class B 1 (Disc station), class C 21. Hardware NOT TESTED (HW-28), not visually approved.
+
+### 728a - P2 class C, third layout: Timeline (WinPagesTime.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The entry hanging from the year line keeps its cover, name and console line; on its pages the facts area becomes the page,
+  each drawn as its own small vertical timeline in the accent (a thin line down the left, a node per stop), the page named
+  beside a short page line (one tick per page, the shown one filled) after the old page has gone:
+  CHRONICLE (each fact a filled stop, label over value in whole words; the story as THE STORY SO FAR at the line's end, an
+  open node, a D-pad stop), MILESTONES (each achievement a stop - filled node + "Reached <date>" when yours, open ring +
+  "Ahead" when not - badge, title, points "N pts"; "N of M milestones reached", the order as a pill; A opens the whole text
+  and how rare; lazy rows), BRANCHES (each option a branch tick off the line to a rounded tag; removing ones red, second A).
+  Motion: the next page comes along the line of time - from the right a fifth of the way going forward, from the left going
+  back - as it fades up; none with Motion Off. Info (ENTRY) unchanged. The entry takes a steady height on its pages (max 480 dp)
+  so the milestones scroll; Play keeps its slot (sceneKeySlots); L1 / R1 anywhere in the window. The line is drawn behind
+  each stop (no intrinsic measuring of the rows' texts).
+- Tests (cloud, Robolectric): NativePagesTime728aTest 4/4 (fails before: no timePageName / TIMELINE_ENTRY not native);
+  TIMELINE added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace (+ RPC) / WinPresentation /
+  Batch508 / Visual426: 1,850 tests 0 failures (52 Timeline cases, none skipped); Hierarchy529 / CategoryStable394 /
+  WindowWordsSurvey682 / NativePages681a / Batch2 / UniformKeys / NativeConfirm / PopupNativeStorage / Popup421 /
+  NoArtCaption684: 597 tests 0 failures. Static checks PASS (no finding in the new file).
+- Audit: class A 32 / 53 (+ Timeline), class B 1 (Disc station), class C 20. Hardware NOT TESTED (HW-28), not visually approved.

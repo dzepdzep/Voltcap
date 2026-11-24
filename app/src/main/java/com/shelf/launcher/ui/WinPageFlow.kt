@@ -75,7 +75,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (726a, P2 class C: Circuit board - the datasheet's CHARACTERISTICS, PIN STATES and JUMPERS sections, WinPagesChip.kt.)
     WinScene.CHIP_SHEET,
     // (727a, P2 class C: Channel grid - the channel's CHANNEL INFO, STAMPS and SETTINGS screens in the preview well, WinPagesChan.kt.)
-    WinScene.WII_PREVIEW)
+    WinScene.WII_PREVIEW,
+    // (728a, P2 class C: Timeline - the entry's CHRONICLE, MILESTONES and BRANCHES along its own line, WinPagesTime.kt.)
+    WinScene.TIMELINE_ENTRY)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
