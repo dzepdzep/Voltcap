@@ -44,6 +44,8 @@ object HomeIdle {
      */
     var settled by mutableStateOf(false)
         private set
+    /** 682at: tests only - what 10 s without input (true) and the next press (false) do to [settled]. */
+    @androidx.annotation.VisibleForTesting internal fun settleForTest(v: Boolean) { settled = v }
     var deep by mutableStateOf(false)
         private set
     /**

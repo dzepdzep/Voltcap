@@ -138,6 +138,20 @@ k_home() { gate; wg_key_home $1; }
 # the same build, the tubes' text legacy (before) and new (after) by the QA-only switch, interleaved twice; each: one press and
 # back, then 8 s still (frames drawn with nothing pressed), then 12 home moves. Level 1, QA app, synthetic games.
 #   sh p2review.sh arab TAG SCALE   then  sh p2review.sh restore TAG
+# (682at, owner 24 Nov option 2 - the charging light: "compare the visual appearance and rendering cost before/after on KONKR and
+# RP Classic, with the same charging conditions"): the same build, legacy / new by the QA-only switch, interleaved twice; the
+# battery shown as charging at 77 % by the QA app's own status hook (the same on both handhelds, the real charging untouched);
+# per variant: 6 s to let the start feedback pass, a press and back, then 8 s still (frames drawn); then the level to 78 % and
+# six screenshots of the light 0.25 s apart plus one 6 s later. Level 1, QA app only.
+#   sh p2review.sh chab TAG SCALE   then  sh p2review.sh restore TAG
+ch_ab() {
+  n=CH_$1_$2; A --es voltcap_test_chargelight $1 --es voltcap_test_battery "77|true"; sleep 6; gate; wg_home
+  k_home R; sleep 0.7; k_home L; sleep 1.2
+  phase still; sleep 8; phase_end still
+  A --es voltcap_test_battery "78|true"; sleep 0.3
+  for i in 1 2 3 4 5 6; do screencap -p $O/${n}_light_$i.png; sleep 0.25; done
+  sleep 6; screencap -p $O/${n}_rest.png
+  log "ch $n done"; }
 ar_ab() {
   n=AB_$1_$2; A --es voltcap_test_arattract $1; sleep 2; gate; wg_home
   k_home R; sleep 0.7; k_home L; sleep 1.2
@@ -451,6 +465,24 @@ arab)
   ar_ab legacy 1; ar_ab new 1; ar_ab legacy 2; ar_ab new 2
   A --es voltcap_test_arattract new
   log "arab done (launches: $(launches))"; echo DONE >> $L;;
+chab)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  # (a home that is otherwise still: Arcade after 682as - the Voltcap row's animated theme scene draws every frame by itself)
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
+  ch_ab legacy 1; ch_ab new 1; ch_ab legacy 2; ch_ab new 2
+  A --es voltcap_test_chargelight new --es voltcap_test_battery off
+  log "chab done (launches: $(launches))"; echo DONE >> $L;;
 stilldiff)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

@@ -896,6 +896,23 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; PlayPlace* all layouts, NoStrayPlay682j all 40 layouts, every
   ORBIT / Orbit case (AchFirstRow, ShelfText, WindowWordsSurvey, WinFocus, LazyRows, OrbitSpin, OrbitKeyLabel) + PopupNativeStorage
   + Layouts330: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+
+### 682at - charging light (owner 24 Nov 17:50, option 2, visual quality kept) - implemented, hardware-measured, NOT visually approved
+- **Why presses restarted it:** Update 511 keyed the light (PlainBattery) and the Volt gauge's bolt (the shared focus pulse,
+  50 ms steps = 20 updates/s) on `HomeIdle.settled` - 10 s after the last input they rest, and every press wakes them for another
+  10 s. **Now:** feedback only - charging starting, the level changing while charging, Voltcap coming back to the front: two
+  sweeps / breaths at the full frame rate (the plain light was 30 updates/s before), then on to the still place (light at 0.55,
+  bolt at its steady glow) and still until one of those changes. Draw-only in its own layer as before (no recomposition). Display
+  only - ChargeLimiter, the charge limit, bypass and battery reporting untouched. A/B switch `voltcap_test_chargelight legacy|new`.
+  ChargeLight682atTest (legacy restarts on every press - fails as the old code; new: once per charging start / level change).
+- **Hardware (Level 1, QA app qa682at = 45857d6, `p2review.sh chab`, the QA app's battery hook showing 77 % -> 78 % charging on both,
+  same build, legacy / new twice, Arcade home on Shadow of the Colossus, x1.0, restore OK, diff 0, 0 launches):**
+  RP Classic 1-9 s after a press: legacy 19.9 frames/s (every one a ~42 ms whole-window frame) -> **new 0 frames** (both runs).
+  KONKR: 60.4-60.6 frames/s in both - the KONKR QA profile's home keeps drawing for other reasons in that window (not the battery:
+  the only pixels changing between the light shots are the bolt's); the light itself no longer restarts there either (same build,
+  same code path). Appearance: kch2 / rch2 `CH_*_light_1..6` + `_rest` - the same bolt, same brightness range; new comes to its
+  steady glow after two breaths. (The Voltcap-row runs kch / rch are invalid for this: its theme scene draws 60 fps by itself.)
+- Open: what draws 60 fps on the KONKR's still Arcade home for ~10 s after a press (decorative effects of its look) - tracked.
 ### 735a - P2 class C, tenth scene: Airy home (AIRY_PANEL, WinPagesAiry.kt) - implemented, NOT owner-approved, HW NOT TESTED
 - The floating white 1999 panel (soft rounded corners, pale blue-grey well, the cover in its rounded frame, the name in the
   light face, the pixel LCD, big round keys with their word under them) stays as it is; its pages take the panel's right column
