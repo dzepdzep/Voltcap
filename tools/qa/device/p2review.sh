@@ -142,6 +142,9 @@ ar_ab() {
   n=AB_$1_$2; A --es voltcap_test_arattract $1; sleep 2; gate; wg_home
   k_home R; sleep 0.7; k_home L; sleep 1.2
   phase still; sleep 8; phase_end still
+  # (the status bar's charging light runs ~10 s after a press while the handheld charges - USB QA always does - HomeIdle.settled
+  # stops it; 11-19 s after the press the home is still awake (calm comes at 30 s) and only its own activity draws)
+  sleep 2; phase settled; sleep 8; phase_end settled
   phase nav; for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; sleep 0.8; phase_end nav
   log "ab $n done"; }
 ar_variant() {
@@ -159,7 +162,12 @@ tracehome_layout() {
   atrace --async_start -a $P -b 16384 gfx view input am dalvik > /dev/null 2>&1; sleep 0.5
   for i in 1 2 3 4 5 6; do wg_key_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do wg_key_home L; sleep 0.5; done; sleep 0.5
   atrace --async_dump -o $O/${n}_tracehome.txt > /dev/null 2>&1; atrace --async_stop > /dev/null 2>&1
-  log "$1: tracehome done ($(wc -c < $O/${n}_tracehome.txt 2>/dev/null) bytes)"; }
+  log "$1: tracehome done ($(wc -c < $O/${n}_tracehome.txt 2>/dev/null) bytes)"
+  # (682as: the still home a moment after a press - what is still drawn while it is awake)
+  k_home R; sleep 0.8; k_home L; sleep 2
+  atrace --async_start -a $P -b 16384 gfx view input am dalvik > /dev/null 2>&1; sleep 5
+  atrace --async_dump -o $O/${n}_traceawake.txt > /dev/null 2>&1; atrace --async_stop > /dev/null 2>&1
+  log "$1: traceawake done ($(wc -c < $O/${n}_traceawake.txt 2>/dev/null) bytes)"; }
 # (682aq, owner 22:43 - D389 lazy rows: "Test 0, 1, 10 and 120 achievements, including rapid input and early closure ... Back /
 # reopen"): per layout and fixture game (LZ_GAMES: "name|name"), the Achievements page (R1 R1) opened with its frames read
 # (gfxinfo), D-pad bursts of 10 inside the confirmed window (focus checked before every burst) down to the end and back up,
@@ -459,6 +467,8 @@ stilldiff)
   A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
   # (682as: what changes on a still Arcade home - five screenshots, nothing pressed; tools diff them)
   sleep 4; gate; wg_home; for i in 1 2 3 4 5; do screencap -p $O/still_$i.png; sleep 0.2; done
+  # (682as: the same a moment after a press - the home is awake for 30 s after input; HomeIdle.calm stills it after)
+  k_home R; sleep 0.8; k_home L; sleep 2; for i in 1 2 3 4 5; do screencap -p $O/awake_$i.png; sleep 0.2; done
   log "stilldiff done (launches: $(launches))"; echo DONE >> $L;;
 perf)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"

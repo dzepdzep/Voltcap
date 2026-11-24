@@ -79,7 +79,7 @@ internal fun FitText(
         val w = constraints.maxWidth
         val parentH = if (constraints.hasBoundedHeight) constraints.maxHeight else Constraints.Infinity
         val h = if (maxHeight > 0) minOf(maxHeight, parentH) else parentH
-        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio, extraLine, wholeWords) {
+        val fit = remember(text, w, h, maxSize, minSize, maxLines, fontWeight, style, lineHeightRatio, extraLine, wholeWords, stillWhenCut) {
             fun styled(s: Float) = style.copy(fontSize = s.sp, lineHeight = (s * lineHeightRatio).sp, fontWeight = fontWeight ?: style.fontWeight)
             val longest = if (wholeWords) text.split(' ', '\n').maxByOrNull { it.length }.orEmpty() else ""
             fun fits(s: Float, lines: Int): Boolean {
@@ -98,9 +98,20 @@ internal fun FitText(
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
             while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
             if (extraLine && !fits(s, lines)) lines = maxLines + 1
-            val wordFits = longest.isEmpty() || w <= 0 || w == Constraints.Infinity ||
-                measurer.measure(longest, styled(s), softWrap = false, maxLines = 1).size.width <= w
-            FitPick(s, lines, slideWhenCut && !fits(s, lines), wordFits)
+            // (682as: a still text that fits nowhere at its smallest size is laid out wider and drawn condensed - the least squeeze,
+            // never under half, that holds the whole text in its lines and the longest word on one line.)
+            var layoutW = 0
+            if (stillWhenCut && !slideWhenCut && w > 0 && w != Constraints.Infinity && !fits(s, lines)) {
+                fun fitsAt(lw: Int): Boolean {
+                    if (longest.isNotEmpty() && measurer.measure(longest, styled(s), softWrap = false, maxLines = 1).size.width > lw) return false
+                    return !measurer.measure(text, styled(s), overflow = TextOverflow.Clip, maxLines = lines,
+                        constraints = Constraints(maxWidth = lw, maxHeight = h)).hasVisualOverflow
+                }
+                var k = 0.95f
+                while (k >= 0.5f && !fitsAt((w / k).toInt())) k -= 0.05f
+                layoutW = (w / k.coerceAtLeast(0.5f)).toInt()
+            }
+            FitPick(s, lines, slideWhenCut && !fits(s, lines), layoutW == 0, layoutW)
         }
         @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
         // (676y: it slides at the size it shrank to - a far arcade machine's sign is a few px tall; at the full size its letters
@@ -114,9 +125,10 @@ internal fun FitText(
             fontWeight = fontWeight, textAlign = textAlign, style = style,
             // qa-ok: TRUNCATE (lyrics / song titles in a fixed box: only after the smallest readable size AND an extra line)
             maxLines = fit.second, overflow = if (stillWhenCut) TextOverflow.Clip else TextOverflow.Ellipsis,
-            // (682as: a word wider than the line even at the smallest size is never split - it stays on its one line.)
-            softWrap = !(stillWhenCut && !fit.fourth),
-            modifier = if (wide) Modifier.fillMaxWidth() else Modifier
+            // (682as: a word wider than the line even at the smallest size is never split: the lines are laid out as wide as that
+            // word and drawn narrower - condensed letters, as an arcade screen's lettering is - at the smallest size's height.)
+            modifier = (if (wide) Modifier.fillMaxWidth() else Modifier).then(
+                if (!fit.fourth) Modifier.condensedTo(fit.wordW) else Modifier)
         )
     }
 }
@@ -428,5 +440,21 @@ private fun wordChar(c: Char): Boolean {
     }
 }
 
-/** 682as: [FitText]'s choice - size, lines, slide, and whether its longest word fits a line at that size. */
-private data class FitPick(val first: Float, val second: Int, val third: Boolean, val fourth: Boolean)
+/** 682as: [FitText]'s choice - size, lines, slide, whether it fits as it is, and else the width it is laid out at (drawn condensed). */
+private data class FitPick(val first: Float, val second: Int, val third: Boolean, val fourth: Boolean, val wordW: Int)
+
+/** 682as: lay the content out [wide] px wide (its longest word's width) and draw it squeezed into the width it was given -
+ *  horizontally only, never below half; centred in that width. */
+private fun Modifier.condensedTo(wide: Int): Modifier = layout { m, c ->
+    val room = c.maxWidth
+    val k = (room.toFloat() / wide).coerceIn(0.5f, 1f)
+    val inner = (room / k).toInt()
+    val p = m.measure(c.copy(minWidth = minOf(c.minWidth, inner), maxWidth = inner))
+    val drawn = (p.width * k).toInt()
+    layout(room, p.height) {
+        p.placeWithLayer((room - drawn) / 2, 0) {
+            scaleX = k
+            transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+        }
+    }
+}

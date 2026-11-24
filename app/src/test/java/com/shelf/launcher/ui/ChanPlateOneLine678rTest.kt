@@ -19,6 +19,6 @@ class ChanPlateOneLine678rTest {
     @Test fun fitTextHonoursExtraLine() {
         val fit = src("FitText.kt")
         assertTrue(fit.contains("if (extraLine && !fits(s, lines)) lines = maxLines + 1"))
-        assertTrue(fit.contains("lineHeightRatio, extraLine) {"))
+        assertTrue(fit.contains("lineHeightRatio, extraLine, wholeWords, stillWhenCut) {")) // (682as: + wholeWords, stillWhenCut; still a key)
     }
 }

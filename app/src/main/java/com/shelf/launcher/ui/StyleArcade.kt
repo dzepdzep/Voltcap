@@ -393,7 +393,7 @@ internal fun ArcadeAttract(g: Game, detail: Boolean, live: Boolean) {
         // then wraps at a space.)
         if (detail) {
             if (legacy) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
-            else FitText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), maxSize = 9.sp, minSize = 7.sp, maxLines = 2, extraLine = false,
+            else FitText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), maxSize = 9.sp, minSize = 7.sp, maxLines = 1,
                 textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont()), slideWhenCut = live, wholeWords = true, stillWhenCut = !live)
         }
     }

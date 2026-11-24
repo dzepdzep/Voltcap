@@ -282,6 +282,9 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("androidx.compose.ui:ui-test-manifest")
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
+    // (682as, owner 24 Nov - Arcade B "profile exactly what happens when moving from one game to the next": composable names in
+    // an atrace of the QA app. Only in a build asked for with -PvoltcapComposeTracing=true, debug (QA app) only; never a release.)
+    if (providers.gradleProperty("voltcapComposeTracing").orNull == "true") debugImplementation("androidx.compose.runtime:runtime-tracing")
 
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")

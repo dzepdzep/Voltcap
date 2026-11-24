@@ -82,7 +82,12 @@ class ArcadeTube682asTest(private val big: Boolean) {
             for (g in names) for (detail in listOf(true, false)) {
                 show(g, detail, live = false, legacy = false)
                 assertEquals("${g.name} detail=$detail: a tube you're not on slid", 0, slides())
-                for (r in layouts()) assertFalse("${g.name} detail=$detail: a word split '${r.layoutInput.text}'", brokenWord(r))
+                for (r in layouts()) {
+                    assertFalse("${g.name} detail=$detail: a word split '${r.layoutInput.text}'", brokenWord(r))
+                    // (the big tube shows it whole; a far machine's small tube may leave its last words out - never half a word - its
+                    // sign right above it carries the whole name, and so does the machine once you move onto it)
+                    if (detail) assertFalse("${g.name} detail=$detail: words left out '${r.layoutInput.text}'", r.hasVisualOverflow)
+                }
             }
         } finally { ArcadeTubeText.legacy.value = false; TestHooks.scale.value = null }
     }
@@ -91,7 +96,9 @@ class ArcadeTube682asTest(private val big: Boolean) {
         try {
             show(names[0], detail = true, live = true, legacy = false)
             assertEquals("PLAYSTATION 2 on the big tube slid", 0, slides())
-            assertTrue(layouts().any { it.layoutInput.text.text == "PLAYSTATION 2" })
+            val console = layouts().first { it.layoutInput.text.text == "PLAYSTATION 2" }
+            // (one line - it steps down before it wraps)
+            assertEquals("PLAYSTATION 2 wrapped instead of stepping down", 1, console.lineCount)
             for (r in layouts()) assertFalse("a word split '${r.layoutInput.text}'", brokenWord(r))
         } finally { ArcadeTubeText.legacy.value = false; TestHooks.scale.value = null }
     }
