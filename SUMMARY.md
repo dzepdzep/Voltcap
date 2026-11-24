@@ -1,3 +1,23 @@
+# Update 729a (24 Nov 2026, cloud run) - P2 class C: Hero carousel / Hero tiles get the banner's own pages (native-pages branch)
+- CI first: Verify 310 on e9092e9 (728a, dev line) GREEN; on 864e293 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), b70895f0 (merged with the owner session's 682ar / 682ar2 pushes -> 546f5b99):
+  the fourth class C scene, shared by two layouts. The Hero banner keeps its key art, gradient and logo; on its pages the name
+  steps down to a smaller title, the banner's tab strip (all page names, the shown one underlined in white) takes the info line's
+  place, the art darkens a shade and the text column widens a little. THE FEATURE (facts as big key figures with an accent rule;
+  the story as a pull quote), HALL OF FAME (big "N / M" figure, slim progress bar, each achievement a billboard row - round
+  badge, "Unlocked <date>" / "Locked", points pill; A opens the whole text + rarity; lazy rows), QUICK ACTIONS (big pill buttons;
+  removing ones red, second A). The next page grows up out of the banner's lower left corner; none with Motion Off.
+- Found by the tests: at x1.3 the full-size title (3 reserved lines) + info line left the Hall of Fame 0 px for its first
+  achievement (AchFirstRow HERO / HERO_TILES big=true 6/6 FAIL) -> the compact heading on pages fixed it.
+- Checked (cloud): compile OK; NativePagesHero729aTest 4/4 (new; fails on the old code); HERO + HERO_TILES added to AchFirstRow
+  + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace / CategoryStable394 / NativeConfirm / UniformKeys /
+  NativePagesTime728a: 1,884 tests 0 failures (100 Hero cases, none skipped); after merging 682ar: Hero cases + LazyRows /
+  ListHeadTurn682ar / PageHandoff682ar 357 tests 0 failures. Static PASS, QA selftest OK. Hardware NOT TESTED (HW-28), not
+  visually approved. Not on the dev line.
+  Files (P2 branch): ui/WinPagesHero.kt (new), ui/WinScenesHomes2.kt (HeroBanner), ui/WinPageFlow.kt, tests
+  NativePagesHero729aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+- Note: the owner's live session pushed 682ar / 682ar2 to the P2 branch while this run held the lock; merged (no conflicts), nothing overwritten.
+
 # Update 728a (24 Nov 2026, cloud run) - P2 class C: Timeline gets its own Details / Achievements / Options (native-pages branch)
 - CI first: Verify 310 on 678c10e (727a lock commit, dev line; 974c7bb itself was cancelled by the newer push) GREEN; on 8a73d96
   (P2 branch) GREEN.

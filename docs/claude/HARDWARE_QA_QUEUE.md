@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages (v0674-native-pages 864e293) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages (v0674-native-pages 546f5b99) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
@@ -216,6 +216,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   MILESTONES lazywalk (140 Downs / Ups, B, reopen) - the line stays continuous between stops while scrolling; a dated and an
   undated game ("YEAR UNKNOWN" node); a removing branch armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
   Evidence: Robolectric only (NativePagesTime728aTest + TIMELINE suites, 52 cases 0 failures, cloud).
+- 729a adds Hero carousel + Hero tiles (one scene; same session, build 546f5b99 or later): p2review walk Info -> THE FEATURE ->
+  HALL OF FAME -> QUICK ACTIONS (R1 x3, L1 back) on both layouts, the tab strip's underline moves after the old page has gone,
+  the name steps down without a jump of Play; Play same size and place on every page; HALL OF FAME lazywalk; a game with a
+  logo and one without; a removing action armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesHero729aTest + HERO / HERO_TILES suites, 100 cases 0 failures, cloud).
 
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)

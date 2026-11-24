@@ -2,29 +2,29 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 728a · 2026-11-24 09:50 UTC · commit `this update (being pushed)` · CI: Verify 310 on 678c10e (dev) and 8a73d96 (native pages): green · effort: medium
+**1. LATEST UPDATE** - 729a · 2026-11-24 10:55 UTC · commit `this update (being pushed)` · CI: Verify 310 on e9092e9 (dev) and 864e293 (native pages): green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Timeline layout's game window now has its own Details, Achievements and Options pages, each drawn as a small timeline inside the entry card: the game's facts as stops down a line with the story at its end, each achievement a milestone (a filled dot and the date you reached it, or an open ring and 'Ahead'), and the options as branches off the line (removing ones are red and ask twice). The page name and a short page line show which page you are on. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 32 of 53 layouts now have their own pages.
+**2. WHAT CLAUDE JUST FIXED** - The Hero carousel and Hero tiles layouts' game window now has its own Details, Achievements and Options pages in the hero banner's style: the game's facts as big key figures with the story as a pull quote, a Hall of Fame with a big 'unlocked' count, a slim progress bar and each achievement as a banner row, and the options as big pill buttons (removing ones are red and ask twice); a tab strip under the game's name shows which page you are on. The automated tests caught that the first achievement had no room with large text, which is fixed. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 34 of 53 layouts now have their own pages.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
+- **App** (729a): The Hero carousel and Hero tiles layouts' game window now has its own Details, Achievements and Options pages in the hero banner's style: the game's facts as big key figures with the story as a pull quote, a Hall of Fame with a big 'unlocked' count, a slim progress bar and each achievement as a banner row, and the options as big pill buttons (removing ones are red and ask twice); a tab strip under the game's name shows which page you are on. The automated tests caught that the first achievement had no room with large text, which is fixed. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 34 of 53 layouts now have their own pages.
 - **App** (728a): The Timeline layout's game window now has its own Details, Achievements and Options pages, each drawn as a small timeline inside the entry card: the game's facts as stops down a line with the story at its end, each achievement a milestone (a filled dot and the date you reached it, or an open ring and 'Ahead'), and the options as branches off the line (removing ones are red and ask twice). The page name and a short page line show which page you are on. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 32 of 53 layouts now have their own pages.
 - **App** (727a): The Channel grid layout's game window now has its own Details, Achievements and Options screens inside its rounded preview card: the game's facts on a soft info card with an 'About this channel' bubble, each achievement a rounded pill with a stamp that is inked with a star once you have it, and the options as big rounded buttons (removing ones are red and ask twice); dots show which screen you are on. Three controller-focus problems in that window were fixed on the way (for example, Back after flicking pages quickly could close the window). On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 31 of 53 layouts now have their own pages.
 - **App** (726a): The Circuit board layout's game window now has its own Details, Achievements and Options pages, designed as sections of the chip's datasheet: a parameter / value table with the story as the functional description, each achievement a numbered pin with a lit or unlit LED (HIGH / LOW) and its points, and each option a jumper whose cap closes when you select it (removing ones are red and ask twice). It is on the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 30 of 53 layouts now have their own pages.
-- **App** (725a): Press START on an installed app or Android game and pick 'Categories…' to choose every category it belongs in at once: Android games or Other apps (or automatic), Recomps, any console such as Nintendo 64 or GameCube, and your collections. Changes show immediately, are kept after restarts, rescans and app updates, and the game still appears only once in All games and launches, saves and keeps its art and play time exactly as before. A console that only holds such an app appears in the category list and disappears again when you take it out.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
 | Area | Implemented | Verified on handhelds | Approved by you | Released |
 |---|---|---|---|---|
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
-| Native pages (own designs) | `██████░░░░` 32/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Native pages (own designs) | `██████░░░░` 34/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
 | Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
 | Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch; then: Next native-page layout (Hero / Hero tiles); Row position residuals (Task 1)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch; then: Next native-page layout (Pocket family or the next single-scene class C layout); Row position residuals (Task 1)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,7 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
-| HW-28 P2 726a + 727a + 728a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages (v0674-native-pages 864e293) | OPEN (batch with the next KONKR + RP Classic P2 session) |
+| HW-28 P2 726a + 727a + 728a + 729a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages (v0674-native-pages 546f5b99) | OPEN (batch with the next KONKR + RP Classic P2 session) |
 | HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
 | HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
@@ -230,13 +230,13 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 
 **Native popup pages**
 - Total: 53
-- Implemented: 32 (60 %)
-- Unit-tested: 32 (60 %)
+- Implemented: 34 (64 %)
+- Unit-tested: 34 (64 %)
 - Emulator-tested: 0 (0 %)
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 32 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 21 layouts still on the shared page (20 class C + Disc station's shared bodies).
+- Remaining / blocked: 34 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 19 layouts still on the shared page (18 class C + Disc station's shared bodies).
 - Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**

@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 10:55 UTC, 729a (cloud, Task 5):** Verify 310 on e9092e9 (dev) + 864e293 (P2) GREEN. P2 branch 546f5b99: Hero carousel +
+Hero tiles (HERO_BANNER, one scene) have the banner's own pages - THE FEATURE / HALL OF FAME / QUICK ACTIONS (WinPagesHero.kt;
+class C 4 scenes done, own designs 34 / 53). Compact heading on pages (x1.3 AchFirstRow found 0 px for the first achievement).
+Robolectric 1,884 tests 0 failures (100 Hero cases). HW-28 extended. Not approved. The owner's live session also pushes to the
+P2 branch (682ar, 682ar2 merged in) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on 546f5b99 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (the Pocket family (POCKET_LCD) needs all three faces in one batch; else the next single-scene class C layout in
+NATIVE_PAGES_AUDIT.md) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+
 **24 Nov 09:50 UTC, 728a (cloud, Task 5):** Verify 310 on 678c10e (dev) + 8a73d96 (P2) GREEN. P2 branch 864e293: Timeline
 (TIMELINE_ENTRY) has its own pages along its line - CHRONICLE / MILESTONES / BRANCHES (WinPagesTime.kt; class C 3 of 23, own
 designs 32 / 53). Robolectric: NativePagesTime728aTest 4/4 + TIMELINE in AchFirstRow / ShelfText / WinFocus / NoStrayPlay /
