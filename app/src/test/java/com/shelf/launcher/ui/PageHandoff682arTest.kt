@@ -25,4 +25,14 @@ class PageHandoff682arTest {
     @Test fun confirmPressesKeptThroughATurnNeverReachPlay() = assertEquals(
         listOf(KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_BUTTON_R1, KeyEvent.KEYCODE_DPAD_UP).flatMap { listOf("${it}v", "${it}^") }, kept(onPlay = true))
     @Test fun onThePagesOwnControlEveryKeptPressGoesThroughInOrder() = assertEquals(12, kept(onPlay = false).size)
+
+    /** KONKR storm kst10: L1 and R1 in one frame end on the page they started from - the hand-over must still be released. */
+    @Test fun everyTurnCountsEvenWhenItEndsWhereItStarted() {
+        val box = HandoffPage(WinPage.TROPHIES, PageHandoff()).also { it.own = true }
+        var page by box
+        page = WinPage.DETAILS; page = WinPage.TROPHIES
+        assertEquals(WinPage.TROPHIES, page); assertEquals(2, box.turns.intValue)
+        val src = java.io.File("src/main/java/com/shelf/launcher/ui/GameWindow.kt").readText()
+        org.junit.Assert.assertTrue("the hand-over effect is keyed by the turns", src.contains("LaunchedEffect(page, pageBox.turns.intValue)"))
+    }
 }
