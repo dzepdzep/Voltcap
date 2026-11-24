@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 05:45 UTC, 725a (cloud, Task 4):** Verify 310 on ff28c4f GREEN. START > "Categories…" on an installed app / Android
+game: Automatic / Android games / Other apps, Recomps, consoles (LibraryAppsSettings.appConsoles, "More consoles…"), Collections…
+link; several at once, applied at once, kept by package name; a console with only an app appears / hides; no duplicate in All.
+AppCategories725aTest 6/6 + 724a / 450 / 482 / 394 PASS (cloud). HW-24 725a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 5 (remaining 24 native-page layouts on
+`claude/v0674-native-pages`, worktree, merge the dev line in first) or the open Task 1 residuals (Row Top column taller than
+the screen vs the bar at the bottom); Task 3 auto-suggest stays OPEN until a reliable detector / vetted list exists.
+
 **24 Nov 04:40 UTC, 724a (cloud, Task 3):** Verify 310 on c7f4430 GREEN. Recomps category: apps marked by hand in Settings >
 Apps in your library ("Recomp?" chip) form "Recomps" (RECOMPS_PLATFORM, LibraryAppsSettings.recomps); in All too, never Other
 apps, hidden while empty, same game record. No auto-suggest (no reliable detector). Recomps724aTest 5/5 + 450 / 482 / 394 PASS

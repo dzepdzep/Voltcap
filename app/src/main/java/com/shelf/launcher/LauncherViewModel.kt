@@ -5273,6 +5273,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         if (!on && s.platformFilter == RECOMPS_PLATFORM && RECOMPS_PLATFORM !in s.availablePlatforms) setPlatformFilter(null)
     }
 
+    /**
+     * 725a (owner Task 4, START > Categories): lists an installed app under console [platform] too, or takes it out. Only
+     * the category changes (same record, launched as before). Taking the last app out of a console that has no game of its
+     * own while it is open puts you back on All (the category hides when empty).
+     */
+    fun setAppConsole(packageName: String, platform: String, on: Boolean) {
+        updateLibraryApps { com.shelf.launcher.data.AppCategories.withConsole(it, packageName, platform, on) }
+        val s = _uiState.value
+        if (!on && s.platformFilter == platform && platform !in s.availablePlatforms) setPlatformFilter(null)
+    }
+
     fun toggleAppInLibrary(packageName: String) = updateLibraryApps {
         it.copy(added = if (packageName in it.added) it.added - packageName else it.added + packageName)
     }

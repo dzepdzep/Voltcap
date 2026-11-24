@@ -771,7 +771,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     configuringArtForGame != null || configuringRaForGame != null ||
                     viewingAchievementsForGame != null || pickingMissingSourceFor != null ||
                     pbState.options != null || musicOverrideFor != null ||
-                    collectionsForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
+                    collectionsForGame != null || categoriesForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
                     screensForGame != null || profileForGame != null || showControlsHelp || showSortDialog || showWhatToPlay || manualFor != null || steamAchFor != null || leaderboardsFor != null || uiState.syncOfflinePrompt != null ||
                     saveSyncForGame != null || runningAsk != null || yearRecap != null || manualMissing != null || hubScreen != null ||
                     perfForGame != null ||
@@ -966,6 +966,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         editingArtworkForGame = null
         pickingMissingSourceFor = null
         collectionsForGame = null
+        categoriesForGame = null
         screensForGame = null
         profileForGame = null
         statusForGame = null
@@ -5476,7 +5477,36 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onToggleContinueApp = game.packageName?.let { pkg -> { viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) } },
             continueAppNote = continueAppNote(state, game, viewModel),
             onClearContinue = game.packageName?.takeIf { continueAppSwitch(state, game) == true && state.lastPlayedAt.containsKey(game.stableKey) }
-                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } }
+                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } },
+            // 725a (owner Task 4): where an installed app / Android game is listed, several categories at once.
+            onCategories = appCategoriesPkg(game)?.let { { optionsForGame = null; categoriesForGame = game } },
+            categoriesSummary = appCategoriesPkg(game)?.let { pkg ->
+                com.shelf.launcher.data.AppCategories.summary(
+                    uiState.isAndroidGame(game), uiState.isRecomp(game), uiState.isOtherApp(game),
+                    com.shelf.launcher.data.AppCategories.consolesOf(state.libraryApps, pkg),
+                    if (state.appearance.userCollections) state.userCollections.count { game.stableKey in it.value } else 0
+                )
+            }
+        )
+    }
+
+    categoriesForGame?.let { game ->
+        val pkg = appCategoriesPkg(game)
+        if (pkg == null) LaunchedEffect(Unit) { categoriesForGame = null }
+        else AppCategoriesDialog(
+            game = game,
+            androidGame = uiState.isAndroidGame(game),
+            kind = state.libraryApps.kindOf(pkg),
+            recomp = uiState.isRecomp(game),
+            consoles = com.shelf.launcher.data.AppCategories.consolesOf(state.libraryApps, pkg),
+            libraryPlatforms = state.availablePlatforms,
+            collectionsOn = state.appearance.userCollections,
+            collectionCount = state.userCollections.count { game.stableKey in it.value },
+            onKind = { viewModel.setAppKind(pkg, it) },
+            onRecomp = { viewModel.setAppRecomp(pkg, it) },
+            onConsole = { p, on -> viewModel.setAppConsole(pkg, p, on) },
+            onCollections = { categoriesForGame = null; collectionsForGame = game },
+            onDismiss = { categoriesForGame = null }
         )
     }
 
@@ -7822,6 +7852,11 @@ internal object HomeKeyGuard {
 
 
 /** Update 450: the "Show in Continue playing" switch for an ordinary app (null for games, emulators and non-apps). */
+/** 725a (owner Task 4): the package START > Categories works on - an installed app / Android game; null for ROMs, Steam
+ *  games and Voltcap's own shortcuts ("voltcap:"). */
+internal fun appCategoriesPkg(game: com.shelf.launcher.data.Game): String? =
+    game.packageName?.takeIf { game.sourceType == com.shelf.launcher.data.SourceType.APP && !it.startsWith("voltcap:") }
+
 internal fun continueAppSwitch(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game): Boolean? {
     val pkg = game.packageName ?: return null
     if (game.sourceType != com.shelf.launcher.data.SourceType.APP || state.isAndroidGame(game) || pkg in state.emulatorPackages) return null

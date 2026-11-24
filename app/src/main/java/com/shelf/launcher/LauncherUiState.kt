@@ -395,6 +395,8 @@ data class LauncherUiState(
         if (pkg in libraryApps.added || game.stableKey in favorites) return true
         // 724a: a recomp you marked is a game of your library (All games too), whatever the apps mode.
         if (pkg in libraryApps.recomps) return true
+        // 725a: an app you listed under a console (START > Categories) is in your library too.
+        if (libraryApps.appConsoles[pkg].isNullOrEmpty().not()) return true
         return when (libraryApps.mode) {
             AppsMode.ALL -> true
             AppsMode.GAMES_AND_ADDED -> isAndroidGame(game)
@@ -423,6 +425,16 @@ data class LauncherUiState(
     /** 724a: an installed app you marked as a recomp / native port (the Recomps category). */
     fun isRecomp(game: Game): Boolean =
         game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.recomps } == true
+
+    /** 725a: listed in "Other apps": an app that isn't an Android game; a recomp only when you set it as an app by hand. */
+    fun isOtherApp(game: Game): Boolean {
+        if (game.platform != "App" || isAndroidGame(game)) return false
+        return !isRecomp(game) || game.packageName in libraryApps.forcedApps
+    }
+
+    /** 725a: an installed app you listed under console [platform] too (START > Categories). */
+    fun isAppInConsole(game: Game, platform: String): Boolean =
+        game.sourceType == SourceType.APP && game.packageName?.let { platform in libraryApps.appConsoles[it].orEmpty() } == true
 
     fun isAndroidGame(game: Game): Boolean {
         if (game.sourceType != SourceType.APP) return false
@@ -538,8 +550,10 @@ data class LauncherUiState(
             }
             // "Apps" = your other apps (Spotify, YouTube…); game apps live under "Android games" only.
             // (724a: a recomp you marked is a game, never an "other app".)
-            platformFilter == "App" -> library.filter { it.platform == "App" && !isAndroidGame(it) && !isRecomp(it) }
-            platformFilter != null -> library.filter { it.platform == platformFilter }
+            // (725a: unless you set it as an app by hand in START > Categories - manual beats automatic.)
+            platformFilter == "App" -> library.filter { isOtherApp(it) }
+            // 725a: a console lists the apps you put under it too (the same record, once).
+            platformFilter != null -> library.filter { it.platform == platformFilter || isAppInConsole(it, platformFilter) }
             else -> library
         }
         val searched = byCategory.filter {
@@ -641,11 +655,14 @@ data class LauncherUiState(
         platformsMemo.getOrCompute(key) {
             val platforms = games.map { it.platform }.distinct()
                 // "Other apps" only when there's an app that isn't a game.
-                .filter { p -> p != "App" || games.any { it.platform == "App" && !isAndroidGame(it) && !isRecomp(it) } }
+                .filter { p -> p != "App" || games.any { isOtherApp(it) } }
             val android = if (games.any { isAndroidGame(it) }) listOf(ANDROID_GAMES_PLATFORM) else emptyList()
             // 724a: Recomps only while an installed app is marked as one (hidden from L2 / R2 and the tiles when empty).
             val recomps = if (games.any { isRecomp(it) }) listOf(RECOMPS_PLATFORM) else emptyList()
-            (platforms + android + recomps).distinct().sorted()
+            // 725a: a console an installed app is listed under (START > Categories), also with no game of its own.
+            val consoles = games.asSequence().filter { it.sourceType == SourceType.APP }
+                .flatMap { g -> g.packageName?.let { libraryApps.appConsoles[it] }.orEmpty().asSequence() }.toList()
+            (platforms + android + recomps + consoles).distinct().sorted()
         }
     }
 

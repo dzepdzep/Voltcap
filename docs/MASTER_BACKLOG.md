@@ -97,7 +97,7 @@ auto navigation when empty, assignments kept. IN PROGRESS (724a: manual Recomp m
 (Recomps, Android games, Other apps, N64, GameCube, other consoles, user collections where supported; e.g. a Zelda recomp in Recomps +
 Android games + N64). Manual beats automatic; never changes how it launches; kept across rescans, restarts, APK updates; no duplicate
 records in All Games; artwork, saves, favorites, achievements, playtime, emulator settings and metadata untouched; visible at once
-and editable later. OPEN.
+and editable later. IN PROGRESS (725a: START > Categories on installed apps / Android games - kind, Recomps, consoles, Collections link; unit-tested; HW-24 725a NOT TESTED).
 
 **TASK 5 - All 53 native page designs:** the 29 are not the end; track the remaining 24 (incl. Disc station's shared page bodies).
 Every layout gets genuinely individual Details / Achievements / Options in its own identity. The count stays on the dashboard

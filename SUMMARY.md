@@ -1,3 +1,23 @@
+# Update 725a (24 Nov 2026, cloud run) - Task 4: START > Categories (an installed app / Android game in several categories at once)
+- CI first: Verify 310 on ff28c4f (724a) GREEN.
+- Owner Task 4: START on an installed app or Android game now has "Categories…" (under Details; its subtitle names where it is
+  listed). The dialog (AppCategoriesDialog): Automatic / Android games / Other apps (reuses forcedGames / forcedApps), Recomps
+  (724a mark), Consoles (the library's consoles first, then the ones it is in; "More consoles…" lists every console Voltcap
+  names; stores / Android / Other apps / aliases never offered) and a Collections… link to the existing picker. Every press
+  applies at once. New LibraryAppsSettings.appConsoles (prefs library_apps "app_consoles", keyed by package: kept across
+  rescans, restarts and APK updates, backed up with library_apps). A console lists those apps with its games (same record, once
+  in All); a console with only an app appears in L2 / R2 and hides again when the last one is taken off (open -> back to All).
+  An app listed anywhere by hand is in the library. Manual beats automatic: a recomp you set as an app is in Other apps too
+  (automatic recomps still never are). Launch, saves, play time, art, achievements and metadata are keyed as before.
+- Tests: AppCategories725aTest 6/6 (new; fails on the old code - no field / no console listing), Recomps724aTest 5/5,
+  ContinueApps450Test 10/10, Batch482Test 7/7, CategoryStable394Test 6/6 PASS (cloud, compiled with the Maven mirror); static
+  checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/data/AppCategories.kt (new), data/LibraryAppsStore.kt, data/ConsoleNames.kt,
+  LauncherUiState.kt, LauncherViewModel.kt, ui/AppCategoriesDialog.kt (new), ui/GameOptionsDialog.kt, ui/LauncherScreen.kt,
+  ui/LauncherUiFlags.kt; test app/src/test/java/com/shelf/launcher/data/AppCategories725aTest.kt (new).
+- NOT TESTED: handheld (HW-24 725a: D-pad / touch, x1.3 popclip, restart). ROMs (a ROM in a second console) not offered - Task 4
+  names installed games / apps.
+
 # Update 724a (24 Nov 2026, cloud run) - Task 3: Recomps category (installed recomp / native-port apps, marked by hand)
 - CI first: Verify 310 on c7f4430 (723a) GREEN.
 - Owner 22:43 item 5 / Task 3: new platform key RECOMPS_PLATFORM ("Recomps"); LibraryAppsSettings.recomps (prefs library_apps

@@ -53,6 +53,8 @@ internal class LauncherUiFlags(viewModel: LauncherViewModel, context: Context, i
     var detailsAction by mutableStateOf(DetailsAction.PLAY)
     var achievementsShowMissing by mutableStateOf(false)
     var collectionsForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
+    /** 725a (owner Task 4): START > Categories open for this installed app / Android game. */
+    var categoriesForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
     var screensForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
     var profileForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)
     var statusForGame by mutableStateOf<com.shelf.launcher.data.Game?>(null)

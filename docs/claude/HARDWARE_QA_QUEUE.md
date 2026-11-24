@@ -318,6 +318,13 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   with the D-pad and by touch -> "Recomp ✓"; back home: L2 / R2 and the category tiles now show "Recomps" with that app; it is
   also in All, not in Other apps; launching it works as before. Take the mark off while in Recomps -> back on All, the category
   gone. Unit evidence only (Recomps724aTest).
+- Also (725a, owner Task 4 START > Categories, dev line 725a or later, ~3 min, KONKR x1.0 + x1.3; LEVEL 1 QA app only, choices
+  taken off afterwards): START on an installed app / Android game -> "Categories…" row (under Details) naming where it is
+  listed. Open it: first focus on "Automatic", every row reachable by D-pad and touch, nothing cut at x1.3 (popclip). Tick
+  Recomps + Nintendo 64 (or "More consoles…" -> GameCube) and set "Android games": back home the app is in Recomps, Android games
+  and the console (a console with no ROMs appears in L2 / R2 only now), once in All, launching it starts the same app (saves,
+  play time, art unchanged). Restart the QA app: kept. Untick the console while it is open -> back on All, the console gone.
+  "Collections…" opens the collection picker. Unit evidence only (AppCategories725aTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE
