@@ -79,7 +79,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (728a, P2 class C: Timeline - the entry's CHRONICLE, MILESTONES and BRANCHES along its own line, WinPagesTime.kt.)
     WinScene.TIMELINE_ENTRY,
     // (729a, P2 class C: Hero carousel / Hero tiles - the banner's THE FEATURE, HALL OF FAME and QUICK ACTIONS, WinPagesHero.kt.)
-    WinScene.HERO_BANNER)
+    WinScene.HERO_BANNER,
+    // (730a, P2 class C: Memory card - the save browser's INFORMATION, MEMORY BLOCKS and COMMANDS screens, WinPagesMemCard.kt.)
+    WinScene.MEMCARD_INFO)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
