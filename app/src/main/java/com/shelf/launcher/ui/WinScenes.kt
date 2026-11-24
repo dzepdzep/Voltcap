@@ -1599,7 +1599,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
     val wideOk = w - consoleX >= 260.dp && h >= 280.dp
     val command = remember { androidx.compose.runtime.mutableStateOf("") }
     if (!wideOk) { OrbitTerminalNarrow(ctx, acts, glow, origin, clock); return }
-    Box(Modifier.size(w, h)) {
+    // (734b, P2 class C: L1 / R1 turn the console's own pages wherever the D-pad is - on an arc key too.)
+    Box(Modifier.size(w, h).nativeBumpers(ctx)) {
         val discCy = h / 2
         // The rings round the disc.
         Canvas(Modifier.offset(discCx - ringR * 1.05f, discCy - ringR * 1.05f).size(ringR * 2.1f)) {
@@ -1632,11 +1633,17 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
         OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
         // The keys, fanned out on an arc to the disc's right.
         val n = acts.size
+        // (734b, PlayPlace682ab ORBIT: on Options the page has no key of its own (Full details / Full list), so the fan of
+        // two keys spread differently from the fan of three and Play moved 27 px. On a page the fan keeps PAGE_SLOTS places
+        // before Back - Play the first, the page's own key the second, empty when there is none - so Play stays put.)
+        val backs = acts.count { it.back }
+        val slotN = if (ctx.page != WinPage.MAIN) maxOf(n, PAGE_SLOTS + backs) else n
         // (Update 470, D212: 22° between keys, was 17° — neighbours' touch boxes crossed by 9 x 18 px at the fan's ends.)
-        val span = minOf(156f, (n - 1).coerceAtLeast(1) * 22f)
-        val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
-        acts.forEachIndexed { i, a ->
-            val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
+        val span = minOf(156f, (slotN - 1).coerceAtLeast(1) * 22f)
+        val stagger = minOf(0.035f, 0.22f / slotN.coerceAtLeast(1))
+        acts.forEachIndexed { k, a ->
+            val i = if (k >= n - backs) k + (slotN - n) else k
+            val ang = if (slotN == 1) 0f else -span / 2f + span * i / (slotN - 1)
             val rad = Math.toRadians(ang.toDouble())
             val dx = kotlin.math.cos(rad).toFloat(); val dy = kotlin.math.sin(rad).toFloat()
             SceneControl(a, Modifier
@@ -1672,14 +1679,15 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
 private fun OrbitTerminalNarrow(ctx: WinSceneCtx, acts: List<WinAction>, glow: Color, origin: androidx.compose.ui.geometry.Rect?, clock: androidx.compose.runtime.FloatState) {
     val w = ctx.maxW; val h = ctx.maxH
     val discD = minOf(w * 0.34f, h * 0.3f)
-    Column(Modifier.size(w, h), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.size(w, h).nativeBumpers(ctx), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OdFlyingDisc(ctx, origin, clock, Modifier.size(discD))
             Box(Modifier.weight(1f).fillMaxHeight().graphicsLayer { val t = ((ctx.reveal() - 0.28f) / 0.54f).coerceIn(0f, 1f); alpha = t }) { OdConsole(ctx, glow, clock) }
         }
         // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow), never wrapped.)
         Box(Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
-            UniformKeyRow(acts, 8.dp) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
+            // (734b: on a page the keys keep two slots, Play the first, with or without the page's own key - PlayPlace682ab)
+            UniformKeyRow(acts, 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
         }
     }
 }
@@ -1798,24 +1806,39 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
             }
             .padding(start = 20.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)
     ) {
-        if (ctx.page != WinPage.MAIN) { ctx.pageBody(Modifier.fillMaxSize()); return@Box }
+        // (734b, P2 class C: on its pages the console shows its own screens - DATA / TRACKS / COMMANDS, WinPagesOrbit.kt -
+        // under a heading that names the page after the old one has gone; the CMD line stays under them. Info as before.)
+        if (ctx.page != WinPage.MAIN) {
+            Column(Modifier.fillMaxSize()) {
+                OrbitPageArea(ctx, glow, { (kotlin.math.sin(clock.floatValue * 3f) + 1f) / 2f }, Modifier.fillMaxWidth().weight(1f))
+                if (command.isNotEmpty()) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("CMD", color = glow, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("▸ " + command.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 2,
+                        style = TextStyle(shadow = Shadow(glow, Offset.Zero, 8f)))
+                }
+            }
+            return@Box
+        }
         val label = TextStyle(color = glow, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         val scroll = rememberScrollState()
         // (Whatever the window's first focus did, it opens at the top.)
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(450); scroll.scrollTo(0) }
         Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(scroll)) {
+            // (734b, ShelfTextRoboTest ORBIT x1.3: in the narrow console a long console name - SUPER NINTENDO ENTERTAINMENT SYSTEM -
+            // ran under READY (54 x 15 px). The DISC line keeps DISC and the READY lamp; the console name has its own line under it.)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("DISC", style = label)
-                Spacer(Modifier.width(8.dp))
-                // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
-                WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
-                    modifier = Modifier.weight(1f))
+                Spacer(Modifier.weight(1f).widthIn(min = 8.dp))
                 // A small LED, breathing.
                 Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }
                 Spacer(Modifier.width(5.dp))
                 Text("READY", style = label)
             }
+            // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
+            WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
+                modifier = Modifier.fillMaxWidth().padding(top = 1.dp))
             Spacer(Modifier.height(2.dp))
             Text(ctx.name.uppercase(), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 maxLines = 1, modifier = Modifier.basicMarquee().semantics { this[QaClip.Slides] = true }, style = TextStyle(shadow = Shadow(glow.copy(alpha = 0.8f), Offset.Zero, 12f)))

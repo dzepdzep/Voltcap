@@ -56,3 +56,7 @@ class C 15. Implemented only - hardware NOT TESTED (HW-28), not visually approve
 ## Update 733a (class C)
 Case flow draws its own pages (DETAILS / EXTRAS / SETUP in the picture's glass well): class A 38, class B 1 (Disc station),
 class C 14. Implemented only - hardware NOT TESTED (HW-28), not visually approved.
+
+## Update 734b (class C)
+Orbit deck draws its own console screens (DATA / TRACKS / COMMANDS in the console): class A 39, class B 1 (Disc station),
+class C 13. Implemented only - hardware NOT TESTED (HW-28), not visually approved.

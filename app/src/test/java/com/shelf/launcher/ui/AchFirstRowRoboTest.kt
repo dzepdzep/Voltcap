@@ -66,7 +66,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (732a: class C - the File select file's own screens)
             HomeLayout.FILESELECT,
             // (733a: class C - the Case flow case's own pages)
-            HomeLayout.CASEFLOW)
+            HomeLayout.CASEFLOW,
+            // (734b: class C - the Orbit deck console's own screens)
+            HomeLayout.ORBIT)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

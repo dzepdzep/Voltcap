@@ -875,3 +875,24 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow / ShelfText / PlayPlace* / WinFocus / NoStrayPlay /
   NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / WindowWordsSurvey / Layouts330 / Pickups672 / Batch506 /
   NativePages* 2286 tests 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+### 734b - P2 class C, ninth scene: Orbit deck (ORBIT_TERMINAL, WinPagesOrbit.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The disc flown off the orbit, its chrome keys fanned on an arc and the dark glass console (chrome edge, scan lines, spaced glow
+  caps, mono readouts, numbered track cells) stay as they are; the pages are the console's own screens in the same readout
+  language: DATA (each fact a readout - spaced glow label, bold mono value - then the story as a LOG panel with a chamfered edge,
+  a D-pad stop), TRACKS ("TRACKS N / M" + the lit-cell strip; each achievement a track - its numbered cell lit when earned, the
+  badge, the title, a mono "UNLOCKED <date>" / "LOCKED" line, "+N PTS"; A opens the whole text + rarity; lazy rows; the order a
+  chamfered key), COMMANDS (each option a "▸ LABEL" mono command line lit in the orbit's colour; removing ones amber-red with
+  "PRESS A AGAIN TO REMOVE" - second A). Heading: the page's code in glow caps, a chamfered cell per page (the shown one lit) and
+  the breathing READY lamp, after the old page has gone; the next screen rolls up like a terminal (from below forward, from above
+  back); none with Motion Off. The CMD line stays under the pages. Before: the shared page body inside the console.
+- L1 / R1 on the window's root (wide: arc keys; narrow: key row). On a page the arc keeps PAGE_SLOTS places before Back and the
+  narrow row two slots, so Play stays put on Options (PlayPlace682ab caught 27 px / 51 px before the fix).
+- Existing defect fixed (ShelfText x1.3, narrow console): a long console name (SUPER NINTENDO ENTERTAINMENT SYSTEM) ran under
+  READY; the console name now has its own line under DISC ... READY.
+- Test fixes found on the way: PlayPlace682ab's Play matcher missed a key that is labelled and described ("play play" - Orbit's
+  narrow key), so x1.3 compared nothing; NoStrayPlay682j named the focus by its text only, so on Orbit's icon-only arc keys the
+  walk "reached Play" on any key - a key with no text is now named by its merged description.
+- Tests (cloud): NativePagesOrbit734bTest 4/4 (new; fails before: no orbitPageName, ORBIT_TERMINAL not native); ORBIT added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; PlayPlace* all layouts, NoStrayPlay682j all 40 layouts, every
+  ORBIT / Orbit case (AchFirstRow, ShelfText, WindowWordsSurvey, WinFocus, LazyRows, OrbitSpin, OrbitKeyLabel) + PopupNativeStorage
+  + Layouts330: 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.

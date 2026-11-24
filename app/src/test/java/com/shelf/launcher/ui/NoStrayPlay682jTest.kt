@@ -68,6 +68,10 @@ class NoStrayPlay682jTest(private val layout: HomeLayout, private val big: Boole
     private fun focusedText(): String = runCatching {
         compose.onAllNodes(androidx.compose.ui.test.isFocused()).fetchSemanticsNodes(false).joinToString {
             (it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.Text) { null } ?: "").toString() }
+            // (734b: Orbit deck's arc keys carry no words - an icon with its description - so every key read "" and the walk
+            // "reached Play" on whichever key it stood. A key with no text is named by its merged description instead.)
+            .ifBlank { compose.onAllNodes(androidx.compose.ui.test.isFocused(), useUnmergedTree = false).fetchSemanticsNodes(true).joinToString {
+                (it.config.getOrElseNullable(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription) { null } ?: emptyList()).joinToString(" ") } }
     }.getOrDefault("")
     private fun ok(step: String) {
         assertEquals("$layout x${if (big) "1.3" else "1.0"}: $step started the game", 0, plays)

@@ -88,7 +88,10 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
     private fun playAt(): androidx.compose.ui.geometry.Rect? {
         val click = androidx.compose.ui.semantics.SemanticsActions.OnClick
         val m = androidx.compose.ui.test.SemanticsMatcher("play") { n -> n.config.contains(click) &&
-            words(n).replace(Regex("[^a-z ]"), " ").trim().replace(Regex(" +"), " ") in PLAY }
+            words(n).replace(Regex("[^a-z ]"), " ").trim().replace(Regex(" +"), " ").let { w -> w in PLAY ||
+                // (734b: a key that is labelled and described - Orbit's narrow "PLAY" key with its "Play" icon reads "play play")
+                w.split(" ").let { ws -> ws.size % 2 == 0 && ws.size >= 2 && ws.subList(0, ws.size / 2) == ws.subList(ws.size / 2, ws.size) &&
+                    ws.subList(0, ws.size / 2).joinToString(" ") in PLAY } } }
         return compose.onAllNodes(m).fetchSemanticsNodes().firstOrNull()?.boundsInRoot
     }
 

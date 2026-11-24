@@ -87,7 +87,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (732a, P2 class C: File select - the file's DETAILS, STARS and OPTIONS screens on its inset panel, WinPagesFile.kt.)
     WinScene.FILE_CARD,
     // (733a, P2 class C: Case flow - the disc menu's DETAILS, EXTRAS and SETUP in the picture's glass well, WinPagesCase.kt.)
-    WinScene.CASE_MEDIA)
+    WinScene.CASE_MEDIA,
+    // (734b, P2 class C: Orbit deck - the console's DATA, TRACKS and COMMANDS screens, WinPagesOrbit.kt.)
+    WinScene.ORBIT_TERMINAL)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
