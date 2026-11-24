@@ -52,6 +52,18 @@ internal object HomeReach {
 
     fun on(z: Zone, i: Int): Boolean = zone == z && index == i
 
+    /**
+     * Whether the game header's Play & buttons lie above the games (▲) or below (▼).
+     * [headerMovedY]: the header (or its Play & buttons) moved in Edit Home, y fraction; [addedPlayY]: an added Play / Continue
+     * or Play & buttons part on the Voltcap row, where it is drawn (y fraction). 715a (Task 1): with the header off that added
+     * part is the only one publishing Play, so its place wins - and a stored spot of the switched-off header no longer does.
+     */
+    fun headerAbove(classic: Boolean, headerOn: Boolean, dockTop: Boolean, headerMovedY: Float?, addedPlayY: Float?): Boolean {
+        if (classic && !headerOn && addedPlayY != null) return addedPlayY < 0.5f
+        headerMovedY?.let { return it < 0.5f }
+        return if (classic) !dockTop else true
+    }
+
     fun leave() {
         zone = null
         index = 0

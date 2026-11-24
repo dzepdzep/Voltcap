@@ -73,6 +73,96 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   description (2 lines), the meta line and the comments title read whole (shrink or slide) - never an ellipsis; rows keep their
   spacing while focus grows a row; D-pad + touch scroll the list and comments. Screenshots. Unit evidence only
   (CrossTrophiesFullText705aTest, static TRUNCATE 90 -> 86; NOT cloud compiled (Maven 429) - CI first compile).
+- Also (709a, rule 11, dev line 709a or later, ~1 min, KONKR x1.3 + x1.0, with 707a / 703a): R1 quick panel - change a setting
+  with a long name (undo strip "Changed: ..." shrinks, then slides), open the tile editor and pick a tile with a long name (2 lines,
+  then shrink, then slide) and look at captions with spaces - never an ellipsis; Undo / swipe-away, D-pad + touch still work.
+  Screenshots. Unit evidence only (QuickSettingsFullText709aTest, cloud compiled + PASS; static TRUNCATE 81 -> 78).
+- Also (711a, rule 11, dev line 711a or later, ~1 min, KONKR x1.3 + x1.0, with 710a): a game with RetroAchievements progress -
+  game popup's Journey and the Hero carousel journey: every step's title, date and detail whole (wrap, shrink, then slide),
+  never an ellipsis; nothing overlaps the rail. D-pad + touch still work. Screenshots.
+  Unit evidence only (GameJourneyFullText711aTest, cloud compiled + PASS; static TRUNCATE 75 -> 72).
+- Also (712a, rule 11, dev line 712a or later, ~1 min, KONKR x1.3 + x1.0, with 711a): RetroAchievements dialog with a
+  long-titled recent achievement and a long account name - name, game and account name whole (wrap, shrink, then slide),
+  never an ellipsis; "Play as" / "Remove" chips stay whole and reachable. D-pad + touch still work. Screenshots.
+  Unit evidence only (RaDialogFullText712aTest; static TRUNCATE 72 -> 69).
+- Also (713a, rule 11, dev line 713a or later, ~2 min, KONKR x1.3 + x1.0, with 712a): shared dialog chrome - a text field
+  holding a long value (e.g. a long ROM folder path / server address), a menu sheet with a long title (e.g. a long game name's
+  menu), and chips in a narrow row (Settings chip rows, RA "Play as") - whole (shrink, then slide), never an ellipsis; chips
+  keep their size, focus ring and touch target. D-pad + touch still work. Screenshots.
+  Unit evidence only (DialogChromeFullText713aTest; static TRUNCATE 69 -> 66).
+- Also (715a, Task 1 Row-position, dev line 715a or later, ~2 min, KONKR x1.0, with 714a): Voltcap row, game header OFF,
+  Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
+  before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
+  row). A on the reached Play launches the game. Unit evidence only (HeaderReachDirection715aTest 3/3).
+- **717a (cloud, answers the 22:15 note): 714a is testable WITHOUT the R1 panel.** The Row tile's own handler already has a
+  QA hook (Batch 521, `--es voltcap_test_dock TOP|MIDDLE|BOTTOM`, preview only: tileRowPlaceReset + withDockHere); 717a adds
+  one `rowtile` log line per change (layout, from->to, buttons' spot, every kept spot). Run (LEVEL 1, KONKR, QA app from the
+  dev line 717a or later, ~2 min, no key / tap except B on a first-start picker, snapshot saved and restored):
+  `sh tools/qa/device/row714.sh r714` (x1.0) and `sh tools/qa/device/row714.sh r714b font=1.3`, pull /sdcard/pc/<tag>, then
+  `python3 tools/qa/tools/row714.py <dir>` (PASS / FAIL / INFRA; screenshots + QaClip dumps beside it show the buttons
+  at each step). Covers: placed at Middle -> Top (normal spot) -> Middle (spot back) -> Bottom, placed at Bottom, Top -> Bottom
+  (its own spot) -> Middle (Middle's spot) -> Middle again (unchanged). The real R1 tile tap stays a by-hand owner check.
+- **718a (cloud): the hook IS now the exact handler.** R1's Row tile and `voltcap_test_dock` call the same step (rowTilePress;
+  RowTileExactHandler718aTest guards it); `voltcap_test_dock NEXT` = one tile press. row714.sh (dev line 718a or later) adds
+  s8-s10, three NEXT presses Middle -> Bottom -> Top -> Middle, graded on the landing place too. Same run commands as 717a.
+- **719a (cloud): 716a's combination now has its QA path** (answers the 22:03 result's "no QA hook sets those options").
+  `--es voltcap_test_rowcombo on|off` previews game header + "Game info + news" + category bar of every category + a song in
+  the status bar's player (nothing saved; off puts the header and the song back); `--ez voltcap_test_rowcol true` logs one
+  `rowcol` line (column top / bottom vs the bar's bottom edge, dp). Run (LEVEL 1, QA app only, dev line 719a or later, ~2 min,
+  no key / tap except B on a first-start picker, snapshot saved and restored): `sh tools/qa/device/row716.sh r716` (x1.0) and
+  `sh tools/qa/device/row716.sh r716b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/row716.py <dir>`. Steps:
+  baseline Middle / Bottom / Top, then the combination Middle / Bottom / Top / Middle through the R1 tile's own step.
+- **720a (cloud): 715a (added Play part + real Edit Home D-pad) now has its QA path.** The QA app writes voltcap_qa_edit
+  ("EDIT <part>" while Edit Home is open, else "HOME") and `--ez voltcap_test_reach true` logs one `reach` line (the Play part's
+  saved / moving / drawn place, the home's own ▲ / ▼ decision, the zone the D-pad is on). Run (LEVEL 1, QA app only, dev line
+  720a or later, ~2 min, snapshot saved and restored, never A / R1 / taps; D-pad keys in Edit Home only on "EDIT CLASSIC:h_play",
+  home keys only on "HOME", else STOP with nothing pressed): `sh tools/qa/device/play720.sh p720` (x1.0) and
+  `sh tools/qa/device/play720.sh p720b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/play720.py <dir>`. Steps: header
+  off + Play added at y 0.44 -> ▲ reaches it; Edit Home 5 real ▼ -> Done -> ▼ reaches it; ▲ ▲ Y (Undo) -> one step; Discard
+  keeps the saved place; restart keeps it; Reset this part; Row Top (tile handler, preview) -> ▲ reaches Play. KONKR + RP Classic.
+- **721a (cloud): Tile home Top with the profile pictures AND a music player in a top corner.** Top kept the rows clear of the
+  pictures only (60 dp), so a player Home shows top-right (~52 dp down) could sit on the tiles / first pill; now 8 dp under
+  whichever reaches lower (TileRows.topPadDp; TileTopMusic721aTest 3/3 cloud). By eye (LEVEL 1, QA app, ~2 min, dev line 721a or
+  later): Tile home, Switch-style profiles on, music player top-right with a song playing, R1 Row -> Top, x1.0 and x1.3 - the
+  first pill / tiles start under the player, nothing overlaps; player off -> rows back up under the pictures. KONKR.
+- **722a (cloud): Edit Home / preset preview vs the real Home at Top.** The little drawn preview put the row at 0.2 with the
+  name above it and the clock bar at the top; the real Home at Top (Classic row, Tile home) has the row under the edge, the
+  name under it and the clock bar at the bottom (above the legend). Preview follows that now (PreviewDock; Middle / Bottom
+  unchanged; PreviewDock722aTest 4/4 cloud). By eye (LEVEL 1, QA app, ~1 min, same session as 721a): Settings > Presets, a
+  preset whose row is at Top (Classic and Tile home), preview beside the real Home after applying - same order top to bottom. KONKR.
+- **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
+  opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
+  D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions
+  "shortcuts=0.3000,0.2000" - drawn there), nothing in the panel was pressed or tapped, restore diff 0. To test without touching
+  system tiles: a QA-only hook that runs the Row tile's own handler (tileRowPlaceReset + withDockHere(next)) - e.g.
+  `--ez voltcap_test_rowtile true` - then p2review.sh r714 (P2 branch 682ao) reads the result from the snapshot JSON (run-as is
+  refused: the QA app is not debuggable). Device note: Wi-Fi went off at 22:18 while the KONKR slept - the vendor home
+  (com.ayaneo.home) switches it off in sleep and back on at wake ("Set WiFi enabled" at every wake); not caused by the QA tools.
+- **RESULT 23 Nov 22:03 (live session, KONKR GT78 USB, QA app built from dev line 7bd1dea = 716b, Level 1):** 716a PASS for the
+  QA app's own settings - Voltcap row and Tile home at Row Top / Middle / Bottom, x1.0 (kr10) and x1.3 (kr13): every text of the
+  home whole and on screen (QaClip dumps, nothing cut, nothing under the status bar); at Middle / Bottom the game header starts
+  below the clock / battery at x1.3; at Top the status bar sits at the bottom, clear. Header ON + "Game & news" + category bar
+  Full + music player: NOT TESTED (no QA hook sets those appearance options - next step: drive Settings or extend the snapshot
+  hook). 714a (R1 Row tile + hand-placed round buttons) and 715a (Edit Home Play part reach): NOT TESTED - they need the real R1
+  tile and Edit Home moves (the voltcap_test_dock hook bypasses 714a's tile handler). Restore diff 0, 0 launches; the KONKR is
+  back on the P2 QA build 682am. Tool: p2review.sh rows (P2 branch).
+- Also (716a, Task 1 Row-position, dev line 716a or later, ~3 min, KONKR x1.3 QA font scale, with 714a / 715a): Voltcap row,
+  game header ON + Next to the row "Game & news" + category bar Full, status bar on, legend on. R1 Row tile Middle, then Bottom:
+  the header's top line must sit fully below the clock / battery (it could start under them before); at x1.0 nothing moves
+  compared with 715a (same screenshots). Music player in the status bar (top left) once: same check. Unit evidence only
+  (RowColumnUnderBar716aTest 4/4).
+- Also (714a, Task 1 Row-position, dev line 714a or later, ~2 min, KONKR x1.0, with 713a): Tile home, round buttons "by the
+  tiles" moved in Edit Home at Row Middle; R1 Row tile Middle -> Top -> Bottom -> Middle: at Top / Bottom the buttons sit at their
+  normal spot (no overlap with the tiles or the profile row), back at Middle the hand-placed spot returns; the same with Settings
+  "Where the tiles sit". Screenshots of each place. Unit evidence only (TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4).
+- Also (710a, rule 11, dev line 710a or later, ~1 min, KONKR x1.3 + x1.0, with 709a): open a game window's Performance page
+  (a game with a long profile name) - every row's name and value whole (wrap, shrink, then slide), never an ellipsis; the main
+  page's 2-line story preview may end in "…" but the Details page shows it whole. D-pad + touch still work. Screenshots.
+  Unit evidence only (GameWindowFullText710aTest, cloud compiled + PASS; static TRUNCATE 78 -> 75).
+- Also (707a, rule 11, dev line 707a or later, ~1 min, KONKR x1.3 + x1.0, with 703a below): home edit mode toolbar - select a
+  widget with a long name (and a hidden one): "Edit Home · <name> (hidden)" and its scope line read whole (shrink, then slide) -
+  never an ellipsis; toolbar keeps its size at top and bottom; narrow layout keeps the actions row. Screenshots. Unit evidence
+  only (HomeEditLegendFullText707aTest, cloud compiled + PASS; static TRUNCATE 86 -> 84).
 - Also (703a, rule 11, dev line 703a or later, ~2 min, KONKR x1.3 + x1.0): home edit mode - open the inspector on a widget
   with a long name / scope line, and the widget list with a hidden + an off-screen widget: every name and status line reads
   whole (shrink, then slide) - never an ellipsis; rows keep their spacing; D-pad + touch reach Hide / Show and Fold / Close.
@@ -106,6 +196,14 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
+- lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
+  and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.
+- Coverflow Details x1.3 (cover mode, kcw13 / rcw13): facts reachable with one Up, story end above Play with one Down (D392 fixed).
+- Arcade perf (fair 30-game category): KONKR home navigation slow frames 24.5 -> 0.6 %; RP Classic 12.2 -> 12.6 % (GPU-bound, open).
+- D390: the first cover walk looped ~30 min (shell variable) - QA app only, stopped by hand, over the 15-min limit; fixed.
+- NOT TESTED: x1.3 lazywalk; layouts other than Cinema / Crate / Resume / Bar on hardware; D391 (home awake behind a window).
+
 ### HW-26 Volt second screen text shown whole (690a, rule 11) - OPEN (Thor; batch with HW-19 when the owner says the Thor is back)
 - Device(s): AYN Thor (3140972f), USB, lower screen = second display. Level L1 (QA app only). Thor NOT with the owner since 17 Nov -
   never poll / wake; only when he says it is back. Commit: dev line 690a or later. ~3 min, x1.0 + x1.3.
@@ -116,6 +214,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   game card's console label whole; nothing jumps when the focus moves. Screenshot of the lower screen at both scales.
 - Evidence so far: unit only (SecondScreenVoltFullText690aTest, static TRUNCATE 158 -> 150); not compiled in the cloud (Maven 429) -
   CI is the first compile.
+- Also (708a, rule 11, dev line 708a or later, ~1 min, x1.0 + x1.3): second screen folder games page (open a console folder on the
+  lower screen) in each look - List (name 2 lines, then shrink, then slide), Tiles / Covers / Wide (name under the tile shrinks,
+  then slides; grid rows stay even) and a game without a cover (its name centred in the tile, up to 4 lines) - never an
+  ellipsis; D-pad + touch still pick a game. Screenshots. Unit evidence only (SecondGamesPageFullText708aTest, cloud compiled +
+  PASS; static TRUNCATE 84 -> 81).
 - Result: (filled in by the hardware session)
 
 ### HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) - DONE (b76e3ef); 678k NOT TESTED
@@ -202,6 +305,26 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   Card binder (CARDS): open a game - the card still turns over (front away, back in) as before, no flicker or blank frame at
   the half-turn; B - it turns back. pop529 STORAGE OWN / CARDS OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test
   NEXT_685, CardFront685Test).
+- Also (723a, owner Task 2 R1 Focus position, dev line 723a or later, ~3 min, KONKR x1.0 + x1.3; RP Classic if connected;
+  LEVEL 1 QA app only, settings restored): Voltcap row, carousel off - R1 shows "Focus Left"; A -> "Focus Middle" and the game
+  you're on moves to the middle and stays there while ◀ ▶ browse (first / last game, Endless on and off, a category with 1 and
+  2 games); A again -> Left. Hold the tile -> the list (Left / Middle, current marked), pick with the D-pad and by touch. Tile
+  home: A steps Edges -> Left -> Middle -> Right -> Edges, each held while browsing, category name aligned as Settings does.
+  Carousel on (either layout) and Voltcap row "Covers · first one wide": tile greyed, its press explains why. Another layout
+  (e.g. Grid, Hero): no Focus tile. R1 order unchanged (the new tile after the saved ones). Unit evidence only
+  (FocusPosTile723aTest); matrix docs/claude/R1_FOCUS_POSITION_723.md.
+- Also (724a, owner Task 3 Recomps, dev line 724a or later, ~2 min, KONKR x1.0 + x1.3; LEVEL 1 QA app only, marks taken off
+  afterwards): no Recomps category before marking. Settings > Apps in your library: "Recomp?" chip under an app's name, reach it
+  with the D-pad and by touch -> "Recomp ✓"; back home: L2 / R2 and the category tiles now show "Recomps" with that app; it is
+  also in All, not in Other apps; launching it works as before. Take the mark off while in Recomps -> back on All, the category
+  gone. Unit evidence only (Recomps724aTest).
+- Also (725a, owner Task 4 START > Categories, dev line 725a or later, ~3 min, KONKR x1.0 + x1.3; LEVEL 1 QA app only, choices
+  taken off afterwards): START on an installed app / Android game -> "Categories…" row (under Details) naming where it is
+  listed. Open it: first focus on "Automatic", every row reachable by D-pad and touch, nothing cut at x1.3 (popclip). Tick
+  Recomps + Nintendo 64 (or "More consoles…" -> GameCube) and set "Android games": back home the app is in Recomps, Android games
+  and the console (a console with no ROMs appears in L2 / R2 only now), once in All, launching it starts the same app (saves,
+  play time, art unchanged). Restart the QA app: kept. Untick the console while it is open -> back on All, the console gone.
+  "Collections…" opens the collection picker. Unit evidence only (AppCategories725aTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -139,18 +138,19 @@ internal fun GameJourneyTimeline(steps: List<GameJourney.Step>, modifier: Modifi
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f).padding(bottom = if (compact) 8.dp else 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
+                        // 711a (rule 11): the step's title whole - wraps to 2 lines, readable size, then slides.
+                        FullText(
                             s.title, color = if (s.done) Color.White else Color.White.copy(alpha = 0.6f),
-                            fontSize = if (compact) 13.sp else 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 13.sp else 14.sp), maxFontSize = if (compact) 13.sp else 14.sp), fontWeight = FontWeight.SemiBold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false)
+                            fontSize = if (compact) 13.sp else 14.sp, fontWeight = FontWeight.SemiBold,
+                            maxLines = 2, modifier = Modifier.weight(1f, fill = false), reserve = false
                         )
                         s.at?.let {
                             Spacer(Modifier.width(8.dp))
-                            Text(fmt.format(java.util.Date(it)), color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                            FullText(fmt.format(java.util.Date(it)), color = Color.White.copy(alpha = 0.45f), fontSize = 11.sp, reserve = false)
                         }
                     }
                     s.detail?.takeIf { it.isNotBlank() }?.let {
-                        Text(it, color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        FullText(it, color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 3, reserve = false)
                     }
                     if (s.badges.isNotEmpty() && !compact) {
                         Spacer(Modifier.height(4.dp))

@@ -53,6 +53,8 @@ fun AppsLibraryDialog(
     onToggleInLibrary: (String) -> Unit,
     onToggleEmulator: (String) -> Unit,
     onSetAppKind: (String, com.shelf.launcher.data.AppKind) -> Unit = { _, _ -> },
+    /** 724a: marks an app as a recomp / native port (its own Recomps category). */
+    onSetRecomp: (String, Boolean) -> Unit = { _, _ -> },
     onDismiss: () -> Unit
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppsLibraryDialog")
@@ -84,7 +86,8 @@ fun AppsLibraryDialog(
         item { MutedNote(
             "Game or app: Voltcap guesses which apps are games (Android's game category, big game studios, " +
                 "game engines inside the app, gamepad support). Press the Game / App chip to overrule it — " +
-                "games go in the Android games category."
+                "games go in the Android games category. Recomp puts a recompiled game or native port (an Android APK, " +
+                "never a Windows build) in its own Recomps category, shown once one is marked."
         ) }
         item { Spacer(Modifier.height(12.dp)) }
         item { ShelfTextField(query, { query = it }, "Search apps") }
@@ -129,7 +132,9 @@ fun AppsLibraryDialog(
                 isEmulator = pkg in settings.emulators || autoEmulator,
                 emulatorAuto = autoEmulator,
                 onToggleInLibrary = { onToggleInLibrary(pkg) },
-                onToggleEmulator = { onToggleEmulator(pkg) }
+                onToggleEmulator = { onToggleEmulator(pkg) },
+                isRecomp = pkg in settings.recomps,
+                onToggleRecomp = { onSetRecomp(pkg, pkg !in settings.recomps) }
             )
             Spacer(Modifier.height(8.dp))
             }
@@ -150,7 +155,9 @@ private fun AppRow(
     kindPinned: Boolean,
     onCycleKind: () -> Unit,
     onToggleInLibrary: () -> Unit,
-    onToggleEmulator: () -> Unit
+    onToggleEmulator: () -> Unit,
+    isRecomp: Boolean = false,
+    onToggleRecomp: () -> Unit = {}
 ) {
     com.shelf.launcher.Breadcrumbs.mark("AppRow")
     val icon = rememberAppIcon(app.packageName)
@@ -177,6 +184,10 @@ private fun AppRow(
             if (tags.isNotEmpty()) {
                 Text(tags.joinToString(" · "), color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
+            // 724a (owner Task 3): its own Recomps category, set by hand only (no reliable detector); under the name so the
+            // three chips on the right keep their room. Reached with the D-pad like the other chips, or a tap.
+            Spacer(Modifier.height(4.dp))
+            Chip(if (isRecomp) "Recomp ✓" else "Recomp?", accent = isRecomp, onClick = onToggleRecomp)
         }
         Spacer(Modifier.width(8.dp))
         Chip(kindLabel, accent = kindPinned, onClick = onCycleKind)

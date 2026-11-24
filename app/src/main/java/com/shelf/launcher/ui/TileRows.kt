@@ -122,6 +122,17 @@ internal object TileRows {
      * the tiles, the facts 18 dp under them (x the tile scale), the chips under the row 4 dp, the buttons under it 8 dp
      * (2 dp at the top), nothing before the first row.
      */
+    /**
+     * Tile home at Top: how far down (dp) the stack starts. Clear of the Switch-style profile pictures (at least 60 dp, more
+     * when their measured bottom [badgeBottomDp] needs it - x1.3) and of a music player Home shows in a top corner
+     * ([musicBottomDp], 0 = none), 8 dp under whichever reaches lower; without either 10 dp, as before. (721a: the profile
+     * branch used to ignore the music player.)
+     */
+    fun topPadDp(profilesShown: Boolean, badgeBottomDp: Float, musicBottomDp: Float): Float {
+        val music = if (musicBottomDp > 0f) musicBottomDp + 8f else 0f
+        return if (profilesShown) maxOf(60f, badgeBottomDp + 8f, music) else maxOf(10f, music)
+    }
+
     fun gapBefore(prev: String?, id: String, top: Boolean, tileScale: Float): Float = when {
         prev == null -> 0f
         id == TILES && prev == CATS -> 2f

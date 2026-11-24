@@ -86,6 +86,9 @@ object ConsoleNames {
         "App" to "Other apps"
     )
 
+    /** 725a: every key with an official name, in the order listed (START > Categories offers the consoles from it). */
+    val keys: List<String> get() = names.keys.toList()
+
     /** The official name — always (printed on cases, cartridges and discs, logo look-ups, reports). */
     fun display(platform: String): String = names[platform] ?: platform
 

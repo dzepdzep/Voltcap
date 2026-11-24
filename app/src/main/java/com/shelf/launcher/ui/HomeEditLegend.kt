@@ -28,7 +28,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -77,11 +76,12 @@ internal fun BoxScope.HomeEditToolbar() {
                 LegendFold(-1)
                 Spacer(Modifier.width(6.dp))
                 Column(Modifier.weight(1f, fill = false)) {
-                    Text(
+                    // (Update 707a, rule 11: the widget name and scope line are shown whole - shrink, then slide; no reserved height.)
+                    FullText(
                         "Edit Home · " + HomeWidgets.label(sel) + if (!HomeEditSession.shown(sel)) " (hidden)" else "",
-                        color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false
                     )
-                    Text(HomeEditSession.scopeOf(sel), color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(HomeEditSession.scopeOf(sel), color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1, reserve = false)
                 }
                 Spacer(Modifier.width(8.dp))
                 if (!narrow) ToolbarActions()

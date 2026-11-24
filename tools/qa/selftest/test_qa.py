@@ -3037,5 +3037,204 @@ class TestGfxDelta682ag(unittest.TestCase):
         self.assertNotIn("gpu_p50", s); self.assertIsNone(s["slow_ui"])
 
 
+class TestRow714Grader717a(unittest.TestCase):
+    """717a: row714.py grades the Tile home Row place / round buttons' spot run (HW-24 714a) from the QA app's rowtile lines;
+    a lost spot FAILs, an old build without the line is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s1 none MIDDLE:0.3000,0.2000", "expect s2 0.3000,0.2000 -",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowtile TILES MIDDLE->TOP spot=ROW shortcuts=none kept=MIDDLE:0.3000,0.2000",
+            "E VoltcapQA: 2 rowtile TILES TOP->MIDDLE spot=ROW shortcuts=0.3000,0.2000 kept=-"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row714
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowtile.txt"), "w").write("\n".join(rows) + "\n")
+        return row714.grade(d)[1]
+
+    def test_spot_back_at_its_place_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_spot_lost_fails(self):
+        lost = [self.ROWS[0], self.ROWS[1].replace("shortcuts=0.3000,0.2000", "shortcuts=none")]
+        self.assertEqual(self._grade(self.LOG, lost), "FAIL")
+
+    def test_old_build_or_wrong_setup_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, []), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        classic = [r.replace("TILES", "CLASSIC") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, classic), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_never_opens_r1_and_targets_the_qa_app(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("voltcap_test_pref"))
+        self.assertIn("voltcap_test_snapshot restore", sh)
+
+
+
+class TestRow714NextPress718a(unittest.TestCase):
+    """718a: row714.sh's NEXT steps (one press of the Row tile, the exact R1 handler) are graded on the place they land on:
+    a press that skips a place in the tile's own cycle FAILs even with the right spots."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s8 0.7000,0.7000 MIDDLE:0.3000,0.2000 BOTTOM", "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROW = "E VoltcapQA: 1 rowtile TILES MIDDLE->BOTTOM spot=ROW shortcuts=0.7000,0.7000 kept=MIDDLE:0.3000,0.2000"
+
+    def test_press_lands_on_the_next_place(self):
+        g = TestRow714Grader717a._grade
+        self.assertEqual(g(self, self.LOG, [self.ROW]), "PASS")
+        self.assertEqual(g(self, self.LOG, [self.ROW.replace("->BOTTOM", "->TOP")]), "FAIL")
+
+    def test_script_presses_round_the_whole_cycle(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            nxt = [ln.split()[-1] for ln in f.read().splitlines() if ln.startswith("dock ") and " NEXT " in ln]
+        self.assertEqual(nxt, ["BOTTOM", "TOP", "MIDDLE"])
+
+class TestRow716Grader719a(unittest.TestCase):
+    """719a: row716.py grades 716a's real combination (game header + info / news + every category + a song in the bar's
+    player): a column under the status bar FAILs, a combination that did not apply or an old build is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=font=1.3 real_pid=4242",
+           "expect b1 MIDDLE off", "expect c1 MIDDLE on", "expect c3 TOP on",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowcol CLASSIC MIDDLE top=120.0 bottom=330.0 bar=40.0 screen=448.0 legend=on header=off info=OFF cats=FULL player=off",
+            "E VoltcapQA: 2 rowcombo on header=true info=BOTH",
+            "E VoltcapQA: 3 rowcol CLASSIC MIDDLE top=44.0 bottom=420.0 bar=44.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on",
+            "E VoltcapQA: 4 rowcol CLASSIC TOP top=8.0 bottom=400.0 bar=0.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row716
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowcol.txt"), "w").write("\n".join(rows) + "\n")
+        return row716.grade(d)[1]
+
+    def test_column_below_the_bar_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_column_under_the_bar_fails(self):
+        under = [r.replace("top=44.0 bottom=420.0", "top=20.0 bottom=396.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, under), "FAIL")
+
+    def test_tall_column_may_spill_at_the_bottom(self):
+        tall = [r.replace("top=44.0 bottom=420.0", "top=44.0 bottom=470.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, tall), "PASS")
+
+    def test_combo_missing_old_build_or_wrong_layout_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("player=on", "player=off") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [self.ROWS[0]]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [r.replace("CLASSIC", "TILES") for r in self.ROWS]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_targets_the_qa_app_and_never_opens_r1(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row716.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("A --es voltcap_test_rowcombo on"))
+        self.assertLess(sh.index("A --es voltcap_test_rowcombo off"), sh.index("A --es voltcap_test_snapshot restore"))
+
+
+class TestPlay720Grader720a(unittest.TestCase):
+    """720a: play720.py grades the real Edit Home D-pad move of the Voltcap row's added Play part (715a): a D-pad that goes the
+    wrong way, a move that does not save / undo / reset, or a key that misses Play FAILs; setup that did not apply, an old
+    build or a safety STOP is INFRA, never PASS. The script presses D-pad keys in Edit Home only on its EDIT mark, never A."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242"] + \
+          ["expect " + e for e in ["r1 above", "r2 zone", "r3 edit", "r4 live+5", "r5 below", "r6 zone", "r7 live-1",
+                                   "r8 kept", "r9 kept", "r10 reset", "r11 above", "r12 zone"]] + \
+          ["restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    H = "E VoltcapQA: 1 reach CLASSIC dock=%s header=off added=yes saved=%s live=%s drawn=%s above=%s up=%s down=%s buttons=1 zone=%s edit=%s"
+    ROWS = [H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "none", "off"),
+            H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "HEADER", "off"),
+            H % ("MIDDLE", "0.440", "0.440", "0.440", "true", "HEADER", "-", "none", "on"),
+            H % ("MIDDLE", "0.440", "0.540", "0.540", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "HEADER", "off"),
+            H % ("MIDDLE", "0.540", "0.520", "0.520", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "HEADER", "off")]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import play720
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "reach.txt"), "w").write("\n".join(rows) + "\n")
+        return play720.grade(d)[1]
+
+    def _with(self, i, row):
+        r = list(self.ROWS); r[i] = row; return r
+
+    def test_good_run_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_dpad_going_the_wrong_way_fails(self):
+        # 715a's bug: Play drawn below, the D-pad still goes up.
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("above=false up=- down=HEADER", "above=true up=HEADER down=-"))), "FAIL")
+        # Row at the top, Play above: the key did not reach it.
+        self.assertEqual(self._grade(self.LOG, self._with(11, self.ROWS[11].replace("zone=HEADER", "zone=none"))), "FAIL")
+
+    def test_move_save_undo_reset_are_checked(self):
+        self.assertEqual(self._grade(self.LOG, self._with(3, self.ROWS[3].replace("live=0.540", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("saved=0.540", "saved=0.440").replace("drawn=0.540", "drawn=0.560"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(6, self.ROWS[6].replace("live=0.520", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(8, self.ROWS[8].replace("saved=0.540", "saved=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(9, self.ROWS[9].replace("saved=none", "saved=0.540"))), "FAIL")
+
+    def test_setup_missing_old_build_or_stop_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("header=off", "header=on") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, self.ROWS[:3]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG[:4] + ["STOP Edit Home not open on CLASSIC:h_play", "DONE"], self.ROWS[:3]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_presses_edit_keys_only_in_edit_home_and_never_a(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "play720.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        for bad in ("BUTTON_A", "DPAD_CENTER", "KEYCODE_ENTER", "BUTTON_R1", "input tap", "input swipe"):
+            self.assertNotIn(bad, sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        # only three places press keys: the picker's B, ek (Edit Home open on the Play part) and hk (Edit Home closed)
+        self.assertEqual(len(keys), 3)
+        self.assertTrue(any(ln.startswith("ek()") and '"EDIT $ID"' in ln for ln in keys))
+        self.assertTrue(any(ln.startswith("hk()") and '"HOME"' in ln for ln in keys))
+        body = sh.split("logcat -c", 1)[1]
+        self.assertNotIn("input keyevent", body)
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index('voltcap_test_pref "home_header=false"'))
+        self.assertLess(sh.index("E open; E select:$ID"), sh.index("ek DPAD_DOWN"))
+        self.assertLess(sh.rindex(" ek "), sh.index("voltcap_test_snapshot restore"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

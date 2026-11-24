@@ -376,7 +376,7 @@ internal fun r1Order(saved: List<String>, built: List<String>): List<String> {
  * Game size and the carousel's spacing stay separate controls.
  */
 /** Update 491 (R0): tiles added after the owner's arrangement existed — always after the older tiles, in More. */
-internal val R1_APPENDED = listOf("layoutopts", "spacing")
+internal val R1_APPENDED = listOf("layoutopts", "spacing", "focuspos") // (723a: Focus position)
 
 internal object R1Spacing {
     fun prefFor(l: com.shelf.launcher.data.HomeLayout): com.shelf.launcher.data.Features.IntPref? = when (l) {
