@@ -196,6 +196,14 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
+- lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
+  and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.
+- Coverflow Details x1.3 (cover mode, kcw13 / rcw13): facts reachable with one Up, story end above Play with one Down (D392 fixed).
+- Arcade perf (fair 30-game category): KONKR home navigation slow frames 24.5 -> 0.6 %; RP Classic 12.2 -> 12.6 % (GPU-bound, open).
+- D390: the first cover walk looped ~30 min (shell variable) - QA app only, stopped by hand, over the 15-min limit; fixed.
+- NOT TESTED: x1.3 lazywalk; layouts other than Cinema / Crate / Resume / Bar on hardware; D391 (home awake behind a window).
+
 ### HW-26 Volt second screen text shown whole (690a, rule 11) - OPEN (Thor; batch with HW-19 when the owner says the Thor is back)
 - Device(s): AYN Thor (3140972f), USB, lower screen = second display. Level L1 (QA app only). Thor NOT with the owner since 17 Nov -
   never poll / wake; only when he says it is back. Commit: dev line 690a or later. ~3 min, x1.0 + x1.3.
