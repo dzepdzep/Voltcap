@@ -305,6 +305,14 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   Card binder (CARDS): open a game - the card still turns over (front away, back in) as before, no flicker or blank frame at
   the half-turn; B - it turns back. pop529 STORAGE OWN / CARDS OWN -> popclip.py. Unit evidence only (WindowWordsSurvey682Test
   NEXT_685, CardFront685Test).
+- Also (723a, owner Task 2 R1 Focus position, dev line 723a or later, ~3 min, KONKR x1.0 + x1.3; RP Classic if connected;
+  LEVEL 1 QA app only, settings restored): Voltcap row, carousel off - R1 shows "Focus Left"; A -> "Focus Middle" and the game
+  you're on moves to the middle and stays there while ◀ ▶ browse (first / last game, Endless on and off, a category with 1 and
+  2 games); A again -> Left. Hold the tile -> the list (Left / Middle, current marked), pick with the D-pad and by touch. Tile
+  home: A steps Edges -> Left -> Middle -> Right -> Edges, each held while browsing, category name aligned as Settings does.
+  Carousel on (either layout) and Voltcap row "Covers · first one wide": tile greyed, its press explains why. Another layout
+  (e.g. Grid, Hero): no Focus tile. R1 order unchanged (the new tile after the saved ones). Unit evidence only
+  (FocusPosTile723aTest); matrix docs/claude/R1_FOCUS_POSITION_723.md.
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE

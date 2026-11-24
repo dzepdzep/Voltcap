@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 03:40 UTC, 723a (cloud, Task 2):** Verify 310 on 4404495 GREEN. R1 Focus position: 53-layout audit (code) - only the
+Voltcap row and Tile home have a horizontal focus anchor; new R1 "Focus" tile reuses their settings (press = next, hold = list),
+hidden elsewhere, greyed with carousel / first-one-wide; matrix docs/claude/R1_FOCUS_POSITION_723.md. FocusPosTile723aTest 4/4 +
+R1Compat326 / 491 / TileWalk329 PASS (cloud). HW-24 723a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then owner 22:43 item 5: Recomps category (Task 3) - separate
+category for installed Android recomp APKs + manual shortcuts, auto-suggest only when reliable, hidden when empty; then START ->
+Classification & Categories (Task 4).
+
 **24 Nov 02:40 UTC, 722a (cloud, Task 1):** Verify 310 on e77f9fa (721a) GREEN. Edit Home / preset preview vs the real Home:
 at Top the preview drew the row at 0.2, its name above and the clock bar at the top; now row under the edge, name under it, clock
 bar at the bottom (above the legend) - the real Home's rule (PreviewDock). Middle / Bottom unchanged. PreviewDock722aTest 4/4

@@ -87,7 +87,7 @@ x1.3, small screens, enlarged elements, custom placements. IN PROGRESS (714a: Ti
 the vertical Row Position tile). Audit all 53 layouts first; candidates: VoltCap row / Classic (reuse its Focus Position setting),
 Tile home (reuse Edges / Left / Center / Right). Others only if they genuinely support it; Hero's cover side is not focus position.
 A cycles, long-press opens direct choices, shows the current choice, keeps R1 customization / order. Test focus movement, endless
-scrolling, animations, category-label alignment, unusual game counts. Deliver a compatibility matrix. OPEN.
+scrolling, animations, category-label alignment, unusual game counts. Deliver a compatibility matrix. IN PROGRESS (723a: tile on Voltcap row + Tile home, matrix docs/claude/R1_FOCUS_POSITION_723.md; unit-tested, handheld HW-24 723a NOT TESTED).
 
 **TASK 3 - Recomps category:** separate category for native recompiled games / compatible ports: installed Android recomp APKs and
 manual shortcuts (never assume Windows builds run on Android). Auto-suggest only when reliable. Shown when it has games, hidden from

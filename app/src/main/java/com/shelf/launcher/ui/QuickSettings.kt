@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Layers
@@ -857,6 +858,20 @@ fun QuickSettingsCard(
                     // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.
                     // 718a: one shared step - rowTilePress - so the QA hook `voltcap_test_dock` runs this exact change.)
                     home.setAppearance(rowTilePress(a, rowTileNext(a)))
+                })
+            }
+            // 723a (owner Task 2): Focus position - where the game you're on stays across the screen while you browse (the
+            // Voltcap row's / Tile home's own "Game you're on"; FocusPosTile, r1TileFit). Press: the next choice; hold: the list.
+            if (FocusPosTile.applies(a.homeLayout)) {
+                val names = FocusPosTile.choices(a)
+                val cur = FocusPosTile.current(a)
+                add(R1Tile("focuspos", Icons.Filled.CenterFocusStrong, FocusPosTile.label(a), cur > 0,
+                    longAction = {
+                        choiceSheet = "Game you're on · " + a.homeLayout.label to names.mapIndexed { i, n ->
+                            R1Choice(n, i == cur) { home.setAppearance(FocusPosTile.pick(a, i)) }
+                        }
+                    }) {
+                    home.setAppearance(FocusPosTile.next(a))
                 })
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).

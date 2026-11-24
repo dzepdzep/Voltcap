@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 722a · 2026-11-24 02:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on e77f9fa (721a): green · effort: medium
+**1. LATEST UPDATE** - 723a · 2026-11-24 03:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4404495: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The small drawn preview of a home look (presets / Edit Home) now shows the games at the top the way the real home does: the row right under the top edge, the game's name under it and the clock bar moved to the bottom. Middle and bottom positions look as before.
+**2. WHAT CLAUDE JUST FIXED** - New R1 tile 'Focus' chooses where the game you're on stays across the screen while you browse: Left or Middle on the Voltcap row, and Edges / Left / Middle / Right on the Tile home (press for the next choice, hold for the list). It uses the same settings as Layout options, so nothing you set before changes, and your R1 order stays as it was. The other 51 layouts have no such setting, so the tile does not appear there (list of all 53 in the new matrix); it is greyed with an explanation while a carousel keeps the game in the middle.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
+- **App** (723a): New R1 tile 'Focus' chooses where the game you're on stays across the screen while you browse: Left or Middle on the Voltcap row, and Edges / Left / Middle / Right on the Tile home (press for the next choice, hold for the list). It uses the same settings as Layout options, so nothing you set before changes, and your R1 order stays as it was. The other 51 layouts have no such setting, so the tile does not appear there (list of all 53 in the new matrix); it is greyed with an explanation while a carousel keeps the game in the middle.
 - **App** (714a): Row position on the Tile home: moving the tiles to Top, Middle or Bottom no longer deletes where you placed the round buttons in Edit Home - each place remembers its own spot and gives it back when the tiles return there (first fix of the Row-position task).
 - **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
-- **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: R1 Focus Position audit across the 53 layouts; Recomps + START: Classification & Categories
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Recomps category (Task 3); START: Classification & Categories (Task 4)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,6 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
 | HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
@@ -208,7 +209,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 15 of 24.
+Open hardware requests: 15 of 25.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)

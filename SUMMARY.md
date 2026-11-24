@@ -1,3 +1,19 @@
+# Update 723a (24 Nov 2026, cloud run) - Task 2: new R1 Focus position tile (Voltcap row, Tile home) + 53-layout matrix
+- CI first: Verify 310 on 4404495 GREEN (b57bf66's run cancelled by the newer push).
+- Owner 22:43 item 4 / Task 2: audit of the 53 layouts (code): only the Voltcap row (FocusPosition, GameDock) and Tile home
+  (TileFocus, TileHome) have a horizontal focus anchor; matrix docs/claude/R1_FOCUS_POSITION_723.md (SUPPORTED 2, NOT OFFERED 51,
+  Hero's cover side is not a focus position). New R1 tile "Focus" (FocusPosTile723.kt): reuses those two settings (no new pref,
+  nothing migrated); press = next choice (Left / Middle; Edges / Left / Middle / Right), hold = the list with the current one
+  marked; hidden on the other 51 layouts; greyed with the reason while the carousel look (always middle) or the Voltcap row's
+  "Covers · first one wide" keeps the game in one place. Goes after the saved R1 tiles (R1_APPENDED): saved order unchanged;
+  pinnable to L1 ("Focus position"); in the R1 tile walk (TileCheck).
+- Tests: FocusPosTile723aTest 4/4 (new; old code had no tile / rule), R1Compat326Test 6/6, Batch491Test 6/6, TileWalk329Test 7/7,
+  RowTileExactHandler718aTest 3/3 PASS (cloud, compiled with the Maven mirror); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/FocusPosTile723.kt (new), ui/QuickSettings.kt, ui/R1TileRules.kt,
+  ui/R1Extras.kt, ui/R1Shortcuts.kt, ui/TileCheck.kt, data/BuiltinShortcuts.kt,
+  app/src/test/java/com/shelf/launcher/ui/FocusPosTile723aTest.kt (new); docs/claude/R1_FOCUS_POSITION_723.md (new).
+- Hardware NOT TESTED: HW-24 723a (KONKR x1.0 / x1.3: focus movement, Endless, category alignment, hold list by D-pad + touch).
+
 # Update 722a (24 Nov 2026, cloud run) - Task 1: Edit Home / preset preview matches the real Home at Top
 - CI first: Verify 310 on e77f9fa (721a) GREEN.
 - Owner 22:43 item 3 ("Edit Home previews kept", preview = real Home): PresetPreview at Top drew the row at 0.2 with the game's
