@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 04:40 UTC, 724a (cloud, Task 3):** Verify 310 on c7f4430 GREEN. Recomps category: apps marked by hand in Settings >
+Apps in your library ("Recomp?" chip) form "Recomps" (RECOMPS_PLATFORM, LibraryAppsSettings.recomps); in All too, never Other
+apps, hidden while empty, same game record. No auto-suggest (no reliable detector). Recomps724aTest 5/5 + 450 / 482 / 394 PASS
+(cloud). HW-24 724a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 4: START on an installed game / app -> Classification &
+categories, MULTIPLE at once (Recomps, Android games, Other apps, consoles, collections); manual beats automatic; reuse
+LibraryAppsSettings (recomps / forcedGames / forcedApps) + collections; no duplicate records; launch / saves / metadata unchanged.
+
 **24 Nov 03:40 UTC, 723a (cloud, Task 2):** Verify 310 on 4404495 GREEN. R1 Focus position: 53-layout audit (code) - only the
 Voltcap row and Tile home have a horizontal focus anchor; new R1 "Focus" tile reuses their settings (press = next, hold = list),
 hidden elsewhere, greyed with carousel / first-one-wide; matrix docs/claude/R1_FOCUS_POSITION_723.md. FocusPosTile723aTest 4/4 +

@@ -147,6 +147,10 @@ enum class SpecialFilter(val label: String) {
  * marks as games, plus apps added to the library by hand (emulators left out). */
 const val ANDROID_GAMES_PLATFORM = "Android"
 
+/** 724a (owner Task 3): platform key of the "Recomps" category - installed recomp / native-port apps you marked
+ *  ([com.shelf.launcher.data.LibraryAppsSettings.recomps]). Shown only while it has games. */
+const val RECOMPS_PLATFORM = "Recomps"
+
 /** Sort names are cleaned once per title, not on every comparison. */
 private val sortNameCache = java.util.concurrent.ConcurrentHashMap<String, String>()
 internal fun sortName(name: String): String =
@@ -389,6 +393,8 @@ data class LauncherUiState(
     fun isAppInLibrary(game: Game): Boolean {
         val pkg = game.packageName ?: return true
         if (pkg in libraryApps.added || game.stableKey in favorites) return true
+        // 724a: a recomp you marked is a game of your library (All games too), whatever the apps mode.
+        if (pkg in libraryApps.recomps) return true
         return when (libraryApps.mode) {
             AppsMode.ALL -> true
             AppsMode.GAMES_AND_ADDED -> isAndroidGame(game)
@@ -413,6 +419,10 @@ data class LauncherUiState(
     /** Update 450: an ordinary app put in Continue playing by hand (not a game; see [com.shelf.launcher.data.ContinueApps]). */
     fun isContinueApp(game: Game): Boolean =
         game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.continueApps } == true && !isAndroidGame(game)
+
+    /** 724a: an installed app you marked as a recomp / native port (the Recomps category). */
+    fun isRecomp(game: Game): Boolean =
+        game.sourceType == SourceType.APP && game.packageName?.let { it in libraryApps.recomps } == true
 
     fun isAndroidGame(game: Game): Boolean {
         if (game.sourceType != SourceType.APP) return false
@@ -446,6 +456,11 @@ data class LauncherUiState(
     private fun computeVisibleGames(): List<Game> {
         if (platformFilter == ANDROID_GAMES_PLATFORM) {
             return games.filter { isAndroidGame(it) }
+                .filter { searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) }
+                .let { sortGames(it) }
+        }
+        if (platformFilter == RECOMPS_PLATFORM) {
+            return games.filter { isRecomp(it) }
                 .filter { searchQuery.isBlank() || it.name.contains(searchQuery, ignoreCase = true) }
                 .let { sortGames(it) }
         }
@@ -522,7 +537,8 @@ data class LauncherUiState(
                 library.filter { it.stableKey in keys }
             }
             // "Apps" = your other apps (Spotify, YouTube…); game apps live under "Android games" only.
-            platformFilter == "App" -> library.filter { it.platform == "App" && !isAndroidGame(it) }
+            // (724a: a recomp you marked is a game, never an "other app".)
+            platformFilter == "App" -> library.filter { it.platform == "App" && !isAndroidGame(it) && !isRecomp(it) }
             platformFilter != null -> library.filter { it.platform == platformFilter }
             else -> library
         }
@@ -625,9 +641,11 @@ data class LauncherUiState(
         platformsMemo.getOrCompute(key) {
             val platforms = games.map { it.platform }.distinct()
                 // "Other apps" only when there's an app that isn't a game.
-                .filter { p -> p != "App" || games.any { it.platform == "App" && !isAndroidGame(it) } }
+                .filter { p -> p != "App" || games.any { it.platform == "App" && !isAndroidGame(it) && !isRecomp(it) } }
             val android = if (games.any { isAndroidGame(it) }) listOf(ANDROID_GAMES_PLATFORM) else emptyList()
-            (platforms + android).distinct().sorted()
+            // 724a: Recomps only while an installed app is marked as one (hidden from L2 / R2 and the tiles when empty).
+            val recomps = if (games.any { isRecomp(it) }) listOf(RECOMPS_PLATFORM) else emptyList()
+            (platforms + android + recomps).distinct().sorted()
         }
     }
 

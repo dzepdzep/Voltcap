@@ -5262,6 +5262,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
+    /**
+     * 724a (owner Task 3): marks an installed app as a recomp / native port (the Recomps category) or takes the mark off.
+     * Only the category changes: launching, art, saves, play time and metadata stay keyed as before. Taking the last one off
+     * while Recomps is open puts you back on All (the category hides when empty).
+     */
+    fun setAppRecomp(packageName: String, on: Boolean) {
+        updateLibraryApps { it.copy(recomps = if (on) it.recomps + packageName else it.recomps - packageName) }
+        val s = _uiState.value
+        if (!on && s.platformFilter == RECOMPS_PLATFORM && RECOMPS_PLATFORM !in s.availablePlatforms) setPlatformFilter(null)
+    }
+
     fun toggleAppInLibrary(packageName: String) = updateLibraryApps {
         it.copy(added = if (packageName in it.added) it.added - packageName else it.added + packageName)
     }

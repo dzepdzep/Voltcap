@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 723a · 2026-11-24 03:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 4404495: green · effort: medium
+**1. LATEST UPDATE** - 724a · 2026-11-24 04:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on c7f4430: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - New R1 tile 'Focus' chooses where the game you're on stays across the screen while you browse: Left or Middle on the Voltcap row, and Edges / Left / Middle / Right on the Tile home (press for the next choice, hold for the list). It uses the same settings as Layout options, so nothing you set before changes, and your R1 order stays as it was. The other 51 layouts have no such setting, so the tile does not appear there (list of all 53 in the new matrix); it is greyed with an explanation while a carousel keeps the game in the middle.
+**2. WHAT CLAUDE JUST FIXED** - New Recomps category for recompiled games and native ports installed as Android apps. In Settings > Apps in your library each app has a 'Recomp?' chip; marked apps get their own Recomps category (and stay in All games, never under Other apps). The category only appears once something is marked and disappears when the last mark is taken off. Nothing is guessed automatically yet, because there is no reliable way to recognise a recomp; how apps launch, their saves, play time and art are unchanged.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
+- **App** (724a): New Recomps category for recompiled games and native ports installed as Android apps. In Settings > Apps in your library each app has a 'Recomp?' chip; marked apps get their own Recomps category (and stay in All games, never under Other apps). The category only appears once something is marked and disappears when the last mark is taken off. Nothing is guessed automatically yet, because there is no reliable way to recognise a recomp; how apps launch, their saves, play time and art are unchanged.
 - **App** (723a): New R1 tile 'Focus' chooses where the game you're on stays across the screen while you browse: Left or Middle on the Voltcap row, and Edges / Left / Middle / Right on the Tile home (press for the next choice, hold for the list). It uses the same settings as Layout options, so nothing you set before changes, and your R1 order stays as it was. The other 51 layouts have no such setting, so the tile does not appear there (list of all 53 in the new matrix); it is greyed with an explanation while a carousel keeps the game in the middle.
 - **App** (714a): Row position on the Tile home: moving the tiles to Top, Middle or Bottom no longer deletes where you placed the round buttons in Edit Home - each place remembers its own spot and gives it back when the tiles return there (first fix of the Row-position task).
-- **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: Recomps category (Task 3); START: Classification & Categories (Task 4)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: START: Classification & Categories (Task 4); Native pages toward 53/53 (Task 5)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

@@ -1,3 +1,18 @@
+# Update 724a (24 Nov 2026, cloud run) - Task 3: Recomps category (installed recomp / native-port apps, marked by hand)
+- CI first: Verify 310 on c7f4430 (723a) GREEN.
+- Owner 22:43 item 5 / Task 3: new platform key RECOMPS_PLATFORM ("Recomps"); LibraryAppsSettings.recomps (prefs library_apps
+  "recomps", already backed up by SettingsScopes). Settings > Apps in your library: a "Recomp?" / "Recomp ✓" chip under each
+  app's name (D-pad / touch). A marked app: in Recomps and in All (whatever the apps mode), never in Other apps; an Android game
+  stays in Android games too (detector untouched); same Game record (launch, stable key, saves, play time, art, metadata
+  unchanged; no duplicate in All). The category appears in L2 / R2 / tiles only while it has a game; taking the last mark off
+  while Recomps is open goes back to All. Left out of the ROM-platform lists (collections dialog etc.). No auto-suggest: no
+  reliable detector exists (no package-name guessing, Windows builds never assumed) - stays OPEN for a vetted list.
+- Tests: Recomps724aTest 5/5 (new; fails on the old code - no key / no field), ContinueApps450Test 10/10, Batch482Test 7/7,
+  CategoryStable394Test 6/6 PASS (cloud); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/LauncherUiState.kt, LauncherViewModel.kt, data/LibraryAppsStore.kt,
+  ui/AppsLibraryDialog.kt, ui/LauncherScreen.kt; test app/src/test/java/com/shelf/launcher/data/Recomps724aTest.kt.
+- NOT TESTED: handheld (HW-24 724a). START -> multiple categories (Task 4) is the next item.
+
 # Update 723a (24 Nov 2026, cloud run) - Task 2: new R1 Focus position tile (Voltcap row, Tile home) + 53-layout matrix
 - CI first: Verify 310 on 4404495 GREEN (b57bf66's run cancelled by the newer push).
 - Owner 22:43 item 4 / Task 2: audit of the 53 layouts (code): only the Voltcap row (FocusPosition, GameDock) and Tile home

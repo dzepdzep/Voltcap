@@ -32,7 +32,13 @@ data class LibraryAppsSettings(
      * v0.6.67 (update 450): ordinary apps put in Continue playing by hand (streaming clients such as PXPlay or Asobi).
      * They stay apps (no game session, play time or save sync — [ContinueApps]); empty by default.
      */
-    val continueApps: Set<String> = emptySet()
+    val continueApps: Set<String> = emptySet(),
+    /**
+     * 724a (owner Task 3): installed apps marked by hand as recomps / native ports (a recompiled N64 game's Android APK and
+     * the like). They make up the Recomps category ([com.shelf.launcher.RECOMPS_PLATFORM]); nothing is guessed (no reliable
+     * detector exists), Windows builds are never assumed to run. Marking one never changes how it launches.
+     */
+    val recomps: Set<String> = emptySet()
 )
 
 /** Game-or-app choice for one installed app. */
@@ -55,7 +61,8 @@ class LibraryAppsStore(context: Context) {
         alwaysUseIcons = prefs.getBoolean("always_icons", false),
         forcedGames = prefs.getStringSet("forced_games", null)?.toSet() ?: emptySet(),
         forcedApps = prefs.getStringSet("forced_apps", null)?.toSet() ?: emptySet(),
-        continueApps = prefs.getStringSet("continue_apps", null)?.toSet() ?: emptySet()
+        continueApps = prefs.getStringSet("continue_apps", null)?.toSet() ?: emptySet(),
+        recomps = prefs.getStringSet("recomps", null)?.toSet() ?: emptySet()
     )
 
     fun save(s: LibraryAppsSettings) = prefs.edit()
@@ -67,5 +74,6 @@ class LibraryAppsStore(context: Context) {
         .putStringSet("forced_games", s.forcedGames)
         .putStringSet("forced_apps", s.forcedApps)
         .putStringSet("continue_apps", s.continueApps)
+        .putStringSet("recomps", s.recomps)
         .apply()
 }

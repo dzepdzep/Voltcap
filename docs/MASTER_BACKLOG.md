@@ -91,7 +91,7 @@ scrolling, animations, category-label alignment, unusual game counts. Deliver a 
 
 **TASK 3 - Recomps category:** separate category for native recompiled games / compatible ports: installed Android recomp APKs and
 manual shortcuts (never assume Windows builds run on Android). Auto-suggest only when reliable. Shown when it has games, hidden from
-auto navigation when empty, assignments kept. OPEN.
+auto navigation when empty, assignments kept. IN PROGRESS (724a: manual Recomp mark + category, unit-tested; auto-suggest OPEN - no reliable detector; HW-24 724a NOT TESTED).
 
 **TASK 4 - START -> Classification & categories:** on an installed game / Android app, START picks its categories - MULTIPLE at once
 (Recomps, Android games, Other apps, N64, GameCube, other consoles, user collections where supported; e.g. a Zelda recomp in Recomps +

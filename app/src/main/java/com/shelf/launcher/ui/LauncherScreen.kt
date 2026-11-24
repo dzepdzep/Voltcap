@@ -6193,7 +6193,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onDeleteCollection = { viewModel.deleteCollection(it) },
             playStatuses = state.playStatuses,
             libraryPlatforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             romRoot = state.romRootPath,
             onOpenTgdb = { showMenu = false; showTgdb = true },
@@ -6241,6 +6241,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onToggleInLibrary = { viewModel.toggleAppInLibrary(it) },
             onToggleEmulator = { viewModel.toggleAppEmulator(it) },
             onSetAppKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) },
+            onSetRecomp = { pkg, on -> viewModel.setAppRecomp(pkg, on) },
             onDismiss = { showAppsLibrary = false; showMenu = true }
         )
     }
@@ -6336,7 +6337,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     if (showEmulatorSettings) {
         EmulatorSettingsDialog(
             platforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             configs = state.emulatorConfigs,
             installedApps = state.installedApps,
@@ -6620,7 +6621,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onAppearanceChange = { viewModel.setAppearance(it) },
             onSelectTheme = { viewModel.setTheme(it) },
             emulatorPlatforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             emulatorConfigs = state.emulatorConfigs,
             installedApps = state.installedApps,

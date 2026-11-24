@@ -313,6 +313,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   Carousel on (either layout) and Voltcap row "Covers · first one wide": tile greyed, its press explains why. Another layout
   (e.g. Grid, Hero): no Focus tile. R1 order unchanged (the new tile after the saved ones). Unit evidence only
   (FocusPosTile723aTest); matrix docs/claude/R1_FOCUS_POSITION_723.md.
+- Also (724a, owner Task 3 Recomps, dev line 724a or later, ~2 min, KONKR x1.0 + x1.3; LEVEL 1 QA app only, marks taken off
+  afterwards): no Recomps category before marking. Settings > Apps in your library: "Recomp?" chip under an app's name, reach it
+  with the D-pad and by touch -> "Recomp ✓"; back home: L2 / R2 and the category tiles now show "Recomps" with that app; it is
+  also in All, not in Other apps; launching it works as before. Take the mark off while in Recomps -> back on All, the category
+  gone. Unit evidence only (Recomps724aTest).
 - Result:
 
 ### HW-23 KONKR evening session 17 Nov (live, owner present) - DONE
