@@ -1,3 +1,16 @@
+# Update 725b (24 Nov 2026, cloud run) - P2 branch: dev line merged in, QA selftest red fixed (QA tooling)
+- CI first: Verify 310 on 35bb129 (725a) GREEN.
+- Task 5 prep on `claude/v0674-native-pages` (worktree): the dev line (721a-725a, 31 commits) merged in (31e2931; one
+  conflict, tools/qa/selftest/test_qa.py - both sides' new classes kept). The P2 branch's QA selftest was RED on 7110d79
+  (TestWinGuard682jc: p2review.sh r714's k_home pressed raw `input keyevent KEYCODE_BUTTON_` around the window guard).
+  Fixed in eb4af38: k_home -> wg_key_home (R1 only while the confirmed home holds the focus and says HOME); the B that closes
+  the R1 panel -> new winguard wg_key_main (only while the QA app's confirmed main window holds the focus; anything else in
+  front aborts with nothing pressed). +2 selftests (fail on the old code). The lock file on the P2 branch keeps its own state.
+- Checked (cloud): merged P2 tree compiles (:app:compileDebugUnitTestKotlin OK); QA selftest 264 OK; static checks PASS.
+  Targeted unit tests NOT RUN here (Maven Central 429 on the unit-test classpath) - CI on eb4af38 runs them.
+- No app code changed on either line; no hardware. Files: P2 branch tools/qa/device/winguard.sh, tools/qa/device/p2review.sh,
+  tools/qa/selftest/test_qa.py; dev line hand-off docs only.
+
 # Update 725a (24 Nov 2026, cloud run) - Task 4: START > Categories (an installed app / Android game in several categories at once)
 - CI first: Verify 310 on ff28c4f (724a) GREEN.
 - Owner Task 4: START on an installed app or Android game now has "Categories…" (under Details; its subtitle names where it is

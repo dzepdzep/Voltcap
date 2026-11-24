@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 725a · 2026-11-24 05:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on ff28c4f: green · effort: medium
+**1. LATEST UPDATE** - 725b · 2026-11-24 06:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on 35bb129: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Press START on an installed app or Android game and pick 'Categories…' to choose every category it belongs in at once: Android games or Other apps (or automatic), Recomps, any console such as Nintendo 64 or GameCube, and your collections. Changes show immediately, are kept after restarts, rescans and app updates, and the game still appears only once in All games and launches, saves and keeps its art and play time exactly as before. A console that only holds such an app appears in the category list and disappears again when you take it out.
+**2. WHAT CLAUDE JUST FIXED** - Prepared the native-pages branch for the remaining layouts: brought it up to date with the latest development line and fixed a test script that could press a button without first checking that the test app was in front (its self-test was failing). No change to the app itself.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: All 53 native page designs (Task 5); Row position residuals (Task 1)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch; then: All 53 native page designs (Task 5): next layout; Row position residuals (Task 1)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

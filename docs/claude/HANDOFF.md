@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 06:40 UTC, 725b (cloud, Task 5 prep):** Verify 310 on 35bb129 GREEN. P2 branch `claude/v0674-native-pages`: dev line
+merged in (31e2931, test_qa.py conflict = both sides kept); its QA selftest was RED (p2review.sh r714 raw keys around winguard)
+-> eb4af38: k_home via wg_key_home, the R1 panel's B via new wg_key_main; selftest 264 OK, merged tree compiles, static PASS.
+Unit tests NOT RUN (Maven 429) - CI on eb4af38 is their check.
+NEXT: check Verify 310 on the dev push AND on eb4af38 (P2) FIRST (red -> fix first). Then Task 5: the first of the 23 class C
+layouts on the P2 branch (worktree; NATIVE_PAGES_P2.md "How a family joins"; suggested next: Pocket family / Channel /
+Circuit) - or the Task 1 residual (Row Top: a column taller than the room above the bottom clock bar; needs a design choice,
+no fix that cuts text).
+
 **24 Nov 05:45 UTC, 725a (cloud, Task 4):** Verify 310 on ff28c4f GREEN. START > "Categories…" on an installed app / Android
 game: Automatic / Android games / Other apps, Recomps, consoles (LibraryAppsSettings.appConsoles, "More consoles…"), Collections…
 link; several at once, applied at once, kept by package name; a console with only an app appears / hides; no duplicate in All.
