@@ -56,7 +56,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (727a: class C - Channel grid's own screens)
             HomeLayout.CHAN,
             // (728a: class C - the Timeline entry's own pages)
-            HomeLayout.TIMELINE)
+            HomeLayout.TIMELINE,
+            // (729a: class C - the Hero banner's own pages, both layouts that share it)
+            HomeLayout.HERO, HomeLayout.HERO_TILES)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

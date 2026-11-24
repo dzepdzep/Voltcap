@@ -683,3 +683,23 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   WindowWordsSurvey682 / NativePages681a / Batch2 / UniformKeys / NativeConfirm / PopupNativeStorage / Popup421 /
   NoArtCaption684: 597 tests 0 failures. Static checks PASS (no finding in the new file).
 - Audit: class A 32 / 53 (+ Timeline), class B 1 (Disc station), class C 20. Hardware NOT TESTED (HW-28), not visually approved.
+
+### 729a - P2 class C, fourth scene: Hero banner (Hero carousel + Hero tiles, WinPagesHero.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The banner (key art behind the dark gradient, logo / name bottom left) keeps its look; on its pages the hero text column
+  widens a little (62 -> 70 %) and the art darkens a shade, the name steps down to a smaller title (no reserved lines) and the
+  banner's tab strip takes the info line's place: every page name in a row (whole names, wraps), the shown one bold with a white
+  underline, after the old page has gone. Pages, in the banner's white-on-art type:
+  THE FEATURE (the facts as a band of big key figures - value large over a small label, a thin accent rule each, whole words;
+  the story as a pull quote with an accent bar, a D-pad stop), HALL OF FAME (a big "N / M" figure + "achievements unlocked",
+  a slim progress bar in the accent, each achievement a billboard row - round badge, title, "Unlocked <date>" / "Locked",
+  points pill; the order as a white pill; A opens the whole text and how rare; lazy rows), QUICK ACTIONS (big pill buttons in
+  the banner's key style, white when focused; removing ones red, second A). Motion: the next page grows up out of the banner's
+  lower left corner (where the hero text sits) as it fades in, nudged from the right going forward / the left going back; none
+  with Motion Off. Info (SPOTLIGHT) unchanged. Play keeps its slot (sceneKeySlots); L1 / R1 anywhere in the window.
+- Found by the tests on the way: at x1.3 the full-size title (3 reserved lines) and the info line left the Hall of Fame 0 px
+  for its first achievement (AchFirstRow HERO big=true FAILED 6/6) - fixed by the compact heading on pages.
+- Tests (cloud, Robolectric): NativePagesHero729aTest 4/4 (fails before: no heroPageName / HERO_BANNER not native); HERO +
+  HERO_TILES added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace / CategoryStable394 /
+  NativePagesTime728a and others: 1,884 tests 0 failures (100 Hero cases, none skipped). Static checks PASS.
+- Audit: class A 34 / 53 (+ Hero carousel, Hero tiles), class B 1 (Disc station), class C 18. Hardware NOT TESTED (HW-28), not
+  visually approved.
