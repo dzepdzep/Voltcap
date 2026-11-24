@@ -1,3 +1,22 @@
+# Update 727a (24 Nov 2026, cloud run) - P2 class C: Channel grid gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 045fac8 (726a, dev line) GREEN; on 5d53277 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 8a73d96: the second class C layout. Channel grid's window (the rounded
+  preview card in the grid's palette) now draws the channel's own screens in its preview well instead of the shared page body:
+  CHANNEL INFO (facts on one rounded info card, the story as the "About this channel" bubble), STAMPS (rounded pills with a
+  round stamp - inked star when yours, empty ring when not - and points; "N of M stamps", order pill, A opens date / rarity;
+  lazy rows), SETTINGS (big rounded pills; removing ones red and ask for a second A). Header with the screen name and pager
+  dots; screens slide in from the side like channel pages. Info (banner) and its More page unchanged.
+- Bugs found on the way (only reachable once the scene stays composed under its pages) and fixed: B from Options landed on
+  More's first key; two key rows swapped per turn (now one row, Play in the same slot on every screen); an L1 / R1 storm left
+  nothing lit because the opener (Details) sits behind the closed More key - the closed More key now answers for those keys.
+- Checked (cloud): compile OK; NativePagesChan727aTest 4/4 (new; fails on the old code); CHAN in AchFirstRow / ShelfText /
+  WinFocus / PlayPlace (+ RPC) / NoStrayPlay / LazyRows + NativeConfirm / WinPresentation / Batch2 / UniformKeys / Chip726a /
+  PopupNativeStorage: 104 tests 0 failures; Hierarchy529 (source-shape string updated to the single row), Batch494/496/506/507,
+  Popup421, Visual426, WindowWordsSurvey682, CategoryStable394: green. LazyRows n=0 now also accepts the card's "Start" key.
+  Static PASS. Hardware NOT TESTED (HW-28), not visually approved. Not on the dev line.
+  Files (P2 branch): ui/WinPagesChan.kt (new), ui/WinScenesWii.kt, ui/WinPageFlow.kt, tests NativePagesChan727aTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest, LazyRows682aqTest, Hierarchy529Test, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
 # Update 726a (24 Nov 2026, cloud run) - P2 class C: Circuit board gets its own Details / Achievements / Options (native-pages branch)
 - CI first: Verify 310 on 55b7361 (725b, dev line) GREEN; on eb4af38 (P2 branch) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 5d53277: the first class C layout. Circuit board's window (the chip's
