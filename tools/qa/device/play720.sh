@@ -52,7 +52,9 @@ for i in 1 2 3 4 5; do ek DPAD_DOWN; done
 R r4 live+5; shot r4_moved_down
 E save; R r5 below; shot r5_saved_below
 hk DPAD_DOWN; R r6 zone; shot r6_down_on_play; hk BUTTON_B
-E open; E select:$ID; ek DPAD_UP; ek DPAD_UP; ek BUTTON_Y; R r7 live-1; shot r7_undo
+# (682ar: Edit Home makes presses of one kind within 0.9 s one Undo step (a held D-pad) - the two Ups are spaced so that
+# they are two steps and Y takes back exactly one.)
+E open; E select:$ID; ek DPAD_UP; sleep 0.8; ek DPAD_UP; sleep 0.8; ek BUTTON_Y; R r7 live-1; shot r7_undo
 E discard; R r8 kept; shot r8_discarded
 am force-stop $P; sleep 1; A; sleep 5; gate; picker; R r9 kept; shot r9_after_restart
 E open; E reset:$ID; E save; R r10 reset; shot r10_reset
