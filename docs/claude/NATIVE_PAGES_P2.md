@@ -643,3 +643,24 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   added to AchFirstRow (6/6, + RPC), LazyRows (8/8), PlayPlace (2/2 + RPC 2/2), NoStrayPlay (2/2), WinFocus (8/8),
   ShelfText (24/24); WinPresentation / Visual426 / PopupNativeStorage / NativePages681a / Review682ag / UniformKeys green.
 - Audit: class A 30 / 53 (+ Circuit), class B 1 (Disc station), class C 22. Hardware NOT TESTED (HW-27), not visually approved.
+
+### 727a - P2 class C, second layout: Channel grid (WinPagesChan.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The channel's own screens in the preview card's well (the grid's palette, wiiPaletteNow, and its rim colour), soft rounded
+  cards and pills, a header naming the screen with the channel pager's dots (one per page, the shown one filled):
+  CHANNEL INFO (the facts on one rounded info card, label over value in whole words; the story as the "About this channel"
+  bubble, a D-pad stop), STAMPS (each achievement a rounded pill, a round stamp on the right - inked with a star when yours,
+  an empty ring when not - with its points; "N of M stamps", the order as a pill; A opens the whole text, "Stamped <date>",
+  how rare; lazy rows), SETTINGS (each option a big rounded pill in the window's key shape; removing ones red, second A).
+  Motion: the next screen slides in from the side a quarter of the way, as a channel page does (right going forward, left
+  going back), the old one slides an eighth the other way and fades. Info (the banner) and its More page of big keys unchanged.
+- Found and fixed on the way (the scene now stays composed under its own pages): (1) the More page's focus effect ran on
+  every page turn - B from Options landed on More's first key (Details); it now follows More being opened / closed only.
+  (2) Two key rows (Info / pages) swapped on every turn; one row now, the pages' keys in the Info row's slots (Play in one
+  place on every screen - PlayPlace). (3) A screen turned to with L1 / R1 has its More key as opener, which is not on the card
+  while More is closed: the window waited ~8 frames with nothing lit and in an L1 / R1 storm the focus was lost (B then
+  closed the window - NoStrayPlay682jTest). The closed More key now answers for the keys behind it: B lands on More at once.
+- Tests (cloud, Robolectric): NativePagesChan727aTest 4/4 (fails before: no chanPageName / WII_PREVIEW not native); CHAN added
+  to AchFirstRow + ShelfText; CHAN in WinFocus / PlayPlace (+ RPC) / NoStrayPlay / LazyRows (n=0 check accepts the card's
+  "Start") green - 104 tests, 0 failures; Hierarchy529 (source shape updated to the one row), Batch494 / 496 / 506 / 507,
+  Popup421, Visual426, WindowWordsSurvey682, CategoryStable394 green. Static checks PASS.
+- Audit: class A 31 / 53 (+ Channel), class B 1 (Disc station), class C 21. Hardware NOT TESTED (HW-28), not visually approved.
