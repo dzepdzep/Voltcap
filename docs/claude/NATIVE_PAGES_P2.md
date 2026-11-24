@@ -740,3 +740,12 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   CubeFacet676i: 581 tests 0 failures (146 skipped by the survey's own assumptions, none of the MEMCARD page cases). After merging
   682ar3: 730a + WinFocus / NoStrayPlay MEMCARD + PageHandoff682ar + ListHeadTurn682ar green; QA selftest OK; static PASS.
 - Audit: class A 35 / 53 (+ Memory card), class B 1 (Disc station), class C 17. Hardware NOT TESTED (HW-28), not visually approved.
+- **682ar2 / ar3 hardware (QA app, KONKR + RP Classic, synthetic games, 0 launches throughout):** `p2review.sh storm` on Crate and
+  Dock - 7 same-instant bursts + 3 paced sequences each: never a launch; paced L1 R1 A steps the order on the key every time.
+  Found on the way and fixed: (a) a burst ending on the page it started from never released the hand-over (it was keyed by the
+  page) - the D-pad did nothing until the next turn: now keyed by every turn (HandoffPage.turns); (b) D391's real cause - the
+  screensaver's wait counted only the home's own input: a game window's keys never reached it, so after 5 + 10 minutes the home
+  behind the window went to its screensaver and black. `p2review.sh awake` (saver idle 40 s, QA only): 120 s of presses in a
+  window - no screensaver; 60 s without - it starts. PASS both devices. (c) D394: the D390 watchdog outlived a finished run.
+  Crate lazywalk (0 / 1 / 10 / 120 KONKR, 120 RP Classic): Back reached, Up to the stamp, early close clean. D390 on device:
+  P2_MAX_S=25 -> ABORT "max run time", nothing pressed. HeadListSource682arTest guards every future page (head lists).
