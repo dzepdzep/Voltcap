@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 23:50 UTC, 741a (cloud, Task 5):** Verify 310 on c466cf8 (dev) + 945bb17 (P2) GREEN. P2 branch 9831e03: the Art
+library (GALLERY_PLACARD) hangs its own pages on its mat - Catalogue / Collection (10-frame hang) / Curator in the placard's serif,
+coming up like the gallery lights (WinPagesGallery.kt; class C 16 scenes done, own designs 46 / 53). PlayPlace ARTLIB found Play
+at the same place on all pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 9831e03 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Cross (CROSS_OPTIONS keeps its options list - check NATIVE_PAGES_P2.md before touching it); then Live, Layout Studio; the
+Pocket family (POCKET_LCD) needs all three faces in one batch) - or an emulator p2review sheet of batch 5/6 for the owner, or the
+Task 1 residual.
+
 **24 Nov 22:50 UTC, 740a (cloud, Task 5):** Verify 310 on aa0e172 (dev) + 982dfb1 (P2) GREEN. P2 branch 945bb17: Green core
 (CORE_PANEL) has the glowing console's own pages - SPEC / UNLOCKS (12-cell charge bar) / CONTROL in its monospace capitals and
 glow colour, opening from one glowing line (WinPagesCore.kt; class C 15 scenes done, own designs 45 / 53). Arctic needed nothing

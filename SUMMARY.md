@@ -1,3 +1,24 @@
+# Update 741a (24 Nov 2026, cloud run) - P2 class C: the Art library's gallery wall gets its own pages (native-pages branch)
+- CI first: Verify 310 on c466cf8 (dev line) and 945bb17 (P2, Green core) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 945bb17 -> 9831e03: the sixteenth class C scene (batch 6). The Art library's
+  gallery wall hangs its own pages on the pale mat where the work hangs, in the placard's serif and ink, lit in the layout's
+  colour: Catalogue (each fact a catalogue line - label in small grey capitals over the value, hairlines between - then the
+  story on a white card headed "Notes"), Collection (cup, "N of M acquired", a hang of 10 small frames - one acquired always fills
+  one, all only when every one is acquired - the order as a slim key; each achievement a framed badge beside its placard: title,
+  "Acquired <date>" / "Not yet acquired", "+N"; A shows the whole text and how rare it is), Curator (each option a small placard;
+  removing ones in deep red, second A). Heading = the page's name in serif italic + "ROOM N OF M", after the old page has gone;
+  the next page comes up like the gallery lights as you step up to the wall (fade + slight scale); none with Motion Off. On its
+  pages the wall keeps its size and its keys keep the page slots (Play first), so Play stays put; on a short wall's pages the
+  placard keeps the name alone. Was the shared page bodies on the mat. Own designs 46 / 53.
+- Checked (cloud): NativePagesGallery741aTest 4/4 (new; fails on the old code: no galleryPageName, GALLERY_PLACARD not native);
+  ARTLIB added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc ARTLIB x1.0 / x1.3 found Play at
+  the same place on all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*,
+  Layouts344 / 374, Batch505, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage - 2,803 tests, 0 failures.
+  Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesGallery.kt (new), ui/WinScenesMore.kt (GalleryPlacard), ui/WinPageFlow.kt; tests
+  NativePagesGallery741aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 740a (24 Nov 2026, cloud run) - P2 class C: Green core's console gets its own pages (native-pages branch)
 - CI first: Verify 310 on aa0e172 (dev line) and 982dfb1 (P2, Rental shop) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 982dfb1 -> 945bb17: the fifteenth class C scene (batch 6; Arctic already had
