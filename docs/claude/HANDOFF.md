@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 15:20 UTC, 733a (cloud, Task 5):** Verify 310 on 3f6f2f6 (dev) + 91247df (P2) GREEN. P2 branch d3907c7: Case flow
+(CASE_MEDIA) has the case's own pages in the picture's glass well - DETAILS / EXTRAS / SETUP (WinPagesCase.kt; class C 8 scenes
+done, own designs 38 / 53); on its pages the window keeps one size so Play stays put (PlayPlace caught it); PlayPlace's More
+matcher now reads a labelled More key. Robolectric 2286 tests 0 failures. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on d3907c7 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family
+(POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+New P2 pages: run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow for the layout before pushing.
+
 **24 Nov 14:20 UTC, 732a (cloud, Task 5):** Verify 310 on c157066 (dev) + ee74963 (P2) GREEN. P2 branch 91247df: File select
 (FILE_CARD) has the file's own screens on its inset - DETAILS / STARS / OPTIONS (WinPagesFile.kt; class C 7 scenes done, own designs
 37 / 53); its page row keeps Play in the first of two slots (PlayPlace caught it before the push). Robolectric 628 tests 0 failures

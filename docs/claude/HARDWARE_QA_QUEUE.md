@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens (v0674-native-pages 91247df) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages (v0674-native-pages d3907c7) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
@@ -240,6 +240,11 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   (ERASE?) and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3; a light and a dark file colour.
   Evidence: Robolectric only (NativePagesFile732aTest + FILESELECT in AchFirstRow / ShelfText / PlayPlace / WinFocus / NoStrayPlay /
   LazyRows suites, 628 tests 0 failures, cloud).
+- 733a adds Case flow (same session, build d3907c7 or later): p2review walk Info -> Details -> Extras -> Setup (R1 x3, L1 back),
+  the heading (accent edge, page name, page pills) changes after the old page has gone; on a page the window keeps one size and
+  Play (first of two pill slots) the same size and place; Extras lazywalk (120 set); a removing Setup pill armed and left (never
+  confirmed); the pickup flip on open / B still turns the window; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesCase733aTest + CASEFLOW suites, 2286 tests 0 failures, cloud).
 
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)

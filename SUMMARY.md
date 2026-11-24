@@ -1,3 +1,26 @@
+# Update 733a (24 Nov 2026, cloud run) - P2 class C: Case flow gets the case's own pages (native-pages branch)
+- CI first: Verify 310 on 3f6f2f6 (dev line) GREEN; on 91247df (732a, P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 91247df -> d3907c7: the eighth class C scene. The case opened into its media
+  keeps its dark glass stage, black glass well with a shine, accent-edged name band and glossy pills reflected on the floor; its
+  pages take the picture's place in the glass well, like the menu of the disc inside: DETAILS (facts as glass strips with the
+  name band's accent edge, the story in its own glass panel), EXTRAS ("N of M unlocked" over a glossy bar with its reflection;
+  each achievement a glass slide - badge with reflection, title, "Unlocked <date>" / "Locked", points pill; A opens the whole
+  text + rarity; lazy rows), SETUP (glossy option pills; removing ones red, second A). Heading: accent edge + page name + a pill
+  per page, after the old page has gone; pages flow in like the next case; none with Motion Off. Before: the shared page body
+  squeezed into the 110-300 dp picture band.
+- Found by the tests: Play moved between pages (window sized by its content) -> on its pages the case keeps one size (the
+  stage), pills two slots, Play the first. PlayPlace682ab's More matcher missed a labelled + described More key ("more more"), so
+  for Case flow it compared Info with Details and never reached the other pages - it now reads More as AchFirstRow does (not a
+  weaker check: it reaches more pages; all layouts still pass).
+- Checked (cloud): compile OK; NativePagesCase733aTest 4/4 (new; fails on the old code: no casePageName, CASE_MEDIA not native);
+  CASEFLOW added to AchFirstRow (+ PlayPlace / PlayPlaceRpc) + ShelfText; AchFirstRow / ShelfText / PlayPlace* / WinFocus /
+  NoStrayPlay / NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / WindowWordsSurvey / Layouts330 /
+  Pickups672 / Batch506 / NativePages*: 2286 tests 0 failures. Static PASS. Gradle with VOLTCAP_MAVEN_MIRROR.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 38 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesCase.kt (new), ui/WinScenes.kt (CaseFlowMedia), ui/WinPageFlow.kt, test NativePagesCase733aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, PlayPlace682abRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md.
+  Dev line: hand-off docs only.
+
 # Update 732a (24 Nov 2026, cloud run) - P2 class C: File select gets the file's own screens (native-pages branch)
 - CI first: Verify 310 on c157066 (dev line) GREEN; on ee74963 (731a, P2 branch) GREEN (run 45402171675).
 - Task 5 on `claude/v0674-native-pages` (worktree), ee74963 -> 91247df: the seventh class C scene. The turned-over save file keeps
