@@ -1316,6 +1316,9 @@ internal fun GameWindow(
         // (v0.6.66, D135: an A pressed inside the window is the window's own — a Play click after it is real.)
         androidx.compose.foundation.layout.Box(Modifier.onPreviewKeyEvent { e ->
             if (QaTrace.on) android.util.Log.e("VoltcapQA", "winkey ${e.nativeKeyEvent.keyCode} ${e.type}")
+            // (682aq8, D391: keys pressed in the game window are input too - the window's dialog never passes them through the
+            // activity, so after half an hour of D-pad in a window the home behind it had dimmed to black as if left alone.)
+            HomeIdle.poke()
             // v0.6.66 popup polish (Odin, Twin desk, A B A B at 120 ms): the second A came down while the window flew back, but
             // a button clicks on release and the window was gone by then — the open-again was lost and the last B fell on the
             // home screen (it opened the category screen). While closing, A asks for it again on its press; its release is

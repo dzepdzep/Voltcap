@@ -1,5 +1,11 @@
 package com.shelf.launcher.ui
 
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -79,7 +85,12 @@ private fun ShelfLine(on: Boolean, ink: Color, label: Color, content: @Composabl
 @Composable
 private fun ShelfCatalogue(ctx: WinSceneCtx, live: Boolean, ink: Color, label: Color, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
-    Column(modifier.nativeScroll(ink)) {
+    // (682aq8, D392 - owner 22:43, Coverflow x1.3 on hardware: the story, one D-pad stop taller than the panel, opened with the
+    // facts scrolled out above it and its last lines below - ▲ / ▼ moved nothing. On the story ▲ / ▼ now scroll the page while
+    // there is more that way, then the press goes on as before.)
+    val sc = androidx.compose.foundation.rememberScrollState()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    Column(modifier.pageScrollCue(sc, ink).verticalScroll(sc)) {
         // (682ag PROPOSAL, owner 23 Nov 13:32 - Coverflow details' reading space, shown to the owner as a comparison first, OFF by
         // default: the facts as one line of values, so the story starts near the top of the same panel - the panel
         // keeps its width, the home's title stays in view. Coverflow only - LocalCoverReading; the shelf family keeps its rules.)
@@ -95,7 +106,15 @@ private fun ShelfCatalogue(ctx: WinSceneCtx, live: Boolean, ink: Color, label: C
             }
         }
         Spacer(Modifier.heightIn(min = 6.dp))
-        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = focus, live = live) { on ->
+        NativeItem(onClick = {}, Modifier.fillMaxWidth().onPreviewKeyEvent { e ->
+            if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val step = sc.viewportSize * 0.6f
+            when (e.key) {
+                androidx.compose.ui.input.key.Key.DirectionUp -> if (sc.value > 0) { scope.launch { sc.animateScrollBy(-step) }; true } else false
+                androidx.compose.ui.input.key.Key.DirectionDown -> if (sc.value < sc.maxValue) { scope.launch { sc.animateScrollBy(step) }; true } else false
+                else -> false
+            }
+        }, focus = focus, live = live) { on ->
             Column(Modifier.fillMaxWidth().background(if (on) label.copy(alpha = 0.10f) else Color.Transparent).padding(start = 14.dp, top = 4.dp, bottom = 4.dp)) {
                 Text("STORY", color = label, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp, fontFamily = FontFamily.Monospace)
                 Text(ctx.summary ?: "No story for this game yet.", color = ink.copy(alpha = 0.9f), fontSize = 13.sp, lineHeight = 19.sp)

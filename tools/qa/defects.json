@@ -4312,6 +4312,30 @@
    "severity": "high",
    "status": "fixed in code 682aq8 (lazy rows on 25 pages; Record crate keeps its eager tracklist - lazy, its ORDER stamp inside the first row lost the page turn's focus and a quick A after L1 / R1 started the game, NoStrayPlay682jTest - open for Crate) - owner: not final until reviewed. NativeRows (LazyColumn, page scroll cue + faded edges) on all 26 native Achievements pages: only on-screen rows composed (Robolectric LazyRows682aqTest: 120 achievements -> a screenful composed, counts 80 / 120 intact, 0 / 1 / 10 / 120 x1.0 / x1.3, 224 cases, fails on 682am). Hardware lazywalk (140 quick Downs in bursts of 10, then 140 Ups, B, reopen, early close): first lazy build stopped on row 30 (KONKR) / 52 (RP Classic) where the eager column reached the end - fixed in 682aq7 (each move first puts the next row whole in view, presses queued in order); 682aq7 reaches Back on KONKR (Cinema, Crate, Resume, Bar) and RP Classic (Cinema, Resume), Up returns to the top, B / reopen land on the page first control, early close leaves no window and no crash. Page change on the 120 game (KONKR Cinema atrace): 1031 (682ak) -> 132 (682am) -> 35 ms longest frame (kasb10), no staggered filling. 682aq8: the rows never scroll the list themselves (a scroll that cut a bring-into-view short threw \"uncancelled requests present\" in Robolectric); each queued move waits for the glide to stop and, while presses wait, the list brings rows in without a glide (BringIntoViewSpec).",
    "found": "2026-11-23"
+  },
+  {
+   "id": "D390",
+   "title": "QA tool: p2review.sh cover (682aq) shared the variable i with shot(), so its Up walk never ended - KONKR and RP Classic pressed D-pad Up in the QA app's Cover details window every ~2.4 s for ~30 min (24 Nov 02:32-03:03), over the 15-minute physical QA limit",
+   "rule": "qa-tool",
+   "severity": "medium",
+   "status": "fixed 682aq8 (own counter, fixed 8 / 12 steps). Keys only through winguard inside the QA app's window (Level 1); production Voltcap untouched (versionCode 80), runs stopped by hand, restore verify OK, snapshot diff 0 on both devices",
+   "found": "2026-11-24"
+  },
+  {
+   "id": "D391",
+   "title": "Home behind an open game window dims / blanks as idle while D-pad keys are pressed in the window (the window's dialog never passes its keys through MainActivity, so HomeIdle never sees them) - KONKR / RP Classic, Cover details window, after ~30 min of presses the home behind went black",
+   "rule": "ux",
+   "severity": "low",
+   "status": "fixed in code 682aq8 (the window's key preview pokes HomeIdle); not re-tested on hardware",
+   "found": "2026-11-24"
+  },
+  {
+   "id": "D392",
+   "title": "Coverflow (shelf family) Details page at x1.3: the story is one D-pad stop taller than the panel - the page opened with the facts scrolled out above and the story's last lines below, and Up / Down moved nothing (KONKR kcv13: facts at y -14..76 shown 0; story 427 px tall, 360 shown; RP Classic: facts' top line cut). Facts and the end of the synopsis were reachable only by touch",
+   "rule": "ux",
+   "severity": "medium",
+   "status": "fixed in code 682aq8 (on the story Up / Down scroll the page while there is more that way, then the press goes on); hardware re-check pending",
+   "found": "2026-11-24"
   }
  ]
 }

@@ -174,11 +174,13 @@ lazy_layout() {
 # bar"): Cover details window, its Details page: shots while Up walks to the top (the facts) and Down to the story's end, each with
 # its QaClip dump (the text's and the keys' bounds). Level 1.   sh p2review.sh cover TAG SCALE   then  sh p2review.sh restore TAG
 cover_walk() {
+  # (682aq8: its own counter - shot() runs its own `i` loop; sharing it kept this walk pressing Up for 30 minutes, KONKR / RP
+  # Classic 24 Nov 02:32-03:03, QA app only, stopped by hand)
   n=COVERDETAILS; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Tetris (World)}}"; sleep 2
   openw COVERDETAILS ${n}_cv || return 1
   k BUTTON_R1 1.4; shot ${n}_cv_details; log "details focus [$(rowlabel ${TAG}_${n}_cv_details)]"
-  i=0; while [ $i -lt 8 ]; do i=$((i + 1)); k DPAD_UP 0.7; shot ${n}_cv_up$i; log "up $i [$(rowlabel ${TAG}_${n}_cv_up$i)]"; done
-  i=0; while [ $i -lt 12 ]; do i=$((i + 1)); k DPAD_DOWN 0.7; shot ${n}_cv_dn$i; log "down $i [$(rowlabel ${TAG}_${n}_cv_dn$i)]"; done
+  for cv in 1 2 3 4 5 6 7 8; do k DPAD_UP 0.7; shot ${n}_cv_up$cv; log "up $cv [$(rowlabel ${TAG}_${n}_cv_up$cv)]"; done
+  for cv in 1 2 3 4 5 6 7 8 9 10 11 12; do k DPAD_DOWN 0.7; shot ${n}_cv_dn$cv; log "down $cv [$(rowlabel ${TAG}_${n}_cv_dn$cv)]"; done
   closewin; log "cover walk done (launches: $(launches))"; }
 case $MODE in
 tracehome)
