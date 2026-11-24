@@ -945,3 +945,14 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   no measurable frame-level gain claimed.** The remaining cost is structural (the whole screen body re-composing on every focus
   step); next step proposed: keep the focused index out of LauncherScreenContent's own reads (its children read it), measured the
   same way.
+
+### 682au - Record crate / Dock (BAR) safety verification (owner 24 Nov 19:23 item 2) - HARDWARE PASS
+QA app qa682au (28ab750, Level 1), KONKR BW0306N230000845 + RP Classic MC94516AQF091001112 over USB, x1.0 and x1.3
+(ksf10 / ksf13 / rsf10 / rsf13, `p2review.sh safety TAG SCALE "CRATE BAR"`), the 120-achievement synthetic game (Crazy Taxi):
+Achievements page, A on the order key twice (Crate: Set order -> Still to get first -> Earned first; Dock: Earned first -> Latest
+earned / Most points / Rarest first), after each re-sort a deep scroll and quick bursts 'L1 R1 A', 'R1 L1 A', 'L1 R1 A A' (12 per
+run) - **0 launches**; rapid B B, the window reopened at once, 'R1 R1 A' - **0 launches**; a fresh window, focus on Play, one
+deliberate A - **exactly 1 launch recorded** (the QA launch block) - all 8 layout x handheld x scale cases. Restore OK, diff 0.
+The plain storm (fast + paced) passed earlier on both (682ar2 / ar3). Regression tests kept: ListHeadTurn682arTest,
+PageHandoff682arTest, HeadListSource682arTest (fail on the old implementation). D393: hardware-verified.
+Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under 682ar4 (accepted by the owner 24 Nov).
