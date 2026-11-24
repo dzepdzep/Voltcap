@@ -715,3 +715,28 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   NativePagesTime728a and others: 1,884 tests 0 failures (100 Hero cases, none skipped). Static checks PASS.
 - Audit: class A 34 / 53 (+ Hero carousel, Hero tiles), class B 1 (Disc station), class C 18. Hardware NOT TESTED (HW-28), not
   visually approved.
+
+### 730a - P2 class C, fifth scene: Memory card (MEMCARD_INFO, WinPagesMemCard.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The save browser (grey screen, the save's icon turning big at the left, the title in yellow top right, the choices as glowing
+  words along the bottom) keeps its look. Its pages are the browser's own screens on the dark glass panel at the right, in the
+  browser's type (yellow titles, white words with the soft drop shadow, the choices' white-to-blue glow on the focused line):
+  INFORMATION (each fact a label / value line, labels dim at the left, values wrapping in whole words; the story as the save's
+  Notes, a D-pad stop), MEMORY BLOCKS ("N / M blocks saved" over one row of memory blocks - a lit yellow block per achievement
+  you have, a hollow one for each still to get, 40 blocks at most where one stands for several, any progress lights one; each
+  achievement a save entry: square badge, title yellow when yours, "Saved <date>" / "Empty block", points; A opens the whole
+  text and how rare; the order a glowing word; lazy rows), COMMANDS (each option a word line with the choices' glow; removing
+  ones red, second A as the browser asks before a delete). Heading: the page's name in yellow and a row of small blocks, one per
+  page, the shown one lit, after the old page has gone. Motion: the next screen rises a little into the panel as it fades in,
+  drifting in from the right going forward / the left going back; none with Motion Off. Info (SAVE) unchanged.
+- The panel was a fixed 62 % box in the middle of the right half; it now runs from under the title to above the choices row
+  (measured), and the facts make way on a page (they are on INFORMATION). L1 / R1 anywhere in the window.
+- Found by the tests on the way (MEMCARD was in no text suite before): at x1.3 a long console name ("Super Nintendo
+  Entertainment System") ran one line under the save's title and was cut there - also on the Info page, so a defect of the
+  existing window, not only the new pages (ShelfText MEMCARD x1.3 FAILED 6/24); the card block keeps left of the title's column
+  and the name wraps. A wrapping 40-block strip took two rows at x1.3 and left the first achievement 2 px short (AchFirstRow
+  MEMCARD big n=40) - one row of blocks sharing the width.
+- Tests (cloud, Robolectric): NativePagesMemCard730aTest 5/5 (fails before: no mcPageName / MEMCARD_INFO not native); MEMCARD
+  added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / PopupMore451 / Layouts330 / WindowWordsSurvey682 /
+  CubeFacet676i: 581 tests 0 failures (146 skipped by the survey's own assumptions, none of the MEMCARD page cases). After merging
+  682ar3: 730a + WinFocus / NoStrayPlay MEMCARD + PageHandoff682ar + ListHeadTurn682ar green; QA selftest OK; static PASS.
+- Audit: class A 35 / 53 (+ Memory card), class B 1 (Disc station), class C 17. Hardware NOT TESTED (HW-28), not visually approved.
