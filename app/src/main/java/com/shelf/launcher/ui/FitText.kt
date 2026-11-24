@@ -96,7 +96,10 @@ internal fun FitText(
             var s = top
             var lines = maxLines
             // Step down ~6 % at a time: a handful of measurements at most, and only when the text changes.
-            while (s > bottom && !fits(s, lines)) s = maxOf(bottom, s * 0.94f - 0.1f)
+            // (682au, owner 24 Nov - Arcade B: on the RP Classic the step-down cost ~1.5 ms per text, ~11 ms of each ~100 ms game
+            // change. The same steps, searched by halves: the first step that fits, in ~4 measurements instead of up to ~20.
+            // FitSearch.legacy: the old walk, QA A/B only.)
+            s = fitStepSize(top, bottom, FitSearch.legacy.value) { fits(it, lines) }
             if (extraLine && !fits(s, lines)) lines = maxLines + 1
             // (682as: a still text that fits nowhere at its smallest size is laid out wider and drawn condensed - the least squeeze,
             // never under half, that holds the whole text in its lines and the longest word on one line.)
@@ -457,4 +460,28 @@ private fun Modifier.condensedTo(wide: Int): Modifier = layout { m, c ->
             transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
         }
     }
+}
+
+/** 682au: QA-only same-build A/B for [FitText]'s size search (`--es voltcap_test_fitsearch legacy|new`, isolated QA app, session). */
+internal object FitSearch { val legacy = androidx.compose.runtime.mutableStateOf(false) }
+
+/** 682au: [FitText]'s size - the first of the ~6 % steps down from [top] to [bottom] that [fits], else [bottom]. [legacy]: tried one
+ *  by one (the old walk); else galloping then halves (the same steps, the same answer where a smaller size never fits worse). Pure. */
+internal fun fitStepSize(top: Float, bottom: Float, legacy: Boolean, fits: (Float) -> Boolean): Float {
+    if (legacy) { var s = top; while (s > bottom && !fits(s)) s = maxOf(bottom, s * 0.94f - 0.1f); return s }
+    if (top <= bottom || fits(top)) return top
+    val steps = ArrayList<Float>(24).apply { var t = top; while (t > bottom) { t = maxOf(bottom, t * 0.94f - 0.1f); add(t) } }
+    // (galloping: steps 1, 2, 4, 8 ... down until one fits, then halves between - a fit just under the top costs what the walk
+    // did, one near the bottom ~log2 of the walk)
+    val last = steps.size - 1
+    var prev = -1; var probe = 0; var stride = 1
+    while (true) {
+        if (fits(steps[probe])) break
+        prev = probe
+        if (probe == last) return steps[last]
+        probe = minOf(last, probe + stride); stride *= 2
+    }
+    var lo = prev + 1; var hi = probe
+    while (lo < hi) { val mid = (lo + hi) / 2; if (fits(steps[mid])) hi = mid else lo = mid + 1 }
+    return steps[lo]
 }
