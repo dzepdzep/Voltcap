@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 22:50 UTC, 740a (cloud, Task 5):** Verify 310 on aa0e172 (dev) + 982dfb1 (P2) GREEN. P2 branch 945bb17: Green core
+(CORE_PANEL) has the glowing console's own pages - SPEC / UNLOCKS (12-cell charge bar) / CONTROL in its monospace capitals and
+glow colour, opening from one glowing line (WinPagesCore.kt; class C 15 scenes done, own designs 45 / 53). Arctic needed nothing
+(own pages since 682y). PlayPlace GREENCORE found Play at the same place on all pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 945bb17 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Art library (GalleryPlacard, WinScenesMore.kt), Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs all
+three faces in one batch) - or an emulator p2review sheet of batch 5 for the owner, or the Task 1 residual. The owner's session
+pushes to the P2 branch: fetch + merge before every P2 push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab +
+AchFirstRow (+Rpc) + NoStrayPlay682j + ShelfText for the layout AND every test that greps the scene name (grep -rln <SCENE>
+app/src/test); check the PLAYPLACE output line really found Play on the pages.
+
 **24 Nov 21:40 UTC, 739a (cloud, Task 5):** Verify 310 on 5d6a422 (dev) + fb72ff4 (P2) GREEN. P2 branch 982dfb1: Rental shop
 (SHOP_TAG) has the rental tag's own pages - CATALOGUE CARD / REWARDS CARD (punch card) / COUNTER in its black capitals lit in the
 neon (WinPagesShop.kt; class C 14 scenes done, own designs 44 / 53). PlayPlace had silently skipped the shop (did not know RENT &

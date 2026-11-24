@@ -1,3 +1,23 @@
+# Update 740a (24 Nov 2026, cloud run) - P2 class C: Green core's console gets its own pages (native-pages branch)
+- CI first: Verify 310 on aa0e172 (dev line) and 982dfb1 (P2, Rental shop) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 982dfb1 -> 945bb17: the fifteenth class C scene (batch 6; Arctic already had
+  its own pages since 682y). Green core's glowing system console reads out its own pages under its glow rule, in its monospace
+  capitals and the picked glow colour: SPEC (each fact a readout line - label in the dim glow over the value, a glow tick down its
+  left - then the story in a cut-corner well headed "// DESCRIPTION"), UNLOCKS (cup, "N / M", a 12-cell core charge bar - one
+  earned always charges one, all only when every one is earned - the order as a cut-corner key; each achievement a cut-corner
+  line: badge, title, "UNLOCKED <date>" / "LOCKED", "+N"; A shows the whole text and how rare it is), CONTROL ("> " command lines;
+  removing ones in alarm red, second A). Heading = "> " + the page's name + a cut-corner cell per page, after the old page has gone;
+  the next page opens from one glowing line across its middle like the console's boot; none with Motion Off. On its pages the
+  console keeps one height and its keys keep the page slots (Play first), so Play stays put. Was the cover with the shared page
+  bodies in the facts' place. Own designs 45 / 53.
+- Checked (cloud): NativePagesCore740aTest 4/4 (new; fails on the old code: no corePageName, CORE_PANEL not native); GREENCORE
+  added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc GREENCORE x1.0 / x1.3 found Play at the
+  same place on all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*, Layouts344,
+  NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage - 2,570 + 88 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCore.kt (new), ui/WinScenesMore.kt (CorePanel), ui/WinPageFlow.kt; tests NativePagesCore740aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 739a (24 Nov 2026, cloud run) - P2 class C: Rental shop's tag gets its own pages (native-pages branch)
 - CI first: Verify 310 on 5d6a422 (dev line) and fb72ff4 (P2, Panel dashboard) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), fb72ff4 -> 982dfb1: the fourteenth class C scene (first of batch 6). Rental

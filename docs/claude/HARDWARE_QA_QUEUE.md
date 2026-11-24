@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages (v0674-native-pages 982dfb1) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages (v0674-native-pages 945bb17) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - 738a adds Panel dashboard (same session, build fb72ff4 or later): p2review walk Info -> Overview -> Achievements -> Manage (R1 x3,
   L1 back); the page name + flat segments change after the old page has gone; the next page slides in from its side (none with
   Motion Off); the art strip says the console only; Play same size and place on every page; facts tiles, the ABOUT panel and the
@@ -210,6 +210,13 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   (120-set) with the ten punch holes and the order stamp (words slide); an achievement opened (A) shows the whole text + rarity;
   a removing choice armed and left; B puts the case back in its slot; popclip.sh + popclip.py PASS (tag marked Tilted); 0 launches.
   Evidence: Robolectric only (NativePagesShop739aTest + SHOP suites, cloud).
+- 740a adds Green core (same session, build 945bb17 or later): p2review walk Title -> Spec -> Unlocks -> Control (R1 x3, L1 back);
+  the "> NAME" heading + cut-corner page cells change after the old page has gone; the next page opens from one glowing line
+  across its middle (none with Motion Off); Play same size and place on every page and the console one height on its pages; the
+  readout lines, // DESCRIPTION and the achievement lines whole at x1.0 / x1.3 with two glow colours (Layout options > accent);
+  Unlocks lazywalk (120-set) with the 12-cell charge bar and the order key (words slide); an achievement opened (A) shows the
+  whole text + rarity; a removing line armed (red) and left; popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesCore740aTest + GREENCORE suites, cloud).
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
