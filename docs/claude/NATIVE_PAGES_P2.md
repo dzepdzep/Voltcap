@@ -806,3 +806,22 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   the box's CONTENTS stamp (it then compared the first page's Play) - "contents" added to its Details words. PlayPlace +
   PlayPlaceRpc 151 / 0 (incl. BOX, MEMCARD); AchFirstRowRpc682r + LazyRows682aq 315 / 0; ShelfText + AchFirstRow 1,213 run
   with only those 4 PlayPlace BOX failures before the word fix.
+
+### 732a - P2 class C, seventh scene: File select (FILE_CARD, WinPagesFile.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The turned-over save file keeps its chunky bevelled block, outlined capitals, yellow lit state and dark inset panel; its pages
+  are the file's own screens on that inset: DETAILS (each fact a fat rounded slot - yellow label, white value - and the story in
+  its own slot, a D-pad stop), STARS (big star + "N / M STARS", a row of little stars yellow / outlined, one standing for several
+  past 24; each achievement a rounded row - star, round badge, outlined title, "GOT IT <date>" / "NOT YET", "+N"; A opens the whole
+  text + rarity; lazy rows; order as a small round button), OPTIONS (fat round slots like the file's buttons, yellow when lit;
+  removing ones red with "ERASE? PRESS A AGAIN" - second A). The top row names the page in outlined capitals with one round pip
+  per page (shown one yellow) after the old page has gone; the next screen pops in from 94 % a little from the side; none with
+  Motion Off. Before: the shared page body inside the inset and the shared page name in the top row.
+- Found by the tests: Play moved between pages (PlayPlace682ab FILESELECT x1.0 / x1.3: wide on Details, short in the middle on
+  Options) -> a page's button row keeps two slots, Play the first (as Box / Memory card); at x1.3 on the tight file the star row
+  left the first achievement 62 of 73 px (AchFirstRow FILESELECT big=true) -> on a tight file with big text the count line says
+  it alone, and the inset's page area has no second padding.
+- Tests (cloud): NativePagesFile732aTest 5/5 (new; fails before: no filePageName / FILE_CARD not native); FILESELECT added to
+  AchFirstRow + ShelfText; FILESELECT cases of AchFirstRow / AchFirstRowRpc / ShelfText / PlayPlace / PlayPlaceRpc / WinFocus /
+  NoStrayPlay / LazyRows + NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / Layouts330 / WindowWordsSurvey
+  / CubeFacet 628 tests 0 failures (146 WindowWordsSurvey skips, as before); NativePages* + PopupNativeStorage + DiscTracks green.
+  Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not visually approved.

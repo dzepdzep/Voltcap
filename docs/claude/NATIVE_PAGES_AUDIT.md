@@ -48,3 +48,7 @@ Night menu and Blades draw their own pages: class A 29, class B 1 (Disc station)
 ## Update 731a (class C)
 Cardboard box draws its own sheets (CONTENTS / CHECKLIST / SERVICE on the insert's paper): class A 36, class B 1 (Disc station),
 class C 16. Implemented only - hardware NOT TESTED (HW-28), not visually approved.
+
+## Update 732a (class C)
+File select draws its own screens (DETAILS / STARS / OPTIONS on the file's inset panel): class A 37, class B 1 (Disc station),
+class C 15. Implemented only - hardware NOT TESTED (HW-28), not visually approved.

@@ -62,7 +62,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (730a: class C - the Memory card browser's own screens)
             HomeLayout.MEMCARD,
             // (731a: class C - the Cardboard box insert's own sheets)
-            HomeLayout.BOX)
+            HomeLayout.BOX,
+            // (732a: class C - the File select file's own screens)
+            HomeLayout.FILESELECT)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

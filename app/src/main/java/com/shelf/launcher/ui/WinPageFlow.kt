@@ -83,7 +83,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (730a, P2 class C: Memory card - the save browser's INFORMATION, MEMORY BLOCKS and COMMANDS screens, WinPagesMemCard.kt.)
     WinScene.MEMCARD_INFO,
     // (731a, P2 class C: Cardboard box - the insert's CONTENTS, CHECKLIST and SERVICE sheets, WinPagesBox.kt.)
-    WinScene.BOX_SHEET)
+    WinScene.BOX_SHEET,
+    // (732a, P2 class C: File select - the file's DETAILS, STARS and OPTIONS screens on its inset panel, WinPagesFile.kt.)
+    WinScene.FILE_CARD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

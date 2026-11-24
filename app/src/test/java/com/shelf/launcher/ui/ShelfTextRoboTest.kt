@@ -52,7 +52,7 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                 HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME, HomeLayout.SPOT,
                 HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, // (682w: batch 3)
                 HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE, // (682y: batch 4)
-                HomeLayout.CIRCUIT, HomeLayout.CHAN, HomeLayout.TIMELINE, HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.MEMCARD, HomeLayout.BOX) // (731a: Cardboard box's own sheets) // (730a: Memory card's own screens) // (729a: the Hero banner's own pages) // (728a: Timeline's own pages) // (727a: Channel's own screens) // (726a: class C - the datasheet's sections) // (682s: P2 batch 1's own pages too)
+                HomeLayout.CIRCUIT, HomeLayout.CHAN, HomeLayout.TIMELINE, HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.MEMCARD, HomeLayout.BOX, HomeLayout.FILESELECT) // (732a: File select's own screens) // (731a: Cardboard box's own sheets) // (730a: Memory card's own screens) // (729a: the Hero banner's own pages) // (728a: Timeline's own pages) // (727a: Channel's own screens) // (726a: class C - the datasheet's sections) // (682s: P2 batch 1's own pages too)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)

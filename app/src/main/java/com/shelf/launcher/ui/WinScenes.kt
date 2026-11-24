@@ -670,7 +670,10 @@ private fun FileCardBack(ctx: WinSceneCtx) {
     // (674h, D332 x1.3: on the KONKR and the Flip 2 the name's three 26 sp lines and the 50 dp buttons left the inset - TIME and
     // the story - 0 px. A tight file writes the name smaller (two lines; it slides) and its buttons a little lower.)
     val tight = h < 420.dp
-    Box(Modifier.size(w, h)) {
+    // (732a, P2 class C: the file's own screens - DETAILS / STARS / OPTIONS, WinPagesFile.kt - on its inset panel; L1 / R1 turn
+    // them wherever the D-pad is. The top row names the page after the old one has gone.)
+    val heading = rememberHeadingPage(ctx.page)
+    Box(Modifier.size(w, h).nativeBumpers(ctx)) {
         // Its thickness.
         Box(Modifier.fillMaxSize().offset(0.dp, 9.dp).clip(shape).background(mixS(base, Color.Black, 0.5f)))
         Column(
@@ -686,7 +689,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         .border(3.dp, mixS(base, Color.White, 0.45f), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 5.dp)
                 ) { Text(ctx.console.uppercase(), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, maxLines = 1, style = FsOutline) }
                 Spacer(Modifier.weight(1f))
-                if (ctx.page != WinPage.MAIN) Text(pageName(ctx.page).uppercase(), color = ink, fontSize = 16.sp, fontWeight = FontWeight.Black, style = if (ink == Color.White) FsOutline else TextStyle())
+                if (ctx.page != WinPage.MAIN) FilePageHeading(nativeTabs(ctx.pages), if (heading == WinPage.MAIN) ctx.page else heading, ink)
                 Spacer(Modifier.width(14.dp))
                 Canvas(Modifier.size(26.dp)) { fsBigStar(yellow) }
                 Text(" × ${ctx.earned}" + (if (ctx.total > 0) " / ${ctx.total}" else ""), color = ink, fontSize = 20.sp, fontWeight = FontWeight.Black,
@@ -741,7 +744,11 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     Box(
                         Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(mixS(base, Color.Black, 0.42f))
                             .border(3.dp, mixS(base, Color.Black, 0.6f), RoundedCornerShape(14.dp)).padding(6.dp)
-                    ) { ctx.pageBody(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp))) }
+                    ) {
+                        NativePages(ctx, Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)), label = "filePage", move = ::fileMove) { pg, pageLive ->
+                            FilePage(ctx, pg, pageLive, base, tight, Modifier.fillMaxSize())
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -751,7 +758,8 @@ private fun FileCardBack(ctx: WinSceneCtx) {
             // (674k, KONKR x1.3 k674k with More open: the round tools' row under the buttons left TIME 0 px - on a tight file
             // they stand beside the buttons, which share the rest of the row.)
             StackOrRow(tight && ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty(), Modifier, 8.dp, { m -> Box(m) {
-            UniformKeyRow(ctx.buttons, 10.dp) { a ->
+            // (732a: on a page the fat buttons keep two slots, Play the first, with or without the page's own button - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 10.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         Box(
                             Modifier.uniformFill()
