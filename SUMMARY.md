@@ -1,3 +1,22 @@
+# Update 735a (24 Nov 2026, cloud run) - P2 class C: Airy home gets the panel's own pages (native-pages branch)
+- CI first: Verify 310 on 1eb9328 (dev line) and 6e8c897 (P2, Orbit deck) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 6e8c897 -> da3e595, merged with the owner session's 682at (charging light)
+  -> 2e18249: the tenth class C scene. Airy home's floating white panel shows its own pages in its right column, in the same soft
+  1999 language: ABOUT (each fact a white round-ended bubble + the story in a speech bubble), STARS (one line: "★ N of M", a
+  bubble meter filled in the accent, the order as a round pill; each achievement a white rounded card with a round badge,
+  "Got it <date>" / "Still to get" and a round points bubble), SETTINGS (round-ended pills with a dot; removing ones soft red,
+  second A). Heading = the page's name in the light face + page dots, after the old page has gone; pages float up like a bubble;
+  none with Motion Off. Own designs 40 / 53 (class C 12 left).
+- Found by tests and fixed before the push: at x1.3 on the 640 x 427 window and the RP Classic the first star showed half a card
+  (16 px, then 46 px of 73) - the stars header is one line now (the order pill's words slide, rule 11) and a tight panel's pages
+  take the small round keys, a smaller heading and closer edges. Play keeps two page slots - same place on all three pages.
+- Checked (cloud): NativePagesAiry735aTest 4/4 (new); AchFirstRow + AchFirstRowRpc + ShelfText + PlayPlace + PlayPlaceRpc AIRY,
+  Airy477, WinFocus AIRY, NoStrayPlay682j all layouts, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, Layouts330,
+  UniformKeys, NativePages* - 0 failures; after the merge NativePagesAiry + ChargeLight682at green. Static PASS. Full suite: CI.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesAiry.kt (new), ui/WinScenes.kt (AiryPanel), ui/WinPageFlow.kt; tests NativePagesAiry735aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 734b (24 Nov 2026, cloud run) - P2 class C: Orbit deck gets the console's own screens (native-pages branch)
 - CI first: Verify 310 on 00d7e9b (dev line) GREEN; P2 branch: ec5addf (owner session, Arcade) RED, fixed by the owner session's
   6a9e2d4 (GREEN, includes 734a's test fix) - nothing left for this run.

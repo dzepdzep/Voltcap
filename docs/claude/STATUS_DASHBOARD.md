@@ -2,12 +2,12 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 734b · 2026-11-24 16:50 UTC · commit `this update (being pushed)` · CI: Verify 310 green on 00d7e9b (dev) and 6a9e2d4 (native-pages); 6e8c897 (native-pages, Orbit) pending at hand-off · effort: medium
+**1. LATEST UPDATE** - 735a · 2026-11-24 17:45 UTC · commit `this update (being pushed)` · CI: Verify 310 green on 1eb9328 (dev) and 6e8c897 (native-pages); 2e18249 (native-pages, Airy) pending at hand-off · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Orbit deck layout's game window now has its own Details, Achievements and Options screens inside its glowing console, in the same terminal style: the game's facts as readouts with the story as a log, the achievements as numbered tracks that light up when you have them (with a strip of lit cells for your progress), and the options as command lines (removing ones are red and ask twice). Play stays in the same spot on every page. Also fixed: at large text a long console name ran under the READY lamp. On the test branch only, not yet checked on a handheld.
+**2. WHAT CLAUDE JUST FIXED** - The Airy home layout's game window now has its own Details, Achievements and Options pages inside its floating white panel, in the same soft 1999 style: the game's facts as rounded bubbles with the story in a speech bubble, the achievements as white cards with round badges and a row of bubbles that fill in for your progress, and the options as big rounded pills (removing ones are red and ask twice). Play stays in the same spot on every page, and at large text the first achievement is shown whole. On the test branch only, not yet checked on a handheld.
 
 **3. LAST 24 HOURS** (most important first)
-- **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
+- **App** (735a): The Airy home layout's game window now has its own Details, Achievements and Options pages inside its floating white panel, in the same soft 1999 style: the game's facts as rounded bubbles with the story in a speech bubble, the achievements as white cards with round badges and a row of bubbles that fill in for your progress, and the options as big rounded pills (removing ones are red and ask twice). Play stays in the same spot on every page, and at large text the first achievement is shown whole. On the test branch only, not yet checked on a handheld.
 - **App** (734b): The Orbit deck layout's game window now has its own Details, Achievements and Options screens inside its glowing console, in the same terminal style: the game's facts as readouts with the story as a log, the achievements as numbered tracks that light up when you have them (with a strip of lit cells for your progress), and the options as command lines (removing ones are red and ask twice). Play stays in the same spot on every page. Also fixed: at large text a long console name ran under the READY lamp. On the test branch only, not yet checked on a handheld.
 - **App** (733a): The Case flow layout's game window now has its own Details, Achievements and Options pages, shown in the glass picture area of the opened case like the menu of the disc inside: the facts as glass strips with the coloured edge, the achievements as 'Extras' with a glossy progress bar and one glass slide per achievement, and the options as glossy pill buttons (removing ones are red and ask twice). The automated tests caught the Play button moving between pages; that is fixed, and a test that had not been reaching every page of this layout now does. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 38 of 53 layouts now have their own pages.
 - **App** (732a): The File select layout's game window now has its own Details, Achievements and Options pages on the dark panel inside the turned-over save file, in the same chunky style: the facts as fat rounded slots with yellow labels, the achievements as 'stars' with a row of little stars and one rounded row per achievement, and the options as big round buttons (removing ones are red and ask twice, like erasing a save). The automated tests caught the Play button moving between pages and a too-tight Achievements page at large text; both are fixed. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 37 of 53 layouts now have their own pages.
@@ -18,13 +18,13 @@
 | Area | Implemented | Verified on handhelds | Approved by you | Released |
 |---|---|---|---|---|
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
-| Native pages (own designs) | `███████░░░` 39/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Native pages (own designs) | `████████░░` 40/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
 | Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
 | Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch (6e8c897); then: Next native-page layout (Airy / Bubbles / Camera, or the Pocket family in one batch); Row position residuals (Task 1)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch (2e18249); then: Next native-page layout (Bubbles / Camera / Panels, or the Pocket family in one batch); Row position residuals (Task 1)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,7 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
-| HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens (v0674-native-pages 6e8c897) | OPEN (batch with the next KONKR + RP Classic P2 session) |
+| HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages (v0674-native-pages 2e18249) | OPEN (batch with the next KONKR + RP Classic P2 session) |
 | HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
 | HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
@@ -230,13 +230,13 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 
 **Native popup pages**
 - Total: 53
-- Implemented: 39 (73 %)
-- Unit-tested: 39 (73 %)
+- Implemented: 40 (75 %)
+- Unit-tested: 40 (75 %)
 - Emulator-tested: 0 (0 %)
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 39 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 15 layouts still on the shared page (14 class C + Disc station's shared bodies).
+- Remaining / blocked: 40 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 13 layouts still on the shared page (12 class C + Disc station's shared bodies).
 - Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**

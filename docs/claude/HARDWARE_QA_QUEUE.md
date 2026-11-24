@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens (v0674-native-pages 6e8c897) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages (v0674-native-pages 2e18249) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
@@ -251,6 +251,12 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   a removing command armed and left (never confirmed); the disc flight on open / B unchanged; the DISC line with a long console
   name (SNES) whole and clear of READY at x1.3; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
   Evidence: Robolectric only (NativePagesOrbit734bTest + ORBIT suites, PlayPlace all layouts, NoStrayPlay682j 80/80, cloud).
+- 735a adds Airy home (same session, build 2e18249 or later): p2review walk Info -> About -> Stars -> Settings (R1 x3, L1 back),
+  the page name + dots change after the old page has gone, the page floats up; Play same size and place on every page (on the
+  KONKR the pages take the small round keys - Info keeps the big ones: check by eye that the change reads well); Stars lazywalk
+  (120-set) with the bubble meter and the order pill (its words slide on one line); a removing setting armed and left; popclip.sh
+  + popclip.py PASS; 0 launches; x1.0 + x1.3. Evidence: Robolectric only (NativePagesAiry735aTest + AIRY suites, PlayPlace /
+  AchFirstRow / ShelfText AIRY, NoStrayPlay682j all layouts, cloud).
 
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
