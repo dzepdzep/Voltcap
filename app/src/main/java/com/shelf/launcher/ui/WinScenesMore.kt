@@ -353,7 +353,11 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
  * key's height, [gap] apart - edges in line, nothing resizing as the D-pad moves. Each key is drawn by [key] at that size.
  */
 @Composable
-internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = false, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = false,
+    /** (737a, PlayPlace CAMERA: Options has Play alone, Details / Achievements Play + their own key - a column under a weighted
+     *  page put Play a key lower on Options.) The column keeps the room of at least [slots] keys, the keys from its top: Play
+     *  stays put on every page. */
+    slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
     androidx.compose.ui.layout.Layout(content = {
@@ -366,7 +370,8 @@ internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = fa
         val w = if (fill && c.hasBoundedWidth) c.maxWidth else need.coerceIn(c.minWidth, if (c.hasBoundedWidth) c.maxWidth else Int.MAX_VALUE)
         val h = runCatching { ms.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
         val ps = ms.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
-        val total = if (ps.isEmpty()) 0 else ps.size * h + (ps.size - 1) * gapPx
+        val rows = maxOf(ps.size, if (ps.isEmpty()) 0 else slots)
+        val total = if (rows == 0) 0 else rows * h + (rows - 1) * gapPx
         layout(w, total) { ps.forEachIndexed { i, p -> p.place(0, i * (h + gapPx)) } }
     }
 }

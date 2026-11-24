@@ -611,6 +611,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             scaleY = 0.015f + 0.985f * open
             alpha = if (q <= 0f) 0f else 1f
         }
+            // (737a, P2 class C: L1 / R1 from anywhere in the menu - its own pages DATA / ALBUM / SETUP, WinPagesCamera.kt.)
+            .nativeBumpers(ctx)
     ) {
         Canvas(Modifier.fillMaxSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
         Row(Modifier.fillMaxSize().padding(u * 6)) {
@@ -632,7 +634,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(u * 6))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
+                // (737a: on its own pages the name keeps one sliding line - the page takes the room under it.)
+                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = if (ctx.page == WinPage.MAIN) 3 else 1, lineHeight = fs(8f))
                 Spacer(Modifier.height(u))
                 Box(Modifier.fillMaxWidth().height(u).background(c0))
                 Spacer(Modifier.height(u * 3))
@@ -656,10 +659,13 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(u * 2))
                     if (ctx.total > 0) Text("TROPHIES ${ctx.earned}/${ctx.total}", color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth().background(c0)) { ctx.pageBody(Modifier.fillMaxSize().padding(u * 2)) }
+                    // (737a, P2 class C: the camera's own pages on its light screen - DATA / ALBUM / SETUP in the pixel font and the
+                    // four shades, under a heading that names the page after the old one has gone; was the shared pages in a dark box.)
+                    CameraPageArea(ctx, CameraInk(c0, c1, c2, c3, font, u, fs), Modifier.weight(1f).fillMaxWidth())
                     Spacer(Modifier.height(u * 2))
-                    // (674e: the page's keys a stack of identical rows the window's width, at least 24 dp.)
-                    UniformKeyColumn(ctx.buttons, 0.dp, fill = true) { a ->
+                    // (674e: the page's keys a stack of identical rows the window's width, at least 24 dp. 737a: the room of two
+                    // keys on every page - Play alone on Options stays where it is on Details.)
+                    UniformKeyColumn(ctx.buttons, 0.dp, fill = true, slots = PAGE_SLOTS) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 24.dp).background(if (on) c1 else Color.Transparent), contentAlignment = Alignment.CenterStart) {
                                 Text((if (on) "> " else "  ") + a.label.uppercase(), color = if (on) c0 else c1, fontFamily = font, fontSize = fs(5f), maxLines = 2)

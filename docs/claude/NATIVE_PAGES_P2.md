@@ -950,3 +950,22 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   WindowWordsSurvey682, PopupMore451, Layouts344, Batch505, Batch489, Visual426, PopupNativeStorage, NativeConfirm, UniformKeys,
   NativePages*: 694 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 11 scenes done (own designs 41 / 53).
+### 737a - P2 class C, twelfth scene: Pocket camera (CAMERA_MENU, WinPagesCamera.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The cartridge menu (the chunky pixel frame in the picked palette's four shades, the dithered picture and the console / time on
+  the left, the name over a one-pixel rule on the right) stays as it is; its pages take the room under the name on the light
+  screen, in the same pixel font and shades: DATA (LABEL / VALUE lines, dotted pixel rules between, then the story in a one-pixel
+  frame headed ABOUT - a D-pad stop, the head turns dark while you are on it), ALBUM (one line: the pixel cup, "03/12", a meter of
+  pixel cells - one earned always shows a cell, full only when all are earned - and the order as a menu row whose words slide;
+  each award a numbered album entry "NO.01" with its badge in a square pixel frame, the title, "GOT <date>" / "NOT YET", the
+  points; the row you are on dark with the arrow cursor, as on the menu; A opens the whole text + how rare it is; lazy rows),
+  SETUP (menu rows with the arrow cursor; removing ones marked "!" and ask "PRESS A AGAIN TO REMOVE" - second A).
+  Heading: the page's name and a pixel square per page (the shown one filled) over a dotted rule, after the old page has gone.
+  Motion: the page draws itself down the little screen in the window's own 12 switch-on steps (cameraStep), a dark scan line at
+  its front; none with Motion Off. Was: the shared pages in a dark box.
+- L1 / R1 on the menu's root. The keys stay one uniform column under the page (674e), so Play stays put; on the pages the name
+  keeps one sliding line so the page gets the room (it had up to three).
+- Reuse: the existing pixel cup / cursor icons (PX_TROPHY now internal), pixelIcon, the menu's pixel unit and font sizes.
+- Tests (cloud): NativePagesCamera737aTest (new; fails before: no cameraPageName, CAMERA_MENU not native); CAMERA added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText. Results in SUMMARY 737a. Hardware NOT TESTED (HW-28 extended),
+  emulator review not run, not approved.
+- Audit: class C 12 scenes done (own designs 42 / 53).
