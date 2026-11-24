@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # longtitle.sh TAG "LAYOUTS" — per test game (long titles / maybe no art) x layout: window collapsed (c) and More open (e) stills.
 # Owner's view state saved first and restored + verified at the end; preview mode; launches blocked.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT

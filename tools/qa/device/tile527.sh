@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Sprint 527 - Tile home rows (TileRows order) and the background clip's light, isolated QA app ONLY (com.shelf.launcher.qa).
 # Never wakes / unlocks; keys only while the QA app is in front (else STOP). The owner's QA snapshot files are copied aside
 # first and put back byte-for-byte at the end (the snapshot hook overwrites them).

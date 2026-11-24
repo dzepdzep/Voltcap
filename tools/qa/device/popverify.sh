@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # popverify.sh TAG "LAYOUTS" — update 452 D156 check per layout (preview only, launches blocked, the owner's popup style):
 # A opens (c.png) · More opened as its button does (voltcap_test_winmore, e.png) · B → More closes, window stays (b.png) · B → window
 # closes · rapid A B A B (120 ms) → closed, nothing started. PASS line per layout; the app's own "win more=" log lines kept in log.txt.

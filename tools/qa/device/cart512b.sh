@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 512 (b, the cartridge itself — library shell "gb"): the generated / custom cartridge path (fixture "Pokemon Brown (Hack).gb", synthetic cover; QA app only) held in
 # Inspect at many turns, incl. edge-on, and pitched — screenshots into the QA app's folder (nothing saved, no game).
 P=com.shelf.launcher.qa; O=/sdcard/Android/data/$P/files/c512b; mkdir -p $O; rm -f $O/*

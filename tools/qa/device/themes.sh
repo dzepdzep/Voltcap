@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # VoltCap QA (update 432) — theme stills on one layout, preview only (nothing saved; `voltcap_test_preview false` at the end puts
 # the saved layout / theme back). Needs the test-hooks file.
 #   [BG=ANIMATED] [KEYS="R R"] sh themes.sh RUN LAYOUT "THEME1 THEME2 …" [WAIT_S]  → out/RUN_LAYOUT_THEME.png and _b.png (2 s later)

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: Smart App Artwork - apps without cover art (on these handhelds: JoiPlay, FolderSync, Obtainium, SaveQuest; DroidDeck /
 # PXPlay / Moonlight are not installed and nothing is installed for this test) in square, portrait, wide and hero cards, focus on.
 # Isolated QA app ONLY, preview (nothing saved), settings snapshotted / restored.   sh appart523.sh TAG ["LAYOUTS"] ["APPS"]

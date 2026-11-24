@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 512: Inspect touch behaviour with ONE finger (adb `input` has one pointer — no pinch / two-finger pan here).
 # (sh insp512.sh TAG [x%] [y%] — where to drag; default the middle.) Tiles home -> A (game window) -> tap its Inspect control (found in QaClip's dump) -> a recording of: idle motion,
 # a one-finger drag, the 3 s hold, the 360 ms settle-back and the idle motion after; then Y (reset) recorded. QA app only.

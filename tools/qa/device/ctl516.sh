@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 516: controller pass on a compact screen — isolated Voltcap QA app ONLY (launches blocked, preview layouts, settings
 # snapshotted and restored). Per layout: D-pad 4 right / 2 down, R1 (notifications panel), L1 (shortcuts), R2 / L2 (category
 # forward and back), Select (main menu, 3 down), Start (game options); after each a screenshot and the focused window, then B

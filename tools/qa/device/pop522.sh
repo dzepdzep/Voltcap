@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 522: popup + controller-glyph sweep on the isolated QA app ONLY (popclip.sh, 53 layouts x popup styles, QaClip dumps with
 # the InkGlyph boxes). QA settings snapshotted before and restored after; optional QA-only scale (voltcap_test_scale, never the
 # system font_scale / density).  sh pop522.sh TAG "LAYOUTS" "STYLES" "GAME" [SCALE e.g. font=1.3,density=1]

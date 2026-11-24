@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # ptab.sh TAG — Settings A/B for update 457: one perfetto trace per mode (voltcap_test_settingsflat false / true), Settings Home page, ▼x10 ▲x10.
 P=com.shelf.launcher; A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
 input keyevent KEYCODE_WAKEUP

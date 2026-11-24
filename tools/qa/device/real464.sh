@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 464: the REAL cartridge photo path as you open it — game window › Inspect (case) › open › take the cartridge out —
 # then turned by the same slow touch drags. Identical script on the RC and on staging, for pixel comparison.
 # usage: sh real464.sh OUT NAME

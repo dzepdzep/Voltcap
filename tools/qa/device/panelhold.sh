@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # panelhold.sh TAG REPS — update 456 A/B: the home background held under the app drawer and Settings (voltcap_test_panelhold).
 # Per mode (off = before, on = after): drawer open + idle 4 s, drawer scroll ▼x8 ▲x8, Settings open + idle 4 s, Settings ▼x6 ▲x6.
 # Prints frames / missed vsyncs / max gap (QaTrace cadence) and gfxinfo GPU 50th/90th percentile + janky % per phase.

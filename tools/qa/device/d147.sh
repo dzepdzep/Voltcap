@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # d147.sh TAG LAYOUT "OPEN KEYS" "AFTER KEYS" — D147 check on the Thor: preview LAYOUT, press OPEN KEYS (the layout's own way to its
 # dashboard button), A, ▼ (onto the dashboard: the return button should light), A (back), then AFTER KEYS. Both screens captured.
 P=com.shelf.launcher/.MainActivity; D=/sdcard/pp/$1; mkdir -p $D

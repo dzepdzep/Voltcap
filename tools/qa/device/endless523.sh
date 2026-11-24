@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: Endless with few games, isolated QA app ONLY. Per layout x category (1, 2, 3, many games): Endless on, the start,
 # then 6 fast steps (80 ms apart) and 3 fast steps back, a shot after each burst; QaClip dump for the focus. Settings
 # snapshotted / restored.  sh endless523.sh TAG

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 514: RP Classic Game shelf frame pacing — isolated Voltcap QA app ONLY. Single D-pad steps (0.7 s apart), a burst, then
 # a case pulled out into its window and put back. gfxinfo framestats for each part (fs_<TAG>_<part>.txt) + summary lines.
 #   sh perf514.sh TAG [LAYOUT]

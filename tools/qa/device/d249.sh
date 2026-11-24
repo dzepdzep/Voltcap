@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 475 (D249 triage): is the first D-pad press after arriving on the home screen lost — and after WHAT arrival?
 # Per trial: arrive (hook = voltcap_test_game intent, plain = am start with no extras, home = the HOME key when Voltcap is
 # the launcher), wait, dump the app's focus, ONE DPAD_RIGHT, dump again: moved=1 / 0. Then a second press: moved2.

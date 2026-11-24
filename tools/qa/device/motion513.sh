@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: motion audit — every home layout in the isolated QA app: a short screen recording of game-to-game moves
 # (2 steps right, 1 left, a burst of 3), the window opening (A) and closing (B), for tools/qa/tools/flash513.py (one-frame
 # flashes) and frame review. Keys only while the QA app has the focus. sh motion513.sh TAG [LAYOUTS]

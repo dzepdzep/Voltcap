@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: a deleted game leaves the list on the next scan, also when its playlist / cue sheet stays behind. Isolated QA
 # app ONLY, in its OWN stand-in library folder (Android/data/<qa>/files/roms - never the owner's ROMs). Test files are made
 # here and removed again at the end. Grid layout, PS1 category, preview; settings snapshotted / restored.  sh deleted523.sh TAG

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 515: Xbox 360 / PS3 / PS4 cases (and the PS2 game's own, for reference) on the production renderer — isolated Voltcap QA app ONLY.
 # The fixture game "Shadow of the Colossus" with the QA fixture's portrait art is put in each console's case through the R1 › Case
 # pick (Features case_style, QA app's own setting, snapshotted first and restored + verified at the end), then held in Inspect

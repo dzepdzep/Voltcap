@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 529 (owner, 13 Nov): Night menu ("Moonlight") motion - the same recordings and metrics before and after the motion
 # work. Isolated QA app ONLY (com.shelf.launcher.qa), fixture library, launches blocked. Never wakes / unlocks: a key only
 # while the QA app is in front, awake and unlocked (else the run stops). Owner settings: snapshot saved first, restored last.

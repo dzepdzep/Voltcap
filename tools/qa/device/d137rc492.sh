@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 492 (D137) — Case stacks: rebuilds per move (QaTrace "recomp" counts: Screen, StkRoot, StkStage, StkItem, StkFront,
 # Spine…), frame stats and memory, over identical walks. Preview hooks only (layout / category for this session, nothing
 # saved); arrows and B only — B closes the start-up "Who's playing?" keeping the profile. Nothing is launched.

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 487 (K3) — Save Vault: the grid slot vs the save up close, in the owner's own vault settings (nothing changed,
 # no save data touched: the vault is only looked at). A opens a save's window, B closes it.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pc/k3vault; mkdir -p $OUT

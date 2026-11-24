@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 499 — screenshots / logs only (no A on Play, no game, no sync): layout-aware windows by family, Save Vault (dry view),
 # custom layout accent, overlay fixture, physical-media homes. Run between `viewstate.sh save` and `viewstate.sh restore`.
 # sh win499.sh TAG MODE   -> /sdcard/pc/TAG/*.png + log.txt

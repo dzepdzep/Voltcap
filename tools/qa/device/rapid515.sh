@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 515: the intermittent "A B A B left the window open" — isolated Voltcap QA app ONLY (launches blocked, preview layouts).
 # Each round: the home in front with the window closed, one key sequence, 2.5 s, then the window state and the app's own key
 # trace (VoltcapQA: homekey / winkey / win close again / reopen on press / reopen cancelled / win closed reopen=).

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # stacks461.sh OUT — D137 Case stacks: 2 sets x 3 runs of 20 RIGHT presses at 150 ms (gfxinfo), PSS after each set,
 # plus pop-in frames: 3 screenshots right after quick moves. Assumes Case stacks preview on a GBA game already open.
 O=$1; rm -f $O; P=com.shelf.launcher

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 464: home screen (Pocket Quest, cartridge look; session-only preview), every solid cartridge held at YAW
 # (voltcap_test_pose — the same hook on the RC and staging). The game first (its category may bring its own layout), then the
 # preview layout. usage: sh home464g.sh OUT YAW NAME...

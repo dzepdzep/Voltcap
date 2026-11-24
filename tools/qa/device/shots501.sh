@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 501: layout screenshots in the isolated QA app only (com.shelf.launcher.qa). Usage: shots501.sh <tag> LAYOUT...
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=$F/shots501; mkdir -p $O
 T=$1; shift

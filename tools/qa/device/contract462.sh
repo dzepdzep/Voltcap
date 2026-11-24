@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 462: the controller contract on every layout (simulated input: adb `input keyevent`, not a physical pad).
 # usage: sh contract462.sh "LAYOUT ..." OUTDIR   (needs the voltcap_test_hooks file; the caller saves / restores the snapshot)
 # Per layout: Select → Settings, Start → game options, R1 → quick menu, L1 → shortcuts, B → category picker (themed or

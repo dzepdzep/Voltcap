@@ -2991,6 +2991,31 @@ echo FINISHED >> {d}/log.txt
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_682ar_d390_every_device_script_that_sends_input_has_a_real_end(self):
+        import glob, re
+        missing = [os.path.basename(f) for f in glob.glob(os.path.join(self.DEV, "*.sh"))
+                   if os.path.basename(f) not in ("qaguard.sh", "winguard.sh") and re.search(r"input (keyevent|tap|swipe)", open(f).read())
+                   and "qaguard.sh" not in open(f).read()]
+        # (winguard.sh is a library: the scripts that source it source qaguard.sh themselves, and its keys check wg_time_ok)
+        self.assertEqual(missing, [], "device scripts sending input without qaguard.sh")
+
+    def test_682ar_d390_qaguard_sends_nothing_past_the_deadline(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        try:
+            bin_ = os.path.join(d, "bin"); os.makedirs(bin_); keys = os.path.join(d, "keys.txt"); open(keys, "w").close()
+            open(os.path.join(bin_, "input"), "w").write(f"#!/bin/sh\necho \"$*\" >> {keys}\n"); os.chmod(os.path.join(bin_, "input"), 0o755)
+            env = {**os.environ, "PATH": bin_ + ":" + os.environ["PATH"]}
+            ok = subprocess.run(["sh", "-c", f"L={d}/l.txt; . {self.DEV}/qaguard.sh; input keyevent KEYCODE_A; echo END >> {d}/l.txt"],
+                                env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(ok.returncode, 0); self.assertEqual(open(keys).read().split(), ["keyevent", "KEYCODE_A"])
+            late = subprocess.run(["sh", "-c", f"L={d}/l2.txt; QA_T_END=$(( $(date +%s) - 1 )); . {self.DEV}/qaguard.sh; "
+                                   f"while true; do input keyevent KEYCODE_B; done"], env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(late.returncode, 3); self.assertNotIn("KEYCODE_B", open(keys).read())
+            self.assertIn("max run time", open(os.path.join(d, "l2.txt")).read())
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_682ar_d390_default_deadline_is_the_15_minute_limit(self):
         src = open(f"{self.DEV}/winguard.sh").read()
         self.assertIn("WG_MAX_S:-900", src)

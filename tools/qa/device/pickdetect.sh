@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 447 (D144): picker447.sh (the new picker.sh) on every "Who's playing?" look — sample profiles (ids 900+, nothing saved).
 # usage: sh pickdetect.sh TAG   → /sdcard/pp/TAG/result.txt lines "LOOK picker=X home=Y"; PASS only if PICKER / HOME each time.
 P=com.shelf.launcher; OUT=/sdcard/pp/$1; rm -rf $OUT; mkdir -p $OUT

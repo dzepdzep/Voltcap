@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # popmore.sh TAG "LAYOUTS" [RIGHTS] — update 451 More check (preview only, launches blocked): A opens the window (still 1), ▶ x RIGHTS
 # (default 3: Play → Details → Back/Inspect → More) (still 2), A on it (still 3: More open, focus on its first action), B (still 4:
 # More closed, window still open), B (still 5: window closed). Logs the focused window token after each step.

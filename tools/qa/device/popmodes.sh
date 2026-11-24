@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # popmodes.sh TAG "LAYOUTS" — update 454: every R1 popup style x layout (preview, launches blocked): A opens (still), focus line,
 # B closes (window token back to home), no launch. Saves the owner's snapshot first and restores + verifies it at the end
 # (voltcap_test_pref writes popup_style_by_layout during the run).

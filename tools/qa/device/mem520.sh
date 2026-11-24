@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 520: KONKR (or any handheld) memory soak — isolated Voltcap QA app ONLY (launches blocked, preview layouts, snapshot saved
 # and restored). Separates caches from leaks: meminfo per round, after 60 s idle and after a critical trim.
 #   sh mem520.sh TAG [ROUNDS=10] [LAYOUTS="SHELF STACKS TILES CHAN CASEFLOW COVERDETAILS GRID HERO_TILES CINEMA BOX"]

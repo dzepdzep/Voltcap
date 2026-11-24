@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 482 (B5) — Cardboard box with one box: ▶ past the last case and ◀ past the first (Endless on). Preview only.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pc/box5; rm -rf $OUT; mkdir -p $OUT
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

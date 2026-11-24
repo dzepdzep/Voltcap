@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 515: Batch 514 retest — isolated Voltcap QA app ONLY (sample profiles, fixture / pushed QA pictures, preview layouts;
 # settings snapshotted and restored). sh retest515.sh TAG
 #  fx    QA fixture art (wide / portrait / square) on Game shelf and Case stacks (picked pictures as a game's Box: art515.sh).

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # verify461b.sh — Crystal Kaizo (hack matched to Crystal) no longer wears Crystal's label; Fool's Gold printed label close-up; Silver same size.
 P=com.shelf.launcher; O=/sdcard/q461w; rm -rf $O; mkdir -p $O
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

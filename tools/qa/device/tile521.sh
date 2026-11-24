@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 521 fix check: Tile home with the owner-like Edit home move (row -90 dp, buttons placed by the tiles), then the R1 Row
 # place (same reset as the R1 tile) Top / Bottom / Middle; plus Top with no move (profiles). Isolated QA app ONLY; restored.
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; O=$F/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt

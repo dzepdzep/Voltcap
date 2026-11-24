@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Game shelf: OLD vs NEW (3D case) pull-out, artwork readiness and spine flicker - QA app only. 
 # Runs on the handheld from /data/local/tmp. Same gates as ci_qa.sh: a failed gate stops the script with no input sent.
 # Nothing is saved: the layout is a preview (voltcap_test_preview, ended at the end of each run), the 3D switch is in memory (Shelf3D.enabled), games never start

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 502 (isolated QA app only): the drawn Game Boy pak path Pokemon Brown uses (no label scan -> printed sticker on the
 # drawn "gb" shell, cover from a made-up picture) held at many angles, incl. edge-on; then the 3D look's cartridge free-running.
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=$F/cart502; mkdir -p $O; rm -f $O/*.png

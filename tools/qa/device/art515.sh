@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 515: QA pictures (back|spine|front wrap, minimalist sleeve, pure-green stand-in, 16:9 artwork) as two games' "Box"
 # picture (voltcap_test_pick; taken off again with "clear") — Shelf / Stacks / Cover Details homes and Inspect at 0|0 and
 # 35|8. Isolated QA app ONLY; snapshot restored. sh art515.sh TAG

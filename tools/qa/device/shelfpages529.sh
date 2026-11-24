@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 529k - the shelf family's own pages (Game shelf, Case stacks, Console stack, Coverflow details) on the handheld. Isolated QA
 # app ONLY (com.shelf.launcher.qa), fixture library + achievements, launches blocked, preview on (nothing saved); the owner's QA
 # snapshot is kept first and put back by `restore`. Never wakes / unlocks: keys only while the QA app is in front and awake.

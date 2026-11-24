@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # v0.6.66 update 444 popup polish check (preview only; launches blocked by voltcap_test_nolaunch). Per layout x style:
 # home still, open recording + stills (+1.2 s settled, +5 s rested), D-pad walk stills, close recording, after-B still
 # (same game as before?), then rapid A B A B and A B B (120 ms) — any window left open is closed and noted.

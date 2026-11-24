@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 529, achievements compact hotfix: the per-game achievement list, before / after - isolated QA app ONLY
 # (com.shelf.launcher.qa), fixture library with synthetic sets (QaArtFixture; the new build: sets of 0 / 1 / 10 / 120 and synthetic
 # comments). Never wakes / unlocks: a key only while the QA app is in front, awake and unlocked. Owner settings: snapshot saved

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 529 blur hotfix: the blurred hero / baked-blur paths with real decoded pictures - isolated QA app ONLY. QA fixture art
 # (art=wide: generated 16:9 pictures with lettering and hard edges, used as hero too; art=lowres: 64 x 96 shown big; art=portrait).
 # Never wakes / unlocks; keys only while the QA app is in front. Owner snapshot kept and restored.

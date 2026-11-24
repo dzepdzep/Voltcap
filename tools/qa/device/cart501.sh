@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 501 (isolated QA app only): cartridges / cases held at set angles (TestHooks.inspect: nothing saved, no game).
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=$F/cart501; mkdir -p $O; rm -f $O/*.png
 for g in "$@"; do

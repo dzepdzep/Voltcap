@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 720a - HW-24 715a: the Voltcap row's added Play part moved with the REAL Edit Home D-pad, and where the home's ▲ / ▼ then go
 # (LEVEL 1, isolated QA app com.shelf.launcher.qa ONLY). Game header off, "Play / Continue" added to the Voltcap row (CLASSIC),
 # its place set just above the middle (y 0.44); then in Edit Home (`voltcap_test_edithome open` + `select:CLASSIC:h_play`) five
@@ -15,7 +16,10 @@ ID=CLASSIC:h_play
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 log() { echo "$*" >> $L; }
 stop() { log "STOP $1"; echo DONE >> $L; exit 3; }
-gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
+# (682ar, D390: a real end - every gate checks the run's deadline, 15 min unless MAX_S is lower; past it: STOP, nothing pressed)
+T_END=$(( $(date +%s) + ${MAX_S:-900} )); [ "${MAX_S:-900}" -le 900 ] || T_END=$(( $(date +%s) + 900 ))
+gate() { [ "$(date +%s)" -lt "$T_END" ] || stop "max run time reached - nothing more pressed"
+  dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 picker() { grep -q "^PICKER" $F/voltcap_qa_screen 2>/dev/null && { gate; input keyevent KEYCODE_BUTTON_B; sleep 1.5; log "picker dismissed"; }; }

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 474 — home-screen navigation evidence (QA tier T5): per layout, the game you're on is moved RIGHT, LEFT, LEFT, RIGHT (475)
 # (DOWN / UP where RIGHT doesn't move it), and after every key: an early raw screenshot (~0.15 s + capture, no PNG encoding) and, once settled (1.4 s), a
 # screenshot + QaClip dump. tools/qa/tools/navclip.py then checks: the same game comes back with its title / art in the same

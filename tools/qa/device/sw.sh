@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # VoltCap QA — settings page stills: sh sw.sh NAME TAB [SUB] [STEPS]
 #   Starts on Voltcap's home (Settings closed). Opens Settings, goes to tab TAB (1 = Home), opens it; SUB > 0 opens the
 #   SUB-th entry of a menu page. Then 3×Down per still. Only Down / Left / Right / A on a tab or menu entry are pressed:

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: Save Vault looks with saves of games that are here, games that are NOT here (with a look another device
 # recorded, and with none), isolated QA app ONLY, `voltcap_test_vault_fixture` (display only: no save read / written,
 # nothing synced). Per look: the grid, a not-here save opened (A = DPAD_CENTER), back. Settings snapshotted / restored.

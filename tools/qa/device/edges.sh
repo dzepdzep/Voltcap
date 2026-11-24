@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # VoltCap QA (update 479, B1) — one still per home layout for the edge / unused-space audit. Run detached:
 #   setsid sh edges.sh TAG "CLASSIC TILES …" &   → /sdcard/pc/TAG/<LAYOUT>.png + log.txt, DONE at the end
 # Preview only (voltcap_test_preview: nothing saved); no navigation, no game started. The caller saves / restores the

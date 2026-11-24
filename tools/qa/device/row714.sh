@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 717a - HW-24 714a without the R1 panel (LEVEL 1, isolated QA app com.shelf.launcher.qa ONLY). R1 opens on its Quick row
 # (Wi-Fi, Bluetooth, Do not disturb...), so no script opens it: the Row tile's own change (tileRowPlaceReset + withDockHere)
 # runs through `--es voltcap_test_dock`, which logs `rowtile ...` (rowTileQaLine). Tile home, the round buttons placed by the
@@ -10,7 +11,10 @@ P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; SC=${2:-off}; 
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 log() { echo "$*" >> $L; }
 stop() { log "STOP $1"; echo DONE >> $L; exit 3; }
-gate() { dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
+# (682ar, D390: a real end - every gate checks the run's deadline, 15 min unless MAX_S is lower; past it: STOP, nothing pressed)
+T_END=$(( $(date +%s) + ${MAX_S:-900} )); [ "${MAX_S:-900}" -le 900 ] || T_END=$(( $(date +%s) + 900 ))
+gate() { [ "$(date +%s)" -lt "$T_END" ] || stop "max run time reached - nothing more pressed"
+  dumpsys power | grep -q "mWakefulness=Awake" || stop asleep
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
   dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" || stop "QA app not in front"; }
 picker() { grep -q "^PICKER" $F/voltcap_qa_screen 2>/dev/null && { gate; input keyevent KEYCODE_BUTTON_B; sleep 1.5; log "picker dismissed"; }; }

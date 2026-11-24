@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # winpace.sh MODE — Settings (main menu) ▼x10 ▲x10 with voltcap_test_panelhold MODE; per window (gfxinfo framestats):
 # frames, frames over 1.5 vsync since the previous (while scrolling, gaps < 250 ms), worst gap, median GPU ms.
 P=com.shelf.launcher; A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

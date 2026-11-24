@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 488 (K3) — every physical Save Vault look x PS2 browser style on / off: the grid slot and the save up close, on the
 # first save (any game) and a PS2 save if the vault has one (second Right-step). The look is set with voltcap_test_pref (the
 # caller restores the owner's settings with voltcap_test_snapshot); the PS2 switch only for this session. Saves are only looked at.

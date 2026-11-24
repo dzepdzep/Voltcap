@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 510 stabilization pass — isolated Voltcap QA app ONLY (com.shelf.launcher.qa: every launch blocked, no sync).
 # Screenshots + log into the QA app's own folder. Saves the QA app's settings snapshot first, restores + verifies at the end.
 # sh stab510.sh TAG [sections]   sections: pop modes ovl win media (default all)

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 462b: what each GB-family game's piece is drawn from on a real home screen (Pocket Quest + Case flow, cartridge look,
 # preview / session only) — screenshots + the VoltcapQA mediasrc lines. usage: sh src462.sh OUTDIR
 P=com.shelf.launcher; OUT=${1:-/sdcard/src462}; rm -rf $OUT; mkdir -p $OUT

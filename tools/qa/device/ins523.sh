@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: Inspect gesture test on the isolated QA app ONLY, with REAL multi-touch on the RP Classic's panel (mt523.sh).
 #   sh ins523.sh open GAME [LAYOUT]   - settings snapshot, preview, the game's window, its Inspect key tapped; shot ins_open
 #   sh ins523.sh shot NAME            - a screenshot

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 511: resume after the 10 s settle on <layout> (QA app only): a key at rest, recorded (look for a jump),
 # then frames per 3 s window for 30 s (resumed effects, settle again 10 s later). sh resume511.sh <tag> <layout>
 P=com.shelf.launcher.qa; T=$1; L=$2

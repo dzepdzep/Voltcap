@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 514: "Who's playing?" geometry on this device — isolated Voltcap QA app ONLY (sample profiles: nothing is switched or saved).
 #   sh pick514.sh TAG [nav]   → <files>/TAG/: one screenshot + the picker window's frame per case, log.txt
 #   nav = on: the windows ask for the navigation bar shown, as the owner's Voltcap on a Retroid (voltcap_test_navshown).

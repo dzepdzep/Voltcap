@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 489d / 490 (K4) — A/B of the spines made ahead, cold each time: MODE on (default) or nospines (TestHooks.warmMode).
 # sh k4ab489.sh MODE STEPS [LAYOUT] [CATEGORY] -> /sdcard/pc/k4w/ab_MODE_LAYOUT_CATEGORY.txt: spine counts per walk (out, back
 # = returning to games already seen, then the same again warm), frame stats over the walks, PSS right after and settled (20 s).

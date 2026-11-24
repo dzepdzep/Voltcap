@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Sprint 528 visual QA (isolated QA app ONLY, com.shelf.launcher.qa): never wakes / unlocks the handheld; a key only while the QA
 # app is in front (else STOP). Real-cover fixture: pictures QA pushed into the QA app's OWN files/qa_covers (art=covers, matched
 # by game name; games without one show the fallback). Owner settings saved first (snapshot) and put back by `restore`.

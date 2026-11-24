@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # v0.6.67 "Who's playing?" looks (preview only: sample profiles via voltcap_test_profiles — your real profiles are never
 # switched, edited or removed; voltcap_test_pickerlook shows a look for this session, nothing saved).
 # usage: sh pickerlooks.sh TAG ["LOOKS"]   per look: 3 samples (active=1), ▶ moved, 8 long names + a locked one, the editor (Y), the PIN

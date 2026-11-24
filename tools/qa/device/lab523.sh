@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523: popup design lab before / after (523t: VS="legacy approved" = before / after the approved direction) - the same popups in each variant (PopupLab, voltcap_test_popuplab), isolated
 # QA app ONLY, stand-in library, preview (nothing saved), settings snapshotted / restored.   sh lab523.sh TAG [GAME]
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; TAG=$1; GAME=${2:-Mario Kart 64}; O=/sdcard/pc/$TAG; rm -rf $O; mkdir -p $O; L=$O/log.txt

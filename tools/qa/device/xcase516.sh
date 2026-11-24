@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 516: the Xbox 360 / Xbox One / PS3 / PS4 / PS5 cases as those consoles' OWN games get them — isolated Voltcap QA app ONLY.
 # Five stand-in files in the QA app's own fixture library (folders ps3 / ps4 / xbox360 / PS5 / XboxOne — the scanner keeps an
 # unknown folder's name as the console), a QA-only rescan of that folder (voltcap_test_fixture_roms), the QA fixture's portrait

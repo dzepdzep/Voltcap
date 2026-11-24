@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # navcheck.sh TAG "LAYOUTS" "KEYS" — preview each layout, press KEYS (0.45 s apart), log the app's focus lines per key; stills.
 # View state saved + restored (verified); preview only; launches blocked.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT

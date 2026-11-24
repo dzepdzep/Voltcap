@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # dualreg.sh TAG — update 451 short dual-screen regression on the Thor (previews only, launches blocked): per two-screen layout the
 # dashboard is opened (voltcap_test_twindash, as its own button does), ▼ must light the return button, A must come back, ▶ must move.
 P=com.shelf.launcher; OUT=/sdcard/dr/$1; rm -rf $OUT; mkdir -p $OUT

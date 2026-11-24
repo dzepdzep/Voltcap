@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 477 (D250 triage): Blades — what is selected when A is pressed, and which game the window opens. Per round: the run's
 # game selected (voltcap_test_game), a probe dump + shot of the home, then KEYS (moves between blades) and A; the window's game
 # from the app's own dump. Rounds also switch layout away and back. Preview, launches blocked. setsid sh d250.sh TAG GAME N

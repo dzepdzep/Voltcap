@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 522: Tile home part independence - two parts moved (the tile row and the round shortcuts), then each reset on its own;
 # the other must stay exactly where it was. QaClip dumps after every step (part boxes compared by tools/qa/tools/tile522.py),
 # plus R1 Row TOP / BOTTOM / MIDDLE with both moved. Isolated QA app ONLY; QA settings snapshotted and restored.
