@@ -772,7 +772,10 @@ internal fun TimelineHang(ctx: WinSceneCtx) {
     val node = 46.dp
     val dated = timelineDated(ctx.year)
     val compact = ctx.maxH < 400.dp
-    Column(Modifier.width(w).heightIn(max = ctx.maxH)) {
+    // (728a, P2: the entry's own pages - WinPagesTime.kt. On them the entry takes a steady height so the milestones have room to
+    // scroll; L1 / R1 turn the pages wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    Column(Modifier.width(w).heightIn(max = if (onPage) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx)) {
         // The year line: drawn across from the left, its node (the year) on it — inside the window, never over its edge.
         Box(Modifier.fillMaxWidth().height(node), contentAlignment = Alignment.CenterStart) {
             Box(Modifier.fillMaxWidth().height(3.dp).graphicsLayer {
@@ -797,25 +800,35 @@ internal fun TimelineHang(ctx: WinSceneCtx) {
         // The stem from the node down to the entry.
         Box(Modifier.padding(start = 28.dp + node / 2 - 1.dp).width(2.dp).height(12.dp).graphicsLayer { alpha = sceneStage(ctx.reveal(), 0.4f, 0.6f) }.background(a))
         // The entry, unrolling down from the stem.
-        Column(Modifier.fillMaxWidth().weight(1f, fill = false).graphicsLayer {
+        Column(Modifier.fillMaxWidth().weight(1f, fill = onPage).graphicsLayer {
             val e = sceneEase(sceneStage(ctx.reveal(), 0.45f, 1f))
             scaleY = 0.3f + 0.7f * e; transformOrigin = TransformOrigin(0.08f, 0f); alpha = e
             shape = RoundedCornerShape(10.dp); clip = true
             shadowElevation = 12.dp.toPx() * e
         }.background(themeDark(Color(0xFF1A1D23))).border(1.dp, a.copy(alpha = 0.45f), RoundedCornerShape(10.dp)).padding(14.dp)) {
-            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
+            Row(Modifier.weight(1f, fill = onPage), verticalAlignment = Alignment.Top) {
                 val aw = if (compact) 64.dp else 86.dp
                 Box(Modifier.width(aw).aspectRatio(0.72f).clip(RoundedCornerShape(4.dp))) { SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color.Black, consoleNamedBeside = ctx.console.isNotBlank()) }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     StableFullText(ctx.name, color = Color.White, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                     Text(listOfNotNull(ctx.console, ctx.developer).joinToString(" · "), color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    // (728a: on its pages the entry names the one shown beside the page line - after the old page has gone)
+                    val heading = rememberHeadingPage(ctx.page)
+                    if (heading != WinPage.MAIN) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(timePageName(heading), color = a, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                        Spacer(Modifier.width(8.dp))
+                        TimePageLine(nativeTabs(ctx.pages), heading, a)
+                    }
                     Spacer(Modifier.height(6.dp))
-                    Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year", "Made by")) }
+                    NativePages(ctx, Modifier.weight(1f, fill = onPage).fillMaxWidth(), label = "timePage", move = ::timeMove) { pg, pageLive ->
+                        if (pg == WinPage.MAIN) Column { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year", "Made by")) }
+                        else TimePage(ctx, pg, pageLive, a, Modifier.fillMaxSize())
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) inkOn(a) else Color.White, Color.Black,
                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(6.dp))
             }

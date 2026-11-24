@@ -71,7 +71,13 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (682w: Card binder - CARD TEXT / MOVES / RULES in the card's text box, WinPagesCard.kt.)
     WinScene.CARD_BACK,
     // (682y, P2 batch 4: Side menu - the drawer's submenus, WinPagesSide.kt.)
-    WinScene.SIDE_DRAWER, WinScene.ARCTIC_DRAWER, WinScene.DOCK_FLYOUT)
+    WinScene.SIDE_DRAWER, WinScene.ARCTIC_DRAWER, WinScene.DOCK_FLYOUT,
+    // (726a, P2 class C: Circuit board - the datasheet's CHARACTERISTICS, PIN STATES and JUMPERS sections, WinPagesChip.kt.)
+    WinScene.CHIP_SHEET,
+    // (727a, P2 class C: Channel grid - the channel's CHANNEL INFO, STAMPS and SETTINGS screens in the preview well, WinPagesChan.kt.)
+    WinScene.WII_PREVIEW,
+    // (728a, P2 class C: Timeline - the entry's CHRONICLE, MILESTONES and BRANCHES along its own line, WinPagesTime.kt.)
+    WinScene.TIMELINE_ENTRY)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

@@ -32,7 +32,19 @@ data class LibraryAppsSettings(
      * v0.6.67 (update 450): ordinary apps put in Continue playing by hand (streaming clients such as PXPlay or Asobi).
      * They stay apps (no game session, play time or save sync — [ContinueApps]); empty by default.
      */
-    val continueApps: Set<String> = emptySet()
+    val continueApps: Set<String> = emptySet(),
+    /**
+     * 724a (owner Task 3): installed apps marked by hand as recomps / native ports (a recompiled N64 game's Android APK and
+     * the like). They make up the Recomps category ([com.shelf.launcher.RECOMPS_PLATFORM]); nothing is guessed (no reliable
+     * detector exists), Windows builds are never assumed to run. Marking one never changes how it launches.
+     */
+    val recomps: Set<String> = emptySet(),
+    /**
+     * 725a (owner Task 4, START > Categories): consoles an installed app is listed under too, chosen by hand (a recompiled
+     * N64 game's APK in Nintendo 64 as well). Package name -> console keys ("N64", "GameCube"). Only where it is listed
+     * changes: the same game record, launched as the app it is.
+     */
+    val appConsoles: Map<String, Set<String>> = emptyMap()
 )
 
 /** Game-or-app choice for one installed app. */
@@ -55,7 +67,9 @@ class LibraryAppsStore(context: Context) {
         alwaysUseIcons = prefs.getBoolean("always_icons", false),
         forcedGames = prefs.getStringSet("forced_games", null)?.toSet() ?: emptySet(),
         forcedApps = prefs.getStringSet("forced_apps", null)?.toSet() ?: emptySet(),
-        continueApps = prefs.getStringSet("continue_apps", null)?.toSet() ?: emptySet()
+        continueApps = prefs.getStringSet("continue_apps", null)?.toSet() ?: emptySet(),
+        recomps = prefs.getStringSet("recomps", null)?.toSet() ?: emptySet(),
+        appConsoles = AppCategories.decode(prefs.getStringSet("app_consoles", null))
     )
 
     fun save(s: LibraryAppsSettings) = prefs.edit()
@@ -67,5 +81,7 @@ class LibraryAppsStore(context: Context) {
         .putStringSet("forced_games", s.forcedGames)
         .putStringSet("forced_apps", s.forcedApps)
         .putStringSet("continue_apps", s.continueApps)
+        .putStringSet("recomps", s.recomps)
+        .putStringSet("app_consoles", AppCategories.encode(s.appConsoles))
         .apply()
 }

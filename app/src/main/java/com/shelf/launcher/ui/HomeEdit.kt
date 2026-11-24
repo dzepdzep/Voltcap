@@ -619,7 +619,9 @@ internal fun BoxScope.MovableWidget(
         val r = androidx.compose.ui.geometry.Rect(pos.x.value, pos.y.value, (pos.x + w).value, (pos.y + h).value)
         androidx.compose.runtime.SideEffect { if (PartRects.at[id] != r) PartRects.at[id] = r }
     }
-    androidx.compose.runtime.DisposableEffect(id) { onDispose { PartRects.at.remove(id) } }
+    // (715a, Task 1: where it's drawn as fractions of its zone, for the D-pad's up / down choice - HomeReach.headerAbove.)
+    androidx.compose.runtime.SideEffect { PartRects.frac[id] = if (nestedAt != null) zone.fractionOf(pos.x, pos.y, w, h) else f }
+    androidx.compose.runtime.DisposableEffect(id) { onDispose { PartRects.at.remove(id); PartRects.frac.remove(id) } }
     // Update 144: the drag reads these as they are now, so it isn't restarted (and stopped under the finger) when
     // the part changes size while it's being moved.
     val wNow by androidx.compose.runtime.rememberUpdatedState(w)
@@ -1541,6 +1543,12 @@ internal object PartRects {
      * Written by [keepPartsClear] only; the layout never reads the title's place back (no layout loop).
      */
     val rootPx = mutableStateMapOf<String, androidx.compose.ui.geometry.Rect>()
+
+    /**
+     * 715a (Task 1): where each part is drawn now as (x, y) fractions of its zone (0 = top / left). A plain map, not state:
+     * only read on a key press (HomeReach), so writing it never recomposes anything.
+     */
+    val frac = java.util.concurrent.ConcurrentHashMap<String, Pair<Float, Float>>()
 
     fun layoutId(layout: com.shelf.launcher.data.HomeLayout, name: String): String = "layout:${layout.name}:$name"
 

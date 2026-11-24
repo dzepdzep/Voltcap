@@ -562,7 +562,9 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
     // was ever drawn here, so the default "Your theme's colours" Circuit opened a green board with gold traces.)
     val (pcb, trace, silk) = circuitSheetColors()
     val w = minOf(ctx.maxW, 620.dp)
-    Box(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (726a, P2: the sheet's own sections - WinPagesChip.kt. On them the sheet takes a steady height so the pin list has room
+    // to scroll; L1 / R1 turn the sections wherever the D-pad is.)
+    Box(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         // Powers up from the trace: a line that opens into the board.
         val e = sceneEase(ctx.reveal())
         scaleY = 0.05f + 0.95f * e
@@ -582,12 +584,17 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
         Column(Modifier.padding(start = 36.dp, end = 14.dp, top = 12.dp, bottom = 12.dp)) {
             Text("DATASHEET  ·  ${ctx.console.uppercase()}", color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
             StableFullText(ctx.name, color = silk, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+            // (726a: on its sections the sheet names the one shown - numbered as a datasheet's, after the old one has gone)
+            val heading = rememberHeadingPage(ctx.page)
+            if (heading != WinPage.MAIN) Text("SECTION ${chipSectionNo(heading)}  ·  ${chipPageName(heading)}", color = trace, fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(Modifier.height(6.dp))
-            if (ctx.page == WinPage.MAIN) {
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "chipPage", move = ::chipMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) {
                 // Pins: the facts numbered like a chip's pinout.
                 // (674g, x1.3 f674f / k674f with More open: the pinout took up to 45 % of the window first and the status line under
                 // the keys was cut (Flip 2) or 0 px (KONKR). The pinout gives way - it scrolls - and the keys and that line keep theirs.)
-                Column(Modifier.weight(1f, fill = false).heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
+                Column(Modifier.heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
                     sceneFacts(ctx).forEachIndexed { i, (l, v) ->
                         Row(Modifier.padding(vertical = 1.dp)) {
                             Text("P%02d".format(i + 1), color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(36.dp))
@@ -596,9 +603,10 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.6f))
+            } else ChipPage(ctx, pg, pageLive, pcb, trace, silk, Modifier.fillMaxSize())
+            }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, Color(0xFF07261A), trace, silk, Color(0xFF07261A), trace.copy(alpha = 0.4f), trace, CutCornerShape(4.dp), font = FontFamily.Monospace, upper = true, size = 11.sp)
             }
         }

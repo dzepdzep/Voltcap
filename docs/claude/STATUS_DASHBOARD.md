@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - P2-23b · 2026-11-23 09:47 UTC · commit `P2 f17dfb8 / 5e7c327 (branch claude/v0674-native-pages)` · CI: Verify f17dfb8: ubuntu-24.04 green, ubuntu-latest Maven 429 (rerun) · effort: high
+**1. LATEST UPDATE** - 725a · 2026-11-24 05:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on ff28c4f: green · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
+**2. WHAT CLAUDE JUST FIXED** - Press START on an installed app or Android game and pick 'Categories…' to choose every category it belongs in at once: Android games or Other apps (or automatic), Recomps, any console such as Nintendo 64 or GameCube, and your collections. Changes show immediately, are kept after restarts, rescans and app updates, and the game still appears only once in All games and launches, saves and keeps its art and play time exactly as before. A console that only holds such an app appears in the category list and disappears again when you take it out.
 
 **3. LAST 24 HOURS** (most important first)
+- **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
 - **p2** (P2-23b): Owner's 23 Nov visual review: the 5 critical layouts (TV room option 2, Spotlight, Arctic, Arcade, Icon bar) and 7 polish layouts fixed; re-checked on both handhelds at x1.3 (QA app, 0 launches, settings restored); Play now stays put on every page of all 29 layouts. Before/after package published. Still open: Coverflow details reading space, page-change frame audit, TV strip one key at a time.
-- **CI / build** (706a): The automatic checks kept failing because Maven Central refused downloads (too many requests), not because of a code problem. CI and cloud runs now download from Google's copy of Maven Central first; the owner's own builds are unchanged. Last run's change compiled and its test passed.
-- **CI / build** (702a): The automatic check on GitHub kept turning red because Maven Central (where build libraries are downloaded) refused downloads, and its built-in retry never kicked in for the unit-test step. It now retries in that case too - real test or compile failures still turn it red at once.
-- **App** (P2-23a): Native pages (P2 feature branch): 29 layouts now draw their own Details, Achievements and Options pages, and all 29 were walked on both handhelds at normal and larger text. Play now keeps the same size and place on every page in 28 of them (the TV room still needs your decision). A review package with real screenshots and short motion clips of every layout is ready; none is visually approved yet.
-- **CI / build** (692b): Fixed a mistake in the last run's new check for the game card (its search pattern was too strict and failed in CI); the game card itself was already right.
+- **App** (725a): Press START on an installed app or Android game and pick 'Categories…' to choose every category it belongs in at once: Android games or Other apps (or automatic), Recomps, any console such as Nintendo 64 or GameCube, and your collections. Changes show immediately, are kept after restarts, rescans and app updates, and the game still appears only once in All games and launches, saves and keeps its art and play time exactly as before. A console that only holds such an app appears in the category list and disappears again when you take it out.
+- **App** (724a): New Recomps category for recompiled games and native ports installed as Android apps. In Settings > Apps in your library each app has a 'Recomp?' chip; marked apps get their own Recomps category (and stay in All games, never under Other apps). The category only appears once something is marked and disappears when the last mark is taken off. Nothing is guessed automatically yet, because there is no reliable way to recognise a recomp; how apps launch, their saves, play time and art are unchanged.
+- **App** (723a): New R1 tile 'Focus' chooses where the game you're on stays across the screen while you browse: Left or Middle on the Voltcap row, and Edges / Left / Middle / Right on the Tile home (press for the next choice, hold for the list). It uses the same settings as Layout options, so nothing you set before changes, and your R1 order stays as it was. The other 51 layouts have no such setting, so the tile does not appear there (list of all 53 in the new matrix); it is greyed with an explanation while a carousel keeps the game in the middle.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner: visual review of the before/after package (12 layouts); then: Coverflow details: reading space decision; Page-change frame audit (on-device capture)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push; then: All 53 native page designs (Task 5); Row position residuals (Task 1)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 
@@ -183,6 +183,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
 | HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
 | HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
@@ -208,7 +209,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 15 of 24.
+Open hardware requests: 15 of 25.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
@@ -234,8 +235,8 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 29 own designs, 0 visually approved. Owner review 23 Nov 07:28: 16 close to approval (unchanged), 12 changed in 682ag (TV option 2, Spotlight, Arctic, Arcade, Icon bar + 7 polish) - before/after package published 23 Nov; Coverflow details reading space and the page-change frame audit still open. Disc station still shows shared page bodies in its own frame; 23 layouts still on the shared page.
-- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md + NATIVE_PAGES_AUDIT.md (23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app; 22-23 Nov runs on 1ada6c8 / b316b8f / 9192a89); the 12 layouts changed in 682ag re-walked at x1.3 on both handhelds (kag13 / rag13 d29e05c, kbg13 / rbg13 f17dfb8; 0 launches, 0 crashes, restore diff 0) - x1.0 of the changed 12 not re-run on hardware. Play same size and place on every page: 29 of 29 (TV fixed f17dfb8).
+- Remaining / blocked: 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 24 layouts still on the shared page.
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**
 - Total: 14

@@ -73,6 +73,164 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 05:45 UTC, 725a (cloud, Task 4):** Verify 310 on ff28c4f GREEN. START > "Categories…" on an installed app / Android
+game: Automatic / Android games / Other apps, Recomps, consoles (LibraryAppsSettings.appConsoles, "More consoles…"), Collections…
+link; several at once, applied at once, kept by package name; a console with only an app appears / hides; no duplicate in All.
+AppCategories725aTest 6/6 + 724a / 450 / 482 / 394 PASS (cloud). HW-24 725a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 5 (remaining 24 native-page layouts on
+`claude/v0674-native-pages`, worktree, merge the dev line in first) or the open Task 1 residuals (Row Top column taller than
+the screen vs the bar at the bottom); Task 3 auto-suggest stays OPEN until a reliable detector / vetted list exists.
+
+**24 Nov 04:40 UTC, 724a (cloud, Task 3):** Verify 310 on c7f4430 GREEN. Recomps category: apps marked by hand in Settings >
+Apps in your library ("Recomp?" chip) form "Recomps" (RECOMPS_PLATFORM, LibraryAppsSettings.recomps); in All too, never Other
+apps, hidden while empty, same game record. No auto-suggest (no reliable detector). Recomps724aTest 5/5 + 450 / 482 / 394 PASS
+(cloud). HW-24 724a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 4: START on an installed game / app -> Classification &
+categories, MULTIPLE at once (Recomps, Android games, Other apps, consoles, collections); manual beats automatic; reuse
+LibraryAppsSettings (recomps / forcedGames / forcedApps) + collections; no duplicate records; launch / saves / metadata unchanged.
+
+**24 Nov 03:40 UTC, 723a (cloud, Task 2):** Verify 310 on 4404495 GREEN. R1 Focus position: 53-layout audit (code) - only the
+Voltcap row and Tile home have a horizontal focus anchor; new R1 "Focus" tile reuses their settings (press = next, hold = list),
+hidden elsewhere, greyed with carousel / first-one-wide; matrix docs/claude/R1_FOCUS_POSITION_723.md. FocusPosTile723aTest 4/4 +
+R1Compat326 / 491 / TileWalk329 PASS (cloud). HW-24 723a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then owner 22:43 item 5: Recomps category (Task 3) - separate
+category for installed Android recomp APKs + manual shortcuts, auto-suggest only when reliable, hidden when empty; then START ->
+Classification & Categories (Task 4).
+
+**24 Nov 02:40 UTC, 722a (cloud, Task 1):** Verify 310 on e77f9fa (721a) GREEN. Edit Home / preset preview vs the real Home:
+at Top the preview drew the row at 0.2, its name above and the clock bar at the top; now row under the edge, name under it, clock
+bar at the bottom (above the legend) - the real Home's rule (PreviewDock). Middle / Bottom unchanged. PreviewDock722aTest 4/4
+PASS (cloud). HW-24 722a (by eye).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then owner 22:43 item 4: R1 Focus Position audit (53 layouts,
+reuse the Voltcap row / Classic and Tile home focus-anchor prefs; only where genuinely supported; A cycles, long-press direct).
+
+**24 Nov 01:40 UTC, 721a (cloud, Task 1):** Verify 310 on a8a3ef6 (720a) GREEN. Tile home Top vs the profile row audited: Top
+with the Switch-style pictures ignored a top-corner music player (Middle already kept both floors) - TileRows.topPadDp now keeps
+the rows 8 dp under whichever reaches lower; unchanged when only one is shown. TileTopMusic721aTest 3/3 + 521 / TileRows / 714a
+tests PASS (cloud). HW-24 721a (by eye).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1: Edit Home preview (PresetPreview.kt rowTop fractions)
+vs the real Home at Top / Middle / Bottom; then item 4 R1 Focus Position audit (53 layouts, reuse the Classic / Tile home
+focus-anchor prefs).
+
+**24 Nov 00:40 UTC, 720a (cloud, Task 1):** Verify 310 on d11266d (719a) GREEN. 715a's real Edit Home D-pad move of the added
+Play part now has a QA path: voltcap_qa_edit mark (EDIT <part> / HOME) + `voltcap_test_reach` line (from the home's own
+prepareReach); play720.sh + play720.py (selftest 6/6). PlayReach720aTest 3/3 PASS (cloud). HW-24 720a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): Tile home Top vs the profile row
+at x1.3 (Batch 521 / Sprint 527 minimum), Edit Home preview (PresetPreview.kt rowTop fractions) vs the real Home; then item 4
+R1 Focus Position audit.
+
+**23 Nov 23:35 UTC, 719a (cloud, Task 1):** Verify 310 on d1c70cd (718a) GREEN. 716a's real combination now has a QA path:
+`voltcap_test_rowcombo on|off` (header + Game info / news + every category + a song in the bar's player, preview only) and
+`voltcap_test_rowcol` (one `rowcol` line: column vs status bar, dp); row716.sh + row716.py (selftest 6/6). RowCombo719aTest 3/3
+PASS (cloud). HW-24 719a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): a safe QA path for the real Edit
+Home D-pad movement of the added Play part (715a; HomeEditState select: + real D-pad keys only while Edit Home is open in the QA
+app, no R1); then Tile home Top vs the profile row at x1.3, Edit Home preview vs the real Home.
+
+**23 Nov 22:20 UTC, 718a (cloud, Task 1):** Verify 310 on bbe5c98 GREEN. Owner 22:43 order read (items 1-2 = P2 on-device
+profiling / Coverflow x1.3 on the P2 branch - live session with hardware). Task 1 "verify it is the exact handler": R1's Row
+tile and `voltcap_test_dock` now share rowTilePress (ui/QuickSettings.kt); `voltcap_test_dock NEXT` = one tile press;
+row714.sh s8-s10 press round the cycle. RowTileExactHandler718aTest 3/3 + 714a / 717a / 521 tests PASS (cloud). HW-24 714a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): a safe QA path for the real Edit
+Home D-pad movement of the added Play part (715a; HomeEditState select: + real D-pad keys only while Edit Home is open in the
+QA app, no R1), and a QA hook for the 716a combination (game header + Game & news + category bar Full + music player) so it can
+be checked at x1.3; then Tile home Top vs the profile row at x1.3, Edit Home preview vs the real Home.
+
+**23 Nov 21:55 UTC, 717a (cloud, QA tooling):** Verify 310 on 7bd1dea (716b) GREEN. 714a's hardware check unblocked without R1
+(its Quick row has system tiles): `voltcap_test_dock` (the Row tile's own handler, preview only) now logs one `rowtile` line;
+tools/qa/device/row714.sh + tools/qa/tools/row714.py grade it (selftest 5/5). RowTileQaLine717aTest 3/3 PASS (cloud). HW-24 714a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
+**23 Nov 20:35 UTC, 716b (cloud, CI fix):** Verify 310 on 5d96b3d (716a) RED on both runners: RoboFramesApply529Test caught
+RowColumnUnderBar716aTest stepping frames without Snapshot.sendApplyNotifications() (test hygiene, app code fine). Fixed the
+test loop; 716a 4/4 + RoboFramesApply529Test 1/1 PASS (cloud). Reminder for new Robolectric tests: every
+mainClock.advanceTimeByFrame() line also calls Snapshot.sendApplyNotifications().
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
+**23 Nov 19:35 UTC, 716a (cloud):** Verify 310 on 2e865a2 (715a) GREEN. TASK 1 finding 3 fixed: Voltcap row Row Middle /
+Bottom placed its column on the whole screen, so a tall column (header + info + chips at x1.3) started under the status bar;
+RowColumnFit.keepUnderBar keeps its top below the bar (unchanged whenever it fits; Middle clears the legend too where both fit).
+RowColumnUnderBar716aTest 4/4 PASS (cloud). HW-24 716a. Matrix H18.
+Residual (noted, not changed): Row Top puts the bar at the bottom; a column taller than the screen there could still reach it.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), corner round shortcuts vs the moved column, Edit Home preview
+(PresetPreview.kt rowTop fractions) vs the real Home.
+
+**23 Nov 18:45 UTC, 715a (cloud):** Verify 310 on 37b32a1 (714a) GREEN. Owner 18:23 backlog read (P2-i / P2-j / D386 / D387 are
+on-device profiling - live session). TASK 1 finding 2 fixed: Voltcap row with the header off - ▲ / ▼ follow where an added Play /
+Continue part is drawn (HomeReach.headerAbove + PartRects.frac), not the row's place. HeaderReachDirection715aTest 3/3 PASS
+(cloud). HW-24 715a. Matrix H18.
+Audited and consistent (no change): header above / below the row per Row place vs prepareReach; the status-bar music player at Top
+(bar moves to the bottom, playerUp follows); ShortcutCorner.resolve vs the row edge.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (one finding per run with its test): Tile home
+Top vs the profile row at x1.3 (Batch 521 / Sprint 527 minimum), Row Middle with header + info + chips taller than the screen at
+x1.3 (the centred column can run under the status bar), Edit Home preview vs the real Home.
+
+**23 Nov 17:25 UTC, 714a (cloud):** Verify 310 on 8598c1c (713a) GREEN. P2 finish handed over by the live session (P2-23c) ->
+owner TASK 1 (Row-position collisions) started. Finding 1 fixed: Tile home Row place change deleted the round buttons' Edit Home
+spot by the tiles (Batch 521) - now kept aside per place ("shortcuts@<PLACE>" in widget_positions) and restored there.
+TileRowPlaceSpots714aTest 4/4 + Batch521Test 4/4 PASS (cloud). HW-24 714a. Matrix H18.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then TASK 1 continued (cloud audit, one finding per run with its
+test): Voltcap row (CLASSIC) Top / Middle / Bottom vs the game header (headerUp in LauncherScreen.prepareReach), the small music
+player in the status bar at Top, corner round shortcuts (ShortcutCorner.resolve), Tile home Top vs the profile row at x1.3
+(Batch 521 / Sprint 527 minimum), Edit Home preview vs the real Home. Hardware checks batched into HW-24.
+
+**23 Nov 16:35 UTC, 713a (cloud):** Verify 310 on 2f17a84 (712a) GREEN; 711a rerun 45195727121 GREEN (NDK failure was infra).
+P2 finish still in the live session (claude/v0674-native-pages pushes to 15:23 UTC) - left alone. Filler: P13 rule 11
+DialogChrome.kt 3 TRUNCATE -> 0 (ShelfTextField value, ShelfMenuDialog title, Chip label FullText). DialogChromeFullText713aTest
+2/2 PASS (cloud). TRUNCATE 69 -> 66. HW-24 713a. Cloud Gradle needs VOLTCAP_MAVEN_MIRROR (Maven 429 without it).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). If P2 is finished / handed over: TASK 1 (Row-position collisions
+audit). Otherwise P13 next TRUNCATE file (CompanionActivity 3), one per run with its test.
+
+**23 Nov 15:25 UTC, 712a (cloud):** Verify 310 on 38cd4fb (711a) RED on ubuntu-24.04 only: NDK 28 download was a bad zip
+before any build (infra); ubuntu-latest passed the full suite; failed jobs rerun requested (run 45195727121). P2 finish still in
+the live session (claude/v0674-native-pages pushes to 14:24 UTC) - left alone. Filler: P13 rule 11 RetroAchievementsDialog.kt
+3 TRUNCATE -> 0 (achievement name / game / account name FullText). RaDialogFullText712aTest. TRUNCATE 72 -> 69. HW-24 712a.
+NEXT: check Verify 310 on this push AND the 45195727121 rerun FIRST (a real failure -> fix first). If P2 is finished / handed
+over: TASK 1 (Row-position collisions audit). Otherwise P13 next TRUNCATE file (DialogChrome 3), one per run with its test.
+
+**23 Nov 14:25 UTC, 711a (cloud):** Verify 310 on 838af2e (710a) GREEN. P2 finish still in the live session on
+claude/v0674-native-pages (pushes to 13:57 UTC) - left alone. Filler: P13 rule 11 GameJourneyUi.kt 3 TRUNCATE -> 0 (journey step
+title / date / detail FullText). GameJourneyFullText711aTest 2/2 PASS (cloud compiled). TRUNCATE 75 -> 72. HW-24 711a (KONKR).
+NEXT: check Verify 310 on this push FIRST. If the live session has finished P2 (backlog 0000000 P2 items DONE / handed over):
+start TASK 1 (Row-position collisions audit). Otherwise P13 next TRUNCATE file (RetroAchievementsDialog 3, DialogChrome 3), one
+per run with its test.
+
+**23 Nov 13:30 UTC, 710a (cloud):** Verify 310 on 8f1ac4f (owner backlog 13:32) GREEN. Owner order 13:32: P2 finish (P2-a..f) is in
+the live session on claude/v0674-native-pages (pushes 13:23) - left alone; Tasks 1-4 start after P2. Filler: P13 rule 11
+GameWindow.kt 3 TRUNCATE -> 0 (perf rows FullText; story preview qa-ok, Details page whole). GameWindowFullText710aTest 3/3 PASS
+(cloud compiled). TRUNCATE 78 -> 75. HW-24 710a (KONKR).
+NEXT: check Verify 310 on this push FIRST. If the live session has finished P2 (backlog 0000000 P2 items DONE / handed over):
+start TASK 1 (Row-position collisions audit: R1 Row Position x TileRows / TileHome / Edit Home - cloud code audit + a test first).
+Otherwise P13 next TRUNCATE file (3 each: GameJourneyUi, RetroAchievementsDialog, DialogChrome), one per run with its test.
+
+**23 Nov 12:20 UTC, 709a (cloud, v0.6.74 turn):** Verify 310 on d0e153e (708a) GREEN. P2 left alone (owner review pending).
+P13 rule 11: QuickSettings.kt (R1 panel undo strip, tile editor name, spaced tile caption) 3 TRUNCATE -> 0 via FullText.
+QuickSettingsFullText709aTest 2/2 PASS in the cloud (compiled, mirror on). TRUNCATE 81 -> 78. HW-24 709a (KONKR).
+NEXT: check Verify 310 on this push FIRST. Then P2 turn if the owner has answered the package / Coverflow reading space;
+otherwise v0.6.74: P13 next TRUNCATE file (3 each: GameWindow, GameJourneyUi, RetroAchievementsDialog, DialogChrome) - one
+per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 11:20 UTC, 708a (cloud, v0.6.74 turn):** Verify 310 on 673a1e0 (707a) GREEN. P2 left alone (owner review pending).
+P13 rule 11: SecondGamesPage.kt (second screen folder games: list row, missing-cover name, tile label) 3 TRUNCATE -> 0 via
+FullText. SecondGamesPageFullText708aTest 2/2 PASS in the cloud (compiled; export VOLTCAP_MAVEN_MIRROR or plugin resolution
+fails). TRUNCATE 84 -> 81. HW-26 708a (Thor, with 690a).
+NEXT: check Verify 310 on this push FIRST. Then P2 turn if the owner has answered the package / Coverflow reading space;
+otherwise v0.6.74: P13 next TRUNCATE file (3 each: QuickSettings, GameWindow, GameJourneyUi, RetroAchievementsDialog,
+DialogChrome) - one per run with its FullText test; or H12 once the owner picks.
+
+**23 Nov 10:20 UTC, 707a (cloud, v0.6.74 turn):** Verify 310 on c917a78 (P2-23b, with 706a's mirror) GREEN - mirror confirmed.
+P2 left alone (owner review of the 12-layout before/after package pending). P13 rule 11: HomeEditLegend.kt (edit toolbar title
++ scope line) 2 TRUNCATE -> 0 via FullText (reserve = false). HomeEditLegendFullText707aTest 2/2 PASS in the cloud (compiled).
+TRUNCATE 86 -> 84. HW-24 707a (KONKR, with 703a).
+NEXT: check Verify 310 on this push FIRST. Then P2 turn if the owner has answered the package / Coverflow reading space;
+otherwise v0.6.74: P13 next TRUNCATE file (3 each: SecondGamesPage, QuickSettings, GameWindow, GameJourneyUi,
+RetroAchievementsDialog, DialogChrome) - one per run with its FullText test; or H12 once the owner picks.
+
 **23 Nov 09:20 UTC, 706a (cloud, CI fix):** Verify 310 on 503d679 (705a) RED on both runners from Maven Central 429 only (3 attempts
 each; app + tests compiled). VOLTCAP_MAVEN_MIRROR (Google's Maven Central mirror, CI / cloud only): settings.gradle.kts asks it
 before mavenCentral(); Robolectric's android-all fetch too. Cloud with the mirror: compile + 705a test 2/2 + 681y 5/5 PASS.
@@ -570,6 +728,10 @@ touched; KONKR production not upgraded. How to work in the cloud: `docs/claude/C
   first compile: if red, fixing it is item 0.
 
 ## Next (in order; skip what needs hardware - queue it instead)
+- OWNER 23 Nov 13:32 (newest, wins): docs/MASTER_BACKLOG.md section 0000000 - finish P2 (P2-a..f, live session on
+  claude/v0674-native-pages), THEN Tasks 1-4 in order without asking again (Row-position collisions, R1 Focus Position tile, Recomps
+  category, START classification), Task 5 (53 native pages) runs on. Hardware steps -> HARDWARE_QA_QUEUE.md. No merge / production
+  install / release without the owner's GO.
 - OWNER PRIORITIES 17 Nov (backlog section 00 - this order wins over the rule 11 filler below; one item per run, smallest safe
   step first; notify the owner only for hardware, a design decision or a release GO; never a new scheduled task):
   1. DONE 678k (GREEN on b76e3ef). v0.6.73: read "Verify Android update 310" on the merge commit (facet 677l merged into this line, 17 Nov). If red: fix it

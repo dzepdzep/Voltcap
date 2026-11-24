@@ -126,8 +126,10 @@ qtap() { # tap the centre of the first QaClip node whose label starts with $1 in
   gate; wg_time_ok; case "$(wg_focus)" in *"$P/"*) ;; *) stop "tap: QA app lost the focus";; esac
   input tap $xy; log "tapped '$1' at $xy"; }
 rowtile() { k_home R1; sleep 1.6; shot r1_$1; qtap "Row" ${TAG}_r1_$1 || return 1; sleep 1.2; shot r1_after_$1; k_home_any B; sleep 1.2; }
-k_home() { gate; wg_key_qa $1; } # (682ar: through winguard - QA app in front, deadline)
-k_home_any() { k_home $1; }
+# (725b: through winguard - R1 only while the confirmed home holds the focus and says HOME; the B that closes the R1 panel
+# only while the QA app's confirmed main window still holds it. The old raw `input keyevent` skipped the guard - selftest red.)
+k_home() { gate; wg_key_home $1; }
+k_home_any() { gate; wg_key_main $1; }
 # (682ap, D379): atrace of the home moving through games (6 right, 6 left) - QA app sections + RenderThread. Level 1.
 tracehome_layout() {
   n=$1; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Shadow of the Colossus}}"; sleep 2

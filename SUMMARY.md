@@ -1,3 +1,280 @@
+# Update 725a (24 Nov 2026, cloud run) - Task 4: START > Categories (an installed app / Android game in several categories at once)
+- CI first: Verify 310 on ff28c4f (724a) GREEN.
+- Owner Task 4: START on an installed app or Android game now has "Categories…" (under Details; its subtitle names where it is
+  listed). The dialog (AppCategoriesDialog): Automatic / Android games / Other apps (reuses forcedGames / forcedApps), Recomps
+  (724a mark), Consoles (the library's consoles first, then the ones it is in; "More consoles…" lists every console Voltcap
+  names; stores / Android / Other apps / aliases never offered) and a Collections… link to the existing picker. Every press
+  applies at once. New LibraryAppsSettings.appConsoles (prefs library_apps "app_consoles", keyed by package: kept across
+  rescans, restarts and APK updates, backed up with library_apps). A console lists those apps with its games (same record, once
+  in All); a console with only an app appears in L2 / R2 and hides again when the last one is taken off (open -> back to All).
+  An app listed anywhere by hand is in the library. Manual beats automatic: a recomp you set as an app is in Other apps too
+  (automatic recomps still never are). Launch, saves, play time, art, achievements and metadata are keyed as before.
+- Tests: AppCategories725aTest 6/6 (new; fails on the old code - no field / no console listing), Recomps724aTest 5/5,
+  ContinueApps450Test 10/10, Batch482Test 7/7, CategoryStable394Test 6/6 PASS (cloud, compiled with the Maven mirror); static
+  checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/data/AppCategories.kt (new), data/LibraryAppsStore.kt, data/ConsoleNames.kt,
+  LauncherUiState.kt, LauncherViewModel.kt, ui/AppCategoriesDialog.kt (new), ui/GameOptionsDialog.kt, ui/LauncherScreen.kt,
+  ui/LauncherUiFlags.kt; test app/src/test/java/com/shelf/launcher/data/AppCategories725aTest.kt (new).
+- NOT TESTED: handheld (HW-24 725a: D-pad / touch, x1.3 popclip, restart). ROMs (a ROM in a second console) not offered - Task 4
+  names installed games / apps.
+
+# Update 724a (24 Nov 2026, cloud run) - Task 3: Recomps category (installed recomp / native-port apps, marked by hand)
+- CI first: Verify 310 on c7f4430 (723a) GREEN.
+- Owner 22:43 item 5 / Task 3: new platform key RECOMPS_PLATFORM ("Recomps"); LibraryAppsSettings.recomps (prefs library_apps
+  "recomps", already backed up by SettingsScopes). Settings > Apps in your library: a "Recomp?" / "Recomp ✓" chip under each
+  app's name (D-pad / touch). A marked app: in Recomps and in All (whatever the apps mode), never in Other apps; an Android game
+  stays in Android games too (detector untouched); same Game record (launch, stable key, saves, play time, art, metadata
+  unchanged; no duplicate in All). The category appears in L2 / R2 / tiles only while it has a game; taking the last mark off
+  while Recomps is open goes back to All. Left out of the ROM-platform lists (collections dialog etc.). No auto-suggest: no
+  reliable detector exists (no package-name guessing, Windows builds never assumed) - stays OPEN for a vetted list.
+- Tests: Recomps724aTest 5/5 (new; fails on the old code - no key / no field), ContinueApps450Test 10/10, Batch482Test 7/7,
+  CategoryStable394Test 6/6 PASS (cloud); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/LauncherUiState.kt, LauncherViewModel.kt, data/LibraryAppsStore.kt,
+  ui/AppsLibraryDialog.kt, ui/LauncherScreen.kt; test app/src/test/java/com/shelf/launcher/data/Recomps724aTest.kt.
+- NOT TESTED: handheld (HW-24 724a). START -> multiple categories (Task 4) is the next item.
+
+# Update 723a (24 Nov 2026, cloud run) - Task 2: new R1 Focus position tile (Voltcap row, Tile home) + 53-layout matrix
+- CI first: Verify 310 on 4404495 GREEN (b57bf66's run cancelled by the newer push).
+- Owner 22:43 item 4 / Task 2: audit of the 53 layouts (code): only the Voltcap row (FocusPosition, GameDock) and Tile home
+  (TileFocus, TileHome) have a horizontal focus anchor; matrix docs/claude/R1_FOCUS_POSITION_723.md (SUPPORTED 2, NOT OFFERED 51,
+  Hero's cover side is not a focus position). New R1 tile "Focus" (FocusPosTile723.kt): reuses those two settings (no new pref,
+  nothing migrated); press = next choice (Left / Middle; Edges / Left / Middle / Right), hold = the list with the current one
+  marked; hidden on the other 51 layouts; greyed with the reason while the carousel look (always middle) or the Voltcap row's
+  "Covers · first one wide" keeps the game in one place. Goes after the saved R1 tiles (R1_APPENDED): saved order unchanged;
+  pinnable to L1 ("Focus position"); in the R1 tile walk (TileCheck).
+- Tests: FocusPosTile723aTest 4/4 (new; old code had no tile / rule), R1Compat326Test 6/6, Batch491Test 6/6, TileWalk329Test 7/7,
+  RowTileExactHandler718aTest 3/3 PASS (cloud, compiled with the Maven mirror); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/FocusPosTile723.kt (new), ui/QuickSettings.kt, ui/R1TileRules.kt,
+  ui/R1Extras.kt, ui/R1Shortcuts.kt, ui/TileCheck.kt, data/BuiltinShortcuts.kt,
+  app/src/test/java/com/shelf/launcher/ui/FocusPosTile723aTest.kt (new); docs/claude/R1_FOCUS_POSITION_723.md (new).
+- Hardware NOT TESTED: HW-24 723a (KONKR x1.0 / x1.3: focus movement, Endless, category alignment, hold list by D-pad + touch).
+
+# Update 722a (24 Nov 2026, cloud run) - Task 1: Edit Home / preset preview matches the real Home at Top
+- CI first: Verify 310 on e77f9fa (721a) GREEN.
+- Owner 22:43 item 3 ("Edit Home previews kept", preview = real Home): PresetPreview at Top drew the row at 0.2 with the game's
+  name ABOVE it and the clock / battery bar at the TOP. The real Home at Top (Classic row, Tile home; not Grid, TV room or a style
+  layout) puts the row right under the edge (16 dp / 60 dp), the name UNDER it (nameBelow) and the status bar at the BOTTOM,
+  above the legend. New pure PreviewDock (same rule as LauncherScreen atBottom / barTop); Middle and Bottom drawn exactly as before.
+- Tests: PreviewDock722aTest 4/4 PASS (new; fails on the old fixed 0.2 top) (cloud, compiled with the Maven mirror); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/PresetPreview.kt,
+  app/src/test/java/com/shelf/launcher/ui/PreviewDock722aTest.kt (new).
+- Hardware NOT TESTED: HW-24 722a (by eye, KONKR, with 721a).
+
+# Update 721a (24 Nov 2026, cloud run) - Task 1: Tile home Top keeps clear of the profile pictures AND a top-corner music player
+- CI first: Verify 310 on a8a3ef6 (720a) GREEN.
+- Owner 22:43 item 3 (Tile home Top vs the profile row, Batch 521 / Sprint 527 minimum): audited. Middle already keeps both
+  floors (badgeFloor, musicFloor). Top did not: with Switch-style profile pictures shown it used maxOf(60 dp, pictures + 8 dp) and
+  ignored the music player Home shows in a top corner (Sprint 528's floor applied only without the pictures), so a player at the
+  top right (~112 dp bottom) sat on the tiles / first pill. New pure TileRows.topPadDp: 8 dp under whichever reaches lower; with
+  only one of them (or neither) the result is exactly as before (60 / measured pictures / 10 dp / music + 8).
+- Tests: TileTopMusic721aTest 3/3 (new; the old rule gives 60 dp for the 120 dp case), Batch521Test 4/4 + TileRowsTest 12/12
+  (source checks moved to the helper), TileRowPlaceSpots714aTest 4/4 PASS (cloud, compiled); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt, ui/TileRows.kt,
+  app/src/test/java/com/shelf/launcher/ui/TileTopMusic721aTest.kt (new), Batch521Test.kt, TileRowsTest.kt.
+- Hardware NOT TESTED: HW-24 721a (by eye, KONKR x1.0 / x1.3).
+
+# Update 720a (24 Nov 2026, cloud run) - Task 1: QA path for the real Edit Home D-pad move of the added Play part (715a)
+- CI first: Verify 310 on d11266d (719a) GREEN.
+- Owner 22:43 item 3: "a safe path for the real Edit Home D-pad movement and the added Play part". New (QA app / hooks file only,
+  normal use unchanged): voltcap_qa_edit ("EDIT <part>" while Edit Home is open, "HOME" otherwise) so a script presses D-pad
+  keys in Edit Home only while it really is open on the part, and `--ez voltcap_test_reach true` logs one `reach` line built
+  from the home's own prepareReach (the decision a real ▲ / ▼ uses): the Play part's saved / moving / drawn y, above / below,
+  the zones up / down, the zone the D-pad is on, Edit Home on / off (PlayReach720.kt).
+- tools/qa/device/play720.sh (LEVEL 1, QA app only, snapshot saved / restored; never A, R1 or taps; STOP with nothing pressed
+  when a mark does not match): header off + "Play / Continue" added on the Voltcap row at y 0.44 -> ▲ reaches it; Edit Home,
+  five real ▼ -> Done -> ▼ reaches it; ▲ ▲ + Y (Undo) = one step; Discard keeps the saved place; restart keeps it; Reset this
+  part; Row Top through the R1 tile's handler (preview) -> ▲ reaches Play. tools/qa/tools/play720.py grades it (wrong
+  direction, unsaved / wrong move, Undo / Discard / Reset mistakes, a missed key = FAIL; setup not applied, old build, STOP = INFRA).
+- Tests: PlayReach720aTest 3/3 (new), HeaderReachDirection715aTest 3/3, RowCombo719aTest 3/3 PASS (cloud, compiled with the
+  Maven mirror); QA selftest 235/235 incl. TestPlay720Grader720a 6/6; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/PlayReach720.kt (new), ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/PlayReach720aTest.kt (new), tools/qa/device/play720.sh (new),
+  tools/qa/tools/play720.py (new), tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 720a (play720.sh x1.0 + x1.3 on the KONKR; RP Classic too if connected).
+
+# Update 719a (23 Nov 2026, cloud run) - Task 1: QA path for 716a's real combination (header + news + every category + bar player)
+- CI first: Verify 310 on d1c70cd (718a) GREEN.
+- Owner 22:43 item 3: "716a passed with defaults - still the combination game header + game / news + full category bar + music /
+  status widgets". The 22:03 live result said no QA hook could set those options. New (QA builds with the hooks file only,
+  normal use unchanged): `--es voltcap_test_rowcombo on|off` previews that combination on the layout in use (RowCombo719.appearance:
+  Game info + news, category bar of every category incl. the layout's own choice; Features.homeHeader on, held in memory
+  during the preview; a fake song so the status bar's player shows; off puts the header and the song back) and
+  `--ez voltcap_test_rowcol true` logs one `rowcol` line: where the Voltcap row's column landed (top / bottom) vs the status
+  bar's bottom edge and the screen, in dp, plus which parts were really on.
+- tools/qa/device/row716.sh (LEVEL 1, QA app only, snapshot saved / restored, no key / tap except B on a first-start picker):
+  Classic, defaults at Middle / Bottom / Top, then the combination at Middle / Bottom / Top / Middle through the R1 tile's own
+  step (voltcap_test_dock = rowTilePress). tools/qa/tools/row716.py: FAIL when the column starts under the bar or runs off the
+  bottom although it fits; a taller-than-the-room column spilling at the bottom is noted (716a's design); combination not on,
+  wrong layout or an old build = INFRA.
+- Tests: RowCombo719aTest 3/3 (new), RowColumnUnderBar716aTest 4/4, RowTileQaLine717aTest 3/3, RowTileExactHandler718aTest 3/3 PASS
+  (cloud, compiled); QA selftest 229/229 incl. TestRow716Grader719a 6/6; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RowCombo719.kt (new), ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowCombo719aTest.kt (new), tools/qa/device/row716.sh (new), tools/qa/tools/row716.py (new),
+  tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 719a (row716.sh x1.0 + x1.3 on the KONKR; RP Classic too if connected).
+
+# Update 718a (23 Nov 2026, cloud run) - Task 1: the Row tile QA hook now runs R1's exact Row tile handler
+- CI first: Verify 310 on bbe5c98 (owner backlog 22:43, contains 717a) GREEN; 0d7b630 / 886835d cancelled by the newer push.
+- Owner 22:43 Task 1: "verify it is the exact handler". It was not quite: the R1 Row tile and the hook `voltcap_test_dock`
+  each had their own copy of the change (Tile home reset + new place). Now both call one step, rowTilePress(a, to)
+  (ui/QuickSettings.kt), and rowTileNext(a) gives the tile's cycle (Top -> Middle -> Bottom -> Top). The tile saves the result
+  (unchanged behaviour), the hook previews it. `--es voltcap_test_dock NEXT` = one press of the tile (its own cycle).
+- row714.sh: three NEXT presses added (Middle -> Bottom -> Top -> Middle), each graded on the place it lands on as well as the
+  buttons' spots (row714.py: optional 4th expect field; older logs still grade).
+- Tests: RowTileExactHandler718aTest 3/3 (new: the tile and the hook both call rowTilePress, no private copy, NEXT follows the
+  cycle), RowTileQaLine717aTest 3/3, TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4 PASS (cloud, compiled; two source-shape
+  assertions moved to the shared step, same check); QA selftest 223/223 incl. TestRow714NextPress718a 2/2; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowTileExactHandler718aTest.kt (new), RowTileQaLine717aTest.kt, TileRowPlaceSpots714aTest.kt,
+  Batch521Test.kt, tools/qa/device/row714.sh, tools/qa/tools/row714.py, tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 714a (row714.sh x1.0 + x1.3 on the KONKR, now incl. the three tile presses).
+
+# Update 717a (23 Nov 2026, cloud run) - Task 1: the Tile home Row-place check (714a) can run on a handheld without R1
+- CI first: Verify 310 on 7bd1dea (716b) GREEN; the later docs-only pushes (HW notes, locks) were cancelled by newer pushes.
+- Answers the live session's 22:15 note (714a NOT TESTED: R1 opens on its Quick row of system tiles, so no script may open it).
+  The Row tile's own handler already had a QA hook (Batch 521, `--es voltcap_test_dock`, preview only); 717a makes it gradable:
+  one QA log line per change, `rowtile TILES MIDDLE->TOP spot=ROW shortcuts=none kept=MIDDLE:0.3000,0.2000`
+  (rowTileQaLine in ui/QuickSettings.kt, logged in LauncherScreen's testDock effect; QA builds with the hooks file only -
+  normal use unchanged).
+- New tools/qa/device/row714.sh (LEVEL 1, QA app only, no key / tap except B on a first-start picker while the QA app is in
+  front, snapshot saved / restored, the owner's Voltcap process checked unchanged) and tools/qa/tools/row714.py (PASS / FAIL /
+  INFRA; an old build without the line = INFRA, never PASS). HW-24 714a now names the exact run.
+- Tests: RowTileQaLine717aTest 3/3, TileRowPlaceSpots714aTest 4/4, Batch521Test 4/4 PASS (cloud, compiled); QA selftest 221/221
+  incl. TestRow714Grader717a 5/5; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowTileQaLine717aTest.kt (new), tools/qa/device/row714.sh (new),
+  tools/qa/tools/row714.py (new), tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 714a (row714.sh x1.0 + x1.3 on the KONKR).
+
+# Update 716b (23 Nov 2026, cloud run) - CI fix: 716a's layout test stepped frames without the apply guard
+- CI first: Verify 310 on 5d96b3d (716a) RED on both runners, same single failure (not infra): RoboFramesApply529Test - the
+  716a test RowColumnUnderBar716aTest stepped Robolectric frames without Snapshot.sendApplyNotifications() (the 529 rule that
+  keeps manual frames from reading stale state). App code unaffected; 2786 tests ran, 1 failed.
+- Fix: the frame loop in RowColumnUnderBar716aTest sends apply notifications before each frame (same pattern as the other
+  Robolectric tests). RowColumnUnderBar716aTest 4/4 + RoboFramesApply529Test 1/1 PASS (cloud, Maven mirror). Static checks PASS.
+- Files to copy: app/src/test/java/com/shelf/launcher/ui/RowColumnUnderBar716aTest.kt.
+- Hardware: none needed (test-only).
+
+# Update 716a (23 Nov 2026, cloud run) - Task 1 Row-position: the Voltcap row never starts under the status bar
+- CI first: Verify 310 on 2e865a2 (715a) GREEN.
+- Audit finding (Voltcap row, status bar x Row place): Row Middle centred the row's column (game header, info / news, category
+  bar, games) on the whole screen and Row Bottom stood it on the bottom edge, ignoring the status bar along the top. A column
+  taller than the room the bar leaves (header + info + chips at x1.3 text, the music player in the bar) started under the clock /
+  battery / player. New ui/RowColumnFit.kt keepUnderBar (applied between the Row-place alignment and rowTopPx): when the column
+  fits, it stays exactly where it was (shift 0); otherwise its top stays below the bar (+4 dp), Middle also clears the legend
+  band where both fit, and only a column taller than the whole free room spills at the bottom (top readable). Row Top unchanged
+  (the bar is at the bottom there). Tile home and the other layouts unchanged.
+- Test: RowColumnUnderBar716aTest 4/4 PASS (Robolectric layout: the old centring put a 380 dp column at 10 dp under a 40 dp
+  bar, keepUnderBar at 40 dp; pure placement cases; source wiring); HeaderReachDirection715aTest 3/3 PASS. App + tests compiled
+  in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RowColumnFit.kt (new), ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/RowColumnUnderBar716aTest.kt.
+- Hardware NOT TESTED: HW-24 716a (KONKR x1.3).
+
+# Update 715a (23 Nov 2026, cloud run) - Task 1 Row-position: the D-pad reaches an added Play part where it is drawn
+- CI first: Verify 310 on 37b32a1 (714a) GREEN; e23c26c (owner 18:23 backlog, docs) running.
+- Audit finding (Voltcap row, Play controls x Row place): with the game header off, an added "Play / Continue" (or "Play &
+  buttons") part is the only thing that publishes Play to the D-pad, but ▲ / ▼ were chosen from the row's place (Row Top -> ▼)
+  or from a stored spot of the switched-off header - ▼ went to a Play drawn above the games (it sits upper right by default).
+  Now HomeReach.headerAbove decides: header off + added Play part -> where that part is drawn (MovableWidget records its drawn
+  fractions in PartRects.frac, a plain map read on key presses only); everything else as before. Other layouts unchanged.
+- Test: HeaderReachDirection715aTest 3/3 PASS (fails on 714a: no headerAbove / frac); TileRowPlaceSpots714aTest 4/4 PASS.
+  App + tests compiled in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HomeReach.kt, ui/HomeEdit.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/HeaderReachDirection715aTest.kt.
+- Hardware NOT TESTED: HW-24 715a (KONKR, with 714a).
+
+# Update 714a (23 Nov 2026, cloud run) - Task 1 Row-position: Tile home keeps the round buttons' hand-placed spot per Row place
+- CI first: Verify 310 on 8598c1c (713a code) GREEN; 3113e24 (P2-23c docs) running. P2 finish handed over by the live session
+  (P2-23c) -> owner Task 1 (Row-position collisions) starts.
+- Audit finding: changing Tile home's Row place (R1 Row tile, Settings "Where the tiles sit", the QA dock hook) DELETED the round
+  buttons' spot saved "by the tiles" in Edit Home (Batch 521) - a silent erase of a saved customization (owner: never). Now the
+  spot is kept aside for the place it was made at (widget_positions key "shortcuts@<PLACE>") and comes back when the tiles return
+  there; at another place the buttons sit at their normal spot, so the Batch 521 collision fix stays. Other widgets untouched;
+  Reset Layout clears everything as before. The row's old up / down move (no effect since Sprint 527) is still dropped.
+- Test: TileRowPlaceSpots714aTest 4/4 PASS (fails on 713a: the spot was reset); Batch521Test 4/4 PASS (source strings updated).
+  App + tests compiled in the cloud (Maven mirror). Static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, ui/SettingsDialog.kt, ui/LauncherScreen.kt,
+  app/src/test/java/com/shelf/launcher/ui/TileRowPlaceSpots714aTest.kt, ui/Batch521Test.kt.
+- Hardware NOT TESTED: HW-24 714a (KONKR).
+
+# Update 713a (23 Nov 2026, cloud run) - rule 11: shared dialog chrome shows field values, menu titles and chip labels whole
+- CI first: Verify 310 on 2f17a84 (712a) GREEN; the 711a rerun (run 45195727121, attempt 2) GREEN too - the NDK failure was infra.
+- P2 finish still in the live session on claude/v0674-native-pages (pushes to 15:23 UTC) - left alone; Tasks 1-4 wait for P2.
+- DialogChrome.kt (shared UI): 3 TRUNCATE places -> 0. ShelfTextField's shown value (1 line), the ShelfMenuDialog sheet title
+  (2 lines) and every Chip label (1 line) go through FullText (shrink readably, then slide; reserve = false so sizes stay).
+  Chips size to their label as before; they only slide where their row leaves too little room.
+- Test: DialogChromeFullText713aTest 2/2 PASS in the cloud (fails on 712a: 3 Ellipsis); compiled with the Maven mirror on
+  (Maven Central 429 without it). Static checks PASS, TRUNCATE 69 -> 66.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt, app/src/test/java/com/shelf/launcher/ui/DialogChromeFullText713aTest.kt.
+- Hardware NOT TESTED: HW-24 713a (KONKR, with 712a).
+
+# Update 712a (23 Nov 2026, cloud run) - rule 11: RetroAchievements dialog shows its names whole
+- CI first: Verify 310 on 38cd4fb (711a) FAILED on one runner only - infra: the ubuntu-24.04 runner's NDK 28 download was a bad
+  zip ("Error on ZipFile unknown archive") before any build; the ubuntu-latest runner passed the full suite. Failed jobs rerun
+  requested (run 45195727121).
+- P2 finish still in the live session on claude/v0674-native-pages (pushes to 14:24 UTC) - left alone; Tasks 1-4 wait for P2.
+- RetroAchievementsDialog.kt: 3 TRUNCATE places -> 0. Recent achievement's name + its game (2 lines each) and a saved account's
+  name go through FullText (wrap, shrink readably, then slide; reserve = false).
+- Test: RaDialogFullText712aTest (fails on 711a: 3 Ellipsis). App + tests compiled in the cloud; the Gradle test run here was blocked
+  by Maven Central 429 (twice) - its assertions checked by an equivalent script (new code pass, 711a code fails); CI runs it. Static checks PASS, TRUNCATE 72 -> 69.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/RetroAchievementsDialog.kt, app/src/test/java/com/shelf/launcher/ui/RaDialogFullText712aTest.kt.
+- Hardware NOT TESTED: HW-24 712a (KONKR, with 710a / 711a).
+
+# Update 711a (23 Nov 2026, cloud run) - rule 11: Game Journey timeline shows its text whole
+- CI first: Verify 310 on 838af2e (710a) GREEN.
+- P2 finish still in the live session on claude/v0674-native-pages (pushes 13:23-13:57 UTC) - left alone; Tasks 1-4 wait for P2.
+- GameJourneyUi.kt (GameJourneyTimeline: game popup journey + Hero carousel journey): 3 TRUNCATE places -> 0. Step title
+  (2 lines), date (1 line) and detail (3 lines, was 2) go through FullText (wrap, shrink readably, then slide; reserve = false).
+- Test: GameJourneyFullText711aTest 2/2 PASS in the cloud (fails on 710a: 3 Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 75 -> 72.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GameJourneyUi.kt, app/src/test/java/com/shelf/launcher/ui/GameJourneyFullText711aTest.kt.
+- Hardware NOT TESTED: HW-24 711a (KONKR, with 710a).
+
+# Update 710a (23 Nov 2026, cloud run) - rule 11: game window performance rows show their text whole
+- CI first: Verify 310 on 8f1ac4f (owner backlog 23 Nov 13:32) GREEN.
+- P2 finish items (owner 13:32) left to the live session on claude/v0674-native-pages (pushes running there); Tasks 1-4 wait for P2.
+- GameWindow.kt: 3 TRUNCATE places -> 0. Performance page rows: name (1 line) and value (2 lines) go through FullText (wrap,
+  shrink readably, then slide; reserve = false). Main page story: kept as a short preview by design, marked qa-ok: the Details
+  page (its button / a tap on the window) shows the whole story (WindowDetails, no line limit) - guarded by the test.
+- Test: GameWindowFullText710aTest 3/3 PASS in the cloud (fails on 709a: 3 unmarked Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 78 -> 75.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GameWindow.kt, app/src/test/java/com/shelf/launcher/ui/GameWindowFullText710aTest.kt.
+- Hardware NOT TESTED: HW-24 710a (KONKR, with 709a).
+
+# Update 709a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the R1 quick panel shows its text whole
+- CI first: Verify 310 on d0e153e (708a) GREEN.
+- P2 left alone (owner review of the before/after package pending).
+- QuickSettings.kt (R1 quick panel): 3 TRUNCATE places -> 0. The undo strip's "Changed: <setting>" (1 line), the picked tile's
+  name in the tile editor (2 lines) and a tile caption with spaces (2 lines in its fixed caption box) go through FullText
+  (wrap, shrink readably, then slide; reserve = false). One-word and line-break captions keep their existing clip-and-shrink path.
+- Test: QuickSettingsFullText709aTest 2/2 PASS in the cloud (fails on 708a: 3 Ellipsis); compiled with the mirror on.
+  Static checks PASS, TRUNCATE 81 -> 78.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QuickSettings.kt, app/src/test/java/com/shelf/launcher/ui/QuickSettingsFullText709aTest.kt.
+- Hardware NOT TESTED: HW-24 709a (KONKR, with 707a / 703a).
+
+# Update 708a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the second screen's folder games page shows game names whole
+- CI first: Verify 310 on 673a1e0 (707a) GREEN.
+- P2 left alone (owner review of the before/after package pending).
+- SecondGamesPage.kt (second screen, a console folder's games): 3 TRUNCATE places -> 0. The List row name (2 lines), the
+  missing-cover placeholder name (4 lines, centred, reserve = false) and the name under a tile (1 line, reserved so grid rows
+  stay even) go through FullText (wrap, shrink readably, then slide). Unused TextOverflow import removed.
+- Test: SecondGamesPageFullText708aTest 2/2 PASS in the cloud (fails on 707a: 3 Ellipsis); :app:compileDebugUnitTestKotlin
+  BUILD SUCCESSFUL (mirror on). Static checks PASS, TRUNCATE 84 -> 81.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/SecondGamesPage.kt, app/src/test/java/com/shelf/launcher/ui/SecondGamesPageFullText708aTest.kt.
+- Hardware NOT TESTED: HW-26 708a (Thor lower screen, with 690a).
+
+# Update 707a (23 Nov 2026, cloud run, v0.6.74 turn) - rule 11: the home editor's toolbar shows its title and scope line whole
+- CI first: Verify 310 on c917a78 (P2-23b, includes 706a's Maven mirror) GREEN - the mirror fix is confirmed.
+- P2 left alone (owner review of the before/after package pending).
+- HomeEditLegend.kt (home edit mode toolbar): 2 TRUNCATE places -> 0. "Edit Home · <widget>" (+ " (hidden)") and the
+  widget's scope line go through FullText (shrink, then slide), reserve = false so the toolbar keeps its size. Unused
+  TextOverflow import removed.
+- Test: HomeEditLegendFullText707aTest 2/2 (fails on 706a: 2 Ellipsis) + HomeEditFullText703aTest 2/2 PASS in the cloud;
+  :app:compileDebugUnitTestKotlin BUILD SUCCESSFUL (mirror on). Static checks PASS, TRUNCATE 86 -> 84.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/HomeEditLegend.kt, app/src/test/java/com/shelf/launcher/ui/HomeEditLegendFullText707aTest.kt.
+- Hardware NOT TESTED: HW-24 707a (KONKR, ~1 min, with 703a's home edit check).
+
 # Update 706a (23 Nov 2026, cloud run, CI fix) - CI and cloud runs fetch Maven Central artifacts from Google's mirror
 - CI first: Verify 310 on 503d679 (705a) RED on both runners - Maven Central answered 429 to all three attempts (60 s / 120 s
   retries) for Robolectric's nativeruntime-dist-compat jar. App + tests COMPILED on both (compileDebugUnitTestKotlin ran); no

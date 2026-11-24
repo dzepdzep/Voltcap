@@ -90,7 +90,8 @@ class TileRowsTest {
         assertTrue(ls.contains("badgeFloor, musicFloor)"))
         // (KONKR x1.3: the profile pictures' bottom is a floor for the order your settings give too.)
         assertTrue(ls.contains("val badgeFloor = if (TileSwitch.profiles && TileRowEdit.badgeBottomPx > 0f) (TileRowEdit.badgeBottomPx + 8.dp.toPx()).toInt() else 0"))
-        assertTrue(ls.contains("maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)"))
+        assertTrue(ls.contains("badgeBottomDp = TileRowEdit.badgeBottomPx.toDp().value"))
+        assertEquals(60f, TileRows.topPadDp(true, 0f, 0f))
         assertEquals(40, TileRows.TOP_CLEAR_DP)
     }
 

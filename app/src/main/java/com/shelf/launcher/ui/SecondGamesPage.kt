@@ -53,7 +53,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -417,9 +416,10 @@ private fun FolderPopup(
                                 if (cover != null) AsyncImage(rememberStyleArtRequest(cover, trim = true), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                             }
                             Spacer(Modifier.width(10.dp))
-                            Text(
+                            // (Update 708a, rule 11: the name shows whole - two lines, then a readable size, then a slide.)
+                            FullText(
                                 gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                                maxLines = 2, modifier = Modifier.weight(1f)
                             )
                         }
                     } else Column(tap, horizontalAlignment = Alignment.CenterHorizontally) {
@@ -437,15 +437,17 @@ private fun FolderPopup(
                         ) {
                             // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                             if (pic != null) AsyncImage(rememberStyleArtRequest(pic, trim = pic == coverOf(g)), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-                            else Text(
+                            // (Update 708a: the missing-cover name centred on its own - nothing laid out around it, so no reserve.)
+                            else FullText(
                                 gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, textAlign = TextAlign.Center,
-                                maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(6.dp)
+                                maxLines = 4, modifier = Modifier.padding(6.dp), reserve = false
                             )
                         }
                         Spacer(Modifier.height(4.dp))
-                        Text(
+                        // (Update 708a: the name under the tile shrinks readably, then slides; reserved line keeps the grid rows even.)
+                        FullText(
                             gameDisplayName(g.name), color = ShelfTheme.colors.textPrimary, fontSize = 10.sp, fontWeight = FontWeight.SemiBold,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+                            maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }

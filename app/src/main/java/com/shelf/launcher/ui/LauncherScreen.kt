@@ -771,7 +771,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                     configuringArtForGame != null || configuringRaForGame != null ||
                     viewingAchievementsForGame != null || pickingMissingSourceFor != null ||
                     pbState.options != null || musicOverrideFor != null ||
-                    collectionsForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
+                    collectionsForGame != null || categoriesForGame != null || statusForGame != null || playStatsForGame != null || tipsForGame != null || guideForGame != null || viewingShots != null || artViewer != null ||
                     screensForGame != null || profileForGame != null || showControlsHelp || showSortDialog || showWhatToPlay || manualFor != null || steamAchFor != null || leaderboardsFor != null || uiState.syncOfflinePrompt != null ||
                     saveSyncForGame != null || runningAsk != null || yearRecap != null || manualMissing != null || hubScreen != null ||
                     perfForGame != null ||
@@ -966,6 +966,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         editingArtworkForGame = null
         pickingMissingSourceFor = null
         collectionsForGame = null
+        categoriesForGame = null
         screensForGame = null
         profileForGame = null
         statusForGame = null
@@ -1289,17 +1290,44 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(loopRow = v))
     }
 
+    var rowComboHeaderWas by remember { mutableStateOf<Boolean?>(null) } // (719a)
     // (Batch 521: the R1 Row tile's own change - withDockHere - asked for by a QA run, shown only during a preview.)
     val testDock = TestHooks.dock.value
     LaunchedEffect(testDock) {
         val name = testDock ?: return@LaunchedEffect
         TestHooks.dock.value = null
-        com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name }?.let { d ->
+        // (718a: `NEXT` = one press of the tile, its own cycle; a place name = the tile's change to that place.)
+        (if (name == "NEXT") rowTileNext(state.appearance) else com.shelf.launcher.data.DockPosition.values().firstOrNull { it.name == name })?.let { d ->
             if (TestHooks.previewOnly) {
-                if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(state.appearance)
-                viewModel.previewAppearance(state.appearance.withDockHere(d))
+                val a0 = state.appearance
+                // (718a: the Row tile's exact change - rowTilePress, the same call the R1 tile makes - previewed, not saved.)
+                viewModel.previewAppearance(rowTilePress(a0, d))
+                // (717a: one line per Row tile change, so tools/qa/device/row714.sh can grade 714a without the R1 panel - its
+                // Quick row holds system tiles a script must never reach.)
+                QaTrace.event("rowtile", rowTileQaLine(a0.homeLayout.name, a0.dockHere.name, d.name, a0.shortcutSpot.name,
+                    com.shelf.launcher.data.Features.widgetPositions.value))
             }
         }
+    }
+
+    // (719a: the 716a combination for a QA run - RowCombo719 - shown only during a preview; `off` puts the header and the song back.)
+    val testRowCombo = TestHooks.rowCombo.value
+    LaunchedEffect(testRowCombo) {
+        val v = testRowCombo ?: return@LaunchedEffect
+        TestHooks.rowCombo.value = null
+        if (!TestHooks.previewOnly) return@LaunchedEffect
+        if (v == "on") {
+            if (rowComboHeaderWas == null) rowComboHeaderWas = com.shelf.launcher.data.Features.homeHeader.value
+            com.shelf.launcher.data.Features.homeHeader.value = true // (held in memory during a preview - Features.holdWrites)
+            viewModel.previewAppearance(RowCombo719.appearance(state.appearance))
+            TestHooks.fakeNowPlaying = com.shelf.launcher.data.NowPlaying("Row check", "Voltcap test", "com.shelf.launcher", isPlaying = true)
+        } else {
+            rowComboHeaderWas?.let { com.shelf.launcher.data.Features.homeHeader.value = it }
+            rowComboHeaderWas = null
+            TestHooks.fakeNowPlaying = null
+        }
+        viewModel.refreshNowPlaying()
+        QaTrace.event("rowcombo", "$v header=${com.shelf.launcher.data.Features.homeHeader.value} info=${state.appearance.rowInfo.name}")
     }
 
     // (Pass 5: theme / performance mode asked for by a QA run — TestHooks.kt, off without its flag file.)
@@ -2680,7 +2708,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val classic = !tileLayout && !heroLayout && !gridLayout && !tvLayout && !styleLayout
         // The game header's buttons (classic row), or its Play & buttons part on Hero / Spotlight / Icon bar.
         val actionsAt = HomeWidgets.position(HomeWidgets.H_ACTIONS) ?: HomeWidgets.position(HomeWidgets.HEADER)
-        val headerUp = actionsAt?.let { it.second < 0.5f } ?: if (classic) dock != com.shelf.launcher.data.DockPosition.TOP else true
+        // (715a, Task 1: with the header off, an added "Play / Continue" or "Play & buttons" part is what ▲ / ▼ reach - its own
+        // place decides, not the row's; Row at the top put ▼ on a Play drawn above the row.)
+        val addedPlayAt = com.shelf.launcher.data.HomeLayout.CLASSIC.let { l ->
+            PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_PLAY)] ?: PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_ACTIONS)]
+        }?.second
+        val headerUp = HomeReach.headerAbove(
+            classic = classic, headerOn = com.shelf.launcher.data.Features.homeHeader.state.value,
+            dockTop = dock == com.shelf.launcher.data.DockPosition.TOP, headerMovedY = actionsAt?.second, addedPlayY = addedPlayAt
+        )
         // The round shortcuts in a corner ☰ or floating (the Tile home's bar by the tiles has its own keys).
         val spot = a.shortcutSpot
         val scOn = a.tileShortcuts && tileShortcuts.isNotEmpty() && spot != com.shelf.launcher.data.ShortcutSpot.ROW &&
@@ -4103,6 +4139,52 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         // legend always stays along the bottom edge.
         val dockPosition = state.appearance.dockHere
         val legendShown = state.appearance.legendOn
+        // (719a: `voltcap_test_rowcol` - one QA line: where the Voltcap row's column landed vs the status bar, RowCombo719.line.)
+        val rowColAsk = TestHooks.rowCol.intValue
+        if (rowColAsk > 0 && QaTrace.on) {
+            val dens = androidx.compose.ui.platform.LocalDensity.current.density
+            val a = state.appearance
+            val barTopPx = if (barHere && dockPosition != com.shelf.launcher.data.DockPosition.TOP) statusBarHeightPx.toFloat() else 0f
+            val headerOn = com.shelf.launcher.data.Features.homeHeader.state.value && focusedGame != null
+            // (read when the line is written, so it reports the frame after the last change - not the one that asked)
+            val rowColLine by androidx.compose.runtime.rememberUpdatedState(RowCombo719.line(
+                a.homeLayout.name, dockPosition, rowTopPx, rowBottomPx, barTopPx, homeHeightPx, dens, legendShown,
+                headerOn, a.rowInfo, a.categoryBarFor(a.homeLayout), state.nowPlaying != null
+            ))
+            LaunchedEffect(rowColAsk) {
+                kotlinx.coroutines.delay(600) // (the column measured after the last change)
+                QaTrace.event("rowcol", rowColLine)
+            }
+        }
+        // (720a: `voltcap_test_reach` - one QA line: the added Play part's place and where ▲ / ▼ go, PlayReach720.line; and
+        // voltcap_qa_edit marks Edit Home open / closed so play720.sh presses its D-pad keys only inside Edit Home.)
+        if (QaTrace.on) {
+            val editOn = HomeEditState.active
+            val editSel = HomeEditState.selected
+            val markCtx = androidx.compose.ui.platform.LocalContext.current
+            LaunchedEffect(editOn, editSel) { TestHooks.markEdit(markCtx, PlayReach720.editMark(editOn, editSel)) }
+        }
+        val reachAsk = TestHooks.reach.intValue
+        if (reachAsk > 0 && QaTrace.on) {
+            val reachLine by androidx.compose.runtime.rememberUpdatedState({
+                prepareReach()
+                val id = PlayReach720.playId
+                val l = com.shelf.launcher.data.HomeLayout.CLASSIC
+                PlayReach720.line(
+                    state.appearance.homeLayout.name, state.appearance.dockHere.name,
+                    com.shelf.launcher.data.Features.homeHeader.state.value,
+                    HomeWidgets.H_PLAY in com.shelf.launcher.data.Features.overlayPartsFor(l),
+                    HomeWidgets.position(id)?.second, HomeEditState.live[id]?.second,
+                    (PartRects.frac[id] ?: PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_ACTIONS)])?.second,
+                    HomeReach.up, HomeReach.down, HomeReach.header.size, HomeReach.zone, HomeEditState.active
+                )
+            })
+            LaunchedEffect(reachAsk) {
+                kotlinx.coroutines.delay(600) // (after the last move / press is drawn)
+                QaTrace.event("reach", reachLine())
+            }
+        }
+
         @Composable
         fun BoxScope.GameRows() {
         if (styleLayout) {
@@ -4403,11 +4485,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         // (Batch 521, Flip 2: with Switch-style profiles top-left, Top put the categories / first tile under them -
                         // the "All" chip was hidden behind the picture. Below them then: 12 dp + 40 dp + 8 dp.)
                         // (Batch 522, tile522b: kept while Edit Home is open too - opening it moved the whole row 50 dp up at Top.)
-                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP)
-                            (if (TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty())
-                                maxOf(60.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.badgeBottomPx.toDp() } + 8.dp)
-                            // (Sprint 528: and below a music player Home shows in a top corner)
-                            else maxOf(10.dp, with(androidx.compose.ui.platform.LocalDensity.current) { TileRowEdit.musicBottomPx.toDp() } + 8.dp)) else 0.dp,
+                        // (Sprint 528: and below a music player Home shows in a top corner.)
+                        // (721a, Task 1: with the profile pictures shown, Top kept clear of them only - a music player in the
+                        // other top corner sat on the tiles / first pill. Both floors now, as Middle has them - TileRows.topPadDp.)
+                        top = if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) with(androidx.compose.ui.platform.LocalDensity.current) {
+                            TileRows.topPadDp(
+                                profilesShown = TileSwitch.profiles && !screensaverOn && com.shelf.launcher.data.Profiles.list.value.isNotEmpty(),
+                                badgeBottomDp = TileRowEdit.badgeBottomPx.toDp().value,
+                                musicBottomDp = TileRowEdit.musicBottomPx.toDp().value
+                            ).dp
+                        } else 0.dp,
                         bottom = if (legendShown) 26.dp else 8.dp
                     )
                     .onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }
@@ -4553,7 +4640,16 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         com.shelf.launcher.data.DockPosition.MIDDLE -> Alignment.Center
                         com.shelf.launcher.data.DockPosition.BOTTOM -> Alignment.BottomCenter
                     }
-                ).onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }.then(
+                ).then(with(RowColumnFit) {
+                    // 716a: a column taller than the room the status bar leaves no longer starts under it (Middle / Bottom).
+                    val dens = androidx.compose.ui.platform.LocalDensity.current
+                    val barTop = barHere && dockPosition != com.shelf.launcher.data.DockPosition.TOP && statusBarHeightPx > 0
+                    Modifier.keepUnderBar(
+                        dockPosition,
+                        topSafe = if (barTop) statusBarHeightPx + with(dens) { 4.dp.roundToPx() } else 0,
+                        bottomSafe = if (legendShown) with(dens) { 24.dp.roundToPx() } else 0
+                    )
+                }).onGloballyPositioned { rowTopPx = it.positionInRoot().y; rowBottomPx = rowTopPx + it.size.height }.then(
                     // The status bar moves to the bottom then, so the row can sit
                     // right at the top.
                     if (dockPosition == com.shelf.launcher.data.DockPosition.TOP) Modifier.padding(top = 16.dp) else Modifier
@@ -5386,7 +5482,36 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onToggleContinueApp = game.packageName?.let { pkg -> { viewModel.setAppInContinue(pkg, pkg !in state.libraryApps.continueApps) } },
             continueAppNote = continueAppNote(state, game, viewModel),
             onClearContinue = game.packageName?.takeIf { continueAppSwitch(state, game) == true && state.lastPlayedAt.containsKey(game.stableKey) }
-                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } }
+                ?.let { pkg -> { optionsForGame = null; viewModel.clearContinueHistory(pkg) } },
+            // 725a (owner Task 4): where an installed app / Android game is listed, several categories at once.
+            onCategories = appCategoriesPkg(game)?.let { { optionsForGame = null; categoriesForGame = game } },
+            categoriesSummary = appCategoriesPkg(game)?.let { pkg ->
+                com.shelf.launcher.data.AppCategories.summary(
+                    uiState.isAndroidGame(game), uiState.isRecomp(game), uiState.isOtherApp(game),
+                    com.shelf.launcher.data.AppCategories.consolesOf(state.libraryApps, pkg),
+                    if (state.appearance.userCollections) state.userCollections.count { game.stableKey in it.value } else 0
+                )
+            }
+        )
+    }
+
+    categoriesForGame?.let { game ->
+        val pkg = appCategoriesPkg(game)
+        if (pkg == null) LaunchedEffect(Unit) { categoriesForGame = null }
+        else AppCategoriesDialog(
+            game = game,
+            androidGame = uiState.isAndroidGame(game),
+            kind = state.libraryApps.kindOf(pkg),
+            recomp = uiState.isRecomp(game),
+            consoles = com.shelf.launcher.data.AppCategories.consolesOf(state.libraryApps, pkg),
+            libraryPlatforms = state.availablePlatforms,
+            collectionsOn = state.appearance.userCollections,
+            collectionCount = state.userCollections.count { game.stableKey in it.value },
+            onKind = { viewModel.setAppKind(pkg, it) },
+            onRecomp = { viewModel.setAppRecomp(pkg, it) },
+            onConsole = { p, on -> viewModel.setAppConsole(pkg, p, on) },
+            onCollections = { categoriesForGame = null; collectionsForGame = game },
+            onDismiss = { categoriesForGame = null }
         )
     }
 
@@ -6103,7 +6228,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onDeleteCollection = { viewModel.deleteCollection(it) },
             playStatuses = state.playStatuses,
             libraryPlatforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             romRoot = state.romRootPath,
             onOpenTgdb = { showMenu = false; showTgdb = true },
@@ -6151,6 +6276,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onToggleInLibrary = { viewModel.toggleAppInLibrary(it) },
             onToggleEmulator = { viewModel.toggleAppEmulator(it) },
             onSetAppKind = { pkg, kind -> viewModel.setAppKind(pkg, kind) },
+            onSetRecomp = { pkg, on -> viewModel.setAppRecomp(pkg, on) },
             onDismiss = { showAppsLibrary = false; showMenu = true }
         )
     }
@@ -6246,7 +6372,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     if (showEmulatorSettings) {
         EmulatorSettingsDialog(
             platforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             configs = state.emulatorConfigs,
             installedApps = state.installedApps,
@@ -6530,7 +6656,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             onAppearanceChange = { viewModel.setAppearance(it) },
             onSelectTheme = { viewModel.setTheme(it) },
             emulatorPlatforms = state.availablePlatforms.filter {
-                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM
+                it != "App" && it != "Steam" && it != com.shelf.launcher.ANDROID_GAMES_PLATFORM && it != com.shelf.launcher.RECOMPS_PLATFORM
             },
             emulatorConfigs = state.emulatorConfigs,
             installedApps = state.installedApps,
@@ -7731,6 +7857,11 @@ internal object HomeKeyGuard {
 
 
 /** Update 450: the "Show in Continue playing" switch for an ordinary app (null for games, emulators and non-apps). */
+/** 725a (owner Task 4): the package START > Categories works on - an installed app / Android game; null for ROMs, Steam
+ *  games and Voltcap's own shortcuts ("voltcap:"). */
+internal fun appCategoriesPkg(game: com.shelf.launcher.data.Game): String? =
+    game.packageName?.takeIf { game.sourceType == com.shelf.launcher.data.SourceType.APP && !it.startsWith("voltcap:") }
+
 internal fun continueAppSwitch(state: com.shelf.launcher.LauncherUiState, game: com.shelf.launcher.data.Game): Boolean? {
     val pkg = game.packageName ?: return null
     if (game.sourceType != com.shelf.launcher.data.SourceType.APP || state.isAndroidGame(game) || pkg in state.emulatorPackages) return null

@@ -14,7 +14,8 @@ class Hierarchy529Test {
     @Test fun channelGridIsOneUniformRowWithAWordedMoreLast() {
         val s = src("WinScenesWii.kt")
         val body = s.substring(s.indexOf("private fun WiiChannelPreviewBody("), s.indexOf("private fun WiiMorePage("))
-        assertTrue(body.contains("UniformKeyRow(row.map { it.first }, 12.dp)"))
+        // (727a: one row for Info and the channel's own screens - on Info it is the Channels / Start / MORE row)
+        assertTrue(body.contains("UniformKeyRow(if (main) row.map { it.first } else ctx.buttons, 12.dp"))
         assertTrue(body.contains("moreAct?.let { it to it.label })"))           // MORE the last of the row
         assertTrue(!body.contains("WiiRoundMore("))
         assertTrue(!body.contains("I.MoreHoriz"))                                // no three dots

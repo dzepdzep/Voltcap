@@ -87,7 +87,8 @@ class LazyRows682aqTest(private val layout: HomeLayout, private val big: Boolean
             if (count == 0) {
                 // (no achievements: the window keeps its own buttons - no page of rows, nothing broken)
                 assertTrue("$tag: no rows, the window's controls stay", rowsComposed().isEmpty() &&
-                    compose.onAllNodes(SemanticsMatcher("play") { "play" in words(it) }).fetchSemanticsNodes().isNotEmpty())
+                    // (727a: Channel grid's Play key reads "Start" on its Info card - the window's own word for Play)
+                    compose.onAllNodes(SemanticsMatcher("play") { words(it).let { w -> "play" in w || w.trim() == "start" } }).fetchSemanticsNodes().isNotEmpty())
                 return
             }
             org.junit.Assume.assumeTrue("$tag: page reached", rowsComposed().isNotEmpty())

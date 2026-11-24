@@ -642,3 +642,56 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   NoStrayPlay682jTest 60, LazyRows 224 (Crate lazy again), AchFirstRow 192, WinFocus 448.
 - **D390:** winguard deadline on every key / tap (15 min default), watchdog; `p2review.sh storm` mode (bursts L1 R1 A ... in
   one input call inside the confirmed window, launch count after each).
+### 726a - P2 class C, first layout: Circuit board (WinPagesChip.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The chip's datasheet on the board (the board / trace / silkscreen colours of Board colours), its sections in the sheet's
+  monospace silkscreen, the heading "SECTION n · NAME" under the game's name (after the old section has gone):
+  CHARACTERISTICS (a PARAMETER / VALUE table between rules, values in whole words; the story as the FUNCTIONAL DESCRIPTION
+  block, a D-pad stop), PIN STATES (each achievement a numbered pin P01 ..., an LED lit in the trace colour + HIGH when yours,
+  hollow + LOW when not, "N PT"; "N / M PINS HIGH", the order key; A opens the whole text with LATCHED date / YIELD rarity;
+  lazy rows), JUMPERS (J1, J2 ... - the cap bridges the two header pins while focused; removing ones red, second A).
+  Motion: the section's signal runs along the trace (slides in a tenth from the trace side, from the other side going back).
+  Info (PINOUT) unchanged. Play keeps its slot on every section (sceneKeySlots); L1 / R1 anywhere in the sheet.
+- Tests (cloud, Robolectric): NativePagesChip726aTest 4/4 (fails before: no chipPageName / CHIP_SHEET not native); CIRCUIT
+  added to AchFirstRow (6/6, + RPC), LazyRows (8/8), PlayPlace (2/2 + RPC 2/2), NoStrayPlay (2/2), WinFocus (8/8),
+  ShelfText (24/24); WinPresentation / Visual426 / PopupNativeStorage / NativePages681a / Review682ag / UniformKeys green.
+- Audit: class A 30 / 53 (+ Circuit), class B 1 (Disc station), class C 22. Hardware NOT TESTED (HW-27), not visually approved.
+
+### 727a - P2 class C, second layout: Channel grid (WinPagesChan.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The channel's own screens in the preview card's well (the grid's palette, wiiPaletteNow, and its rim colour), soft rounded
+  cards and pills, a header naming the screen with the channel pager's dots (one per page, the shown one filled):
+  CHANNEL INFO (the facts on one rounded info card, label over value in whole words; the story as the "About this channel"
+  bubble, a D-pad stop), STAMPS (each achievement a rounded pill, a round stamp on the right - inked with a star when yours,
+  an empty ring when not - with its points; "N of M stamps", the order as a pill; A opens the whole text, "Stamped <date>",
+  how rare; lazy rows), SETTINGS (each option a big rounded pill in the window's key shape; removing ones red, second A).
+  Motion: the next screen slides in from the side a quarter of the way, as a channel page does (right going forward, left
+  going back), the old one slides an eighth the other way and fades. Info (the banner) and its More page of big keys unchanged.
+- Found and fixed on the way (the scene now stays composed under its own pages): (1) the More page's focus effect ran on
+  every page turn - B from Options landed on More's first key (Details); it now follows More being opened / closed only.
+  (2) Two key rows (Info / pages) swapped on every turn; one row now, the pages' keys in the Info row's slots (Play in one
+  place on every screen - PlayPlace). (3) A screen turned to with L1 / R1 has its More key as opener, which is not on the card
+  while More is closed: the window waited ~8 frames with nothing lit and in an L1 / R1 storm the focus was lost (B then
+  closed the window - NoStrayPlay682jTest). The closed More key now answers for the keys behind it: B lands on More at once.
+- Tests (cloud, Robolectric): NativePagesChan727aTest 4/4 (fails before: no chanPageName / WII_PREVIEW not native); CHAN added
+  to AchFirstRow + ShelfText; CHAN in WinFocus / PlayPlace (+ RPC) / NoStrayPlay / LazyRows (n=0 check accepts the card's
+  "Start") green - 104 tests, 0 failures; Hierarchy529 (source shape updated to the one row), Batch494 / 496 / 506 / 507,
+  Popup421, Visual426, WindowWordsSurvey682, CategoryStable394 green. Static checks PASS.
+- Audit: class A 31 / 53 (+ Channel), class B 1 (Disc station), class C 21. Hardware NOT TESTED (HW-28), not visually approved.
+
+### 728a - P2 class C, third layout: Timeline (WinPagesTime.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The entry hanging from the year line keeps its cover, name and console line; on its pages the facts area becomes the page,
+  each drawn as its own small vertical timeline in the accent (a thin line down the left, a node per stop), the page named
+  beside a short page line (one tick per page, the shown one filled) after the old page has gone:
+  CHRONICLE (each fact a filled stop, label over value in whole words; the story as THE STORY SO FAR at the line's end, an
+  open node, a D-pad stop), MILESTONES (each achievement a stop - filled node + "Reached <date>" when yours, open ring +
+  "Ahead" when not - badge, title, points "N pts"; "N of M milestones reached", the order as a pill; A opens the whole text
+  and how rare; lazy rows), BRANCHES (each option a branch tick off the line to a rounded tag; removing ones red, second A).
+  Motion: the next page comes along the line of time - from the right a fifth of the way going forward, from the left going
+  back - as it fades up; none with Motion Off. Info (ENTRY) unchanged. The entry takes a steady height on its pages (max 480 dp)
+  so the milestones scroll; Play keeps its slot (sceneKeySlots); L1 / R1 anywhere in the window. The line is drawn behind
+  each stop (no intrinsic measuring of the rows' texts).
+- Tests (cloud, Robolectric): NativePagesTime728aTest 4/4 (fails before: no timePageName / TIMELINE_ENTRY not native);
+  TIMELINE added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace (+ RPC) / WinPresentation /
+  Batch508 / Visual426: 1,850 tests 0 failures (52 Timeline cases, none skipped); Hierarchy529 / CategoryStable394 /
+  WindowWordsSurvey682 / NativePages681a / Batch2 / UniformKeys / NativeConfirm / PopupNativeStorage / Popup421 /
+  NoArtCaption684: 597 tests 0 failures. Static checks PASS (no finding in the new file).
+- Audit: class A 32 / 53 (+ Timeline), class B 1 (Disc station), class C 20. Hardware NOT TESTED (HW-28), not visually approved.

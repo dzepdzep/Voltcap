@@ -130,9 +130,42 @@ internal fun PresetPreview(
             HomeLayout.COVERDETAILS -> p.coverDetails()
             HomeLayout.ARTLIB -> p.artLib()
         }
-        p.statusBar(layout)
+        p.statusBar(layout, showLegend)
         if (showLegend) p.legend()
     }
+}
+
+/**
+ * 722a (Task 1, Edit Home / preset preview vs the real Home at Top / Middle / Bottom): the preview's places, as pure
+ * fractions of the mock screen, following the same rules the real Home uses (LauncherScreen):
+ * - with the games at the top (Classic row, Tile home - not Grid, TV room or a style layout) the clock / battery bar goes
+ *   to the bottom, above the legend when it is shown (the preview always drew it at the top, over the row);
+ * - at the top the row sits right under the edge with the game's name UNDER it (Classic: 16 dp, Tile home: 60 dp clear of
+ *   the corner pictures / player; nameBelow) - the preview put the row at 0.2 with its name above it;
+ * - Middle and Bottom are drawn as before.
+ */
+internal object PreviewDock {
+    /** The real rule: the status bar moves to the bottom only for these layouts at Top (LauncherScreen atBottom / barTop). */
+    fun statusAtBottom(layout: HomeLayout, dock: com.shelf.launcher.data.DockPosition): Boolean =
+        dock == com.shelf.launcher.data.DockPosition.TOP && layout != HomeLayout.GRID && layout != HomeLayout.TV && !layout.styleHome
+
+    /** The status bar's line (y fraction): top as before, else above the legend (0.93) or near the bottom edge. */
+    fun statusY(atBottom: Boolean, legend: Boolean): Float = if (!atBottom) 0.05f else if (legend) 0.875f else 0.945f
+
+    /** Classic row top at Top: 16 dp of a ~360 dp tall screen, rounded up to the mock's grid. */
+    const val CLASSIC_TOP = 0.06f
+    /** Tile home tiles' top at Top: 60 dp of a ~360 dp tall screen (TileRows.topPadDp's minimum). */
+    const val TILES_TOP = 0.17f
+
+    fun rowTop(dock: com.shelf.launcher.data.DockPosition, rowH: Float, bottomEdge: Float, topEdge: Float): Float = when (dock) {
+        com.shelf.launcher.data.DockPosition.TOP -> topEdge
+        com.shelf.launcher.data.DockPosition.MIDDLE -> 0.5f - rowH / 2f
+        com.shelf.launcher.data.DockPosition.BOTTOM -> bottomEdge - rowH
+    }
+
+    /** Where the game's name line goes: under the row at Top (nameBelow), [above] over it otherwise. */
+    fun nameY(dock: com.shelf.launcher.data.DockPosition, rowY: Float, rowH: Float, above: Float): Float =
+        if (dock == com.shelf.launcher.data.DockPosition.TOP) rowY + rowH + 0.04f else rowY - above
 }
 
 /** Draws the mock screens, in fractions of the preview's width / height. */
@@ -356,12 +389,14 @@ private class PreviewPainter(
         }
     }
 
-    fun statusBar(layout: HomeLayout) {
+    fun statusBar(layout: HomeLayout, legend: Boolean = false) {
         // (Update 162: dark on Hero tiles' pale backdrop too.)
         // (Update 241, #110: and on Live tiles / Channel grid only while their pale backdrop is on.)
+        // (722a: at the bottom with the games at the top, as the real Home puts it - PreviewDock.)
         val ink = if (pale(layout)) Color(0xFF333333) else Color.White
-        for (i in 0..3) dot(0.74f + i * 0.045f, 0.06f, 2.2f, ink.copy(alpha = 0.75f))
-        line(0.92f, 0.05f, 0.05f, ink.copy(alpha = 0.75f), 0.02f)
+        val y = PreviewDock.statusY(PreviewDock.statusAtBottom(layout, dock), legend)
+        for (i in 0..3) dot(0.74f + i * 0.045f, y + 0.01f, 2.2f, ink.copy(alpha = 0.75f))
+        line(0.92f, y, 0.05f, ink.copy(alpha = 0.75f), 0.02f)
     }
 
     fun legend() {
@@ -377,31 +412,28 @@ private class PreviewPainter(
         if (dimOthers) rect(tx, y, tw, hh, Color.Black.copy(alpha = 0.45f), r0 * cornerK)
     }
 
-    /** (Update 241, #110) Where the row's top sits for the dock position (Top / Middle / Bottom), for a row [rowH] high. */
-    private fun rowTop(rowH: Float, bottomEdge: Float): Float = when (dock) {
-        com.shelf.launcher.data.DockPosition.TOP -> 0.2f
-        com.shelf.launcher.data.DockPosition.MIDDLE -> 0.5f - rowH / 2f
-        com.shelf.launcher.data.DockPosition.BOTTOM -> bottomEdge - rowH
-    }
+    /** (Update 241, #110) Where the row's top sits for the dock position (Top / Middle / Bottom), for a row [rowH] high.
+     *  (722a: Top right under the edge as on the real Home - PreviewDock.) */
+    private fun rowTop(rowH: Float, bottomEdge: Float, topEdge: Float): Float = PreviewDock.rowTop(dock, rowH, bottomEdge, topEdge)
 
     fun classic() {
         // (Update 241, #110: the row's place, the game you're on in the middle or at the left end, as its wide capsule
         // or as a cover, and the other games dimmed / leaning — "Cover shelf" and "Big tiles" drew the standard row.)
         val ch = 0.3f * k
-        val y = rowTop(ch, 0.92f)
+        val y = rowTop(ch, 0.92f, PreviewDock.CLASSIC_TOP)
         val fw = if (focusedWide) 0.3f * k else 0.15f * k
         val sw = 0.11f * k
         val gap = 0.025f * k
         if (focusCenter) {
             val fx = 0.5f - fw / 2f
-            line(0.375f, y - 0.1f, 0.25f, Color.White, 0.035f)
+            line(0.375f, PreviewDock.nameY(dock, y, ch, 0.1f), 0.25f, Color.White, 0.035f)
             for (j in 1..4) {
                 other(fx - j * (sw + gap), y + 0.03f, sw, ch - 0.03f, 10 - j)
                 other(fx + fw + gap + (j - 1) * (sw + gap), y + 0.03f, sw, ch - 0.03f, j)
             }
             card(fx, y, fw, ch, 0, on = true)
         } else {
-            line(0.05f, y - 0.1f, 0.25f, Color.White, 0.035f)
+            line(0.05f, PreviewDock.nameY(dock, y, ch, 0.1f), 0.25f, Color.White, 0.035f)
             card(0.05f, y, fw, ch, 0, on = true)
             for (i in 1..6) {
                 val x = 0.05f + fw + gap + (i - 1) * (sw + gap)
@@ -415,8 +447,8 @@ private class PreviewPainter(
         // (Update 241, #110: Tile home's own tile size and the row's place — "Big tile home" drew the standard picture.)
         val s = 0.15f * k * tileScale
         val big = s + 0.03f
-        val y = rowTop(big * w / h, 0.74f) + 0.03f
-        line(0.24f, y - 0.08f, 0.2f, Color.White, 0.035f)
+        val y = rowTop(big * w / h, 0.74f, PreviewDock.TILES_TOP) + 0.03f
+        line(0.24f, PreviewDock.nameY(dock, y - 0.03f, big * w / h, 0.05f), 0.2f, Color.White, 0.035f)
         var x = 0.06f
         for (i in 0..6) {
             val on = i == 1
