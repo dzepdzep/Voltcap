@@ -629,3 +629,17 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   D389 move queue: the glide-wait version (aq8 / aq9) landed Downs back on the row above; aq10 keeps aq7's reveal-before-move,
   only when no other scroll runs - Back reached on KONKR (Cinema, Resume, Bar) and RP Classic (Cinema, Resume), Up back to the top,
   0 crashes, restore diff 0. D390: the first cover walk looped ~30 min (shared shell variable) - QA app only, stopped by hand.
+
+### 726a - P2 class C, first layout: Circuit board (WinPagesChip.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The chip's datasheet on the board (the board / trace / silkscreen colours of Board colours), its sections in the sheet's
+  monospace silkscreen, the heading "SECTION n · NAME" under the game's name (after the old section has gone):
+  CHARACTERISTICS (a PARAMETER / VALUE table between rules, values in whole words; the story as the FUNCTIONAL DESCRIPTION
+  block, a D-pad stop), PIN STATES (each achievement a numbered pin P01 ..., an LED lit in the trace colour + HIGH when yours,
+  hollow + LOW when not, "N PT"; "N / M PINS HIGH", the order key; A opens the whole text with LATCHED date / YIELD rarity;
+  lazy rows), JUMPERS (J1, J2 ... - the cap bridges the two header pins while focused; removing ones red, second A).
+  Motion: the section's signal runs along the trace (slides in a tenth from the trace side, from the other side going back).
+  Info (PINOUT) unchanged. Play keeps its slot on every section (sceneKeySlots); L1 / R1 anywhere in the sheet.
+- Tests (cloud, Robolectric): NativePagesChip726aTest 4/4 (fails before: no chipPageName / CHIP_SHEET not native); CIRCUIT
+  added to AchFirstRow (6/6, + RPC), LazyRows (8/8), PlayPlace (2/2 + RPC 2/2), NoStrayPlay (2/2), WinFocus (8/8),
+  ShelfText (24/24); WinPresentation / Visual426 / PopupNativeStorage / NativePages681a / Review682ag / UniformKeys green.
+- Audit: class A 30 / 53 (+ Circuit), class B 1 (Disc station), class C 22. Hardware NOT TESTED (HW-27), not visually approved.

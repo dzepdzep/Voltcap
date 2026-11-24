@@ -50,7 +50,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (682ad: batch 6)
             HomeLayout.TILES, HomeLayout.GRID,
             // (682ae: batch 7)
-            HomeLayout.NIGHT, HomeLayout.BLADES)
+            HomeLayout.NIGHT, HomeLayout.BLADES,
+            // (726a: class C - Circuit board's datasheet sections)
+            HomeLayout.CIRCUIT)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {
