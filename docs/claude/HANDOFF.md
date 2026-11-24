@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 21:40 UTC, 739a (cloud, Task 5):** Verify 310 on 5d6a422 (dev) + fb72ff4 (P2) GREEN. P2 branch 982dfb1: Rental shop
+(SHOP_TAG) has the rental tag's own pages - CATALOGUE CARD / REWARDS CARD (punch card) / COUNTER in its black capitals lit in the
+neon (WinPagesShop.kt; class C 14 scenes done, own designs 44 / 53). PlayPlace had silently skipped the shop (did not know RENT &
+PLAY / CATALOGUE CARD) - taught both; Play now proven put on all three pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 982dfb1 (P2) FIRST (red -> fix first). Then Task 5: next class C layout of batch 6 on the
+P2 branch (Arctic, Green core, Art library, Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs all three faces in
+one batch) - or an emulator p2review sheet of batch 5 for the owner, or the Task 1 residual. The owner's session pushes to the P2
+branch: fetch + merge before every P2 push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow
+(+Rpc) + NoStrayPlay682j + ShelfText for the layout AND every test that greps the scene name (grep -rln <SCENE> app/src/test); check
+the PLAYPLACE output line really found Play on the pages (a layout with its own key words is skipped, not failed).
+
 **24 Nov 20:50 UTC, 738a (cloud, Task 5):** Verify 310 on ca697b9 (dev) + 5e1b096 (P2) GREEN. P2 branch fb72ff4: Panel dashboard
 (PANEL_DETAIL) has the swung-round panel's own pages - OVERVIEW / ACHIEVEMENTS / MANAGE as flat tiles and rows lit in the
 dashboard's colour, sliding in like the next panel (WinPagesPanels.kt; class C 13 scenes done, own designs 43 / 53). Batch 5

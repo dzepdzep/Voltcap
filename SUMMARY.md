@@ -1,3 +1,27 @@
+# Update 739a (24 Nov 2026, cloud run) - P2 class C: Rental shop's tag gets its own pages (native-pages branch)
+- CI first: Verify 310 on 5d6a422 (dev line) and fb72ff4 (P2, Panel dashboard) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), fb72ff4 -> 982dfb1: the fourteenth class C scene (first of batch 6). Rental
+  shop's yellow rental tag prints its own pages under the title in its black capitals, lit in the shop's neon: CATALOGUE CARD
+  (opened by the tag's own CATALOGUE CARD key: facts label over value between dashed rules, the story under a black bar headed
+  THE STORY), REWARDS CARD (a member punch card: cup, "N / M", ten punch holes - one earned always punches one, all only when every
+  one is earned - the order as a black stamp; each achievement a line with its square badge, title, "EARNED <date>" / "NOT YET",
+  "+N PTS"; A shows the whole text and how rare it is), COUNTER (black punched rows; removing ones orange, second A). Heading = the
+  page's name (wraps, never cut) + a punch hole per page, after the old page has gone; the next page drops in from above like the
+  next card on the tag's string; none with Motion Off. On its pages the tag keeps one size and one row of punched keys (two page
+  slots, RENT & PLAY first), so Play stays put. No made-up rental period / due date / price. Was the shared pages in a black frame
+  with "▸" words under it. Own designs 44 / 53.
+- Found on the way (tests): PlayPlace never checked the Rental shop - it knew neither RENT & PLAY nor CATALOGUE CARD, so it skipped
+  the layout; ShelfText could not open its Details. Both now know the shop's words (stronger, not weaker), and PlayPlace SHOP finds
+  Play at the same place on all three pages at x1.0 / x1.3.
+- Checked (cloud): NativePagesShop739aTest 4/4 (new; fails on the old code: no shopPageName, SHOP_TAG not native); SHOP added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, Layouts344, WindowWordsSurvey682,
+  Batch505, PopupShade461, Pickups672, ShopTag673, NativeConfirm, PopupNativeStorage, WinFocus, UniformKeys673, NativePages* -
+  2,639 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesShop.kt (new), ui/WinScenesConsole.kt (RentalTagCard), ui/WinPageFlow.kt; tests
+  NativePagesShop739aTest (new), AchFirstRowRoboTest, PlayPlace682abRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line:
+  hand-off docs only.
+
 # Update 738a (24 Nov 2026, cloud run) - P2 class C: Panel dashboard gets the panel's own pages (native-pages branch)
 - CI first: Verify 310 on ca697b9 (dev line) and 5e1b096 (P2, Pocket camera) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 5e1b096 -> fb72ff4: the thirteenth class C scene. Panel dashboard's swung-round
