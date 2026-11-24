@@ -1,3 +1,14 @@
+# Update 734a (24 Nov 2026, cloud run) - CI fix on the native-pages branch (Case flow test expectation)
+- CI first: Verify 310 on 194557a (dev line) GREEN; on d3907c7 (733a, P2 branch) RED - both runners: 4286 tests, 1 failed,
+  PopupNativeStorageTest.storageKeepsItsOwnPages. The test named Case flow (CASE_MEDIA) as an example of a scene still on the
+  shared pages; 733a gave Case flow its own pages, so the app was right and the test's example was out of date.
+- Fix on `claude/v0674-native-pages` (worktree), d3907c7 -> 50cfb3f, test only: the check now walks every scene not in
+  NATIVE_PAGE_SCENES (each must answer false, and at least one must remain), and Case flow is asserted native. No assertion
+  weakened: the old single-scene check is a subset of the new one; the next P2 conversion can no longer turn it red.
+- Checked (cloud): PopupNativeStorageTest 9/9 (failed on d3907c7 in CI). Static PASS. Full suite: GitHub CI on this push.
+- Not tested: nothing new for hardware (test-only change; HW-28 unchanged).
+- Files (P2 branch): app/src/test/java/com/shelf/launcher/ui/PopupNativeStorageTest.kt. Dev line: hand-off docs only.
+
 # Update 733a (24 Nov 2026, cloud run) - P2 class C: Case flow gets the case's own pages (native-pages branch)
 - CI first: Verify 310 on 3f6f2f6 (dev line) GREEN; on 91247df (732a, P2 branch) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 91247df -> d3907c7: the eighth class C scene. The case opened into its media

@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 733a · 2026-11-24 15:20 UTC · commit `this update (being pushed)` · CI: Verify 310 green on 3f6f2f6 (dev) and 91247df (native-pages); d3907c7 (native-pages) pending at hand-off · effort: medium
+**1. LATEST UPDATE** - 734a · 2026-11-24 15:45 UTC · commit `this update (being pushed)` · CI: Verify 310 green on 194557a (dev); red on d3907c7 (native-pages, this test) - fix 50cfb3f pending at hand-off · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Case flow layout's game window now has its own Details, Achievements and Options pages, shown in the glass picture area of the opened case like the menu of the disc inside: the facts as glass strips with the coloured edge, the achievements as 'Extras' with a glossy progress bar and one glass slide per achievement, and the options as glossy pill buttons (removing ones are red and ask twice). The automated tests caught the Play button moving between pages; that is fixed, and a test that had not been reaching every page of this layout now does. On the native-pages test branch only, checked with automated tests; not yet on a handheld or approved by you. 38 of 53 layouts now have their own pages.
+**2. WHAT CLAUDE JUST FIXED** - The automated checks on the native-pages test branch turned red after the last run gave Case flow its own pages: one older test still used Case flow as its example of a layout without its own pages. The app was right; the test now checks every layout that still uses the shared pages instead of naming one, so the next layout converted will not trip it again. No app change.
 
 **3. LAST 24 HOURS** (most important first)
 - **p2** (P2-23c): Finished the P2 items from the owner's 13:32 review: on real handhelds, page changes in Arctic, Game magazine, Library and Cube now show one page at a time with the heading changing after the old page has gone (Magazine's cover and key row no longer move while the new page appears); Spotlight's title sits on a dark plate over busy art; Terminal's delete confirmation is fully readable; the TV room keeps its one-key strip as decided; both handhelds re-checked at normal and larger text. Coverflow details proposal waits for the owner.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch (d3907c7); then: Next native-page layout (Orbit / Airy / Bubbles, or the Pocket family in one batch); Row position residuals (Task 1)
+**5. WORKING ON NEXT** - now: Verify 310 green on this push and on the native-pages branch (50cfb3f); then: Next native-page layout (Orbit / Airy / Bubbles, or the Pocket family in one batch); Row position residuals (Task 1)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 15:45 UTC, 734a (cloud, CI fix):** Verify 310 on 194557a (dev) GREEN; P2 branch RED on d3907c7 (PopupNativeStorageTest
+still named Case flow as a shared-page scene after 733a converted it). Fixed test-only on the P2 branch (50cfb3f): the check follows
+NATIVE_PAGE_SCENES, so future conversions cannot break it. PopupNativeStorageTest 9/9 (cloud). Not approved; HW-28 unchanged.
+NEXT: check Verify 310 on this push AND on 50cfb3f (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family
+(POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual. New P2 pages: before pushing run PlayPlace682ab +
+PlayPlaceRpc682ab + AchFirstRow for the layout AND every non-Robolectric test that greps the scene name (grep -rln <SCENE>
+app/src/test) - 733a missed PopupNativeStorageTest that way.
+
 **24 Nov 15:20 UTC, 733a (cloud, Task 5):** Verify 310 on 3f6f2f6 (dev) + 91247df (P2) GREEN. P2 branch d3907c7: Case flow
 (CASE_MEDIA) has the case's own pages in the picture's glass well - DETAILS / EXTRAS / SETUP (WinPagesCase.kt; class C 8 scenes
 done, own designs 38 / 53); on its pages the window keeps one size so Play stays put (PlayPlace caught it); PlayPlace's More
