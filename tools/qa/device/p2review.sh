@@ -477,7 +477,9 @@ chab)
   A --es voltcap_test_artfix "delay=0"; sleep 2
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
-  A --es voltcap_test_layout CLASSIC; sleep 4; gate
+  # (a home that is otherwise still: Arcade after 682as - the Voltcap row's animated theme scene draws every frame by itself)
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
   ch_ab legacy 1; ch_ab new 1; ch_ab legacy 2; ch_ab new 2
   A --es voltcap_test_chargelight new --es voltcap_test_battery off
   log "chab done (launches: $(launches))"; echo DONE >> $L;;
