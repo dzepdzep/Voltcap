@@ -1,3 +1,22 @@
+# Update 738a (24 Nov 2026, cloud run) - P2 class C: Panel dashboard gets the panel's own pages (native-pages branch)
+- CI first: Verify 310 on ca697b9 (dev line) and 5e1b096 (P2, Pocket camera) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 5e1b096 -> fb72ff4: the thirteenth class C scene. Panel dashboard's swung-round
+  panel shows its own pages on its right side, flat like the dashboard, in the picked palette: OVERVIEW (each fact a flat tile with
+  a colour bar down its left, label over value; the story in a flat panel headed ABOUT under a colour bar), ACHIEVEMENTS (cup,
+  "N / M", a 10-segment flat meter - one earned always lights one, all only when every one is earned - the order as a flat tile;
+  each achievement a flat row with its square badge, title, "Unlocked <date>" / "Locked" and points, lit like the commands; A shows
+  the whole text and how rare it is), MANAGE (flat rows like the command column; removing ones in the warning orange, second A).
+  Heading = the page's name + a flat segment per page, after the old page has gone; the next page slides in from its side like the
+  next panel coming round; none with Motion Off. The art strip now names the console alone (the page name was said twice). Was
+  the shared pages in a thin frame. Own designs 43 / 53.
+- Checked (cloud): NativePagesPanels738aTest 4/4 (new; fails on the old code: no panelPageName, PANEL_DETAIL not native); PANELS
+  added to AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow*, PlayPlace*, NoStrayPlay682j, ShelfText,
+  WinFocus, Layouts344, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, UniformKeys673, NativePages* - 2,575 tests, 0
+  failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesPanels.kt (new), ui/WinScenesConsole.kt (PanelDetail), ui/WinPageFlow.kt; tests
+  NativePagesPanels738aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 737a (24 Nov 2026, cloud run) - P2 class C: Pocket camera gets the cartridge menu's own pages (native-pages branch)
 - CI first: Verify 310 on 32e3610 (dev line) and 445fd1f (P2, Bubble home) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 445fd1f -> f2e65f0, merged with the owner session's 682au (Arcade FitText,

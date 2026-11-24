@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 20:50 UTC, 738a (cloud, Task 5):** Verify 310 on ca697b9 (dev) + 5e1b096 (P2) GREEN. P2 branch fb72ff4: Panel dashboard
+(PANEL_DETAIL) has the swung-round panel's own pages - OVERVIEW / ACHIEVEMENTS / MANAGE as flat tiles and rows lit in the
+dashboard's colour, sliding in like the next panel (WinPagesPanels.kt; class C 13 scenes done, own designs 43 / 53). Batch 5
+(Orbit, Airy, Bubbles, Camera, Panels) is now all implemented - ready for an emulator p2review sheet for the owner. HW-28 extended.
+NEXT: check Verify 310 on this push AND on fb72ff4 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (batch 6: Rental shop, Arctic, Green core, Art library, Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs
+all three faces in one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every P2
+push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout
+AND every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
 **24 Nov 19:55 UTC, 737a (cloud, Task 5):** Verify 310 on 32e3610 (dev) + 445fd1f (P2) GREEN. P2 branch 5e1b096 (737a f2e65f0 +
 merge of the owner session's 682au): Pocket camera (CAMERA_MENU) has the cartridge menu's own pages - DATA / ALBUM / SETUP in its
 pixel font and four shades (WinPagesCamera.kt; class C 12 scenes done, own designs 42 / 53). PlayPlace caught Play a key lower on
