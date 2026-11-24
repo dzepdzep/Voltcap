@@ -38,6 +38,9 @@ internal object TestHooks {
     val settings = mutableStateOf<String?>(null)
     /** Update 490 (search QA): `--es voltcap_test_settings Home --es voltcap_test_settings_search spacing` — typed into Settings' own search box. */
     val settingsSearch = mutableStateOf<String?>(null)
+    /** 682ar (D391 QA): `--ei voltcap_test_saveridle S` - the screensaver's idle time in seconds for this session (0 = the
+     *  setting again). Isolated QA app only; nothing saved. */
+    @Volatile var saverIdleS: Int = 0
     /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
     val screensaver = mutableStateOf(false)
     /**
@@ -419,6 +422,10 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
         // Sprint 527: `--es voltcap_test_clipshade legacy|new` - the background clip's old (theme fog) or new shading, for a
         // same-frame before / after (isolated QA app only, session only).
+        if (intent?.hasExtra("voltcap_test_saveridle") == true && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            saverIdleS = intent.getIntExtra("voltcap_test_saveridle", 0).coerceAtLeast(0)
+            android.util.Log.e("VoltcapQA", "saver idle ${saverIdleS}s")
+        }
         intent?.getStringExtra("voltcap_test_clipshade")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
             android.util.Log.e("VoltcapQA", "clipshade $v")

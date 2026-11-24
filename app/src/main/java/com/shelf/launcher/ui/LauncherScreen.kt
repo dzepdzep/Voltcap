@@ -1819,7 +1819,17 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         val settings = state.screensaver
         // (Update 125: never while Edit Home is open.)
         if (!ScreensaverGate.mayRun(screensaverActive, settings.enabled, aDialogIsOpen, showSearchBar, screensaverOn, HomeEditState.active, whoAsk, whoPending)) return@LaunchedEffect
-        kotlinx.coroutines.delay(settings.idleMinutes * 60_000L)
+        // (682ar, D391 - owner 24 Nov: "activity inside a game window must prevent the launcher behind it from dimming or going
+        // black". The window's keys never reach this screen's lastInputAt; after 5 minutes of playing with an open window the
+        // screensaver started behind it, then went to black. The wait now also counts any input HomeIdle saw - the window's too.)
+        val idleMs = TestHooks.saverIdleS.takeIf { it > 0 }?.let { it * 1000L } ?: (settings.idleMinutes * 60_000L)
+        val started = android.os.SystemClock.elapsedRealtime()
+        while (true) {
+            val wait = ScreensaverGate.waitMs(idleMs, android.os.SystemClock.elapsedRealtime() - started, HomeIdle.sinceAnyInputMs())
+            if (wait <= 0L) break
+            kotlinx.coroutines.delay(wait)
+        }
+        if (com.shelf.launcher.data.QaVariant.isolatedNow) android.util.Log.e("VoltcapQA", "screensaver on (idle ${idleMs / 1000}s)")
         screensaverOn = true
     }
     // Update 202: the screensaver dismissed: the background music fades back in at once, not after its 250 ms fade-out.

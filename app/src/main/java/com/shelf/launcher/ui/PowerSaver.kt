@@ -71,6 +71,8 @@ object HomeIdle {
      * changing what the 30 s idle step means for this screen.
      */
     @Volatile private var lastAnyInput = SystemClock.elapsedRealtime()
+    /** 682ar (D391): how long since the last input of any kind - the home's keys, touches, and the keys of a game window over it. */
+    fun sinceAnyInputMs(): Long = SystemClock.elapsedRealtime() - lastAnyInput
     /** When the last input came (elapsedRealtime). */
     val lastInputAt: Long get() = lastInput
     /** Idle focus mode (hero carousel): the UI is faded out until the next input. */
