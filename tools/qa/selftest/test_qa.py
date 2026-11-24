@@ -2963,6 +2963,27 @@ echo REACHED_END >> {d}/log.txt
             rc, keys, log = self.run_guard([self.QA, self.QA, self.QA, other], 'wg_window; wg_key_win R1; wg_key_win A', popup="/r/g.sfc")
             self.assertEqual(rc, 4); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1"]); self.assertIn(word, log)
 
+    def test_682ar_d390_a_key_loop_ends_at_the_deadline(self):
+        # (D390: a walk that never ended pressed Up for 30 minutes - every key now checks the run's deadline)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; WG_DEADLINE=$(( $(date +%s) + 2 )); while true; do wg_key_win U; sleep 0.2; done',
+                                       popup="/r/game.sfc")
+        self.assertEqual(rc, 4, log); self.assertIn("max run time", log); self.assertNotIn("REACHED_END", log)
+        self.assertTrue(0 < len(keys) < 40, len(keys))
+
+    def test_682ar_d390_past_the_deadline_nothing_is_pressed(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; WG_DEADLINE=$(( $(date +%s) - 1 )); wg_key_win A', popup="/r/game.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("max run time", log)
+
+    def test_682ar_d390_default_deadline_is_the_15_minute_limit(self):
+        src = open(f"{self.DEV}/winguard.sh").read()
+        self.assertIn("WG_MAX_S:-900", src)
+        p2 = open(f"{self.DEV}/p2review.sh").read()
+        self.assertIn("wg_watchdog", p2)
+        burst = p2[p2.index("burst() {"):p2.index("lazy_layout() {")]
+        self.assertIn("wg_time_ok", burst)
+        qtap = p2[p2.index("qtap() {"):p2.index("rowtile() {")]
+        self.assertIn("wg_time_ok", qtap)
+
     def test_no_game_window_means_no_page_key(self):
         rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="null")
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("game window expected", log)

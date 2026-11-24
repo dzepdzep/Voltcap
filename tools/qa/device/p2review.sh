@@ -24,6 +24,9 @@ WG_LOG=$L
 putback() { A --es voltcap_test_libapp remove:com.android.settings; A --ez voltcap_test_preview false; A --es voltcap_test_snapshot restore; sleep 2; am force-stop $P; }
 WG_ONABORT=putback
 . "$(dirname "$0")/winguard.sh"
+# (682ar, D390: a real end - every key / tap checks the deadline, 15 min by default (P2_MAX_S overrides, never more); a
+# watchdog ends the run a minute after it, putting the QA app's state back. Restore presses nothing and has no deadline.)
+[ "$MODE" = restore ] || { [ -n "$P2_MAX_S" ] && [ "$P2_MAX_S" -lt 900 ] && WG_DEADLINE=$(( $(date +%s) + P2_MAX_S )); wg_watchdog; }
 wgk() { case $1 in BUTTON_A) echo A;; BUTTON_B) echo B;; BUTTON_R1) echo R1;; BUTTON_L1) echo L1;; DPAD_UP) echo U;; DPAD_DOWN) echo D;;
   DPAD_LEFT) echo L;; DPAD_RIGHT) echo R;; *) echo "$1";; esac; }
 k() { wg_key_win $(wgk $1); sleep ${2:-0.8}; }
@@ -120,7 +123,7 @@ qtap() { # tap the centre of the first QaClip node whose label starts with $1 in
   d=$(grep -o '"density":[0-9.]*' $O/$2.json | head -1 | cut -d: -f2)
   [ -s $O/tap.txt ] || { log "no '$1' in $2 - nothing tapped"; return 1; }
   xy=$(awk -F, -v d=$d '{printf "%d %d", ($1+$3/2)*d, ($2+$4/2)*d}' $O/tap.txt)
-  gate; case "$(wg_focus)" in *"$P/"*) ;; *) stop "tap: QA app lost the focus";; esac
+  gate; wg_time_ok; case "$(wg_focus)" in *"$P/"*) ;; *) stop "tap: QA app lost the focus";; esac
   input tap $xy; log "tapped '$1' at $xy"; }
 rowtile() { k_home R1; sleep 1.6; shot r1_$1; qtap "Row" ${TAG}_r1_$1 || return 1; sleep 1.2; shot r1_after_$1; k_home_any B; sleep 1.2; }
 # (725b: through winguard - R1 only while the confirmed home holds the focus and says HOME; the B that closes the R1 panel
@@ -143,7 +146,7 @@ tracehome_layout() {
 rowlabel() { tr -d '\n' < $O/$1.json | tr '{' '\n' | grep -F '"focused":true' | sed -n 's/.*"label":"\([^"]*\)".*/\1/p' | head -2 | tr '\n' '|'; }
 burst() { # $1 key, $2 bursts of 10 - each burst only while the game window has the focus (winguard's own check)
   kc=KEYCODE_$1; b=0; while [ $b -lt $2 ]; do
-    h=$(wg_hash "$(wg_focus)"); [ "$h" = "$WG_WIN" ] || wg_abort "burst $1: the game window lost the focus"
+    wg_time_ok; h=$(wg_hash "$(wg_focus)"); [ "$h" = "$WG_WIN" ] || wg_abort "burst $1: the game window lost the focus"
     input keyevent $kc $kc $kc $kc $kc $kc $kc $kc $kc $kc; b=$((b + 1)); done; }
 lazy_layout() {
   lay=$1; gi=0
@@ -184,6 +187,27 @@ cover_walk() {
   for cv in 1 2 3 4 5 6 7 8; do k DPAD_UP 0.7; shot ${n}_cv_up$cv; log "up $cv [$(rowlabel ${TAG}_${n}_cv_up$cv)]"; done
   for cv in 1 2 3 4 5 6 7 8 9 10 11 12; do k DPAD_DOWN 0.7; shot ${n}_cv_dn$cv; log "down $cv [$(rowlabel ${TAG}_${n}_cv_dn$cv)]"; done
   closewin; log "cover walk done (launches: $(launches))"; }
+# (682ar, owner 24 Nov - "rapid L1 / R1 / A / B sequences cannot accidentally launch games"): per layout, the 120-achievement game
+# (or LZ_GAMES), its Achievements page scrolled deep, then quick bursts in one input call each - L1 R1 A, R1 L1 A, L1 R1 R1 A,
+# L1 R1 A B, A L1 R1 A, B R1 R1 A ... - with the focused control and the launch count read after each. A launch fails the run.
+# Level 1, synthetic games only (the QA app's launch block records, never starts).   sh p2review.sh storm TAG SCALE "LAYOUTS"
+storm_layout() {
+  lay=$1; n=${lay}_st
+  A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 2
+  openw $lay $n || return 1
+  k BUTTON_R1 1.1; k BUTTON_R1 1.6; shot ${n}_page; log "$lay storm: page focus [$(rowlabel ${TAG}_${n}_page)]"
+  for seq in "L1 R1 A" "R1 L1 A" "L1 R1 R1 L1 A" "L1 R1 A B" "A L1 R1 A" "L1 R1 A A" "R1 R1 R1 R1 A"; do
+    burst DPAD_DOWN 2; sleep 1.2
+    [ "$(wg_popup)" != null ] || { log "$lay storm: window closed before '$seq'"; break; }
+    wg_keys_win "$seq"; sleep 1.5; shot ${n}_s; lc=$(launches)
+    log "$lay storm '$seq': launches=$lc popup=$(wg_popup | head -c 12) focus [$(rowlabel ${TAG}_${n}_s)]"
+    [ "$lc" = 0 ] || { log "FAIL $lay: '$seq' launched a game"; break; }
+    # (back to the achievements page for the next burst: B to Info if the burst left it elsewhere, then R1 R1)
+    [ "$(wg_popup)" != null ] || { log "$lay storm: '$seq' closed the window (B)"; A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5; openw $lay ${n}_re || break; }
+    k BUTTON_B 1.2; [ "$(wg_popup)" != null ] || { A --es voltcap_test_game "${LZ_GAMES:-$BIG}"; sleep 1.5; openw $lay ${n}_re2 || break; }
+    k BUTTON_R1 1.1; k BUTTON_R1 1.6
+  done
+  closewin; log "$lay storm done (launches: $(launches))"; }
 case $MODE in
 tracehome)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -274,6 +298,23 @@ cover)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   cover_walk
   log "cover done"; echo DONE >> $L;;
+storm)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  for lay in $LAYS; do logcat -c; storm_layout $lay; done
+  log "storm done"; echo DONE >> $L;;
 trace)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

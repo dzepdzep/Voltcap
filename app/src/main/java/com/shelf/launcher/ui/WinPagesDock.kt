@@ -141,7 +141,7 @@ private fun DockAchievements(ctx: WinSceneCtx, live: Boolean, modifier: Modifier
         androidx.compose.foundation.layout.BoxWithConstraints(gridMod) {
         val per = maxOf(1, (maxWidth.value / DOCK_ICON_CELL).toInt())
         val lines = androidx.compose.runtime.remember(t.all, per) { dockLines(t.all.size, per) }
-        NativeRows(Color.White, Modifier.fillMaxWidth().fillMaxHeight()) {
+        NativeRows(Color.White, Modifier.fillMaxWidth().fillMaxHeight(), head = true, order = t.order) {
             nativeItems(lines, { it[0] }) { li, _ ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             for (slot in lines[li]) {

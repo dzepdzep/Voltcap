@@ -630,6 +630,18 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   only when no other scroll runs - Back reached on KONKR (Cinema, Resume, Bar) and RP Classic (Cinema, Resume), Up back to the top,
   0 crashes, restore diff 0. D390: the first cover walk looped ~30 min (shared shell variable) - QA app only, stopped by hand.
 
+### 682ar - owner 24 Nov 09:51 (option 2: Record crate first, then Task 1)
+- **D393 (safety, P2 QA builds 682aq-aq10 only):** A after a quick L1 / R1 started the game on Record crate AND Dock (BAR).
+  Root cause: both pages print their order key - the page's first focus - inside the lazy list's first row. A lazy list holds
+  its place by key on a re-sort and keeps its scroll when the page is turned back to, so that row was not built; the window's
+  8-frame request for the page's first focus failed, fell back to Play, and the A kept through the turn (682j hand-over) was
+  delivered to Play. Fixes: (1) `NativeRows(head = true, order = ...)` - the list goes back to its head when the page is turned to
+  again or re-sorted; the crate's head line with the stamp is the list's own keyed first item (a re-sort no longer rebuilds the
+  lit stamp inside another track); (2) safety net - `PageHandoff.release(onPlay)` never hands a confirm press kept during a page
+  change to Play. No delays added. Tests: ListHeadTurn682arTest (CRATE / BAR x1.0 / x1.3: fails 4/4 on 7110d79), PageHandoff682arTest,
+  NoStrayPlay682jTest 60, LazyRows 224 (Crate lazy again), AchFirstRow 192, WinFocus 448.
+- **D390:** winguard deadline on every key / tap (15 min default), watchdog; `p2review.sh storm` mode (bursts L1 R1 A ... in
+  one input call inside the confirmed window, launch count after each).
 ### 726a - P2 class C, first layout: Circuit board (WinPagesChip.kt) - implemented, NOT owner-approved, HW NOT TESTED
 - The chip's datasheet on the board (the board / trace / silkscreen colours of Board colours), its sections in the sheet's
   monospace silkscreen, the heading "SECTION n · NAME" under the game's name (after the old section has gone):

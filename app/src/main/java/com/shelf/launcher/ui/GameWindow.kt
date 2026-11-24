@@ -1496,33 +1496,38 @@ internal fun GameWindow(
         LaunchedEffect(page) {
             if (!turned) { turned = true; return@LaunchedEffect }
             val opener = pageOpener[0]
+            // (682ar: whether the focus ends on Play - then the confirm presses kept while the page changed are not handed to it)
+            var onPlay = false
             when (pageFocusTarget(page, fromPerf, opener != null, ownDetails = nativePages(scene) || tvRect != null)) {
                 PageFocus.LIST -> {
                     // (A native page's leaving copy holds no requester and is inert: no wait for it - Phase 2, WinFocusRoboTest: the
                     // 60 ms left nothing lit for 4 frames and an L1 / R1 in them was lost. The shared page still waits for its own.)
                     if (!nativePages(scene)) kotlinx.coroutines.delay(60)
-                    if (!focusWhenAttached(listFocus)) runCatching { playFocus.requestFocus() }
+                    if (!focusWhenAttached(listFocus)) { onPlay = true; runCatching { playFocus.requestFocus() } }
                 }
                 PageFocus.PERF -> {
                     fromPerf = false
                     kotlinx.coroutines.delay(60)
-                    if (runCatching { perfFocus.requestFocus() }.isFailure) runCatching { playFocus.requestFocus() }
+                    if (runCatching { perfFocus.requestFocus() }.isFailure) { onPlay = true; runCatching { playFocus.requestFocus() } }
                 }
                 PageFocus.OPENER -> {
                     pageOpener[0] = null
                     // (682j: when the page's own key isn't on the picture - Options behind More, an icon the layout doesn't draw -
                     // the return lands on the picture's Details key, still not Play: B / L1 / R1 then A never starts the game.)
-                    if (!focusWhenAttached(opener!!) && pageOpener[1]?.let { it !== opener && focusWhenAttached(it, 3) } != true)
-                        runCatching { playFocus.requestFocus() }
+                    if (!focusWhenAttached(opener!!) && pageOpener[1]?.let { it !== opener && focusWhenAttached(it, 3) } != true) {
+                        onPlay = true; runCatching { playFocus.requestFocus() }
+                    }
                 }
                 PageFocus.PLAY -> {
                     if (!nativePages(scene)) kotlinx.coroutines.delay(60) // (as LIST: no wait on a native page)
+                    onPlay = true
                     if (!focusWhenAttached(playFocus)) runCatching { playFocus.requestFocus() }
                 }
             }
             // (682j: the new page has its control lit - the presses kept while the pages changed go to it, in order.)
-            if (handoff.focused) runCatching { winFocusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) }
-            handoff.release { keyView.dispatchKeyEvent(it) }
+            // (nothing was lit - the next control takes it, which may be Play: no kept confirm press for it either)
+            if (handoff.focused) { onPlay = true; runCatching { winFocusManager.moveFocus(androidx.compose.ui.focus.FocusDirection.Next) } }
+            handoff.release(onPlay) { keyView.dispatchKeyEvent(it) }
         }
         var target by remember { mutableStateOf<Rect?>(null) }
         // Update 400: a storage layout's window without a piece of its own (Game shelf, Console stack, Card binder, Record crate)

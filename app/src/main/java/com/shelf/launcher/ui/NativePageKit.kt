@@ -146,7 +146,9 @@ internal fun NativePages(
         modifier = modifier.nativeBumpers(ctx, tabs),
         label = label
     ) { p ->
-        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) { NativePageOpening { this@AnimatedContent.content(p, p == ctx.page) } }
+        androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p, LocalNativeLive provides (p == ctx.page)) {
+            NativePageOpening { this@AnimatedContent.content(p, p == ctx.page) }
+        }
     }
 }
 
@@ -349,12 +351,34 @@ internal inline fun vcTraceC(name: String, content: @Composable () -> Unit) {
 @Composable
 internal fun NativeRows(
     ink: androidx.compose.ui.graphics.Color, modifier: Modifier, spacing: androidx.compose.ui.unit.Dp = 0.dp,
+    /** The page's first focus (its order key) is printed in the list's first row - the Record crate's stamp, the Dock's key. */
+    head: Boolean = false,
+    /** For a [head] list: the order - a new one puts the list back at its head, as the eager column was. */
+    order: Any? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit
 ) {
     // (682aq7, NoStrayPlay682jTest CRATE: rememberLazyListState is saved - a page turned away from and back to came back
     // scrolled, its first row - the record's ORDER stamp, the page's first focus - not built, so the turn's focus fell back to
     // Play and a quick A started the game. The page opens at its top, where its first focus is, as the column effectively did.)
     val state = remember { androidx.compose.foundation.lazy.LazyListState() }
+    // (682ar, owner 24 Nov - "A after quick L1 / R1 reached Play", Record crate: root cause. The crate prints its order stamp - the
+    // page's first focus - on the first side's line, inside the list. Lazy, a re-sort kept the old first track at the top (a lazy
+    // list holds its place by key) and a page turned away from and back to kept its scroll, so the head row was not built: the
+    // window's request for the page's first focus found no stamp for its 8 frames and fell back to Play. An eager column kept
+    // every row, and the request brought the stamp into view. A [head] list goes back to its head when the page is turned to
+    // again and when the order changes - the stamp is then built and takes the focus in the same frames as before.)
+    if (head) {
+        val live = LocalNativeLive.current
+        val seen = remember { booleanArrayOf(false, false) }
+        LaunchedEffect(live) {
+            if (seen[0] && live && (state.firstVisibleItemIndex > 0 || state.firstVisibleItemScrollOffset > 0)) state.requestScrollToItem(0)
+            seen[0] = true
+        }
+        LaunchedEffect(order) {
+            if (seen[1]) state.requestScrollToItem(0)
+            seen[1] = true
+        }
+    }
     // (682aq, KONKR + RP Classic lazywalk: 140 quick Downs - bursts of ten - stopped on row 30 / 52 of 120 where the eager column
     // reached the end. Diagnostics (682aq6 / aq9): every press reached the rows and every focus move "succeeded" - but a move made
     // while the list was gliding, or onto a row not yet laid out, landed by position on a row already passed (Down 5 -> 4, again
@@ -374,8 +398,10 @@ internal fun NativeRows(
             val from = ctl.focused
             var settle = 0
             while (state.isScrollInProgress && settle < 30) { androidx.compose.runtime.withFrameNanos { }; settle++ }
-            if (from >= 0 && !state.isScrollInProgress)
-                runCatching { nativeRowsReveal(state, if (down) from + 1 else from - 1, down, glide = queued[0] <= 1) }
+            // (the list's own index of the lit row - a list may have items before its rows, the crate's head line: 682ar)
+            val at = state.layoutInfo.visibleItemsInfo.firstOrNull { it.key == ctl.focusedKey }?.index ?: -1
+            if (from >= 0 && at >= 0 && !state.isScrollInProgress)
+                runCatching { nativeRowsReveal(state, if (down) at + 1 else at - 1, down, glide = queued[0] <= 1) }
             var ok = fm.moveFocus(d); var waited = 0
             // (a move after the rows were left - the presses past the last row - is made once, as the window would, not retried)
             while (!ok && from >= 0 && waited < 6) { androidx.compose.runtime.withFrameNanos { }; waited++; ok = fm.moveFocus(d) }
@@ -403,8 +429,11 @@ internal fun NativeRows(
     }
 }
 
+/** 682ar: whether the native page this content draws is the window's page now (false for the copy on its way out). */
+internal val LocalNativeLive = androidx.compose.runtime.compositionLocalOf { true }
+
 /** 682aq7: which row of a [NativeRows] list has the focus (its index; -1 none) - kept by [nativeItems]' rows. */
-internal class NativeRowsCtl { var focused = -1 }
+internal class NativeRowsCtl { var focused = -1; var focusedKey: Any? = null }
 internal val LocalNativeRows = androidx.compose.runtime.staticCompositionLocalOf<NativeRowsCtl?> { null }
 
 /** 682aq7: a native page's rows in a [NativeRows] list - each row tells the list when it has the focus. */
@@ -413,7 +442,8 @@ internal fun <T> androidx.compose.foundation.lazy.LazyListScope.nativeItems(
 ) = items(list.size, key = { key(list[it]) }) { i ->
     val ctl = LocalNativeRows.current
     androidx.compose.foundation.layout.Box(Modifier.onFocusChanged { f ->
-        if (f.hasFocus) ctl?.focused = i else if (ctl != null && ctl.focused == i) ctl.focused = -1
+        if (f.hasFocus) { ctl?.focused = i; ctl?.focusedKey = key(list[i]) }
+        else if (ctl != null && ctl.focused == i) { ctl.focused = -1; ctl.focusedKey = null }
     }) { content(i, list[i]) }
 }
 
