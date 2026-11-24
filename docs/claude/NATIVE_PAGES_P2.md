@@ -1052,3 +1052,22 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   Popup421, WinFocus*, Layouts344, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,570 + 88 tests, 0
   failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 15 scenes done (own designs 45 / 53).
+### 741a - P2 class C, sixteenth scene: Art library (GALLERY_PLACARD, WinPagesGallery.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The gallery wall (the theme's dark wall, the work whole in a dark frame on a pale mat, the white museum placard, slim keys lit
+  in the layout's colour) stays as it is; its pages hang on the mat in the placard's serif and ink: Catalogue (each fact a
+  catalogue line - label in small grey capitals over the value, hairlines between - then the story on a white card headed "Notes",
+  a D-pad stop), Collection (one line: cup, "N of M acquired", a hang of 10 small frames - one acquired always fills one, all only
+  when every one is acquired - and the order as a slim key; each achievement a framed badge (dark frame, white mat) beside its
+  placard: title in the serif, "Acquired <date>" / "Not yet acquired" in italics, "+N"; the one you are on lit; A opens the whole
+  text + how rare it is; lazy rows), Curator (each option a small placard; removing ones in the museum's deep red, "Press A again
+  to confirm" - second A). Heading: the page's name in the serif italic and "ROOM N OF M", after the old page has gone. Motion:
+  the next page comes up like the gallery's lights as you step up to the wall (fade + 0.96 -> 1 scale); none with Motion Off.
+  On a short wall's pages the placard keeps the name alone (maker / year / console are on the Catalogue). Was: the shared page
+  bodies on the mat.
+- L1 / R1 anywhere on the wall. On its pages the wall keeps its size and its keys keep the page slots (Play first), so Play stays
+  put: PlayPlace ARTLIB x1.0 / x1.3 + PlayPlaceRpc found Play at the same place on all three pages.
+- Tests (cloud): NativePagesGallery741aTest 4/4 (new; fails before: no galleryPageName, GALLERY_PLACARD not native); ARTLIB added
+  to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, InputContract462, WindowWordsSurvey682,
+  Popup421, WinFocus*, Layouts344 / 374, Batch505, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,803 tests,
+  0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 16 scenes done (own designs 46 / 53).

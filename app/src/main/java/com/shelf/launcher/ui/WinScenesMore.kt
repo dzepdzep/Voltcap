@@ -1147,9 +1147,13 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         scaleX = s; scaleY = s
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(4.dp); clip = true
-    }.background(wall).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    }.background(wall)
+        // (741a, P2 class C: L1 / R1 from anywhere on the wall - its own pages Catalogue / Collection / Curator, WinPagesGallery.kt.)
+        .nativeBumpers(ctx).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        val onPage = ctx.page != WinPage.MAIN
+        val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
         // The work itself, whole, in a dark frame with a mat — never stretched.
-        Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(if (onPage && short) 6.dp else 10.dp)) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Batch 523: the work in a frame of ITS shape - the mat hugs it instead of a whole picture floating in a wide mat.)
@@ -1160,19 +1164,27 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
                         contentScale = ContentScale.Fit,
                         onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f && sz.width.isFinite()) { CoverAspects.note(art, sz.width, sz.height); shape = sz.width / sz.height } })
                 }
-            } else ctx.pageBody(Modifier.fillMaxSize())
+            } else {
+                // (741a, P2 class C: the gallery's own pages hang on the mat - Catalogue / Collection / Curator in the placard's serif
+                // and ink, lit in the layout's colour (WinPagesGallery.kt); was the shared page bodies on the mat. On its pages the
+                // wall keeps its size and its keys keep the page slots, Play first, so Play stays put.)
+                GalleryPageArea(ctx, GalleryInk(lit, ink), Modifier.fillMaxSize(), short)
+            }
         }
-        Spacer(Modifier.height(10.dp))
-        // The placard.
+        Spacer(Modifier.height(if (onPage && short) 6.dp else 10.dp))
+        // The placard. (741a: on a short wall's pages it keeps the name alone - the maker / year / console and play time are on the
+        // Catalogue, the count on the Collection - so the page above keeps its room.)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f).background(Color.White).border(1.dp, ink.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 6.dp)) {
-                StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-                Text(listOfNotNull(ctx.developer, ctx.year, ctx.console).joinToString(", "), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
-                Text(ctx.played + (if (ctx.total > 0) "  ·  ${ctx.earned} / ${ctx.total} trophies" else ""), color = ink.copy(alpha = 0.6f), fontSize = 10.sp, fontFamily = FontFamily.Serif)
+            Column(Modifier.weight(1f).background(Color.White).border(1.dp, ink.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = if (onPage && short) 4.dp else 6.dp)) {
+                StableFullText(ctx.name, color = ink, fontSize = if (onPage && short) 13.sp else 15.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+                if (!(onPage && short)) {
+                    Text(listOfNotNull(ctx.developer, ctx.year, ctx.console).joinToString(", "), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
+                    Text(ctx.played + (if (ctx.total > 0) "  ·  ${ctx.earned} / ${ctx.total} trophies" else ""), color = ink.copy(alpha = 0.6f), fontSize = 10.sp, fontFamily = FontFamily.Serif)
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
-        KeyRow(sceneKeys(ctx)) { a ->
+        KeyRow(sceneKeys(ctx), slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
             SceneKey(a, if (a.primary) lit else Color.White, lit, if (a.primary) com.shelf.launcher.ui.theme.textOn(lit, Color.White) else ink, com.shelf.launcher.ui.theme.textOn(lit, Color.White),
                 Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(2.dp))
         }

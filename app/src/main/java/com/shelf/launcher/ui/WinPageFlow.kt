@@ -101,7 +101,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (739a, P2 class C: Rental shop - the rental tag's BOX BACK, REWARDS CARD and COUNTER in its black capitals, WinPagesShop.kt.)
     WinScene.SHOP_TAG,
     // (740a, P2 class C: Green core - the glowing console's SPEC, UNLOCKS and CONTROL in its monospace capitals, WinPagesCore.kt.)
-    WinScene.CORE_PANEL)
+    WinScene.CORE_PANEL,
+    // (741a, P2 class C: Art library - the gallery wall's Catalogue, Collection and Curator on its mat, WinPagesGallery.kt.)
+    WinScene.GALLERY_PLACARD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
