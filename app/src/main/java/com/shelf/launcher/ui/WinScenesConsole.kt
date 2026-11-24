@@ -459,6 +459,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             if (o is androidx.compose.ui.graphics.Outline.Generic) clipPath(o.path) { this@drawWithContent.drawContent() } else drawContent()
             drawPeelFlap(pk)
         }.clip(RoundedCornerShape(10.dp)).background(ground)
+            // (736a, P2 class C: L1 / R1 from anywhere in the card - its own pages INFO / AWARDS / SETTINGS, WinPagesBubble.kt.)
+            .nativeBumpers(ctx)
     ) {
         (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
@@ -527,7 +529,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else Box(Modifier.weight(if (ctx.page == WinPage.MAIN && !rich) 0.36f else 0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
+            } else Box(Modifier.weight(if (ctx.page == WinPage.MAIN && !rich) 0.36f else 0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Transparent)) {
                 if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).then(fadeScroll())) {
                     // (Update 424: the LiveArea's info panel stood mostly empty white beside the bubble's keys: the game's picture
                     // heads it, as on the console's page, and its description follows the facts.)
@@ -561,7 +563,9 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                                 textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                         }
                     }
-                } else ctx.pageBody(Modifier.fillMaxSize())
+                // (736a, P2 class C: on its pages the white panel shows the card's own pages - INFO / AWARDS / SETTINGS in the
+                // LiveArea's white keys and hairlines, under a heading that names the page after the old one has gone.)
+                } else BubblePageArea(ctx, blue, Modifier.fillMaxSize(), compact)
             }
         }
     }

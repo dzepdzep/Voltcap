@@ -91,7 +91,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (734b, P2 class C: Orbit deck - the console's DATA, TRACKS and COMMANDS screens, WinPagesOrbit.kt.)
     WinScene.ORBIT_TERMINAL,
     // (735a, P2 class C: Airy home - the floating panel's ABOUT, STARS and SETTINGS in its soft bubbles, WinPagesAiry.kt.)
-    WinScene.AIRY_PANEL)
+    WinScene.AIRY_PANEL,
+    // (736a, P2 class C: Bubble home - the LiveArea card's INFO, AWARDS and SETTINGS on its white panel, WinPagesBubble.kt.)
+    WinScene.BUBBLE_CARD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

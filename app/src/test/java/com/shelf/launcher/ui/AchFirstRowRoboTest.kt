@@ -70,7 +70,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (734b: class C - the Orbit deck console's own screens)
             HomeLayout.ORBIT,
             // (735a: class C - the Airy home panel's own pages)
-            HomeLayout.AIRY)
+            HomeLayout.AIRY,
+            // (736a: class C - the Bubble home card's own pages)
+            HomeLayout.BUBBLES)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {
