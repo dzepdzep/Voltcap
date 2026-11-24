@@ -332,6 +332,12 @@ internal fun rememberHeadingPage(page: WinPage): WinPage {
     return if (anim) shown.value else page
 }
 
+/** 682au (Arcade B profiling builds only): a zero-length named section - a timestamp in an atrace. */
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun vcMark(name: String) {
+    if (android.os.Build.VERSION.SDK_INT >= 29 && android.os.Trace.isEnabled()) { android.os.Trace.beginSection(name); android.os.Trace.endSection() }
+}
+
 /** 682ap (D386 / D389 profiling): [vcTrace] (PerfTrace.kt) for a composable [content] - its composition as a named section. */
 @Composable
 internal inline fun vcTraceC(name: String, content: @Composable () -> Unit) {

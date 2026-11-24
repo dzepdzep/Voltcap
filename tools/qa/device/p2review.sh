@@ -144,6 +144,13 @@ k_home() { gate; wg_key_home $1; }
 # per variant: 6 s to let the start feedback pass, a press and back, then 8 s still (frames drawn); then the level to 78 % and
 # six screenshots of the light 0.25 s apart plus one 6 s later. Level 1, QA app only.
 #   sh p2review.sh chab TAG SCALE   then  sh p2review.sh restore TAG
+# (682au, owner 24 Nov - Arcade B: "use a controlled comparison"): FitText's size search legacy / new by the QA-only switch, the same
+# build, interleaved twice; each: 2 x 12 home moves on the 30-game category (gfxinfo + framestats). Level 1, QA app only.
+#   sh p2review.sh fsab TAG SCALE   then  sh p2review.sh restore TAG
+fs_ab() {
+  n=FS_$1_$2; A --es voltcap_test_fitsearch $1; sleep 2; gate; wg_home
+  phase nav; for r in 1 2; do for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; done; sleep 0.8; phase_end nav
+  log "fs $n done"; }
 ch_ab() {
   n=CH_$1_$2; A --es voltcap_test_chargelight $1 --es voltcap_test_battery "77|true"; sleep 6; gate; wg_home
   k_home R; sleep 0.7; k_home L; sleep 1.2
@@ -465,6 +472,24 @@ arab)
   ar_ab legacy 1; ar_ab new 1; ar_ab legacy 2; ar_ab new 2
   A --es voltcap_test_arattract new
   log "arab done (launches: $(launches))"; echo DONE >> $L;;
+fsab)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
+  for kv in ar_mode=SHOWCASE arcade_glow=true ar_side_art=true ar_video=true arcade_lines=true ar_motion=true; do A --es voltcap_test_pref "$kv"; sleep 0.3; done
+  fs_ab legacy 1; fs_ab new 1; fs_ab legacy 2; fs_ab new 2
+  A --es voltcap_test_fitsearch new
+  log "fsab done (launches: $(launches))"; echo DONE >> $L;;
 chab)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
