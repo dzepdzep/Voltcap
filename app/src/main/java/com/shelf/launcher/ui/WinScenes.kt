@@ -478,8 +478,12 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
     val tight = bigPageText() && ctx.maxH < 420.dp
     val accent = if (ctx.accent.luminance() > 0.6f) SheetRed else ctx.accent
     val scroll = rememberScrollState()
+    // (731a, P2 class C: the insert's other sheets - CONTENTS / CHECKLIST / SERVICE, WinPagesBox.kt - typed on the same paper
+    // between the title and the stamps; L1 / R1 turn them wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    val heading = rememberHeadingPage(ctx.page)
     Box(
-        Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+        Modifier.widthIn(max = w).heightIn(max = ctx.maxH).nativeBumpers(ctx)
             .graphicsLayer {
                 val k = ctx.reveal().coerceIn(0f, 1f)
                 // Out from behind the case (its left), turning to lie a little crooked.
@@ -504,7 +508,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
             // header, the title and the stamped actions stay put.)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("INSERT · " + (if (ctx.page == WinPage.MAIN) "CONTENTS" else pageName(ctx.page).uppercase()), color = SheetMuted, fontSize = 11.sp,
+                Text("INSERT · " + boxPageName(heading), color = SheetMuted, fontSize = 11.sp,
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text(ctx.console.uppercase(), color = SheetMuted, fontSize = 11.sp, fontFamily = mono, maxLines = 1)
             }
@@ -518,6 +522,13 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(if (tight) 5.dp else 8.dp))
             // (672c, KONKR x1.3 k673b: with the Saves line whole the story box had 24 px - a sliver that was also a D-pad stop
             // under the touch size. Under one line's room it gives its room away and is no stop; CONTENTS has the whole story.)
+            if (onPage) Column(Modifier.weight(1f).fillMaxWidth()) {
+                BoxPageHeading(nativeTabs(ctx.pages), if (heading == WinPage.MAIN) ctx.page else heading)
+                Spacer(Modifier.height(if (tight) 4.dp else 6.dp))
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "boxPage", move = ::boxMove) { pg, pageLive ->
+                    BoxPage(ctx, pg, pageLive, accent, Modifier.fillMaxSize())
+                }
+            } else {
             var middleRoom by remember { androidx.compose.runtime.mutableIntStateOf(Int.MAX_VALUE) }
             val middleMin = with(androidx.compose.ui.platform.LocalDensity.current) { (16.sp.toPx() + 8.dp.toPx()).toInt() }
             val middleGone = middleRoom < middleMin
@@ -536,8 +547,11 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             var x = 0f
                             while (x < size.width) { drawCircle(SheetRule, 1.1f, Offset(x, size.height - 2f)); x += 5f }
                         }
+                        // (731a, ShelfTextRoboTest BOX: an end-aligned value narrower than its room was laid out across the whole room
+                        // and reported running 212 px past its own box ('Never played', '140 / 160'). The leader already puts
+                        // the value at the right; a value that wraps fills its room either way.)
                         Text(value, color = SheetInk, fontSize = 13.sp, fontFamily = mono, fontWeight = FontWeight.Bold, maxLines = 3,
-                            textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
+                            modifier = Modifier.widthIn(max = w * 0.55f))
                     }
                 }
                 // (Update 471, owner review: the whole story under the facts left it a sliver of the sheet to be read in. The
@@ -563,9 +577,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 line("Last played", ctx.last)
                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
                 if (!shortSheet) story(true)
-            } else {
-                // The other pages, on the same paper.
-                ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
+            }
             }
             }
             Spacer(Modifier.height(if (tight) 6.dp else 12.dp))
