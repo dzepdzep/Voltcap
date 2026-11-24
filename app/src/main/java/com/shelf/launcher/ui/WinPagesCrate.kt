@@ -197,16 +197,6 @@ internal const val CRATE_STAMP_TOUCH = 26
 /** "A1", "B3": a track's number on its side. Pure. */
 internal fun crateTrackNo(earned: Boolean, i: Int): String = (if (earned) "A" else "B") + (i + 1)
 
-/** 682aq: per row of a tracklist - a side heading above it (and whether it is the first side), and its track number. */
-internal data class CrateMark(val heading: Boolean, val first: Boolean, val no: String)
-internal fun crateMarks(earned: List<Boolean>): List<CrateMark> {
-    var a = 0; var b = 0; var side: Boolean? = null
-    return earned.map { e ->
-        val heading = side != e; val first = side == null; side = e
-        CrateMark(heading, heading && first, crateTrackNo(e, if (e) a++ else b++))
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: Color, red: Color, modifier: Modifier) {
@@ -229,22 +219,22 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
         }
     }
     Column(modifier) {
-        // (682aq: lazy rows - the sides' headings and track numbers worked out once for the whole list, so each row knows its own)
-        val marks = androidx.compose.runtime.remember(t.all) { crateMarks(t.all.map { it.isUnlocked }) }
-        NativeRows(ink, Modifier.weight(1f).fillMaxWidth()) {
-            if (t.all.isEmpty()) item { stamp() }
-            nativeItems(t.all, { it.id }) { idx, ach -> androidx.compose.foundation.layout.Column {
+        Column(Modifier.weight(1f).fillMaxWidth().nativeScroll(ink)) {
+            var a = 0; var b = 0
+            var side: Boolean? = null
+            if (t.list.isEmpty()) stamp()
+            t.list.forEach { ach ->
                 val earned = ach.isUnlocked
-                val mk = marks[idx]
-                if (mk.heading) {
-                    val first = mk.first
+                if (side != earned) {
+                    val first = side == null
+                    side = earned
                     FlowRow(Modifier.fillMaxWidth().padding(top = if (first) 0.dp else 6.dp, bottom = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(if (earned) "SIDE A  ·  YOURS" else "SIDE B  ·  STILL TO GET", color = red, fontSize = 9.sp, fontWeight = FontWeight.Black,
                             letterSpacing = 2.sp, modifier = Modifier.align(Alignment.CenterVertically))
                         if (first) stamp()
                     }
                 }
-                val no = mk.no
+                val no = crateTrackNo(earned, if (earned) a++ else b++)
                 androidx.compose.runtime.key(ach.id) {
                     val opened = openId == ach.id
                     NativeItem(onClick = { openId = if (opened) null else ach.id }, Modifier.fillMaxWidth(), live = live) { on ->
@@ -298,9 +288,9 @@ private fun CrateTracklist(ctx: WinSceneCtx, live: Boolean, paper: Color, ink: C
                         }
                     }
                 }
-            } }
-            if (t.all.isEmpty()) item { Text("No tracks on this record.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp, fontStyle = FontStyle.Italic,
-                fontFamily = FontFamily.Serif) }
+            }
+            if (t.list.isEmpty()) Text("No tracks on this record.", color = ink.copy(alpha = 0.6f), fontSize = 12.sp, fontStyle = FontStyle.Italic,
+                fontFamily = FontFamily.Serif)
         }
     }
 }

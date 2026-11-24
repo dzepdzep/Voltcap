@@ -170,6 +170,16 @@ lazy_layout() {
     if openw $lay ${n}_lze; then k BUTTON_R1 0.25; k BUTTON_R1 0.12; wg_key_win B; sleep 0.25; closewin; shot ${n}_lz_early
       log "$lay g$gi: early close - popup=$(wg_popup | head -c 20) crash=$(logcat -d -b crash | grep -c "$P")"; fi
   done; }
+# (682aq, owner 22:43 item 2 - Coverflow option A at x1.3: "all facts reachable by scrolling, the synopsis not under the fixed button
+# bar"): Cover details window, its Details page: shots while Up walks to the top (the facts) and Down to the story's end, each with
+# its QaClip dump (the text's and the keys' bounds). Level 1.   sh p2review.sh cover TAG SCALE   then  sh p2review.sh restore TAG
+cover_walk() {
+  n=COVERDETAILS; A --es voltcap_test_game "${PERF_GAME:-${MIX:-Tetris (World)}}"; sleep 2
+  openw COVERDETAILS ${n}_cv || return 1
+  k BUTTON_R1 1.4; shot ${n}_cv_details; log "details focus [$(rowlabel ${TAG}_${n}_cv_details)]"
+  i=0; while [ $i -lt 8 ]; do i=$((i + 1)); k DPAD_UP 0.7; shot ${n}_cv_up$i; log "up $i [$(rowlabel ${TAG}_${n}_cv_up$i)]"; done
+  i=0; while [ $i -lt 12 ]; do i=$((i + 1)); k DPAD_DOWN 0.7; shot ${n}_cv_dn$i; log "down $i [$(rowlabel ${TAG}_${n}_cv_dn$i)]"; done
+  closewin; log "cover walk done (launches: $(launches))"; }
 case $MODE in
 tracehome)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -243,6 +253,23 @@ lazywalk)
   log "lazywalk games: $LZ_GAMES"
   for lay in $LAYS; do logcat -c; lazy_layout $lay; done
   log "lazywalk done"; echo DONE >> $L;;
+cover)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  cover_walk
+  log "cover done"; echo DONE >> $L;;
 trace)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

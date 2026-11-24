@@ -36,7 +36,9 @@ import java.time.Duration
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
 class LazyRows682aqTest(private val layout: HomeLayout, private val big: Boolean, private val count: Int) {
     companion object {
-        internal val LAZY = AchFirstRowRoboTest.NATIVE
+        // (682aq7: Record crate keeps its eager tracklist for now - its ORDER stamp inside the first row lost the page turn's focus
+        // when lazy, NoStrayPlay682jTest; D389 open for it)
+        internal val LAZY = AchFirstRowRoboTest.NATIVE - HomeLayout.CRATE
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> = LAZY.flatMap { l -> listOf(false, true).flatMap { b -> listOf(0, 1, 10, 120).map { arrayOf<Any>(l, b, it) } } }

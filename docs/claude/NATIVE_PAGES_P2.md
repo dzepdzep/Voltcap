@@ -601,7 +601,7 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
 
 ### 682aq - P2 performance, owner 23 Nov 22:43 (24 Nov night, autonomous) - QA app only, KONKR + RP Classic over USB
 - **D389 - lazy rows (fixed in code, not final):** `NativeRows` (kit) - a LazyColumn with the page's own scroll cue and faded edges -
-  on all 26 native Achievements pages (Crate's sides, Dock's icon lines and Discover's shelves worked out per row up front:
+  on 25 native Achievements pages (Record crate stays eager - see 682aq8; Dock icon lines and Discover shelves worked out per row up front:
   `crateMarks`, `dockLines`, `discoverRuns`). Only on-screen rows are composed; counts, order and look-ups use the whole list.
   Robolectric LazyRows682aqTest (every native layout x 0 / 1 / 10 / 120 x x1.0 / x1.3, 224 cases, fails on 682am). Hardware
   `p2review.sh lazywalk` (140 quick Downs in bursts of ten, 140 Ups, B, reopen, early close): the first lazy build lost presses
@@ -618,3 +618,8 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   24.5 -> 0.6 % (502 frames), RenderThread p50 13.0 -> 7.5 ms. RP Classic: home navigation 12.2 -> 12.6 % (GPU-bound, GPU p50
   15 ms even when still), window walk 23.2 -> 5.3 %. 60 FPS not claimed; RP Classic GPU cost open.
 - Builds: QA APKs qa682aq .. qa682aq7 (QA app only). Production Voltcap untouched (versionCode 80 on both devices).
+- **682aq8 (CI on 682aq: NoStrayPlay682jTest CRATE failed):** lazy, the Record crate's ORDER stamp - the page's first focus, inside
+  the first row - was not focusable after a quick L1 / R1 turn on a scrolled list; the turn's focus fell back to Play and the held A
+  started the game. Crate goes back to its eager tracklist (D389 open for Crate). The rows' move queue no longer scrolls the list
+  itself (Compose threw "uncancelled requests present" when a scroll cut a bring-into-view short): each move waits for the glide to
+  end; while presses wait, rows come into view without a glide. NoStrayPlay 60 / LazyRows 216 / AchFirstRow 220 / WinFocus 448 green.
