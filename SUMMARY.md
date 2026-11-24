@@ -1,3 +1,21 @@
+# Update 736a (24 Nov 2026, cloud run) - P2 class C: Bubble home gets the card's own pages (native-pages branch)
+- CI first: Verify 310 on 18d8051 (dev line) and 2e18249 (P2, Airy home + owner's 682at) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 2e18249 -> 445fd1f: the eleventh class C scene. Bubble home's LiveArea card
+  shows its own pages on its white info panel, in the card's language: INFO (label / value lines with hairlines + the
+  description in a pale box), AWARDS (one line: gold cup, "N / M", a slim round-ended meter in the card's blue, the order as a
+  round-ended white key; each award a round-ended white key with a round badge, "Earned <date>" / "Not yet" and the points in a
+  gold ring; A rounds it into a card with the whole text and how rare it is), SETTINGS (round-ended white keys with the card's
+  white-to-grey face and blue ring; removing ones orange, second A). Heading = the page's name + a bubble per page, after the
+  old page has gone; pages swell in like a bubble; none with Motion Off. The page panel was a dark see-through box around the
+  shared pages - now white like the first page. Own designs 41 / 53 (class C 11 left).
+- Play (the Start plate) stays the first key down the left on every page - PlayPlace BUBBLES x1.0 / x1.3 PASS.
+- Checked (cloud): NativePagesBubble736aTest 4/4 (new; fails on the old code); AchFirstRow + Rpc, PlayPlace + Rpc, NoStrayPlay682j,
+  ShelfText BUBBLES; WindowWordsSurvey682, PopupMore451, Layouts344, Batch505, Batch489, Visual426, PopupNativeStorage,
+  NativeConfirm, UniformKeys, NativePages* - 694 tests, 0 failures. Static PASS. Full suite: CI.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesBubble.kt (new), ui/WinScenesConsole.kt (BubbleCard), ui/WinPageFlow.kt; tests
+  NativePagesBubble736aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 735a (24 Nov 2026, cloud run) - P2 class C: Airy home gets the panel's own pages (native-pages branch)
 - CI first: Verify 310 on 1eb9328 (dev line) and 6e8c897 (P2, Orbit deck) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 6e8c897 -> da3e595, merged with the owner session's 682at (charging light)

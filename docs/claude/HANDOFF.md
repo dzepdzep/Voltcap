@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 18:45 UTC, 736a (cloud, Task 5):** Verify 310 on 18d8051 (dev) + 2e18249 (P2) GREEN. P2 branch 445fd1f: Bubble home
+(BUBBLE_CARD) has the LiveArea card's own pages - INFO / AWARDS / SETTINGS on its white panel (WinPagesBubble.kt; class C 11
+scenes done, own designs 41 / 53). The page panel is white now (was a dark see-through box). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 445fd1f (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs all three
+faces in one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every P2 push.
+New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout AND
+every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
 **24 Nov 17:45 UTC, 735a (cloud, Task 5):** Verify 310 on 1eb9328 (dev) + 6e8c897 (P2) GREEN. P2 branch 2e18249 (735a da3e595 +
 merge of the owner session's 682at charging light): Airy home (AIRY_PANEL) has the panel's own pages - ABOUT / STARS / SETTINGS
 (WinPagesAiry.kt; class C 10 scenes done, own designs 40 / 53). x1.3 room for the first star found by AchFirstRow and fixed
