@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens (v0674-native-pages e59f3c6) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets (v0674-native-pages ee74963) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
@@ -227,6 +227,12 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   lazywalk (synthetic 120: 40 blocks, one row); a game on a long console name (wraps left of the title, x1.3); with and without
   a PS2 save icon; a removing command armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
   Evidence: Robolectric only (NativePagesMemCard730aTest + MEMCARD suites, 581 tests 0 failures incl. the survey, cloud).
+- 731a adds Cardboard box (same session, build ee74963 or later): p2review walk Info -> CONTENTS -> CHECKLIST -> SERVICE (R1 x3,
+  L1 back), the sheet header + "SHEET n OF m" + filled tab change after the old page has gone; the tilted sheet's stamps (Play)
+  same size and place on every sheet (PlayPlace passes in Robolectric only); CHECKLIST lazywalk (synthetic 120: 32 boxes, one
+  row); the first page's fact values at the right of their leaders (no longer end-aligned) at x1.0 + x1.3; Options / More
+  stickers reach SERVICE; a removing line armed (VOID?) and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesBox731aTest + BOX in AchFirstRow / ShelfText / PlayPlace suites, 0 failures, cloud).
 
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)

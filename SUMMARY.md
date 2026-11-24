@@ -1,3 +1,26 @@
+# Update 731a (24 Nov 2026, cloud run) - P2 class C: Cardboard box gets the insert's own sheets + P2 branch CI fix (native-pages branch)
+- CI first: Verify 310 on b2c90cc (dev line) GREEN. P2 branch RED on 911681e (run 45393737656): PlayPlace682ab / PlayPlaceRpc682ab
+  MEMCARD x1.0 + x1.3 (4 of 4,139) - 730a's Memory card pages put Play alone in the middle on COMMANDS. Fixed here (two page slots,
+  Play the first); the owner's live session pushed the same fix meanwhile (682as) - theirs kept in the merge (ee74963).
+- Task 5 on `claude/v0674-native-pages` (worktree), 31f0a09 -> ee74963: the sixth class C scene. The Cardboard box's insert sheet
+  keeps its cream paper, tape, typewriter face and rubber stamps; its pages are the slip's other sheets on the same paper:
+  CONTENTS (the Details stamp's own name - numbered facts on dotted leaders, the story as REMARKS), CHECKLIST ("N OF M CHECKED"
+  over one row of typed boxes; each achievement a [X] / [ ] line with badge, "CHECKED <date>" / "NOT YET", points; A opens the
+  whole text + rarity; lazy rows), SERVICE (typed option lines, stamped in the accent when focused; removing ones red with a VOID?
+  second A). Heading "SHEET n OF m" + page name + small sheet tabs after the old page has gone; the next sheet feeds up from
+  under; none with Motion Off. The first page's header now says INSERT · INVENTORY (it said CONTENTS, the Details stamp's name).
+- Found by the tests (BOX was in no text suite before): the first page's end-aligned fact values ('Never played', '140 / 160')
+  were laid out across the whole room, reported 212 px past their own box (ShelfText BOX 12/24 FAIL) -> no longer end-aligned (the
+  dotted leader puts them at the right). ShelfText / PlayPlace could not reach the box's controls (CONTENTS stamp; Options / More
+  as icon-only stickers) -> matched by description / "contents" word (reaching, not loosening).
+- Checked (cloud): compile OK; NativePagesBox731aTest 6/6 (new; fails before: no boxPageName / BOX_SHEET not native); BOX added to
+  AchFirstRow + ShelfText (846 / 0); after merging the owner's 682ar4: 11 native-page suites 1,306 / 0; PlayPlace + PlayPlaceRpc
+  151 / 0; AchFirstRowRpc682r + LazyRows682aq 315 / 0; after the 682as merge PlayPlace + 730a + 731a green. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 36 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesBox.kt (new), ui/WinScenes.kt (BoxInsertSheet), ui/WinPageFlow.kt, test NativePagesBox731aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, PlayPlace682abRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md.
+  Dev line: hand-off docs only.
+
 # Update 730a (24 Nov 2026, cloud run) - P2 class C: Memory card gets the save browser's own screens (native-pages branch)
 - CI first: Verify 310 on d2d508f (dev line) GREEN; on 546f5b99 (729a, P2 branch) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 57ddc94 (merged with the owner session's 682ar3 push -> 579d131, doc e59f3c6):
