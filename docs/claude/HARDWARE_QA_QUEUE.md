@@ -112,6 +112,14 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   no key / tap except B on a first-start picker, snapshot saved and restored): `sh tools/qa/device/row716.sh r716` (x1.0) and
   `sh tools/qa/device/row716.sh r716b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/row716.py <dir>`. Steps:
   baseline Middle / Bottom / Top, then the combination Middle / Bottom / Top / Middle through the R1 tile's own step.
+- **720a (cloud): 715a (added Play part + real Edit Home D-pad) now has its QA path.** The QA app writes voltcap_qa_edit
+  ("EDIT <part>" while Edit Home is open, else "HOME") and `--ez voltcap_test_reach true` logs one `reach` line (the Play part's
+  saved / moving / drawn place, the home's own ▲ / ▼ decision, the zone the D-pad is on). Run (LEVEL 1, QA app only, dev line
+  720a or later, ~2 min, snapshot saved and restored, never A / R1 / taps; D-pad keys in Edit Home only on "EDIT CLASSIC:h_play",
+  home keys only on "HOME", else STOP with nothing pressed): `sh tools/qa/device/play720.sh p720` (x1.0) and
+  `sh tools/qa/device/play720.sh p720b font=1.3`, pull /sdcard/pc/<tag>, `python3 tools/qa/tools/play720.py <dir>`. Steps: header
+  off + Play added at y 0.44 -> ▲ reaches it; Edit Home 5 real ▼ -> Done -> ▼ reaches it; ▲ ▲ Y (Undo) -> one step; Discard
+  keeps the saved place; restart keeps it; Reset this part; Row Top (tile handler, preview) -> ▲ reaches Play. KONKR + RP Classic.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

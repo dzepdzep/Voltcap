@@ -1,3 +1,22 @@
+# Update 720a (24 Nov 2026, cloud run) - Task 1: QA path for the real Edit Home D-pad move of the added Play part (715a)
+- CI first: Verify 310 on d11266d (719a) GREEN.
+- Owner 22:43 item 3: "a safe path for the real Edit Home D-pad movement and the added Play part". New (QA app / hooks file only,
+  normal use unchanged): voltcap_qa_edit ("EDIT <part>" while Edit Home is open, "HOME" otherwise) so a script presses D-pad
+  keys in Edit Home only while it really is open on the part, and `--ez voltcap_test_reach true` logs one `reach` line built
+  from the home's own prepareReach (the decision a real ▲ / ▼ uses): the Play part's saved / moving / drawn y, above / below,
+  the zones up / down, the zone the D-pad is on, Edit Home on / off (PlayReach720.kt).
+- tools/qa/device/play720.sh (LEVEL 1, QA app only, snapshot saved / restored; never A, R1 or taps; STOP with nothing pressed
+  when a mark does not match): header off + "Play / Continue" added on the Voltcap row at y 0.44 -> ▲ reaches it; Edit Home,
+  five real ▼ -> Done -> ▼ reaches it; ▲ ▲ + Y (Undo) = one step; Discard keeps the saved place; restart keeps it; Reset this
+  part; Row Top through the R1 tile's handler (preview) -> ▲ reaches Play. tools/qa/tools/play720.py grades it (wrong
+  direction, unsaved / wrong move, Undo / Discard / Reset mistakes, a missed key = FAIL; setup not applied, old build, STOP = INFRA).
+- Tests: PlayReach720aTest 3/3 (new), HeaderReachDirection715aTest 3/3, RowCombo719aTest 3/3 PASS (cloud, compiled with the
+  Maven mirror); QA selftest 235/235 incl. TestPlay720Grader720a 6/6; static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/PlayReach720.kt (new), ui/LauncherScreen.kt, ui/TestHooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/PlayReach720aTest.kt (new), tools/qa/device/play720.sh (new),
+  tools/qa/tools/play720.py (new), tools/qa/selftest/test_qa.py.
+- Hardware NOT TESTED: HW-24 720a (play720.sh x1.0 + x1.3 on the KONKR; RP Classic too if connected).
+
 # Update 719a (23 Nov 2026, cloud run) - Task 1: QA path for 716a's real combination (header + news + every category + bar player)
 - CI first: Verify 310 on d1c70cd (718a) GREEN.
 - Owner 22:43 item 3: "716a passed with defaults - still the combination game header + game / news + full category bar + music /

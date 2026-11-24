@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 00:40 UTC, 720a (cloud, Task 1):** Verify 310 on d11266d (719a) GREEN. 715a's real Edit Home D-pad move of the added
+Play part now has a QA path: voltcap_qa_edit mark (EDIT <part> / HOME) + `voltcap_test_reach` line (from the home's own
+prepareReach); play720.sh + play720.py (selftest 6/6). PlayReach720aTest 3/3 PASS (cloud). HW-24 720a.
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then Task 1 (owner 22:43 item 3): Tile home Top vs the profile row
+at x1.3 (Batch 521 / Sprint 527 minimum), Edit Home preview (PresetPreview.kt rowTop fractions) vs the real Home; then item 4
+R1 Focus Position audit.
+
 **23 Nov 23:35 UTC, 719a (cloud, Task 1):** Verify 310 on d1c70cd (718a) GREEN. 716a's real combination now has a QA path:
 `voltcap_test_rowcombo on|off` (header + Game info / news + every category + a song in the bar's player, preview only) and
 `voltcap_test_rowcol` (one `rowcol` line: column vs status bar, dp); row716.sh + row716.py (selftest 6/6). RowCombo719aTest 3/3

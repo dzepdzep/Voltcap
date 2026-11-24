@@ -2891,5 +2891,84 @@ class TestRow716Grader719a(unittest.TestCase):
         self.assertLess(sh.index("A --es voltcap_test_rowcombo off"), sh.index("A --es voltcap_test_snapshot restore"))
 
 
+class TestPlay720Grader720a(unittest.TestCase):
+    """720a: play720.py grades the real Edit Home D-pad move of the Voltcap row's added Play part (715a): a D-pad that goes the
+    wrong way, a move that does not save / undo / reset, or a key that misses Play FAILs; setup that did not apply, an old
+    build or a safety STOP is INFRA, never PASS. The script presses D-pad keys in Edit Home only on its EDIT mark, never A."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242"] + \
+          ["expect " + e for e in ["r1 above", "r2 zone", "r3 edit", "r4 live+5", "r5 below", "r6 zone", "r7 live-1",
+                                   "r8 kept", "r9 kept", "r10 reset", "r11 above", "r12 zone"]] + \
+          ["restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    H = "E VoltcapQA: 1 reach CLASSIC dock=%s header=off added=yes saved=%s live=%s drawn=%s above=%s up=%s down=%s buttons=1 zone=%s edit=%s"
+    ROWS = [H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "none", "off"),
+            H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "HEADER", "off"),
+            H % ("MIDDLE", "0.440", "0.440", "0.440", "true", "HEADER", "-", "none", "on"),
+            H % ("MIDDLE", "0.440", "0.540", "0.540", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "HEADER", "off"),
+            H % ("MIDDLE", "0.540", "0.520", "0.520", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "HEADER", "off")]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import play720
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "reach.txt"), "w").write("\n".join(rows) + "\n")
+        return play720.grade(d)[1]
+
+    def _with(self, i, row):
+        r = list(self.ROWS); r[i] = row; return r
+
+    def test_good_run_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_dpad_going_the_wrong_way_fails(self):
+        # 715a's bug: Play drawn below, the D-pad still goes up.
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("above=false up=- down=HEADER", "above=true up=HEADER down=-"))), "FAIL")
+        # Row at the top, Play above: the key did not reach it.
+        self.assertEqual(self._grade(self.LOG, self._with(11, self.ROWS[11].replace("zone=HEADER", "zone=none"))), "FAIL")
+
+    def test_move_save_undo_reset_are_checked(self):
+        self.assertEqual(self._grade(self.LOG, self._with(3, self.ROWS[3].replace("live=0.540", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("saved=0.540", "saved=0.440").replace("drawn=0.540", "drawn=0.560"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(6, self.ROWS[6].replace("live=0.520", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(8, self.ROWS[8].replace("saved=0.540", "saved=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(9, self.ROWS[9].replace("saved=none", "saved=0.540"))), "FAIL")
+
+    def test_setup_missing_old_build_or_stop_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("header=off", "header=on") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, self.ROWS[:3]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG[:4] + ["STOP Edit Home not open on CLASSIC:h_play", "DONE"], self.ROWS[:3]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_presses_edit_keys_only_in_edit_home_and_never_a(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "play720.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        for bad in ("BUTTON_A", "DPAD_CENTER", "KEYCODE_ENTER", "BUTTON_R1", "input tap", "input swipe"):
+            self.assertNotIn(bad, sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        # only three places press keys: the picker's B, ek (Edit Home open on the Play part) and hk (Edit Home closed)
+        self.assertEqual(len(keys), 3)
+        self.assertTrue(any(ln.startswith("ek()") and '"EDIT $ID"' in ln for ln in keys))
+        self.assertTrue(any(ln.startswith("hk()") and '"HOME"' in ln for ln in keys))
+        body = sh.split("logcat -c", 1)[1]
+        self.assertNotIn("input keyevent", body)
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index('voltcap_test_pref "home_header=false"'))
+        self.assertLess(sh.index("E open; E select:$ID"), sh.index("ek DPAD_DOWN"))
+        self.assertLess(sh.rindex(" ek "), sh.index("voltcap_test_snapshot restore"))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

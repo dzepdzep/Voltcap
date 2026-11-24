@@ -4150,6 +4150,34 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                 QaTrace.event("rowcol", rowColLine)
             }
         }
+        // (720a: `voltcap_test_reach` - one QA line: the added Play part's place and where ▲ / ▼ go, PlayReach720.line; and
+        // voltcap_qa_edit marks Edit Home open / closed so play720.sh presses its D-pad keys only inside Edit Home.)
+        if (QaTrace.on) {
+            val editOn = HomeEditState.active
+            val editSel = HomeEditState.selected
+            val markCtx = androidx.compose.ui.platform.LocalContext.current
+            LaunchedEffect(editOn, editSel) { TestHooks.markEdit(markCtx, PlayReach720.editMark(editOn, editSel)) }
+        }
+        val reachAsk = TestHooks.reach.intValue
+        if (reachAsk > 0 && QaTrace.on) {
+            val reachLine by androidx.compose.runtime.rememberUpdatedState({
+                prepareReach()
+                val id = PlayReach720.playId
+                val l = com.shelf.launcher.data.HomeLayout.CLASSIC
+                PlayReach720.line(
+                    state.appearance.homeLayout.name, state.appearance.dockHere.name,
+                    com.shelf.launcher.data.Features.homeHeader.state.value,
+                    HomeWidgets.H_PLAY in com.shelf.launcher.data.Features.overlayPartsFor(l),
+                    HomeWidgets.position(id)?.second, HomeEditState.live[id]?.second,
+                    (PartRects.frac[id] ?: PartRects.frac[HomeWidgets.overlayId(l, HomeWidgets.H_ACTIONS)])?.second,
+                    HomeReach.up, HomeReach.down, HomeReach.header.size, HomeReach.zone, HomeEditState.active
+                )
+            })
+            LaunchedEffect(reachAsk) {
+                kotlinx.coroutines.delay(600) // (after the last move / press is drawn)
+                QaTrace.event("reach", reachLine())
+            }
+        }
 
         @Composable
         fun BoxScope.GameRows() {

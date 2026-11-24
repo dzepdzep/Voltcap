@@ -18,6 +18,14 @@ internal object TestHooks {
     val rowCombo = mutableStateOf<String?>(null)
     /** 719a: `--ez voltcap_test_rowcol true` - one `rowcol ...` QA line: where the Voltcap row's column sits vs the status bar (RowCombo719.line). */
     val rowCol = androidx.compose.runtime.mutableIntStateOf(0)
+    /** 720a: `--ez voltcap_test_reach true` - one `reach ...` QA line: the added Play part's place and where ▲ / ▼ go (PlayReach720.line). */
+    val reach = androidx.compose.runtime.mutableIntStateOf(0)
+
+    /** 720a: voltcap_qa_edit - "EDIT <part>" while Edit Home is open, else "HOME" (play720.sh presses D-pad keys in Edit Home only on EDIT). */
+    fun markEdit(context: android.content.Context, mark: String) {
+        if (!enabled(context)) return
+        runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_qa_edit").writeText(mark + "\n") }
+    }
     /** Batch 523r: `--es voltcap_test_loop true|false` — Endless (Home › the row goes round) for a preview only (nothing saved). */
     val loop = mutableStateOf<Boolean?>(null)
     /** Batch 521b: `--es voltcap_test_badgegallery N|aN|off` — the console badge audit page N (aN: its assets view), QaBadgeGallery.kt. */
@@ -355,6 +363,7 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && (d == "NEXT" || com.shelf.launcher.data.DockPosition.values().any { it.name == d })) dock.value = d }
         intent?.getStringExtra("voltcap_test_rowcombo")?.let { v -> if (enabled(context) && (v == "on" || v == "off")) rowCombo.value = v }
         if (intent?.getBooleanExtra("voltcap_test_rowcol", false) == true && enabled(context)) rowCol.intValue++
+        if (intent?.getBooleanExtra("voltcap_test_reach", false) == true && enabled(context)) reach.intValue++
         intent?.getStringExtra("voltcap_test_loop")?.let { v -> if (enabled(context) && (v == "true" || v == "false")) loop.value = v == "true" }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
