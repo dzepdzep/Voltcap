@@ -9,6 +9,8 @@
 #                           says a game window is open (GAME: that game) -> WG_WIN = that window, WG_GAME = its game; else ABORT
 #   wg_key_home KEY         press KEY only while WG_MAIN still has the focus and the mark still says HOME; else ABORT
 #   wg_key_win KEY          press KEY only while WG_WIN still has the focus; else ABORT
+#   wg_key_main KEY         press KEY only while WG_MAIN (the QA app's own main window, confirmed by wg_home) still has the
+#                           focus - for the app's in-window panels (R1 quick panel open, so the mark may not say HOME); else ABORT
 #   wg_pass_picker          only at setup: the picker confirmed (mark PICKER, QA app focused) -> ONE B, then wg_home must hold
 # A key is pressed once; nothing is ever retried. Every abort names what was in front.
 WG_MAIN=""; WG_WIN=""; WG_GAME=""
@@ -56,6 +58,9 @@ wg_key_win() { k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
 wg_key_home() { k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
   h=$(wg_hash "$(wg_focus)"); [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] || wg_abort "before $1: the home lost the focus to $(wg_what "$(wg_focus)")"
   [ "$(wg_mark)" = HOME ] || wg_abort "before $1: the QA app shows $(wg_mark)"
+  input keyevent KEYCODE_$k; }
+wg_key_main() { k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
+  h=$(wg_hash "$(wg_focus)"); [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] || wg_abort "before $1: the QA app's main window lost the focus to $(wg_what "$(wg_focus)")"
   input keyevent KEYCODE_$k; }
 wg_pass_picker() {
   [ "$(wg_mark)" = PICKER ] || return 0

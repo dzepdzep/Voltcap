@@ -2979,6 +2979,23 @@ echo REACHED_END >> {d}/log.txt
         rc, keys, log = self.run_guard([self.QA], 'wg_window "/r/one.sfc"; wg_key_win A', popup="/r/two.sfc")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
 
+    def test_main_window_key_works_with_a_panel_open_and_aborts_elsewhere(self):
+        # 725b: wg_key_main - the B that closes the R1 panel: pressed while the confirmed main window holds the focus even when
+        # the mark no longer says HOME; another window in front (game window, quick settings) = ABORT, nothing pressed.
+        body = 'wg_home; echo "QUICK 1" > $F/voltcap_qa_screen; wg_key_main B'
+        rc, keys, log = self.run_guard([self.QA], body, ty="BASE_APPLICATION")   # abc1 = the QA app's main window here
+        self.assertEqual(rc, 0, log); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_B"])
+        shade = "Window{77 u0 NotificationShade}"
+        rc, keys, log = self.run_guard([self.QA, self.QA, shade], body, ty="BASE_APPLICATION")   # wg_home reads the focus twice
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("quick settings", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_key_main B')   # no confirmed main window: never a yes
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_p2review_home_keys_go_through_the_guard(self):
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertIn("k_home() { gate; wg_key_home $1; }", src)
+        self.assertIn("k_home_any() { gate; wg_key_main $1; }", src)
+
     def test_navigation_scripts_press_keys_only_through_the_guard(self):
         for name in ("nav682j.sh", "p2review.sh"):
             src = open(os.path.join(self.DEV, name)).read()
