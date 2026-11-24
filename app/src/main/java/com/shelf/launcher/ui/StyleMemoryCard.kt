@@ -730,7 +730,10 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
         }, horizontalAlignment = Alignment.CenterHorizontally) {
             // (673g, owner brief 15 Nov: the choices one row of identical choices - each word's glow the same size - scrolling
             // a whole choice at a time where they don't fit; the save status stays its own line under them.)
-            UniformKeyRow(ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList(), 6.dp) { a ->
+            // (682as, CI on 730a - PlayPlace682ab MEMCARD: Start was 295 dp wide on INFORMATION / MEMORY BLOCKS and 73 dp on COMMANDS.
+            // On a page the row is measured with the page keys' reference, as the other native layouts do - Start keeps its place.)
+            UniformKeyRow(ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList(), 6.dp,
+                slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val glow by animateFloatAsState(if (on) 1f else 0f, tween(180), label = "mcWord")
                         Box(
