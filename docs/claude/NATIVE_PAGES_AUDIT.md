@@ -44,3 +44,7 @@ implemented only - hardware: batch 5 in the 22 Nov evening capture (gk10 / gr10)
 
 ## Update 682ae (batch 7)
 Night menu and Blades draw their own pages: class A 29, class B 1 (Disc station), class C 23. Batches 6-7 hardware NOT TESTED.
+
+## Update 731a (class C)
+Cardboard box draws its own sheets (CONTENTS / CHECKLIST / SERVICE on the insert's paper): class A 36, class B 1 (Disc station),
+class C 16. Implemented only - hardware NOT TESTED (HW-28), not visually approved.

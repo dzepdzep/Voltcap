@@ -761,3 +761,27 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
     merges into ONE Undo step by design (a held D-pad), so Y undid both. Script now spaces the presses; re-run k720c/k720d/r720c/r720d:
     **PASS on both, x1.0 + x1.3.** Same x1.3 stray-line grader fix as row716.
   - Not covered by these runs: touch dragging in Edit Home (manual), Odin 2 Portal (connected, not used in this task).
+
+### 731a - P2 class C, sixth scene: Cardboard box (BOX_SHEET, WinPagesBox.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The insert sheet (a typed inventory slip on cream paper, taped at its corner, beside the case lifted out of the box; actions
+  rubber-stamped boxes) keeps its look. Its pages are the slip's other sheets, typed on the same paper in the same typewriter
+  face between the title and the stamps: CONTENTS (the Details stamp's own name; each fact a numbered item on a dotted leader,
+  values wrapping in whole words; the story as REMARKS, a D-pad stop - the slip's "THE WHOLE STORY: CONTENTS" now lands on it),
+  CHECKLIST ("N OF M CHECKED" over one row of typed boxes - filled for yours, empty still to get, 32 at most where one stands for
+  several; each achievement a checklist line: typed [X] / [ ], square badge, title, "CHECKED <date>" / "NOT YET", points; A opens
+  the whole text and how rare; the order a small stamped box; lazy rows), SERVICE (each option a typed line in a ruled box,
+  stamped in the accent when focused; removing ones in the slip's red ink, second A with a VOID? confirmation). Heading: "SHEET n
+  OF m", the page's name and a row of small sheet tabs, the shown one filled, after the old page has gone. Motion: the next sheet
+  feeds up from under the one before as it fades in, a little from the right going forward / the left going back; none with
+  Motion Off. The slip's own header now says INSERT · INVENTORY on the first page (it said CONTENTS, the name of its Details
+  stamp - two pages had the same name). L1 / R1 anywhere in the window.
+- Found by the tests on the way (BOX was in no text suite before): the first page's end-aligned fact values ('Never played',
+  '140 / 160') were laid out across the whole 308 px room and reported 212 px past their own box (ShelfText BOX FAILED 12/24
+  main page); the dotted leader already puts the value at the right, so the value is no longer end-aligned. The text suite could
+  not reach the box's Options / More (round stickers named only by their icon's description) - it now matches an icon-only
+  control by its description, and "contents" as a Details word.
+- Tests (cloud, Robolectric): NativePagesBox731aTest 6/6 (fails before: no boxPageName / BOX_SHEET not native); BOX added to
+  AchFirstRow + ShelfText; ShelfText suite 846 tests 0 failures; after merging 682ar4: NativePagesBox731a + HeadListSource682ar +
+  AchFirstRow + WinFocus + NoStrayPlay682j + PageHandoff682ar + ListHeadTurn682ar + PopupMore451 + Layouts330 + Popup421 +
+  WindowWordsSurvey682: 1,306 tests 0 failures (166 skipped by the suites' own assumptions). Static PASS.
+- Audit: class A 36 / 53 (+ Cardboard box), class B 1 (Disc station), class C 16. Hardware NOT TESTED (HW-28), not visually approved.
