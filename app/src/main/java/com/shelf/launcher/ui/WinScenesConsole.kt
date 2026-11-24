@@ -710,6 +710,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
             // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
             flatTextFor3d()
         }.clip(RoundedCornerShape(6.dp)).background(p.panel).border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+            // (738a, P2 class C: L1 / R1 from anywhere in the panel - its own pages OVERVIEW / ACHIEVEMENTS / MANAGE, WinPagesPanels.kt.)
+            .nativeBumpers(ctx)
     ) {
         Column(Modifier.fillMaxSize()) {
             // The art strip with the name.
@@ -718,7 +720,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
                     WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-                    Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
+                    // (738a: the page's name is the page area's own heading now - the strip keeps the console alone.)
+                    Text(ctx.console, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                 }
                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
             }
@@ -791,7 +794,10 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else Box(Modifier.fillMaxSize().border(1.dp, ink.copy(alpha = 0.18f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                    // (738a, P2 class C: the panel's own pages on its right side - OVERVIEW / ACHIEVEMENTS / MANAGE as flat tiles and
+                    // rows lit in the dashboard's colour, under a heading that names the page after the old one has gone; was the
+                    // shared pages in a thin frame.)
+                    } else PanelPageArea(ctx, PanelInk(ink, p.accent, p.panel), Modifier.fillMaxSize(), compact)
                 }
             }
         }

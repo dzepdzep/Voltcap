@@ -993,3 +993,23 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText. Results in SUMMARY 737a. Hardware NOT TESTED (HW-28 extended),
   emulator review not run, not approved.
 - Audit: class C 12 scenes done (own designs 42 / 53).
+### 738a - P2 class C, thirteenth scene: Panel dashboard (PANEL_DETAIL, WinPagesPanels.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The swung-round panel (the wide art strip with the name and the bar in the dashboard's colour, the commands as flat rows down
+  the left lit in that colour, the cover and facts on the right) stays as it is; its pages take the right side in the same flat
+  panel language and the picked palette (Green / Silver / Graphite / Theme): OVERVIEW (each fact a flat tile with a bar in the
+  dashboard's colour down its left, label over value; then the story in a flat panel headed ABOUT under a colour bar - a D-pad
+  stop), ACHIEVEMENTS (one line: the cup, "N / M", a flat meter of 10 segments - one earned always lights one, all only when every
+  one is earned - and the order as a flat tile whose words slide; each achievement a flat row: square badge, title, "Unlocked
+  <date>" / "Locked", the points; the row you are on lit like the commands; A opens the whole text + how rare it is; lazy rows),
+  MANAGE (flat rows like the command column; removing ones in the warning orange, "Press A again to remove" - second A).
+  Heading: the page's name and a flat segment per page (the shown one long, in the colour) over a hairline, after the old page
+  has gone; the art strip now says the console alone (the page name was said twice). Motion: the next page slides along from
+  the side it comes from, like the next panel of the row coming round (fading in); none with Motion Off. Was: the shared pages
+  in a thin frame.
+- L1 / R1 on the panel's root. The commands keep their column and weights on every page (Play first, the tools only on the first
+  page), so Play stays put (PlayPlace PANELS x1.0 / x1.3 + Rpc PASS).
+- Tests (cloud): NativePagesPanels738aTest 4/4 (new; fails before: no panelPageName, PANEL_DETAIL not native); PANELS added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; with AchFirstRow*, PlayPlace*, NoStrayPlay682j, ShelfText,
+  WinFocus, Layouts344, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, UniformKeys673, NativePages*: 2,575 tests, 0
+  failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 13 scenes done (own designs 43 / 53).

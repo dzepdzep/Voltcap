@@ -95,7 +95,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (736a, P2 class C: Bubble home - the LiveArea card's INFO, AWARDS and SETTINGS on its white panel, WinPagesBubble.kt.)
     WinScene.BUBBLE_CARD,
     // (737a, P2 class C: Pocket camera - the cartridge menu's DATA, ALBUM and SETUP in its pixel font and four shades, WinPagesCamera.kt.)
-    WinScene.CAMERA_MENU)
+    WinScene.CAMERA_MENU,
+    // (738a, P2 class C: Panel dashboard - the swung-round panel's OVERVIEW, ACHIEVEMENTS and MANAGE as flat tiles, WinPagesPanels.kt.)
+    WinScene.PANEL_DETAIL)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
