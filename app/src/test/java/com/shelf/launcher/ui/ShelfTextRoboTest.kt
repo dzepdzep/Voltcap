@@ -52,7 +52,7 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
                 HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME, HomeLayout.SPOT,
                 HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, // (682w: batch 3)
                 HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE, // (682y: batch 4)
-                HomeLayout.CIRCUIT, HomeLayout.CHAN, HomeLayout.TIMELINE, HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.MEMCARD) // (730a: Memory card's own screens) // (729a: the Hero banner's own pages) // (728a: Timeline's own pages) // (727a: Channel's own screens) // (726a: class C - the datasheet's sections) // (682s: P2 batch 1's own pages too)
+                HomeLayout.CIRCUIT, HomeLayout.CHAN, HomeLayout.TIMELINE, HomeLayout.HERO, HomeLayout.HERO_TILES, HomeLayout.MEMCARD, HomeLayout.BOX) // (731a: Cardboard box's own sheets) // (730a: Memory card's own screens) // (729a: the Hero banner's own pages) // (728a: Timeline's own pages) // (727a: Channel's own screens) // (726a: class C - the datasheet's sections) // (682s: P2 batch 1's own pages too)
             val out = mutableListOf<Array<Any?>>()
             for (l in layouts) for (t in listOf("Ico", LONG)) for (s in listOf(1.0f, 1.3f)) for (a in listOf<Int?>(null, 160, 9999))
                 out += arrayOf<Any?>(l, t, s, a)
@@ -143,13 +143,15 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         trail += "open: " + state()
         // (529k: Game shelf's Details key is "Turn over" - the index card turns.)
         // (682n / 682p: Game magazine's is "The story", Arcade's "Game info".)
-        for (page in listOf(listOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "type", "nfo", "flip", "card", "text"), listOf("options", "config"))) {
+        for (page in listOf(listOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "type", "nfo", "flip", "card", "text", "contents"), listOf("options", "config"))) {
+            // (731a: the Cardboard box's Details stamp is "CONTENTS"; its Options and More are round stickers named by their
+            // icon's description only - a control without text is matched by its description.)
             val m = SemanticsMatcher("page") { n -> n.config.contains(SemanticsActions.OnClick) &&
-                (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
+                ctlWords(n).lowercase().split(Regex("[^a-z]+")).filter { it.isNotEmpty() }.let { w -> w.isNotEmpty() && w.all { it in page } } }
             var found = compose.onAllNodes(m).fetchSemanticsNodes()
             if (found.isEmpty()) {   // behind More ("•••" on Tiles)
                 val more = SemanticsMatcher("More") { n -> n.config.contains(SemanticsActions.OnClick) &&
-                    (n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }.orEmpty()).trim().let { it == "•••" || it.equals("more", true) } }
+                    ctlWords(n).trim().let { it == "•••" || it.equals("more", true) } }
                 val ms = compose.onAllNodes(more).fetchSemanticsNodes()
                 val before = state(); val c0 = WinClickProbe.clicks
                 if (ms.isNotEmpty()) { compose.onAllNodes(more)[ms.size - 1].performSemanticsAction(SemanticsActions.OnClick); frames(12) }
@@ -196,6 +198,11 @@ class ShelfTextRoboTest(private val layout: HomeLayout, private val title: Strin
         val after = state()
         return " | unchanged; pending=$pending; after sendApplyNotifications: " + (if (after != before) "RECOMPOSED ($after)" else "still unchanged")
     }
+
+    /** A control's words: its text, or - for an icon-only control - its description (731a). */
+    private fun ctlWords(n: androidx.compose.ui.semantics.SemanticsNode): String =
+        n.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }?.takeIf { it.isNotBlank() }
+            ?: n.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(" ").orEmpty()
 
     private fun ShadowDialogBack() {
         val d = org.robolectric.shadows.ShadowDialog.getLatestDialog() ?: return
