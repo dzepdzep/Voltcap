@@ -687,7 +687,10 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 860.dp)
     val h = minOf(ctx.maxH, 500.dp)
-    Box(Modifier.width(w).height(h).graphicsLayer {
+    // (729a, P2: the banner's own pages - WinPagesHero.kt. On them the hero text column widens a little and the art darkens a
+    // shade so the pages read; L1 / R1 turn the pages wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    Box(Modifier.width(w).height(h).nativeBumpers(ctx).graphicsLayer {
         // The banner grows open from its middle band (the hero strip widening into the page).
         val e = sceneEase(ctx.reveal())
         scaleY = 0.35f + 0.65f * e
@@ -696,20 +699,32 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
     }.background(Color.Black)) {
         (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
-        Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
-            ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-                ?: StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 3, fontWeight = FontWeight.Black)
-            Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString("  ·  "), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
-            // (Update 426: the summary gives way first — it scrolls — so the title is never squeezed to one cut line when the
-            // keys wrap; it was "999 Nine Hours, Nine Persons, Nin" on the Thor.)
-            if (ctx.page == WinPage.MAIN) ctx.summary?.let {
-                val sc = androidx.compose.foundation.rememberScrollState()
-                Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp,
-                    modifier = Modifier.weight(1f, fill = false).heightIn(max = 15.dp * 4).sceneFadeEdges(sc).verticalScroll(sc))
+        val shade by androidx.compose.animation.core.animateFloatAsState(if (onPage) 0.3f else 0f,
+            if (rememberAnimationsEnabled()) androidx.compose.animation.core.tween(NATIVE_PAGE_MS) else androidx.compose.animation.core.snap(), label = "heroShade")
+        if (shade > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = shade)))
+        Column(Modifier.fillMaxHeight().fillMaxWidth(if (onPage) 0.7f else 0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
+            // (729a: on its pages - once the old page has gone - the name steps down to a smaller title without the reserved
+            // lines and the banner's tab strip takes the info line's place, so the page has the room; AchFirstRow HERO x1.3 had
+            // 0 px for the first achievement with the full-size title and line kept.)
+            val heading = rememberHeadingPage(ctx.page)
+            val headed = heading != WinPage.MAIN
+            ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(if (headed) 0.5f else 0.8f).height(minOf(h * (if (headed) 0.12f else 0.2f), if (headed) 56.dp else 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
+                ?: if (headed) WinFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Black, lineHeight = 24.sp)
+                else StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 3, fontWeight = FontWeight.Black)
+            if (headed) Box(Modifier.padding(top = 6.dp, bottom = 8.dp)) { HeroTabStrip(nativeTabs(ctx.pages), heading) }
+            else Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString("  ·  "), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
+            NativePages(ctx, Modifier.fillMaxWidth().weight(1f, fill = onPage), label = "heroPage", move = ::heroMove) { pg, pageLive ->
+                // (Update 426: the summary gives way first — it scrolls — so the title is never squeezed to one cut line when the
+                // keys wrap; it was "999 Nine Hours, Nine Persons, Nin" on the Thor.)
+                if (pg == WinPage.MAIN) Column { ctx.summary?.let {
+                    val sc = androidx.compose.foundation.rememberScrollState()
+                    Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp,
+                        modifier = Modifier.heightIn(max = 15.dp * 4).sceneFadeEdges(sc).verticalScroll(sc))
+                } }
+                else HeroPage(ctx, pg, pageLive, a, Modifier.fillMaxSize())
             }
-            else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx), 8.dp) { k ->
+            KeyRow(sceneKeys(ctx), 8.dp, slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) Color.White else Color.White.copy(alpha = 0.16f), a, if (k.primary) Color.Black else Color.White, onColor(a),
                     Color.Transparent, Color.White, RoundedCornerShape(50), height = 38.dp)
             }
