@@ -761,3 +761,19 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
     merges into ONE Undo step by design (a held D-pad), so Y undid both. Script now spaces the presses; re-run k720c/k720d/r720c/r720d:
     **PASS on both, x1.0 + x1.3.** Same x1.3 stray-line grader fix as row716.
   - Not covered by these runs: touch dragging in Edit Home (manual), Odin 2 Portal (connected, not used in this task).
+
+### 682as - Priority 3: RP Classic Arcade GPU (24 Nov, investigation only - no app change yet)
+Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic games; every run "restore: OK", diff 0, 0 launches.
+- **`p2review.sh arbisect`** (new): the Arcade home with one of its own look options off at a time (Marquee glow, side art,
+  gameplay clip, scan lines, motion, all of them, Arcade hall), 6 s still + 12 home moves each, gfxinfo. Result: **no option
+  changes the GPU cost** - GPU p50 15-16 ms per frame in every variant, still or moving (frame budget 16.7 ms); moving janky
+  15-25 % in every variant (run-to-run noise about +-5 %). Arcade hall: 7.6 %.
+- **The still home redraws every vsync** (framestats: 16.7 ms apart, nothing pressed). **`p2review.sh stilldiff`** (new, 5
+  screenshots, nothing pressed): the only pixels changing are the attract screens' sliding lines - the big machine's console
+  name ("PLAYSTATION 2", FullText 9 sp, one line, a few px too wide) and the small machine's title (FitText slideWhenCut). A
+  slide (rule 11) keeps the whole window repainting at 60 fps (GPU 15 ms each) until HomeIdle.calm (30 s without input).
+- **Moving:** atrace (tracehome ARCADE) - each L / R costs one 34-44 ms main-thread frame (Recomposer 34-39 ms, Compose:recompose
+  ~20 ms of it; VC:arcBig / arcMini ~1 ms each), RenderThread DrawFrames ~18 ms average (88 FillRect + 48 AA convex path ops a
+  frame). So the moving jank is one CPU hitch per press plus a GPU that is at the frame budget with nothing on.
+- Open (owner to choose): A) let the attract-screen lines fit (shrink to the readable minimum) so a still Arcade home stops
+  repainting; B) cut the per-move recomposition; C) find the full-screen overdraw (QA-only part toggles, new build); D) leave it.
