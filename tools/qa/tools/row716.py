@@ -60,10 +60,18 @@ def grade(run):
         out.append(('INFRA', 'no expect steps in log.txt'))
     if len(got) < len(expects):
         out.append(('INFRA', '%d rowcol lines for %d steps (an old build without the 719a line?)' % (len(got), len(expects))))
+    # (682ar, KONKR / RP Classic x1.3: the scale change put one rowcol line of the place the home came back at before the first
+    # step - every step then read its neighbour's line. A line left over before a step (a place other than the step's, while
+    # there are more lines than steps left) is skipped; never more than the extra lines there are.)
+    j = 0
     for i, e in enumerate(expects):
-        if i >= len(got) or len(e) < 3:
+        if len(e) < 3:
             break
-        out.append(check(e[0], e[1], e[2], got[i]))
+        while j < len(got) and got[j][1] != e[1] and len(got) - j > len(expects) - i:
+            j += 1
+        if j >= len(got):
+            break
+        out.append(check(e[0], e[1], e[2], got[j])); j += 1
     restore = next((l for l in log if l.startswith('restore:')), None)
     if restore is None or not restore[8:].strip():
         out.append(('INFRA', 'restore result missing'))

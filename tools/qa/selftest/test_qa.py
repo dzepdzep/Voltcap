@@ -3221,6 +3221,13 @@ class TestRow716Grader719a(unittest.TestCase):
         self.assertEqual(self._grade(self.LOG, None), "INFRA")
         self.assertEqual(self._grade(self.LOG, [r.replace("CLASSIC", "TILES") for r in self.ROWS]), "INFRA")
 
+    def test_682ar_a_line_left_over_before_the_first_step_is_skipped(self):
+        # (x1.3 on the KONKR / RP Classic: the scale change logged one rowcol of the place the home came back at)
+        extra = ["E VoltcapQA: 0 rowcol CLASSIC BOTTOM top=119.3 bottom=426.7 bar=36.0 screen=448.0 legend=off header=on info=OFF cats=FULL player=off"]
+        self.assertEqual(self._grade(self.LOG, extra + self.ROWS), "PASS")
+        # (but a wrong place is never skipped into a pass: the steps' own lines must be there)
+        self.assertEqual(self._grade(self.LOG, extra + [r.replace("MIDDLE", "BOTTOM") for r in self.ROWS]), "INFRA")
+
     def test_bad_restore_or_production_touched_fails(self):
         self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
         self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
@@ -3274,6 +3281,18 @@ class TestPlay720Grader720a(unittest.TestCase):
 
     def test_good_run_passes(self):
         self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_682ar_a_line_from_before_the_setup_is_skipped(self):
+        pre = self.H.replace("header=off added=yes", "header=on added=no") % (
+            "BOTTOM", "none", "none", "none", "true", "HEADER", "-", "none", "off")
+        self.assertEqual(self._grade(self.LOG, [pre] + self.ROWS), "PASS")
+        # (a setup that never applied stays INFRA)
+        self.assertEqual(self._grade(self.LOG, [pre] + [pre] * 12), "INFRA")
+
+    def test_682ar_undo_presses_are_spaced_past_the_hold_window(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "play720.sh")) as f:
+            sh = f.read()
+        self.assertIn("ek DPAD_UP; sleep 0.8; ek DPAD_UP; sleep 0.8; ek BUTTON_Y", sh)
 
     def test_dpad_going_the_wrong_way_fails(self):
         # 715a's bug: Play drawn below, the D-pad still goes up.

@@ -749,3 +749,15 @@ Owner accepted the Night menu and Arcade x1.3 corrections as improved; no blanke
   window - no screensaver; 60 s without - it starts. PASS both devices. (c) D394: the D390 watchdog outlived a finished run.
   Crate lazywalk (0 / 1 / 10 / 120 KONKR, 120 RP Classic): Back reached, Up to the stamp, early close clean. D390 on device:
   P2_MAX_S=25 -> ABORT "max run time", nothing pressed. HeadListSource682arTest guards every future page (head lists).
+- **Task 1 hardware - Row Position (714a / 715a / 716a), Level 1 QA app qa682ar3, KONKR (BW0306N230000845) + RP Classic
+  (MC94516AQF091001112) over USB, x1.0 and x1.3, every run "restore: OK", fatal 0, the owner's Voltcap untouched (pid unchanged / not running):**
+  - row714 (manually placed round buttons come back when the row moves, via the QA-only R1 Row Position hook - no system quick
+    settings): PASS on both, x1.0 + x1.3.
+  - row716 (complex combination: game header + info / news + every category + a song in the bar's player; Top / Middle / Bottom):
+    PASS on both, x1.0 + x1.3. The first x1.3 grade was INFRA: the scale change re-created the home and logged one extra rowcol line
+    before step 1, so every step read its neighbour's line - grader fixed (682ar4), the same captures re-graded PASS.
+  - play720 (715a: the D-pad reaches the added Play part in Edit Home; move, Done, Undo, Discard, restart, Reset this part, Edit Home
+    Preview with the dock at TOP): first run FAIL r7 on both / both scales - the script pressed Up Up within 0.9 s, which Edit Home
+    merges into ONE Undo step by design (a held D-pad), so Y undid both. Script now spaces the presses; re-run k720c/k720d/r720c/r720d:
+    **PASS on both, x1.0 + x1.3.** Same x1.3 stray-line grader fix as row716.
+  - Not covered by these runs: touch dragging in Edit Home (manual), Odin 2 Portal (connected, not used in this task).

@@ -102,10 +102,16 @@ def grade(run):
     if len(got) < len(expects):
         out.append(('INFRA', '%d reach lines for %d steps (an old build without the 720a line?)' % (len(got), len(expects))))
     ctx = {}
+    # (682ar, x1.3 on the KONKR / RP Classic: the scale change re-created the home, which logged one reach line from before the
+    # setup - every step then read its neighbour's line. Lines from before the setup (header on / Play not added) at the start
+    # are skipped, never more than the extra lines there are.)
+    j = 0
+    while j < len(got) and len(got) - j > len(expects) and (got[j][0], got[j][2], got[j][3]) != ('CLASSIC', 'off', 'yes'):
+        j += 1
     for i, e in enumerate(expects):
-        if i >= len(got) or len(e) < 2:
+        if j + i >= len(got) or len(e) < 2:
             break
-        out.append(check(e[0], e[1], got[i], ctx))
+        out.append(check(e[0], e[1], got[j + i], ctx))
     restore = next((l for l in log if l.startswith('restore:')), None)
     if restore is None or not restore[8:].strip():
         out.append(('INFRA', 'restore result missing'))
