@@ -1,3 +1,19 @@
+# Update 726a (24 Nov 2026, cloud run) - P2 class C: Circuit board gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 55b7361 (725b, dev line) GREEN; on eb4af38 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 5d53277: the first class C layout. Circuit board's window (the chip's
+  datasheet on the board, Board colours) now draws its own sections in the sheet's monospace silkscreen instead of the shared
+  page body: CHARACTERISTICS (PARAMETER / VALUE table between rules, the story as FUNCTIONAL DESCRIPTION), PIN STATES (each
+  achievement a numbered pin with an LED, HIGH / LOW, "N PT", order key, A opens date / rarity; lazy rows), JUMPERS (J1 ...,
+  the cap bridges the pins while focused; removing ones red and ask for a second A). Heading "SECTION n · NAME" under the name
+  after the old section has gone; the signal slides in from the trace side; Play keeps its slot; L1 / R1 anywhere. Info
+  (PINOUT) unchanged. New WinPagesChip.kt; ChipSheet (WinScenesHomes2.kt) uses NativePages; CHIP_SHEET in NATIVE_PAGE_SCENES.
+- Checked (cloud): compile OK; NativePagesChip726aTest 4/4 (new; fails on the old code - no chipPageName, CHIP_SHEET not native);
+  CIRCUIT added to AchFirstRow 6/6 (+ RPC), LazyRows 8/8, PlayPlace 2/2 (+ RPC 2/2), NoStrayPlay 2/2, WinFocus 8/8, ShelfText
+  24/24; WinPresentation / Visual426 / PopupNativeStorage / NativePages681a / Review682ag / UniformKeys green. Static PASS (no
+  finding in the new file). Hardware NOT TESTED (HW-28), not visually approved. Not on the dev line (P2 branch until the owner's
+  comparison). Files (P2 branch): ui/WinPagesChip.kt (new), ui/WinScenesHomes2.kt, ui/WinPageFlow.kt, tests
+  NativePagesChip726aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
 # Update 725b (24 Nov 2026, cloud run) - P2 branch: dev line merged in, QA selftest red fixed (QA tooling)
 - CI first: Verify 310 on 35bb129 (725a) GREEN.
 - Task 5 prep on `claude/v0674-native-pages` (worktree): the dev line (721a-725a, 31 commits) merged in (31e2931; one

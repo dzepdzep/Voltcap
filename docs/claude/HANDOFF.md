@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 07:55 UTC, 726a (cloud, Task 5):** Verify 310 on 55b7361 + eb4af38 GREEN. P2 branch 5d53277: Circuit board (CHIP_SHEET)
+has its own datasheet sections - CHARACTERISTICS / PIN STATES / JUMPERS (WinPagesChip.kt; first class C layout, own designs
+30 / 53). Robolectric: NativePagesChip726aTest + CIRCUIT in AchFirstRow / LazyRows / PlayPlace / NoStrayPlay / WinFocus /
+ShelfText, all green (cloud). HW-28 queued (KONKR + RP Classic). Not visually approved.
+NEXT: check Verify 310 on this push AND on 5d53277 (P2) FIRST (red -> fix first). Then Task 5 continues on the P2 branch with
+the next class C layout (suggested: Channel (WII_PREVIEW) or Timeline (TIMELINE_ENTRY) - single-layout scenes; the Pocket
+family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design
+choice).
+
 **24 Nov 06:40 UTC, 725b (cloud, Task 5 prep):** Verify 310 on 35bb129 GREEN. P2 branch `claude/v0674-native-pages`: dev line
 merged in (31e2931, test_qa.py conflict = both sides kept); its QA selftest was RED (p2review.sh r714 raw keys around winguard)
 -> eb4af38: k_home via wg_key_home, the R1 panel's B via new wg_key_main; selftest 264 OK, merged tree compiles, static PASS.

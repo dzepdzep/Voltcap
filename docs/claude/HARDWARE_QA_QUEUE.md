@@ -196,6 +196,17 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-28 P2 726a Circuit board's own datasheet sections (v0674-native-pages 5d53277) - OPEN (batch with the next KONKR + RP Classic P2 session)
+- Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
+  or later. ~6 min per handheld, x1.0 + x1.3.
+- Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
+- Tests: home layout Circuit, a game with achievements (synthetic 120 + a short set): p2review walk Info -> CHARACTERISTICS ->
+  PIN STATES -> JUMPERS (R1 / R1 / R1 / L1 back), heading "SECTION n" changes after the old section is gone; Play same size and
+  place on every section (QaClip); PIN STATES lazywalk (140 Downs / Ups, B, reopen); a removing jumper armed and left (never
+  confirmed); popclip.sh + popclip.py PASS; 0 launches, restore diff 0; one strip of screenshots per scale for the owner.
+- Evidence so far: Robolectric only (NativePagesChip726aTest, AchFirstRow / LazyRows / PlayPlace / NoStrayPlay / WinFocus /
+  ShelfText CIRCUIT cases green in the cloud). Not on hardware, not visually approved.
+
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
   and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.
