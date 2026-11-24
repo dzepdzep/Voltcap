@@ -195,18 +195,26 @@ internal class PageHandoff {
         if (held.size < HANDOFF_MAX_KEPT) held += android.view.KeyEvent(e)
         return true
     }
-    /** The new page lit its control: deliver what was kept, in order (a press that turns the page again is kept anew). */
-    fun release(deliver: (android.view.KeyEvent) -> Unit) {
+    /** The new page lit its control: deliver what was kept, in order (a press that turns the page again is kept anew).
+     *  [onPlay]: what got the focus is Play (the page's own control could not be lit, or the page starts on Play) - then a
+     *  confirm press kept while the page changed ([HANDOFF_CONFIRM_KEYS], down and up) is dropped: it was pressed before Play was
+     *  on screen lit, so it never starts the game (682ar, owner 24 Nov). The D-pad and the bumpers still go through, in order;
+     *  a press made once Play is lit starts the game as always. */
+    fun release(onPlay: Boolean = false, deliver: (android.view.KeyEvent) -> Unit) {
         holding = false
         if (held.isEmpty()) return
         val out = ArrayList(held); held.clear()
-        out.forEach(deliver)
+        out.forEach { if (!(onPlay && it.keyCode in HANDOFF_CONFIRM_KEYS)) deliver(it) }
     }
     internal val keptCount: Int get() = held.size
 }
 
 internal val HANDOFF_BACK_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_BACK, android.view.KeyEvent.KEYCODE_BUTTON_B, android.view.KeyEvent.KEYCODE_ESCAPE)
 internal const val HANDOFF_MAX_KEPT = 48
+/** 682ar: the keys that press the lit control - never handed to Play from a page change ([PageHandoff.release]). */
+internal val HANDOFF_CONFIRM_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER,
+    android.view.KeyEvent.KEYCODE_NUMPAD_ENTER, android.view.KeyEvent.KEYCODE_BUTTON_A, android.view.KeyEvent.KEYCODE_SPACE,
+    android.view.KeyEvent.KEYCODE_BUTTON_START)
 
 /** The window's page with [PageHandoff]: a change in a window with its own pages ([own]) hands the focus over as it happens. */
 internal class HandoffPage(initial: WinPage, private val h: PageHandoff) {

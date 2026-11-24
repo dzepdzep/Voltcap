@@ -11,7 +11,17 @@
 #   wg_key_win KEY          press KEY only while WG_WIN still has the focus; else ABORT
 #   wg_pass_picker          only at setup: the picker confirmed (mark PICKER, QA app focused) -> ONE B, then wg_home must hold
 # A key is pressed once; nothing is ever retried. Every abort names what was in front.
+#   wg_time_ok              (682ar, D390) every key above first checks the run's deadline: WG_DEADLINE (epoch s), by default 15
+#                           minutes (WG_MAX_S) from when this file was sourced - the owner's physical-QA limit. Past it: ABORT,
+#                           nothing pressed. A watchdog also ends the script WG_GRACE_S (60 s) after the deadline, whatever it does.
 WG_MAIN=""; WG_WIN=""; WG_GAME=""
+WG_DEADLINE=${WG_DEADLINE:-$(( $(date +%s) + ${WG_MAX_S:-900} ))}
+wg_time_ok() { [ "$(date +%s)" -lt "$WG_DEADLINE" ] || wg_abort "max run time reached (deadline $(date -d @$WG_DEADLINE +%T 2>/dev/null || echo $WG_DEADLINE))"; }
+wg_watchdog() { # end this script (and its children) WG_GRACE_S after the deadline - started once by the sourcing script
+  me=$$; ( sleep $(( WG_DEADLINE - $(date +%s) + ${WG_GRACE_S:-60} )); echo "$(date +%T) WATCHDOG: past the deadline - script ended" >> $WG_LOG
+    pkill -P $me 2>/dev/null; kill -TERM $me 2>/dev/null
+    type "$WG_ONABORT" > /dev/null 2>&1 && $WG_ONABORT; echo DONE >> $WG_LOG ) >/dev/null 2>&1 &
+  WG_DOG=$!; }
 wg_focus() { dumpsys window | grep mCurrentFocus | tail -1; }
 wg_hash() { echo "$1" | sed -n 's/.*Window{\([0-9a-f]*\) .*/\1/p'; }
 wg_mark() { cut -d' ' -f1 $F/voltcap_qa_screen 2>/dev/null; }
@@ -50,12 +60,22 @@ wg_window() {
   WG_WIN=$h; WG_GAME=$pg; }
 wg_kc() { case $1 in R1) echo BUTTON_R1;; L1) echo BUTTON_L1;; R2) echo BUTTON_R2;; L2) echo BUTTON_L2;; A) echo BUTTON_A;; B) echo BUTTON_B;;
   L) echo DPAD_LEFT;; R) echo DPAD_RIGHT;; U) echo DPAD_UP;; D) echo DPAD_DOWN;; *) echo "";; esac; }
-wg_key_win() { k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
+wg_key_win() { wg_time_ok; k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
   h=$(wg_hash "$(wg_focus)"); [ -n "$WG_WIN" ] && [ "$h" = "$WG_WIN" ] || wg_abort "before $1: the game window lost the focus to $(wg_what "$(wg_focus)")"
   input keyevent KEYCODE_$k; }
-wg_key_home() { k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
+wg_key_home() { wg_time_ok; k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
   h=$(wg_hash "$(wg_focus)"); [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] || wg_abort "before $1: the home lost the focus to $(wg_what "$(wg_focus)")"
   [ "$(wg_mark)" = HOME ] || wg_abort "before $1: the QA app shows $(wg_mark)"
+  input keyevent KEYCODE_$k; }
+# (682ar) several keys as one quick burst (one input call - as fast as a thumb can't be) inside the confirmed game window:
+# the window is checked once before the burst; "L1 R1 A"
+wg_keys_win() { wg_time_ok; ks=""; for x in $1; do k=$(wg_kc $x); [ -n "$k" ] || wg_abort "unknown key $x"; ks="$ks KEYCODE_$k"; done
+  h=$(wg_hash "$(wg_focus)"); [ -n "$WG_WIN" ] && [ "$h" = "$WG_WIN" ] || wg_abort "before '$1': the game window lost the focus to $(wg_what "$(wg_focus)")"
+  input keyevent $ks; }
+# (682ar) a key for the QA app's own home-level panels (R1 quick panel, Edit Home): only while a window of the QA app has the
+# focus - never Android's quick settings, never the production Voltcap - and before the deadline
+wg_key_qa() { wg_time_ok; k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
+  f=$(wg_focus); case "$f" in *"$P/"*) ;; *) wg_abort "before $1: the QA app lost the focus to $(wg_what "$f")";; esac
   input keyevent KEYCODE_$k; }
 wg_pass_picker() {
   [ "$(wg_mark)" = PICKER ] || return 0
