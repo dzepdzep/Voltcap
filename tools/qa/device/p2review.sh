@@ -130,6 +130,17 @@ rowtile() { k_home R1; sleep 1.6; shot r1_$1; qtap "Row" ${TAG}_r1_$1 || return 
 # (725b: through winguard - R1 only while the confirmed home holds the focus and says HOME; the B that closes the R1 panel
 # only while the QA app's confirmed main window still holds it. The old raw `input keyevent` skipped the guard - selftest red.)
 k_home() { gate; wg_key_home $1; }
+# (682as, Priority 3 - RP Classic Arcade GPU: which part of the Arcade home costs the GPU. The Arcade home with ONE of its own
+# look options changed at a time (Features prefs, the same switches as Layout options; the snapshot restores them all), each
+# with a still phase and a home-navigation phase between read-only gfxinfo dumps. Level 1, QA app, synthetic games only.
+#   sh p2review.sh arbisect TAG SCALE   then  sh p2review.sh restore TAG
+ar_variant() {
+  n=AR_$1; shift
+  for kv in "$@"; do A --es voltcap_test_pref "$kv"; sleep 0.4; done
+  sleep 3; gate; wg_home
+  phase still; sleep 6; phase_end still
+  phase nav; for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; sleep 0.8; phase_end nav
+  log "variant $n: $* done"; }
 k_home_any() { gate; wg_key_main $1; }
 # (682ap, D379): atrace of the home moving through games (6 right, 6 left) - QA app sections + RenderThread. Level 1.
 tracehome_layout() {
@@ -379,6 +390,48 @@ trace)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   for lay in $LAYS; do logcat -c; trace_layout $lay; done
   log "trace done"; echo DONE >> $L;;
+arbisect)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
+  B="ar_mode=SHOWCASE arcade_glow=true ar_side_art=true ar_video=true arcade_lines=true ar_motion=true ar_room=CARPET ar_crt=LIGHT"
+  ar_variant base $B
+  ar_variant noglow arcade_glow=false;        A --es voltcap_test_pref arcade_glow=true
+  ar_variant noside ar_side_art=false;        A --es voltcap_test_pref ar_side_art=true
+  ar_variant novideo ar_video=false;          A --es voltcap_test_pref ar_video=true
+  ar_variant nolines arcade_lines=false;      A --es voltcap_test_pref arcade_lines=true
+  ar_variant nomotion ar_motion=false;        A --es voltcap_test_pref ar_motion=true
+  ar_variant alloff arcade_glow=false ar_side_art=false ar_video=false arcade_lines=false ar_motion=false
+  ar_variant hall $B ar_mode=HALL
+  ar_variant base2 $B
+  log "arbisect done (launches: $(launches))"; echo DONE >> $L;;
+stilldiff)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout ARCADE; sleep 4; gate
+  # (682as: what changes on a still Arcade home - five screenshots, nothing pressed; tools diff them)
+  sleep 4; gate; wg_home; for i in 1 2 3 4 5; do screencap -p $O/still_$i.png; sleep 0.2; done
+  log "stilldiff done (launches: $(launches))"; echo DONE >> $L;;
 perf)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
