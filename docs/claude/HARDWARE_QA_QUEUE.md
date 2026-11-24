@@ -125,6 +125,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   whichever reaches lower (TileRows.topPadDp; TileTopMusic721aTest 3/3 cloud). By eye (LEVEL 1, QA app, ~2 min, dev line 721a or
   later): Tile home, Switch-style profiles on, music player top-right with a song playing, R1 Row -> Top, x1.0 and x1.3 - the
   first pill / tiles start under the player, nothing overlaps; player off -> rows back up under the pictures. KONKR.
+- **722a (cloud): Edit Home / preset preview vs the real Home at Top.** The little drawn preview put the row at 0.2 with the
+  name above it and the clock bar at the top; the real Home at Top (Classic row, Tile home) has the row under the edge, the
+  name under it and the clock bar at the bottom (above the legend). Preview follows that now (PreviewDock; Middle / Bottom
+  unchanged; PreviewDock722aTest 4/4 cloud). By eye (LEVEL 1, QA app, ~1 min, same session as 721a): Settings > Presets, a
+  preset whose row is at Top (Classic and Tile home), preview beside the real Home after applying - same order top to bottom. KONKR.
 - **RESULT 23 Nov 22:15 (live session, KONKR, dev line 7bd1dea QA app, Level 1) - 714a: NOT TESTED, by choice.** The R1 panel
   opens with its Quick row first (Wi-Fi, Bluetooth, Do not disturb...): the Row tile is further down (collapsed), and tapping or
   D-padding through that panel by script risks a system toggle - forbidden. The hand-placed buttons spot was set (widget_positions

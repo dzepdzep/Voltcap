@@ -1,3 +1,14 @@
+# Update 722a (24 Nov 2026, cloud run) - Task 1: Edit Home / preset preview matches the real Home at Top
+- CI first: Verify 310 on e77f9fa (721a) GREEN.
+- Owner 22:43 item 3 ("Edit Home previews kept", preview = real Home): PresetPreview at Top drew the row at 0.2 with the game's
+  name ABOVE it and the clock / battery bar at the TOP. The real Home at Top (Classic row, Tile home; not Grid, TV room or a style
+  layout) puts the row right under the edge (16 dp / 60 dp), the name UNDER it (nameBelow) and the status bar at the BOTTOM,
+  above the legend. New pure PreviewDock (same rule as LauncherScreen atBottom / barTop); Middle and Bottom drawn exactly as before.
+- Tests: PreviewDock722aTest 4/4 PASS (new; fails on the old fixed 0.2 top) (cloud, compiled with the Maven mirror); static checks PASS.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/PresetPreview.kt,
+  app/src/test/java/com/shelf/launcher/ui/PreviewDock722aTest.kt (new).
+- Hardware NOT TESTED: HW-24 722a (by eye, KONKR, with 721a).
+
 # Update 721a (24 Nov 2026, cloud run) - Task 1: Tile home Top keeps clear of the profile pictures AND a top-corner music player
 - CI first: Verify 310 on a8a3ef6 (720a) GREEN.
 - Owner 22:43 item 3 (Tile home Top vs the profile row, Batch 521 / Sprint 527 minimum): audited. Middle already keeps both

@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**24 Nov 02:40 UTC, 722a (cloud, Task 1):** Verify 310 on e77f9fa (721a) GREEN. Edit Home / preset preview vs the real Home:
+at Top the preview drew the row at 0.2, its name above and the clock bar at the top; now row under the edge, name under it, clock
+bar at the bottom (above the legend) - the real Home's rule (PreviewDock). Middle / Bottom unchanged. PreviewDock722aTest 4/4
+PASS (cloud). HW-24 722a (by eye).
+NEXT: check Verify 310 on this push FIRST (red -> fix first). Then owner 22:43 item 4: R1 Focus Position audit (53 layouts,
+reuse the Voltcap row / Classic and Tile home focus-anchor prefs; only where genuinely supported; A cycles, long-press direct).
+
 **24 Nov 01:40 UTC, 721a (cloud, Task 1):** Verify 310 on a8a3ef6 (720a) GREEN. Tile home Top vs the profile row audited: Top
 with the Switch-style pictures ignored a top-corner music player (Middle already kept both floors) - TileRows.topPadDp now keeps
 the rows 8 dp under whichever reaches lower; unchanged when only one is shown. TileTopMusic721aTest 3/3 + 521 / TileRows / 714a
