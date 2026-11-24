@@ -1020,11 +1020,13 @@ internal fun CorePanel(ctx: WinSceneCtx) {
         transformOrigin = TransformOrigin(0.5f, 0.5f)
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
     }.clip(CutCornerShapeCompat).background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.93f).copy(alpha = 0.96f), androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.97f).copy(alpha = 0.98f))))
-        .border(1.5.dp, glow.copy(alpha = 0.8f), CutCornerShapeCompat).padding(14.dp)) {
+        .border(1.5.dp, glow.copy(alpha = 0.8f), CutCornerShapeCompat)
+        // (740a, P2 class C: L1 / R1 from anywhere on the console - its own pages SPEC / UNLOCKS / CONTROL, WinPagesCore.kt.)
+        .nativeBumpers(ctx).padding(14.dp)) {
         Text("// SYSTEM  ›  TITLE", color = glow.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
         StableFullText(ctx.name, color = ink, fontSize = 22.sp, maxLines = 2, fontWeight = FontWeight.Bold)
         Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0f)))))
-        Row(Modifier.weight(1f, fill = false)) {
+        if (ctx.page == WinPage.MAIN) Row(Modifier.weight(1f, fill = false)) {
             // (Update 423: the cover follows the room left under the keys — sized by its width it grew past the row and covered
             // the title once the keys wrapped onto more lines.)
             Box(Modifier.widthIn(max = minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f, matchHeightConstraintsFirst = true).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
@@ -1032,9 +1034,15 @@ internal fun CorePanel(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
+        } else {
+            // (740a, P2 class C: the console's own pages read out under the glow rule - SPEC / UNLOCKS / CONTROL in its monospace
+            // capitals and glow (WinPagesCore.kt); was the cover with the shared page bodies in the facts' place. On its pages the
+            // console takes its whole height and its keys keep the page slots, Play first, so Play stays put.)
+            val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+            CorePageArea(ctx, CoreInk(glow, ink, dim), Modifier.weight(1f).fillMaxWidth(), short)
         }
         Spacer(Modifier.height(10.dp))
-        KeyRow(sceneKeys(ctx)) { a ->
+        KeyRow(sceneKeys(ctx), slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
             SceneKey(a, dim, glow, glow, androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.9f), glow.copy(alpha = 0.4f), glow, CutCornerShapeCompat, font = FontFamily.Monospace, upper = true, size = 11.sp)
         }
     }

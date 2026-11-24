@@ -1033,3 +1033,22 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   WindowWordsSurvey682, Batch505, PopupShade461, Pickups672, ShopTag673, NativeConfirm, PopupNativeStorage, WinFocus, UniformKeys673,
   NativePages*: 2,639 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 14 scenes done (own designs 44 / 53).
+### 740a - P2 class C, fifteenth scene: Green core (CORE_PANEL, WinPagesCore.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The glowing system console (dark panel with 45° cut corners framed in the layout's glow colour, "// SYSTEM › TITLE" over the
+  name, the fading glow rule, the cover and the facts readout, cut-corner monospace keys) stays as it is; its pages are read out
+  under the rule in its monospace capitals and glow: SPEC (each fact a readout line - label in the dim glow over the value, a
+  glow tick down its left - then the story in a cut-corner well headed "// DESCRIPTION", a D-pad stop), UNLOCKS (one line: cup,
+  "N / M", a core charge bar of 12 cells - one earned always charges one, all only when every one is earned - and the order as a
+  cut-corner key; each achievement a cut-corner line: cut-corner badge, title in capitals, "UNLOCKED <date>" / "LOCKED", "+N";
+  the line you are on lit in the glow; A opens the whole text + how rare it is; lazy rows), CONTROL ("> " command lines; removing
+  ones in the alarm red, "PRESS A AGAIN TO CONFIRM" - second A). Heading: "> " and the page's name in the glow and a cut-corner
+  cell per page (the shown one lit), after the old page has gone. Motion: the next page opens from one glowing line across its
+  middle, the console's own boot (fading in); none with Motion Off. Follows the picked glow colour (Layout options › accent).
+  Was: the cover with the shared page bodies in the facts' place.
+- L1 / R1 anywhere on the console. On its pages the console takes its whole height and its keys keep the page slots (Play
+  first), so Play stays put: PlayPlace GREENCORE x1.0 / x1.3 + PlayPlaceRpc found Play at the same place on all three pages.
+- Tests (cloud): NativePagesCore740aTest 4/4 (new; fails before: no corePageName, CORE_PANEL not native); GREENCORE added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, InputContract462, WindowWordsSurvey682,
+  Popup421, WinFocus*, Layouts344, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,570 + 88 tests, 0
+  failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 15 scenes done (own designs 45 / 53).
