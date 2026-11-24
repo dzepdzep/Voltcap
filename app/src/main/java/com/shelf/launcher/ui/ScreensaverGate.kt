@@ -11,4 +11,7 @@ internal object ScreensaverGate {
         profileSelectorUp: Boolean, profileSelectorPending: Boolean
     ): Boolean = active && enabled && !dialogOpen && !searchOpen && !saverOn && !editingHome &&
         !profileSelectorUp && !profileSelectorPending
+    /** 682ar (D391): how much longer the screensaver waits - the idle time counted both from when the wait began (the home's
+     *  own input restarts it) and from the last input of any kind, a game window's keys included ([HomeIdle.sinceAnyInputMs]). */
+    fun waitMs(idleMs: Long, sinceStartMs: Long, sinceAnyInputMs: Long): Long = maxOf(idleMs - sinceStartMs, idleMs - sinceAnyInputMs)
 }

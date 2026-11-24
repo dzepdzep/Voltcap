@@ -208,6 +208,26 @@ storm_layout() {
     k BUTTON_R1 1.1; k BUTTON_R1 1.6
   done
   closewin; log "$lay storm done (launches: $(launches))"; }
+# (682ar, D391 - owner 24 Nov: "activity inside a game window must prevent the launcher behind it from dimming or going black"):
+# the screensaver's idle time set to 40 s for the session (voltcap_test_saveridle, QA app only, nothing saved), a Cover details
+# window open, a D-pad press every 5 s inside it for 120 s - the screensaver must not start (VoltcapQA "screensaver on" lines: 0);
+# then no presses for 60 s with the window still open - now it must start (the timer itself still works). Shots at 60 / 115 / 175 s.
+# Level 1.   sh p2review.sh awake TAG SCALE
+awake_walk() {
+  n=COVERDETAILS; A --ei voltcap_test_saveridle 40; sleep 1
+  A --es voltcap_test_game "${PERF_GAME:-${MIX:-Tetris (World)}}"; sleep 2
+  openw COVERDETAILS ${n}_aw || return 1
+  logcat -c; t0=$(date +%s); dir=D
+  while [ $(( $(date +%s) - t0 )) -lt 120 ]; do
+    k $dir 5; [ $dir = D ] && dir=U || dir=D
+    el=$(( $(date +%s) - t0 )); for at in 60 115; do [ $el -ge $at ] && [ ! -e $O/aw_$at ] && { touch $O/aw_$at; shot ${n}_aw_$at; }; done
+  done
+  on1=$(logcat -d -s VoltcapQA | grep -c 'screensaver on'); log "awake: 120 s of presses in the window - screensaver starts: $on1 (want 0)"
+  sleep 60; shot ${n}_aw_175
+  on2=$(logcat -d -s VoltcapQA | grep -c 'screensaver on'); log "awake: then 60 s without input - screensaver starts: $on2 (want 1)"
+  [ "$on1" = 0 ] && [ "$on2" -ge 1 ] && log "PASS awake" || log "FAIL awake"
+  A --ei voltcap_test_saveridle 0; sleep 1
+  [ "$(wg_popup)" != null ] && { closewin; } ; log "awake walk done (launches: $(launches))"; }
 case $MODE in
 tracehome)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -315,6 +335,23 @@ storm)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   for lay in $LAYS; do logcat -c; storm_layout $lay; done
   log "storm done"; echo DONE >> $L;;
+awake)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 "); BIG=$(pick "achmix n=120 "); [ -n "$BIG" ] || BIG=$(pick "achfix n=120 ")
+  log "setup scale=$SC layouts=$LAYS mixed='$MIX' long='$BIG'"
+  [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
+  awake_walk
+  log "awake done"; echo DONE >> $L;;
 trace)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
