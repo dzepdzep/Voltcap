@@ -52,3 +52,7 @@ class C 16. Implemented only - hardware NOT TESTED (HW-28), not visually approve
 ## Update 732a (class C)
 File select draws its own screens (DETAILS / STARS / OPTIONS on the file's inset panel): class A 37, class B 1 (Disc station),
 class C 15. Implemented only - hardware NOT TESTED (HW-28), not visually approved.
+
+## Update 733a (class C)
+Case flow draws its own pages (DETAILS / EXTRAS / SETUP in the picture's glass well): class A 38, class B 1 (Disc station),
+class C 14. Implemented only - hardware NOT TESTED (HW-28), not visually approved.

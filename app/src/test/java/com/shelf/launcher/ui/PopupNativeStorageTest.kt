@@ -34,7 +34,12 @@ class PopupNativeStorageTest {
 
     @Test fun storageKeepsItsOwnPages() {
         assertTrue(nativePages(WinScene.STORAGE_RECORD))
-        assertFalse(nativePages(WinScene.CASE_MEDIA))
+        // every scene still on the shared pages answers false (734a: was CASE_MEDIA by name, which 733a gave its own pages;
+        // P2 converts one scene per run, so the check follows the set instead of naming a scene that will move)
+        val shared = WinScene.entries.filterNot { it in NATIVE_PAGE_SCENES }
+        assertTrue("some scenes still use the shared pages", shared.isNotEmpty())
+        shared.forEach { assertFalse(it.name, nativePages(it)) }
+        assertTrue(nativePages(WinScene.CASE_MEDIA))
         assertFalse(nativePages(null))
         val gw = src("GameWindow.kt")
         // (Phase 3: the condition lives in sharedPageFor, WinPageFlow.kt - one decision for every scene.)

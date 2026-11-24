@@ -858,3 +858,20 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   content 7 ms, the info 3 ms, row / category ~1 ms each), applying changes 4-6 ms; layout ~37-46 ms - sub-compositions of
   BoxWithConstraints (the showcase itself, the row, FitText) ~17 ms and ~20 text measurements of 0.7-2 ms; draw recording ~10 ms.
   No single hot spot; next: cut the per-move work of the screen body and the showcase's layout-time composition.
+### 733a - P2 class C, eighth scene: Case flow (CASE_MEDIA, WinPagesCase.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The case opened into its media keeps its dark glass stage, black glass well with a shine, accent-edged name band and glossy
+  round-ended pills reflected on the floor; its pages take the picture's place in that glass well, like the menu of the disc
+  inside: DETAILS (each fact a glass strip with the name band's accent edge - small spaced label, white value - and the story in
+  its own glass panel, a D-pad stop), EXTRAS ("N of M unlocked" over a glossy accent bar with its floor reflection; each
+  achievement a glass slide - badge with its reflection, title, "Unlocked <date>" / "Locked", a points pill; A opens the whole text
+  + rarity; lazy rows; the order a small glossy pill), SETUP (glossy round-ended option pills, accent gloss when lit; removing ones
+  red with "Press A again to remove" - second A). Heading: the accent edge, the page's name and a round-ended pill per page (the
+  shown one in the accent) after the old page has gone; the next page flows in like the next case (from the side, from 92 %);
+  none with Motion Off. Before: the shared page body squeezed into the picture's band (110-300 dp).
+- On its pages the window keeps one size (the whole stage), so the pills - two slots, Play the first - stay where they are.
+- Test fix found on the way: PlayPlace682ab's More matcher missed a More key that is labelled and described ("more more" - Case
+  flow), so it compared Info's Play with Details' and never reached Extras / Setup; it now reads More as AchFirstRow does.
+- Tests (cloud): NativePagesCase733aTest 4/4 (new; fails before: no casePageName, CASE_MEDIA not native); CASEFLOW added to
+  AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow / ShelfText / PlayPlace* / WinFocus / NoStrayPlay /
+  NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / WindowWordsSurvey / Layouts330 / Pickups672 / Batch506 /
+  NativePages* 2286 tests 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
