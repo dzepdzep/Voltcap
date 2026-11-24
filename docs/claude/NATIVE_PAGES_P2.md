@@ -825,3 +825,36 @@ Level 1, QA app qa682ar3, RP Classic (MC94516AQF091001112, USB), x1.0, synthetic
   NoStrayPlay / LazyRows + NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / Layouts330 / WindowWordsSurvey
   / CubeFacet 628 tests 0 failures (146 WindowWordsSurvey skips, as before); NativePages* + PopupNativeStorage + DiscTracks green.
   Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not visually approved.
+
+### 682as - Arcade A (owner 24 Nov 14:54: fix the continuous redrawing first) - implemented, hardware-measured, NOT visually approved
+- **Change:** the attract screens' words (title, console line) and the marquee signs' fallback name wrap at whole words and size
+  down to the tube's smallest size; only the machine you're on may slide (a name that fits nowhere at all - it rests with the home
+  at 30 s, as before); the others stay still. The console line steps 9 -> 7 sp before it wraps ("PLAYSTATION 2" now one line). A
+  far tube that cannot hold every word even condensed (never below half width) shows its first whole lines - never half a word;
+  its sign right above carries the whole name, and the machine shows it whole once you move onto it. FitText: `wholeWords`,
+  `stillWhenCut` (condensed, no ellipsis). QA-only A/B switch `--es voltcap_test_arattract legacy|new` (isolated QA app, session).
+  Tests: ArcadeTube682asTest (legacy slides - fails as the old code; new: no slide on tubes you're not on, no split word, the big
+  tube whole, the console line one line), ChanPlateOneLine678r updated (FitText keys).
+- **Hardware (Level 1, QA app qa682as2 = 77fdd6e, RP Classic MC94516AQF091001112 USB, x1.0, the 30-game category on Shadow of
+  the Colossus, no recording; `p2review.sh arab` - legacy / new interleaved twice in the same build; restore OK, diff 0, 0 launches):**
+
+  | phase (after a press) | legacy | new |
+  |---|---|---|
+  | still 11-19 s (home awake, nothing moving) | 58.8 / 58.5 frames/s, GPU p50 16 ms, p50 32-34 ms | **0 frames** (both runs) |
+  | still 1-9 s | 55.9 / 56.2 frames/s, slow 4.5 / 4.7 % | 19.9 frames/s, all slow (p50 42 ms) - the status bar's charging light (USB charging; Update 493/511 light, settles 10 s after input), not Arcade |
+  | 12 home moves | 561 / 598 frames, slow 18.2 / 16.2 %, p50 31-32, p95 77-85, p99 105-113 ms, GPU p50 15-16 | 450 / 456 frames, slow 25.8 / 24.6 %, p50 31-32, p95 89-93, p99 105-113 ms, GPU p50 14 |
+
+  Moving is unchanged in absolute terms (slow UI frames 45-55 vs 48-50, slow draws 97-102 vs 112-116); the percentage is higher
+  only because the legacy run's denominator included ~60 cheap marquee frames a second. 60 FPS not claimed: a home frame on the RP
+  Classic costs GPU 14-16 ms plus ~13 ms issuing (atrace), and each move still has its main-thread hitch (Arcade B, next).
+- Screens: rsd4 (awake_1.png) - big tube "SHADOW OF THE COLOSSUS / PLAYSTATION 2" whole, still; small tube "SHADOW OF / THE".
+- Found on the way (not changed): the charging light redraws the whole window ~20-30 times a second for 10 s after each press
+  while charging - on the RP Classic each such frame is a full 40 ms window redraw.
+- **Arcade B - profile (24 Nov, RP Classic, QA app qa682as_trace2 = compose-tracing build + VC: sections, Level 1, restore OK):**
+  correction first - the earlier "35-44 ms stall per move" came from a trace started on Tetris, a one-game category (the presses
+  did not change game, as in 682al's correction). On the 30-game category a game-to-game move is one ~100 ms main-thread frame
+  (plain build agrees: arab moving p95 77-93 ms, p99 105-113 ms). Per move: composition ~54 ms - the screen's content body
+  (LauncherScreenContent, which collects the whole UI state) ~17 ms of its own, the Arcade showcase ~15 ms (the big machine's new
+  content 7 ms, the info 3 ms, row / category ~1 ms each), applying changes 4-6 ms; layout ~37-46 ms - sub-compositions of
+  BoxWithConstraints (the showcase itself, the row, FitText) ~17 ms and ~20 text measurements of 0.7-2 ms; draw recording ~10 ms.
+  No single hot spot; next: cut the per-move work of the screen body and the showcase's layout-time composition.

@@ -164,7 +164,7 @@ internal fun StyleArcade(c: StyleCtx, modifier: Modifier = Modifier) {
         if (z > 0f) { val s = 1f + 0.9f * z; scaleX = s; scaleY = s; transformOrigin = if (hall) TransformOrigin(0.5f, 0.4f) else TransformOrigin(0.2f, 0.42f) }
     }) {
         if (Features.arMode.state.value == Features.ArMode.HALL) ArcadeHallMode(c, g, launch, Modifier.fillMaxSize())
-        else ArcadeShowcase(c, g, launch, Modifier.fillMaxSize())
+        else vcTraceC("VC:arcShow") { ArcadeShowcase(c, g, launch, Modifier.fillMaxSize()) }
         // The dark as the camera reaches the monitor.
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = (ArcadeNav.zoom.value * 0.85f).coerceIn(0f, 1f) }.background(Color.Black))
     }
@@ -494,7 +494,7 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "cabinet"), "Big cabinet")
                     .pointerInput(Unit) { detectTapGestures { c.actions.open() } }
             ) {
-                AnimatedContent(targetState = g, label = "arcadeBig", transitionSpec = { gameSwap() }) { shown ->
+                vcTraceC("VC:arcBigAC") { AnimatedContent(targetState = g, label = "arcadeBig", transitionSpec = { gameSwap() }) { shown ->
                     val b = cabBuildFor(pick, shown.platform)
                     val a = cabAspect(cabModel(b), big)
                     val hh = minOf(cabH, cabW / a)
@@ -502,27 +502,27 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
                         vcTraceC("VC:arcBig") { ArcadeMachine(c, shown, b, { color }, hh * a, hh, { big }, { litAnim.value }, { 0f }, live = shown.stableKey == g.stableKey, detail = true,
                             cacheBody = true) }
                     }
-                }
+                } }
             }
             Column(
                 Modifier.offset(x = rightX).width(rightW).height(infoH)
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "info"), "Name, Play & Details")
             ) {
-                ArcadeCategory(c, compact)
+                vcTraceC("VC:arcCat") { ArcadeCategory(c, compact) }
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                 AnimatedContent(
                     targetState = g, label = "arcadeInfo", transitionSpec = { gameSwap() },
                     contentAlignment = Alignment.TopStart,
                     modifier = Modifier.weight(1f).fillMaxWidth()
-                ) { shown -> ArcadeInfo(c, shown, richArcade(color), compact, plaque = compact) }   // (short screens: the plaque's 2 lines)
+                ) { shown -> vcTraceC("VC:arcInfo") { ArcadeInfo(c, shown, richArcade(color), compact, plaque = compact) } }   // (short screens: the plaque's 2 lines)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-                ArcadeButtons(c, g, richArcade(color), compact, launch)
+                vcTraceC("VC:arcBtns") { ArcadeButtons(c, g, richArcade(color), compact, launch) }
             }
-            ArcadeRow(
+            vcTraceC("VC:arcRow") { ArcadeRow(
                 c, miniH,
                 Modifier.offset(x = rightX, y = fullH - rowH).width(rightW).height(rowH)
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "row"), "Row of cabinets")
-            )
+            ) }
         }
     }
 }

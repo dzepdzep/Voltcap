@@ -3621,7 +3621,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         }
         val styleTopFree = if (menuTopBand) 56.dp else 12.dp
         SideEffect { if (HomeMenuSlot.want != menuInOwnSlot) { HomeMenuSlot.want = menuInOwnSlot; if (!menuInOwnSlot) HomeMenuSlot.rect = null } }
-        if (barHere) HomeStatusBar(
+        if (barHere) vcTraceC("VC:statusBar") { HomeStatusBar(
             menuSlot = menuInBarSlot,
             // The player sits in the status bar when it's top left; other
             // corners get their own spot (below).
@@ -3641,7 +3641,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             } else {
                 Modifier.align(Alignment.TopCenter).zIndex(if ((gridLayout || tvLayout || styleLayout) && !showDetails) 5f else 0f)
             }).onSizeChanged { statusBarHeightPx = it.height }
-        )
+        ) }
 
         // Corner visualizers (Appearance › Music player): small space scenes moving with the music.
         // With the second screen up they play there instead (Settings › Screens › Music effects).
@@ -4199,7 +4199,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         fun BoxScope.GameRows() {
         if (styleLayout) {
             // The style homes (StyleHomes.kt): their own menus, cards and panels over the whole screen.
-            StyleHome(
+            vcTraceC("VC:styleHome") { StyleHome(
                 layout = state.appearance.homeLayout, state = state, art = displayArt, shortcuts = tileShortcuts,
                 actions = run {
                     val freshActions = StyleActions(
@@ -4297,7 +4297,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                         start = if (state.appearance.homeLayout == com.shelf.launcher.data.HomeLayout.SIDE || state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp,
                         end = if (state.appearance.homeLayout.fullBleed()) 0.dp else 12.dp
                     )
-            )
+            ) }
         } else if (tvLayout) {
             // TV room (TvRoomHome.kt): the game on an old TV, the games beside it, its story under it.
             if (visibleGames.isEmpty()) Text(EmptyShelf.text, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp, modifier = Modifier.align(Alignment.Center))
