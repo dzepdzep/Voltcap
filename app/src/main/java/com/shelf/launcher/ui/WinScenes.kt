@@ -2168,7 +2168,9 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 // settled panel should show it. The panel keeps its size while everything fits (×1.0 unchanged) and grows down
                 // to the cover frame's foot when the lines need it; only beyond that does it scroll.)
                 Box(
-                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f - (nightCmdW - w * 0.26f)).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
+                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f - (nightCmdW - w * 0.26f)).heightIn(min = h * 0.56f, max = h * 0.70f)
+                        // (682bc, HW-29 rpop13_4 NIGHT x1.3: a turned panel reports straight boxes - 2 px read as a cut. QaClip.Tilted.)
+                        .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -2f }
                         .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
@@ -2390,7 +2392,7 @@ private fun NightBannerWipe(page: WinPage, anim: Boolean, words: @Composable (Wi
 @Composable
 private fun NightPagePanel(ctx: WinSceneCtx, p: WinPage, live: Boolean, w: Dp, h: Dp, col: com.shelf.launcher.data.Features.NmColor, hi: Color, modifier: Modifier) {
     Box(
-        modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).graphicsLayer { rotationZ = -2f }
+        modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -2f }
             .clip(slantShape(0.06f)).background(Brush.horizontalGradient(listOf(Color(col.top), Color(col.bottom))))
             .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.06f)).padding(start = 30.dp, end = 26.dp, top = 12.dp, bottom = 12.dp)
     ) { NightPage(ctx, p, live, hi, Modifier.fillMaxSize()) } // (682ae, P2 batch 7: the status screen's own pages - WinPagesNight.kt)

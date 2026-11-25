@@ -1669,9 +1669,9 @@
    "version_code": 80,
    "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
    "patch_sha256": null,
-   "base_commit": "claude/v0674-native-pages 8ff8108 + Disc track label GivesWay",
-   "tree_hash": "claude/v0674-native-pages 8ff8108+",
-   "note": "HW-29: key-row scroll finishes after a cancel, measure-only refs out of the QA dump, Disc label alternatives give way"
+   "base_commit": "claude/v0674-native-pages 8ff8108",
+   "tree_hash": "claude/v0674-native-pages 8ff8108",
+   "note": "HW-29: key-row scroll finishes after a cancel, measure-only refs out of the QA dump (the Disc label GivesWay of 65cf01c is NOT in this APK - built before it)"
   }
  ]
 }
