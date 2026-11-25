@@ -1,4 +1,4 @@
-# VoltCap v0.7.0 - functional and data-integrity audit (25 Nov 2026, live session 682bd)
+# VoltCap v0.7.0 - functional and data-integrity audit (25 Nov 2026, live session 682bd; final 23:35)
 
 Owner order 25 Nov 21:24 ("MANDATORY FULL FUNCTIONAL AUDIT ... prove that v0.7.0 preserves existing user data and functionality").
 Branch `claude/v0674-native-pages`. Builds: QA app only (`com.shelf.launcher.qa`), production VoltCap untouched and never read
@@ -14,12 +14,12 @@ fixed (with its verification) - **NOT TESTED** - **BLOCKER** = release blocker.
 | Upgrade v0.6.73 -> v0.7.0 (settings kept) | PASS-HW | QA build of the v0.6.73 release code (main a401221) over QA data, restart, then the v0.7.0 QA build over it: every settings file and key compared - 0 changes on KONKR and RP Classic (only the update-check time and battery-watch counters move) |
 | Backup / restore / safety snapshot | PASS-AUTO | DataIntegrity682bdTest: all 100+ settings files, every value type, per-game data and device files - backup, wipe, restore = identical; restore twice = identical; the import's safety snapshot puts the previous state back; another device's backup leaves this device's files and the appearance device keys alone; a backup without game data leaves game data alone |
 | Repeated migrations | PASS-AUTO | the start-up migrations (ScreenScraper address clean-up, tuner "With power") run twice = no change; the tuner migration can no longer touch a profile saved by this build |
-| Restart / rescan / layout previews / Edit Home discard | PASS-HW | persist682.sh + persistdiff.py on both handhelds (qa682bf): 0 changed keys after each step |
-| Per-game / app / console / global performance profiles | FIXED + PASS-AUTO; HW on simulated tuner hardware: see below | explicit Underclock Off kept and named; one resolution rule for launch and popup; source shown everywhere (TuneOverride682bdTest 9) |
+| Restart / rescan / layout previews / Edit Home discard / tuner session / second restart | PASS-HW | persist682.sh + persistdiff.py on both handhelds (qa682bf): 0 changed keys after each step except the tuner's own first-use records (migration flag; the simulator's stock record - now kept in its own file, D401) |
+| Per-game / app / console / global performance profiles | FIXED + PASS-AUTO + PASS-HW (simulated tuner) | explicit Underclock Off kept and named; one resolution rule for launch and popup; source shown everywhere (TuneOverride682bdTest 9). Both handhelds, QA app on TuneSim (tunesim682.sh): the game's own Off with AutoTDP Balanced = "AutoTDP Balanced · Underclock Off · Game profile" (status line and Android's notification); back in Voltcap = "... Underclock Light (with power) · Device-wide"; own profile removed mid-game = falls to device-wide |
 | AutoTDP vs explicit underclock | PASS-AUTO | AutoTDP moves the underclock only when it is "With power" |
-| Heat Guard | FIXED (redesigned) + PASS-AUTO | presets, smoothing, hysteresis, gradual steps, recovery, firmware thermal never written (HeatGuard682bdTest 13, synthetic traces) |
-| Recents: library game back in front | FIXED (new) + PASS-AUTO | only Android games named by their package; emulator games never guessed |
-| R1 Heat guard tile | PASS-AUTO; HW: see below | appended after the owner's tiles; same on every layout |
+| Heat Guard | FIXED (redesigned) + PASS-AUTO + PASS-HW (simulated temperature) | presets, smoothing, hysteresis, gradual steps, recovery, firmware thermal never written (HeatGuard682bdTest 13, synthetic traces). Both handhelds at a simulated 97 °C: first step after ~30 s, "Heat guard −7 % for now" beside the unchanged "Underclock Off", second step −14 %; back at 60 °C the cut is gone; the saved profile never changed. No handheld was heated |
+| Recents: library game back in front | FIXED (new) + PASS-AUTO + PASS-HW (simulated) | only Android games named by their package; emulator games never guessed. Both handhelds: the game in front again = its own profile; an unknown app in front = nothing changes |
+| R1 Heat guard tile | PASS-AUTO + PASS-HW (simulated tuner) | appended after the owner's tiles (R1_APPENDED); on the Device tab on both handhelds: "Heat guard −14 % now" while restricting; hold = sheet with On, Gentle / Balanced / Aggressive, limits 75-90 °C (95 °C firmware trip), "Now: −14 % ... (about 97 °C)"; A = Off, A again = "Balanced 85 °C". On the real tuner hardware (RP Classic / Flip 2 / AYN): NOT TESTED (the QA app never uses root) |
 | Game-specific emulator / launch settings | PASS-AUTO (new) + PASS-HW (persistence walk) | StorePersistence682bdTest; a game's own emulator, extras and an explicit off survive restart; one game's change leaves others and the console alone |
 | Play time | PASS-AUTO (new) | StorePersistence682bdTest - had no test before |
 | Favourites, achievements, artwork / metadata overrides, categories, collections, recomps, R1 order / focus position | PASS-AUTO (existing suites + the backup round trip) + PASS-HW (723a / 724a / 725a QA, the persistence walk) | |
@@ -63,3 +63,21 @@ the handheld's own thermal limit is shown when a core reads back below Voltcap's
 
 - The resume rule needs usage access; without it the game keeps the device-wide profile (the notification says so).
 - Emulator and GameNative games are never recognised from the app in front (the package names no single game).
+
+## Builds and CI
+
+- QA builds (tools/qa/builds.json): qa-682bf (persistence, upgrade), qa-682bh-f094d6c (simulated tuner walk); qa-0673-a401221
+  (the v0.6.73 release code as the QA app, with a QA-only settings-dump hook, never on main).
+- CI Verify GREEN on b4e37b2 (Heat Guard / R1 / resume / data-integrity tests). The last code commit f094d6c: Verify running
+  at the time of writing (see the readiness doc).
+- Tests added: TuneOverride682bdTest 9, HeatGuard682bdTest 13, DataIntegrity682bdTest 5, StorePersistence682bdTest 2, QA
+  selftests (watchdog KILL, persistdiff).
+
+## What blocks v0.7.0 (unchanged by this audit, plus one)
+
+1. Library rescan with the SD card out (681r): the fix is on another branch - owner decision to bring it in (recommended).
+2. Owner visual approval of the targeted preview (682bb corrections) and of the new tuner screens (notification wording, R1
+   Heat guard tile and sheet).
+3. Integration branch with main + the dev line, green CI on that exact commit, versioning when authorised.
+Deferrable: HW-28 walk at x1.0; D399 / D400; the 31 unlisted settings files' scope review; real-hardware tuner check on an
+AYN / Retroid handheld by the owner (production, step by step, when approved).

@@ -731,7 +731,12 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
   with achievements and a milestone) and the status-bar session note: wrap / shrink / slide, never "…"; the card keeps its
   height for a short name; the note slides inside its 320 dp and stops after 30 s idle. Emulator can't play a real game session.
 
-### HW-29 v0.7.0 review fixes + HW-28 completion (owner 25 Nov 15:35) - OPEN, prepared, PC left the bridge before the runs
+### HW-29 v0.7.0 review fixes + HW-28 completion (owner 25 Nov 15:35) - DONE 25 Nov (x1.0 walk not run)
+Results (QA builds qa-682bb ... qa-682bh): fix check PASS both; stress captured both; popup gate 28 x 2 scales PASS both after
+D397; HW-28 walk x1.3 PASS both (0 launches, confirmations cancelled, Play in place); upgrade v0.6.73 -> v0.7.0 and the
+persistence walk 0 changes both; simulated-tuner walk + R1 Heat guard tile PASS both. See docs/claude/AUDIT_0.7.0.md.
+Still open: the HW-28 walk at x1.0 (`sh qachain.sh run TAG off 4 "<28 layouts>"`, output to /data/local/tmp).
+(Original plan below.)
 QA app qa682bb (`6f6fd73`), both handhelds over USB, Level 1. In this order (each run <= 15 min; qachain.sh batches):
 1. Fix check + targeted preview: `GAL_NAV=0 sh p2review.sh gallery TAG off|font=1.3 "GREENCORE DISCS CAMERA BOX"` on both, and
    `APP_PKG=... sh p2review.sh appcat TAG font=1.3` (Categories / Collections after); compare with the gallery (m/k13, m/r13,

@@ -16,6 +16,23 @@ note() { dumpsys notification --noredact 2>/dev/null | grep -A60 "pkg=$P" | grep
   | sed 's/^ *//' | tr '\n' ' ' > $O/note_$1.txt; log "note $1: $(cat $O/note_$1.txt | cut -c1-300)"; }
 key() { front || stop "QA app not in front - nothing pressed"; input keyevent $1; sleep ${2:-0.8}; }
 shot() { screencap -p $O/$1.png; }
+# R1 panel + the Heat guard tile and its hold sheet; B (guarded: the QA app has the focus) closes each
+qkey() { front || stop "QA app not in front - nothing pressed"; input keyevent $1; sleep ${2:-1}; }
+r1check() {
+  wg_key_home R1; sleep 1.5; shot ${1}_r1; A --es voltcap_test_clip ${TAG}_r1_$1; sleep 2.5
+  j=$F/qa_clip/${TAG}_r1_$1.json
+  xy=$(grep -o '"label":"Heat guard[^"]*","kind":"control","full":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\]' $j 2>/dev/null | head -1 | sed 's/.*full":\[//;s/\]//')
+  if [ -n "$xy" ]; then
+    x=$(echo $xy | awk -F, '{print int($1+$3/2)}'); y=$(echo $xy | awk -F, '{print int($2+$4/2)}')
+    log "R1 Heat guard tile at $x,$y: $(grep -o '"label":"Heat guard[^"]*"' $j | head -1)"
+    front || stop "QA app not in front - nothing pressed"; input swipe $x $y $x $y 900; sleep 2; shot ${1}_heat_sheet
+    A --es voltcap_test_clip ${TAG}_heat_$1; sleep 2.5
+    log "sheet: $(grep -o '"label":"[^"]*"' $F/qa_clip/${TAG}_heat_$1.json 2>/dev/null | grep -iE 'heat|now|limit|°C|Balanced|Gentle|Aggressive' | head -8 | tr '\n' ' ')"
+    qkey KEYCODE_BUTTON_B 1.2
+  else log "R1: no Heat guard tile on the panel's first page - NOT TESTED there ($(grep -o '"label":"[^"]*","kind":"control"' $j 2>/dev/null | wc -l) controls)"; fi
+  qkey KEYCODE_BUTTON_B 1.2
+  wg_home
+}
 [ "$1" = run ] || { echo "usage: sh tunesim682.sh run TAG"; exit 2; }
 dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep"
 front || stop "QA app not in front"
@@ -33,16 +50,15 @@ S on 3
 S "heat:on|BALANCED|85"; S "global:AUTO|BALANCED"; S "own:com.qa.tunegame|OFF|BALANCED"; S "lib:com.qa.tunegame|Tune Game"
 note 0_home
 # 1. the game's own explicit Off with AutoTDP Balanced
-S "launch:com.qa.tunegame|Tune Game|com.qa.tunegame" 3
+S "launch:com.qa.tunegame|Tune Game|com.qa.tunegame" 7
 note 1_game_own_off
 # 2. hot: the heat guard steps in (temporary, apart from the profile)
 S temp:97 1; sleep 26; note 2_hot
-# R1 panel with the Heat guard tile, and its hold sheet
-wg_key_home R1; sleep 1.5; shot 3_r1
-A --es voltcap_test_clip ${TAG}_r1; sleep 2
+# R1 panel while the guard restricts: the Heat guard tile says so; hold opens its sheet (a touch hold on the tile the
+# panel's own layout dump names - inside the QA app's window only)
+r1check 3
 # 3. cool: the cut comes back
-S temp:60 1; sleep 40; note 4_cooled
-wg_key_main B; sleep 1
+S temp:60 1; sleep 60; note 4_cooled
 # 4. back in Voltcap: the device-wide profile ("with power" + AutoTDP Balanced = Light), said as Device-wide
 S end 2; note 5_device
 # 5. the game from Recents (simulated foreground): its own again; an unknown app: nothing

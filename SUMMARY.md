@@ -1,3 +1,21 @@
+# Update 682bd-2 (25 Nov 2026, live session) - v0.7.0 functional + data-integrity audit, Heat Guard rework, R1 Heat guard tile, Recents profile restore
+- Audit report: docs/claude/AUDIT_0.7.0.md (also the project doc claude/AUDIT_0.7.0.md). Upgrade v0.6.73 -> v0.7.0 on both
+  handhelds (QA app): 0 setting changes. Backup / restore / snapshot / cross-device import / migrations twice: identical
+  (DataIntegrity682bdTest). Restart, rescan, layout previews, Edit Home discard: 0 changes (persist682.sh). HW-28 walk x1.3:
+  56 runs, 0 launches, 56 confirmations cancelled, Play in place; popup gate 112 / 112 PASS after D397.
+- Heat Guard: smoothed hottest-core reading, Gentle / Balanced / Aggressive, small % steps, hysteresis, recovery, limits under
+  the firmware's first trip, firmware thermal never written; shown apart from the saved profile. R1 Heat guard tile (Device
+  tab; hold = choices + status). A library Android game brought back from Recents gets its own profile (never guessed for
+  emulator games). TuneSim: QA-only simulated tuner hardware + hooks; QA prefs dump hook.
+- Fixed: D395 (watchdog), D396 (chain stdout), D397 (key row stopped between keys), D398 (gate false readings), D401
+  (tuner_stock travelled with backups). Open minor: D399, D400.
+- Tests: TuneOverride682bdTest 9, HeatGuard682bdTest 13, DataIntegrity682bdTest 5, StorePersistence682bdTest 2, selftests.
+  Not tested: real clocks on AYN / Retroid (QA app never uses root), HW-28 walk at x1.0, Save Sync on hardware.
+- Files: device/tune/{HeatGuard,TuneSim,TuneModel,Tuner,TuneHardware,TuneService,GameNotification,GameExtras}.kt,
+  device/DeviceControls.kt, ui/{QuickSettings,R1Extras,TunerContent,GamePopupStatus,TestHooks,QaPrefsDump}.kt, MainActivity.kt,
+  LauncherViewModel.kt, data/SettingsScopes.kt, tests above, tools/qa/{device/persist682.sh,tunesim682.sh,r1heat682.sh,
+  qachain.sh,winguard.sh; tools/persistdiff.py; builds.json; defects.json}. Production untouched; no merge, no release.
+
 # Update 682bd (25 Nov 2026, live session) - per-game performance profile: an explicit Underclock Off, and whose profile runs
 - Audit (owner 25 Nov 20:58, "Underclock Off came back as AutoTDP Balanced · Underclock Light"): a game's saved Off is kept
   (TuneStore per_game under the game's stableKey = the package for an Android game; the launch reads the same key); AutoTDP moves
