@@ -329,6 +329,13 @@ internal fun LookObject(tile: CategoryTile, modifier: Modifier, stand: Boolean =
 // 1. System Stage — a museum hall: each system on its own lit plinth
 // ---------------------------------------------------------------------------------------------
 
+/** 760a: how far the object's foot sinks into the plinth's top face, and the museum plate's gap above the floor (x plinth height). */
+internal const val STAGE_FOOT_SINK = 0.62f
+internal const val STAGE_PLATE_BOTTOM = 0.14f
+
+/** 760a: the most the museum plate may rise - from its gap above the floor up to the object's foot, never over it. */
+internal fun stagePlateRoom(plinthH: Dp, topFace: Dp): Dp = plinthH - topFace * STAGE_FOOT_SINK - plinthH * STAGE_PLATE_BOTTOM
+
 @Composable
 internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     val pos = rememberLookGlide(selected, animate, Spring.StiffnessLow)
@@ -382,15 +389,20 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     drawOval(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), Offset(size.width / 2f, tf * 0.62f), size.width * 0.36f), Offset(size.width * 0.14f, tf * 0.30f), Size(size.width * 0.72f, tf * 0.66f))
                 }
                 // The museum label on the front: a small dark plate with the name, maker and year, the count.
+                // (760a, P5: at x1.3 on the KONKR a two-line name over the facts made the plate ~100 dp tall against ~83 dp of
+                // plinth front - it rose over the plinth's top and the object's foot. The plate now ends at the object's foot
+                // (stagePlateRoom); the name gives way first - it shrinks to its readable minimum, then slides; the facts keep
+                // their two lines.)
                 Column(
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = plH * 0.14f).width(plW * 0.80f)
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = plH * STAGE_PLATE_BOTTOM).width(plW * 0.80f)
+                        .heightIn(max = stagePlateRoom(plH, topFace))
                         .graphicsLayer { alpha = near() }
                         .clip(RoundedCornerShape(3.dp)).background(Color(0xFF0B0B0D)).border(0.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     // (Sprint 528, KONKR: on the narrow plate the facts slid on one line - a still showed "O · 1996"; the name and
                     // the facts wrap onto a second line first.)
-                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false, modifier = Modifier.weight(1f, fill = false))
                     Spacer(Modifier.height(3.dp))
                     FullText(
                         listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp,
@@ -398,7 +410,7 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     )
                 }
                 // The object, standing on the plinth's top.
-                LookObject(tile, Modifier.align(Alignment.BottomCenter).padding(bottom = plH - topFace * 0.62f).size(objW, objH), stand = true)
+                LookObject(tile, Modifier.align(Alignment.BottomCenter).padding(bottom = plH - topFace * STAGE_FOOT_SINK).size(objW, objH), stand = true)
             }
         }
     }

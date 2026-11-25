@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 21:40 UTC, 760a (cloud, P5 polish - System Stage):** Verify 310 on 359aa12 GREEN. Stage's museum plate is capped at
+the object's foot (at x1.3 on the KONKR it rose ~17 dp over the plinth's top and the console's foot); the name gives way first
+(shrink to 10 sp, then slide), the facts keep two lines (StagePlateRoom760aTest 2/2; HW-24 760a).
+NEXT: check Verify 310 on this push FIRST. Then P5 polish, next look: Generations (then Slides, System Vault, Grid / Pocket
+Dashboard / Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses (ONEPRESS),
+rule 14. P2: only on an owner push / review or a red CI.
+
 **25 Nov 20:40 UTC, 759a (cloud, matrix P5):** Verify 310 on 7a73a1b GREEN. The 756a-758a NEXT lines were stale: badgecheck
 D357 (680b) and the profile-picture corner (681e) are DONE in QA tooling, H16 guarded 53/53, owner Tasks 2-4 done in code
 (723a-725a). Save Sync port (releases.json gate) is NOT doable in the cloud: fix/save-sync exists only as a ~100 KB base64

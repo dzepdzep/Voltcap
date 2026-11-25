@@ -106,6 +106,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (760a, matrix P5, dev line 760a or later, ~1 min, KONKR x1.3 + x1.0, with the 759a pass below): System Stage with a
+  long console name (e.g. Nintendo Entertainment System) - the museum plate on the middle plinth stays below the object's foot
+  and the plinth's lit top (never over them); the name shrinks or slides, the maker / year / count line is whole. Screenshot
+  x1.3. Unit evidence only (StagePlateRoom760aTest).
 - Also (759a, matrix P5, dev line 759a or later, ~5 min, KONKR x1.0 + x1.3): the 17 category-screen looks on the current dev
   build (docs/claude/CATEGORY_STYLES_P5.md table; last hardware 12 Nov on an older branch) - pick each in Settings > Categories >
   Category screen, open the category screen (Category screen = "Open it with B" for the test, restored after), step with the keys of its "Keys" column (System Blades and Pocket Dashboard: ◀ ▶ - the

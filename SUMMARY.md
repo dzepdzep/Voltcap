@@ -1,3 +1,19 @@
+# Update 760a (25 Nov 2026, cloud run) - matrix P5 polish: System Stage's museum plate never rises over the plinth and the object
+- CI first: Verify 310 on 359aa12 (759a) GREEN.
+- P5 third-priority polish, first look (System Stage). Arithmetic on the KONKR (640 x 427 dp, plinth 26 % of the height): the
+  plate's room on the plinth front is ~83 dp; at x1.3 a two-line name over two lines of facts needs ~100 dp, and the plate
+  (unbounded) rose over the plinth's lit top and the foot of the console standing on it.
+- Fix (CategoryLooks.kt StageLook): the plate's height is capped at the object's foot (stagePlateRoom; STAGE_FOOT_SINK /
+  STAGE_PLATE_BOTTOM name the two factors both the plate and the object use). The name has weight(fill = false), so the facts
+  (maker / year / count, two lines) are measured first and the name gives way: FullText shrinks it to 10 sp, then slides it -
+  never "...". At x1.0 a one-line name over two lines of facts is unchanged.
+- Test: StagePlateRoom760aTest 2/2 (room arithmetic: x1.0 fits, x1.3 old need > room, the name keeps a readable line; source
+  guards fail on 759a); CategoryLooks527Test 7/7, CategoryLooksInventory759aTest 4/4. Compiled: :app:compileDebugUnitTestKotlin
+  (cloud). Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 760a, ~1 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/StagePlateRoom760aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
 # Update 759a (25 Nov 2026, cloud run) - matrix P5: the 17 category-screen looks reconciled; Blades + Pocket Dashboard key hints fixed
 - CI first: Verify 310 on 7a73a1b (758a) GREEN.
 - Next-item check: the HANDOFF "NEXT" lines of 756a-758a still named badgecheck D357 and the profile-picture corner - both were
