@@ -60,3 +60,8 @@ class C 14. Implemented only - hardware NOT TESTED (HW-28), not visually approve
 ## Update 734b (class C)
 Orbit deck draws its own console screens (DATA / TRACKS / COMMANDS in the console): class A 39, class B 1 (Disc station),
 class C 13. Implemented only - hardware NOT TESTED (HW-28), not visually approved.
+
+## Update 682az (the last one)
+Disc station draws its own tracks (DISC INFO / PROGRAM / SETUP on the deck's LCD): class A 53, class B 0, class C 0 - every layout
+has its own pages. Implemented only - visual hardware capture in the v0.7.0 preview gallery; functional hardware QA NOT TESTED;
+not visually approved.

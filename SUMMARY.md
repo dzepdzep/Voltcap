@@ -1,3 +1,20 @@
+# Update 682aw-682ba (25 Nov 2026, live session) - feature QA done, Disc station's own pages (53 / 53), v0.7.0 preview capture
+- 723a / 724a / 725a hardware QA (QA app, both handhelds, x1.0 + x1.3): Focus position, Recomps + START Categories incl. touch,
+  Collections picker + an existing custom collection, restart / rescan / same record - PASS. The QA text-scale switch did not reach
+  ShelfDialog / ShelfMenuDialog windows (fixed QA-side, WithTestScale; re-runs PASS). APK-update persistence NOT TESTED on
+  hardware (the install guard allows the QA app only). HooksIsolated682awTest PASS.
+- Arcade B: experimental branch claude/exp-arcadeb-focus only (focus save no longer rebuilds the home; ~40-50 % fewer rebuilds,
+  fewer slow frames; the ~100 ms change stall NOT improved). Not merged (owner 25 Nov 12:48).
+- 682az / 682az2: Disc station's tracks play its own DISC INFO / PROGRAM / SETUP pages on the deck's LCD (WinPagesDisc.kt); Play
+  stays put (it moved before). 3,058 tests, 0 failures. Native pages 53 / 53 implemented; not owner-approved.
+- 682ba: p2review gallery mode, galchain.sh (runs of <= 15 layouts inside the 15-minute guard), gallery070.py (HTML + ZIP);
+  Green core's window from the QA hook in p2review (its home A is a menu). Capture on both handhelds at x1.0 / x1.3 (owner allowed
+  the full run for this gallery only).
+- Files: app/src/main/java/com/shelf/launcher/ui/{WinPagesDisc.kt (new), WinScenesMore.kt, DialogChrome.kt}; tests
+  NativePagesDisc682azTest (new), DiscTracks673Test, AchFirstRowRoboTest, ShelfTextRoboTest; tools/qa/device/{p2review.sh,
+  galchain.sh (new)}; tools/qa/tools/{appcat.py, gallery070.py (new)}; selftest TestIsoab682ay on the experimental branch.
+- Not tested: Disc station popclip on hardware; class C functional hardware QA (HW-28); owner visual approval of all 53.
+
 # Update 744a (25 Nov 2026, cloud run) - P2 class C: Layout Studio gets its own pages (native-pages branch)
 - CI first: Verify 310 on 5fb6ff6 (dev line) and 63f0b52 (P2, Live tiles) GREEN (50e4a3f was cancelled by the next push).
 - Task 5 on `claude/v0674-native-pages` (worktree), 63f0b52 -> 89ab1d6: the nineteenth class C scene (batch 8). Layout Studio's

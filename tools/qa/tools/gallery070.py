@@ -18,6 +18,8 @@ PAGES = [('home', 'Home'), ('info', 'Info (window)'), ('details', 'Details'), ('
 
 def jpg(src, dst, width):
     from PIL import Image
+    if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(src):
+        return
     im = Image.open(src).convert('RGB')
     if im.width > width:
         im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
@@ -30,15 +32,22 @@ def clip(srcs, dst):
     srcs = [s for s in srcs if os.path.exists(s) and os.path.getsize(s) > 2000]
     if not srcs:
         return False
+    if os.path.exists(dst) and os.path.getsize(dst) > 1000 and os.path.getmtime(dst) >= max(os.path.getmtime(s) for s in srcs):
+        return True
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    lst = dst + '.txt'
+    import tempfile
+    fd, lst = tempfile.mkstemp(suffix='.txt')  # (outside the gallery folder: nothing to delete there)
+    os.close(fd)
     with open(lst, 'w') as f:
         for s in srcs:
             f.write("file '%s'\n" % os.path.abspath(s).replace("'", "'\\''"))
     r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', lst, '-vf', 'scale=720:-2',
                         '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28', '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', dst],
                        capture_output=True, text=True)
-    os.remove(lst)
+    try:
+        os.remove(lst)
+    except OSError:
+        pass
     return r.returncode == 0 and os.path.exists(dst) and os.path.getsize(dst) > 1000
 
 
@@ -80,7 +89,7 @@ nav a{margin-right:14px;white-space:nowrap}
 .b.ok{border-color:var(--ok);color:var(--ok)}.b.warn{border-color:var(--warn);color:var(--warn)}.b.bad{border-color:var(--bad);color:var(--bad)}
 table{border-collapse:collapse;width:100%;margin:8px 0}td,th{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}
 th{background:#1d212a;font-weight:600}
-.lay{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0}
+.lay,h2{scroll-margin-top:120px}.lay{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0}
 .mat{display:grid;grid-template-columns:110px repeat(4,1fr);gap:6px;align-items:start}
 .mat .h{font-size:12px;color:var(--muted);text-align:center}.mat .r{font-size:13px;color:var(--muted);padding-top:4px}
 .mat img,.mat video{width:100%;border-radius:6px;border:1px solid var(--line);background:#000;display:block}
@@ -189,7 +198,7 @@ A screenshot here is a visual capture on the handheld (QA app, synthetic games) 
 not your approval. Every layout is <span class="b bad">NOT APPROVED</span> until you approve it.</p>
 <p class="muted">Captures: %d screenshots, %d recordings, %d not captured (shown as NOT CAPTURED with the reason).</p>
 %s
-<h2 id="layouts">All 53 layouts</h2><div class="grid">%s</div>%s</div>
+<h2 id="layouts">All 53 layouts</h2><p class="muted">Each layout: Home, Info, Details, Achievements, Options and the page walk on KONKR x1.0 / x1.3 and RP Classic x1.0 / x1.3 (narrow screens: KONKR only); home navigation at x1.0. Tap a picture for full size.</p><div class="grid">%s</div>%s</div>
 <div class="lb" id="lb"><img alt=""></div><script>%s</script></body></html>""" % (
         CSS, html.escape(summary), ''.join('<a href="#%s">%s</a>' % (s['id'], html.escape(s['title'])) for s in notes.get('sections', [])),
         counts['shots'], counts['clips'], counts['missing'], ''.join(extra_html), tiles, ''.join(body), JS)

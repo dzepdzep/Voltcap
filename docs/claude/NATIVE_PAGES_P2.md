@@ -1223,6 +1223,23 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
   the touch point moved with them (RPC y 899 -> 870), the Collections picker at x1.3 (Close in view, the body scrolls). Visual
   note for review (not graded): a wrapped row subtitle at x1.3 shows a wide gap between its lines ("... and the / rest").
 
-### 682az - Disc station (DISC_PANEL) - IN PROGRESS by the live session (owner 25 Nov 12:48 "OPTION 3, then OPTION 2")
-The 53rd layout's own pages are being built in the live session (owner present). Hourly run: do not start Disc station; the
-v0.7.0 preview gallery comes next in the live session too. Arcade B stays on claude/exp-arcadeb-focus (not to be merged).
+### 682az - Disc station (DISC_PANEL), the 53rd layout - implemented, NOT owner-approved, functional HW NOT TESTED
+- The deck (smoked metal panel beside the player, NOW LOADED tray line, the LCD, the transport keys) and its track motion (673f:
+  L1 / R1 skip a track, the old track scrolls off, the next comes up) stay. Each track now plays the deck's own page on the LCD,
+  in its segment-monospace and one lit colour (WinPagesDisc.kt) - was the shared white page cards:
+  DISC INFO (a CD-TEXT block - each fact a lit-edge label box and its value - the page's first stop, so it opens on the facts;
+  LINER NOTES below in a framed well with a ▶ mark), PROGRAM (one line: PROG "N / M", a 16-bar level meter in a fixed 56 dp -
+  one earned lights one, all only when all are earned - and the MODE key in the rest of the line, its words sliding; each
+  achievement a track: "01", ▶ when yours / "--", the badge, the title, "PLAYED <day>" / "NOT PLAYED", "+N"; the track you are on
+  inverted; A opens the whole text + rarity), SETUP (rows led by a drawn key mark; a removing one by a drawn eject mark in the
+  warning red, second A, "PRESS A AGAIN TO CONFIRM"). The track line names the page (DISC INFO / PROGRAM / SETUP) and the deck's
+  music calendar sits under it (a numbered cell per track, the one playing lit).
+- Play stays put: on the tracks the keys keep the Info page's slots and the panel takes a fixed height grown upward from the
+  Info page's (measured with More closed; livePageHeight, as Live tiles 743a). Before: the panel grew both ways and Play moved
+  (RP Classic x1.0 capture rdb10). PlayPlace + PlayPlaceRpc DISCS x1.0 / x1.3: Play's rect identical on all three pages.
+- Hardware look (QA app qa682az, x1.3, RP Classic rda13 + KONKR kda13): three tight spots fixed in 682az2 - DISC INFO opened
+  scrolled to the notes (facts off the top), the meter squeezed MODE to a sliver, track rows wrapped the date + time.
+- Tests: NativePagesDisc682azTest (new), DiscTracks673Test updated, DISCS in AchFirstRow + ShelfText; with WinFocus*,
+  NoStrayPlay*, NativeConfirm*, WindowWordsSurvey682*, NativePages*, UniformKeys*, Batch506, Inspect673, Popup421, PlayPlace*:
+  3,058 tests, 0 failures. Static PASS. Native pages: 53 / 53 implemented (audit: class A 53).
+- Hardware: visual capture in the v0.7.0 preview gallery (682ba); popclip / functional HW NOT TESTED; not visually approved.
