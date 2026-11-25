@@ -18,6 +18,12 @@ TWO_STEP="CUBE GREENCORE"   # layouts whose home opens a console (Cube) / its GA
 # window from the QA hook (voltcap_test_window: the focused game's window, never starts a game), not from an A on the home.)
 # (682ba: Green core stopped the v0.7.0 gallery capture the same way - handled as two-step by 753a, above; not repeated here.)
 HOOK_OPEN="BUBBLES"
+# (754a, review 45623176605: Cross's window has no Achievements page while "Achievements in the menu's style" (cross_trophies,
+# update 127, on by default) is on - its Achievements key opens the menu's own full-screen list instead, so R1 never reached a
+# trophies page and two Downs from the first page's Start game landed on Options: a false FAIL. For the P2 page review the walk
+# turns that setting off for the layout (QA app only; the old value put back after it, the snapshot restores every setting
+# anyway) so the window's own Achievements page (742a) is what gets reviewed; the default list is NOT TESTED by this walk.)
+menu_ach_pref() { case $1 in CROSS) echo cross_trophies;; esac; }
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 SC=${3:-off}; LAYS=${4:-CRATE}
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -809,8 +815,13 @@ run)
   [ -n "$MIX" ] || log "no fixture game with both earned and locked achievements - Tracklist sides NOT TESTED"
   for lay in $LAYS; do
     n=$lay; logcat -c
+    MP=$(menu_ach_pref $lay); MP_OLD=""
+    if [ -n "$MP" ]; then A --es voltcap_test_pref "$MP=false"; sleep 1.2
+      MP_OLD=$(logcat -d -s VoltcapTest | grep -F "pref $MP was " | tail -1 | sed -n 's/.* was \([a-z]*\) -> .*/\1/p')
+      log "$lay: its Achievements key opens the layout's own list ($MP, was ${MP_OLD:-unknown}) - off for this walk, so the window's own Achievements page is reviewed; that default list NOT TESTED here"
+    fi
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
-    openw $lay $n || continue
+    openw $lay $n || { [ -n "$MP" ] && A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; continue; }
     shot ${n}_info; k DPAD_RIGHT 0.9; shot ${n}_info_key2; k DPAD_LEFT 0.9
     # (682ag, owner 23 Nov 13:32 - page-transition audit: the walk's frame times from the app's own renderer - its gfxinfo counters
     # before and after the walk (tools/gfxdelta.py takes the difference), next to the recording; screenrecord fps is no frame-time
@@ -881,6 +892,7 @@ run)
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     MOTION=OFF; if openw $lay ${n}_off; then REC_SEG=10 rec_start $O/${n}_walk_motionoff 10; sleep 0.6
       k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.2; rec_stop; closewin; fi; MOTION=NORMAL
+    [ -n "$MP" ] && { A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1; }
     log "$lay done (launches: $(launches))"
   done
   log "run done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"; echo DONE >> $L ;;

@@ -3171,6 +3171,27 @@ wg_nodump_why
         self.assertLess(two, ow.index("wg_key_home A; sleep 1.9"))
         self.assertIn("wg_window; return", ow[two:ow.index("esac", two)])
 
+    def test_cross_review_turns_its_menu_list_off_and_back_754a(self):
+        # (754a, review 45623176605: Cross's Achievements key opens the menu's own list (cross_trophies, on by default) - its window
+        # had no Achievements page, so the walk's Downs landed on Options: a false FAIL. The walk turns it off for the layout only,
+        # reads the old value from the app's own log and puts it back - also when the window does not open.)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = src[src.index("menu_ach_pref() {"):]
+        fn = fn[:fn.index("}") + 1]
+        out = subprocess.run(["sh", "-c", fn + '; menu_ach_pref CROSS; echo "|"; menu_ach_pref CRATE'], capture_output=True, text=True).stdout
+        self.assertEqual(out.split(), ["cross_trophies", "|"])
+        run = src[src.index("\nrun)\n"):]
+        run = run[:run.index("\nrestore)\n")]
+        off = run.index('voltcap_test_pref "$MP=false"')
+        self.assertLess(off, run.index("openw $lay $n"))
+        self.assertIn('voltcap_test_pref "$MP=${MP_OLD:-true}"; continue', run)
+        self.assertLess(run.index('A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1'), run.index('log "$lay done'))
+        sed = run[run.index("MP_OLD=$(logcat"):]
+        sed = sed[sed.index("sed -n"):sed.index(")\n")]
+        line = "11-25 13:47:01.000 E VoltcapTest: pref cross_trophies was true -> false"
+        out = subprocess.run(["sh", "-c", f"echo '{line}' | {sed}"], capture_output=True, text=True).stdout.strip()
+        self.assertEqual(out, "true")
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
