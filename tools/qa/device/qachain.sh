@@ -7,6 +7,10 @@
 #   sh qachain.sh pop    TAGBASE SCALE N "LAYOUTS" GAME   pop529.sh run (popclip gate, the layout's own window - OWN) - N about 8;
 #                                                         waits for popclip's DONE, then pop529.sh restore
 # Level 1, QA app only, synthetic games, launches blocked.
+# (682bc, HW-29 krb13: started as  nohup sh -c "..." > /sdcard/pc/x.txt &  every `input` / `am` the run sent failed with
+# "Failure calling service input: Failed transaction" - system_server refuses a /sdcard (FUSE) file as the command's stdout. The
+# guard saw no window and stopped the run, nothing pressed. Send the chain's output to /data/local/tmp, never to /sdcard.)
+case "$(readlink /proc/$$/fd/1 2>/dev/null)" in /storage/*|/sdcard/*|/mnt/*) echo "qachain: stdout is a shared-storage file - input / am calls would fail; send it to /data/local/tmp" >&2; exit 2;; esac
 cd "$(dirname "$0")"
 KIND=$1; BASE=$2; SC=$3; N=$4; LAYS=$5; GAME=${6:-Shadow of the Colossus}; part=1; n=0; batch=""
 T=/data/local/tmp

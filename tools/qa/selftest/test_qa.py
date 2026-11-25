@@ -2991,6 +2991,27 @@ echo FINISHED >> {d}/log.txt
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_682bc_d395_a_finished_run_leaves_no_watchdog_sleep(self):
+        # D395 (HW-29 krc13_1 / rrc13_1): the device's sh held the TERM until the dog's sleep ended - the dog of a finished run
+        # sat on, due to put the QA app back over the next run. The EXIT trap kills the dog with KILL and then its sleep.
+        import tempfile, time
+        d = tempfile.mkdtemp()
+        try:
+            script = f"""P=com.shelf.launcher.qa; F={d}; TAG=t; WG_LOG={d}/log.txt; WG_GRACE_S=4173; WG_DEADLINE=$(( $(date +%s) + 2 ))
+. {self.DEV}/winguard.sh
+wg_watchdog
+echo FINISHED >> {d}/log.txt
+"""
+            subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=20)
+            time.sleep(0.5)
+            left = subprocess.run(["pgrep", "-f", "sleep 417[45]"], capture_output=True, text=True).stdout.split()
+            for pid in left: subprocess.run(["kill", pid])
+            self.assertEqual(left, [], "the watchdog's sleep outlived the run")
+            src = open(f"{self.DEV}/winguard.sh").read()
+            self.assertIn("kill -9 $WG_DOG", src)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_682ar_d390_every_device_script_that_sends_input_has_a_real_end(self):
         import glob, re
         missing = [os.path.basename(f) for f in glob.glob(os.path.join(self.DEV, "*.sh"))

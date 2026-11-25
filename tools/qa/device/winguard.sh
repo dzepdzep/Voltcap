@@ -26,7 +26,10 @@ wg_watchdog() { # end this script (and its children) WG_GRACE_S after the deadli
   WG_DOG=$!
   # (682ar: a run that ends on its own takes its watchdog with it - one left running put the QA app back (force-stop) over the
   # next run's work, KONKR kst10 12:08)
-  trap 'kill $WG_DOG 2>/dev/null' EXIT; }
+  # (682bc, D395 - HW-29 KONKR krc13_1 / RP Classic rrc13_1: the plain kill did not take - the device's sh holds a TERM until its
+  # foreground sleep ends - and the dog of a finished run sat on, due to put the QA app back over the next run at deadline + 60 s.
+  # KILL can't be held: the dog dies at once, then its sleep.)
+  trap 'c=$(pgrep -P $WG_DOG 2>/dev/null); kill -9 $WG_DOG 2>/dev/null; [ -n "$c" ] && kill $c 2>/dev/null' EXIT; }
 wg_focus() { dumpsys window | grep mCurrentFocus | tail -1; }
 wg_hash() { echo "$1" | sed -n 's/.*Window{\([0-9a-f]*\) .*/\1/p'; }
 wg_mark() { cut -d' ' -f1 $F/voltcap_qa_screen 2>/dev/null; }
