@@ -1727,6 +1727,17 @@
    "base_commit": "claude/v0674-native-pages 75b9443",
    "tree_hash": "claude/v0674-native-pages 75b9443",
    "note": "682bd audit: + tuner QA hooks, TuneSim stock apart, tuner_stock INTERNAL"
+  },
+  {
+   "id": "qa-682bh-f094d6c",
+   "apk_sha256": "aed6a8b5ba4a91b15124e2af540f187a28b9906c13442de089b5536a17aa903d",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages f094d6c",
+   "tree_hash": "claude/v0674-native-pages f094d6c",
+   "note": "682bd audit: simulated tuner walk build"
   }
  ]
 }
