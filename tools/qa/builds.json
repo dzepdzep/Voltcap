@@ -1716,6 +1716,17 @@
    "base_commit": "claude/v0674-native-pages 53a0f05",
    "tree_hash": "claude/v0674-native-pages 53a0f05",
    "note": "682bd audit build: qa682be + QA prefs dump hook (the intended v0.7.0 code)"
+  },
+  {
+   "id": "qa-682bg-75b9443",
+   "apk_sha256": "fb7f586717e535e4b59d5fb639184dab29f5875ee3cfab32ef0cf7e80645933c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 75b9443",
+   "tree_hash": "claude/v0674-native-pages 75b9443",
+   "note": "682bd audit: + tuner QA hooks, TuneSim stock apart, tuner_stock INTERNAL"
   }
  ]
 }
