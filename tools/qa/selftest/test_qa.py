@@ -3160,6 +3160,17 @@ wg_nodump_why
         self.assertLess(hook, ow.index("wg_key_home A; sleep 1.9"))
         self.assertIn("voltcap_test_window true", ow[hook:ow.index("esac", hook)])
 
+    def test_green_core_home_is_two_step(self):
+        # (753a, review 45612718815: Green Core's home opens on its MENU page - one A opens GAMES, the window is one A further)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertRegex(src, r'(?m)^TWO_STEP="[^"]*\bGREENCORE\b')
+        self.assertRegex(src, r'(?m)^TWO_STEP="[^"]*\bCUBE\b')
+        ow = src[src.index("openw() {"):]
+        ow = ow[:ow.index("wg_window; }")]
+        two = ow.index('case " $TWO_STEP "')
+        self.assertLess(two, ow.index("wg_key_home A; sleep 1.9"))
+        self.assertIn("wg_window; return", ow[two:ow.index("esac", two)])
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
