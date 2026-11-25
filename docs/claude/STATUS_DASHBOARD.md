@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 758a · 2026-11-25 19:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on d8a7b15 (757b) · effort: medium
+**1. LATEST UPDATE** - 759a · 2026-11-25 20:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 7a73a1b (758a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The last two places in the app that cut text with dots are fixed: the category name on the home screen now shrinks a little and then slides along its line when it is very long (switching categories still swaps it in place, nothing moves), and on the Tiles layout a game name too long for two lines slides along one line instead of ending in dots. No place in the app's code cuts text with dots any more; checking it on a handheld is queued.
+**2. WHAT CLAUDE JUST FIXED** - The 17 looks of the category screen now have one up-to-date list with what each one is, which keys move it and what has been checked so far. While making it, two of the Settings explanations turned out to name the wrong keys: System Blades and Pocket Dashboard said to use up / down, but they move with left / right. The explanations now say left / right; nothing else changed. A short handheld check of all 17 looks is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
@@ -20,11 +20,11 @@
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
 | Native pages (own designs) | `██████████` 52/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
 | Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
-| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
+| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Badge checker: ignore badges of tiles partly off-screen and covers stacked behind the focused one (with self-tests); Profile picture in its intended corner, never twice (v0.6.74 list)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: third-priority polish (Stage, Generations, Slides, Vault, Grid / Dashboard / Constellation); Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 
@@ -167,8 +167,8 @@ Tracked requirement rows: **92** = 30 in the requirements matrix (programme + re
 |---|---|---|---|
 | done | 2 | 4 | 6 (6 %) |
 | implemented, verification pending | 12 | 0 | 12 (13 %) |
-| in progress | 10 | 4 | 14 (15 %) |
-| not started / open | 3 | 7 | 10 (10 %) |
+| in progress | 11 | 4 | 15 (16 %) |
+| not started / open | 2 | 7 | 9 (9 %) |
 | waiting for hardware | 0 | 25 | 25 (27 %) |
 | waiting for owner | 1 | 19 | 20 (21 %) |
 | blocked (references) | 0 | 1 | 1 (1 %) |
@@ -254,13 +254,13 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 **Category styles (looks)**
 - Total: 17
 - Implemented: 17 (100 %)
-- Unit-tested: UNKNOWN
+- Unit-tested: all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 10 / 17
 - Emulator-tested: 0 (0 %)
-- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)
+- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued
 - Owner approved: 0 (0 %)
 - Released: 17 (older state)
 - Remaining / blocked: third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review
-- Source: Project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
+- Source: docs/claude/CATEGORY_STYLES_P5.md (759a); project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
 
 **Uniform buttons / menus**
 - Total: UNKNOWN

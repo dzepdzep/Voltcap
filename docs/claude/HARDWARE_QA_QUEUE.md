@@ -106,6 +106,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (759a, matrix P5, dev line 759a or later, ~5 min, KONKR x1.0 + x1.3): the 17 category-screen looks on the current dev
+  build (docs/claude/CATEGORY_STYLES_P5.md table; last hardware 12 Nov on an older branch) - pick each in Settings > Categories >
+  Category screen, open the category screen (Category screen = "Open it with B" for the test, restored after), step with the keys of its "Keys" column (System Blades and Pocket Dashboard: ◀ ▶ - the
+  Settings line now says so; ▲ ▼ do nothing there), A opens the category, B back. FAIL = a look that does not open, keys that
+  do not move it, cut text, or the Settings line naming other keys. Screenshot per look. Unit evidence only
+  (CategoryLooksInventory759aTest).
 - Also (758a, rule 11, dev line 758a or later, ~3 min, KONKR x1.3 + x1.0, with 749a-757b): a category with a very long
   name (a long collection name, or a console name at x1.3) on a layout with the home category name - shrinks, then slides,
   never "..."; L2 / R2 through it: the name swaps in place, nothing around it moves (rule 14, catswitch.sh). Tiles layout with

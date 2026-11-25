@@ -1,3 +1,22 @@
+# Update 759a (25 Nov 2026, cloud run) - matrix P5: the 17 category-screen looks reconciled; Blades + Pocket Dashboard key hints fixed
+- CI first: Verify 310 on 7a73a1b (758a) GREEN.
+- Next-item check: the HANDOFF "NEXT" lines of 756a-758a still named badgecheck D357 and the profile-picture corner - both were
+  done in 680b / 681e (HANDOFF 17 Nov, 22 Nov 689a); H16 is guarded 53/53; owner Tasks 2-4 done in code (723a-725a); Save Sync
+  port blocked in the cloud (the fix/save-sync branch exists only as a ~100 KB base64 project doc, not a git ref). Picked
+  matrix P5 (OPEN: "list and per-style status to be reconciled").
+- docs/claude/CATEGORY_STYLES_P5.md: the 17 looks (Features.PlatformView) with what draws each, its keys, the home layouts it
+  follows, unit and hardware evidence (last: KONKR x1.0 / x1.3 12 Nov on an older branch), owner 0 / 17, remaining polish.
+- Found on the way: Settings > Categories > Category screen told users to press ▲ ▼ for System Blades and Pocket Dashboard,
+  but both step with ◀ ▶ only (lookNavOf ROW; ▲ ▼ do nothing). Lines now say ◀ ▶; Pocket Dashboard's no longer calls its row
+  of round icons "a compact list". No behaviour change.
+- Test: CategoryLooksInventory759aTest 4/4 (exactly 17 looks; each drawn by PlatformBrowser; each Settings line starts with the
+  picker name; the arrows in a line = the keys that move it - fails on the 758a text); CategoryLooks527Test 7/7,
+  PlatformBrowserFullText678jTest 1/1. Compiled: :app:compileDebugUnitTestKotlin (cloud). Static checks [PASS]. Full suite: CI.
+  Hardware NOT TESTED (HW-24 759a, ~5 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt,
+  app/src/test/java/com/shelf/launcher/ui/CategoryLooksInventory759aTest.kt; docs/claude/CATEGORY_STYLES_P5.md; docs (matrix P5,
+  progress.json, HANDOFF, HW queue, dashboard).
+
 # Update 758a (25 Nov 2026, cloud run) - rule 11: the home's category name and the Tiles game name no longer end in "..."
 - CI first: Verify 310 on d8a7b15 (757b) GREEN.
 - Rule 11 (no "..." truncation), the last two places in the app sources: the home's category name (LauncherScreen) goes

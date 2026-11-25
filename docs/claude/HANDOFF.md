@@ -73,6 +73,18 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 20:40 UTC, 759a (cloud, matrix P5):** Verify 310 on 7a73a1b GREEN. The 756a-758a NEXT lines were stale: badgecheck
+D357 (680b) and the profile-picture corner (681e) are DONE in QA tooling, H16 guarded 53/53, owner Tasks 2-4 done in code
+(723a-725a). Save Sync port (releases.json gate) is NOT doable in the cloud: fix/save-sync exists only as a ~100 KB base64
+project doc (claude/backups/fix_save_sync_bundle_b64.txt), too large to materialise reliably here - a PC session should push
+it as a branch (e.g. claude/v0674-save-sync) so a cloud run can rebase it. P5: docs/claude/CATEGORY_STYLES_P5.md lists the 17
+looks with keys / follow-home / unit / hardware / owner state; Blades + Pocket Dashboard Settings lines said ▲ ▼ but step with
+◀ ▶ - fixed (CategoryLooksInventory759aTest 4/4; HW-24 759a).
+NEXT: check Verify 310 on this push FIRST. Then P5 third-priority polish, one look per run, cloud-checkable parts only (a
+unit / source guard per change): System Stage, Generations, Slides, System Vault, Grid / Pocket Dashboard / Constellation - look
+for cut or overlapping text at x1.3 sizes, ignored first presses (ONEPRESS) and rule 14 (a category change inside a look is
+immediate). P2: only on an owner push / review or a red CI.
+
 **25 Nov 19:40 UTC, 758a (cloud, rule 11 - app sources now 0 TRUNCATE):** Verify 310 on d8a7b15 GREEN. Home category name
 (LauncherScreen, FullText inside CategoryNameSwap - rule 14 swap unchanged, CategoryStable394Test 6/6) and Tiles game name
 (TileHome, FullText autoFit / reserve off - one-go fit and fixed box kept) shown whole (CategoryTileFullText758aTest 3/3,
