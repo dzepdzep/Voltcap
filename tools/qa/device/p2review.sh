@@ -11,6 +11,10 @@
 #        Options page with a destructive row ARMED (one press - never confirmed) and moved off; Motion Off walk recorded.
 #   sh p2review.sh restore TAG
 TWO_STEP="CUBE"   # layouts whose home opens a console first, then the game
+# (751a, review 45593862011: Bubble home's A unfolds the LiveArea INSIDE the home - no game window - and the LiveArea's A is
+# Start, i.e. Play. The A walk aborted there (QaClip popupGame null) at x1.3 and x1.0. A layout listed here gets its game
+# window from the QA hook (voltcap_test_window: the focused game's window, never starts a game), not from an A on the home.)
+HOOK_OPEN="BUBBLES"
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 SC=${3:-off}; LAYS=${4:-CRATE}
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -39,7 +43,9 @@ closewin() { for i in 1 2 3; do [ "$(wg_popup)" = null ] && break; wg_key_win B;
 # at x1.0, review 44280831400) - a second READ, never a second key
 # (748a, review 45566681915 p2r10: "A showed no confirmation" while the kept dump says "PRESS A AGAIN TO CONFIRM" - the device's
 # grep -qiE missed it in the dump's one long line with a '·' in it; read like onhide: short lines, fixed strings)
-confirmtext() { [ -s "$1" ] && tr -d '\n' < "$1" | tr '{' '\n' | grep -qiF -e 'again to confirm' -e 'cover lifted' -e 'guarded switch' -e 'are you sure'; }
+# (751a, review 45593862011: the shared Setup page and several native ones ask "Press A again to remove" - shown, but not
+# one of the phrases read here, so CASEFLOW / ORBIT / AIRY were called unconfirmed at x1.3 and x1.0)
+confirmtext() { [ -s "$1" ] && tr -d '\n' < "$1" | tr '{' '\n' | grep -qiF -e 'again to confirm' -e 'again to remove' -e 'cover lifted' -e 'guarded switch' -e 'are you sure'; }
 armed() { confirmtext $O/${TAG}_$1.json && return 0
   sleep 0.8; shot $1; confirmtext $O/${TAG}_$1.json; }
 dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
@@ -75,6 +81,8 @@ openw() { # layout name -> 0 when the game window is open
   case " $TWO_STEP " in *" $1 "*) wg_key_home A; sleep 1.6
     if [ -n "$(wg_popup | grep -v '^null$')" ]; then log "$1: the console's face was open - the game window opened at once"; wg_window; return; fi
     log "$1: console opened (two-step home)"; wg_home;; esac
+  case " $HOOK_OPEN " in *" $1 "*) log "$1: its home's A is the LiveArea / Start - window opened by the QA hook (no key)"
+    A --ez voltcap_test_window true; sleep 2.2; wg_window; return;; esac
   wg_key_home A; sleep 1.9
   wg_window; }   # (no window = ABORT: winguard stops the run, nothing more pressed)
 # (682aj, owner 23 Nov 18:23 - "Investigate the 48% slow frames ... with screen recording enabled and disabled, stable screen versus

@@ -3134,6 +3134,32 @@ wg_nodump_why
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_armed_remove_confirmation_counts(self):
+        # (751a, review 45593862011: "Press A again to remove" was shown on CASEFLOW / ORBIT / AIRY and called missing)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = next(l for l in src.split("\n") if l.startswith("confirmtext() {"))
+        d = tempfile.mkdtemp()
+        try:
+            env = self._broken_grep_env(d)
+            armed = self._long_dump("null").replace('"Row 3 ', '"Hide from library/Press A again to remove \u00b7 move away to can ', 1)
+            with open(os.path.join(d, "armed.json"), "w", encoding="utf-8") as f: f.write(armed)
+            with open(os.path.join(d, "plain.json"), "w", encoding="utf-8") as f: f.write(self._long_dump("null"))
+            r = subprocess.run(["sh", "-c", f"{fn}\nconfirmtext {d}/armed.json && echo YES; confirmtext {d}/plain.json || echo NO"],
+                               env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(r.stdout.split(), ["YES", "NO"], r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_hook_opened_layouts_never_press_a_on_the_home(self):
+        # (751a: Bubble home's home A unfolds the LiveArea, whose A is Start - the window comes from the QA hook)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertRegex(src, r'(?m)^HOOK_OPEN="[^"]*\bBUBBLES\b')
+        ow = src[src.index("openw() {"):]
+        ow = ow[:ow.index("wg_window; }")]
+        hook = ow.index('case " $HOOK_OPEN "')
+        self.assertLess(hook, ow.index("wg_key_home A; sleep 1.9"))
+        self.assertIn("voltcap_test_window true", ow[hook:ow.index("esac", hook)])
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
