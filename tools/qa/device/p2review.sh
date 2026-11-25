@@ -10,7 +10,9 @@
 #        a track opened (A) and the list scrolled; then the 120-achievement game's Tracklist scrolled far; then an Android app's
 #        Options page with a destructive row ARMED (one press - never confirmed) and moved off; Motion Off walk recorded.
 #   sh p2review.sh restore TAG
-TWO_STEP="CUBE"   # layouts whose home opens a console first, then the game
+TWO_STEP="CUBE GREENCORE"   # layouts whose home opens a console (Cube) / its GAMES page (Green Core menu) first, then the game
+# (753a, review 45612718815: Green Core's home starts on its MENU page - the first A opens GAMES, no game window; x1.3 aborted
+# there, x1.0 passed only because the GAMES page was still open from the x1.3 walk. The "already open" check below covers that.)
 # (751a, review 45593862011: Bubble home's A unfolds the LiveArea INSIDE the home - no game window - and the LiveArea's A is
 # Start, i.e. Play. The A walk aborted there (QaClip popupGame null) at x1.3 and x1.0. A layout listed here gets its game
 # window from the QA hook (voltcap_test_window: the focused game's window, never starts a game), not from an A on the home.)
@@ -82,7 +84,7 @@ openw() { # layout name -> 0 when the game window is open
   # the game and the home check then aborted. After the first A: a game window open = that is the window.)
   case " $TWO_STEP " in *" $1 "*) wg_key_home A; sleep 1.6
     if [ -n "$(wg_popup | grep -v '^null$')" ]; then log "$1: the console's face was open - the game window opened at once"; wg_window; return; fi
-    log "$1: console opened (two-step home)"; wg_home;; esac
+    log "$1: console / games page opened (two-step home)"; wg_home;; esac
   case " $HOOK_OPEN " in *" $1 "*) log "$1: its home's A is the LiveArea / Start - window opened by the QA hook (no key)"
     A --ez voltcap_test_window true; sleep 2.2; wg_window; return;; esac
   wg_key_home A; sleep 1.9
