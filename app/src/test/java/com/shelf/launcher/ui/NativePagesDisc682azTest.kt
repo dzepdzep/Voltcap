@@ -35,6 +35,7 @@ class NativePagesDisc682azTest {
         assertEquals("only Performance keeps the shared page", 1, pages.split("ctx.pageFor(").size - 1)
         assertTrue(pages.contains("confirm.press(i, o.destructive)"))
         assertTrue(pages.contains("DiscKeyMark(o.destructive"))
+        assertTrue("the page opens on the CD-text facts (the first stop), the notes below", pages.indexOf("\"CD-TEXT\"") in 1 until pages.indexOf("\"LINER NOTES\""))
     }
 
     @Test fun pageNamesAndReadoutWords() {
@@ -44,6 +45,8 @@ class NativePagesDisc682azTest {
         assertEquals("PLAYED 2026-11-01", discAwardLine(true, " 2026-11-01 "))
         assertEquals("PLAYED", discAwardLine(true, null)); assertEquals("PLAYED", discAwardLine(true, " "))
         assertEquals("NOT PLAYED", discAwardLine(false, "2026-11-01"))
+        assertEquals("the day, not the time", "PLAYED 2026-11-01", discAwardLine(true, "2026-11-01 10:00:00"))
+        assertEquals("2026-11-01", discDay("2026-11-01T10:00:00Z")); assertEquals("1 Nov", discDay(" 1 Nov "))
         assertEquals("01", discTrackNo(0)); assertEquals("12", discTrackNo(11)); assertEquals("120", discTrackNo(119)); assertEquals("01", discTrackNo(-4))
     }
 

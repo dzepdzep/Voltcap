@@ -65,7 +65,10 @@ internal fun discTrackNo(i: Int): String = (i + 1).coerceAtLeast(1).toString().p
 
 /** An achievement's status on the program list: "PLAYED <date>" / "PLAYED" when yours, "NOT PLAYED" otherwise. Pure. */
 internal fun discAwardLine(earned: Boolean, date: String?): String =
-    if (!earned) "NOT PLAYED" else date?.takeIf { it.isNotBlank() }?.let { "PLAYED ${it.trim()}" } ?: "PLAYED"
+    if (!earned) "NOT PLAYED" else date?.takeIf { it.isNotBlank() }?.let { "PLAYED ${discDay(it)}" } ?: "PLAYED"
+
+/** The day of an earned date ("2026-11-01 10:00:00" -> "2026-11-01"); any other text whole, as given. Pure. */
+internal fun discDay(date: String): String = date.trim().let { d -> Regex("""^(\d{4}-\d{2}-\d{2})[ T].*""").find(d)?.groupValues?.get(1) ?: d }
 
 /** How many of the level meter's [bars] are lit: one earned always lights one, all only when every one is earned. Pure. */
 internal fun discLevel(earned: Int, total: Int, bars: Int): Int {
@@ -125,19 +128,27 @@ internal fun DiscPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, k: DiscInk, m
 @Composable
 private fun DiscInfo(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: Modifier) {
     val focus = nativeListFocus(ctx, live)
-    Column(modifier.nativeScroll(k.lcd), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        nativeFacts(ctx).forEach { f ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                Box(Modifier.width(92.dp).border(1.dp, k.line, DiscCell).background(k.tile, DiscCell).padding(horizontal = 5.dp, vertical = 2.dp)) {
-                    WholeWordsText(f.label.uppercase(), color = k.label, fontSize = 9.sp, lineHeight = 12.sp, fontFamily = FontFamily.Monospace)
+    // (682az, hardware x1.3: with the liner notes as the only stop, the page opened scrolled to them and the CD-text facts were
+    // off the top of the LCD. The CD-text block is the first stop now - the page opens on the facts, the notes one Down below.)
+    Column(modifier.nativeScroll(k.lcd), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = focus, live = live) { on ->
+            Column(Modifier.fillMaxWidth().border(if (on) 2.dp else 1.dp, if (on) k.lcd else Color.Transparent, DiscWell).padding(4.dp),
+                verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text("CD-TEXT", color = if (on) k.lcd else k.label, fontSize = 10.sp, fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold, letterSpacing = 1.sp, lineHeight = 13.sp)
+                nativeFacts(ctx).forEach { f ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                        Box(Modifier.width(92.dp).border(1.dp, k.line, DiscCell).background(k.tile, DiscCell).padding(horizontal = 5.dp, vertical = 2.dp)) {
+                            WholeWordsText(f.label.uppercase(), color = k.label, fontSize = 9.sp, lineHeight = 12.sp, fontFamily = FontFamily.Monospace)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        WholeWordsText(f.value.uppercase(), color = k.lcd, fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
+                            fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
+                    }
                 }
-                Spacer(Modifier.width(8.dp))
-                WholeWordsText(f.value.uppercase(), color = k.lcd, fontSize = 12.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
-                    fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
             }
         }
-        Spacer(Modifier.height(5.dp))
-        NativeItem(onClick = {}, Modifier.fillMaxWidth(), focus = focus, live = live) { on ->
+        NativeItem(onClick = {}, Modifier.fillMaxWidth(), live = live) { on ->
             Column(Modifier.fillMaxWidth().background(if (on) k.lcd.copy(alpha = 0.12f) else k.tile, DiscWell)
                 .border(if (on) 2.dp else 1.dp, if (on) k.lcd else k.line, DiscWell).padding(horizontal = 10.dp, vertical = 7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -159,7 +170,7 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
-        // One line: PROG and the count, the level meter in the room between, the MODE key at most its share (its words slide on one
+        // One line: PROG and the count, the level meter, the MODE key in the rest of the line (its words slide on one
         // line, rule 11) - so the first track stays whole at x1.3 (AchFirstRow).
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("PROG", color = k.label, fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, lineHeight = 13.sp,
@@ -168,7 +179,9 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
             Text(discAwardCount(t.earned, t.total), color = k.lcd, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
                 fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
             val lit = discLevel(t.earned, t.total, DISC_LEVEL_BARS)
-            Row(Modifier.weight(1f).padding(horizontal = 8.dp).height(12.dp), horizontalArrangement = Arrangement.spacedBy(2.dp),
+            // (682az, hardware x1.3: a meter that took half the line squeezed the MODE key to a sliver - the meter keeps a fixed
+            // 56 dp, the key the rest.)
+            Row(Modifier.padding(horizontal = 8.dp).width(56.dp).height(12.dp), horizontalArrangement = Arrangement.spacedBy(1.dp),
                 verticalAlignment = Alignment.Bottom) {
                 repeat(DISC_LEVEL_BARS) { i ->
                     // The meter's bars rise left to right, like the deck's level display.
@@ -176,11 +189,13 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
                     Box(Modifier.weight(1f).fillMaxHeight(h).background(if (i < lit) k.lcd else k.tile).border(0.5.dp, k.line))
                 }
             }
-            NativeItem(onClick = t.nextOrder, Modifier.weight(1f, fill = false), focus = focus, live = live) { on ->
-                Box(Modifier.background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
-                    .padding(horizontal = 9.dp, vertical = 4.dp)) {
-                    WinFullText("MODE: " + t.order.label.uppercase(), color = if (on) k.onLit else k.lcd, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp,
-                        fontFamily = FontFamily.Monospace)
+            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
+                NativeItem(onClick = t.nextOrder, focus = focus, live = live) { on ->
+                    Box(Modifier.background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
+                        .padding(horizontal = 9.dp, vertical = 4.dp)) {
+                        WinFullText("MODE: " + t.order.label.uppercase(), color = if (on) k.onLit else k.lcd, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp,
+                            fontFamily = FontFamily.Monospace)
+                    }
                 }
             }
         }
@@ -195,12 +210,12 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
                         val sub = if (on) k.onLit.copy(alpha = 0.8f) else k.muted
                         Column(Modifier.fillMaxWidth().background(if (on) k.lit else k.tile, DiscCell).padding(start = 6.dp, end = 10.dp, top = 4.dp, bottom = 4.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(discTrackNo(i), color = text, fontSize = 15.sp, fontWeight = FontWeight.Bold, lineHeight = 18.sp,
-                                    fontFamily = FontFamily.Monospace, softWrap = false, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.widthIn(min = 26.dp))
-                                Spacer(Modifier.width(5.dp))
+                                Text(discTrackNo(i), color = text, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
+                                    fontFamily = FontFamily.Monospace, softWrap = false, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.widthIn(min = 22.dp))
+                                Spacer(Modifier.width(3.dp))
                                 Text(if (earned) "▶" else "--", color = if (on) k.onLit else if (earned) k.lcd else k.muted, fontSize = 11.sp, lineHeight = 14.sp,
-                                    fontFamily = FontFamily.Monospace, softWrap = false, maxLines = 1, modifier = Modifier.widthIn(min = 16.dp))
-                                Spacer(Modifier.width(4.dp))
+                                    fontFamily = FontFamily.Monospace, softWrap = false, maxLines = 1, modifier = Modifier.widthIn(min = 13.dp))
+                                Spacer(Modifier.width(3.dp))
                                 NativeBadge(ach.badgeName, ach.title, earned, k.lcd, Modifier.size(28.dp), shape = DiscCell)
                                 Spacer(Modifier.width(8.dp))
                                 Column(Modifier.weight(1f)) {
@@ -214,12 +229,12 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
                                 }
                             }
                             ach.description?.let { d ->
-                                if (opened) Text(d, color = text, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(start = 59.dp, top = 3.dp))
-                                else WinFullText(d, color = sub, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp, modifier = Modifier.padding(start = 59.dp, top = 1.dp))
+                                if (opened) Text(d, color = text, fontSize = 12.sp, lineHeight = 16.sp, modifier = Modifier.padding(start = 41.dp, top = 3.dp))
+                                else WinFullText(d, color = sub, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp, modifier = Modifier.padding(start = 41.dp, top = 1.dp))
                             }
                             if (opened) ach.unlockPercent?.let { pc ->
                                 Text("%.1f %% of players have it".format(pc), color = if (on) k.onLit else k.lcd, fontSize = 11.sp,
-                                    fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 59.dp, top = 1.dp, bottom = 2.dp))
+                                    fontFamily = FontFamily.Monospace, modifier = Modifier.padding(start = 41.dp, top = 1.dp, bottom = 2.dp))
                             }
                         }
                     }
