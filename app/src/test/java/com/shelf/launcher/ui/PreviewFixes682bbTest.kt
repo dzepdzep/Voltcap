@@ -77,4 +77,22 @@ class PreviewFixes682bbTest {
         assertTrue(m.contains("else DiscTrackLine(discTrackLabel(p, tracks), discPageName(p).uppercase(), tracks, p, discInk)"))
         assertFalse("no calendar row of its own under the track line", m.contains("DiscCalendar(tracks, p, discInk)"))
     }
+
+    @Test fun measureOnlyReferencesStayOutOfTheQaDump() {
+        // 682bc (HW-29 kpop13_2 CAMERA x1.3): the page key column's measure-only "Full details" was dumped as a text laid out
+        // 0 x 0 - popclip read it as a fact with no room. Every measure-only reference carries the probe tag QaClip leaves out.
+        for (f in listOf("WinScenesMore.kt", "WinScenesArcade.kt")) {
+            val s = src(f)
+            assertFalse(f, s.contains("clearAndSetSemantics { }"))
+        }
+        assertEquals(2, Regex("clearAndSetSemantics \\{ statusProbe = true \\}").findAll(src("WinScenesMore.kt")).count())
+        assertTrue(src("QaClip.kt").contains("if (inProbe(n)) continue"))
+    }
+
+    @Test fun aCancelledRowScrollStillReachesItsKey() {
+        // 682bc: comparing with the target left a restarted (cancelled) scroll between two keys - Play cut on More (HW-29).
+        val s = src("WinScenesMore.kt")
+        assertFalse(s.contains("if (to != offset.targetValue)"))
+        assertTrue(s.contains("if (to != offset.value) { if (anim) offset.animateTo(to"))
+    }
 }

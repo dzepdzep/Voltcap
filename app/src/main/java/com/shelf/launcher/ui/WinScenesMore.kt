@@ -279,7 +279,11 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
     androidx.compose.runtime.LaunchedEffect(focused, geom) {
         val g = geom ?: return@LaunchedEffect
         val to = uniformRowScrollFor(focused, offset.targetValue.toInt().coerceIn(0, g.maxOffset), g).toFloat()
-        if (to != offset.targetValue) { if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to) }
+        // (682bc, HW-29 kpop13_3 TILES / rpop13_1 HERO x1.3: a tap on More left the focus - the row turned back to Play - and
+        // More's keys came in on the same frame. The new geometry restarted this effect, which cancelled the running scroll
+        // between two keys while its target already said 0: the row stayed there, Play cut by 201 px. The VALUE is compared,
+        // so a cancelled scroll always finishes on its key.)
+        if (to != offset.value) { if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to) }
     }
     val drag = androidx.compose.foundation.gestures.rememberDraggableState { d ->
         val g = geom
@@ -301,7 +305,7 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
                     // (682ab: on a window's own page the row is measured with the page key that asks the most room ("Full
                     // details") even where the page has no such key - Play is the same size on Options as on Details. The
                     // reference is drawn outside the row's view (clipped), without semantics, focus or touch - LocalMeasureOnly.)
-                    if (slots == PAGE_SLOTS) Box(Modifier.clearAndSetSemantics { }, propagateMinConstraints = true) {
+                    if (slots == PAGE_SLOTS) Box(Modifier.clearAndSetSemantics { statusProbe = true }, propagateMinConstraints = true) {
                         androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
                     }
                     keys.forEachIndexed { i, a ->
@@ -372,7 +376,7 @@ internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = fa
         keys.forEach { a ->
             Box(propagateMinConstraints = true) { androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) } }
         }
-        if (pageRef) Box(Modifier.clearAndSetSemantics { }, propagateMinConstraints = true) {
+        if (pageRef) Box(Modifier.clearAndSetSemantics { statusProbe = true }, propagateMinConstraints = true) {
             androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
         }
     }) { all, c ->

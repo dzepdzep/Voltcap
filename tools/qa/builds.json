@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -802,7 +802,7 @@
    "id": "qa-0.6.71-pnat-fd7bcc52",
    "apk_sha256": "c4f1be8761518575a42ac0b1b383272e92ff27196a88e85e01355081fedf1031",
    "base_commit": "fd7bcc52",
-   "note": "Update 529b: ••• after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
+   "note": "Update 529b: \u2022\u2022\u2022 after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
   },
   {
    "version_name": "0.6.71-qa",
@@ -912,7 +912,7 @@
    "id": "qa-0.6.72-repair-529p",
    "apk_sha256": "4116b9c83983fd411757798ec2fcec7dcc4cb89d72f0544e67ed24e7115a9933",
    "base_commit": "26949935",
-   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round ••• kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round \u2022\u2022\u2022 kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   },
   {
    "version_name": "0.6.71-qa",
@@ -1650,6 +1650,17 @@
    "base_commit": "claude/v0674-native-pages 9192a89",
    "tree_hash": "claude/v0674-native-pages 9192a89",
    "note": "final review capture - gr13 (29 x1.3 RP Classic), hk10 / hr10 / hk13 deltas"
+  },
+  {
+   "id": "qa-682bb-6f6fd73",
+   "apk_sha256": "21246769bf334d3424f4631c537126d07808a42885213fbd3af78e843029f8fe",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 6f6fd73",
+   "tree_hash": "claude/v0674-native-pages 6f6fd73",
+   "note": "v0.7.0 review fixes (682bb) - HW-29: fix check, stress section, HW-28 popup gate + functional walk"
   }
  ]
 }

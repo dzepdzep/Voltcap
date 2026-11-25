@@ -249,6 +249,9 @@ gallery_layout() {
   k BUTTON_R1 1.1; shot ${n}_trophies
   k BUTTON_R1 1.1; shot ${n}_options
   closewin
+  # (682bb: the home again once the window is shut - on a two-step home (Cube, Green core) that is the games page with the
+  # selected title's panel, which the first home shot (its menu) does not show.)
+  shot ${n}_home_after
   if [ "$GAL_NAV" = 1 ]; then
     REC_SEG=8 rec_start $O/${n}_nav 8; sleep 0.5
     for i in 1 2 3; do k_home R; sleep 0.7; done; for i in 1 2 3; do k_home L; sleep 0.7; done
