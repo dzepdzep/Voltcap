@@ -63,7 +63,13 @@ wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; 
 wg_nodump_why() { n=${TAG}_wg
   if [ -e $F/qa_clip_req ]; then w="request file still there ($(cat $F/qa_clip_req 2>/dev/null)) - not taken by the app"
   elif [ -e $F/qa_clip/$n.json.part ]; then w="request taken, dump still being written"
-  elif [ -e $F/qa_clip/$n.json ]; then w="request taken, the dump arrived late"
+  elif [ -e $F/qa_clip/$n.json ]; then
+    # (747c, review 45560074265 rerun: "arrived late" although the read gave up within ~1 s - keep that file beside the log and
+    # say what a reader sees in it now: size, last byte, the popupGame field)
+    cp $F/qa_clip/$n.json "$(dirname "$WG_LOG")/${n}_late.json" 2>/dev/null
+    z=$(wc -c < $F/qa_clip/$n.json 2>/dev/null); e=$(tail -c 1 $F/qa_clip/$n.json 2>/dev/null)
+    g=$(grep -o '"popupGame": *[^,}]*' $F/qa_clip/$n.json 2>/dev/null | head -1)
+    w="request taken, the dump is there now (${z:-?} bytes, ends '${e}', ${g:-no popupGame read}; kept as ${n}_late.json)"
   else w="request taken, no dump written"; fi
   c=$(logcat -d -s VoltcapQA 2>/dev/null | grep -E " clip (error|done)" | tail -2 | sed 's/.* clip /clip /' | tr '\n' ';')
   echo "$w${c:+; last: $c}"; }

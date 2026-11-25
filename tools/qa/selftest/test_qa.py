@@ -3041,6 +3041,9 @@ echo FINISHED >> {d}/log.txt
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("dump still being written", log)
         rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', popup="", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request taken, no dump written", log)
+        rc, keys, log = self.run_guard([self.QA], 'printf %s \'{"popupGame":null}\' > $F/qa_clip/t_wg.json; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+        self.assertIn("the dump is there now (18 bytes, ends '}', \"popupGame\":null; kept as t_wg_late.json)", log)
 
     def test_popup_read_survives_a_dump_being_replaced(self):
         # (747b, emulator review 45560074265) QaClip replaces a dump by deleting it and renaming the new one in; a reader that
