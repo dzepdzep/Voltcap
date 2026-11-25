@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.ImportCandidate
@@ -189,18 +188,19 @@ private fun CandidateRow(c: ImportCandidate, checked: Boolean, enabled: Boolean,
         }
         Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(
+            // (751a, rule 11: the whole name and source line - fitted to a readable size, then a slide)
+            FullText(
                 c.name, color = if (c.importable) colors.textPrimary else ShelfTheme.textMuted,
-                fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis
+                fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 2, reserve = false
             )
             val detail = when {
                 inLibrary -> "In library"
                 !c.importable -> c.reason ?: "Not importable"
                 else -> "AppID ${c.appId}"
             }
-            Text(
-                "$detail · ${c.source}", color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                maxLines = 2, overflow = TextOverflow.Ellipsis
+            FullText(
+                "$detail · ${c.source}", color = ShelfTheme.textMuted, fontSize = 11.sp,
+                maxLines = 2, reserve = false
             )
         }
     }

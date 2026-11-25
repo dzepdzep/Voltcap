@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.CloudSync
@@ -82,13 +81,14 @@ fun SaveSyncBadge(
     Row(base, verticalAlignment = Alignment.CenterVertically) {
         SyncAnimation(status?.state ?: SyncState.PENDING, 16.dp)
         Spacer(Modifier.width(8.dp))
-        Text(
+        // (751a, rule 11: the whole label - FullText fits it to a readable size, then slides)
+        FullText(
             syncBadgeLabel(status),
             color = Color.White.copy(alpha = 0.9f),
-            fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+            fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            reserve = false
         )
     }
 }
@@ -200,7 +200,7 @@ fun SyncQuickCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             SyncAnimation(overall, 22.dp)
             Spacer(Modifier.width(10.dp))
-            Text(
+            FullText(
                 when {
                     sync.authProblem != null -> "This build isn't registered with Google (error 10) — see Settings › Sync"
                     sync.needsSignIn -> "Google wants you to confirm access again"
@@ -210,9 +210,9 @@ fun SyncQuickCard(
                     else -> "Connected. Not synced yet."
                 },
                 color = ShelfTheme.colors.textPrimary,
-                fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+                fontSize = 13.sp,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+                reserve = false,
                 modifier = Modifier.weight(1f)
             )
         }

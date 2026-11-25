@@ -95,6 +95,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   (long label / value, a destructive row in red) - whole (wrap, shrink, then slide), never an ellipsis; rows keep their height,
   focus ring and touch target. D-pad + touch still work. Screenshots.
   Unit evidence only (StatsFullText749aTest; static TRUNCATE 66 -> 60).
+- Also (751a, rule 11, dev line 751a or later, ~2 min, KONKR x1.3 + x1.0, with 749a / 750a): the save inspector (3D view:
+  controls hint and a long object name), the save-sync badge and status line (a long last-result), the Steam import list (long
+  names / source lines) and the RomM browser (long ROM names in the tiles - tiles stay one height - and a long dialog title) -
+  whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
+  Unit evidence only (SaveImportFullText751aTest; static TRUNCATE 51 -> 43).
 - Also (750a, rule 11, dev line 750a or later, ~2 min, KONKR x1.3 + x1.0, with 749a): the new-arrival card after a scan
   (a long name types in: the card never grows; long console / "+N more" tail), the glance window (long title, facts line
   closed and with All details), the launch animation (long title + console, centred) and the companion screen's titles

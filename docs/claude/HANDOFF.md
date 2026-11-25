@@ -73,6 +73,19 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 11:50 UTC, 751a (cloud, P2 review fix + rule 11):** Verify 310 on aaf96c1 GREEN. P2 review 45593862011 (CASEFLOW ORBIT
+AIRY BUBBLES) INFRA, two QA-script causes, no app defect: the shown "Press A again to remove" was not a phrase confirmtext knew
+(3 false FAILs), and Bubble home's A opens the LiveArea in the home (its next A = Play) so no window came (BUBBLES aborted safely).
+P2 1dbd311 (ff on the owner's 79d19e3): "again to remove" accepted; HOOK_OPEN="BUBBLES" opens its window with voltcap_test_window;
+selftest 279/279. Review re-dispatched: 45603942465. Dev line: SaveInspect / SaveSyncUi / SteamImportDialog / RommBrowser through
+FullText (SaveImportFullText751aTest 2/2, TRUNCATE 51 -> 43; HW-24 751a).
+NEXT: check Verify 310 on this push FIRST. Read review 45603942465; if PASS dispatch the next set (one at a time): CAMERA PANELS
+SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (fetch the P2 branch first - the owner pushes to it live).
+Note for the owner's review: Bubble home's game window is not reached by A from its home (A = LiveArea, then Start); the
+review opens it by the QA hook - how a player reaches that window is a design question if it matters. Between dispatches: the
+next rule 11 batch (43 left; e.g. QsTilesCard, StacksArch, TwinShowcase, CartShellPicker). When all sets PASS, one owner action
+with the sheets' run links.
+
 **25 Nov 10:40 UTC, 750a (cloud, rule 11 + P2 review):** Verify 310 on e510120 GREEN. P2 review 45584303713 (HERO_TILES MEMCARD
 BOX FILESELECT) VERDICT PASS, 0 launches; next set 45593862011 (P2:CASEFLOW ORBIT AIRY BUBBLES, on a524ded) dispatched. Dev line:
 new-arrival card, glance window title / facts, launch animation title / console, companion screen titles through FullText

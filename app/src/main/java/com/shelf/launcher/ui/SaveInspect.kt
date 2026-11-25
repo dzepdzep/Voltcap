@@ -76,7 +76,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -358,9 +357,10 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
                         if (!ps2.done) "Reading the save's icon…" else "The Classic squares are flat save icons: there's no 3D object to inspect.",
                         color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, modifier = Modifier.align(Alignment.Center).padding(24.dp)
                     )
-                    Text(
+                    // (751a, rule 11: the whole hint - two lines, a readable size, then a slide)
+                    FullText(
                         "Drag: turn · two fingers: move, pinch: zoom · right stick: turn · L1 + left stick: move · L2 / R2: zoom · Y: reset · X: auto-turn · B: close",
-                        color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, lineHeight = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp, lineHeight = 13.sp, maxLines = 2, reserve = false,
                         modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 12.dp, vertical = 8.dp)
                     )
                 }
@@ -368,9 +368,9 @@ internal fun SaveInspectDialog(game: Game, icon: String?, state: SyncState, caps
             val panel: @Composable (Modifier) -> Unit = { m ->
                 Column(m.background(Color.Black.copy(alpha = 0.35f)).verticalScroll(rememberScrollState()).padding(14.dp)) {
                     Text("Inspect", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                    Text(
+                    FullText(
                         (obj?.label?.let { "$it · " } ?: "") + name, color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp,
-                        maxLines = 2, overflow = TextOverflow.Ellipsis
+                        maxLines = 2, reserve = false
                     )
                     Spacer(Modifier.height(10.dp))
                     if (obj != null && paintable) {

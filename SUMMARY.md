@@ -1,3 +1,21 @@
+# Update 751a (25 Nov 2026, cloud run) - P2 emulator review fixed for "remove" confirmations and Bubble home; rule 11: save inspector, save sync, Steam import and RomM browser show their text whole
+- CI first: Verify 310 on aaf96c1 (750a) GREEN. P2 emulator review 45593862011 (CASEFLOW ORBIT AIRY BUBBLES, on a524ded)
+  VERDICT INFRA: (1) CASEFLOW / ORBIT / AIRY "A on 'Hide from library' showed no confirmation" at x1.3 and x1.0 - the screenshots
+  and dumps show "Press A again to remove · move away to cancel" on screen; p2review's confirmtext only knew "again to confirm"
+  (a QA false FAIL, not an app defect). (2) BUBBLES aborted: Bubble home's A unfolds the LiveArea inside the home (no game
+  window), and the LiveArea's A is Start = Play - winguard stopped correctly, nothing more pressed.
+- P2 branch 1dbd311 (fast-forward on the owner's 79d19e3): confirmtext also accepts "again to remove"; HOOK_OPEN="BUBBLES" opens
+  that layout's game window with the QA hook voltcap_test_window (never starts a game) instead of an A on the home. Selftest
+  279/279 (2 new; both fail on the old script). Review re-dispatched: run 45603942465 (P2:CASEFLOW ORBIT AIRY BUBBLES on 1dbd311).
+- Dev line, rule 11 (matrix P13): SaveInspect.kt (controls hint, object name), SaveSyncUi.kt (sync badge label, status line),
+  SteamImportDialog.kt (row name, detail / source line) and RommBrowser.kt (ROM tile name - keeps two lines of room - and the
+  dialog title) go through FullText (wrap, readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: SaveImportFullText751aTest 2/2 PASS in the cloud (fails on 750a: 8 Ellipsis); ArrivalLaunchFullText750aTest 2/2 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 51 -> 43.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/SaveInspect.kt, ui/SaveSyncUi.kt, ui/SteamImportDialog.kt,
+  ui/RommBrowser.kt, app/src/test/java/com/shelf/launcher/ui/SaveImportFullText751aTest.kt.
+- Not tested: hardware (HW-24 751a, KONKR x1.3 + x1.0, with 749a / 750a).
+
 # Update 750a (25 Nov 2026, cloud run) - rule 11: new-arrival card, glance window, launch animation and companion screen show their text whole
 - CI first: Verify 310 on e510120 (749a) GREEN. P2 emulator review 45584303713 (HERO_TILES MEMCARD BOX FILESELECT, x1.3 + x1.0,
   on a524ded) VERDICT PASS, 0 launches, every destructive row armed and cancelled, crash log empty - sheets in its artifact. Next

@@ -37,7 +37,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -224,7 +223,8 @@ private fun RommGameCard(rom: RommRom, cover: String?, auth: String, onDevice: B
             )
         }
         Spacer(Modifier.height(5.dp))
-        Text(rom.name, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        // (751a, rule 11: the whole name - two lines kept so the tiles line up, a readable size, then a slide)
+        FullText(rom.name, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
         Text(
             if (progress != null) "Downloading ${(progress * 100).toInt()} %" else formatBytes(rom.sizeBytes),
             color = ShelfTheme.textMuted, fontSize = 10.sp, maxLines = 1
@@ -245,7 +245,7 @@ private fun RommConfirm(title: String, message: String, confirm: String, onConfi
         Column(
             Modifier.width(420.dp).clip(RoundedCornerShape(16.dp)).background(ShelfTheme.colors.surfaceRaised).padding(16.dp)
         ) {
-            Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2, reserve = false)
             Spacer(Modifier.height(6.dp))
             Text(message, color = ShelfTheme.textMuted, fontSize = 13.sp)
             Spacer(Modifier.height(12.dp))
