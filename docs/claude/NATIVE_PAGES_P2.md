@@ -1257,3 +1257,13 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
 - Found during capture: Green core's home A opens its GAMES page (753a made it two-step in parallel - kept); Green core home x1.3
   KONKR PLAY TIME value cut ("AYED N") - OPEN; Disc station PROGRAM x1.3 KONKR MODE key narrow (words slide) - for review.
 - Notes / statuses used: docs/claude/PREVIEW_070_notes.json; builder tools/qa/tools/gallery070.py.
+
+### 682bb - owner review of the v0.7.0 preview (25 Nov 15:35) - fixes in code, hardware NOT TESTED yet
+- Green core home: stats share a line only when label + value fit whole, else the value under its label (was "AYED N" sliding).
+- Disc station PROGRAM: short mode words, MODE on the PROG line when whole else its own line, calendar in the track line.
+- Row descriptions (MenuRow / RadioLine / cards / menu header): own line height (x1.3 wrapped gap ~31 sp -> 16 sp).
+- From playplace_hw.py over the gallery's hardware dumps: Cardboard box x1.3 Play out of view on its pages (UniformKeyRow keeps
+  the last focused key - now Play again when the focus leaves the row); Pocket camera RP Classic Play moved on Details
+  (UniformKeyColumn measured with the page reference key) and its picture covered the name (not forced to fill).
+- Tests 2,226, 0 failures; emulated page sheets checked (Disc station, Cardboard box, Pocket camera). Readiness:
+  docs/claude/RELEASE_0.7.0_READINESS.md. Hardware queue: HW-29.

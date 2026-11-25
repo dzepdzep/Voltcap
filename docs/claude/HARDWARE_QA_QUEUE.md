@@ -730,3 +730,16 @@ the newest build + the charging reproduction, HW-3) waits until it is back.
 - 677a extension (commit: the 677a cloud run's): the post-game session card (return from a game with a long name, a session
   with achievements and a milestone) and the status-bar session note: wrap / shrink / slide, never "…"; the card keeps its
   height for a short name; the note slides inside its 320 dp and stops after 30 s idle. Emulator can't play a real game session.
+
+### HW-29 v0.7.0 review fixes + HW-28 completion (owner 25 Nov 15:35) - OPEN, prepared, PC left the bridge before the runs
+QA app qa682bb (`6f6fd73`), both handhelds over USB, Level 1. In this order (each run <= 15 min; qachain.sh batches):
+1. Fix check + targeted preview: `GAL_NAV=0 sh p2review.sh gallery TAG off|font=1.3 "GREENCORE DISCS CAMERA BOX"` on both, and
+   `APP_PKG=... sh p2review.sh appcat TAG font=1.3` (Categories / Collections after); compare with the gallery (m/k13, m/r13,
+   kac13x / rac13x); playplace_hw.py on the new dumps.
+2. Stress section: `GAL_FIX="names=long,art=none,meta=real" GAL_PICK="achmix n=120 " sh p2review.sh gallery TAG font=1.3
+   "GREENCORE DISCS CAMERA BOX CLASSIC CINEMA POCKET ARTLIB"` on both (long names, no art, 120 achievements, narrow at x1.3).
+3. HW-28 popup gate: `sh qachain.sh pop TAG off|font=1.3 8 "<28 layouts>"` on both - CHAN CIRCUIT TIMELINE HERO HERO_TILES MEMCARD
+   BOX FILESELECT CASEFLOW ORBIT AIRY BUBBLES CAMERA PANELS SHOP GREENCORE ARTLIB CROSS LIVE CUSTOM POCKET_CLASSIC POCKET_RIBBON
+   POCKET TILES GRID NIGHT BLADES DISCS; grade popclip.py.
+4. HW-28 functional walk: `sh qachain.sh run TAG font=1.3 4 "<28 layouts>"` on both (opened achievement, 120 list, armed
+   destructive row, Motion Off walk, close / reopen, 0 launches).
