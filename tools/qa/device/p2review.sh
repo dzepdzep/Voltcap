@@ -22,8 +22,30 @@ HOOK_OPEN="BUBBLES"
 # update 127, on by default) is on - its Achievements key opens the menu's own full-screen list instead, so R1 never reached a
 # trophies page and two Downs from the first page's Start game landed on Options: a false FAIL. For the P2 page review the walk
 # turns that setting off for the layout (QA app only; the old value put back after it, the snapshot restores every setting
-# anyway) so the window's own Achievements page (742a) is what gets reviewed; the default list is NOT TESTED by this walk.)
+# anyway) so the window's own Achievements page (742a) is what gets reviewed.)
 menu_ach_pref() { case $1 in CROSS) echo cross_trophies;; esac; }
+# (755a, review 45633462166 ended NOT TESTED only on that default list: after the walk, with the setting back on (its default),
+# menu_list() opens the game's achievements the way the window's Achievements key does (the QA hook sets the same state,
+# viewingAchievementsForGame - no key that could start a game) and checks the menu's own list came up as a dialog of the QA app
+# (the focus left the home window, no game window, its "earned / total  ·  N %" line shown), then one B closes it back to the
+# home. Not opened = FAIL; B leaving it open = FAIL (one more B only while that list still has the focus).)
+pctexts() { c=0; [ -s "$1" ] && c=$(tr -d '\n' < "$1" | tr '{' '\n' | grep -F '"text":"' | grep -F ' / ' | grep -cF ' %","len"'); echo ${c:-0}; }
+menu_list() { # layout name
+  A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
+  A --ez voltcap_test_preview true --es voltcap_test_pref "motion_level=NORMAL"; A --es voltcap_test_layout $1; sleep 3.5; gate
+  [ "$(qawins)" = 1 ] || { log "$1: PRECONDITION FAILED - $(qawins) QA windows on the home (menu list)"; return 1; }
+  wg_home; shot ${2}_mlist_home; c0=$(pctexts $O/${TAG}_${2}_mlist_home.json)
+  A --ez voltcap_test_achlist true; sleep 2.5; gate
+  shot ${2}_mlist_open; c1=$(pctexts $O/${TAG}_${2}_mlist_open.json); pg=$(wg_popup)
+  [ -n "$pg" ] || { log "$1: menu list - dump missing ($(wg_nodump_why))"; return 1; }
+  if [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || [ "$pg" != null ] || [ "${c1:-0}" -le "${c0:-0}" ]; then
+    log "$1: FAIL - its Achievements did not open the menu's own list ($MP on; home focused or game window '$pg', count lines $c0 -> $c1)"
+    [ "$pg" != null ] && { wg_window; closewin; }; return 1; fi
+  wg_dialog; wg_key_dlg B; sleep 1.4
+  if [ "$(wg_hash "$(wg_focus)")" != "$WG_MAIN" ]; then log "$1: FAIL - B left the menu's achievement list open"
+    [ "$(wg_hash "$(wg_focus)")" = "$WG_DLG" ] && { wg_key_dlg B; sleep 1.4; }; wg_home; return 1; fi
+  wg_home; shot ${2}_mlist_closed
+  log "$1: its Achievements key's menu list ($MP on, the default) opened (count lines $c0 -> $c1) and B closed it to the home"; }
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 SC=${3:-off}; LAYS=${4:-CRATE}
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
@@ -820,7 +842,7 @@ run)
     MP=$(menu_ach_pref $lay); MP_OLD=""
     if [ -n "$MP" ]; then A --es voltcap_test_pref "$MP=false"; sleep 1.2
       MP_OLD=$(logcat -d -s VoltcapTest | grep -F "pref $MP was " | tail -1 | sed -n 's/.* was \([a-z]*\) -> .*/\1/p')
-      log "$lay: its Achievements key opens the layout's own list ($MP, was ${MP_OLD:-unknown}) - off for this walk, so the window's own Achievements page is reviewed; that default list NOT TESTED here"
+      log "$lay: its Achievements key opens the layout's own list ($MP, was ${MP_OLD:-unknown}) - off for this walk, so the window's own Achievements page is reviewed; that list is checked after the walk with it back on"
     fi
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     openw $lay $n || { [ -n "$MP" ] && A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; continue; }
@@ -894,7 +916,8 @@ run)
     A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
     MOTION=OFF; if openw $lay ${n}_off; then REC_SEG=10 rec_start $O/${n}_walk_motionoff 10; sleep 0.6
       k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.0; k BUTTON_R1 1.2; rec_stop; closewin; fi; MOTION=NORMAL
-    [ -n "$MP" ] && { A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1; }
+    [ -n "$MP" ] && { A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1
+      if [ "${MP_OLD:-true}" = true ]; then menu_list $lay ${n}; else log "$lay: $MP was off before the run - the window's own page (walked) is what it shows"; fi; }
     log "$lay done (launches: $(launches))"
   done
   log "run done fatal=$(logcat -d -b crash | grep -c 'FATAL EXCEPTION')"; echo DONE >> $L ;;
