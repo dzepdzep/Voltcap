@@ -1071,3 +1071,27 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   Popup421, WinFocus*, Layouts344 / 374, Batch505, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,803 tests,
   0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 16 scenes done (own designs 46 / 53).
+### 742a - P2 class C, seventeenth scene: Cross menu (CROSS_OPTIONS, WinPagesCross.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The cross menu (the name in thin white type over a fine rule on the left, over the wave; the options column sliding in at the
+  right in the home's wash - Dusk / Ocean / Ember or the theme's - its lit row a band) stays as it is; its pages are read out on
+  the left in the menu's thin type, under the cross bar (one small icon per page on a fine line, the shown one bright and named):
+  Information (a system-information list - each label thin and grey, right-aligned against a fine divider, the value white
+  beside it; stacked on a narrow column - then the description as one row of the menu, a D-pad stop), Trophies (one line: cup,
+  "N / M", the per cent and a fine progress line - one earned always shows, full only when every one is earned - and the order as a
+  band key; each trophy a row of the menu: its icon drawn a little larger on the row you are on, the title in thin type,
+  "Earned <date>" / "Not earned", "+N"; A opens the whole text + how rare it is; lazy rows), Options (each option a row of the menu;
+  removing ones in the warning orange, "Press A again to confirm" - second A). Motion: the next page slides in along the bar from
+  the side you moved to (fading in); none with Motion Off. Was: the shared page bodies under the name (the one class C scene that
+  kept them through sharedPageFor's own exception).
+- L1 / R1 anywhere on the menu. On its pages the options column keeps the page slots (Play first) and starts where the first page's
+  keys did (the first page stays centred as before), so Play stays put: PlayPlace CROSS x1.0 / x1.3 + PlayPlaceRpc found Play at
+  the same place on the first page and all three pages (before the fix: 26 dp / 54 dp lower on the pages; the column's scroll now
+  starts at the top on every page too).
+- QA tools taught: PlayPlace's Play words + "start game" / "continue game" (Cross's own label - it had skipped the layout), PlayPlace
+  and ShelfText's Details words + "information".
+- Tests (cloud): NativePagesCross742aTest 4/4 (new; fails before: no crossPageName, CROSS_OPTIONS not native); CROSS added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText (it had been left out of AchFirstRow entirely); with PlayPlace*,
+  NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*, Layouts344, Readability476, Batch505, Visual426,
+  PopupMore451, WinPresentation, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,499 tests, 0 failures.
+  Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 17 scenes done (own designs 47 / 53). Left: Live, Layout Studio, the Pocket family (POCKET_LCD, three faces).

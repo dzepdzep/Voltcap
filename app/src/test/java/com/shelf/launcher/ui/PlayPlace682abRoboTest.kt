@@ -38,7 +38,7 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1}")
         fun cases(): List<Array<Any>> = AchFirstRowRoboTest.NATIVE.filter { it != HomeLayout.TV }
             .flatMap { l -> listOf(arrayOf<Any>(l, false), arrayOf<Any>(l, true)) }
-        private val PLAY = setOf("play", "run", "power on", "insert coin", "start", "play it", "press start", "rent play") // (739a: the Rental shop's RENT & PLAY)
+        private val PLAY = setOf("play", "run", "power on", "insert coin", "start", "play it", "press start", "rent play", "start game", "continue game") // (739a: the Rental shop's RENT & PLAY; 742a: the Cross menu's Start game)
     }
 
     private val compose = createComposeRule()
@@ -113,7 +113,7 @@ open class PlayPlace682abRoboTest(private val layout: HomeLayout, private val bi
             frames(180)
             fun fresh() { gen.intValue++; frames(160) }
             val at = LinkedHashMap<String, androidx.compose.ui.geometry.Rect?>()
-            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text", "contents", "catalogue")); at["details"] = playAt() // (731a: the Cardboard box's CONTENTS; 739a: the Rental shop's CATALOGUE CARD)
+            open(setOf("details", "summary", "info", "turn", "over", "the", "story", "game", "sleeve", "notes", "liner", "plot", "card", "text", "contents", "catalogue", "information")); at["details"] = playAt() // (731a: the Cardboard box's CONTENTS; 739a: the Rental shop's CATALOGUE CARD; 742a: the Cross menu's Information)
             fresh(); open(setOf("achievements", "trophies", "credits")); at["achievements"] = playAt()
             fresh(); open(setOf("options", "config", "backstage")); at["options"] = playAt()
             val seen = at.filterValues { it != null }

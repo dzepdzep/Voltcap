@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -64,11 +66,17 @@ private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else
  * - the tallest item's - edges in line, the gaps even; status lines (Save sync not set up) under the keys, not among them.)
  */
 @Composable
-private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true, key: @Composable (WinAction) -> Unit) {
+private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true,
+    /** (742a: Cross's own pages - the column keeps the page slots, Play first, so Play stays put; 0 = as many as it has.) */
+    slots: Int = 0,
+    /** (742a, PlayPlace CROSS: the main page's column had scrolled to Achievements and kept that scroll on Trophies - Play 26 dp
+     *  higher there than on Information / Options. A new [scrollKey] starts the column at its top.) */
+    scrollKey: Any? = null, key: @Composable (WinAction) -> Unit) {
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
-    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        UniformKeyColumn(actions, 4.dp, fill = true, key = key)
+    val scrollState = androidx.compose.runtime.remember(scrollKey) { androidx.compose.foundation.ScrollState(0) }
+    Column(if (scroll) modifier.verticalScroll(scrollState) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        UniformKeyColumn(actions, 4.dp, fill = true, slots = slots, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -111,27 +119,50 @@ private fun ListKey(a: WinAction, ink: Color, lit: Color, litInk: Color, height:
 @Composable
 internal fun CrossOptions(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.46f, 380.dp).coerceAtLeast(minOf(ctx.maxW, 280.dp))
-    Box(Modifier.fillMaxSize()) {
-        // The title and facts stay on the left, as the column of the selected item would.
-        Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = w + 16.dp).graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 22.sp, maxLines = 3, fontWeight = FontWeight.Light)
-            Box(Modifier.padding(vertical = 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
-            if (ctx.page == WinPage.MAIN) SceneFactsColumn(ctx, Color.White.copy(alpha = 0.55f), Color.White)
-            else ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.75f))
+    // (Update 505: the column in the home's own wash — Dusk / Ocean / Ember, or the theme's — its lit row in the wash's light
+    // colour (your accent when this layout has its own colours), readable on the column; was always black and white.)
+    val wash = crossWash(com.shelf.launcher.data.Features.crossTint.state.value, com.shelf.launcher.ui.theme.ShelfTheme.colors.background,
+        com.shelf.launcher.ui.theme.ShelfTheme.accent)
+    val deep = sceneDark(wash?.first ?: Color.Black)
+    val lit = sceneLit(com.shelf.launcher.data.HomeLayout.CROSS, wash?.second ?: com.shelf.launcher.ui.theme.ShelfTheme.accent, deep)
+    val band = androidx.compose.ui.graphics.lerp(deep, lit, 0.34f)
+    // (742a: where the first page's keys start in the options column - its pages put Play at the same place.)
+    val crossKeysTop = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // (742a, P2 class C: L1 / R1 from anywhere on the menu - its own pages Information / Trophies / Options, WinPagesCross.kt.)
+    Box(Modifier.fillMaxSize().nativeBumpers(ctx)) {
+        if (ctx.page == WinPage.MAIN) {
+            // The title and facts stay on the left, as the column of the selected item would.
+            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = w + 16.dp).graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
+                StableFullText(ctx.name, color = Color.White, fontSize = 22.sp, maxLines = 3, fontWeight = FontWeight.Light)
+                Box(Modifier.padding(vertical = 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
+                SceneFactsColumn(ctx, Color.White.copy(alpha = 0.55f), Color.White)
+            }
+        } else {
+            // (742a: the menu's own pages read out on the left in its thin type, under the cross bar (WinPagesCross.kt) - was the
+            // shared page bodies under the name. The page takes the left side's whole height; the name steps down to two lines.)
+            val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().fillMaxHeight().padding(end = w + 16.dp, top = 8.dp, bottom = 8.dp)
+                .graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
+                StableFullText(ctx.name, color = Color.White, fontSize = if (short) 17.sp else 20.sp, maxLines = 2, fontWeight = FontWeight.Light)
+                Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
+                CrossPageArea(ctx, CrossInk(band), Modifier.fillMaxWidth().weight(1f), short, narrow = ctx.maxW - w - 16.dp < 300.dp)
+            }
         }
-        // (Update 505: the column in the home's own wash — Dusk / Ocean / Ember, or the theme's — its lit row in the wash's light
-        // colour (your accent when this layout has its own colours), readable on the column; was always black and white.)
-        val wash = crossWash(com.shelf.launcher.data.Features.crossTint.state.value, com.shelf.launcher.ui.theme.ShelfTheme.colors.background,
-            com.shelf.launcher.ui.theme.ShelfTheme.accent)
-        val deep = sceneDark(wash?.first ?: Color.Black)
-        val lit = sceneLit(com.shelf.launcher.data.HomeLayout.CROSS, wash?.second ?: com.shelf.launcher.ui.theme.ShelfTheme.accent, deep)
-        val band = androidx.compose.ui.graphics.lerp(deep, lit, 0.34f)
         Column(Modifier.align(Alignment.CenterEnd).width(w).fillMaxHeight().graphicsLayer {
             // The options panel slides in from the screen's right edge (and back out).
             translationX = (1f - sceneEase(ctx.reveal())) * size.width
         }.background(Brush.horizontalGradient(listOf(deep.copy(alpha = 0.0f), deep.copy(alpha = 0.74f), deep.copy(alpha = 0.88f))))
-            .padding(start = 28.dp, end = 12.dp), verticalArrangement = Arrangement.Center) {
-            KeyColumn(sceneKeys(ctx), Modifier.fillMaxWidth()) { a ->
+            // (742a, PlayPlace CROSS: centred, the column put Play 26 dp (x1.3: 54 dp) lower on its pages (Play + one key) than on
+            // the first page (seven keys and the Save sync line). The first page stays centred as it was; on the pages the keys start
+            // where the first page's did - Play stays put everywhere. Before the first page was ever laid out: a fifth down.)
+            .padding(start = 28.dp, end = 12.dp),
+            verticalArrangement = if (ctx.page == WinPage.MAIN) Arrangement.Center else Arrangement.Top) {
+            val keysTop = crossKeysTop.value ?: minOf(ctx.maxH * 0.2f, 72.dp)
+            KeyColumn(sceneKeys(ctx), Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.onGloballyPositioned { c ->
+                    crossKeysTop.value = with(density) { c.positionInParent().y.coerceAtLeast(0f).toDp() }
+                } else Modifier.padding(top = keysTop)),
+                slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS, scrollKey = ctx.page) { a ->
                 ListKey(a, Color.White.copy(alpha = 0.85f), band, com.shelf.launcher.ui.theme.textOn(band, Color.White))
             }
         }

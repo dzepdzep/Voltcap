@@ -82,7 +82,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (740a: class C - Green core's own console pages)
             HomeLayout.GREENCORE,
             // (741a: class C - the Art library's own gallery pages)
-            HomeLayout.ARTLIB)
+            HomeLayout.ARTLIB,
+            // (742a: class C - the Cross menu's own pages)
+            HomeLayout.CROSS)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

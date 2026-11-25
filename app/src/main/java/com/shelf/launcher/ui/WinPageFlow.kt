@@ -103,7 +103,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (740a, P2 class C: Green core - the glowing console's SPEC, UNLOCKS and CONTROL in its monospace capitals, WinPagesCore.kt.)
     WinScene.CORE_PANEL,
     // (741a, P2 class C: Art library - the gallery wall's Catalogue, Collection and Curator on its mat, WinPagesGallery.kt.)
-    WinScene.GALLERY_PLACARD)
+    WinScene.GALLERY_PLACARD,
+    // (742a, P2 class C: Cross menu - Information, Trophies and Options read out on the left in its thin type, WinPagesCross.kt.)
+    WinScene.CROSS_OPTIONS)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 

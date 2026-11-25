@@ -86,6 +86,6 @@ class UniformKeys673Test {
         assertTrue(src("GameWindow.kt").contains("UniformKeyColumn(all.map"))
         assertTrue(src("GameWindow.kt").contains("UniformKeyRow(ctx.buttons.filterNot { it.status }, 12.dp)"))
         // vertical menus (Cross, Side): one width, one height
-        assertTrue(src("WinScenesHomes2.kt").contains("UniformKeyColumn(actions, 4.dp, fill = true, key = key)"))
+        assertTrue(src("WinScenesHomes2.kt").contains("UniformKeyColumn(actions, 4.dp, fill = true, slots = slots, key = key)")) // (742a: Cross pages keep the page slots)
     }
 }
