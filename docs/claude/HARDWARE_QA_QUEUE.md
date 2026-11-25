@@ -100,6 +100,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   names / source lines) and the RomM browser (long ROM names in the tiles - tiles stay one height - and a long dialog title) -
   whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
   Unit evidence only (SaveImportFullText751aTest; static TRUNCATE 51 -> 43).
+- Also (753a, rule 11, dev line 753a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-752a): a games folder's long-press menu
+  (long folder name) and the top-screen folder preview, the artwork gallery label line, the apps library (long app names), a
+  folded Settings group's summary, a slider's value (long value text), the L1 shortcuts (long app names, two lines) and the
+  Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
+  ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
+  Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
 - Also (752a, rule 11, dev line 752a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-751a): the quick-settings tile list (long
   tile names, "In the menu"), Arch stacks home (a long game name centred - no late pop-in on a game change - and the storage /
   games line), Twin showcase (category name in CURRENT mode, game name under the grid) and the cartridge shell picker (long shell

@@ -915,9 +915,10 @@ private fun HomeTile(
                 Icon(Icons.Filled.EmojiEvents, null, tint = accent, modifier = Modifier.size(10.dp))
                 // Update 151: a small upright tick between the trophy and "0/69".
                 ProgressTick(height = 8.dp, gap = 3.dp)
-                Text(
+                // (753a, rule 11: the whole count - readable size, then slides inside the pill.)
+                FullText(
                     "$earned/$possible",
-                    color = Color.White, fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+                    color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false,
                     // (Update 317an, Toni: the count sat low in its bubble — the font's own top / bottom room. Trimmed, centred.)
                     style = androidx.compose.ui.text.TextStyle(
                         platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false),

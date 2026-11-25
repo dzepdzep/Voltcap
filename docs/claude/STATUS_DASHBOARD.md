@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 752a · 2026-11-25 12:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 4f14f72 (dev); emulator review 45603942465 PASS; 45612718815 running · effort: medium
+**1. LATEST UPDATE** - 753a · 2026-11-25 13:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b8d00ea (dev); emulator review 45612718815 INFRA (QA script, fixed); 45623176605 running · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The quick-settings tile list, the Arch stacks home's game name and storage line, Twin showcase's category and game names and the cartridge shell picker now always show their whole text: long names wrap, shrink to a still-readable size or slide slowly instead of ending in '...'. The emulator review of the Case flow, Orbit, Airy and Bubble home game windows passed at both text sizes with no game started; the Camera, Panels, Shop and Greencore layouts are being photographed next.
+**2. WHAT CLAUDE JUST FIXED** - A games folder's menu and preview, the artwork gallery label, the apps library, folded Settings groups, slider values, the L1 shortcuts and the Tiles home's achievement count now always show their whole text instead of ending in '...'. The emulator review of the Camera, Panels and Shop game windows passed at both text sizes; Greencore passed at normal size and stopped safely at the larger size because the review script did not know its home opens a menu first - the script is fixed and Greencore is being re-checked together with the last three layouts.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Read emulator review 45612718815 and dispatch the last set of native-page layouts; then: Next batch of whole-text fixes (35 places left); Emulator review sheets of all native pages for the owner
+**5. WORKING ON NEXT** - now: Read emulator review 45623176605 (Greencore + the last three native-page layouts); then: Owner review sheets of all native pages once every set passes; Next batch of whole-text fixes (27 places left)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

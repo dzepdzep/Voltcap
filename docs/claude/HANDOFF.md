@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 13:40 UTC, 753a (cloud, P2 review fix + rule 11):** Verify 310 on b8d00ea GREEN. P2 review 45612718815 INFRA: x1.0
+4/4 PASS, x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely - its home opens on the MENU page (A = GAMES, window one A
+further; QA script, no app defect). P2 3077309 (ff on the owner's c4dbd6e): TWO_STEP="CUBE GREENCORE", selftest 280/280.
+Dispatched 45623176605 (P2:GREENCORE ARTLIB CROSS LIVE = Green Core re-check + the last set). Dev line: FolderIcons / ArtworkGallery /
+AppsLibraryDialog / FoldGroup / SettingsSlider / ShortcutsPanel / TileHome count pill through FullText (FolderAppsFullText753aTest
+2/2, TRUNCATE 35 -> 27; HW-24 753a).
+NEXT: check Verify 310 on this push FIRST. Read review 45623176605; if PASS every P2 set has an emulator PASS -> ONE owner action
+listing the sheets' run links (45576064795, 45584303713, 45603942465, 45612718815 x1.0 + 45623176605); FAIL / INFRA = next item
+(fetch the P2 branch first - the owner pushes to it live). Then the next rule 11 batch (27 left; e.g. TileHome game name (riseOnChange
++ custom layout - careful), CollectorBacks canvas x2, CubeHub, EmulatorPickerDialog, FirstRunDialog, GameDock).
+
 **25 Nov 12:40 UTC, 752a (cloud, rule 11 + P2 review):** Verify 310 on 4f14f72 (dev) + 12f3b28 (P2) GREEN. P2 review 45603942465
 (CASEFLOW ORBIT AIRY BUBBLES) VERDICT PASS, 0 launches; next set 45612718815 (P2:CAMERA PANELS SHOP GREENCORE, on 12f3b28 = the
 owner's live 682az) dispatched. Dev line: QsTilesCard / StacksArch / TwinShowcase / CartShellPicker through FullText /

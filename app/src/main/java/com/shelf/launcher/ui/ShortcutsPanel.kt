@@ -372,15 +372,15 @@ private fun AppTile(
             }
         }
         Spacer(Modifier.height(6.dp))
-        Text(
+        // (753a, rule 11: the shortcut's whole app name - two lines, readable size, then slides.)
+        FullText(
             app.name,
             color = ShelfTheme.colors.textPrimary,
-            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
-            maxLines = 2,
+            maxLines = 2, reserve = false,
             lineHeight = androidx.compose.ui.unit.TextUnit(1.182f, androidx.compose.ui.unit.TextUnitType.Em),
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.width(80.dp)
         )
     }

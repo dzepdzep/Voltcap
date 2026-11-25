@@ -1,3 +1,23 @@
+# Update 753a (25 Nov 2026, cloud run) - P2 emulator review: Green Core's game window opened as a two-step home; rule 11: folders, artwork gallery, apps library, settings groups / sliders, L1 shortcuts and the Tiles achievement count show their text whole
+- CI first: Verify 310 on b8d00ea (752a) GREEN. P2 emulator review 45612718815 (CAMERA PANELS SHOP GREENCORE on 12f3b28)
+  VERDICT INFRA: x1.0 PASS (all four), x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely ("game window expected",
+  nothing pressed). Cause (QA script, no app defect): Green Core's home opens on its MENU page - its first A opens GAMES, the
+  window is one A further (StyleGreenCore greenCoreKey); x1.0 only passed because GAMES was still open from the x1.3 walk.
+- P2 branch 3077309 (fast-forward on the owner's live c4dbd6e): p2review TWO_STEP="CUBE GREENCORE" (the existing "already
+  open" check covers a GAMES page left open). Selftest 280/280 (1 new, fails on the old script). Review dispatched: run
+  45623176605 (P2:GREENCORE ARTLIB CROSS LIVE).
+- Dev line, rule 11 (matrix P13): FolderIcons.kt (folder menu name, top-screen preview name), ArtworkGallery.kt (label line),
+  AppsLibraryDialog.kt (app name), FoldGroup.kt (summary), SettingsSlider.kt (value), ShortcutsPanel.kt (app name, two lines)
+  and TileHome.kt (achievement count pill; the home's game name is a later batch) go through FullText (wrap, readable size,
+  then slide). 8 TRUNCATE places -> 0.
+- Test: FolderAppsFullText753aTest 2/2 PASS in the cloud (fails on 752a: 8 Ellipsis); ShowcaseFullText752aTest 2/2,
+  CategoryStable394Test 6/6 PASS. App + tests compiled (Maven Central 429 -> VOLTCAP_MAVEN_MIRROR). Static checks PASS,
+  TRUNCATE 35 -> 27.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/FolderIcons.kt, ui/ArtworkGallery.kt, ui/AppsLibraryDialog.kt,
+  ui/FoldGroup.kt, ui/SettingsSlider.kt, ui/ShortcutsPanel.kt, ui/TileHome.kt,
+  app/src/test/java/com/shelf/launcher/ui/FolderAppsFullText753aTest.kt.
+- Not tested: hardware (HW-24 753a, KONKR x1.3 + x1.0, with 749a-752a).
+
 # Update 752a (25 Nov 2026, cloud run) - P2 review of Case flow / Orbit / Airy / Bubble home PASS; rule 11: quick-settings tiles, Arch stacks, Twin showcase and cartridge shell picker show their text whole
 - CI first: Verify 310 on 4f14f72 (751a) GREEN; on the P2 branch 12f3b28 (owner's live 682az) GREEN. P2 emulator review
   45603942465 (P2:CASEFLOW ORBIT AIRY BUBBLES on 1dbd311) VERDICT PASS at x1.3 and x1.0, 0 launches. Next set dispatched:
