@@ -1738,6 +1738,17 @@
    "base_commit": "claude/v0674-native-pages f094d6c",
    "tree_hash": "claude/v0674-native-pages f094d6c",
    "note": "682bd audit: simulated tuner walk build"
+  },
+  {
+   "id": "qa-070rc-7eaccbd",
+   "apk_sha256": "7fcd76503b68985be8c0ec5b9e84cb39d9f0226b827d7ef822fe2c58855247df",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v070-rc 7eaccbd",
+   "tree_hash": "claude/v070-rc 7eaccbd",
+   "note": "v0.7.0 RC integration (P2 + dev + 681r rescan): rescan / upgrade / data-integrity checks"
   }
  ]
 }
