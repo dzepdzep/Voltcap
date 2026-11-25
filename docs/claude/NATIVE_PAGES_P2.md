@@ -1119,3 +1119,27 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   UniformKeys673, PopupNativeStorage*: 2,909 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review
   not run, not approved.
 - Audit: class C 18 scenes done (own designs 48 / 53). Left: Layout Studio, the Pocket family (POCKET_LCD, three faces).
+### 744a - P2 class C, nineteenth scene: Layout Studio (STUDIO_PANEL, WinPagesStudio.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The studio's panel in the layout's (theme / your) colours (the faint 18 dp layout grid, the art in a framed well with crop marks,
+  the console in small spaced capitals, the name in bold, the keys as rounded buttons, Play in the accent) stays as it is on its
+  first page (Canvas); its pages keep that editor's language under the editor's tab strip (the page names - Canvas / Properties /
+  Milestones / Actions - in a rounded segmented bar, the shown one filled in the accent, in page order; wraps, never cut):
+  Properties (an inspector: each fact a row - its label in small spaced capitals in the accent on the left, its value on the right,
+  a dashed guide line under each; then the description in a text frame - a D-pad stop, outlined in the accent and tinted when you
+  are on it), Milestones ("N / M" in bold, the per cent in the accent, a ruler - a rounded track filled in the accent with a tick
+  every tenth; one earned always shows, full only when all are earned - the order as a rounded chip; each achievement a layer row:
+  its badge in a small framed well, outlined in the accent when yours, the title in bold, "Earned <date>" / "Not yet", "+N" in a
+  small accent chip; the row you are on tinted and outlined in the accent; A opens the whole text + how rare it is; lazy rows),
+  Actions (rounded buttons like the keys; removing ones outlined in red, red when you are on them, "Press A again to confirm" -
+  second A). Motion: the next page snaps in from one grid step (18 dp) below, fading in - an element placed on the grid; none
+  with Motion Off. On its pages the console line steps back on a short window (it is in Properties) and the name steps down to
+  18 sp (16 sp, two lines, on a short window) so the first milestone stays whole at x1.3 (AchFirstRow caught it half shown first).
+- L1 / R1 anywhere on the panel. Play stays put: on its pages the key row keeps the first page's slots and the panel grows upward
+  only (livePageHeight, as on Live 743a; measured with More closed). PlayPlace CUSTOM (+ Rpc) x1.0 / x1.3 and a temporary probe
+  of the first page: Play's top-left within 1 px on the first page and all three pages (wider on the pages, as on every layout
+  with More).
+- Tests (cloud): NativePagesStudio744aTest 4/4 (new; fails before: no studioPageName, STUDIO_PANEL not native); CUSTOM added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, WindowWordsSurvey682, Popup421,
+  Batch506, Layouts330, R1Compat326, WinFocus*, UniformKeys673, NativeConfirm681, NativePages*: 2,903 tests, 0 failures. Static
+  PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
+- Audit: class C 19 scenes done (own designs 49 / 53). Left: the Pocket family (POCKET_LCD, three faces in one batch).

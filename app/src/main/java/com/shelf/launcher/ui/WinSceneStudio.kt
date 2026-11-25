@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -77,7 +79,22 @@ internal fun StudioPanel(ctx: WinSceneCtx) {
     val artW = studioArtWidth(w.value, ctx.maxH.value, narrow).dp
     val shape = RoundedCornerShape(16.dp)
     val grid = a.copy(alpha = if (t.background.luminance() > 0.5f) 0.07f else 0.05f)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (744a, P2 class C: the studio's own pages - Properties / Milestones / Actions under the editor's tab strip,
+    // WinPagesStudio.kt; L1 / R1 from anywhere on the panel. On a short window (or large text on a mid one) the title steps down.)
+    val main = ctx.page == WinPage.MAIN
+    val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+    // (744a: as on the Live panel (743a) - on its pages the centred panel grows upward only (livePageHeight, measured with More
+    // closed), so the key row, and Play, stay where the first page had them.)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val mainH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Dp?>(null) }
+    val pageH = mainH.value?.let { livePageHeight(it, ctx.maxH) }
+    val moreShut = sceneKeys(ctx).none { it.label == "Less" }
+    val box = when {
+        main -> Modifier.heightIn(max = ctx.maxH).onSizeChanged { if (moreShut) mainH.value = with(dens) { it.height.toDp() } }
+        pageH != null -> Modifier.height(pageH).offset(y = -(pageH - mainH.value!!) / 2)
+        else -> Modifier.heightIn(max = ctx.maxH)
+    }
+    Column(Modifier.width(w).then(box).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * 24.dp.toPx()
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -91,7 +108,13 @@ internal fun StudioPanel(ctx: WinSceneCtx) {
             var y = step; while (y < size.height) { drawLine(grid, Offset(0f, y), Offset(size.width, y), 1f); y += step }
         }
         .border(1.dp, a.copy(alpha = 0.4f), shape).padding(if (narrow) 12.dp else 16.dp)) {
-        if (narrow) {
+        if (!main) {
+            // (744a) On its pages: the console and the name, smaller; then the tab strip and the page.
+            // (A short window: the name alone - the console is in Properties - so the first milestone stays whole, AchFirstRow x1.3.)
+            StudioTitle(ctx, a, ink, if (short) 16 else 18, console = !short, nameLines = if (short) 2 else 3)
+            Spacer(Modifier.height(if (short) 4.dp else 8.dp))
+            StudioPageArea(ctx, rememberStudioInk(a), Modifier.fillMaxWidth().weight(1f), short)
+        } else if (narrow) {
             Row(verticalAlignment = Alignment.Top) {
                 StudioArt(ctx, artW, a, ink)
                 Spacer(Modifier.width(12.dp))
@@ -111,7 +134,8 @@ internal fun StudioPanel(ctx: WinSceneCtx) {
             }
         }
         Spacer(Modifier.height(12.dp))
-        KeyRow(sceneKeys(ctx), 8.dp) { k ->
+        // (744a: on its pages the row keeps the first page's slots - Play stays put.)
+        KeyRow(sceneKeys(ctx), 8.dp, slots = sceneKeySlots(ctx)) { k ->
             val onA = if (a.luminance() > 0.5f) Color(0xFF111111) else Color.White
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.07f), if (k.primary) a else ink.copy(alpha = 0.16f), if (k.primary) onA else ink,
                 if (k.primary) onA else ink, ink.copy(alpha = 0.16f), if (k.primary) ink else a, RoundedCornerShape(10.dp), height = 36.dp)
@@ -120,11 +144,13 @@ internal fun StudioPanel(ctx: WinSceneCtx) {
 }
 
 @Composable
-private fun StudioTitle(ctx: WinSceneCtx, accent: Color, ink: Color, size: Int) {
-    Text(ctx.console.uppercase(), color = com.shelf.launcher.ui.theme.legibleArtAccent(accent, ShelfTheme.colors.surface, ShelfTheme.colors.surface),
-        fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2)
-    Spacer(Modifier.height(2.dp))
-    StableFullText(ctx.name, color = ink, fontSize = size.sp, maxLines = 3, fontWeight = FontWeight.Bold)
+private fun StudioTitle(ctx: WinSceneCtx, accent: Color, ink: Color, size: Int, console: Boolean = true, nameLines: Int = 3) {
+    if (console) {
+        Text(ctx.console.uppercase(), color = com.shelf.launcher.ui.theme.legibleArtAccent(accent, ShelfTheme.colors.surface, ShelfTheme.colors.surface),
+            fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2)
+        Spacer(Modifier.height(2.dp))
+    }
+    StableFullText(ctx.name, color = ink, fontSize = size.sp, maxLines = nameLines, fontWeight = FontWeight.Bold)
 }
 
 /** The art at its own shape in a framed well, the studio's crop marks round it (they close in as the window opens). */

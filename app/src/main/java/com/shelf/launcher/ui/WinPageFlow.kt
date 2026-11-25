@@ -107,7 +107,9 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (742a, P2 class C: Cross menu - Information, Trophies and Options read out on the left in its thin type, WinPagesCross.kt.)
     WinScene.CROSS_OPTIONS,
     // (743a, P2 class C: Live tiles - about, achievements and options under a pivot, turning in like the panel, WinPagesLive.kt.)
-    WinScene.LIVE_PANEL)
+    WinScene.LIVE_PANEL,
+    // (744a, P2 class C: Layout Studio - Properties, Milestones and Actions under the editor's tab strip, WinPagesStudio.kt.)
+    WinScene.STUDIO_PANEL)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
