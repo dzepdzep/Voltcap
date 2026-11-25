@@ -3032,6 +3032,16 @@ echo FINISHED >> {d}/log.txt
         rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="")   # no dump: never a yes
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
 
+    def test_no_dump_abort_says_why(self):
+        # (747a, emulator review 44367749650: two INFRA aborts "QaClip: 'no dump'" with nothing to tell a stalled app from a
+        # failed dump) - the abort line names it; still nothing pressed
+        rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip_req; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request never taken by the app", log)
+        rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip/t_wg.json.part; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("dump still being written", log)
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', popup="", ty="BASE_APPLICATION")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request taken, no dump written", log)
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])

@@ -47,18 +47,30 @@ wg_dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; chmod 666 $F/qa_clip_req 2>/dev/null; i=0
   # (682s: up to 15 s - on the emulator the dump came later than 6 s and the walk aborted on "no dump"; a wait, never a key)
   while ! wg_dr $F/qa_clip/$n.json && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1)); done
+  # (747a, emulator review 44367749650 aborted twice on "no dump" with nothing to say why: a dump the app is still writing
+  # (its .part file is there) gets up to 15 s more - a read, never a key; anything else stays "no dump")
+  i=0; while ! wg_dr $F/qa_clip/$n.json && [ -e $F/qa_clip/$n.json.part ] && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1)); done
   wg_dr $F/qa_clip/$n.json || { echo ""; return; }
   grep -o '"popupGame": *[^,}]*' $F/qa_clip/$n.json | head -1 | sed 's/^"popupGame": *//; s/"//g'; }
+# (747a) why a QaClip dump did not come - read-only, for the abort line: the request still waiting = the app never read it
+# (its main thread did not run the 250 ms poll: stalled, or the QA app's process restarted); taken but no file = the dump
+# failed or is still being written; plus the app's last "clip" trace lines (QaClip logs "clip error ..." when a dump throws)
+wg_nodump_why() { n=${TAG}_wg
+  if [ -e $F/qa_clip_req ]; then w="request never taken by the app (main thread stalled or restarted?)"
+  elif [ -e $F/qa_clip/$n.json.part ]; then w="request taken, dump still being written"
+  else w="request taken, no dump written"; fi
+  c=$(logcat -d -s VoltcapQA 2>/dev/null | grep -E " clip (error|done)" | tail -2 | sed 's/.* clip /clip /' | tr '\n' ';')
+  echo "$w${c:+; last: $c}"; }
 wg_type() { dumpsys window windows | grep -A6 "Window{$1 " | grep -o "ty=[A-Z_]*" | head -1; }
 wg_home() {
   f=$(wg_focus); case "$f" in *"$P/"*) ;; *) wg_abort "home expected, in front: $(wg_what "$f")";; esac
   [ "$(wg_mark)" = HOME ] || wg_abort "home expected, the QA app shows: $(wg_mark) (picker?)"
-  pg=$(wg_popup); [ "$pg" = null ] || wg_abort "home expected, game window: '${pg:-no dump}'"
+  pg=$(wg_popup); [ "$pg" = null ] || wg_abort "home expected, game window: '${pg:-no dump ($(wg_nodump_why))}'"
   h=$(wg_hash "$(wg_focus)"); [ "$(wg_type $h)" = ty=BASE_APPLICATION ] || wg_abort "home expected, focused window is $(wg_type $h)"
   WG_MAIN=$h; }
 wg_window() {
   f=$(wg_focus); case "$f" in *"$P/"*) ;; *) wg_abort "game window expected, in front: $(wg_what "$f")";; esac
-  pg=$(wg_popup); { [ -n "$pg" ] && [ "$pg" != null ]; } || wg_abort "game window expected, QaClip: '${pg:-no dump}'"
+  pg=$(wg_popup); { [ -n "$pg" ] && [ "$pg" != null ]; } || wg_abort "game window expected, QaClip: '${pg:-no dump ($(wg_nodump_why))}'"
   [ -n "$1" ] && [ "$pg" != "$1" ] && wg_abort "game window of '$1' expected, open: '$pg'"
   h=$(wg_hash "$(wg_focus)"); [ "$(wg_type $h)" = ty=APPLICATION ] || wg_abort "game window expected, focused window is $(wg_type $h)"
   [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] && wg_abort "game window expected, the home window has the focus"
