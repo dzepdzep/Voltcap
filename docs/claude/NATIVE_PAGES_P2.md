@@ -1222,3 +1222,7 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
 - **682ax re-run on qa682ax (the dialogs now at x1.3): KONKR kac13x PASS, RP Classic rac13x PASS** - Categories rows larger and
   the touch point moved with them (RPC y 899 -> 870), the Collections picker at x1.3 (Close in view, the body scrolls). Visual
   note for review (not graded): a wrapped row subtitle at x1.3 shows a wide gap between its lines ("... and the / rest").
+
+### 682az - Disc station (DISC_PANEL) - IN PROGRESS by the live session (owner 25 Nov 12:48 "OPTION 3, then OPTION 2")
+The 53rd layout's own pages are being built in the live session (owner present). Hourly run: do not start Disc station; the
+v0.7.0 preview gallery comes next in the live session too. Arcade B stays on claude/exp-arcadeb-focus (not to be merged).
