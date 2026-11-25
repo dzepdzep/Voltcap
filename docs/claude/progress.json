@@ -17,17 +17,17 @@
   {
    "area": "Native popup pages",
    "total": 53,
-   "impl": 47,
-   "unit": 47,
+   "impl": 48,
+   "unit": 48,
    "emulator": 0,
    "device": 29,
    "owner": 0,
    "released": 0,
-   "remaining": "47 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 11 layouts still on the shared page (10 class C + Disc station's shared bodies).",
+   "remaining": "48 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. 11 layouts still on the shared page (10 class C + Disc station's shared bodies).",
    "source": "P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.",
    "functional_owner": "14 accepted functionally 22 Nov (batches 1-3), not visual approval",
    "branch": "P2 branch only",
-   "ci": "P2 9831e03 (741a): Verify 310 GREEN; 7477b77 (742a, Cross menu) CI pending at hand-off"
+   "ci": "P2 7477b77 (742a): Verify 310 GREEN; 63f0b52 (743a, Live tiles) CI pending at hand-off"
   },
   {
    "area": "Physical pickup / return animations",

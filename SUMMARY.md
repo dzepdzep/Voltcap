@@ -1,3 +1,25 @@
+# Update 743a (25 Nov 2026, cloud run) - P2 class C: the Live tiles panel gets its own pages (native-pages branch)
+- CI first: Verify 310 on 73c1053 (dev line) and 7477b77 (P2, Cross menu) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 7477b77 -> 63f0b52: the eighteenth class C scene (batch 7). The Live tiles panel
+  (flat, dark, turning in like a turnstile) keeps its flat tile language on its pages under a pivot heading - the page names in
+  large thin lower case, the shown one white and first, the others after it in turn, dim: about (lower-case accent labels over thin
+  white values, the description on a flat tile), achievements (big thin per cent, "N of M", a flat accent bar - one earned always
+  shows, full only when all are earned - the order as a flat tile; each achievement a flat row with its badge on a square tile,
+  the row you are on filled in the accent; A shows the whole text and rarity), options (flat tiles; removing ones red, second A).
+  The next page turns in like the panel itself (turnstile from the left edge, text drawn flat first - D285); none with Motion Off.
+  Own designs 48 / 53.
+- Found and fixed on the way (a PlayPlace probe of the first page, not only the pages): grown to the window's height, the centred
+  panel put Play 8 dp lower on its pages (RP Classic: 60 dp). On its pages the panel now grows upward only (livePageHeight: half
+  the free room, measured with More closed), so Play's top-left is identical on the first page and all three pages (x1.0 / x1.3,
+  both screen sizes). Play is wider on the pages, as on every layout whose first-page row scrolls.
+- Checked (cloud): NativePagesLive743aTest 5/5 (new; fails on the old code: no livePageName, LIVE_PANEL not native); LIVE added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, InputContract462, WindowWordsSurvey682,
+  Visual426, Popup421, WinFocus*, Layouts344, Readability476, Batch505, PopupMore451, WinPresentation*, NativeConfirm681,
+  NativePages*, UniformKeys673, PopupNativeStorage* - 2,909 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesLive.kt (new), ui/WinScenesHomes2.kt (LiveTilesPanel, livePageHeight), ui/WinPageFlow.kt; tests
+  NativePagesLive743aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 742a (25 Nov 2026, cloud run) - P2 class C: the Cross menu reads out its own pages (native-pages branch)
 - CI first: Verify 310 on 993d193 (dev line) and 9831e03 (P2, Art library) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 9831e03 -> 7477b77: the seventeenth class C scene (batch 6; the last class C

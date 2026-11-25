@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 02:05 UTC, 743a (cloud, Task 5):** Verify 310 on 73c1053 (dev) + 7477b77 (P2) GREEN. P2 branch 63f0b52: Live tiles
+(LIVE_PANEL) has its own pages - about / achievements (flat accent bar) / options in its flat tile language under a pivot heading
+(the shown page's name first), turning in like a turnstile (WinPagesLive.kt; class C 18 scenes done, own designs 48 / 53). A probe
+of PlayPlace's first page caught Play 8 dp (RP Classic 60 dp) lower on the pages than on the first page - fixed (the panel grows
+upward only on its pages). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 63f0b52 (P2) FIRST (red -> fix first). Then Task 5: Layout Studio (STUDIO_PANEL) on the
+P2 branch; then the Pocket family (POCKET_LCD) - all three faces in one batch - or an emulator p2review sheet of batches 5-7 for the
+owner, or the Task 1 residual. Same pre-push checks as below. Tip: PlayPlace compares the pages only - also print the first page's
+Play (a temporary println after frames(180)) for a centred panel that grows on its pages.
+
 **25 Nov 00:55 UTC, 742a (cloud, Task 5):** Verify 310 on 993d193 (dev) + 9831e03 (P2) GREEN. P2 branch 7477b77: the Cross menu
 (CROSS_OPTIONS) reads out its own pages on the left - Information / Trophies (fine progress line) / Options in its thin type under a
 cross bar of page icons, sliding in along the bar (WinPagesCross.kt; class C 17 scenes done, own designs 47 / 53). PlayPlace CROSS
