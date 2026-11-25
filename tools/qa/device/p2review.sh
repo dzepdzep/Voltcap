@@ -200,6 +200,30 @@ fs_ab() {
   n=FS_$1_$2; A --es voltcap_test_fitsearch $1; sleep 2; gate; wg_home
   phase nav; for r in 1 2; do for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; done; sleep 0.8; phase_end nav
   log "fs $n done"; }
+# (682ba, owner 25 Nov 12:48 - the v0.7.0 visual preview: "all 53 layouts, their Details / Achievements / Options pages, animations
+# ... on KONKR and RP Classic at x1.0 and x1.3"; owner 12:5x: full run allowed past the 15-minute limit for this gallery only):
+# per layout - the home, Info, the page walk recorded (R1 x4), Details, Achievements, Options, back on the home; with GAL_NAV=1
+# the home's own navigation recorded too (3 right, 3 left). Keys only through winguard (inside the confirmed window / home);
+# synthetic games, launches blocked, preview on (nothing saved). Level 1.
+#   sh p2review.sh gallery TAG SCALE "LAYOUTS"   then  sh p2review.sh restore TAG
+gallery_layout() {
+  lay=$1; n=$lay; logcat -c
+  A --es voltcap_test_game "${MIX:-Shadow of the Colossus}"; sleep 2
+  openw $lay $n || return 0
+  shot ${n}_info
+  REC_SEG=9 rec_start $O/${n}_walk 9; sleep 0.6
+  k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.1; k BUTTON_R1 1.3
+  rec_stop; sleep 0.3
+  k BUTTON_R1 1.1; shot ${n}_details
+  k BUTTON_R1 1.1; shot ${n}_trophies
+  k BUTTON_R1 1.1; shot ${n}_options
+  closewin
+  if [ "$GAL_NAV" = 1 ]; then
+    REC_SEG=8 rec_start $O/${n}_nav 8; sleep 0.5
+    for i in 1 2 3; do k_home R; sleep 0.7; done; for i in 1 2 3; do k_home L; sleep 0.7; done
+    rec_stop; sleep 0.3
+  fi
+  log "$lay: gallery done (launches: $(launches))"; }
 ch_ab() {
   n=CH_$1_$2; A --es voltcap_test_chargelight $1 --es voltcap_test_battery "77|true"; sleep 6; gate; wg_home
   k_home R; sleep 0.7; k_home L; sleep 1.2
@@ -695,6 +719,22 @@ fsab)
   fs_ab legacy 1; fs_ab new 1; fs_ab legacy 2; fs_ab new 2
   A --es voltcap_test_fitsearch new
   log "fsab done (launches: $(launches))"; echo DONE >> $L;;
+gallery)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  MIX=$(pick "achmix n=10 ")
+  log "setup gallery scale=$SC nav=${GAL_NAV:-0} mixed='$MIX' layouts=$LAYS"
+  for lay in $LAYS; do gallery_layout $lay; done
+  log "gallery done (launches: $(launches))"; echo DONE >> $L;;
 chab)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked

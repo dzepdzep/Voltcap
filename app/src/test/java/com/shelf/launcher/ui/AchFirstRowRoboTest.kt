@@ -90,7 +90,9 @@ open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: 
             // (744a: class C - Layout Studio's own pages)
             HomeLayout.CUSTOM,
             // (745a: class C - the Pocket family's three faces)
-            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET)
+            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET,
+            // (682az: Disc station's own tracks - DISC INFO / PROGRAM / SETUP on the deck's LCD)
+            HomeLayout.DISCS)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {

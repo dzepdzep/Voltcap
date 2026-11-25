@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -878,6 +879,20 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
     // its tray and keys stay. L1 / R1 skip a track back / on, as the deck's own skip keys would.)
     val tracks = DISC_TRACKS.filter { it in ctx.pages }
     val anim = rememberAnimationsEnabled()
+    val discInk = androidx.compose.runtime.remember(lcd) { DiscInk(lcd, lcdBg) }
+    // (682az: Play stays put - as on Live tiles (743a): the Info page's height is taken with More closed (its open list is not
+    // the row Play sits in); on the tracks the panel takes a fixed height grown from it upward only (livePageHeight), so the key
+    // row stays where the Info page had it whatever the track holds.)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val mainH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val pageH = mainH.value?.let { livePageHeight(it, ctx.maxH) }
+    val moreShut = sceneKeys(ctx).none { it.label == "Less" }
+    val onMain = ctx.page == WinPage.MAIN
+    val box = when {
+        onMain -> Modifier.heightIn(max = ctx.maxH).onSizeChanged { if (moreShut) mainH.value = with(dens) { it.height.toDp() } }
+        pageH != null -> Modifier.height(pageH).offset(y = -(pageH - mainH.value!!) / 2)
+        else -> Modifier.heightIn(max = ctx.maxH)
+    }
     Box(Modifier.width(ctx.maxW).height(ctx.maxH).onPreviewKeyEvent { e ->
         if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
         val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
@@ -891,7 +906,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             scaleX = e; transformOrigin = TransformOrigin(0f, 0.5f); alpha = e
         }.clip(RoundedCornerShape(3.dp)).background(Brush.verticalGradient(listOf(Color(0xFF2A3346), Color(0xFF0B0F18))))
             .border(1.dp, rim, RoundedCornerShape(3.dp)))
-        Column(Modifier.align(Alignment.CenterStart).padding(start = left).width(w).heightIn(max = ctx.maxH).graphicsLayer {
+        Column(Modifier.align(Alignment.CenterStart).padding(start = left).width(w).then(box).graphicsLayer {
             // Out of the deck's edge: the panel slides right from behind the tray as the tray reaches it; back in on close.
             val e = sceneEase(((ctx.reveal() - 0.15f) / 0.85f).coerceIn(0f, 1f))
             translationX = (1f - e) * -48.dp.toPx()
@@ -930,18 +945,18 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
                     }
                 },
                 contentKey = { it },
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = !onMain).clip(RoundedCornerShape(6.dp)).background(lcdBg)
                     .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)),
                 label = "discTrack"
             ) { p ->
                 val live = p == ctx.page
-                androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p, LocalNativeLive provides live) {
                 Column(Modifier.fillMaxWidth().then(if (p == WinPage.MAIN) Modifier else Modifier.fillMaxHeight()).padding(10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(if (p == WinPage.MAIN) labels.second else discTrackLabel(p, tracks), color = lcd.copy(alpha = 0.7f), fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
                         Spacer(Modifier.weight(1f))
-                        Text(if (p == WinPage.MAIN) ctx.played.uppercase() else winPageTitle(p).uppercase(), color = lcd, fontSize = 10.sp,
+                        Text(if (p == WinPage.MAIN) ctx.played.uppercase() else discPageName(p).uppercase(), color = lcd, fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace, lineHeight = 13.sp, fontWeight = if (p == WinPage.MAIN) null else FontWeight.Bold)
                     }
                     if (p == WinPage.MAIN) {
@@ -949,13 +964,14 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
                         Spacer(Modifier.height(4.dp))
                         SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)
                     } else {
-                        // The track itself: the page's list on the display (its paper is the LCD; the disc in the deck is the
-                        // cover, the name stays the page's own heading).
+                        // The track itself: the deck's own readout on the display (682az, P2 - the 53rd layout: DISC INFO / PROGRAM /
+                        // SETUP, WinPagesDisc.kt; the shared page bodies played here before). The music calendar under the track
+                        // line: a numbered cell per track, the one playing lit.
+                        Spacer(Modifier.height(4.dp))
+                        DiscCalendar(tracks, p, discInk)
                         Spacer(Modifier.height(6.dp))
                         Box(Modifier.weight(1f).fillMaxWidth()) {
-                            androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = false)) {
-                                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-                            }
+                            DiscPage(ctx, p, live, discInk, Modifier.fillMaxSize())
                         }
                     }
                 }
@@ -968,7 +984,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             // past it (the D-pad brings the key it is on into view); the LCD keeps the rest. Where they fit, nothing changes.)
             val keyScroll = rememberScrollState()
             Box(Modifier.heightIn(max = ctx.maxH * 0.45f).sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
-                KeyRow(sceneKeys(ctx), 8.dp) { a ->
+                KeyRow(sceneKeys(ctx), 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> // (682az: the main page's slots on the tracks - Play stays put)
                     SceneKey(a, Color(0xFF263044), Color(0xFF121826), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
                         font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
                 }
