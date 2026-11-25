@@ -1705,6 +1705,17 @@
    "base_commit": "main a401221 (v0.6.73) + QA-only voltcap_test_prefsdump hook (not committed to main)",
    "tree_hash": "main a401221 + QaPrefsDump",
    "note": "682bd upgrade audit: the v0.6.73 release code as the QA app, so its settings can be dumped before the v0.7.0 QA build goes over it"
+  },
+  {
+   "id": "qa-682bf-53a0f05",
+   "apk_sha256": "78a5af587d710f0141b4e2b5f992fceaa9826204ca25eaa01085711c8697a5d0",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 53a0f05",
+   "tree_hash": "claude/v0674-native-pages 53a0f05",
+   "note": "682bd audit build: qa682be + QA prefs dump hook (the intended v0.7.0 code)"
   }
  ]
 }
