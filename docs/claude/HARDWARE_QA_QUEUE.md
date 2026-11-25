@@ -90,6 +90,74 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   menu), and chips in a narrow row (Settings chip rows, RA "Play as") - whole (shrink, then slide), never an ellipsis; chips
   keep their size, focus ring and touch target. D-pad + touch still work. Screenshots.
   Unit evidence only (DialogChromeFullText713aTest; static TRUNCATE 69 -> 66).
+- Also (749a, rule 11, dev line 749a or later, ~2 min, KONKR x1.3 + x1.0, with 713a): a game's play-stats boxes (long
+  values / labels), the performance page's six tiles (long sub lines: all six stay one size) and the game popup's status rows
+  (long label / value, a destructive row in red) - whole (wrap, shrink, then slide), never an ellipsis; rows keep their height,
+  focus ring and touch target. D-pad + touch still work. Screenshots.
+  Unit evidence only (StatsFullText749aTest; static TRUNCATE 66 -> 60).
+- Also (751a, rule 11, dev line 751a or later, ~2 min, KONKR x1.3 + x1.0, with 749a / 750a): the save inspector (3D view:
+  controls hint and a long object name), the save-sync badge and status line (a long last-result), the Steam import list (long
+  names / source lines) and the RomM browser (long ROM names in the tiles - tiles stay one height - and a long dialog title) -
+  whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
+  Unit evidence only (SaveImportFullText751aTest; static TRUNCATE 51 -> 43).
+- Also (753a, rule 11, dev line 753a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-752a): a games folder's long-press menu
+  (long folder name) and the top-screen folder preview, the artwork gallery label line, the apps library (long app names), a
+  folded Settings group's summary, a slider's value (long value text), the L1 shortcuts (long app names, two lines) and the
+  Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
+  ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
+  Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (761a, matrix P5, dev line 761a or later, ~1 min, KONKR x1.3 + x1.0, with the 760a / 759a passes): Generations with a
+  handheld focused next to a long-named home console (e.g. step to Game Boy, then to Nintendo Entertainment System) - the
+  block at the bottom (generation line, name, maker / year / count) stays below the handheld lane (the focused handheld and its
+  year are never covered); a long name shrinks or slides, the other two lines are whole. Screenshot x1.3. Unit evidence only
+  (GenerationsInfoRoom761aTest).
+- Also (760a, matrix P5, dev line 760a or later, ~1 min, KONKR x1.3 + x1.0, with the 759a pass below): System Stage with a
+  long console name (e.g. Nintendo Entertainment System) - the museum plate on the middle plinth stays below the object's foot
+  and the plinth's lit top (never over them); the name shrinks or slides, the maker / year / count line is whole. Screenshot
+  x1.3. Unit evidence only (StagePlateRoom760aTest).
+- Also (759a, matrix P5, dev line 759a or later, ~5 min, KONKR x1.0 + x1.3): the 17 category-screen looks on the current dev
+  build (docs/claude/CATEGORY_STYLES_P5.md table; last hardware 12 Nov on an older branch) - pick each in Settings > Categories >
+  Category screen, open the category screen (Category screen = "Open it with B" for the test, restored after), step with the keys of its "Keys" column (System Blades and Pocket Dashboard: ◀ ▶ - the
+  Settings line now says so; ▲ ▼ do nothing there), A opens the category, B back. FAIL = a look that does not open, keys that
+  do not move it, cut text, or the Settings line naming other keys. Screenshot per look. Unit evidence only
+  (CategoryLooksInventory759aTest).
+- Also (758a, rule 11, dev line 758a or later, ~3 min, KONKR x1.3 + x1.0, with 749a-757b): a category with a very long
+  name (a long collection name, or a console name at x1.3) on a layout with the home category name - shrinks, then slides,
+  never "..."; L2 / R2 through it: the name swaps in place, nothing around it moves (rule 14, catswitch.sh). Tiles layout with
+  a game whose name needs more than two lines at the smallest size - slides along one line, the tile row and the category
+  above never move; D-pad + touch still work. Screenshots. Unit evidence only (CategoryTileFullText758aTest; static TRUNCATE 2 -> 0).
+- Also (757b, rule 11, dev line 757b or later, ~2 min, KONKR x1.3 + x1.0, with 749a-757a): a printed case back (Collector's
+  case / printed back of a game with a long publisher + developer line) - detail lines and the foot note whole (smaller /
+  narrower, never "..."); a custom layout (e.g. the Marquee preset) with a very long game name - shrinks, then slides; the
+  Magazine home with a long summary - the story ends on "Full story on Details ›" and Details shows it whole. D-pad + touch
+  still work. Screenshots. Unit evidence only (CollectorFit757bTest; static TRUNCATE 8 -> 2).
+- Also (757a, rule 11, dev line 757a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-756a): the classic row's game name under
+  the logo (a very long name: two lines, then a slow slide; the row and the logo do not move between short and long names),
+  the badge wall's percentage / points line, Pocket Quest's Play Game / Continue key with the screenshots column open - whole
+  (shrink, then slide), never an ellipsis. Status-bar progress counters (scraping) still may end in an ellipsis beside the mini
+  player - tapping them opens Background work with the whole readouts. D-pad + touch still work. Screenshots.
+  Unit evidence only (DockBadgeFullText757aTest; static TRUNCATE 13 -> 8).
+- Also (756a, rule 11, dev line 756a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-754a): a game's state badge (e.g.
+  MASTERED) on the game-look card, the Cube hub's console label + game count, Cross menu's achievement progress line under the
+  focused game (Trophies category), the Volt tab names - whole (shrink, then slide), never an ellipsis; rows keep their
+  heights. Second-screen showcase name (long name, 3 lines, centred) + second-screen details name (2 lines) on the Thor with
+  HW-26. D-pad + touch still work. Screenshots. Unit evidence only (LookTabsFullText756aTest; static TRUNCATE 19 -> 13).
+- Also (754a, rule 11, dev line 754a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-753a): the emulator picker (long emulator
+  subtitles, two lines), the first-run accounts card's "Connected" mark, the who-is-playing profile names, a saved preset's long
+  name, the manual reader's title + page counter, the game-look option labels (two lines) - whole (wrap, shrink, then slide),
+  never an ellipsis; rows keep their heights. Second-screen guide title + second-screen details console label on the Thor with
+  HW-26. D-pad + touch still work. Screenshots. Unit evidence only (PickerGuideFullText754aTest; static TRUNCATE 27 -> 19).
+- Also (752a, rule 11, dev line 752a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-751a): the quick-settings tile list (long
+  tile names, "In the menu"), Arch stacks home (a long game name centred - no late pop-in on a game change - and the storage /
+  games line), Twin showcase (category name in CURRENT mode, game name under the grid) and the cartridge shell picker (long shell
+  / edition names; cards stay one height) - whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work.
+  Category switch on Arch stacks / Twin showcase: nothing reloads (catswitch). Screenshots.
+  Unit evidence only (ShowcaseFullText752aTest; static TRUNCATE 43 -> 35).
+- Also (750a, rule 11, dev line 750a or later, ~2 min, KONKR x1.3 + x1.0, with 749a): the new-arrival card after a scan
+  (a long name types in: the card never grows; long console / "+N more" tail), the glance window (long title, facts line
+  closed and with All details), the launch animation (long title + console, centred) and the companion screen's titles
+  (Thor second screen if on hand) - whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
+  Unit evidence only (ArrivalLaunchFullText750aTest; static TRUNCATE 60 -> 51).
 - Also (715a, Task 1 Row-position, dev line 715a or later, ~2 min, KONKR x1.0, with 714a): Voltcap row, game header OFF,
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
@@ -196,7 +264,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages (v0674-native-pages 89ab1d6) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a + 745a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages + the Pocket family's pages (v0674-native-pages df0f0c3) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - 738a adds Panel dashboard (same session, build fb72ff4 or later): p2review walk Info -> Overview -> Achievements -> Manage (R1 x3,
   L1 back); the page name + flat segments change after the old page has gone; the next page slides in from its side (none with
   Motion Off); the art strip says the console only; Play same size and place on every page; facts tiles, the ABOUT panel and the
@@ -320,6 +388,16 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   and the milestone rows whole at x1.0 / x1.3 in a light and a dark theme; Milestones lazywalk (120-set) with the ruler and the
   order chip (words slide); an achievement opened (A) shows the whole text + rarity; a removing action armed and left;
   popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric only (NativePagesStudio744aTest + CUSTOM suites, cloud).
+- 745a adds the Pocket family - all three faces (same session, build df0f0c3 or later): in Pocket classic, Pocket ribbon and Pocket
+  each, p2review walk Info -> page 2 -> 3 -> 4 (R1 x3, L1 back): classic's title bar names the page ("‹ DATA ›", "2/4") and the LCD
+  steps the menu in (four hard steps); the ribbon's underlined page name moves after the old page has gone and the sheet slides in
+  from its side; Pocket Quest's chips light and its scan line runs once (none with Motion Off). Play the same height and place on
+  every page as on the first (bottom edge; it is wider on the pages) - ribbon and Quest beside the tall art especially; the
+  facts, TEXT / About / LORE and the first achievement whole at x1.0 / x1.3 (ribbon x1.3: the bar carries the name); MEDALS /
+  Records / Quest log lazywalk (120-set) with the blocks / hairline / gauge and the order chip; an achievement opened (A) shows
+  the whole text + rarity; a removing option armed and left; popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric
+  only (NativePagesPocket745aTest + the Pocket layouts in AchFirstRow / ShelfText / PlayPlace, cloud).
+
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
   and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.

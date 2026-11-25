@@ -20,7 +20,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.ui.theme.ShelfTheme
@@ -239,11 +238,12 @@ private fun PerfQuickRow(row: PerfRow, modifier: Modifier) {
             .then(if (click != null) Modifier.shelfClickable(shape) { click() } else Modifier.shelfFocusable(shape))
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
-        Text(
+        // (749a, rule 11: label and value shown whole - wrap, readable size, then a slide; reserve = false keeps the row's height.)
+        FullText(
             row.label, color = if (row.destructive) ShelfTheme.danger else ShelfTheme.colors.textPrimary, fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+            fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false
         )
-        Text(row.value, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FullText(row.value, color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 2, reserve = false)
     }
 }
 

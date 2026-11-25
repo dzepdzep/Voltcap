@@ -262,11 +262,12 @@ private fun CompanionScreen(info: CompanionInfo, onBack: () -> Unit) {
                 }
                 Spacer(Modifier.width(18.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(
-                        gameDisplayName(info.title), color = ShelfTheme.colors.textPrimary, fontSize = 24.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(24.sp), maxFontSize = 24.sp),
-                        fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
+                    // (750a, rule 11: whole title and console - wrap, a readable size, then a slide.)
+                    FullText(
+                        gameDisplayName(info.title), color = ShelfTheme.colors.textPrimary, fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold, maxLines = 2, reserve = false
                     )
-                    Text(com.shelf.launcher.data.ConsoleNames.display(info.platform), color = ShelfTheme.secondary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    FullText(com.shelf.launcher.data.ConsoleNames.display(info.platform), color = ShelfTheme.secondary, fontSize = 14.sp, fontWeight = FontWeight.Bold, reserve = false)
                     Spacer(Modifier.height(10.dp))
                     Text(
                         "This session  " + clock(session),
@@ -330,9 +331,9 @@ private fun CompanionScreen(info: CompanionInfo, onBack: () -> Unit) {
 private fun CompanionPerfScreen(info: CompanionInfo, onBack: () -> Unit) {
     Box(Modifier.fillMaxSize().background(ShelfTheme.background)) {
         Column(Modifier.fillMaxSize().padding(8.dp)) {
-            Text(
-                gameDisplayName(info.title), color = ShelfTheme.colors.textPrimary, fontSize = 18.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(18.sp), maxFontSize = 18.sp),
-                fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+            FullText(
+                gameDisplayName(info.title), color = ShelfTheme.colors.textPrimary, fontSize = 18.sp,
+                fontWeight = FontWeight.Bold, maxLines = 2, reserve = false,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
             PerfPage()

@@ -155,7 +155,7 @@ internal fun fitMin(size: TextUnit): TextUnit =
 /**
  * Permanent rule (CLAUDE.md #11, QA R18): a label shown whole, never cut with "…". It wraps onto up to [maxLines] lines,
  * shrinks to a size that stays readable ([fitMin], when [autoFit]), and if it still doesn't fit it slides along one line
- * (a slow marquee) so all of it can be read. Use it instead of `maxLines = n, overflow = TextOverflow.Ellipsis`.
+ * (a slow marquee) so all of it can be read. Use it instead of `maxLines = n, overflow = TextOverflow.Ellipsis`. (qa-ok: TRUNCATE - doc comment naming what this replaces)
  */
 @androidx.compose.foundation.ExperimentalFoundationApi
 @Composable

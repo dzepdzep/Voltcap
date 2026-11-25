@@ -165,14 +165,14 @@ internal fun ArtworkStrip(
                 )
             }
         }
-        Text(
+        // (753a, rule 11: the picture's whole label - readable size, then slides; one line's height kept so nothing moves.)
+        FullText(
             if (focused) items.getOrNull(selected)?.let { "${it.label}  ·  ${selected + 1} / ${items.size}  ·  A to view" }.orEmpty()
             else "",
             color = Color.White.copy(alpha = 0.6f),
-            fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp).height(16.dp)
+            fontSize = 11.sp,
+            maxLines = 1,
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

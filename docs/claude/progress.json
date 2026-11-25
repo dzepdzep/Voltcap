@@ -17,17 +17,17 @@
   {
    "area": "Native popup pages",
    "total": 53,
-   "impl": 49,
-   "unit": 49,
+   "impl": 52,
+   "unit": 52,
    "emulator": 0,
    "device": 29,
    "owner": 0,
    "released": 0,
-   "remaining": "49 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a + Layout Studio 744a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. Left: the Pocket family (three faces) + Disc station's shared bodies.",
+   "remaining": "52 own designs (Pocket classic + Pocket ribbon + Pocket Quest 745a + Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a + Layout Studio 744a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. Left: Disc station's shared bodies (class C complete with the Pocket family 745a).",
    "source": "P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.",
    "functional_owner": "14 accepted functionally 22 Nov (batches 1-3), not visual approval",
    "branch": "P2 branch only",
-   "ci": "P2 63f0b52 (743a): Verify 310 GREEN; 89ab1d6 (744a, Layout Studio) CI pending at hand-off"
+   "ci": "P2 8dfd4f6 (755a): Verify 310 GREEN; every emulator review set PASS x1.3 + x1.0 (45570243363 ... 45644606025 Cross; EMULATOR, not handheld)"
   },
   {
    "area": "Physical pickup / return animations",
@@ -45,13 +45,13 @@
    "area": "Category styles (looks)",
    "total": 17,
    "impl": 17,
-   "unit": "UNKNOWN",
+   "unit": "all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 10 / 17",
    "emulator": 0,
-   "device": "UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)",
+   "device": "UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued",
    "owner": 0,
    "released": "17 (older state)",
    "remaining": "third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review",
-   "source": "Project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since"
+   "source": "docs/claude/CATEGORY_STYLES_P5.md (759a); project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since"
   },
   {
    "area": "Uniform buttons / menus",

@@ -471,7 +471,7 @@ private fun SetupAccount(name: String, blurb: String, connected: Boolean, onOpen
             Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f, fill = false))
             if (connected) {
                 Spacer(Modifier.width(8.dp))
-                Text("✓ Connected", color = ShelfTheme.accent, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                FullText("✓ Connected", color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(Modifier.height(4.dp))

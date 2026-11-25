@@ -116,9 +116,9 @@ internal fun ShowcaseArtPage(info: SecondHomeGame, logoUrl: String?, nowPlayingC
                     modifier = Modifier.fillMaxWidth(0.62f).heightIn(max = 170.dp).secondDimArt()
                 )
             } else {
-                Text(
+                FullText( // (756a, rule 11: the name whole; no reserved lines - it is centred by itself)
                     gameDisplayName(game.name), color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center, maxLines = 3, reserve = false,
                     style = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.8f), blurRadius = 14f)),
                     modifier = Modifier.padding(horizontal = 24.dp)
                 )

@@ -177,9 +177,10 @@ private fun AppRow(
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(
-                app.name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp),
-                fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis
+            // (753a, rule 11: the app's whole name.)
+            FullText(
+                app.name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false
             )
             if (tags.isNotEmpty()) {
                 Text(tags.joinToString(" · "), color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)

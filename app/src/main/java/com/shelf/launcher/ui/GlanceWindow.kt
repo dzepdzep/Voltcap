@@ -330,9 +330,10 @@ internal fun GlanceWindow(
             )
 
             // ---- the title (from the row's name) ----
-            Text(
+            // (750a, rule 11: the whole name - two lines, a readable size, then a slide; no reserved room, its size places the art.)
+            FullText(
                 titles.display(g.name), color = Color.White, fontSize = titleSp.sp, fontWeight = FontWeight.Bold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 1.1.em, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
+                maxLines = 2, lineHeight = 1.1.em, style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW), reserve = false,
                 modifier = Modifier
                     .onSizeChanged { titleSize = it }
                     .widthIn(max = with(d) { (W - nameX - pad).coerceAtLeast(120f).toDp() })
@@ -433,8 +434,8 @@ internal fun GlanceWindow(
                     titles.console(g.platform).takeIf { g.sourceType != com.shelf.launcher.data.SourceType.APP },
                     meta?.releaseYear?.toString(), meta?.developer, meta?.genres?.firstOrNull()
                 )
-                if (facts.isNotEmpty()) Text(facts.joinToString("  ·  "), color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp,
-                    maxLines = if (showAll) 4 else 1, overflow = TextOverflow.Ellipsis)
+                if (facts.isNotEmpty()) FullText(facts.joinToString("  ·  "), color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp,
+                    maxLines = if (showAll) 4 else 1, reserve = false)
                 if (showAll) {
                     GlanceAllDetails(meta?.summary, H - restY - with(d) { 64.dp.toPx() })
                 } else meta?.summary?.takeIf { it.isNotBlank() }?.let {

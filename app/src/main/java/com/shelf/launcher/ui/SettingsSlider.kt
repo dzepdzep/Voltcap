@@ -98,11 +98,12 @@ internal fun PercentSlider(
                 modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(8.dp))
-            Text(
+            // (753a, rule 11: the slider's whole value.)
+            FullText(
                 valueText?.invoke(drag.roundToInt()) ?: "${drag.roundToInt()}%",
-                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                maxLines = 1, reserve = false,
                 color = ShelfTheme.colors.textPrimary,
-                fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
         }

@@ -397,16 +397,25 @@ private fun MagRightPage(c: StyleCtx, g: Game, st: MagStyle, compact: Boolean, m
                 // (Update 346: the game's own summary only — no made-up "tester's notes" when there's none; the
                 // screenshots take the column then.)
                 val story = meta?.summary?.takeIf { it.isNotBlank() }
+                // (757b, rule 11: a story longer than its column ends on the cue line under it - "Full story on Details" -
+                // like every other cut summary (StoryWithCue, owner-approved D255), never on a bare "…" that looks like the end.)
+                var storyCut by remember(story, compact) { mutableStateOf(false) }
                 if (story != null) Text(
                     androidx.compose.ui.text.buildAnnotatedString {
                         withStyle(androidx.compose.ui.text.SpanStyle(fontSize = if (compact) 22.sp else 28.sp, fontWeight = FontWeight.Black, color = st.accent, fontFamily = st.head)) { append(story.take(1)) }
                         append(story.drop(1))
                     },
                     color = st.ink, fontFamily = st.body, fontSize = if (compact) 10.5.sp else 11.sp, lineHeight = if (compact) 13.5.sp else 15.sp,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (story in its column; the cue below points to the whole story on Details)
+                    onTextLayout = { if (it.hasVisualOverflow) storyCut = true },
+                    modifier = Modifier.weight(1f)
                 ) else Text(
                     "No story on file for this game yet.", color = st.muted, fontFamily = st.body, fontStyle = FontStyle.Italic,
                     fontSize = if (compact) 10.sp else 11.sp, modifier = if (shots.isEmpty()) Modifier.weight(1f) else Modifier.padding(bottom = 6.dp)
+                )
+                if (story != null && storyCut) FullText(
+                    STORY_CUE, color = st.accent, fontFamily = st.body, fontWeight = FontWeight.SemiBold,
+                    fontSize = if (compact) 9.5.sp else 10.sp, modifier = Modifier.padding(top = 2.dp)
                 )
                 if (shots.isNotEmpty()) {
                     Spacer(Modifier.height(6.dp))

@@ -4168,13 +4168,15 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
                                             coil.compose.AsyncImage(logo, null, Modifier.size(with(androidx.compose.ui.platform.LocalDensity.current) { catSize.toDp() } * 1.2f))
                                             Spacer(Modifier.width(6.dp))
                                         }
-                                        Text(
+                                        // (758a, rule 11: the category name is shown whole - the same readable shrink as before, then it
+                                        // slides along its line; one line's height is kept at full size so nothing moves when a long name
+                                        // shrinks. Swapped at once by CategoryNameSwap / CategorySlide like before - rule 14.)
+                                        FullText(
                                             label,
                                             color = Color.White,
-                                            fontSize = catSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(catSize), maxFontSize = catSize),
+                                            fontSize = catSize,
                                             fontWeight = FontWeight.Bold,
                                             maxLines = 1,
-                                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                             style = nameTextStyle(backdrop)
                                         )
                                     }

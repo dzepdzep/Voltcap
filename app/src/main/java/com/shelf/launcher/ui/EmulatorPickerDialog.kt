@@ -274,7 +274,7 @@ private fun AppRow(
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text(subtitle, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FullText(subtitle, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2)
         }
         if (isCurrent) {
             Text("In use", color = ShelfTheme.accent, fontSize = 11.sp, fontWeight = FontWeight.Bold)

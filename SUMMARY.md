@@ -49,6 +49,308 @@
   NativePagesDisc682azTest (new), DiscTracks673Test, AchFirstRowRoboTest, ShelfTextRoboTest; tools/qa/device/{p2review.sh,
   galchain.sh (new)}; tools/qa/tools/{appcat.py, gallery070.py (new)}; selftest TestIsoab682ay on the experimental branch.
 - Not tested: Disc station popclip on hardware; class C functional hardware QA (HW-28); owner visual approval of all 53.
+# Update 761a (25 Nov 2026, cloud run) - matrix P5 polish: Generations' info block never rises into the handheld lane
+- CI first: Verify 310 on 3beb14f (760a) GREEN.
+- P5 third-priority polish, second look (Generations). Arithmetic on the KONKR (640 x 427 dp): the line sits at 46 % of the
+  height, the focused handheld (scale 1.15) and its year end ~291 dp down, the info block's bottom is 54 dp above the screen's
+  foot, so the block has ~82 dp. At x1.3 a two-line name needs ~125 dp; the block (unbounded, growing upwards) covered the
+  focused handheld and its year.
+- Fix (CategoryLooks.kt GenerationsLook): the block's height is capped at the handheld lane's foot (generationsInfoRoom;
+  GEN_AXIS / GEN_YEAR_W / GEN_INFO_BOTTOM shared with the drawing; 56 dp minimum for short phone screens). The name has
+  weight(fill = false), so the generation line and the facts (two lines) are measured first and the name gives way: FullText
+  shrinks it to 10 sp, then slides it - never "...". The generation line and the facts now go through FullText too (they slide
+  instead of being cut). At x1.0 a one-line name is unchanged.
+- Test: GenerationsInfoRoom761aTest 3/3 (room arithmetic: x1.0 fits, x1.3 old need > room, the name keeps a readable line,
+  phone minimum; source guards fail on 760a); StagePlateRoom760aTest 2/2, CategoryStable394Test 6/6. Compiled:
+  :app:compileDebugUnitTestKotlin (cloud; Maven Central 429 twice, retried). Static checks [PASS]. Full suite: CI. Hardware
+  NOT TESTED (HW-24 761a, ~1 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/GenerationsInfoRoom761aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
+# Update 760a (25 Nov 2026, cloud run) - matrix P5 polish: System Stage's museum plate never rises over the plinth and the object
+- CI first: Verify 310 on 359aa12 (759a) GREEN.
+- P5 third-priority polish, first look (System Stage). Arithmetic on the KONKR (640 x 427 dp, plinth 26 % of the height): the
+  plate's room on the plinth front is ~83 dp; at x1.3 a two-line name over two lines of facts needs ~100 dp, and the plate
+  (unbounded) rose over the plinth's lit top and the foot of the console standing on it.
+- Fix (CategoryLooks.kt StageLook): the plate's height is capped at the object's foot (stagePlateRoom; STAGE_FOOT_SINK /
+  STAGE_PLATE_BOTTOM name the two factors both the plate and the object use). The name has weight(fill = false), so the facts
+  (maker / year / count, two lines) are measured first and the name gives way: FullText shrinks it to 10 sp, then slides it -
+  never "...". At x1.0 a one-line name over two lines of facts is unchanged.
+- Test: StagePlateRoom760aTest 2/2 (room arithmetic: x1.0 fits, x1.3 old need > room, the name keeps a readable line; source
+  guards fail on 759a); CategoryLooks527Test 7/7, CategoryLooksInventory759aTest 4/4. Compiled: :app:compileDebugUnitTestKotlin
+  (cloud). Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 760a, ~1 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/StagePlateRoom760aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
+# Update 759a (25 Nov 2026, cloud run) - matrix P5: the 17 category-screen looks reconciled; Blades + Pocket Dashboard key hints fixed
+- CI first: Verify 310 on 7a73a1b (758a) GREEN.
+- Next-item check: the HANDOFF "NEXT" lines of 756a-758a still named badgecheck D357 and the profile-picture corner - both were
+  done in 680b / 681e (HANDOFF 17 Nov, 22 Nov 689a); H16 is guarded 53/53; owner Tasks 2-4 done in code (723a-725a); Save Sync
+  port blocked in the cloud (the fix/save-sync branch exists only as a ~100 KB base64 project doc, not a git ref). Picked
+  matrix P5 (OPEN: "list and per-style status to be reconciled").
+- docs/claude/CATEGORY_STYLES_P5.md: the 17 looks (Features.PlatformView) with what draws each, its keys, the home layouts it
+  follows, unit and hardware evidence (last: KONKR x1.0 / x1.3 12 Nov on an older branch), owner 0 / 17, remaining polish.
+- Found on the way: Settings > Categories > Category screen told users to press ▲ ▼ for System Blades and Pocket Dashboard,
+  but both step with ◀ ▶ only (lookNavOf ROW; ▲ ▼ do nothing). Lines now say ◀ ▶; Pocket Dashboard's no longer calls its row
+  of round icons "a compact list". No behaviour change.
+- Test: CategoryLooksInventory759aTest 4/4 (exactly 17 looks; each drawn by PlatformBrowser; each Settings line starts with the
+  picker name; the arrows in a line = the keys that move it - fails on the 758a text); CategoryLooks527Test 7/7,
+  PlatformBrowserFullText678jTest 1/1. Compiled: :app:compileDebugUnitTestKotlin (cloud). Static checks [PASS]. Full suite: CI.
+  Hardware NOT TESTED (HW-24 759a, ~5 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/PlatformBrowserSettings.kt,
+  app/src/test/java/com/shelf/launcher/ui/CategoryLooksInventory759aTest.kt; docs/claude/CATEGORY_STYLES_P5.md; docs (matrix P5,
+  progress.json, HANDOFF, HW queue, dashboard).
+
+# Update 758a (25 Nov 2026, cloud run) - rule 11: the home's category name and the Tiles game name no longer end in "..."
+- CI first: Verify 310 on d8a7b15 (757b) GREEN.
+- Rule 11 (no "..." truncation), the last two places in the app sources: the home's category name (LauncherScreen) goes
+  through FullText - the same readable shrink as before, then it slides along its line; one line's full-size height is kept so
+  nothing moves when a long name shrinks. It stays inside CategoryNameSwap, so a category change still swaps the name in place
+  (rule 14). The Tiles layout's game name (TileHome) goes through FullText with its own one-go fitting kept (autoFit off - no
+  pop-in, update 362) and its fixed name box kept (reserve off - the tile row never moves); a name too long for two lines at
+  11 sp slides along one line. Unused TextOverflow import removed from TileHome.
+- Test: CategoryTileFullText758aTest 3/3 (fails on the 757b sources); CategoryStable394Test 6/6. Static TRUNCATE 2 -> 0, [PASS].
+  Compiled: :app:compileDebugUnitTestKotlin (cloud). Full suite: CI. Hardware NOT TESTED (HW-24 758a).
+- Files: app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt, ui/TileHome.kt,
+  app/src/test/java/com/shelf/launcher/ui/CategoryTileFullText758aTest.kt; docs (matrix P13, HANDOFF, HW queue, dashboard).
+
+# Update 757b (25 Nov 2026, cloud run) - rule 11: printed case backs, custom layout texts and the Magazine story no longer end in "..."
+- CI first: Verify 310 on dce5a85 (757a) GREEN.
+- Rule 11 (no "..." truncation): the printed case back (CollectorBacks) draws its detail lines (publisher, release, players)
+  and its foot note whole - a smaller size (to 70 %), then narrower letters - instead of TextUtils.ellipsize (new pure helper
+  wholeLineFit). A custom layout's text pieces (StyleCustom) keep the piece's own line count but shrink to a readable size and
+  then slide instead of "..." (FullText, no reserved height - the piece's box is the user's). The Magazine home's story keeps
+  filling its column and, when it is longer, now ends on the "Full story on Details ›" cue line like every other cut summary
+  (owner-approved D255). Kept on purpose with qa-ok: ScrollingName's unfocused name in a fixed-height row (the focused one
+  slides whole), StoryLines (summary in the room left; whole on Details), the case back's title / paragraph StaticLayouts
+  (only past their readable minimum).
+- Test: CollectorFit757bTest 4/4 (fails on the 757a sources); DockBadgeFullText757aTest, LookTabsFullText756aTest,
+  InputContract462Test, Batch503Test, Batch520Test PASS. Static TRUNCATE 8 -> 2 (LauncherScreen category name, TileHome game
+  name - both need the rule 14 category-switch care). Cloud compiled (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{CollectorBacks,StyleCustom,StyleMagazine,ScrollingName,WholeRows}.kt,
+  app/src/test/java/com/shelf/launcher/ui/CollectorFit757bTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 757b KONKR).
+
+# Update 757a (25 Nov 2026, cloud run) - rule 11: classic row game name, badge wall line and Pocket Quest Play key show their text whole
+- CI first: Verify 310 on afe1c5e (756a) GREEN.
+- Rule 11 (no "..." truncation): GameDock's home game name (two lines, then a slow slide; same size as before - autoFit off -
+  and no reserved second line, so nothing around it moves while the selection moves), BadgeWall's percentage / points line and
+  Pocket Quest's Play / Continue key (readable size, then slide) move to FullText. HomeChrome's status-bar progress counters
+  keep their ellipsis on purpose (qa-ok: live counters that change every second in the bar's leftover room - with the player
+  there that box is nearly empty; the whole readouts are in the Background work dialog: tap them, or Notifications). FitText's
+  doc comment marked qa-ok.
+- Test: DockBadgeFullText757aTest 2/2 (fails on the 756a sources); 15 source-reading suites over the touched files PASS
+  (PqTabs456Test, Batch478-521 set, CategoryBar453Test, ClipLightTest, ...). Static TRUNCATE 13 -> 8. Cloud compiled
+  (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{GameDock,BadgeWall,StylePocketQuest,HomeChrome,FitText}.kt,
+  app/src/test/java/com/shelf/launcher/ui/DockBadgeFullText757aTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 757a KONKR).
+
+# Update 756a (25 Nov 2026, cloud run) - rule 11: state badges, Cube hub labels, Cross progress line, Volt tabs and second-screen names show their text whole
+- CI first: Verify 310 on e0604ce (755a) GREEN. P2 branch moved (owner's 682bb) - untouched by this run.
+- Rule 11 (no "..." truncation): six texts move from `maxLines + TextOverflow.Ellipsis` to FullText (wrap, readable size,
+  then a slow slide): GameLookUi state badge (MASTERED / PERFECT ...), CubeHub console label (+ its "N games" line, which was
+  clipped silently), StyleCrossMenu's "e / t achievements · N %" line (Trophies category; "loading…" is the text's own
+  ellipsis), VoltUi tab names, SecondShowcase game name (3 lines, no reserved height - centred alone) and SecondScreen details
+  name (2 lines, no reserved height, so the console line under it sits where it did).
+- Test: LookTabsFullText756aTest 2/2 (fails on the 755a sources); PickerGuideFullText754aTest 2/2, CategoryStable394Test 6/6.
+  Static TRUNCATE 19 -> 13, TRUNCATE-CLIP 269 (unchanged). Cloud compiled (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{GameLookUi,CubeHub,StyleCrossMenu,VoltUi,SecondShowcase,SecondScreen}.kt,
+  app/src/test/java/com/shelf/launcher/ui/LookTabsFullText756aTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 756a KONKR; second screen with HW-26 Thor).
+
+# Update 755a (25 Nov 2026, cloud run) - P2 emulator review: Cross's default Achievements list is now checked instead of left untested
+- CI first: Verify 310 on 9e7a8de (754a) GREEN. P2 emulator review 45633462166 (P2:CROSS on 777afa8) VERDICT NOT TESTED at
+  x1.3 + x1.0: the window walk itself was clean (all pages shot, destructive row armed and left, 0 launches, 0 FATAL, restore
+  OK), but the walk logged Cross's default list (cross_trophies ON, update 127) as NOT TESTED, which the grader counts.
+- P2 branch 8dfd4f6 (fast-forward on 777afa8): p2review's new menu_list() runs after the Cross walk with the setting back on
+  (only when it was on before): opens the game's achievements the way the window's Achievements key does (QA hook
+  voltcap_test_achlist = the same viewingAchievementsForGame state; no key that could start a game), requires the menu's own
+  list as a QA-app dialog with the focus (not the home, no game window) and more "earned / total  ·  N %" lines than the home,
+  then one B (wg_key_dlg, only while that list has the focus) must give the home back. Not opened / not closed = FAIL; a
+  missing dump = NOT TESTED. Shots CROSS_mlist_home / _open / _closed. No assertion weakened.
+- Selftest 282/282 (new behavioural test with stubbed device calls: opened + closed, not opened = FAIL with no key, B leaving it
+  open = FAIL; fails on the old script). Review dispatched: run 45644606025 (P2:CROSS on 8dfd4f6).
+- Copy: nothing for app/ (QA tools on the P2 branch only). Dev line: hand-off docs only.
+- Result: review 45644606025 VERDICT PASS (x1.3 + x1.0; the menu list opened, count lines 0 -> 1, and B closed it to the home
+  at both scales; 0 launches). Verify 310 on 8dfd4f6 GREEN. Every P2 review set now has an emulator PASS: one owner action
+  (owner_actions.json) lists the runs holding the sheets and asks which Achievements view Cross should show by default.
+- Not tested: hardware (none needed for a QA-script change). EMULATOR evidence only.
+
+# Update 754a (25 Nov 2026, cloud run) - P2 emulator review: Cross's walk fixed (its achievements open the menu's own list by default); rule 11: emulator picker, first-run accounts, who-is-playing, presets, manual reader, second-screen guide / details and game-look options show their text whole
+- CI first: Verify 310 on b56caf8 (753a) GREEN. P2 emulator review 45623176605 (GREENCORE ARTLIB CROSS LIVE on 3077309)
+  VERDICT FAIL on CROSS only (x1.3 + x1.0); GREENCORE (two-step fix of 753a works), ARTLIB and LIVE PASS at both scales, 0
+  launches, 0 FATAL, restore OK. Cause (QA script, no app defect): Cross's "Achievements in the menu's style" (cross_trophies,
+  update 127, ON by default) opens the menu's own full-screen list from the window's Achievements key, so the window has only
+  Game / Information / Options pages - six R1 presses came back to the first page and Down Down from Start game landed on
+  Options. Nothing was pressed on a key (the guard held).
+- P2 branch 777afa8 (fast-forward on the owner's live 4dfb336): p2review turns cross_trophies off for the Cross walk only (QA
+  app; old value read from the app's own log and put back, also when the window does not open; the snapshot restores every
+  setting anyway), so the window's own Achievements page (742a) is reviewed; the default list is logged NOT TESTED by this walk.
+  Selftest 281/281 (1 new, fails on the old script). Review dispatched: run 45633462166 (P2:CROSS).
+- Design note for the owner (not decided here): with the default setting a player never sees Cross's 742a Achievements page -
+  the update-127 menu list takes its place. Which one Cross should show by default is the owner's call.
+- Dev line, rule 11 (matrix P13): EmulatorPickerDialog.kt (subtitle, two lines), FirstRunDialog.kt ("Connected" mark),
+  WhoIsPlaying.kt (player name), PresetsCard.kt (preset name), ManualReader.kt (title + page), GuideSecondScreen.kt (guide title,
+  two lines), GameLookPicker.kt (option label, two lines), SecondScreenDetails.kt (console label) go through FullText (wrap,
+  readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: PickerGuideFullText754aTest 2/2 PASS in the cloud (fails on 753a: 8 Ellipsis); FolderAppsFullText753aTest 2/2 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 27 -> 19.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/EmulatorPickerDialog.kt, ui/FirstRunDialog.kt, ui/WhoIsPlaying.kt,
+  ui/PresetsCard.kt, ui/ManualReader.kt, ui/GuideSecondScreen.kt, ui/GameLookPicker.kt, ui/SecondScreenDetails.kt,
+  app/src/test/java/com/shelf/launcher/ui/PickerGuideFullText754aTest.kt.
+- Not tested: hardware (HW-24 754a KONKR x1.3 + x1.0; the second-screen pieces on the Thor with HW-26).
+
+# Update 753a (25 Nov 2026, cloud run) - P2 emulator review: Green Core's game window opened as a two-step home; rule 11: folders, artwork gallery, apps library, settings groups / sliders, L1 shortcuts and the Tiles achievement count show their text whole
+- CI first: Verify 310 on b8d00ea (752a) GREEN. P2 emulator review 45612718815 (CAMERA PANELS SHOP GREENCORE on 12f3b28)
+  VERDICT INFRA: x1.0 PASS (all four), x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely ("game window expected",
+  nothing pressed). Cause (QA script, no app defect): Green Core's home opens on its MENU page - its first A opens GAMES, the
+  window is one A further (StyleGreenCore greenCoreKey); x1.0 only passed because GAMES was still open from the x1.3 walk.
+- P2 branch 3077309 (fast-forward on the owner's live c4dbd6e): p2review TWO_STEP="CUBE GREENCORE" (the existing "already
+  open" check covers a GAMES page left open). Selftest 280/280 (1 new, fails on the old script). Review dispatched: run
+  45623176605 (P2:GREENCORE ARTLIB CROSS LIVE).
+- Dev line, rule 11 (matrix P13): FolderIcons.kt (folder menu name, top-screen preview name), ArtworkGallery.kt (label line),
+  AppsLibraryDialog.kt (app name), FoldGroup.kt (summary), SettingsSlider.kt (value), ShortcutsPanel.kt (app name, two lines)
+  and TileHome.kt (achievement count pill; the home's game name is a later batch) go through FullText (wrap, readable size,
+  then slide). 8 TRUNCATE places -> 0.
+- Test: FolderAppsFullText753aTest 2/2 PASS in the cloud (fails on 752a: 8 Ellipsis); ShowcaseFullText752aTest 2/2,
+  CategoryStable394Test 6/6 PASS. App + tests compiled (Maven Central 429 -> VOLTCAP_MAVEN_MIRROR). Static checks PASS,
+  TRUNCATE 35 -> 27.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/FolderIcons.kt, ui/ArtworkGallery.kt, ui/AppsLibraryDialog.kt,
+  ui/FoldGroup.kt, ui/SettingsSlider.kt, ui/ShortcutsPanel.kt, ui/TileHome.kt,
+  app/src/test/java/com/shelf/launcher/ui/FolderAppsFullText753aTest.kt.
+- Not tested: hardware (HW-24 753a, KONKR x1.3 + x1.0, with 749a-752a).
+
+# Update 752a (25 Nov 2026, cloud run) - P2 review of Case flow / Orbit / Airy / Bubble home PASS; rule 11: quick-settings tiles, Arch stacks, Twin showcase and cartridge shell picker show their text whole
+- CI first: Verify 310 on 4f14f72 (751a) GREEN; on the P2 branch 12f3b28 (owner's live 682az) GREEN. P2 emulator review
+  45603942465 (P2:CASEFLOW ORBIT AIRY BUBBLES on 1dbd311) VERDICT PASS at x1.3 and x1.0, 0 launches. Next set dispatched:
+  run 45612718815 (P2:CAMERA PANELS SHOP GREENCORE, on 12f3b28).
+- Dev line, rule 11 (matrix P13): QsTilesCard.kt (tile name, "In the menu" mark), StacksArch.kt (game name - StableFullText so
+  it never pops in late inside its gameSwap - and the storage / games line), TwinShowcase.kt (category name, game name under the
+  grid, both StableFullText) and CartShellPicker.kt (shell name, edition name - two lines kept so the cards line up) go through
+  FullText (wrap, readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: ShowcaseFullText752aTest 2/2 PASS in the cloud (fails on 751a: 8 Ellipsis); CategoryStable394Test 6/6 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 43 -> 35.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QsTilesCard.kt, ui/StacksArch.kt, ui/TwinShowcase.kt,
+  ui/CartShellPicker.kt, app/src/test/java/com/shelf/launcher/ui/ShowcaseFullText752aTest.kt.
+- Not tested: hardware (HW-24 752a, KONKR x1.3 + x1.0, with 749a-751a).
+
+# Update 751a (25 Nov 2026, cloud run) - P2 emulator review fixed for "remove" confirmations and Bubble home; rule 11: save inspector, save sync, Steam import and RomM browser show their text whole
+- CI first: Verify 310 on aaf96c1 (750a) GREEN. P2 emulator review 45593862011 (CASEFLOW ORBIT AIRY BUBBLES, on a524ded)
+  VERDICT INFRA: (1) CASEFLOW / ORBIT / AIRY "A on 'Hide from library' showed no confirmation" at x1.3 and x1.0 - the screenshots
+  and dumps show "Press A again to remove · move away to cancel" on screen; p2review's confirmtext only knew "again to confirm"
+  (a QA false FAIL, not an app defect). (2) BUBBLES aborted: Bubble home's A unfolds the LiveArea inside the home (no game
+  window), and the LiveArea's A is Start = Play - winguard stopped correctly, nothing more pressed.
+- P2 branch 1dbd311 (fast-forward on the owner's 79d19e3): confirmtext also accepts "again to remove"; HOOK_OPEN="BUBBLES" opens
+  that layout's game window with the QA hook voltcap_test_window (never starts a game) instead of an A on the home. Selftest
+  279/279 (2 new; both fail on the old script). Review re-dispatched: run 45603942465 (P2:CASEFLOW ORBIT AIRY BUBBLES on 1dbd311).
+- Dev line, rule 11 (matrix P13): SaveInspect.kt (controls hint, object name), SaveSyncUi.kt (sync badge label, status line),
+  SteamImportDialog.kt (row name, detail / source line) and RommBrowser.kt (ROM tile name - keeps two lines of room - and the
+  dialog title) go through FullText (wrap, readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: SaveImportFullText751aTest 2/2 PASS in the cloud (fails on 750a: 8 Ellipsis); ArrivalLaunchFullText750aTest 2/2 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 51 -> 43.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/SaveInspect.kt, ui/SaveSyncUi.kt, ui/SteamImportDialog.kt,
+  ui/RommBrowser.kt, app/src/test/java/com/shelf/launcher/ui/SaveImportFullText751aTest.kt.
+- Not tested: hardware (HW-24 751a, KONKR x1.3 + x1.0, with 749a / 750a).
+
+# Update 750a (25 Nov 2026, cloud run) - rule 11: new-arrival card, glance window, launch animation and companion screen show their text whole
+- CI first: Verify 310 on e510120 (749a) GREEN. P2 emulator review 45584303713 (HERO_TILES MEMCARD BOX FILESELECT, x1.3 + x1.0,
+  on a524ded) VERDICT PASS, 0 launches, every destructive row armed and cancelled, crash log empty - sheets in its artifact. Next
+  set dispatched: run 45593862011 (P2:CASEFLOW ORBIT AIRY BUBBLES) on a524ded (read-only dispatch; the P2 branch is untouched).
+- Dev line, rule 11 (matrix P13): NewArrival.kt (name while it types in - keeps two lines of room so the card never grows - and the
+  console / "+N more" tail), GlanceWindow.kt (title, no reserve because its size places the art; facts line 1 / 4 lines),
+  LaunchAnimation.kt (centred title + console line) and CompanionActivity.kt (game title + console, Performance page title) go
+  through FullText (wrap, readable size, then slide). 9 TRUNCATE places -> 0.
+- Test: ArrivalLaunchFullText750aTest 2/2 PASS in the cloud (fails on 749a: 9 Ellipsis); Batch523cTest, PlayWhileClosing412Test,
+  PopupReview443Test, PopupShade461Test PASS (read these files). App + tests compiled. Static checks PASS, TRUNCATE 60 -> 51.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/NewArrival.kt, ui/GlanceWindow.kt, ui/LaunchAnimation.kt,
+  ui/CompanionActivity.kt, app/src/test/java/com/shelf/launcher/ui/ArrivalLaunchFullText750aTest.kt.
+- Not tested: hardware (HW-24 750a, KONKR x1.3 + x1.0, with 749a).
+
+# Update 749a (25 Nov 2026, cloud run) - rule 11: play stats, performance tiles and game popup status rows show their text whole
+- CI first: Verify 310 on 435538a (748a) GREEN. P2 emulator review 45576064795 (CIRCUIT CHAN TIMELINE HERO, x1.3 + x1.0) VERDICT
+  PASS, 0 launches, every destructive row armed and cancelled - sheets in its artifact. Next set dispatched: run 45584303713
+  (P2:HERO_TILES MEMCARD BOX FILESELECT) on a524ded.
+- The owner's live session is pushing to claude/v0674-native-pages (682av, 09:10-10:08 Berlin, KONKR hardware results) - this
+  run left that branch alone apart from the read-only review dispatch.
+- Dev line, rule 11 (matrix P13): GamePlayStats.kt (stat value + label), PerfPage.kt (tile value + sub line, the sub keeps its two
+  lines so all six tiles stay one size) and GamePopupStatus.kt (status row label + value) go through FullText (wrap, readable size,
+  then slide; reserve = false where the row height must stay). 6 TRUNCATE places -> 0.
+- Test: StatsFullText749aTest 2/2 PASS in the cloud (fails on 748a: 6 Ellipsis); Batch482Test 7/7 + Tuner373Test 3/3 PASS (touch
+  GamePopupStatus). App + tests compiled. Static checks PASS, TRUNCATE 66 -> 60.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GamePlayStats.kt, ui/PerfPage.kt, ui/GamePopupStatus.kt,
+  app/src/test/java/com/shelf/launcher/ui/StatsFullText749aTest.kt.
+- Hardware NOT TESTED: HW-24 749a (KONKR, with 713a).
+
+# Update 748a (25 Nov 2026, cloud run) - P2 emulator review works again: the review walk reads the app's screen dumps without the device's grep (QA tooling, native-pages branch)
+- CI first: Verify 310 on 4d6b6b9 (dev lock) GREEN; 9be5fab (P2) superseded by this push; ae4ad42 (P2) GREEN.
+- Item (handoff NEXT): review 45566681915 on 9be5fab still INFRA at both scales, but 747c's kept files settled it: both kept
+  dumps ended in '}' and held "popupGame" (null / the Okami path), yet the device's grep -o found no popupGame in the same file
+  ("no popupGame read"). Both carried non-ASCII page text ('·' / '›') in the dump's one long line. The same review's
+  "Pocket classic: A on 'Hide from library' showed no confirmation" was the same fault: the kept dump says "PRESS A AGAIN TO
+  CONFIRM · MOVE AWAY TO CANCEL" and the device's grep -qiE missed it. GNU grep and Debian toybox 0.8.9 find both (the device
+  uses Android's own regex), so the exact grep defect is not reproduced off-device; the reads no longer depend on it.
+- 748a (P2 ae4ad42): winguard.sh wg_jval - the popupGame field read by the shell itself (no grep / regex / other program), used
+  by wg_popup and by the abort line; p2review.sh confirmtext - the armed / disarmed confirmation read like onhide (short lines
+  split on '{', fixed strings). Checked in dash, bash and mksh on the two real kept dumps.
+- Tests: two new selftests with a grep stand-in that finds nothing in a >4 KB line with a non-ASCII byte (a model of the device,
+  labelled as such): wg_popup / the abort line read popupGame, confirmtext sees "AGAIN TO CONFIRM" - both FAIL on 9be5fab's
+  scripts, PASS now. Selftest 277/277. Static checks PASS (no app code changed).
+- EMULATOR result: review 45570243363 on ae4ad42 (P2:POCKET_CLASSIC POCKET_RIBBON POCKET CUSTOM) VERDICT PASS - x1.3 and x1.0
+  walks complete for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio; each destructive row armed (confirmation
+  shown) and left, never confirmed; 0 launches; restore OK. First complete P2 emulator review since 18 Nov. The look stays
+  the owner's review (sheets in the run's artifact). Emulator evidence only - not handheld.
+- Dispatched: review 45576064795 (P2:CIRCUIT CHAN TIMELINE HERO).
+- Copy: nothing for the owner's PC (QA tools on branch claude/v0674-native-pages: tools/qa/device/winguard.sh,
+  tools/qa/device/p2review.sh, tools/qa/selftest/test_qa.py). Hardware: not needed for this change (HW-28 unchanged).
+
+# Update 747a-c (25 Nov 2026, cloud run) - P2 emulator review restarted: the review walk's "no dump" stops diagnosed and narrowed (QA tooling, native-pages branch)
+- CI first: Verify 310 on b44d63f (dev line) and 86344b2 (P2) GREEN.
+- Item: the emulator p2review sheet of the newest native pages (handoff NEXT). Every P2 emulator review since 18 Nov stopped as
+  INFRA "game window expected / home expected, QaClip: 'no dump'"; reproduced on 86344b2 (run 45560074265, Pocket classic /
+  ribbon / Pocket Quest / Layout Studio): Pocket classic walked at x1.3 and x1.0 (sheet captured), then the guard stopped.
+- 747a (P2 dc5f873): winguard's abort says why a dump did not come; waits up to 15 s more while a dump is being written.
+- 747b (P2 e13bbd1): wg_popup reads the dump ONCE (the old code looked three times; a dump being replaced in between read as
+  none). Selftest churn test fails on the old code (ok=7/8), passes on the new.
+- Rerun 45563249574 on e13bbd1: still INFRA, but the new line shows the dump WAS written ("request taken, the dump is there")
+  while the read gave up within ~1 s - so not a slow app. 747c (P2 9be5fab): such an abort keeps that dump beside the log
+  (<tag>_wg_late.json) with its size / last byte / popupGame as the reader sees it. Review re-dispatched: run 45566681915.
+- Also seen (rerun, x1.3): Pocket classic "A on 'Hide from library' showed no confirmation" - the first run armed it fine on
+  the same code; likely the same dump-read problem (the check reads a dump), not counted as an app defect yet.
+- Checked: tools/qa/selftest/test_qa.py 275/275 (P2 worktree). No app code changed. Hardware: NOT TESTED (QA tooling;
+  emulator evidence only). Files (P2 branch): tools/qa/device/winguard.sh, tools/qa/selftest/test_qa.py.
+
+# Update 746a (25 Nov 2026, cloud run) - P2 branch CI fix: the native-pages test follows the finished set
+- CI first: Verify 310 on 2ed1c9f (dev line) GREEN; on df0f0c3 (P2, Pocket family) RED - 4963 tests, 1 failure:
+  PopupNativeStorageTest.storageKeepsItsOwnPages asserted "some scenes still use the shared pages". 745a converted the last one,
+  so every WinScene is now in NATIVE_PAGE_SCENES and the assumption no longer holds.
+- Fix (test only, `claude/v0674-native-pages` 86344b2): the test now requires that no scene is left on the shared pages and that
+  nativePages() is true for every scene - a scene falling back to the shared pages fails. The per-scene check stays.
+- Checked: PopupNativeStorageTest 9/9 (cloud, P2 worktree); static checks PASS. No app code changed; nothing to copy for the dev
+  line. Hardware: NOT TESTED (not needed - test change only). Files: app/src/test/java/com/shelf/launcher/ui/PopupNativeStorageTest.kt (P2 branch).
+
+# Update 745a (25 Nov 2026, cloud run) - P2 class C: the Pocket family gets its own pages, all three faces (native-pages branch)
+- CI first: Verify 310 on 0337ee9 (dev line) and 89ab1d6 (P2, Layout Studio) GREEN. Dev line merged into the P2 branch first
+  (docs only; the shallow clone needed --deepen to find the merge base).
+- Task 5 on `claude/v0674-native-pages` (worktree), 89ab1d6 -> df0f0c3: the last class C scene. POCKET_LCD is one scene with three
+  faces; each now draws its own pages (WinPagesPocket.kt): Pocket classic's handheld menu (title bar names the page "‹ DATA ›"
+  "2/4"; DATA / MEDALS / MENU in pixel type, ten pixel blocks, a drawn ▶ cursor, the LCD stepping the menu in four hard steps),
+  Pocket ribbon's white sheet (pixel ribbon of page names underlined in the accent; Details table on grey rules, Records with a
+  hairline bar, Settings rows with ›; slides in from its side), Pocket Quest's cut-corner panel (chips Overview / Status / Quest
+  log / Commands; stat lines, a ten-cell gauge, deep wells, cut-corner buttons; a scan line runs once). Own designs 52 / 53.
+- Play stays put: the window grows upward only on its pages and, beside the tall art (ribbon, Quest), keeps the room the first
+  page left under its keys (PocketPlace.keyGap). Without it the ribbon's Play sat 80 px (RP Classic 161 px) lower on its pages.
+  PlayPlace (+ Rpc) + a temporary first-page probe: Play's bottom edge equal on all pages in every face, x1.0 / x1.3.
+- Found by the tests on the way: ribbon x1.3 first record cut (bar now carries the name on a short window); classic cursor's blank
+  glyph cut at x1.3 (drawn now); PlayPlace never found Pocket Quest's Play ("Play game") and ShelfText not its Details ("Status") -
+  both taught.
+- Files (P2 branch only): ui/WinPagesPocket.kt (new), ui/WinScenesStyled.kt, ui/WinPageFlow.kt; tests NativePagesPocket745aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest; docs/claude/NATIVE_PAGES_P2.md. Dev line: docs only.
+- Checked (cloud): compile; 3,050 targeted tests (PlayPlace*, AchFirstRow*, NoStrayPlay682j, WinFocus, ShelfText, WindowWordsSurvey,
+  NativeConfirm681, NativePages*, UniformKeys673, Pocket source tests) - 3 ribbon x1.3 failures fixed, touched suites rerun green;
+  static PASS. NOT TESTED: hardware (HW-28 extended), emulator review; not owner-approved.
 
 # Update 744a (25 Nov 2026, cloud run) - P2 class C: Layout Studio gets its own pages (native-pages branch)
 - CI first: Verify 310 on 5fb6ff6 (dev line) and 63f0b52 (P2, Live tiles) GREEN (50e4a3f was cancelled by the next push).

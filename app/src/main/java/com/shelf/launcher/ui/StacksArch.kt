@@ -59,7 +59,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
@@ -227,15 +226,16 @@ internal fun StacksPanel(c: StyleCtx, g: Game, compact: Boolean, modifier: Modif
                 androidx.compose.animation.AnimatedContent(
                     targetState = g, label = "archName", transitionSpec = { gameSwap() }, contentAlignment = Alignment.Center
                 ) { shownGame ->
-                    Text(
+                    // (752a, rule 11: the whole name - sized in the same pass so it never pops in late, then a slide)
+                    StableFullText(
                         titles.display(shownGame.name), color = ink.ink, fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+                        textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
                     )
                 }
                 ArchClock(ink, if (compact) 26.sp else 34.sp)
-                Text(
+                FullText(
                     listOfNotNull(storage, "Games: ${c.games.size}").joinToString("  ·  "),
-                    color = ink.muted, fontSize = if (compact) 9.sp else 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis
+                    color = ink.muted, fontSize = if (compact) 9.sp else 11.sp, textAlign = TextAlign.Center, reserve = false
                 )
             }
             ArchRound(Icons.Filled.Info, "Details", 2, small, ink) { open() }

@@ -760,11 +760,11 @@ private fun PqPanelButtons(c: StyleCtx, g: Game, pal: PqPalette, compact: Boolea
             ) {
                 PqKeyGlyph("A", pal, if (compact) 20.dp else 26.dp)
                 Spacer(Modifier.width(9.dp))
-                Text(
+                // 0.6.15: shrinks to fit when the screenshots column takes room (Thor top screen cut it to "Play Ga…").
+                // (757a, rule 11: FullText - past the readable minimum it slides instead of ending in "…".)
+                FullText(
                     if (resumed) "Continue" else "Play Game", color = pal.onAccent, fontSize = if (compact) 14.sp else 19.sp,
-                    // 0.6.15: shrinks to fit when the screenshots column takes room (Thor top screen cut it to "Play Ga…").
-                    autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 11.sp, maxFontSize = if (compact) 14.sp else 19.sp),
-                    fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis
+                    fontWeight = FontWeight.Bold, reserve = false
                 )
             }
             if (playOn) PqCursor(pal, Modifier.align(Alignment.CenterStart).offset(x = (-15).dp).size(9.dp, 12.dp))

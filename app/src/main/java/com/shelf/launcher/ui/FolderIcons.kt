@@ -165,9 +165,10 @@ internal fun FolderIconMenu(
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
                 .padding(vertical = 6.dp)
         ) {
-            Text(
+            // (753a, rule 11: the folder's whole name - wraps, readable size, then slides.)
+            FullText(
                 folder.name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                maxLines = 2, reserve = false, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
             )
             FolderMenuItem("Open", "foldermenu-open", onOpen)
             FolderMenuItem("Change icon…", "foldermenu-change", onChange)
@@ -233,9 +234,9 @@ internal fun TopScreenFolderPreview(folder: GamesFolder?, modifier: Modifier = M
                         )
                     }
                     Spacer(Modifier.height(14.dp))
-                    Text(
+                    FullText(
                         f.name, color = ShelfTheme.colors.textPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+                        maxLines = 2, reserve = false, textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(

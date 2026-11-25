@@ -2,31 +2,31 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 744a · 2026-11-25 02:55 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 5fb6ff6 (dev) and 63f0b52 (P2); 89ab1d6 pending · effort: medium
+**1. LATEST UPDATE** - 761a · 2026-11-25 22:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 3beb14f (760a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The Layout Studio game window now has its own Details, Achievements and Options pages in the studio's editor style, under a rounded tab strip with the page you are on filled in your accent colour: Properties is an inspector with each fact's label on the left, its value on the right and a dashed guide line under each row, then the description in a framed text box; Milestones shows how many you have, the per cent and a ruler-style bar with a tick every tenth, with each achievement as a layer row whose badge sits in a small frame; Actions lists the choices as rounded buttons like the window's keys (removing ones are outlined in red and ask for a second press). Each page snaps in from one grid step below. Play stays in exactly the same place on every page. On a short screen with large text the console line steps back so the first achievement is always whole. On the test branch only; not yet checked on a handheld or approved.
+**2. WHAT CLAUDE JUST FIXED** - Generations (the release-year timeline on the category screen): with bigger text (x1.3) a long console name made the block at the bottom - generation, name, maker / year / games - grow so tall that it covered the handheld consoles drawn just above it and their years. The block now always stays below them; a long name first gets a little smaller and then slides, the other two lines stay whole. Normal-size text looks the same. A one-minute handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
+- **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
+- **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
+- **App** (745a): The three Pocket layouts' game windows now each have their own Details, Achievements and Options pages in their own style: Pocket classic looks like the handheld's own menu - the blue title bar names the page with arrows and its number, facts and options are pixel-type menu lines with a little cursor, and achievements show as medals with a bar of ten pixel blocks, the menu stepping in like an old LCD; Pocket ribbon keeps its plain white information sheet with the cartridge art on the left, a row of page names with the current one underlined, a table on thin grey lines, and a thin progress line for achievements; Pocket Quest keeps its deep panel with cut corners, labelled Status, Quest log and Commands, with a ten-cell gauge and a scan line running down as a page opens. Play stays exactly where it was on the first page (it had been sitting lower on the pages beside the tall cartridge art; fixed). Every layout that draws its own game window now has its own pages (52 of 53; only Disc station still uses the shared pages). On the test branch only; not yet checked on a handheld or approved.
 - **App** (744a): The Layout Studio game window now has its own Details, Achievements and Options pages in the studio's editor style, under a rounded tab strip with the page you are on filled in your accent colour: Properties is an inspector with each fact's label on the left, its value on the right and a dashed guide line under each row, then the description in a framed text box; Milestones shows how many you have, the per cent and a ruler-style bar with a tick every tenth, with each achievement as a layer row whose badge sits in a small frame; Actions lists the choices as rounded buttons like the window's keys (removing ones are outlined in red and ask for a second press). Each page snaps in from one grid step below. Play stays in exactly the same place on every page. On a short screen with large text the console line steps back so the first achievement is always whole. On the test branch only; not yet checked on a handheld or approved.
 - **App** (743a): The Live tiles layout's game window now has its own Details, Achievements and Options pages in the panel's flat tile style, under a heading that lists the page names in large thin lower-case letters with the one you are on first and bright: About shows each fact as a small coloured label over its value with the description on a flat tile, Achievements shows a big per cent, how many you have and a flat bar in your accent colour (one earned always shows, it is full only when every one is earned) with each achievement as a flat row whose badge sits on a square tile, and Options lists the choices as flat tiles (removing ones are red and ask for a second press). Each page turns in like the panel itself, swinging in from its left edge. While doing this the tests found that Play sat a little lower on these pages than on the first page (much lower on the RP Classic); the panel now grows upwards only, so Play stays in exactly the same place. On the test branch only; not yet checked on a handheld or approved.
-- **App** (742a): The Cross menu layout's game window now has its own Details, Achievements and Options pages, read out on the left in the menu's thin white type under a small bar of page icons (the one you are on bright and named): Information is a system-information list with the labels lined up against a fine divider, Trophies shows your progress as a count, a per cent and a fine line (one earned always shows, it is full only when every one is earned) with each trophy as a row of the menu whose icon grows a little when you are on it, and Options lists the choices as rows of the menu (removing ones in orange ask for a second press). Pages slide in along the bar from the side you moved to. While doing this the tests found that Start game sat lower on these pages than on the first page; it now stays in exactly the same place. On the test branch only; not yet checked on a handheld or approved.
-- **App** (741a): The Art library layout's game window now has its own Details, Achievements and Options pages hung on the gallery wall's pale mat in the same museum-placard serif: the Catalogue lists the game's facts like a catalogue entry with the story under Notes, the Collection shows your achievements as small framed badges with their own placards and a row of ten little frames that fill as you earn them (one earned always fills one, all only when every one is earned), and the Curator lists the choices as small placards (removing ones in deep red ask for a second press). Each page comes up like the gallery lights as you step up to the wall, and Play stays in the same place on every page. On the test branch only; not yet checked on a handheld or approved.
-- **App** (740a): The Green core layout's game window now has its own Details, Achievements and Options pages read out on its glowing system console in the same monospace capitals and your chosen glow colour: Spec lists the game's facts as readout lines with the story in a cut-corner box, Unlocks shows your achievements with a 12-cell charge bar (one earned always lights one, it is full only when every one is earned), and Control lists the choices as command lines (removing ones in red ask for a second press). Each page opens from one glowing line like the console starting up, and Play stays in the same place on every page. On the test branch only; not yet checked on a handheld or approved.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
 | Area | Implemented | Verified on handhelds | Approved by you | Released |
 |---|---|---|---|---|
 | Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
-| Native pages (own designs) | `█████████░` 49/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Native pages (own designs) | `██████████` 52/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
 | Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
-| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
+| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Check CI on 89ab1d6 (P2) and this push; then: P2 class C: Pocket family (three faces in one batch); Emulator review sheet of batches 5-7 for the owner
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Slides, Vault, Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
 
-**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 
 **7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
@@ -134,6 +134,7 @@ Merging, the production install and publishing always wait for your explicit GO.
 | 7 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
 | 8 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
 | 9 | Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum | pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font | none | no | merging the pixel font into the v0.6.74 line |
+| 10 | Review the native game-window pages (P2) on the emulator review sheets, and choose Cross's default Achievements view | Every P2 review set now has an emulator walk PASS (EMULATOR only, not handheld): runs 45576064795, 45584303713, 45603942465, 45612718815 (x1.0), 45623176605 (Green core, Art library, Live), 45644606025 (Cross) - each run's artifact holds sheet_p2_<LAYOUT>.jpg. Question: Cross's Achievements key opens the menu's own list by default (setting 'Achievements in the menu's style', update 127), so players never see Cross's new window Achievements page unless they switch it off - keep that default, or show the new page by default? | none | no | the next P2 layouts' polish and merging claude/v0674-native-pages into the v0.6.74 line |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -166,8 +167,8 @@ Tracked requirement rows: **92** = 30 in the requirements matrix (programme + re
 |---|---|---|---|
 | done | 2 | 4 | 6 (6 %) |
 | implemented, verification pending | 12 | 0 | 12 (13 %) |
-| in progress | 10 | 4 | 14 (15 %) |
-| not started / open | 3 | 7 | 10 (10 %) |
+| in progress | 11 | 4 | 15 (16 %) |
+| not started / open | 2 | 7 | 9 (9 %) |
 | waiting for hardware | 0 | 25 | 25 (27 %) |
 | waiting for owner | 1 | 19 | 20 (21 %) |
 | blocked (references) | 0 | 1 | 1 (1 %) |
@@ -183,7 +184,7 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
-| HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages (v0674-native-pages 89ab1d6) | OPEN (batch with the next KONKR + RP Classic P2 session) |
+| HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a + 745a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages + the Pocket family's pages (v0674-native-pages df0f0c3) | OPEN (batch with the next KONKR + RP Classic P2 session) |
 | HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
 | HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
@@ -230,13 +231,13 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 
 **Native popup pages**
 - Total: 53
-- Implemented: 49 (92 %)
-- Unit-tested: 49 (92 %)
+- Implemented: 52 (98 %)
+- Unit-tested: 52 (98 %)
 - Emulator-tested: 0 (0 %)
 - Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 49 own designs (Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a + Layout Studio 744a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. Left: the Pocket family (three faces) + Disc station's shared bodies.
+- Remaining / blocked: 52 own designs (Pocket classic + Pocket ribbon + Pocket Quest 745a + Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a + Layout Studio 744a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. Left: Disc station's shared bodies (class C complete with the Pocket family 745a).
 - Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**
@@ -253,13 +254,13 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 **Category styles (looks)**
 - Total: 17
 - Implemented: 17 (100 %)
-- Unit-tested: UNKNOWN
+- Unit-tested: all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 10 / 17
 - Emulator-tested: 0 (0 %)
-- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)
+- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued
 - Owner approved: 0 (0 %)
 - Released: 17 (older state)
 - Remaining / blocked: third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review
-- Source: Project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
+- Source: docs/claude/CATEGORY_STYLES_P5.md (759a); project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
 
 **Uniform buttons / menus**
 - Total: UNKNOWN

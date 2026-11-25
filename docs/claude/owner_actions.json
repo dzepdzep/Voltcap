@@ -63,6 +63,13 @@
    "device": "none",
    "urgent": false,
    "blocks": "merging the pixel font into the v0.6.74 line"
+  },
+  {
+   "what": "Review the native game-window pages (P2) on the emulator review sheets, and choose Cross's default Achievements view",
+   "why": "Every P2 review set now has an emulator walk PASS (EMULATOR only, not handheld): runs 45576064795, 45584303713, 45603942465, 45612718815 (x1.0), 45623176605 (Green core, Art library, Live), 45644606025 (Cross) - each run's artifact holds sheet_p2_<LAYOUT>.jpg. Question: Cross's Achievements key opens the menu's own list by default (setting 'Achievements in the menu's style', update 127), so players never see Cross's new window Achievements page unless they switch it off - keep that default, or show the new page by default?",
+   "device": "none",
+   "urgent": false,
+   "blocks": "the next P2 layouts' polish and merging claude/v0674-native-pages into the v0.6.74 line"
   }
  ]
 }

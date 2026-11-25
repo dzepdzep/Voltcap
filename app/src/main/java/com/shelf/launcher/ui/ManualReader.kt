@@ -289,9 +289,9 @@ internal fun ManualReader(file: File, title: String, onDismiss: () -> Unit) {
                             .padding(horizontal = 14.dp, vertical = 6.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
+                        FullText(
                             if (count > 0) "$title  ·  ${page + 1} / $count" else title,
-                            color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis
+                            color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold
                         )
                         Text(
                             "◀ ▶  L1 R1  pages  ·  A zoom  ·  B close" + if (zoom > 1.01f) "  ·  ▲ ▼ ◀ ▶ move" else "",

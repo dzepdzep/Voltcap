@@ -73,6 +73,189 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 22:40 UTC, 761a (cloud, P5 polish - Generations):** Verify 310 on 3beb14f GREEN. Generations' info block (generation
+line, name, facts) is capped at the handheld lane's foot (generationsInfoRoom; on the KONKR at x1.3 a two-line name reached
+~40 dp into the focused handheld); the name gives way first, the other lines stay whole (GenerationsInfoRoom761aTest 3/3;
+HW-24 761a).
+NEXT: check Verify 310 on this push FIRST. Then P5 polish, next look: Slides (then System Vault, Grid / Pocket Dashboard /
+Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses (ONEPRESS), rule 14. P2:
+only on an owner push / review or a red CI.
+
+**25 Nov 21:40 UTC, 760a (cloud, P5 polish - System Stage):** Verify 310 on 359aa12 GREEN. Stage's museum plate is capped at
+the object's foot (at x1.3 on the KONKR it rose ~17 dp over the plinth's top and the console's foot); the name gives way first
+(shrink to 10 sp, then slide), the facts keep two lines (StagePlateRoom760aTest 2/2; HW-24 760a).
+NEXT: check Verify 310 on this push FIRST. Then P5 polish, next look: Generations (then Slides, System Vault, Grid / Pocket
+Dashboard / Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses (ONEPRESS),
+rule 14. P2: only on an owner push / review or a red CI.
+
+**25 Nov 20:40 UTC, 759a (cloud, matrix P5):** Verify 310 on 7a73a1b GREEN. The 756a-758a NEXT lines were stale: badgecheck
+D357 (680b) and the profile-picture corner (681e) are DONE in QA tooling, H16 guarded 53/53, owner Tasks 2-4 done in code
+(723a-725a). Save Sync port (releases.json gate) is NOT doable in the cloud: fix/save-sync exists only as a ~100 KB base64
+project doc (claude/backups/fix_save_sync_bundle_b64.txt), too large to materialise reliably here - a PC session should push
+it as a branch (e.g. claude/v0674-save-sync) so a cloud run can rebase it. P5: docs/claude/CATEGORY_STYLES_P5.md lists the 17
+looks with keys / follow-home / unit / hardware / owner state; Blades + Pocket Dashboard Settings lines said ▲ ▼ but step with
+◀ ▶ - fixed (CategoryLooksInventory759aTest 4/4; HW-24 759a).
+NEXT: check Verify 310 on this push FIRST. Then P5 third-priority polish, one look per run, cloud-checkable parts only (a
+unit / source guard per change): System Stage, Generations, Slides, System Vault, Grid / Pocket Dashboard / Constellation - look
+for cut or overlapping text at x1.3 sizes, ignored first presses (ONEPRESS) and rule 14 (a category change inside a look is
+immediate). P2: only on an owner push / review or a red CI.
+
+**25 Nov 19:40 UTC, 758a (cloud, rule 11 - app sources now 0 TRUNCATE):** Verify 310 on d8a7b15 GREEN. Home category name
+(LauncherScreen, FullText inside CategoryNameSwap - rule 14 swap unchanged, CategoryStable394Test 6/6) and Tiles game name
+(TileHome, FullText autoFit / reserve off - one-go fit and fixed box kept) shown whole (CategoryTileFullText758aTest 3/3,
+TRUNCATE 2 -> 0; HW-24 758a).
+NEXT: check Verify 310 on this push FIRST. Then the v0.6.74 list: badgecheck D357 (skip badges of tiles partly off-screen and
+cover-flow covers stacked behind the focused one; real collisions still FAIL; selftest fixtures for both), then the
+profile-picture corner (statuscheck), then H16 polish. P2: only on an owner push / review or a red CI.
+
+**25 Nov 18:40 UTC, 757b (cloud, rule 11):** Verify 310 on dce5a85 GREEN. CollectorBacks detail lines + foot note drawn whole
+(wholeLineFit: smaller to 70 %, then narrower), StyleCustom text pieces through FullText (reserve off), StyleMagazine story ends
+on the STORY_CUE line when cut; ScrollingName (unfocused fixed-height name) + StoryLines qa-ok (CollectorFit757bTest 4/4,
+TRUNCATE 8 -> 2; HW-24 757b).
+NEXT: check Verify 310 on this push FIRST. The last 2 rule 11 places: LauncherScreen:4120 category name (CATSHELL rule 14 -
+FullText with autoFit + reserve, check CategoryStable394Test + static CATSHELL) and TileHome:442 game name (riseOnChange +
+custom layout; keep the tile height). Then the v0.6.74 list (badgecheck D357 fixtures, profile-picture corner, H16 polish).
+P2: only on an owner push / review or a red CI.
+
+**25 Nov 17:40 UTC, 757a (cloud, rule 11):** Verify 310 on afe1c5e GREEN. GameDock home name (autoFit off, no reserve -
+layout unchanged), BadgeWall % / points line, Pocket Quest Play key through FullText; HomeChrome status-bar progress counters
+qa-ok (live counters; whole in Background work); FitText doc comment qa-ok (DockBadgeFullText757aTest 2/2, TRUNCATE 13 -> 8;
+HW-24 757a).
+NEXT: check Verify 310 on this push FIRST. The last 8 rule 11 places each need a decision: LauncherScreen:4120 category name
+(CATSHELL rule 14 - FullText with autoFit + reserve, check CategoryStable394Test), ScrollingName:56 (the shared helper - read
+its callers), StyleCustom (the user's own maxLines - likely qa-ok: the user chose the lines), StyleMagazine story (fills its
+column - Details shows it whole?), WholeRows story (gives way by design - qa-ok with where it is whole), TileHome game name
+(riseOnChange + custom layout), CollectorBacks canvas x2 (drawn bitmap - wrap in StaticLayout or qa-ok). Then the v0.6.74 list
+(badgecheck D357 fixtures, profile-picture corner, H16 polish). P2: only on an owner push / review or a red CI.
+
+**25 Nov 16:45 UTC, 756a (cloud, rule 11):** Verify 310 on e0604ce GREEN. P2 branch moved (owner's live 682bb 6f6fd73 +
+merge d08182f) - left alone, P2 still waits for the owner's sheet review. Dev line: GameLookUi state badge, CubeHub console label
++ count, StyleCrossMenu progress line, VoltUi tab, SecondShowcase name, SecondScreen details name through FullText
+(LookTabsFullText756aTest 2/2, TRUNCATE 19 -> 13; HW-24 756a).
+NEXT: check Verify 310 on this push FIRST. Then the last rule 11 places (13 left; each needs care: StyleCustom (the user's own
+maxLines), StyleMagazine story (fills its column - scroll on focus?), WholeRows story (gives way by design - may deserve qa-ok
+with where it is whole), GameDock, HomeChrome, LauncherScreen, ScrollingName, StylePocketQuest, TileHome game name, BadgeWall,
+CollectorBacks canvas x2; FitText.kt:126 is a doc comment - mark it qa-ok), then the v0.6.74 list (badgecheck D357 fixtures,
+profile-picture corner, H16 polish). P2: only on an owner push / review or a red CI.
+
+**25 Nov 16:05 UTC, 755a (cloud, P2 review - all sets PASS):** Verify 310 on 9e7a8de GREEN. Review 45633462166 (CROSS) was NOT
+TESTED only because the walk logged Cross's default menu list (cross_trophies ON) as untested. P2 8dfd4f6 (ff on 777afa8):
+p2review menu_list() checks that list after the walk with the setting back on (QA hook = the Achievements key's state; the
+menu's own list must take the focus with its earned / total line; one B back to the home; else FAIL); selftest 282/282.
+Re-review 45644606025 VERDICT PASS x1.3 + x1.0 (list opened and closed at both). Verify 310 on 8dfd4f6 GREEN. Every P2 review
+set now has an emulator PASS -> ONE owner action added (sheets' run links + Cross default-view question). No app code changed.
+NEXT: check Verify 310 on this push FIRST. P2 waits for the owner's sheet review (do not start new P2 polish without it; a red
+CI or an owner push to the P2 branch comes first). Then the next rule 11 batch (19 left; e.g. GameLookUi, CubeHub, GameDock,
+StyleCrossMenu, StyleCustom, StyleMagazine, WholeRows; TileHome game name + CollectorBacks canvas need care), then the v0.6.74
+list (badgecheck D357 fixtures, profile-picture corner, H16 polish).
+
+**25 Nov 14:50 UTC, 754a (cloud, P2 review fix + rule 11):** Verify 310 on b56caf8 GREEN. P2 review 45623176605: GREENCORE,
+ARTLIB, LIVE PASS x1.3 + x1.0 (0 launches); CROSS FAIL = QA script: Cross's "Achievements in the menu's style" (cross_trophies,
+default ON, update 127) replaces the window's Achievements page with the menu's own list, so the walk's Downs reached Options.
+P2 777afa8 (ff on the owner's 4dfb336): p2review turns it off for the Cross walk only and puts it back; selftest 281/281.
+Dispatched 45633462166 (P2:CROSS). Design question noted for the owner (default: 742a page vs the update-127 list) - not decided.
+Dev line: EmulatorPicker / FirstRun / WhoIsPlaying / PresetsCard / ManualReader / GuideSecondScreen / GameLookPicker /
+SecondScreenDetails through FullText (PickerGuideFullText754aTest 2/2, TRUNCATE 27 -> 19; HW-24 754a).
+NEXT: check Verify 310 on this push FIRST. Read review 45633462166; if PASS every P2 set has an emulator PASS -> ONE owner action
+listing the sheets' run links (45576064795, 45584303713, 45603942465, 45612718815 x1.0, 45623176605 for GREENCORE ARTLIB LIVE,
+45633462166 CROSS) plus the Cross default-page question; FAIL / INFRA = next item (fetch the P2 branch first - the owner pushes
+to it live). Then the next rule 11 batch (19 left; e.g. GameLookUi, CubeHub, GameDock, StyleCrossMenu, StyleCustom,
+StyleMagazine, WholeRows; TileHome game name + CollectorBacks canvas need care).
+
+**25 Nov 13:40 UTC, 753a (cloud, P2 review fix + rule 11):** Verify 310 on b8d00ea GREEN. P2 review 45612718815 INFRA: x1.0
+4/4 PASS, x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely - its home opens on the MENU page (A = GAMES, window one A
+further; QA script, no app defect). P2 3077309 (ff on the owner's c4dbd6e): TWO_STEP="CUBE GREENCORE", selftest 280/280.
+Dispatched 45623176605 (P2:GREENCORE ARTLIB CROSS LIVE = Green Core re-check + the last set). Dev line: FolderIcons / ArtworkGallery /
+AppsLibraryDialog / FoldGroup / SettingsSlider / ShortcutsPanel / TileHome count pill through FullText (FolderAppsFullText753aTest
+2/2, TRUNCATE 35 -> 27; HW-24 753a).
+NEXT: check Verify 310 on this push FIRST. Read review 45623176605; if PASS every P2 set has an emulator PASS -> ONE owner action
+listing the sheets' run links (45576064795, 45584303713, 45603942465, 45612718815 x1.0 + 45623176605); FAIL / INFRA = next item
+(fetch the P2 branch first - the owner pushes to it live). Then the next rule 11 batch (27 left; e.g. TileHome game name (riseOnChange
++ custom layout - careful), CollectorBacks canvas x2, CubeHub, EmulatorPickerDialog, FirstRunDialog, GameDock).
+
+**25 Nov 12:40 UTC, 752a (cloud, rule 11 + P2 review):** Verify 310 on 4f14f72 (dev) + 12f3b28 (P2) GREEN. P2 review 45603942465
+(CASEFLOW ORBIT AIRY BUBBLES) VERDICT PASS, 0 launches; next set 45612718815 (P2:CAMERA PANELS SHOP GREENCORE, on 12f3b28 = the
+owner's live 682az) dispatched. Dev line: QsTilesCard / StacksArch / TwinShowcase / CartShellPicker through FullText /
+StableFullText (ShowcaseFullText752aTest 2/2, TRUNCATE 43 -> 35; HW-24 752a).
+NEXT: check Verify 310 on this push FIRST. Read review 45612718815; if PASS dispatch the last set: ARTLIB CROSS LIVE; a FAIL /
+INFRA is the next item (fetch the P2 branch first - the owner pushes to it live). Between dispatches: the next rule 11 batch
+(35 left; e.g. FolderIcons, TileHome, CollectorBacks, ArtworkGallery). When all sets PASS, one owner action with the sheets'
+run links.
+
+**25 Nov 11:50 UTC, 751a (cloud, P2 review fix + rule 11):** Verify 310 on aaf96c1 GREEN. P2 review 45593862011 (CASEFLOW ORBIT
+AIRY BUBBLES) INFRA, two QA-script causes, no app defect: the shown "Press A again to remove" was not a phrase confirmtext knew
+(3 false FAILs), and Bubble home's A opens the LiveArea in the home (its next A = Play) so no window came (BUBBLES aborted safely).
+P2 1dbd311 (ff on the owner's 79d19e3): "again to remove" accepted; HOOK_OPEN="BUBBLES" opens its window with voltcap_test_window;
+selftest 279/279. Review re-dispatched: 45603942465. Dev line: SaveInspect / SaveSyncUi / SteamImportDialog / RommBrowser through
+FullText (SaveImportFullText751aTest 2/2, TRUNCATE 51 -> 43; HW-24 751a).
+NEXT: check Verify 310 on this push FIRST. Read review 45603942465; if PASS dispatch the next set (one at a time): CAMERA PANELS
+SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (fetch the P2 branch first - the owner pushes to it live).
+Note for the owner's review: Bubble home's game window is not reached by A from its home (A = LiveArea, then Start); the
+review opens it by the QA hook - how a player reaches that window is a design question if it matters. Between dispatches: the
+next rule 11 batch (43 left; e.g. QsTilesCard, StacksArch, TwinShowcase, CartShellPicker). When all sets PASS, one owner action
+with the sheets' run links.
+
+**25 Nov 10:40 UTC, 750a (cloud, rule 11 + P2 review):** Verify 310 on e510120 GREEN. P2 review 45584303713 (HERO_TILES MEMCARD
+BOX FILESELECT) VERDICT PASS, 0 launches; next set 45593862011 (P2:CASEFLOW ORBIT AIRY BUBBLES, on a524ded) dispatched. Dev line:
+new-arrival card, glance window title / facts, launch animation title / console, companion screen titles through FullText
+(ArrivalLaunchFullText750aTest 2/2, TRUNCATE 60 -> 51; HW-24 750a).
+NEXT: check Verify 310 on this push FIRST. Read review 45593862011; if PASS dispatch the next set (one at a time): CAMERA PANELS
+SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (fetch the P2 branch first - the owner pushes to it live).
+Between dispatches: the next rule 11 batch (51 left; e.g. SaveInspect, SaveSyncUi, SteamImportDialog, RommBrowser). When all
+sets PASS, one owner action with the sheets' run links.
+
+**25 Nov 09:35 UTC, 749a (cloud, rule 11 + P2 review):** Verify 310 on 435538a GREEN. P2 review 45576064795 (CIRCUIT CHAN TIMELINE
+HERO) VERDICT PASS, 0 launches; next set 45584303713 (P2:HERO_TILES MEMCARD BOX FILESELECT, on a524ded = the owner's live 682av
+push) dispatched. Dev line: play stats / performance tiles / popup status rows through FullText (StatsFullText749aTest 2/2,
+TRUNCATE 66 -> 60; HW-24 749a). The owner's live session is pushing to the P2 branch (682av) - fetch + merge before any P2 push.
+NEXT: check Verify 310 on this push FIRST. Read review 45584303713; if PASS dispatch the next set (one at a time): CASEFLOW ORBIT
+AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (if it fails on a524ded's new
+p2review changes, compare with ae4ad42 before touching the owner's scripts). Between dispatches: the next rule 11 batch (60 left;
+e.g. NewArrival, GlanceWindow, LaunchAnimation, CompanionActivity). When all sets PASS, one owner action with the sheets' run links.
+
+**25 Nov 08:35 UTC, 748a (cloud, QA tooling - the P2 emulator review works again):** Verify 310 on 4d6b6b9 (dev) + ae4ad42 (P2)
+GREEN. Root of the "no dump" stops: the dump WAS there and held popupGame, but the device's grep -o found nothing in its one long
+line with non-ASCII page text; the same grep fault hid an armed confirmation ("A showed no confirmation"). P2 ae4ad42: winguard
+wg_jval reads popupGame in pure shell; p2review confirmtext reads like onhide (split on '{', grep -F). Selftest 277/277 (2 new,
+fail on the old scripts). Review 45570243363 (Pocket classic / ribbon / Quest / Layout Studio, x1.3 + x1.0) VERDICT PASS, 0
+launches - sheets in its artifact for the owner. Review 45576064795 (CIRCUIT CHAN TIMELINE HERO) dispatched.
+NEXT: check Verify 310 on this push FIRST. Read review 45576064795; if PASS dispatch the next set (one at a time, ~27 min each):
+HERO_TILES MEMCARD BOX FILESELECT / CASEFLOW ORBIT AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL /
+INFRA there is the next item. Between dispatches: other v0.6.74 work (Task 1 residual etc.). When all sets PASS, one owner
+action with the sheets' run links (owner 0 / 53 approved). Other grep -o reads on whole dumps (p2review density at the start of
+the file) are early ASCII fields - left as they are.
+
+**25 Nov 07:45 UTC, 747a-c (cloud, QA tooling for the P2 emulator review):** Verify 310 on b44d63f (dev) + 86344b2 (P2) GREEN.
+The P2 emulator review has stopped on "QaClip: 'no dump'" since 18 Nov (reproduced: run 45560074265). P2 branch 9be5fab:
+winguard reads the dump once (747b) and an abort names why (747a/c) - rerun 45563249574 showed the dump WAS written while the
+read gave up within ~1 s; 747c keeps that file as <tag>_wg_late.json (+ size / last byte / popupGame) in the artifact.
+Run 45566681915 (9be5fab, P2:POCKET_CLASSIC POCKET_RIBBON POCKET CUSTOM) was dispatched at the end of this run.
+NEXT: check Verify 310 on 9be5fab (P2) and this push FIRST. Then read run 45566681915: if it still stops, open raw/p2r*/
+p2r*_wg_late.json and the abort line - fix the reader (likely a shell / grep read on the device, not the app), selftest it,
+re-dispatch (one at a time - the workflow's concurrency queue keeps only one pending). Once a review passes, dispatch the class C
+layouts in sets of 4 (x1.3 + x1.0 take ~17 min): CIRCUIT CHAN TIMELINE HERO / HERO_TILES MEMCARD BOX FILESELECT / CASEFLOW ORBIT
+AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE + the Pocket set, and put the sheets in front of the owner.
+
+**25 Nov 05:35 UTC, 746a (cloud, CI fix):** Verify 310 on 2ed1c9f (dev) GREEN; on df0f0c3 (P2) RED - one test,
+PopupNativeStorageTest.storageKeepsItsOwnPages, still assumed some scene used the shared pages; 745a's Pocket family was the last,
+so the set is empty. Test now requires every WinScene to draw its own pages (stronger, guards a fall-back). P2 branch 86344b2,
+PopupNativeStorageTest 9/9 (cloud). No app code changed. Note: Disc station IS in NATIVE_PAGE_SCENES (its tracks on the LCD) -
+"52 / 53" counts its shared page BODIES, not the gate.
+NEXT: check Verify 310 on 86344b2 (P2) and this push FIRST (red -> fix first). Then: the emulator p2review sheet of batches 5-8
+(incl. the three Pocket faces) for the owner (owner 0 / 53 approved; class C done); or the Task 1 residual; Disc station's own
+bodies only after the owner decides. Same pre-push checks as below.
+
+**25 Nov 03:50 UTC, 745a (cloud, Task 5):** Verify 310 on 0337ee9 (dev) + 89ab1d6 (P2) GREEN. P2 branch df0f0c3: the Pocket family
+(POCKET_LCD) has its own pages in all three faces (WinPagesPocket.kt) - Pocket classic's handheld menu (title bar names the page,
+DATA / MEDALS / MENU, pixel blocks, LCD steps), Pocket ribbon's sheet (pixel ribbon of names, Details / Records / Settings on grey
+rules), Pocket Quest's cut-corner panel (Status / Quest log / Commands, ten-cell gauge, scan line). Class C complete, own designs
+52 / 53 (Disc station's shared bodies left - owner to decide). Play kept put beside the tall art by keeping the first page's room
+under the keys (ribbon was 80 / 161 px lower without). HW-28 extended. Not approved.
+Infra tip: the clone is shallow - `git fetch --deepen=300 origin <both branches>` before merging the dev line into the P2 branch.
+NEXT: check Verify 310 on this push AND on df0f0c3 (P2) FIRST (red -> fix first). Then: an emulator p2review sheet of batches 5-8
+(incl. the three Pocket faces) for the owner - the owner has 0 / 53 approved and class C is done; or the Task 1 residual; Disc
+station's own bodies only after the owner decides. Same pre-push checks as below.
+
 **25 Nov 02:55 UTC, 744a (cloud, Task 5):** Verify 310 on 5fb6ff6 (dev) + 63f0b52 (P2) GREEN. P2 branch 89ab1d6: Layout Studio
 (STUDIO_PANEL) has its own pages - Properties (inspector rows with dashed guides) / Milestones (ruler + layer rows) / Actions
 (rounded buttons) under the editor's rounded tab strip, snapping in from one grid step below (WinPagesStudio.kt; class C 19 scenes

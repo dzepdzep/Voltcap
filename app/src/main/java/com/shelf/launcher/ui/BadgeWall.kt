@@ -252,10 +252,11 @@ private fun BadgeTile(
         val sub = listOfNotNull(pct, count).joinToString(" · ").ifEmpty { null }
         if (sub != null) {
             if (!showName) Spacer(Modifier.height(4.dp))
-            Text(
+            // (757a, rule 11: shown whole - readable size, then a slow slide - instead of ending in "…".)
+            FullText(
                 sub,
                 color = if (item.percent != null && item.percent < 5f && pct != null) GOLD else ShelfTheme.textMuted,
-                fontSize = 10.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(10.sp), maxFontSize = 10.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), fontFamily = style.font
+                fontSize = 10.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(), fontFamily = style.font
             )
         }
     }
