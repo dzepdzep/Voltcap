@@ -1,3 +1,422 @@
+# Update 744a (25 Nov 2026, cloud run) - P2 class C: Layout Studio gets its own pages (native-pages branch)
+- CI first: Verify 310 on 5fb6ff6 (dev line) and 63f0b52 (P2, Live tiles) GREEN (50e4a3f was cancelled by the next push).
+- Task 5 on `claude/v0674-native-pages` (worktree), 63f0b52 -> 89ab1d6: the nineteenth class C scene (batch 8). Layout Studio's
+  panel (layout grid, framed art well with crop marks, the layout's colours) keeps its first page (Canvas); its pages use the
+  editor's language under a rounded tab strip (Canvas / Properties / Milestones / Actions, the shown one filled in the accent):
+  Properties (inspector rows - spaced-capital labels left, values right, dashed guide lines; the description in a text frame),
+  Milestones ("N / M", per cent, a ruler with a tick every tenth - one earned always shows, full only when all are earned - the
+  order chip; layer rows with the badge in a framed well, "Earned <date>" / "Not yet", "+N" chip; A opens text + rarity),
+  Actions (rounded buttons like the keys; removing ones red-outlined, second A). Pages snap in from one grid step below; none
+  with Motion Off. Own designs 49 / 53.
+- Play stays put: key row keeps the first page's slots, the panel grows upward only on its pages (livePageHeight, as Live 743a).
+  PlayPlace CUSTOM (+ Rpc) x1.0 / x1.3 + a temporary first-page probe: Play's top-left within 1 px on all four pages.
+- Found on the way: AchFirstRow CUSTOM x1.3 showed the first milestone half (37 of 75 px) - on a short window the pages now drop
+  the console line (it is in Properties), the name goes to 16 sp / two lines and the milestone header steps down; PASS after.
+- Checked (cloud): NativePagesStudio744aTest 4/4 (new; fails on the old code: no studioPageName, STUDIO_PANEL not native); CUSTOM
+  added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, WindowWordsSurvey682,
+  Popup421, Batch506, Layouts330, R1Compat326, WinFocus*, UniformKeys673, NativeConfirm681, NativePages* - 2,903 tests,
+  0 failures. Static PASS. (Maven Central answered 429; the run used the settings' VOLTCAP_MAVEN_MIRROR switch with Google's
+  Maven Central mirror.)
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesStudio.kt (new), ui/WinSceneStudio.kt (StudioPanel, StudioTitle), ui/WinPageFlow.kt; tests
+  NativePagesStudio744aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 743a (25 Nov 2026, cloud run) - P2 class C: the Live tiles panel gets its own pages (native-pages branch)
+- CI first: Verify 310 on 73c1053 (dev line) and 7477b77 (P2, Cross menu) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 7477b77 -> 63f0b52: the eighteenth class C scene (batch 7). The Live tiles panel
+  (flat, dark, turning in like a turnstile) keeps its flat tile language on its pages under a pivot heading - the page names in
+  large thin lower case, the shown one white and first, the others after it in turn, dim: about (lower-case accent labels over thin
+  white values, the description on a flat tile), achievements (big thin per cent, "N of M", a flat accent bar - one earned always
+  shows, full only when all are earned - the order as a flat tile; each achievement a flat row with its badge on a square tile,
+  the row you are on filled in the accent; A shows the whole text and rarity), options (flat tiles; removing ones red, second A).
+  The next page turns in like the panel itself (turnstile from the left edge, text drawn flat first - D285); none with Motion Off.
+  Own designs 48 / 53.
+- Found and fixed on the way (a PlayPlace probe of the first page, not only the pages): grown to the window's height, the centred
+  panel put Play 8 dp lower on its pages (RP Classic: 60 dp). On its pages the panel now grows upward only (livePageHeight: half
+  the free room, measured with More closed), so Play's top-left is identical on the first page and all three pages (x1.0 / x1.3,
+  both screen sizes). Play is wider on the pages, as on every layout whose first-page row scrolls.
+- Checked (cloud): NativePagesLive743aTest 5/5 (new; fails on the old code: no livePageName, LIVE_PANEL not native); LIVE added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, InputContract462, WindowWordsSurvey682,
+  Visual426, Popup421, WinFocus*, Layouts344, Readability476, Batch505, PopupMore451, WinPresentation*, NativeConfirm681,
+  NativePages*, UniformKeys673, PopupNativeStorage* - 2,909 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesLive.kt (new), ui/WinScenesHomes2.kt (LiveTilesPanel, livePageHeight), ui/WinPageFlow.kt; tests
+  NativePagesLive743aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 742a (25 Nov 2026, cloud run) - P2 class C: the Cross menu reads out its own pages (native-pages branch)
+- CI first: Verify 310 on 993d193 (dev line) and 9831e03 (P2, Art library) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 9831e03 -> 7477b77: the seventeenth class C scene (batch 6; the last class C
+  scene that still showed the shared bodies through sharedPageFor's own Cross exception). The Cross menu reads its pages out on the
+  left in its thin white type under a "cross bar" (one small icon per page on a fine line, the shown one bright and named):
+  Information (system-information list - grey labels right-aligned against a fine divider, white values beside them, stacked on a
+  narrow column; the description as one row of the menu), Trophies (cup, "N / M", per cent + a fine progress line - one earned
+  always shows, full only when all are earned - the order as a band key; each trophy a row of the menu, its icon drawn larger on
+  the row you are on; A shows the whole text and how rare it is), Options (rows of the menu; removing ones in warning orange,
+  second A). The next page slides in along the bar from the side you moved to; none with Motion Off. Own designs 47 / 53.
+- Found and fixed on the way (PlayPlace CROSS, newly reachable): the centred options column put Play 26 dp (x1.0) / 54 dp (x1.3)
+  lower on the pages than on the first page. The first page stays centred as before; the pages' keys keep the page slots and start
+  where the first page's keys did; the column's scroll starts at its top on every page. PlayPlace had skipped Cross (its Play is
+  "Start game", its Details "Information") - both words taught to PlayPlace / ShelfText.
+- Checked (cloud): NativePagesCross742aTest 4/4 (new; fails on the old code: no crossPageName, CROSS_OPTIONS not native); CROSS added
+  to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc CROSS x1.0 / x1.3 Play at the same place on the
+  first page and all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*, Layouts344,
+  Readability476, Batch505, Visual426, PopupMore451, WinPresentation, NativeConfirm681, NativePages*, UniformKeys673,
+  PopupNativeStorage - 2,499 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCross.kt (new), ui/WinScenesHomes2.kt (CrossOptions, KeyColumn slots / scrollKey), ui/WinPageFlow.kt;
+  tests NativePagesCross742aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest, UniformKeys673Test; docs
+  NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 741a (24 Nov 2026, cloud run) - P2 class C: the Art library's gallery wall gets its own pages (native-pages branch)
+- CI first: Verify 310 on c466cf8 (dev line) and 945bb17 (P2, Green core) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 945bb17 -> 9831e03: the sixteenth class C scene (batch 6). The Art library's
+  gallery wall hangs its own pages on the pale mat where the work hangs, in the placard's serif and ink, lit in the layout's
+  colour: Catalogue (each fact a catalogue line - label in small grey capitals over the value, hairlines between - then the
+  story on a white card headed "Notes"), Collection (cup, "N of M acquired", a hang of 10 small frames - one acquired always fills
+  one, all only when every one is acquired - the order as a slim key; each achievement a framed badge beside its placard: title,
+  "Acquired <date>" / "Not yet acquired", "+N"; A shows the whole text and how rare it is), Curator (each option a small placard;
+  removing ones in deep red, second A). Heading = the page's name in serif italic + "ROOM N OF M", after the old page has gone;
+  the next page comes up like the gallery lights as you step up to the wall (fade + slight scale); none with Motion Off. On its
+  pages the wall keeps its size and its keys keep the page slots (Play first), so Play stays put; on a short wall's pages the
+  placard keeps the name alone. Was the shared page bodies on the mat. Own designs 46 / 53.
+- Checked (cloud): NativePagesGallery741aTest 4/4 (new; fails on the old code: no galleryPageName, GALLERY_PLACARD not native);
+  ARTLIB added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc ARTLIB x1.0 / x1.3 found Play at
+  the same place on all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*,
+  Layouts344 / 374, Batch505, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage - 2,803 tests, 0 failures.
+  Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesGallery.kt (new), ui/WinScenesMore.kt (GalleryPlacard), ui/WinPageFlow.kt; tests
+  NativePagesGallery741aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 740a (24 Nov 2026, cloud run) - P2 class C: Green core's console gets its own pages (native-pages branch)
+- CI first: Verify 310 on aa0e172 (dev line) and 982dfb1 (P2, Rental shop) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 982dfb1 -> 945bb17: the fifteenth class C scene (batch 6; Arctic already had
+  its own pages since 682y). Green core's glowing system console reads out its own pages under its glow rule, in its monospace
+  capitals and the picked glow colour: SPEC (each fact a readout line - label in the dim glow over the value, a glow tick down its
+  left - then the story in a cut-corner well headed "// DESCRIPTION"), UNLOCKS (cup, "N / M", a 12-cell core charge bar - one
+  earned always charges one, all only when every one is earned - the order as a cut-corner key; each achievement a cut-corner
+  line: badge, title, "UNLOCKED <date>" / "LOCKED", "+N"; A shows the whole text and how rare it is), CONTROL ("> " command lines;
+  removing ones in alarm red, second A). Heading = "> " + the page's name + a cut-corner cell per page, after the old page has gone;
+  the next page opens from one glowing line across its middle like the console's boot; none with Motion Off. On its pages the
+  console keeps one height and its keys keep the page slots (Play first), so Play stays put. Was the cover with the shared page
+  bodies in the facts' place. Own designs 45 / 53.
+- Checked (cloud): NativePagesCore740aTest 4/4 (new; fails on the old code: no corePageName, CORE_PANEL not native); GREENCORE
+  added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc GREENCORE x1.0 / x1.3 found Play at the
+  same place on all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*, Layouts344,
+  NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage - 2,570 + 88 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCore.kt (new), ui/WinScenesMore.kt (CorePanel), ui/WinPageFlow.kt; tests NativePagesCore740aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 739a (24 Nov 2026, cloud run) - P2 class C: Rental shop's tag gets its own pages (native-pages branch)
+- CI first: Verify 310 on 5d6a422 (dev line) and fb72ff4 (P2, Panel dashboard) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), fb72ff4 -> 982dfb1: the fourteenth class C scene (first of batch 6). Rental
+  shop's yellow rental tag prints its own pages under the title in its black capitals, lit in the shop's neon: CATALOGUE CARD
+  (opened by the tag's own CATALOGUE CARD key: facts label over value between dashed rules, the story under a black bar headed
+  THE STORY), REWARDS CARD (a member punch card: cup, "N / M", ten punch holes - one earned always punches one, all only when every
+  one is earned - the order as a black stamp; each achievement a line with its square badge, title, "EARNED <date>" / "NOT YET",
+  "+N PTS"; A shows the whole text and how rare it is), COUNTER (black punched rows; removing ones orange, second A). Heading = the
+  page's name (wraps, never cut) + a punch hole per page, after the old page has gone; the next page drops in from above like the
+  next card on the tag's string; none with Motion Off. On its pages the tag keeps one size and one row of punched keys (two page
+  slots, RENT & PLAY first), so Play stays put. No made-up rental period / due date / price. Was the shared pages in a black frame
+  with "▸" words under it. Own designs 44 / 53.
+- Found on the way (tests): PlayPlace never checked the Rental shop - it knew neither RENT & PLAY nor CATALOGUE CARD, so it skipped
+  the layout; ShelfText could not open its Details. Both now know the shop's words (stronger, not weaker), and PlayPlace SHOP finds
+  Play at the same place on all three pages at x1.0 / x1.3.
+- Checked (cloud): NativePagesShop739aTest 4/4 (new; fails on the old code: no shopPageName, SHOP_TAG not native); SHOP added to
+  AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, Layouts344, WindowWordsSurvey682,
+  Batch505, PopupShade461, Pickups672, ShopTag673, NativeConfirm, PopupNativeStorage, WinFocus, UniformKeys673, NativePages* -
+  2,639 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesShop.kt (new), ui/WinScenesConsole.kt (RentalTagCard), ui/WinPageFlow.kt; tests
+  NativePagesShop739aTest (new), AchFirstRowRoboTest, PlayPlace682abRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line:
+  hand-off docs only.
+
+# Update 738a (24 Nov 2026, cloud run) - P2 class C: Panel dashboard gets the panel's own pages (native-pages branch)
+- CI first: Verify 310 on ca697b9 (dev line) and 5e1b096 (P2, Pocket camera) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 5e1b096 -> fb72ff4: the thirteenth class C scene. Panel dashboard's swung-round
+  panel shows its own pages on its right side, flat like the dashboard, in the picked palette: OVERVIEW (each fact a flat tile with
+  a colour bar down its left, label over value; the story in a flat panel headed ABOUT under a colour bar), ACHIEVEMENTS (cup,
+  "N / M", a 10-segment flat meter - one earned always lights one, all only when every one is earned - the order as a flat tile;
+  each achievement a flat row with its square badge, title, "Unlocked <date>" / "Locked" and points, lit like the commands; A shows
+  the whole text and how rare it is), MANAGE (flat rows like the command column; removing ones in the warning orange, second A).
+  Heading = the page's name + a flat segment per page, after the old page has gone; the next page slides in from its side like the
+  next panel coming round; none with Motion Off. The art strip now names the console alone (the page name was said twice). Was
+  the shared pages in a thin frame. Own designs 43 / 53.
+- Checked (cloud): NativePagesPanels738aTest 4/4 (new; fails on the old code: no panelPageName, PANEL_DETAIL not native); PANELS
+  added to AchFirstRow (+ PlayPlace / PlayPlaceRpc via NATIVE) + ShelfText; AchFirstRow*, PlayPlace*, NoStrayPlay682j, ShelfText,
+  WinFocus, Layouts344, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, UniformKeys673, NativePages* - 2,575 tests, 0
+  failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesPanels.kt (new), ui/WinScenesConsole.kt (PanelDetail), ui/WinPageFlow.kt; tests
+  NativePagesPanels738aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 737a (24 Nov 2026, cloud run) - P2 class C: Pocket camera gets the cartridge menu's own pages (native-pages branch)
+- CI first: Verify 310 on 32e3610 (dev line) and 445fd1f (P2, Bubble home) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 445fd1f -> f2e65f0, merged with the owner session's 682au (Arcade FitText,
+  p2review safety mode) -> 5e1b096: the twelfth class C scene. Pocket camera's cartridge menu shows its own pages under the name
+  on its light screen, in the pixel font and the palette's four shades: DATA (LABEL / VALUE lines with dotted pixel rules + the
+  story in a one-pixel frame headed ABOUT), ALBUM (pixel cup, "03/12", a meter of pixel cells - one earned always shows a cell,
+  full only when all are earned - and the order as a menu row; each award a numbered album entry "NO.01" with its badge in a
+  square pixel frame, the title, "GOT <date>" / "NOT YET" and the points; the row you are on dark, as on the menu; A shows the
+  whole text and how rare it is), SETUP (menu rows with the arrow cursor; removing ones marked "!" and ask for a second A).
+  Heading = the page's name + a pixel square per page, after the old page has gone; pages draw down the little screen in the
+  window's own switch-on steps with a scan line; none with Motion Off. Was the shared pages in a dark box. Own designs 42 / 53.
+- Found by tests and fixed before the push: Play sat a key lower on Options (Play alone there) - the camera's key column keeps
+  two keys' room on every page (UniformKeyColumn slots, default unchanged for the other callers); at x1.3 on the RP Classic
+  size the first award stood 346 dp tall (number + badge + points beside the title left it a letter wide) - the number and
+  points now share the entry's first line.
+- Checked (cloud): NativePagesCamera737aTest 4/4 (new; fails on the old code); AchFirstRow + Rpc, ShelfText, WinFocus,
+  NoStrayPlay682j CAMERA; PlayPlace + PlayPlaceRpc all layouts; UniformKeys673, WindowWordsSurvey682, Layouts344,
+  PopupNativeStorage, NativeConfirm, NativePages* - 848 tests, 0 failures. Post-merge (5e1b096): NativePagesCamera737aTest, AchFirstRowRpc + PlayPlaceRpc CAMERA, FitSearch682au 8/8. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCamera.kt (new), ui/WinScenesConsole.kt (CameraMenu), ui/WinPageFlow.kt, ui/WinScenesMore.kt
+  (UniformKeyColumn slots), ui/StylePocketCamera.kt (PX_TROPHY internal); tests NativePagesCamera737aTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 736a (24 Nov 2026, cloud run) - P2 class C: Bubble home gets the card's own pages (native-pages branch)
+- CI first: Verify 310 on 18d8051 (dev line) and 2e18249 (P2, Airy home + owner's 682at) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 2e18249 -> 445fd1f: the eleventh class C scene. Bubble home's LiveArea card
+  shows its own pages on its white info panel, in the card's language: INFO (label / value lines with hairlines + the
+  description in a pale box), AWARDS (one line: gold cup, "N / M", a slim round-ended meter in the card's blue, the order as a
+  round-ended white key; each award a round-ended white key with a round badge, "Earned <date>" / "Not yet" and the points in a
+  gold ring; A rounds it into a card with the whole text and how rare it is), SETTINGS (round-ended white keys with the card's
+  white-to-grey face and blue ring; removing ones orange, second A). Heading = the page's name + a bubble per page, after the
+  old page has gone; pages swell in like a bubble; none with Motion Off. The page panel was a dark see-through box around the
+  shared pages - now white like the first page. Own designs 41 / 53 (class C 11 left).
+- Play (the Start plate) stays the first key down the left on every page - PlayPlace BUBBLES x1.0 / x1.3 PASS.
+- Checked (cloud): NativePagesBubble736aTest 4/4 (new; fails on the old code); AchFirstRow + Rpc, PlayPlace + Rpc, NoStrayPlay682j,
+  ShelfText BUBBLES; WindowWordsSurvey682, PopupMore451, Layouts344, Batch505, Batch489, Visual426, PopupNativeStorage,
+  NativeConfirm, UniformKeys, NativePages* - 694 tests, 0 failures. Static PASS. Full suite: CI.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesBubble.kt (new), ui/WinScenesConsole.kt (BubbleCard), ui/WinPageFlow.kt; tests
+  NativePagesBubble736aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 735a (24 Nov 2026, cloud run) - P2 class C: Airy home gets the panel's own pages (native-pages branch)
+- CI first: Verify 310 on 1eb9328 (dev line) and 6e8c897 (P2, Orbit deck) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 6e8c897 -> da3e595, merged with the owner session's 682at (charging light)
+  -> 2e18249: the tenth class C scene. Airy home's floating white panel shows its own pages in its right column, in the same soft
+  1999 language: ABOUT (each fact a white round-ended bubble + the story in a speech bubble), STARS (one line: "★ N of M", a
+  bubble meter filled in the accent, the order as a round pill; each achievement a white rounded card with a round badge,
+  "Got it <date>" / "Still to get" and a round points bubble), SETTINGS (round-ended pills with a dot; removing ones soft red,
+  second A). Heading = the page's name in the light face + page dots, after the old page has gone; pages float up like a bubble;
+  none with Motion Off. Own designs 40 / 53 (class C 12 left).
+- Found by tests and fixed before the push: at x1.3 on the 640 x 427 window and the RP Classic the first star showed half a card
+  (16 px, then 46 px of 73) - the stars header is one line now (the order pill's words slide, rule 11) and a tight panel's pages
+  take the small round keys, a smaller heading and closer edges. Play keeps two page slots - same place on all three pages.
+- Checked (cloud): NativePagesAiry735aTest 4/4 (new); AchFirstRow + AchFirstRowRpc + ShelfText + PlayPlace + PlayPlaceRpc AIRY,
+  Airy477, WinFocus AIRY, NoStrayPlay682j all layouts, WindowWordsSurvey682, NativeConfirm, PopupNativeStorage, Layouts330,
+  UniformKeys, NativePages* - 0 failures; after the merge NativePagesAiry + ChargeLight682at green. Static PASS. Full suite: CI.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesAiry.kt (new), ui/WinScenes.kt (AiryPanel), ui/WinPageFlow.kt; tests NativePagesAiry735aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 734b (24 Nov 2026, cloud run) - P2 class C: Orbit deck gets the console's own screens (native-pages branch)
+- CI first: Verify 310 on 00d7e9b (dev line) GREEN; P2 branch: ec5addf (owner session, Arcade) RED, fixed by the owner session's
+  6a9e2d4 (GREEN, includes 734a's test fix) - nothing left for this run.
+- Task 5 on `claude/v0674-native-pages` (worktree), 6a9e2d4 -> 6e8c897: the ninth class C scene. Orbit deck's console (chrome
+  edge, scan lines, glow caps, mono readouts) shows its own screens: DATA (fact readouts + the story as a LOG panel), TRACKS (the
+  count + lit-cell strip, each achievement a numbered track cell + badge + mono UNLOCKED / LOCKED line + "+N PTS"), COMMANDS
+  ("▸ LABEL" command lines; removing ones amber-red, second A). Heading = page code + page cells + READY lamp, after the old page
+  has gone; pages roll up like a terminal; none with Motion Off. Own designs 39 / 53 (class C 13 left).
+- Found by tests and fixed before the push: Play moved on Options (the arc fan had one key fewer; it now keeps PAGE_SLOTS places
+  on pages, the narrow row two slots); an existing defect - at x1.3 a long console name ran under READY (own line now).
+  Test fixes: PlayPlace682ab's Play matcher missed Orbit's labelled + described narrow key ("play play"); NoStrayPlay682j named
+  the focus by its text only, so on the icon-only arc it "reached Play" anywhere - a key with no text is named by its description.
+- Checked (cloud): NativePagesOrbit734bTest 4/4 (new); PlayPlace + PlayPlaceRpc all native layouts; NoStrayPlay682j 80/80; every
+  ORBIT / Orbit case (AchFirstRow, ShelfText 24, WindowWordsSurvey, WinFocus, LazyRows, OrbitSpin, OrbitKeyLabel); PopupNativeStorage;
+  Layouts330 - 0 failures. Static PASS. Full suite: GitHub CI on the push.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesOrbit.kt (new), ui/WinScenes.kt, ui/WinPageFlow.kt; tests NativePagesOrbit734bTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest, NoStrayPlay682jTest; docs NATIVE_PAGES_P2.md, NATIVE_PAGES_AUDIT.md.
+  Dev line: hand-off docs only.
+
+# Update 734a (24 Nov 2026, cloud run) - CI fix on the native-pages branch (Case flow test expectation)
+- CI first: Verify 310 on 194557a (dev line) GREEN; on d3907c7 (733a, P2 branch) RED - both runners: 4286 tests, 1 failed,
+  PopupNativeStorageTest.storageKeepsItsOwnPages. The test named Case flow (CASE_MEDIA) as an example of a scene still on the
+  shared pages; 733a gave Case flow its own pages, so the app was right and the test's example was out of date.
+- Fix on `claude/v0674-native-pages` (worktree), d3907c7 -> 50cfb3f, test only: the check now walks every scene not in
+  NATIVE_PAGE_SCENES (each must answer false, and at least one must remain), and Case flow is asserted native. No assertion
+  weakened: the old single-scene check is a subset of the new one; the next P2 conversion can no longer turn it red.
+- Checked (cloud): PopupNativeStorageTest 9/9 (failed on d3907c7 in CI). Static PASS. Full suite: GitHub CI on this push.
+- Not tested: nothing new for hardware (test-only change; HW-28 unchanged).
+- Files (P2 branch): app/src/test/java/com/shelf/launcher/ui/PopupNativeStorageTest.kt. Dev line: hand-off docs only.
+
+# Update 733a (24 Nov 2026, cloud run) - P2 class C: Case flow gets the case's own pages (native-pages branch)
+- CI first: Verify 310 on 3f6f2f6 (dev line) GREEN; on 91247df (732a, P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 91247df -> d3907c7: the eighth class C scene. The case opened into its media
+  keeps its dark glass stage, black glass well with a shine, accent-edged name band and glossy pills reflected on the floor; its
+  pages take the picture's place in the glass well, like the menu of the disc inside: DETAILS (facts as glass strips with the
+  name band's accent edge, the story in its own glass panel), EXTRAS ("N of M unlocked" over a glossy bar with its reflection;
+  each achievement a glass slide - badge with reflection, title, "Unlocked <date>" / "Locked", points pill; A opens the whole
+  text + rarity; lazy rows), SETUP (glossy option pills; removing ones red, second A). Heading: accent edge + page name + a pill
+  per page, after the old page has gone; pages flow in like the next case; none with Motion Off. Before: the shared page body
+  squeezed into the 110-300 dp picture band.
+- Found by the tests: Play moved between pages (window sized by its content) -> on its pages the case keeps one size (the
+  stage), pills two slots, Play the first. PlayPlace682ab's More matcher missed a labelled + described More key ("more more"), so
+  for Case flow it compared Info with Details and never reached the other pages - it now reads More as AchFirstRow does (not a
+  weaker check: it reaches more pages; all layouts still pass).
+- Checked (cloud): compile OK; NativePagesCase733aTest 4/4 (new; fails on the old code: no casePageName, CASE_MEDIA not native);
+  CASEFLOW added to AchFirstRow (+ PlayPlace / PlayPlaceRpc) + ShelfText; AchFirstRow / ShelfText / PlayPlace* / WinFocus /
+  NoStrayPlay / NativeConfirm / PageHandoff / ListHeadTurn / UniformKeys / PopupMore451 / WindowWordsSurvey / Layouts330 /
+  Pickups672 / Batch506 / NativePages*: 2286 tests 0 failures. Static PASS. Gradle with VOLTCAP_MAVEN_MIRROR.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 38 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesCase.kt (new), ui/WinScenes.kt (CaseFlowMedia), ui/WinPageFlow.kt, test NativePagesCase733aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, PlayPlace682abRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md.
+  Dev line: hand-off docs only.
+
+# Update 732a (24 Nov 2026, cloud run) - P2 class C: File select gets the file's own screens (native-pages branch)
+- CI first: Verify 310 on c157066 (dev line) GREEN; on ee74963 (731a, P2 branch) GREEN (run 45402171675).
+- Task 5 on `claude/v0674-native-pages` (worktree), ee74963 -> 91247df: the seventh class C scene. The turned-over save file keeps
+  its chunky bevelled block, outlined capitals, yellow lit state and dark inset; its pages are the file's own screens on that
+  inset: DETAILS (each fact a fat rounded slot - yellow label, white value - and the story in its own slot), STARS (big star +
+  "N / M STARS", a row of little stars, yellow for yours, outlined still to get, one standing for several past 24; each
+  achievement a rounded row - star, round badge, outlined title, "GOT IT <date>" / "NOT YET", "+N"; A opens the whole text +
+  rarity; lazy rows), OPTIONS (fat round slots like the file's buttons; removing ones red with "ERASE? PRESS A AGAIN"). The top row
+  names the page with a round pip per page after the old page has gone (it showed the shared page name at once); the next screen
+  pops in from 94 %; none with Motion Off.
+- Found by the tests: Play moved between pages (PlayPlace682ab FILESELECT x1.0 + x1.3) -> two page slots, Play the first (as
+  Box / Memory card); x1.3 tight file left the first achievement 62 of 73 px (AchFirstRow) -> the star row gives way there, the
+  count line stays; no double padding in the inset.
+- Checked (cloud): compile OK; NativePagesFile732aTest 5/5 (new; fails on the old code: no filePageName, FILE_CARD not native);
+  FILESELECT added to AchFirstRow + ShelfText; FILESELECT cases of 8 Robolectric suites + NativeConfirm / PageHandoff / ListHeadTurn
+  / UniformKeys / PopupMore451 / Layouts330 / WindowWordsSurvey / CubeFacet: 628 tests 0 failures; NativePages* + PopupNativeStorage
+  + DiscTracks green. Static PASS. Gradle needed VOLTCAP_MAVEN_MIRROR (Maven Central 429).
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 37 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesFile.kt (new), ui/WinScenes.kt (FileCardBack), ui/WinPageFlow.kt, test NativePagesFile732aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md. Dev line: hand-off docs only.
+
+# Update 731a (24 Nov 2026, cloud run) - P2 class C: Cardboard box gets the insert's own sheets + P2 branch CI fix (native-pages branch)
+- CI first: Verify 310 on b2c90cc (dev line) GREEN. P2 branch RED on 911681e (run 45393737656): PlayPlace682ab / PlayPlaceRpc682ab
+  MEMCARD x1.0 + x1.3 (4 of 4,139) - 730a's Memory card pages put Play alone in the middle on COMMANDS. Fixed here (two page slots,
+  Play the first); the owner's live session pushed the same fix meanwhile (682as) - theirs kept in the merge (ee74963).
+- Task 5 on `claude/v0674-native-pages` (worktree), 31f0a09 -> ee74963: the sixth class C scene. The Cardboard box's insert sheet
+  keeps its cream paper, tape, typewriter face and rubber stamps; its pages are the slip's other sheets on the same paper:
+  CONTENTS (the Details stamp's own name - numbered facts on dotted leaders, the story as REMARKS), CHECKLIST ("N OF M CHECKED"
+  over one row of typed boxes; each achievement a [X] / [ ] line with badge, "CHECKED <date>" / "NOT YET", points; A opens the
+  whole text + rarity; lazy rows), SERVICE (typed option lines, stamped in the accent when focused; removing ones red with a VOID?
+  second A). Heading "SHEET n OF m" + page name + small sheet tabs after the old page has gone; the next sheet feeds up from
+  under; none with Motion Off. The first page's header now says INSERT · INVENTORY (it said CONTENTS, the Details stamp's name).
+- Found by the tests (BOX was in no text suite before): the first page's end-aligned fact values ('Never played', '140 / 160')
+  were laid out across the whole room, reported 212 px past their own box (ShelfText BOX 12/24 FAIL) -> no longer end-aligned (the
+  dotted leader puts them at the right). ShelfText / PlayPlace could not reach the box's controls (CONTENTS stamp; Options / More
+  as icon-only stickers) -> matched by description / "contents" word (reaching, not loosening).
+- Checked (cloud): compile OK; NativePagesBox731aTest 6/6 (new; fails before: no boxPageName / BOX_SHEET not native); BOX added to
+  AchFirstRow + ShelfText (846 / 0); after merging the owner's 682ar4: 11 native-page suites 1,306 / 0; PlayPlace + PlayPlaceRpc
+  151 / 0; AchFirstRowRpc682r + LazyRows682aq 315 / 0; after the 682as merge PlayPlace + 730a + 731a green. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 36 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesBox.kt (new), ui/WinScenes.kt (BoxInsertSheet), ui/WinPageFlow.kt, test NativePagesBox731aTest.kt
+  (new), AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, PlayPlace682abRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md + _AUDIT.md.
+  Dev line: hand-off docs only.
+
+# Update 730a (24 Nov 2026, cloud run) - P2 class C: Memory card gets the save browser's own screens (native-pages branch)
+- CI first: Verify 310 on d2d508f (dev line) GREEN; on 546f5b99 (729a, P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 57ddc94 (merged with the owner session's 682ar3 push -> 579d131, doc e59f3c6):
+  the fifth class C scene. The save browser keeps its grey screen, turning icon, yellow title and glowing choice words; its pages
+  are the browser's own screens on the dark glass panel at the right: INFORMATION (label / value lines + the story as Notes),
+  MEMORY BLOCKS ("N / M blocks saved" over one row of memory blocks, lit yellow for yours; each achievement a save entry - square
+  badge, "Saved <date>" / "Empty block", points; A opens the whole text + rarity; lazy rows), COMMANDS (word lines with the
+  choices' glow; removing ones red, second A). Heading: page name in yellow + one small block per page, the shown one lit, after
+  the old page has gone. The panel now runs from under the title to above the choices (measured), the facts make way on a page.
+- Found by the tests (Memory card was in no text suite before): at x1.3 a long console name ran one line under the save's title
+  and was cut - also on the Info page (existing defect, ShelfText MEMCARD x1.3 6/24 FAIL) -> the card block keeps left of the
+  title column and the name wraps; a wrapping 40-block strip left the first achievement 2 px short at x1.3 (AchFirstRow n=40) ->
+  one row of blocks.
+- Checked (cloud): compile OK; NativePagesMemCard730aTest 5/5 (new; fails on the old code); MEMCARD added to AchFirstRow +
+  ShelfText; with WinFocus / NoStrayPlay / PopupMore451 / Layouts330 / WindowWordsSurvey682 / CubeFacet676i 581 tests 0 failures;
+  after the merge 730a + WinFocus / NoStrayPlay MEMCARD + PageHandoff682ar + ListHeadTurn682ar green; QA selftest OK; static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not visually approved. Native pages: 35 / 53 own designs on the P2 branch.
+- Files (P2 branch): ui/WinPagesMemCard.kt (new), ui/StyleMemoryCard.kt, ui/WinPageFlow.kt, test NativePagesMemCard730aTest.kt (new),
+  AchFirstRowRoboTest.kt, ShelfTextRoboTest.kt, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
+# Update 729a (24 Nov 2026, cloud run) - P2 class C: Hero carousel / Hero tiles get the banner's own pages (native-pages branch)
+- CI first: Verify 310 on e9092e9 (728a, dev line) GREEN; on 864e293 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), b70895f0 (merged with the owner session's 682ar / 682ar2 pushes -> 546f5b99):
+  the fourth class C scene, shared by two layouts. The Hero banner keeps its key art, gradient and logo; on its pages the name
+  steps down to a smaller title, the banner's tab strip (all page names, the shown one underlined in white) takes the info line's
+  place, the art darkens a shade and the text column widens a little. THE FEATURE (facts as big key figures with an accent rule;
+  the story as a pull quote), HALL OF FAME (big "N / M" figure, slim progress bar, each achievement a billboard row - round
+  badge, "Unlocked <date>" / "Locked", points pill; A opens the whole text + rarity; lazy rows), QUICK ACTIONS (big pill buttons;
+  removing ones red, second A). The next page grows up out of the banner's lower left corner; none with Motion Off.
+- Found by the tests: at x1.3 the full-size title (3 reserved lines) + info line left the Hall of Fame 0 px for its first
+  achievement (AchFirstRow HERO / HERO_TILES big=true 6/6 FAIL) -> the compact heading on pages fixed it.
+- Checked (cloud): compile OK; NativePagesHero729aTest 4/4 (new; fails on the old code); HERO + HERO_TILES added to AchFirstRow
+  + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace / CategoryStable394 / NativeConfirm / UniformKeys /
+  NativePagesTime728a: 1,884 tests 0 failures (100 Hero cases, none skipped); after merging 682ar: Hero cases + LazyRows /
+  ListHeadTurn682ar / PageHandoff682ar 357 tests 0 failures. Static PASS, QA selftest OK. Hardware NOT TESTED (HW-28), not
+  visually approved. Not on the dev line.
+  Files (P2 branch): ui/WinPagesHero.kt (new), ui/WinScenesHomes2.kt (HeroBanner), ui/WinPageFlow.kt, tests
+  NativePagesHero729aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+- Note: the owner's live session pushed 682ar / 682ar2 to the P2 branch while this run held the lock; merged (no conflicts), nothing overwritten.
+
+# Update 728a (24 Nov 2026, cloud run) - P2 class C: Timeline gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 678c10e (727a lock commit, dev line; 974c7bb itself was cancelled by the newer push) GREEN; on 8a73d96
+  (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 864e293: the third class C layout. Timeline's entry (hanging from the year
+  line) keeps its cover, name and console line; on its pages the facts area becomes the page, each its own small vertical
+  timeline in the accent: CHRONICLE (facts as stops down the line, whole words; THE STORY SO FAR at its end, a D-pad stop),
+  MILESTONES (each achievement a stop - filled node + "Reached <date>" when yours, open ring + "Ahead" when not - badge, title,
+  "N pts"; "N of M milestones reached", order pill, A opens whole text + rarity; lazy rows), BRANCHES (each option a branch tick
+  to a rounded tag; removing ones red, second A). Page name + a short page line (one tick per page) beside it after the old page
+  has gone; pages come along the line of time (from the right forward, from the left back). Steady entry height on pages
+  (max 480 dp); Play keeps its slot; L1 / R1 anywhere. The line is drawn behind each stop (no intrinsic measuring).
+- Checked (cloud): compile OK; NativePagesTime728aTest 4/4 (new; fails on the old code - no timePageName, TIMELINE_ENTRY not
+  native); TIMELINE added to AchFirstRow + ShelfText; with WinFocus / NoStrayPlay / LazyRows / PlayPlace (+ RPC) /
+  WinPresentation / Batch508 / Visual426: 1,850 tests 0 failures (52 Timeline cases, none skipped); Hierarchy529 /
+  CategoryStable394 / WindowWordsSurvey682 / NativePages681a / Batch2 / UniformKeys / NativeConfirm / PopupNativeStorage /
+  Popup421 / NoArtCaption684: 597 tests 0 failures. Static PASS. Hardware NOT TESTED (HW-28), not visually approved. Not on
+  the dev line.
+  Files (P2 branch): ui/WinPagesTime.kt (new), ui/WinSceneFamilies.kt (TimelineHang), ui/WinPageFlow.kt, tests
+  NativePagesTime728aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
+# Update 727a (24 Nov 2026, cloud run) - P2 class C: Channel grid gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 045fac8 (726a, dev line) GREEN; on 5d53277 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 8a73d96: the second class C layout. Channel grid's window (the rounded
+  preview card in the grid's palette) now draws the channel's own screens in its preview well instead of the shared page body:
+  CHANNEL INFO (facts on one rounded info card, the story as the "About this channel" bubble), STAMPS (rounded pills with a
+  round stamp - inked star when yours, empty ring when not - and points; "N of M stamps", order pill, A opens date / rarity;
+  lazy rows), SETTINGS (big rounded pills; removing ones red and ask for a second A). Header with the screen name and pager
+  dots; screens slide in from the side like channel pages. Info (banner) and its More page unchanged.
+- Bugs found on the way (only reachable once the scene stays composed under its pages) and fixed: B from Options landed on
+  More's first key; two key rows swapped per turn (now one row, Play in the same slot on every screen); an L1 / R1 storm left
+  nothing lit because the opener (Details) sits behind the closed More key - the closed More key now answers for those keys.
+- Checked (cloud): compile OK; NativePagesChan727aTest 4/4 (new; fails on the old code); CHAN in AchFirstRow / ShelfText /
+  WinFocus / PlayPlace (+ RPC) / NoStrayPlay / LazyRows + NativeConfirm / WinPresentation / Batch2 / UniformKeys / Chip726a /
+  PopupNativeStorage: 104 tests 0 failures; Hierarchy529 (source-shape string updated to the single row), Batch494/496/506/507,
+  Popup421, Visual426, WindowWordsSurvey682, CategoryStable394: green. LazyRows n=0 now also accepts the card's "Start" key.
+  Static PASS. Hardware NOT TESTED (HW-28), not visually approved. Not on the dev line.
+  Files (P2 branch): ui/WinPagesChan.kt (new), ui/WinScenesWii.kt, ui/WinPageFlow.kt, tests NativePagesChan727aTest (new),
+  AchFirstRowRoboTest, ShelfTextRoboTest, LazyRows682aqTest, Hierarchy529Test, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
+# Update 726a (24 Nov 2026, cloud run) - P2 class C: Circuit board gets its own Details / Achievements / Options (native-pages branch)
+- CI first: Verify 310 on 55b7361 (725b, dev line) GREEN; on eb4af38 (P2 branch) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 5d53277: the first class C layout. Circuit board's window (the chip's
+  datasheet on the board, Board colours) now draws its own sections in the sheet's monospace silkscreen instead of the shared
+  page body: CHARACTERISTICS (PARAMETER / VALUE table between rules, the story as FUNCTIONAL DESCRIPTION), PIN STATES (each
+  achievement a numbered pin with an LED, HIGH / LOW, "N PT", order key, A opens date / rarity; lazy rows), JUMPERS (J1 ...,
+  the cap bridges the pins while focused; removing ones red and ask for a second A). Heading "SECTION n · NAME" under the name
+  after the old section has gone; the signal slides in from the trace side; Play keeps its slot; L1 / R1 anywhere. Info
+  (PINOUT) unchanged. New WinPagesChip.kt; ChipSheet (WinScenesHomes2.kt) uses NativePages; CHIP_SHEET in NATIVE_PAGE_SCENES.
+- Checked (cloud): compile OK; NativePagesChip726aTest 4/4 (new; fails on the old code - no chipPageName, CHIP_SHEET not native);
+  CIRCUIT added to AchFirstRow 6/6 (+ RPC), LazyRows 8/8, PlayPlace 2/2 (+ RPC 2/2), NoStrayPlay 2/2, WinFocus 8/8, ShelfText
+  24/24; WinPresentation / Visual426 / PopupNativeStorage / NativePages681a / Review682ag / UniformKeys green. Static PASS (no
+  finding in the new file). Hardware NOT TESTED (HW-28), not visually approved. Not on the dev line (P2 branch until the owner's
+  comparison). Files (P2 branch): ui/WinPagesChip.kt (new), ui/WinScenesHomes2.kt, ui/WinPageFlow.kt, tests
+  NativePagesChip726aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, docs/claude/NATIVE_PAGES_P2.md. Dev line: hand-off docs.
+
+# Update 725b (24 Nov 2026, cloud run) - P2 branch: dev line merged in, QA selftest red fixed (QA tooling)
+- CI first: Verify 310 on 35bb129 (725a) GREEN.
+- Task 5 prep on `claude/v0674-native-pages` (worktree): the dev line (721a-725a, 31 commits) merged in (31e2931; one
+  conflict, tools/qa/selftest/test_qa.py - both sides' new classes kept). The P2 branch's QA selftest was RED on 7110d79
+  (TestWinGuard682jc: p2review.sh r714's k_home pressed raw `input keyevent KEYCODE_BUTTON_` around the window guard).
+  Fixed in eb4af38: k_home -> wg_key_home (R1 only while the confirmed home holds the focus and says HOME); the B that closes
+  the R1 panel -> new winguard wg_key_main (only while the QA app's confirmed main window holds the focus; anything else in
+  front aborts with nothing pressed). +2 selftests (fail on the old code). The lock file on the P2 branch keeps its own state.
+- Checked (cloud): merged P2 tree compiles (:app:compileDebugUnitTestKotlin OK); QA selftest 264 OK; static checks PASS.
+  Targeted unit tests NOT RUN here (Maven Central 429 on the unit-test classpath) - CI on eb4af38 runs them.
+- No app code changed on either line; no hardware. Files: P2 branch tools/qa/device/winguard.sh, tools/qa/device/p2review.sh,
+  tools/qa/selftest/test_qa.py; dev line hand-off docs only.
+
 # Update 725a (24 Nov 2026, cloud run) - Task 4: START > Categories (an installed app / Android game in several categories at once)
 - CI first: Verify 310 on ff28c4f (724a) GREEN.
 - Owner Task 4: START on an installed app or Android game now has "Categories…" (under Details; its subtitle names where it is

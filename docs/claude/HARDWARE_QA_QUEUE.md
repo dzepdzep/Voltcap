@@ -196,6 +196,130 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages (v0674-native-pages 89ab1d6) - OPEN (batch with the next KONKR + RP Classic P2 session)
+- 738a adds Panel dashboard (same session, build fb72ff4 or later): p2review walk Info -> Overview -> Achievements -> Manage (R1 x3,
+  L1 back); the page name + flat segments change after the old page has gone; the next page slides in from its side (none with
+  Motion Off); the art strip says the console only; Play same size and place on every page; facts tiles, the ABOUT panel and the
+  achievement rows whole at x1.0 / x1.3 on Green, Silver and Graphite; Achievements lazywalk (120-set) with the 10-segment meter
+  and the order tile (words slide); an achievement opened (A) shows the whole text + rarity; a removing setting armed and left;
+  popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric only (NativePagesPanels738aTest + PANELS suites, cloud).
+- 739a adds Rental shop (same session, build 982dfb1 or later): with the held case beside the tag, p2review walk Info -> Catalogue
+  card -> Rewards card -> Counter (R1 x3, L1 back); the page name + punch holes change after the old page has gone; the next page
+  drops in from above (none with Motion Off); RENT & PLAY same size and place on every page and the tag one size on its pages; the
+  facts, THE STORY and the achievement lines whole at x1.0 / x1.3 on the purple / teal / blue walls; Rewards card lazywalk
+  (120-set) with the ten punch holes and the order stamp (words slide); an achievement opened (A) shows the whole text + rarity;
+  a removing choice armed and left; B puts the case back in its slot; popclip.sh + popclip.py PASS (tag marked Tilted); 0 launches.
+  Evidence: Robolectric only (NativePagesShop739aTest + SHOP suites, cloud).
+- 740a adds Green core (same session, build 945bb17 or later): p2review walk Title -> Spec -> Unlocks -> Control (R1 x3, L1 back);
+  the "> NAME" heading + cut-corner page cells change after the old page has gone; the next page opens from one glowing line
+  across its middle (none with Motion Off); Play same size and place on every page and the console one height on its pages; the
+  readout lines, // DESCRIPTION and the achievement lines whole at x1.0 / x1.3 with two glow colours (Layout options > accent);
+  Unlocks lazywalk (120-set) with the 12-cell charge bar and the order key (words slide); an achievement opened (A) shows the
+  whole text + rarity; a removing line armed (red) and left; popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesCore740aTest + GREENCORE suites, cloud).
+- 741a adds the Art library (same session, build 9831e03 or later): p2review walk The work -> Catalogue -> Collection -> Curator
+  (R1 x3, L1 back); the serif-italic heading + "ROOM N OF M" change after the old page has gone; the next page comes up with a
+  fade and a slight step closer (none with Motion Off); Play same size and place on every page and the wall one size; the
+  catalogue lines, Notes card and the achievement placards whole at x1.0 / x1.3 on two themes (the layout's colour); Collection
+  lazywalk (120-set) with the 10-frame hang and the order key (words slide); an achievement opened (A) shows the whole text +
+  rarity; a removing placard armed (deep red) and left; on a short wall's pages the placard keeps the name only; popclip.sh +
+  popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesGallery741aTest + ARTLIB suites, cloud).
+- 742a adds the Cross menu (same session, build 7477b77 or later): p2review walk Game -> Information -> Trophies -> Options (R1 x3,
+  L1 back); the cross bar's lit icon + page name change after the old page has gone; the next page slides in along the bar from
+  the side you moved to (none with Motion Off); Start game in the SAME place on the first page and every page (it was lower on the
+  pages before 742a); the information list, the description row and the trophy rows whole at x1.0 / x1.3 in the three washes
+  (Dusk / Ocean / Ember) + the theme's; on the RP Classic's narrower left side the facts stack; Trophies lazywalk (120-set) with the
+  progress line and the order key (words slide); a trophy opened (A) shows the whole text + rarity; a removing row armed (orange)
+  and left; popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesCross742aTest + CROSS suites, cloud).
+- 743a adds Live tiles (same session, build 63f0b52 or later): p2review walk game -> about -> achievements -> options (R1 x3, L1
+  back); the pivot heading puts the shown page's name first after the old page has gone (wraps on the RP Classic, never cut); the
+  next page turns in like a turnstile from the panel's left edge (no smeared text - D285; none with Motion Off); Play in the SAME
+  place on the first page and every page (the panel grows upward only on its pages); about / achievement rows whole at x1.0 /
+  x1.3 with a light and a dark accent (Play's text readable on the accent); achievements lazywalk (120-set) with the flat bar and
+  the order tile (words slide); an achievement opened (A) shows the whole text + rarity; a removing tile armed (red) and left;
+  popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesLive743aTest + LIVE suites, cloud).
+- Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
+  or later. ~6 min per handheld, x1.0 + x1.3.
+- Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.
+- Tests: home layout Circuit, a game with achievements (synthetic 120 + a short set): p2review walk Info -> CHARACTERISTICS ->
+  PIN STATES -> JUMPERS (R1 / R1 / R1 / L1 back), heading "SECTION n" changes after the old section is gone; Play same size and
+  place on every section (QaClip); PIN STATES lazywalk (140 Downs / Ups, B, reopen); a removing jumper armed and left (never
+  confirmed); popclip.sh + popclip.py PASS; 0 launches, restore diff 0; one strip of screenshots per scale for the owner.
+- Evidence so far: Robolectric only (NativePagesChip726aTest, AchFirstRow / LazyRows / PlayPlace / NoStrayPlay / WinFocus /
+  ShelfText CIRCUIT cases green in the cloud). Not on hardware, not visually approved.
+- 727a adds Channel grid (same session, same build 8a73d96 or later): p2review walk Info -> Channel Info -> Stamps -> Settings
+  (R1 x3, L1 back) with the pager dots following; Play ("Start" on Info) same place on every screen; B from a screen turned to
+  with R1 lands on MORE (never Start), B from Options opened through More lands on Options; L1 / R1 storm then B stays in the
+  window; Stamps lazywalk; a removing setting armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3; Light and
+  OLED palettes. Evidence: Robolectric only (NativePagesChan727aTest + CHAN suites, 104 tests 0 failures, cloud).
+- 728a adds Timeline (same session, build 864e293 or later): p2review walk Info -> CHRONICLE -> MILESTONES -> BRANCHES (R1 x3,
+  L1 back), the page name + page line beside it change after the old page has gone; Play same size and place on every page;
+  MILESTONES lazywalk (140 Downs / Ups, B, reopen) - the line stays continuous between stops while scrolling; a dated and an
+  undated game ("YEAR UNKNOWN" node); a removing branch armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesTime728aTest + TIMELINE suites, 52 cases 0 failures, cloud).
+- 729a adds Hero carousel + Hero tiles (one scene; same session, build 546f5b99 or later): p2review walk Info -> THE FEATURE ->
+  HALL OF FAME -> QUICK ACTIONS (R1 x3, L1 back) on both layouts, the tab strip's underline moves after the old page has gone,
+  the name steps down without a jump of Play; Play same size and place on every page; HALL OF FAME lazywalk; a game with a
+  logo and one without; a removing action armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesHero729aTest + HERO / HERO_TILES suites, 100 cases 0 failures, cloud).
+- 730a adds Memory card (same session, build e59f3c6 or later): p2review walk Info -> INFORMATION -> MEMORY BLOCKS -> COMMANDS
+  (R1 x3, L1 back), the yellow page name + lit block change after the old page has gone; the glass panel between the title and
+  the choices on every page (QaClip: nothing under the choices row); Play same size and place on every page; MEMORY BLOCKS
+  lazywalk (synthetic 120: 40 blocks, one row); a game on a long console name (wraps left of the title, x1.3); with and without
+  a PS2 save icon; a removing command armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesMemCard730aTest + MEMCARD suites, 581 tests 0 failures incl. the survey, cloud).
+- 731a adds Cardboard box (same session, build ee74963 or later): p2review walk Info -> CONTENTS -> CHECKLIST -> SERVICE (R1 x3,
+  L1 back), the sheet header + "SHEET n OF m" + filled tab change after the old page has gone; the tilted sheet's stamps (Play)
+  same size and place on every sheet (PlayPlace passes in Robolectric only); CHECKLIST lazywalk (synthetic 120: 32 boxes, one
+  row); the first page's fact values at the right of their leaders (no longer end-aligned) at x1.0 + x1.3; Options / More
+  stickers reach SERVICE; a removing line armed (VOID?) and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesBox731aTest + BOX in AchFirstRow / ShelfText / PlayPlace suites, 0 failures, cloud).
+- 732a adds File select (same session, build 91247df or later): p2review walk Info -> DETAILS -> STARS -> OPTIONS (R1 x3, L1
+  back), the top row's page name + round pips change after the old page has gone; the fat buttons (Play first) same size and
+  place on every page (PlayPlace passes in Robolectric only); STARS lazywalk (synthetic 120: 24 little stars, one row; at x1.3 on
+  the KONKR the star row gives way, the count line stays); fact slots' values whole at x1.0 + x1.3; a removing option armed
+  (ERASE?) and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3; a light and a dark file colour.
+  Evidence: Robolectric only (NativePagesFile732aTest + FILESELECT in AchFirstRow / ShelfText / PlayPlace / WinFocus / NoStrayPlay /
+  LazyRows suites, 628 tests 0 failures, cloud).
+- 733a adds Case flow (same session, build d3907c7 or later): p2review walk Info -> Details -> Extras -> Setup (R1 x3, L1 back),
+  the heading (accent edge, page name, page pills) changes after the old page has gone; on a page the window keeps one size and
+  Play (first of two pill slots) the same size and place; Extras lazywalk (120 set); a removing Setup pill armed and left (never
+  confirmed); the pickup flip on open / B still turns the window; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesCase733aTest + CASEFLOW suites, 2286 tests 0 failures, cloud).
+- 734b adds Orbit deck (same session, build 6e8c897 or later): p2review walk Info -> Data -> Tracks -> Commands (R1 x3, L1 back)
+  with the D-pad on an arc key AND in the page; the heading (page code, page cells, READY lamp) changes after the old page has
+  gone; Play keeps its place on the arc (wide) / its slot in the key row (narrow, x1.3) on every page; Tracks lazywalk (120 set);
+  a removing command armed and left (never confirmed); the disc flight on open / B unchanged; the DISC line with a long console
+  name (SNES) whole and clear of READY at x1.3; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3.
+  Evidence: Robolectric only (NativePagesOrbit734bTest + ORBIT suites, PlayPlace all layouts, NoStrayPlay682j 80/80, cloud).
+- 735a adds Airy home (same session, build 2e18249 or later): p2review walk Info -> About -> Stars -> Settings (R1 x3, L1 back),
+  the page name + dots change after the old page has gone, the page floats up; Play same size and place on every page (on the
+  KONKR the pages take the small round keys - Info keeps the big ones: check by eye that the change reads well); Stars lazywalk
+  (120-set) with the bubble meter and the order pill (its words slide on one line); a removing setting armed and left; popclip.sh
+  + popclip.py PASS; 0 launches; x1.0 + x1.3. Evidence: Robolectric only (NativePagesAiry735aTest + AIRY suites, PlayPlace /
+  AchFirstRow / ShelfText AIRY, NoStrayPlay682j all layouts, cloud).
+- 736a adds Bubble home (same session, build 445fd1f or later): p2review walk Info -> Info page -> Awards -> Settings (R1 x3, L1
+  back), the page name + bubbles change after the old page has gone, the page swells in; Play (the white Start plate) same size
+  and place on every page; the page panel now white like the first page (check it reads well over the game's art); Awards
+  lazywalk (120-set) with the slim meter and the order key (its words slide on one line); an award opened (A) rounds into a card
+  and shows how rare it is; a removing setting armed and left; popclip.sh + popclip.py PASS; 0 launches; x1.0 + x1.3. Evidence:
+  Robolectric only (NativePagesBubble736aTest + BUBBLES suites, PlayPlace / AchFirstRow / ShelfText / NoStrayPlay BUBBLES, cloud).
+- 737a adds Pocket camera (same session, build 5e1b096 or later): p2review walk Info -> Data -> Album -> Setup (R1 x3, L1 back);
+  the page name + pixel squares change after the old page has gone; the page draws down the screen in steps with a scan line
+  (none with Motion Off); Play same size and place on every page (Options too - two keys' room); the pixel font readable at
+  x1.0 / x1.3 on both palettes you use; Album lazywalk (120-set) with the cell meter and the order row (words slide); an entry
+  opened (A) shows the whole text + rarity; a removing setting armed and left; popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesCamera737aTest + CAMERA suites, PlayPlace / AchFirstRow / ShelfText / NoStrayPlay, cloud).
+
+- 744a adds Layout Studio (same session, build 89ab1d6 or later): p2review walk Canvas -> Properties -> Milestones -> Actions (R1 x3,
+  L1 back); the tab strip's filled tab changes after the old page has gone; the next page snaps in from one grid step below (none
+  with Motion Off); Play same size-height and place on every page (wider on the pages); the inspector rows, the description frame
+  and the milestone rows whole at x1.0 / x1.3 in a light and a dark theme; Milestones lazywalk (120-set) with the ruler and the
+  order chip (words slide); an achievement opened (A) shows the whole text + rarity; a removing action armed and left;
+  popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric only (NativePagesStudio744aTest + CUSTOM suites, cloud).
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
   and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.

@@ -73,6 +73,206 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 02:55 UTC, 744a (cloud, Task 5):** Verify 310 on 5fb6ff6 (dev) + 63f0b52 (P2) GREEN. P2 branch 89ab1d6: Layout Studio
+(STUDIO_PANEL) has its own pages - Properties (inspector rows with dashed guides) / Milestones (ruler + layer rows) / Actions
+(rounded buttons) under the editor's rounded tab strip, snapping in from one grid step below (WinPagesStudio.kt; class C 19 scenes
+done, own designs 49 / 53). Play top-left within 1 px on the first page and all pages (PlayPlace + first-page probe). AchFirstRow
+x1.3 caught a half-shown first milestone - fixed (short window: no console line on the pages). HW-28 extended. Not approved.
+Infra tip: Maven Central 429 -> export VOLTCAP_MAVEN_MIRROR=https://maven-central.storage-download.googleapis.com/maven2 (works).
+NEXT: check Verify 310 on this push AND on 89ab1d6 (P2) FIRST (red -> fix first). Then Task 5: the Pocket family (POCKET_LCD) -
+all three faces (Pocket classic, Pocket ribbon, Pocket) in one batch, the last class C scene; or an emulator p2review sheet of
+batches 5-8 for the owner, or the Task 1 residual. Same pre-push checks as below.
+
+**25 Nov 02:05 UTC, 743a (cloud, Task 5):** Verify 310 on 73c1053 (dev) + 7477b77 (P2) GREEN. P2 branch 63f0b52: Live tiles
+(LIVE_PANEL) has its own pages - about / achievements (flat accent bar) / options in its flat tile language under a pivot heading
+(the shown page's name first), turning in like a turnstile (WinPagesLive.kt; class C 18 scenes done, own designs 48 / 53). A probe
+of PlayPlace's first page caught Play 8 dp (RP Classic 60 dp) lower on the pages than on the first page - fixed (the panel grows
+upward only on its pages). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 63f0b52 (P2) FIRST (red -> fix first). Then Task 5: Layout Studio (STUDIO_PANEL) on the
+P2 branch; then the Pocket family (POCKET_LCD) - all three faces in one batch - or an emulator p2review sheet of batches 5-7 for the
+owner, or the Task 1 residual. Same pre-push checks as below. Tip: PlayPlace compares the pages only - also print the first page's
+Play (a temporary println after frames(180)) for a centred panel that grows on its pages.
+
+**25 Nov 00:55 UTC, 742a (cloud, Task 5):** Verify 310 on 993d193 (dev) + 9831e03 (P2) GREEN. P2 branch 7477b77: the Cross menu
+(CROSS_OPTIONS) reads out its own pages on the left - Information / Trophies (fine progress line) / Options in its thin type under a
+cross bar of page icons, sliding in along the bar (WinPagesCross.kt; class C 17 scenes done, own designs 47 / 53). PlayPlace CROSS
+(newly reachable: taught "Start game" / "Information") caught Play 26 / 54 dp lower on the pages than on the first page - fixed (the
+pages' keys start where the first page's did). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 7477b77 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Live (LIVE_PANEL), Layout Studio; the Pocket family (POCKET_LCD) needs all three faces in one batch) - or an emulator
+p2review sheet of batch 5/6 for the owner, or the Task 1 residual. Same pre-push checks as below (PlayPlace output must show Play
+found on the pages - a layout with its own key words is skipped, not failed).
+
+**24 Nov 23:50 UTC, 741a (cloud, Task 5):** Verify 310 on c466cf8 (dev) + 945bb17 (P2) GREEN. P2 branch 9831e03: the Art
+library (GALLERY_PLACARD) hangs its own pages on its mat - Catalogue / Collection (10-frame hang) / Curator in the placard's serif,
+coming up like the gallery lights (WinPagesGallery.kt; class C 16 scenes done, own designs 46 / 53). PlayPlace ARTLIB found Play
+at the same place on all pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 9831e03 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Cross (CROSS_OPTIONS keeps its options list - check NATIVE_PAGES_P2.md before touching it); then Live, Layout Studio; the
+Pocket family (POCKET_LCD) needs all three faces in one batch) - or an emulator p2review sheet of batch 5/6 for the owner, or the
+Task 1 residual.
+
+**24 Nov 22:50 UTC, 740a (cloud, Task 5):** Verify 310 on aa0e172 (dev) + 982dfb1 (P2) GREEN. P2 branch 945bb17: Green core
+(CORE_PANEL) has the glowing console's own pages - SPEC / UNLOCKS (12-cell charge bar) / CONTROL in its monospace capitals and
+glow colour, opening from one glowing line (WinPagesCore.kt; class C 15 scenes done, own designs 45 / 53). Arctic needed nothing
+(own pages since 682y). PlayPlace GREENCORE found Play at the same place on all pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 945bb17 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Art library (GalleryPlacard, WinScenesMore.kt), Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs all
+three faces in one batch) - or an emulator p2review sheet of batch 5 for the owner, or the Task 1 residual. The owner's session
+pushes to the P2 branch: fetch + merge before every P2 push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab +
+AchFirstRow (+Rpc) + NoStrayPlay682j + ShelfText for the layout AND every test that greps the scene name (grep -rln <SCENE>
+app/src/test); check the PLAYPLACE output line really found Play on the pages.
+
+**24 Nov 21:40 UTC, 739a (cloud, Task 5):** Verify 310 on 5d6a422 (dev) + fb72ff4 (P2) GREEN. P2 branch 982dfb1: Rental shop
+(SHOP_TAG) has the rental tag's own pages - CATALOGUE CARD / REWARDS CARD (punch card) / COUNTER in its black capitals lit in the
+neon (WinPagesShop.kt; class C 14 scenes done, own designs 44 / 53). PlayPlace had silently skipped the shop (did not know RENT &
+PLAY / CATALOGUE CARD) - taught both; Play now proven put on all three pages. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 982dfb1 (P2) FIRST (red -> fix first). Then Task 5: next class C layout of batch 6 on the
+P2 branch (Arctic, Green core, Art library, Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs all three faces in
+one batch) - or an emulator p2review sheet of batch 5 for the owner, or the Task 1 residual. The owner's session pushes to the P2
+branch: fetch + merge before every P2 push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow
+(+Rpc) + NoStrayPlay682j + ShelfText for the layout AND every test that greps the scene name (grep -rln <SCENE> app/src/test); check
+the PLAYPLACE output line really found Play on the pages (a layout with its own key words is skipped, not failed).
+
+**24 Nov 20:50 UTC, 738a (cloud, Task 5):** Verify 310 on ca697b9 (dev) + 5e1b096 (P2) GREEN. P2 branch fb72ff4: Panel dashboard
+(PANEL_DETAIL) has the swung-round panel's own pages - OVERVIEW / ACHIEVEMENTS / MANAGE as flat tiles and rows lit in the
+dashboard's colour, sliding in like the next panel (WinPagesPanels.kt; class C 13 scenes done, own designs 43 / 53). Batch 5
+(Orbit, Airy, Bubbles, Camera, Panels) is now all implemented - ready for an emulator p2review sheet for the owner. HW-28 extended.
+NEXT: check Verify 310 on this push AND on fb72ff4 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (batch 6: Rental shop, Arctic, Green core, Art library, Cross; then Live, Layout Studio; the Pocket family (POCKET_LCD) needs
+all three faces in one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every P2
+push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout
+AND every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
+**24 Nov 19:55 UTC, 737a (cloud, Task 5):** Verify 310 on 32e3610 (dev) + 445fd1f (P2) GREEN. P2 branch 5e1b096 (737a f2e65f0 +
+merge of the owner session's 682au): Pocket camera (CAMERA_MENU) has the cartridge menu's own pages - DATA / ALBUM / SETUP in its
+pixel font and four shades (WinPagesCamera.kt; class C 12 scenes done, own designs 42 / 53). PlayPlace caught Play a key lower on
+Options (fixed: UniformKeyColumn slots = PAGE_SLOTS); AchFirstRow Rpc x1.3 caught a 346 dp first award (fixed). HW-28 extended.
+NEXT: check Verify 310 on this push AND on 5e1b096 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs all three faces in
+one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every P2 push. New P2
+pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout AND every test
+that greps the scene name (grep -rln <SCENE> app/src/test).
+
+**24 Nov 18:45 UTC, 736a (cloud, Task 5):** Verify 310 on 18d8051 (dev) + 2e18249 (P2) GREEN. P2 branch 445fd1f: Bubble home
+(BUBBLE_CARD) has the LiveArea card's own pages - INFO / AWARDS / SETTINGS on its white panel (WinPagesBubble.kt; class C 11
+scenes done, own designs 41 / 53). The page panel is white now (was a dark see-through box). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 445fd1f (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs all three
+faces in one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every P2 push.
+New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout AND
+every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
+**24 Nov 17:45 UTC, 735a (cloud, Task 5):** Verify 310 on 1eb9328 (dev) + 6e8c897 (P2) GREEN. P2 branch 2e18249 (735a da3e595 +
+merge of the owner session's 682at charging light): Airy home (AIRY_PANEL) has the panel's own pages - ABOUT / STARS / SETTINGS
+(WinPagesAiry.kt; class C 10 scenes done, own designs 40 / 53). x1.3 room for the first star found by AchFirstRow and fixed
+(one-line stars header; tight panel pages: small keys, smaller heading). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 2e18249 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs
+all three faces in one batch) - or the Task 1 residual. The owner's session pushes to the P2 branch: fetch + merge before every
+P2 push. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow (+Rpc) + NoStrayPlay682j for the layout
+AND every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
+**24 Nov 16:50 UTC, 734b (cloud, Task 5):** Verify 310 on 00d7e9b (dev) GREEN; P2 ec5addf RED was the owner session's (Arcade),
+fixed by its 6a9e2d4 (GREEN). P2 branch 6e8c897: Orbit deck (ORBIT_TERMINAL) has the console's own screens - DATA / TRACKS / COMMANDS
+(WinPagesOrbit.kt; class C 9 scenes done, own designs 39 / 53). Arc keeps PAGE_SLOTS places on pages (Play stayed put only after
+that); console name on its own line (ran under READY at x1.3). PlayPlace + NoStrayPlay now name icon-only / labelled keys. HW-28
+extended. Not approved. The owner's live session is pushing to the P2 branch (682as) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on 6e8c897 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family (POCKET_LCD)
+needs all three faces in one batch) - or the Task 1 residual. New P2 pages: before pushing run PlayPlace682ab + PlayPlaceRpc682ab +
+AchFirstRow + NoStrayPlay682j for the layout AND every test that greps the scene name (grep -rln <SCENE> app/src/test).
+
+**24 Nov 15:45 UTC, 734a (cloud, CI fix):** Verify 310 on 194557a (dev) GREEN; P2 branch RED on d3907c7 (PopupNativeStorageTest
+still named Case flow as a shared-page scene after 733a converted it). Fixed test-only on the P2 branch (50cfb3f): the check follows
+NATIVE_PAGE_SCENES, so future conversions cannot break it. PopupNativeStorageTest 9/9 (cloud). Not approved; HW-28 unchanged.
+NEXT: check Verify 310 on this push AND on 50cfb3f (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family
+(POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual. New P2 pages: before pushing run PlayPlace682ab +
+PlayPlaceRpc682ab + AchFirstRow for the layout AND every non-Robolectric test that greps the scene name (grep -rln <SCENE>
+app/src/test) - 733a missed PopupNativeStorageTest that way.
+
+**24 Nov 15:20 UTC, 733a (cloud, Task 5):** Verify 310 on 3f6f2f6 (dev) + 91247df (P2) GREEN. P2 branch d3907c7: Case flow
+(CASE_MEDIA) has the case's own pages in the picture's glass well - DETAILS / EXTRAS / SETUP (WinPagesCase.kt; class C 8 scenes
+done, own designs 38 / 53); on its pages the window keeps one size so Play stays put (PlayPlace caught it); PlayPlace's More
+matcher now reads a labelled More key. Robolectric 2286 tests 0 failures. HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on d3907c7 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket family
+(POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+New P2 pages: run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow for the layout before pushing.
+
+**24 Nov 14:20 UTC, 732a (cloud, Task 5):** Verify 310 on c157066 (dev) + ee74963 (P2) GREEN. P2 branch 91247df: File select
+(FILE_CARD) has the file's own screens on its inset - DETAILS / STARS / OPTIONS (WinPagesFile.kt; class C 7 scenes done, own designs
+37 / 53); its page row keeps Play in the first of two slots (PlayPlace caught it before the push). Robolectric 628 tests 0 failures
+(FILESELECT cases). HW-28 extended. Not approved. Cloud Gradle: export VOLTCAP_MAVEN_MIRROR (Maven Central 429 this run).
+NEXT: check Verify 310 on this push AND on 91247df (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Case flow, Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross; the Pocket
+family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design
+choice). New P2 pages: run PlayPlace682ab + PlayPlaceRpc682ab + AchFirstRow for the layout before pushing.
+
+**24 Nov 13:20 UTC, 731a (cloud, Task 5 + P2 CI fix):** Verify 310 on b2c90cc (dev) GREEN; P2 branch was RED on 911681e
+(PlayPlace682ab MEMCARD - 730a's Memory card put Play alone in the middle on COMMANDS): fixed (two page slots), the owner's session
+pushed the same fix (682as, theirs kept). P2 branch ee74963: Cardboard box (BOX_SHEET) has the insert's own sheets - CONTENTS /
+CHECKLIST / SERVICE typed on its paper (WinPagesBox.kt; class C 6 scenes done, own designs 36 / 53); first page's end-aligned fact
+values no longer laid out past their box. Robolectric suites green (see SUMMARY 731a). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on ee74963 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (File select, Case flow, Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library, Live, Layout Studio, Cross;
+the Pocket family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar;
+design choice). New P2 pages: run PlayPlace682ab + PlayPlaceRpc682ab too (they caught 730a; they derive from AchFirstRow.NATIVE).
+
+**24 Nov 11:55 UTC, 730a (cloud, Task 5):** Verify 310 on d2d508f (dev) + 546f5b99 (P2) GREEN. P2 branch e59f3c6: Memory card
+(MEMCARD_INFO) has the save browser's own screens on its glass panel - INFORMATION / MEMORY BLOCKS / COMMANDS (WinPagesMemCard.kt;
+class C 5 scenes done, own designs 35 / 53); the panel now spans title-to-choices (measured). Existing defect fixed: a long console
+name ran under the title at x1.3 (ShelfText MEMCARD). Robolectric 581 tests 0 failures. HW-28 extended. Not approved. The owner's
+live session pushed 682ar3 to the P2 branch meanwhile (merged) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on e59f3c6 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (remaining single scenes: Box, File select, Case flow, Orbit, Airy, Bubbles, Camera, Panels, Shop, Green core, Art library,
+Live, Layout Studio, Cross; the Pocket family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top
+column vs the bottom clock bar; design choice).
+
+**24 Nov 10:55 UTC, 729a (cloud, Task 5):** Verify 310 on e9092e9 (dev) + 864e293 (P2) GREEN. P2 branch 546f5b99: Hero carousel +
+Hero tiles (HERO_BANNER, one scene) have the banner's own pages - THE FEATURE / HALL OF FAME / QUICK ACTIONS (WinPagesHero.kt;
+class C 4 scenes done, own designs 34 / 53). Compact heading on pages (x1.3 AchFirstRow found 0 px for the first achievement).
+Robolectric 1,884 tests 0 failures (100 Hero cases). HW-28 extended. Not approved. The owner's live session also pushes to the
+P2 branch (682ar, 682ar2 merged in) - fetch + merge before every P2 push.
+NEXT: check Verify 310 on this push AND on 546f5b99 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (the Pocket family (POCKET_LCD) needs all three faces in one batch; else the next single-scene class C layout in
+NATIVE_PAGES_AUDIT.md) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+
+**24 Nov 09:50 UTC, 728a (cloud, Task 5):** Verify 310 on 678c10e (dev) + 8a73d96 (P2) GREEN. P2 branch 864e293: Timeline
+(TIMELINE_ENTRY) has its own pages along its line - CHRONICLE / MILESTONES / BRANCHES (WinPagesTime.kt; class C 3 of 23, own
+designs 32 / 53). Robolectric: NativePagesTime728aTest 4/4 + TIMELINE in AchFirstRow / ShelfText / WinFocus / NoStrayPlay /
+LazyRows / PlayPlace - 52 cases green, 0 skipped (cloud). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 864e293 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (suggested: Hero / Hero tiles (HERO_BANNER, two layouts one scene); the Pocket family (POCKET_LCD) needs all three faces
+in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+
+**24 Nov 08:55 UTC, 727a (cloud, Task 5):** Verify 310 on 045fac8 + 5d53277 GREEN. P2 branch 8a73d96: Channel grid (WII_PREVIEW)
+has the channel's own screens in its preview well - CHANNEL INFO / STAMPS / SETTINGS (WinPagesChan.kt; class C 2 of 23, own designs
+31 / 53). Three focus bugs fixed in the Channel scene on the way (More-page focus effect, one key row, closed More answers for its
+keys - NoStrayPlay CHAN storm). Robolectric CHAN suites 104/0 + Channel source tests green (cloud). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 8a73d96 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (suggested: Timeline (TIMELINE_ENTRY), then Hero / Hero tiles (HERO_BANNER); the Pocket family (POCKET_LCD) needs all three
+faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design choice).
+
+**24 Nov 07:55 UTC, 726a (cloud, Task 5):** Verify 310 on 55b7361 + eb4af38 GREEN. P2 branch 5d53277: Circuit board (CHIP_SHEET)
+has its own datasheet sections - CHARACTERISTICS / PIN STATES / JUMPERS (WinPagesChip.kt; first class C layout, own designs
+30 / 53). Robolectric: NativePagesChip726aTest + CIRCUIT in AchFirstRow / LazyRows / PlayPlace / NoStrayPlay / WinFocus /
+ShelfText, all green (cloud). HW-28 queued (KONKR + RP Classic). Not visually approved.
+NEXT: check Verify 310 on this push AND on 5d53277 (P2) FIRST (red -> fix first). Then Task 5 continues on the P2 branch with
+the next class C layout (suggested: Channel (WII_PREVIEW) or Timeline (TIMELINE_ENTRY) - single-layout scenes; the Pocket
+family (POCKET_LCD) needs all three faces in one batch) - or the Task 1 residual (Row Top column vs the bottom clock bar; design
+choice).
+
+**24 Nov 06:40 UTC, 725b (cloud, Task 5 prep):** Verify 310 on 35bb129 GREEN. P2 branch `claude/v0674-native-pages`: dev line
+merged in (31e2931, test_qa.py conflict = both sides kept); its QA selftest was RED (p2review.sh r714 raw keys around winguard)
+-> eb4af38: k_home via wg_key_home, the R1 panel's B via new wg_key_main; selftest 264 OK, merged tree compiles, static PASS.
+Unit tests NOT RUN (Maven 429) - CI on eb4af38 is their check.
+NEXT: check Verify 310 on the dev push AND on eb4af38 (P2) FIRST (red -> fix first). Then Task 5: the first of the 23 class C
+layouts on the P2 branch (worktree; NATIVE_PAGES_P2.md "How a family joins"; suggested next: Pocket family / Channel /
+Circuit) - or the Task 1 residual (Row Top: a column taller than the room above the bottom clock bar; needs a design choice,
+no fix that cuts text).
+
 **24 Nov 05:45 UTC, 725a (cloud, Task 4):** Verify 310 on ff28c4f GREEN. START > "Categories…" on an installed app / Android
 game: Automatic / Android games / Other apps, Recomps, consoles (LibraryAppsSettings.appConsoles, "More consoles…"), Collections…
 link; several at once, applied at once, kept by package name; a console with only an app appears / hides; no duplicate in All.
