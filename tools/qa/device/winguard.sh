@@ -44,20 +44,26 @@ wg_what() { case "$1" in
   esac; }
 wg_dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 # the open game window's game from a fresh QaClip dump; "null" = none; "" = no dump (unknown - never taken as a yes)
-wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; chmod 666 $F/qa_clip_req 2>/dev/null; i=0
+wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; chmod 666 $F/qa_clip_req 2>/dev/null; i=0; c=""
   # (682s: up to 15 s - on the emulator the dump came later than 6 s and the walk aborted on "no dump"; a wait, never a key)
-  while ! wg_dr $F/qa_clip/$n.json && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1)); done
+  # (747b, emulator review 45560074265: "no dump" came within ~2 s of the request, not after 15 - the old code looked at the
+  # file three times (loop, check, grep); a dump of the same name being replaced in between (QaClip deletes the old file before
+  # renaming the new one in - e.g. a request the app took twice) reads as none. Likely cause, not proven: wg_nodump_why says.
+  # Now the file is read ONCE into c and that copy is what counts; a read that falls into the gap just waits for the next.)
+  while [ $i -lt 75 ]; do c=$(cat $F/qa_clip/$n.json 2>/dev/null); case "$c" in *"}") break;; esac; c=""; sleep 0.2; i=$((i + 1)); done
   # (747a, emulator review 44367749650 aborted twice on "no dump" with nothing to say why: a dump the app is still writing
   # (its .part file is there) gets up to 15 s more - a read, never a key; anything else stays "no dump")
-  i=0; while ! wg_dr $F/qa_clip/$n.json && [ -e $F/qa_clip/$n.json.part ] && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1)); done
-  wg_dr $F/qa_clip/$n.json || { echo ""; return; }
-  grep -o '"popupGame": *[^,}]*' $F/qa_clip/$n.json | head -1 | sed 's/^"popupGame": *//; s/"//g'; }
-# (747a) why a QaClip dump did not come - read-only, for the abort line: the request still waiting = the app never read it
-# (its main thread did not run the 250 ms poll: stalled, or the QA app's process restarted); taken but no file = the dump
-# failed or is still being written; plus the app's last "clip" trace lines (QaClip logs "clip error ..." when a dump throws)
+  i=0; while [ -z "$c" ] && [ -e $F/qa_clip/$n.json.part ] && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1))
+    c=$(cat $F/qa_clip/$n.json 2>/dev/null); case "$c" in *"}") ;; *) c="";; esac; done
+  [ -n "$c" ] || { echo ""; return; }
+  echo "$c" | grep -o '"popupGame": *[^,}]*' | head -1 | sed 's/^"popupGame": *//; s/"//g'; }
+# (747a) why a QaClip dump did not come - read-only, for the abort line: the request file still there = the app has not taken
+# it (main thread stalled, process restarted - or it could not delete it); taken but no file = the dump failed or is still
+# being written; plus the app's last "clip" trace lines (QaClip logs "clip error ..." when a dump throws)
 wg_nodump_why() { n=${TAG}_wg
-  if [ -e $F/qa_clip_req ]; then w="request never taken by the app (main thread stalled or restarted?)"
+  if [ -e $F/qa_clip_req ]; then w="request file still there ($(cat $F/qa_clip_req 2>/dev/null)) - not taken by the app"
   elif [ -e $F/qa_clip/$n.json.part ]; then w="request taken, dump still being written"
+  elif [ -e $F/qa_clip/$n.json ]; then w="request taken, the dump arrived late"
   else w="request taken, no dump written"; fi
   c=$(logcat -d -s VoltcapQA 2>/dev/null | grep -E " clip (error|done)" | tail -2 | sed 's/.* clip /clip /' | tr '\n' ';')
   echo "$w${c:+; last: $c}"; }

@@ -3036,11 +3036,32 @@ echo FINISHED >> {d}/log.txt
         # (747a, emulator review 44367749650: two INFRA aborts "QaClip: 'no dump'" with nothing to tell a stalled app from a
         # failed dump) - the abort line names it; still nothing pressed
         rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip_req; wg_window; wg_key_win R1', popup="")
-        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request never taken by the app", log)
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request file still there", log)
         rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip/t_wg.json.part; wg_window; wg_key_win R1', popup="")
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("dump still being written", log)
         rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', popup="", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request taken, no dump written", log)
+
+    def test_popup_read_survives_a_dump_being_replaced(self):
+        # (747b, emulator review 45560074265) QaClip replaces a dump by deleting it and renaming the new one in; a reader that
+        # looks at the file more than once can find it gone and call it "no dump" - wg_popup reads it once
+        d = tempfile.mkdtemp()
+        try:
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+( end=$(( $(date +%s) + 40 )); while [ $(date +%s) -lt $end ]; do
+    printf '%s' '{{"popupGame":"/r/g.sfc","x":[]}}' > $F/qa_clip/t_wg.json.part; rm -f $F/qa_clip/t_wg.json
+    sleep 0.03; mv $F/qa_clip/t_wg.json.part $F/qa_clip/t_wg.json; sleep 0.03; done ) &
+w=$!
+ok=0; for k in 1 2 3 4 5 6 7 8; do [ "$(wg_popup)" = /r/g.sfc ] && ok=$((ok + 1)); done
+pkill -P $w 2>/dev/null; kill $w 2>/dev/null
+echo "ok=$ok"
+"""
+            r = subprocess.run(["sh", "-c", script], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=45)
+            self.assertIn("ok=8", r.stdout, r.stdout)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
