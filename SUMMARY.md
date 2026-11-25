@@ -1,3 +1,26 @@
+# Update 744a (25 Nov 2026, cloud run) - P2 class C: Layout Studio gets its own pages (native-pages branch)
+- CI first: Verify 310 on 5fb6ff6 (dev line) and 63f0b52 (P2, Live tiles) GREEN (50e4a3f was cancelled by the next push).
+- Task 5 on `claude/v0674-native-pages` (worktree), 63f0b52 -> 89ab1d6: the nineteenth class C scene (batch 8). Layout Studio's
+  panel (layout grid, framed art well with crop marks, the layout's colours) keeps its first page (Canvas); its pages use the
+  editor's language under a rounded tab strip (Canvas / Properties / Milestones / Actions, the shown one filled in the accent):
+  Properties (inspector rows - spaced-capital labels left, values right, dashed guide lines; the description in a text frame),
+  Milestones ("N / M", per cent, a ruler with a tick every tenth - one earned always shows, full only when all are earned - the
+  order chip; layer rows with the badge in a framed well, "Earned <date>" / "Not yet", "+N" chip; A opens text + rarity),
+  Actions (rounded buttons like the keys; removing ones red-outlined, second A). Pages snap in from one grid step below; none
+  with Motion Off. Own designs 49 / 53.
+- Play stays put: key row keeps the first page's slots, the panel grows upward only on its pages (livePageHeight, as Live 743a).
+  PlayPlace CUSTOM (+ Rpc) x1.0 / x1.3 + a temporary first-page probe: Play's top-left within 1 px on all four pages.
+- Found on the way: AchFirstRow CUSTOM x1.3 showed the first milestone half (37 of 75 px) - on a short window the pages now drop
+  the console line (it is in Properties), the name goes to 16 sp / two lines and the milestone header steps down; PASS after.
+- Checked (cloud): NativePagesStudio744aTest 4/4 (new; fails on the old code: no studioPageName, STUDIO_PANEL not native); CUSTOM
+  added to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, WindowWordsSurvey682,
+  Popup421, Batch506, Layouts330, R1Compat326, WinFocus*, UniformKeys673, NativeConfirm681, NativePages* - 2,903 tests,
+  0 failures. Static PASS. (Maven Central answered 429; the run used the settings' VOLTCAP_MAVEN_MIRROR switch with Google's
+  Maven Central mirror.)
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesStudio.kt (new), ui/WinSceneStudio.kt (StudioPanel, StudioTitle), ui/WinPageFlow.kt; tests
+  NativePagesStudio744aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest; docs NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 743a (25 Nov 2026, cloud run) - P2 class C: the Live tiles panel gets its own pages (native-pages branch)
 - CI first: Verify 310 on 73c1053 (dev line) and 7477b77 (P2, Cross menu) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 7477b77 -> 63f0b52: the eighteenth class C scene (batch 7). The Live tiles panel

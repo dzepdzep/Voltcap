@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 02:55 UTC, 744a (cloud, Task 5):** Verify 310 on 5fb6ff6 (dev) + 63f0b52 (P2) GREEN. P2 branch 89ab1d6: Layout Studio
+(STUDIO_PANEL) has its own pages - Properties (inspector rows with dashed guides) / Milestones (ruler + layer rows) / Actions
+(rounded buttons) under the editor's rounded tab strip, snapping in from one grid step below (WinPagesStudio.kt; class C 19 scenes
+done, own designs 49 / 53). Play top-left within 1 px on the first page and all pages (PlayPlace + first-page probe). AchFirstRow
+x1.3 caught a half-shown first milestone - fixed (short window: no console line on the pages). HW-28 extended. Not approved.
+Infra tip: Maven Central 429 -> export VOLTCAP_MAVEN_MIRROR=https://maven-central.storage-download.googleapis.com/maven2 (works).
+NEXT: check Verify 310 on this push AND on 89ab1d6 (P2) FIRST (red -> fix first). Then Task 5: the Pocket family (POCKET_LCD) -
+all three faces (Pocket classic, Pocket ribbon, Pocket) in one batch, the last class C scene; or an emulator p2review sheet of
+batches 5-8 for the owner, or the Task 1 residual. Same pre-push checks as below.
+
 **25 Nov 02:05 UTC, 743a (cloud, Task 5):** Verify 310 on 73c1053 (dev) + 7477b77 (P2) GREEN. P2 branch 63f0b52: Live tiles
 (LIVE_PANEL) has its own pages - about / achievements (flat accent bar) / options in its flat tile language under a pivot heading
 (the shown page's name first), turning in like a turnstile (WinPagesLive.kt; class C 18 scenes done, own designs 48 / 53). A probe
