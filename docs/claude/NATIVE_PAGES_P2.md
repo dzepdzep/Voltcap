@@ -1243,3 +1243,17 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
   NoStrayPlay*, NativeConfirm*, WindowWordsSurvey682*, NativePages*, UniformKeys*, Batch506, Inspect673, Popup421, PlayPlace*:
   3,058 tests, 0 failures. Static PASS. Native pages: 53 / 53 implemented (audit: class A 53).
 - Hardware: visual capture in the v0.7.0 preview gallery (682ba); popclip / functional HW NOT TESTED; not visually approved.
+
+### 682ba - v0.7.0 visual preview (owner 25 Nov 12:48 "OPTION 3, then OPTION 2") - captured, NOT owner-approved
+- Gallery: qa_runs/gallery070/VoltCap_v0.7.0_preview/index.html + VoltCap_v0.7.0_preview.zip (135 MB) on the owner's PC. All 53
+  layouts x Home / Info / Details / Achievements / Options x KONKR x1.0 / x1.3 + RP Classic x1.0 / x1.3 = 1,060 screenshots, 0
+  missing; 212 page-walk recordings + 106 home-navigation recordings (x1.0); new features (Focus position, Recomps, START
+  Categories, Collections picker); before / after (Disc station, charging light, the x1.3 subtitle gap); Arcade B table; open
+  issues and unverified tests; per-layout badges keep Implemented / Hardware QA / Owner approval apart (all NOT APPROVED).
+- Capture: QA app qa682az (52 layouts, first runs) and qa682az2 (Disc station + the rest; the two differ only in Disc station),
+  p2review gallery mode chained by galchain.sh in runs of <= 15 layouts inside the 15-minute guard (owner allowed the full run for
+  this gallery only); every run restored the QA snapshot (diff 0), 0 launches. Automated check: every page shot has the game
+  window open on the right layout (QaClip popupGame / homeLayout) on all four combinations.
+- Found during capture: Green core's home A opens its GAMES page (753a made it two-step in parallel - kept); Green core home x1.3
+  KONKR PLAY TIME value cut ("AYED N") - OPEN; Disc station PROGRAM x1.3 KONKR MODE key narrow (words slide) - for review.
+- Notes / statuses used: docs/claude/PREVIEW_070_notes.json; builder tools/qa/tools/gallery070.py.

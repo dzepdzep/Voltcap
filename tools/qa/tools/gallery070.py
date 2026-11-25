@@ -209,7 +209,10 @@ not your approval. Every layout is <span class="b bad">NOT APPROVED</span> until
         with zipfile.ZipFile(z, 'w', zipfile.ZIP_DEFLATED) as zf:
             for root, _, files in os.walk(out):
                 for f in files:
-                    p = os.path.join(root, f); zf.write(p, os.path.relpath(p, os.path.dirname(out.rstrip('/'))))
+                    p = os.path.join(root, f)
+                    # (pictures and clips are compressed already - stored as they are, the page deflated)
+                    zf.write(p, os.path.relpath(p, os.path.dirname(out.rstrip('/')) or '.'),
+                             compress_type=zipfile.ZIP_STORED if f.endswith(('.jpg', '.mp4')) else zipfile.ZIP_DEFLATED)
         print('zip:', z, os.path.getsize(z) // 1024 // 1024, 'MB')
 
 
