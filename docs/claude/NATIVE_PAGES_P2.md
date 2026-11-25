@@ -1095,3 +1095,27 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   PopupMore451, WinPresentation, NativeConfirm681, NativePages*, UniformKeys673, PopupNativeStorage: 2,499 tests, 0 failures.
   Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 17 scenes done (own designs 47 / 53). Left: Live, Layout Studio, the Pocket family (POCKET_LCD, three faces).
+### 743a - P2 class C, eighteenth scene: Live tiles (LIVE_PANEL, WinPagesLive.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- The flat dark panel turning in like a turnstile (the console in lower case in your accent, the name in large thin lower case,
+  the art as a square accent tile, the keys as small flat tiles, Play in the accent) stays as it is; its pages keep the flat tile
+  language under a pivot heading (the page names in large thin lower case, the shown one white and first, the others after it in
+  turn, dim; wraps, never cut): about (each fact a small lower-case label in the accent over its value in thin white type, then the
+  description on a flat tile - a D-pad stop, filled in the accent when you are on it), achievements (the big thin per cent, "N of
+  M", a flat accent bar - one earned always shows, full only when every one is earned - and the order as a flat tile; each
+  achievement a flat row: its badge on a square tile (the accent when yours), the title in thin type, "earned <date>" / "not yet",
+  "+N"; the row you are on filled in the accent; A opens the whole text + how rare it is; lazy rows), options (flat tiles; removing
+  ones red-edged, red when you are on them, "press A again to confirm" - second A). Motion: the next page turns in like the panel
+  itself - a turnstile hinged on its left edge, 60 degrees to flat, fading in (text drawn flat first, D285); none with Motion Off.
+  On its pages the name steps down to 22 sp (18 sp on a short window); the art tile and facts are the first page's. Was: the
+  shared page in place of the panel.
+- L1 / R1 anywhere on the panel. Play stays put on the first page AND its pages: on its pages the key row keeps the first page's
+  slots, and the panel grows upward only (livePageHeight: half the free room, moved up by half its growth, measured with More
+  closed) - before that fix a probe of PlayPlace found Play 8 dp (RP Classic 60 dp) lower on the pages than on the first page;
+  after it Play's top-left is identical on all four (x1.0 / x1.3, KONKR-size and RP Classic). Play is wider on the pages (the
+  first page's row scrolls, as on every layout with More).
+- Tests (cloud): NativePagesLive743aTest 5/5 (new; fails before: no livePageName, LIVE_PANEL not native); LIVE added to AchFirstRow
+  (+ Rpc, PlayPlace via NATIVE) + ShelfText; with PlayPlace*, NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Visual426,
+  Popup421, WinFocus*, Layouts344, Readability476, Batch505, PopupMore451, WinPresentation*, NativeConfirm681, NativePages*,
+  UniformKeys673, PopupNativeStorage*: 2,909 tests, 0 failures. Static PASS. Hardware NOT TESTED (HW-28 extended), emulator review
+  not run, not approved.
+- Audit: class C 18 scenes done (own designs 48 / 53). Left: Layout Studio, the Pocket family (POCKET_LCD, three faces).

@@ -43,6 +43,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -188,7 +190,24 @@ private fun SceneFactsColumn(ctx: WinSceneCtx, label: Color, value: Color, font:
 internal fun LiveTilesPanel(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 620.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (743a, P2 class C: the panel's own pages - about / achievements / options under a pivot heading, WinPagesLive.kt; L1 / R1
+    // from anywhere on the panel. On a short window (or large text on a mid one) the name and pivot step down.)
+    val main = ctx.page == WinPage.MAIN
+    val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+    // (743a, PlayPlace probe: grown to the window's height on its pages, the centred panel put Play 8 dp (RP Classic: 60 dp) lower
+    // than on the first page. On its pages the panel grows upward only - by at most what keeps its top on screen - so the key row,
+    // and Play, stay where the first page had them.)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val mainH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val pageH = mainH.value?.let { livePageHeight(it, ctx.maxH) }
+    val moreShut = sceneKeys(ctx).none { it.label == "Less" }
+    val box = when {
+        // (measured with More closed - its open list, "Less", is not the row Play sits in; rememberKeySlots counts the same way)
+        main -> Modifier.heightIn(max = ctx.maxH).onSizeChanged { if (moreShut) mainH.value = with(dens) { it.height.toDp() } }
+        pageH != null -> Modifier.height(pageH).offset(y = -(pageH - mainH.value!!) / 2)
+        else -> Modifier.heightIn(max = ctx.maxH)
+    }
+    Column(Modifier.width(w).then(box).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         rotationY = (1f - e) * 70f
         transformOrigin = TransformOrigin(0f, 0.5f)
@@ -198,22 +217,31 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
         flatTextFor3d()
     }.background(Color(0xFF111111).copy(alpha = 0.94f)).padding(16.dp)) {
         Text(ctx.console.lowercase(), color = a, fontSize = 13.sp, fontWeight = FontWeight.Light)
-        StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = 30.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 32.sp)
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.weight(1f, fill = false)) {
+        if (main) StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = 30.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 32.sp)
+        else StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = if (short) 18.sp else 22.sp, maxLines = 2, fontWeight = FontWeight.Light,
+            lineHeight = if (short) 21.sp else 26.sp)
+        Spacer(Modifier.height(if (main || !short) 8.dp else 4.dp))
+        if (main) Row(Modifier.weight(1f, fill = false)) {
             Box(Modifier.width(minOf(w * 0.3f, 160.dp)).aspectRatio(1f).background(a)) {
                 (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, upperLabels = false) }
-        }
+        } else LivePageArea(ctx, LiveInk(a), Modifier.fillMaxWidth().weight(1f), short)
         Spacer(Modifier.height(10.dp))
-        // The keys as small flat tiles in the accent.
-        KeyRow(sceneKeys(ctx), 4.dp) { k ->
+        // The keys as small flat tiles in the accent. (743a: on its pages the row keeps the first page's slots - Play stays put.)
+        KeyRow(sceneKeys(ctx), 4.dp, slots = sceneKeySlots(ctx)) { k ->
             SceneKeyStyled(k, if (k.primary) a else Color(0xFF2A2A2A), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
                 Color.Transparent, Color.White, RectangleShape, height = 40.dp)
         }
     }
+}
+
+/** 743a (pure): the Live panel's height on its pages - grown from the first page's [mainH] towards the window's [maxH], upward
+ *  only: a centred panel moved up by half its growth keeps its bottom (the key row) in place while its top stays on screen. */
+internal fun livePageHeight(mainH: androidx.compose.ui.unit.Dp, maxH: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp {
+    if (mainH >= maxH) return maxH
+    return ((maxH + mainH) / 2).coerceIn(mainH, maxH)
 }
 
 // ───────────── Dashboard: a widget card rising from the row ─────────────
