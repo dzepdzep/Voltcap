@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 10:40 UTC, 750a (cloud, rule 11 + P2 review):** Verify 310 on e510120 GREEN. P2 review 45584303713 (HERO_TILES MEMCARD
+BOX FILESELECT) VERDICT PASS, 0 launches; next set 45593862011 (P2:CASEFLOW ORBIT AIRY BUBBLES, on a524ded) dispatched. Dev line:
+new-arrival card, glance window title / facts, launch animation title / console, companion screen titles through FullText
+(ArrivalLaunchFullText750aTest 2/2, TRUNCATE 60 -> 51; HW-24 750a).
+NEXT: check Verify 310 on this push FIRST. Read review 45593862011; if PASS dispatch the next set (one at a time): CAMERA PANELS
+SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (fetch the P2 branch first - the owner pushes to it live).
+Between dispatches: the next rule 11 batch (51 left; e.g. SaveInspect, SaveSyncUi, SteamImportDialog, RommBrowser). When all
+sets PASS, one owner action with the sheets' run links.
+
 **25 Nov 09:35 UTC, 749a (cloud, rule 11 + P2 review):** Verify 310 on 435538a GREEN. P2 review 45576064795 (CIRCUIT CHAN TIMELINE
 HERO) VERDICT PASS, 0 launches; next set 45584303713 (P2:HERO_TILES MEMCARD BOX FILESELECT, on a524ded = the owner's live 682av
 push) dispatched. Dev line: play stats / performance tiles / popup status rows through FullText (StatsFullText749aTest 2/2,

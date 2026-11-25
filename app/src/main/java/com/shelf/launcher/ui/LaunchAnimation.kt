@@ -341,15 +341,16 @@ fun LaunchAnimation(
                 },
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                title, color = Color.White, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+            // (750a, rule 11: whole title and console - wrap, a readable size, then a slide.)
+            FullText(
+                title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                maxLines = 2, textAlign = TextAlign.Center, reserve = false
             )
             if (!subtitle.isNullOrBlank()) {
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    subtitle.uppercase(), color = accent.copy(alpha = 0.9f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.3.em, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                FullText(
+                    subtitle.uppercase(), color = accent.copy(alpha = 0.9f), fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.3.em, reserve = false
                 )
             }
         }

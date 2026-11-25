@@ -1,3 +1,17 @@
+# Update 750a (25 Nov 2026, cloud run) - rule 11: new-arrival card, glance window, launch animation and companion screen show their text whole
+- CI first: Verify 310 on e510120 (749a) GREEN. P2 emulator review 45584303713 (HERO_TILES MEMCARD BOX FILESELECT, x1.3 + x1.0,
+  on a524ded) VERDICT PASS, 0 launches, every destructive row armed and cancelled, crash log empty - sheets in its artifact. Next
+  set dispatched: run 45593862011 (P2:CASEFLOW ORBIT AIRY BUBBLES) on a524ded (read-only dispatch; the P2 branch is untouched).
+- Dev line, rule 11 (matrix P13): NewArrival.kt (name while it types in - keeps two lines of room so the card never grows - and the
+  console / "+N more" tail), GlanceWindow.kt (title, no reserve because its size places the art; facts line 1 / 4 lines),
+  LaunchAnimation.kt (centred title + console line) and CompanionActivity.kt (game title + console, Performance page title) go
+  through FullText (wrap, readable size, then slide). 9 TRUNCATE places -> 0.
+- Test: ArrivalLaunchFullText750aTest 2/2 PASS in the cloud (fails on 749a: 9 Ellipsis); Batch523cTest, PlayWhileClosing412Test,
+  PopupReview443Test, PopupShade461Test PASS (read these files). App + tests compiled. Static checks PASS, TRUNCATE 60 -> 51.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/NewArrival.kt, ui/GlanceWindow.kt, ui/LaunchAnimation.kt,
+  ui/CompanionActivity.kt, app/src/test/java/com/shelf/launcher/ui/ArrivalLaunchFullText750aTest.kt.
+- Not tested: hardware (HW-24 750a, KONKR x1.3 + x1.0, with 749a).
+
 # Update 749a (25 Nov 2026, cloud run) - rule 11: play stats, performance tiles and game popup status rows show their text whole
 - CI first: Verify 310 on 435538a (748a) GREEN. P2 emulator review 45576064795 (CIRCUIT CHAN TIMELINE HERO, x1.3 + x1.0) VERDICT
   PASS, 0 launches, every destructive row armed and cancelled - sheets in its artifact. Next set dispatched: run 45584303713

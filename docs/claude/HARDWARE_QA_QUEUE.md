@@ -95,6 +95,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   (long label / value, a destructive row in red) - whole (wrap, shrink, then slide), never an ellipsis; rows keep their height,
   focus ring and touch target. D-pad + touch still work. Screenshots.
   Unit evidence only (StatsFullText749aTest; static TRUNCATE 66 -> 60).
+- Also (750a, rule 11, dev line 750a or later, ~2 min, KONKR x1.3 + x1.0, with 749a): the new-arrival card after a scan
+  (a long name types in: the card never grows; long console / "+N more" tail), the glance window (long title, facts line
+  closed and with All details), the launch animation (long title + console, centred) and the companion screen's titles
+  (Thor second screen if on hand) - whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
+  Unit evidence only (ArrivalLaunchFullText750aTest; static TRUNCATE 60 -> 51).
 - Also (715a, Task 1 Row-position, dev line 715a or later, ~2 min, KONKR x1.0, with 714a): Voltcap row, game header OFF,
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the
