@@ -1,3 +1,12 @@
+# Update 746a (25 Nov 2026, cloud run) - P2 branch CI fix: the native-pages test follows the finished set
+- CI first: Verify 310 on 2ed1c9f (dev line) GREEN; on df0f0c3 (P2, Pocket family) RED - 4963 tests, 1 failure:
+  PopupNativeStorageTest.storageKeepsItsOwnPages asserted "some scenes still use the shared pages". 745a converted the last one,
+  so every WinScene is now in NATIVE_PAGE_SCENES and the assumption no longer holds.
+- Fix (test only, `claude/v0674-native-pages` 86344b2): the test now requires that no scene is left on the shared pages and that
+  nativePages() is true for every scene - a scene falling back to the shared pages fails. The per-scene check stays.
+- Checked: PopupNativeStorageTest 9/9 (cloud, P2 worktree); static checks PASS. No app code changed; nothing to copy for the dev
+  line. Hardware: NOT TESTED (not needed - test change only). Files: app/src/test/java/com/shelf/launcher/ui/PopupNativeStorageTest.kt (P2 branch).
+
 # Update 745a (25 Nov 2026, cloud run) - P2 class C: the Pocket family gets its own pages, all three faces (native-pages branch)
 - CI first: Verify 310 on 0337ee9 (dev line) and 89ab1d6 (P2, Layout Studio) GREEN. Dev line merged into the P2 branch first
   (docs only; the shallow clone needed --deepen to find the merge base).
