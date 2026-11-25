@@ -21,7 +21,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | 8 | Pocket Worlds | WORLDS | WorldsLook | ◀ ▶ | Pocket, Camera, Green Core | - | KONKR 12 Nov | no |
 | 9 | Archive 1994 | ARCHIVE | ArchiveLook | ◀ ▶ | Library, Airy, Resume | - | KONKR 12 Nov | no |
 | 10 | Channel Surf | CHANNEL | ChannelLook | ▲ ▼ | TV room | 527 (CRT roll) | Flip 2 before / after + KONKR 12 Nov | no |
-| 11 | Generations | GENERATIONS | GenerationsLook | ◀ ▶ (release order) | Timeline, Console stack | - | KONKR 12 Nov | no |
+| 11 | Generations | GENERATIONS | GenerationsLook | ◀ ▶ (release order) | Timeline, Console stack | 761a (info block ends at the handheld lane) | KONKR 12 Nov | no |
 | 12 | Constellation | CONSTELLATION | ConstellationLook | ◀ ▶ | Orbit, Circuit, Cube, Bubbles | - | KONKR 12 Nov | no |
 | 13 | System Vault | VAULT | VaultLook | ▲ ▼ | Memory card, File select, Disc station | - | KONKR 12 Nov | no |
 | 14 | Pocket Dashboard | DASHBOARD | DashboardLook (Thor: row on the lower screen) | ◀ ▶ | Pocket classic, Pocket ribbon, Twin showcase / desk / icons, Panels, Dash | 759a | KONKR 12 Nov; Thor two-screen NOT TESTED | no |
@@ -34,7 +34,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 Green Core, Pocket classic).
 
 ## Counts (evidence only)
-- Implemented 17 / 17 (code). Look-specific unit checks 10 / 17 (527, 678j, 759a, 760a Stage); the 759a inventory guard covers all 17. Emulator 0 / 17.
+- Implemented 17 / 17 (code). Look-specific unit checks 10 / 17 (527, 678j, 759a, 760a Stage, 761a Generations); the 759a inventory guard covers all 17. Emulator 0 / 17.
 - Hardware: all 17 opened on KONKR x1.0 / x1.3 on 12 Nov (Sprint 527, branch feature/popup-native) - NOT re-run on the dev line
   since; the dev line has changed the looks since (Sprint 528 Wall header, rule 11 FullText in LookTitle, 759a key notes).
 - Owner visual approval 0 / 17.
@@ -49,9 +49,14 @@ Green Core, Pocket classic).
   ~100 dp tall against ~83 dp of plinth front, so it rose over the plinth's top and the object's foot. The plate now ends at
   the object's foot (`stagePlateRoom`); the name gives way first (shrinks to its readable 10 sp, then slides), the facts keep
   two lines. `StagePlateRoom760aTest` 2/2 (source half fails on 759a). Hardware NOT TESTED (HW-24 760a).
+- 761a Generations: the block for the system you're on (generation line, name, facts) grew upwards without a bound; on the
+  KONKR the room under the handheld lane is ~82 dp, a two-line name at x1.3 needs ~125 dp, so it reached ~40 dp into the
+  focused handheld and its year. It now ends at the lane's foot (`generationsInfoRoom`, a 56 dp minimum on short phone
+  screens); the name gives way first (shrink to 10 sp, then slide), the generation line and the facts (two lines) stay whole.
+  `GenerationsInfoRoom761aTest` 3/3 (source half fails on 760a). Hardware NOT TESTED (HW-24 761a).
 
 ## Remaining (from Sprint 527 + this pass)
-- Third-priority polish still to do: Generations, Slides, Vault, Grid / Dashboard / Constellation (Wall's header
+- Third-priority polish still to do: Slides, Vault, Grid / Dashboard / Constellation (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.

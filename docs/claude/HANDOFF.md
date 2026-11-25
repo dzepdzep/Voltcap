@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 22:40 UTC, 761a (cloud, P5 polish - Generations):** Verify 310 on 3beb14f GREEN. Generations' info block (generation
+line, name, facts) is capped at the handheld lane's foot (generationsInfoRoom; on the KONKR at x1.3 a two-line name reached
+~40 dp into the focused handheld); the name gives way first, the other lines stay whole (GenerationsInfoRoom761aTest 3/3;
+HW-24 761a).
+NEXT: check Verify 310 on this push FIRST. Then P5 polish, next look: Slides (then System Vault, Grid / Pocket Dashboard /
+Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses (ONEPRESS), rule 14. P2:
+only on an owner push / review or a red CI.
+
 **25 Nov 21:40 UTC, 760a (cloud, P5 polish - System Stage):** Verify 310 on 359aa12 GREEN. Stage's museum plate is capped at
 the object's foot (at x1.3 on the KONKR it rose ~17 dp over the plinth's top and the console's foot); the name gives way first
 (shrink to 10 sp, then slide), the facts keep two lines (StagePlateRoom760aTest 2/2; HW-24 760a).

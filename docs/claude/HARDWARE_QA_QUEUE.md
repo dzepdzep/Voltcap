@@ -106,6 +106,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (761a, matrix P5, dev line 761a or later, ~1 min, KONKR x1.3 + x1.0, with the 760a / 759a passes): Generations with a
+  handheld focused next to a long-named home console (e.g. step to Game Boy, then to Nintendo Entertainment System) - the
+  block at the bottom (generation line, name, maker / year / count) stays below the handheld lane (the focused handheld and its
+  year are never covered); a long name shrinks or slides, the other two lines are whole. Screenshot x1.3. Unit evidence only
+  (GenerationsInfoRoom761aTest).
 - Also (760a, matrix P5, dev line 760a or later, ~1 min, KONKR x1.3 + x1.0, with the 759a pass below): System Stage with a
   long console name (e.g. Nintendo Entertainment System) - the museum plate on the middle plinth stays below the object's foot
   and the plinth's lit top (never over them); the name shrinks or slides, the maker / year / count line is whole. Screenshot

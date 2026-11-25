@@ -1,3 +1,22 @@
+# Update 761a (25 Nov 2026, cloud run) - matrix P5 polish: Generations' info block never rises into the handheld lane
+- CI first: Verify 310 on 3beb14f (760a) GREEN.
+- P5 third-priority polish, second look (Generations). Arithmetic on the KONKR (640 x 427 dp): the line sits at 46 % of the
+  height, the focused handheld (scale 1.15) and its year end ~291 dp down, the info block's bottom is 54 dp above the screen's
+  foot, so the block has ~82 dp. At x1.3 a two-line name needs ~125 dp; the block (unbounded, growing upwards) covered the
+  focused handheld and its year.
+- Fix (CategoryLooks.kt GenerationsLook): the block's height is capped at the handheld lane's foot (generationsInfoRoom;
+  GEN_AXIS / GEN_YEAR_W / GEN_INFO_BOTTOM shared with the drawing; 56 dp minimum for short phone screens). The name has
+  weight(fill = false), so the generation line and the facts (two lines) are measured first and the name gives way: FullText
+  shrinks it to 10 sp, then slides it - never "...". The generation line and the facts now go through FullText too (they slide
+  instead of being cut). At x1.0 a one-line name is unchanged.
+- Test: GenerationsInfoRoom761aTest 3/3 (room arithmetic: x1.0 fits, x1.3 old need > room, the name keeps a readable line,
+  phone minimum; source guards fail on 760a); StagePlateRoom760aTest 2/2, CategoryStable394Test 6/6. Compiled:
+  :app:compileDebugUnitTestKotlin (cloud; Maven Central 429 twice, retried). Static checks [PASS]. Full suite: CI. Hardware
+  NOT TESTED (HW-24 761a, ~1 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/GenerationsInfoRoom761aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
 # Update 760a (25 Nov 2026, cloud run) - matrix P5 polish: System Stage's museum plate never rises over the plinth and the object
 - CI first: Verify 310 on 359aa12 (759a) GREEN.
 - P5 third-priority polish, first look (System Stage). Arithmetic on the KONKR (640 x 427 dp, plinth 26 % of the height): the
