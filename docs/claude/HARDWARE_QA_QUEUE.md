@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages (v0674-native-pages 89ab1d6) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a + 745a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages + the Pocket family's pages (v0674-native-pages df0f0c3) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - 738a adds Panel dashboard (same session, build fb72ff4 or later): p2review walk Info -> Overview -> Achievements -> Manage (R1 x3,
   L1 back); the page name + flat segments change after the old page has gone; the next page slides in from its side (none with
   Motion Off); the art strip says the console only; Play same size and place on every page; facts tiles, the ABOUT panel and the
@@ -320,6 +320,16 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   and the milestone rows whole at x1.0 / x1.3 in a light and a dark theme; Milestones lazywalk (120-set) with the ruler and the
   order chip (words slide); an achievement opened (A) shows the whole text + rarity; a removing action armed and left;
   popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric only (NativePagesStudio744aTest + CUSTOM suites, cloud).
+- 745a adds the Pocket family - all three faces (same session, build df0f0c3 or later): in Pocket classic, Pocket ribbon and Pocket
+  each, p2review walk Info -> page 2 -> 3 -> 4 (R1 x3, L1 back): classic's title bar names the page ("‹ DATA ›", "2/4") and the LCD
+  steps the menu in (four hard steps); the ribbon's underlined page name moves after the old page has gone and the sheet slides in
+  from its side; Pocket Quest's chips light and its scan line runs once (none with Motion Off). Play the same height and place on
+  every page as on the first (bottom edge; it is wider on the pages) - ribbon and Quest beside the tall art especially; the
+  facts, TEXT / About / LORE and the first achievement whole at x1.0 / x1.3 (ribbon x1.3: the bar carries the name); MEDALS /
+  Records / Quest log lazywalk (120-set) with the blocks / hairline / gauge and the order chip; an achievement opened (A) shows
+  the whole text + rarity; a removing option armed and left; popclip.sh + popclip.py PASS; 0 launches. Evidence: Robolectric
+  only (NativePagesPocket745aTest + the Pocket layouts in AchFirstRow / ShelfText / PlayPlace, cloud).
+
 ### HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade - DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB)
 - lazywalk (120 achievements, 140 quick Downs / Ups, B, reopen, early close): 682aq10 reaches Back on KONKR (Cinema, Resume, Bar)
   and RP Classic (Cinema, Resume); Record crate stays eager (D389 open for it). 0 crashes, restore diff 0.

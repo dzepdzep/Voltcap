@@ -1,3 +1,24 @@
+# Update 745a (25 Nov 2026, cloud run) - P2 class C: the Pocket family gets its own pages, all three faces (native-pages branch)
+- CI first: Verify 310 on 0337ee9 (dev line) and 89ab1d6 (P2, Layout Studio) GREEN. Dev line merged into the P2 branch first
+  (docs only; the shallow clone needed --deepen to find the merge base).
+- Task 5 on `claude/v0674-native-pages` (worktree), 89ab1d6 -> df0f0c3: the last class C scene. POCKET_LCD is one scene with three
+  faces; each now draws its own pages (WinPagesPocket.kt): Pocket classic's handheld menu (title bar names the page "‹ DATA ›"
+  "2/4"; DATA / MEDALS / MENU in pixel type, ten pixel blocks, a drawn ▶ cursor, the LCD stepping the menu in four hard steps),
+  Pocket ribbon's white sheet (pixel ribbon of page names underlined in the accent; Details table on grey rules, Records with a
+  hairline bar, Settings rows with ›; slides in from its side), Pocket Quest's cut-corner panel (chips Overview / Status / Quest
+  log / Commands; stat lines, a ten-cell gauge, deep wells, cut-corner buttons; a scan line runs once). Own designs 52 / 53.
+- Play stays put: the window grows upward only on its pages and, beside the tall art (ribbon, Quest), keeps the room the first
+  page left under its keys (PocketPlace.keyGap). Without it the ribbon's Play sat 80 px (RP Classic 161 px) lower on its pages.
+  PlayPlace (+ Rpc) + a temporary first-page probe: Play's bottom edge equal on all pages in every face, x1.0 / x1.3.
+- Found by the tests on the way: ribbon x1.3 first record cut (bar now carries the name on a short window); classic cursor's blank
+  glyph cut at x1.3 (drawn now); PlayPlace never found Pocket Quest's Play ("Play game") and ShelfText not its Details ("Status") -
+  both taught.
+- Files (P2 branch only): ui/WinPagesPocket.kt (new), ui/WinScenesStyled.kt, ui/WinPageFlow.kt; tests NativePagesPocket745aTest
+  (new), AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest; docs/claude/NATIVE_PAGES_P2.md. Dev line: docs only.
+- Checked (cloud): compile; 3,050 targeted tests (PlayPlace*, AchFirstRow*, NoStrayPlay682j, WinFocus, ShelfText, WindowWordsSurvey,
+  NativeConfirm681, NativePages*, UniformKeys673, Pocket source tests) - 3 ribbon x1.3 failures fixed, touched suites rerun green;
+  static PASS. NOT TESTED: hardware (HW-28 extended), emulator review; not owner-approved.
+
 # Update 744a (25 Nov 2026, cloud run) - P2 class C: Layout Studio gets its own pages (native-pages branch)
 - CI first: Verify 310 on 5fb6ff6 (dev line) and 63f0b52 (P2, Live tiles) GREEN (50e4a3f was cancelled by the next push).
 - Task 5 on `claude/v0674-native-pages` (worktree), 63f0b52 -> 89ab1d6: the nineteenth class C scene (batch 8). Layout Studio's

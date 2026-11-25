@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 03:50 UTC, 745a (cloud, Task 5):** Verify 310 on 0337ee9 (dev) + 89ab1d6 (P2) GREEN. P2 branch df0f0c3: the Pocket family
+(POCKET_LCD) has its own pages in all three faces (WinPagesPocket.kt) - Pocket classic's handheld menu (title bar names the page,
+DATA / MEDALS / MENU, pixel blocks, LCD steps), Pocket ribbon's sheet (pixel ribbon of names, Details / Records / Settings on grey
+rules), Pocket Quest's cut-corner panel (Status / Quest log / Commands, ten-cell gauge, scan line). Class C complete, own designs
+52 / 53 (Disc station's shared bodies left - owner to decide). Play kept put beside the tall art by keeping the first page's room
+under the keys (ribbon was 80 / 161 px lower without). HW-28 extended. Not approved.
+Infra tip: the clone is shallow - `git fetch --deepen=300 origin <both branches>` before merging the dev line into the P2 branch.
+NEXT: check Verify 310 on this push AND on df0f0c3 (P2) FIRST (red -> fix first). Then: an emulator p2review sheet of batches 5-8
+(incl. the three Pocket faces) for the owner - the owner has 0 / 53 approved and class C is done; or the Task 1 residual; Disc
+station's own bodies only after the owner decides. Same pre-push checks as below.
+
 **25 Nov 02:55 UTC, 744a (cloud, Task 5):** Verify 310 on 5fb6ff6 (dev) + 63f0b52 (P2) GREEN. P2 branch 89ab1d6: Layout Studio
 (STUDIO_PANEL) has its own pages - Properties (inspector rows with dashed guides) / Milestones (ruler + layer rows) / Actions
 (rounded buttons) under the editor's rounded tab strip, snapping in from one grid step below (WinPagesStudio.kt; class C 19 scenes
