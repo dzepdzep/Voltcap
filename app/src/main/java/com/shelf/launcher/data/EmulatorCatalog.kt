@@ -232,6 +232,11 @@ internal object EmulatorCatalog {
             Entry("Citron", "org.citron.citron_emu", "org.citron.citron_emu.activities.EmulationActivity", "android.nfc.action.TECH_DISCOVERED", null, RomFormat.SHARED_URI, true, mapOf()),
             Entry("Kenji-NX", "org.kenjinx.android", "org.kenjinx.android.MainActivity", "org.kenjinx.android.LAUNCH_GAME", "bootPath", RomFormat.SHARED_URI, false, mapOf()),
             Entry("Benji-SC", "org.benjisc.android", "org.kenjinx.android.MainActivity", "org.kenjinx.android.LAUNCH_GAME", "bootPath", RomFormat.SHARED_URI, false, mapOf()),
+            // (native runtimes, owner 25 Nov: NativeRuntimes - the .nup or game folder by path, its documented frontend entry)
+            Entry("Peanuts Native", NativeRuntimes.PEANUTS_PACKAGE, NativeRuntimes.PEANUTS_ACTIVITY, "android.intent.action.VIEW", NativeRuntimes.GAME_EXTRA, RomFormat.FILE_PATH, false, mapOf()),
+        ),
+        "Switch2" to listOf(
+            Entry("Banana Native", NativeRuntimes.BANANA_PACKAGE, NativeRuntimes.BANANA_ACTIVITY, "android.intent.action.VIEW", NativeRuntimes.GAME_EXTRA, RomFormat.FILE_PATH, false, mapOf()),
         ),
         "VirtualBoy" to listOf(
             Entry("vvs", "com.simongellis.vvb", "com.simongellis.vvb.MainActivity", "android.intent.action.VIEW", null, RomFormat.SHARED_URI, true, mapOf()),

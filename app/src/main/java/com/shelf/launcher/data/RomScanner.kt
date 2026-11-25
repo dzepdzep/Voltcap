@@ -193,7 +193,7 @@ object RomScanner {
      * that look like ROMs adopt their folder's name as a platform. */
     private fun isLikelyRom(ext: String): Boolean =
         ext.isNotBlank() && (ext in ambiguousExtensions || extensionToPlatform.containsKey(ext) ||
-            ext in setOf("rom", "col", "int", "a78", "lnx", "32x", "sg", "pc2", "min", "vec"))
+            ext in setOf("rom", "col", "int", "a78", "lnx", "32x", "sg", "pc2", "min", "vec", NativeRuntimes.NUP))
 
     private val discPattern = Regex("""(?i)[\(\[]\s*(?:disc|disk|cd)\s*(\d+)(?:\s*(?:of|/)\s*\d+)?\s*[\)\]]""")
 
@@ -236,6 +236,9 @@ object RomScanner {
         "cso", "zso", "pbp", "gcz" -> 5
         "zip" -> 80
         "7z" -> 81
+        // (native runtimes: a .nup beside the same game's dump never takes over the dump's record - Peanuts / Banana
+        // Native get the .nup through NativeRuntimes.romFor; any other format stays ahead of it)
+        NativeRuntimes.NUP -> 45
         else -> 40
     }
 

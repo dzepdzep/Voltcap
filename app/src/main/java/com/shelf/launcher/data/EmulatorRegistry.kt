@@ -61,7 +61,14 @@ object EmulatorRegistry {
 
     /** Known emulators that claim support for [platform]. */
     fun suggestionsFor(platform: String): List<KnownEmulator> =
-        known.filter { it.platforms == ALL_PLATFORMS || it.platforms.any { p -> p.equals(platform, true) } }
+        known.filter { it.platforms == ALL_PLATFORMS || it.platforms.any { p -> samePlatform(p, platform) } }
+
+    /** (native runtimes: a console kept under its own folder name - "Switch 2", "switch_2" - still gets "Switch2"'s emulators;
+     * the game's console itself is never renamed.) */
+    internal fun samePlatform(a: String, b: String): Boolean {
+        fun k(s: String) = s.lowercase().filter { it != ' ' && it != '-' && it != '_' }
+        return a.equals(b, true) || k(a) == k(b)
+    }
 
     /**
      * Update 144: none for a package name a catalog build only borrows (Genshin Impact, AnTuTu — EmulatorCatalog):

@@ -185,7 +185,9 @@ object GameLauncher {
         }
     }
 
-    private fun explicitAttempts(context: Context, romPath: String, config: EmulatorConfig, shelfRomRoot: String?): List<Intent> {
+    private fun explicitAttempts(context: Context, romPath0: String, config: EmulatorConfig, shelfRomRoot: String?): List<Intent> {
+        // (native runtimes: a game listed by its .nsp / .xci goes to Peanuts / Banana Native as the .nup beside it)
+        val romPath = NativeRuntimes.romFor(config.packageName, romPath0)
         // Storage links must be rooted at the folder the emulator was given.
         var romRoot = config.accessFolder ?: shelfRomRoot
         val pkg = config.packageName ?: return listOf(viewIntent(context, romPath, null, RomFormat.SHARED_URI, romRoot))
