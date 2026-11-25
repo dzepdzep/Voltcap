@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 19:40 UTC, 758a (cloud, rule 11 - app sources now 0 TRUNCATE):** Verify 310 on d8a7b15 GREEN. Home category name
+(LauncherScreen, FullText inside CategoryNameSwap - rule 14 swap unchanged, CategoryStable394Test 6/6) and Tiles game name
+(TileHome, FullText autoFit / reserve off - one-go fit and fixed box kept) shown whole (CategoryTileFullText758aTest 3/3,
+TRUNCATE 2 -> 0; HW-24 758a).
+NEXT: check Verify 310 on this push FIRST. Then the v0.6.74 list: badgecheck D357 (skip badges of tiles partly off-screen and
+cover-flow covers stacked behind the focused one; real collisions still FAIL; selftest fixtures for both), then the
+profile-picture corner (statuscheck), then H16 polish. P2: only on an owner push / review or a red CI.
+
 **25 Nov 18:40 UTC, 757b (cloud, rule 11):** Verify 310 on dce5a85 GREEN. CollectorBacks detail lines + foot note drawn whole
 (wholeLineFit: smaller to 70 %, then narrower), StyleCustom text pieces through FullText (reserve off), StyleMagazine story ends
 on the STORY_CUE line when cut; ScrollingName (unfocused fixed-height name) + StoryLines qa-ok (CollectorFit757bTest 4/4,

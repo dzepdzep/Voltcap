@@ -71,7 +71,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -430,7 +429,9 @@ internal fun TileHomeRow(
             // (523y: the game's name over the tiles fades with the row under a row-style window - the window shows the name itself.)
             Box(Modifier.fillMaxWidth().height(boxH).then(if (ActiveWinMotion.value != com.shelf.launcher.data.Features.WinMotion.NONE)
                 Modifier.graphicsLayer { alpha = RowReveal.sharedAlpha() } else Modifier)) {
-                Text(
+                // (758a, rule 11: FullText - still sized in one go above (autoFit off, no pop-in) inside the fixed name box
+                // (reserve off, the tile row never moves); a name too long for two lines at 11 sp slides along one line.)
+                FullText(
                     shownName,
                     // (0.6.17: white with a bar in the theme's colour under it — the name in the theme's colour vanished on
                     // pictures of the same colour.)
@@ -439,7 +440,7 @@ internal fun TileHomeRow(
                     lineHeight = androidx.compose.ui.unit.TextUnit(1.2f, androidx.compose.ui.unit.TextUnitType.Em),
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    autoFit = false, reserve = false,
                     textAlign = when (align) { 0 -> androidx.compose.ui.text.style.TextAlign.Center; 1 -> androidx.compose.ui.text.style.TextAlign.End; else -> androidx.compose.ui.text.style.TextAlign.Start },
                     style = nameTextStyle(com.shelf.launcher.data.NameBackdrop.SHADOW),
                     modifier = Modifier

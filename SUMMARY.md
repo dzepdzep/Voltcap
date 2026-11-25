@@ -1,3 +1,16 @@
+# Update 758a (25 Nov 2026, cloud run) - rule 11: the home's category name and the Tiles game name no longer end in "..."
+- CI first: Verify 310 on d8a7b15 (757b) GREEN.
+- Rule 11 (no "..." truncation), the last two places in the app sources: the home's category name (LauncherScreen) goes
+  through FullText - the same readable shrink as before, then it slides along its line; one line's full-size height is kept so
+  nothing moves when a long name shrinks. It stays inside CategoryNameSwap, so a category change still swaps the name in place
+  (rule 14). The Tiles layout's game name (TileHome) goes through FullText with its own one-go fitting kept (autoFit off - no
+  pop-in, update 362) and its fixed name box kept (reserve off - the tile row never moves); a name too long for two lines at
+  11 sp slides along one line. Unused TextOverflow import removed from TileHome.
+- Test: CategoryTileFullText758aTest 3/3 (fails on the 757b sources); CategoryStable394Test 6/6. Static TRUNCATE 2 -> 0, [PASS].
+  Compiled: :app:compileDebugUnitTestKotlin (cloud). Full suite: CI. Hardware NOT TESTED (HW-24 758a).
+- Files: app/src/main/java/com/shelf/launcher/ui/LauncherScreen.kt, ui/TileHome.kt,
+  app/src/test/java/com/shelf/launcher/ui/CategoryTileFullText758aTest.kt; docs (matrix P13, HANDOFF, HW queue, dashboard).
+
 # Update 757b (25 Nov 2026, cloud run) - rule 11: printed case backs, custom layout texts and the Magazine story no longer end in "..."
 - CI first: Verify 310 on dce5a85 (757a) GREEN.
 - Rule 11 (no "..." truncation): the printed case back (CollectorBacks) draws its detail lines (publisher, release, players)

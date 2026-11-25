@@ -106,6 +106,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (758a, rule 11, dev line 758a or later, ~3 min, KONKR x1.3 + x1.0, with 749a-757b): a category with a very long
+  name (a long collection name, or a console name at x1.3) on a layout with the home category name - shrinks, then slides,
+  never "..."; L2 / R2 through it: the name swaps in place, nothing around it moves (rule 14, catswitch.sh). Tiles layout with
+  a game whose name needs more than two lines at the smallest size - slides along one line, the tile row and the category
+  above never move; D-pad + touch still work. Screenshots. Unit evidence only (CategoryTileFullText758aTest; static TRUNCATE 2 -> 0).
 - Also (757b, rule 11, dev line 757b or later, ~2 min, KONKR x1.3 + x1.0, with 749a-757a): a printed case back (Collector's
   case / printed back of a game with a long publisher + developer line) - detail lines and the foot note whole (smaller /
   narrower, never "..."); a custom layout (e.g. the Marquee preset) with a very long game name - shrinks, then slides; the
