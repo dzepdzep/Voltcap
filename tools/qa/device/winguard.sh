@@ -56,7 +56,17 @@ wg_popup() { n=${TAG}_wg; rm -f $F/qa_clip/$n.json; echo "$n" > $F/qa_clip_req; 
   i=0; while [ -z "$c" ] && [ -e $F/qa_clip/$n.json.part ] && [ $i -lt 75 ]; do sleep 0.2; i=$((i + 1))
     c=$(cat $F/qa_clip/$n.json 2>/dev/null); case "$c" in *"}") ;; *) c="";; esac; done
   [ -n "$c" ] || { echo ""; return; }
-  echo "$c" | grep -o '"popupGame": *[^,}]*' | head -1 | sed 's/^"popupGame": *//; s/"//g'; }
+  wg_jval "$c" popupGame; }
+# (748a, emulator review 45566681915: both INFRA stops kept the dump, it ended in '}' and held "popupGame" - but the device's
+# grep -o found no popupGame in it ("no popupGame read" from the same file; GNU / Debian toybox grep find it). Both dumps carried
+# non-ASCII text (a '·' / '›' of the pages) in one long line; the same review's "A showed no confirmation" was a grep -qiE that
+# missed "AGAIN TO CONFIRM" in a kept dump. The field is now read by the shell itself - no grep, no regex, no other program)
+# one JSON field's value from a dump text: $1 the text, $2 the field name -> the value without its quotes ("null" for null);
+# nothing when the field is missing (never taken as a yes)
+wg_jval() { v=${1#*\""$2"\":}; [ "$v" = "$1" ] && return 0
+  while :; do case "$v" in " "*) v=${v# };; *) break;; esac; done
+  case "$v" in \"*) v=${v#\"}; v=${v%%\"*};; *) v=${v%%[,\}]*};; esac
+  echo "$v"; }
 # (747a) why a QaClip dump did not come - read-only, for the abort line: the request file still there = the app has not taken
 # it (main thread stalled, process restarted - or it could not delete it); taken but no file = the dump failed or is still
 # being written; plus the app's last "clip" trace lines (QaClip logs "clip error ..." when a dump throws)
@@ -68,7 +78,7 @@ wg_nodump_why() { n=${TAG}_wg
     # say what a reader sees in it now: size, last byte, the popupGame field)
     cp $F/qa_clip/$n.json "$(dirname "$WG_LOG")/${n}_late.json" 2>/dev/null
     z=$(wc -c < $F/qa_clip/$n.json 2>/dev/null); e=$(tail -c 1 $F/qa_clip/$n.json 2>/dev/null)
-    g=$(grep -o '"popupGame": *[^,}]*' $F/qa_clip/$n.json 2>/dev/null | head -1)
+    g=$(wg_jval "$(cat $F/qa_clip/$n.json 2>/dev/null)" popupGame); [ -n "$g" ] && g="\"popupGame\":$g"
     w="request taken, the dump is there now (${z:-?} bytes, ends '${e}', ${g:-no popupGame read}; kept as ${n}_late.json)"
   else w="request taken, no dump written"; fi
   c=$(logcat -d -s VoltcapQA 2>/dev/null | grep -E " clip (error|done)" | tail -2 | sed 's/.* clip /clip /' | tr '\n' ';')

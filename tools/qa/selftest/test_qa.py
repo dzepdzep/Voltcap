@@ -3066,6 +3066,74 @@ echo "ok=$ok"
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    # (748a, emulator review 45566681915: two INFRA stops whose kept dump held "popupGame" - the device's grep found nothing in
+    # the dump's one long line with non-ASCII text, and an armed confirmation went unseen the same way.) A grep standing in for
+    # that device grep: nothing found in a line longer than 4 KB that carries a non-ASCII byte; otherwise the real grep.
+    BROKEN_GREP = """#!/bin/sh
+for a in "$@"; do f="$a"; done
+if [ -f "$f" ]; then src="$f"; else src=-; fi
+t=$(mktemp); cat $( [ "$src" = - ] || echo "$src" ) > $t
+if LC_ALL=C awk 'length($0) > 4096 && /[\200-\377]/ { bad = 1 } END { exit bad ? 0 : 1 }' $t; then rm -f $t; exit 1; fi
+if [ "$src" = - ]; then /usr/bin/env -i PATH=/usr/bin:/bin grep "$@" < $t; else /usr/bin/env -i PATH=/usr/bin:/bin grep "$@"; fi; r=$?; rm -f $t; exit $r
+"""
+
+    def _long_dump(self, game):
+        nodes = ",".join('{"label":"Row %d \u00b7 \u203a","kind":"control","full":[0,0,10,10]}' % i for i in range(160))
+        return '{"screen":[960,640],"windows":[{"nodes":[%s]}],"popupGame":%s,"popupName":null}' % (nodes, game)
+
+    def _broken_grep_env(self, d):
+        b = os.path.join(d, "bin"); os.makedirs(b, exist_ok=True)
+        with open(os.path.join(b, "grep"), "w") as f: f.write(self.BROKEN_GREP)
+        os.chmod(os.path.join(b, "grep"), 0o755)
+        return {**os.environ, "PATH": b + ":" + os.environ["PATH"]}
+
+    def test_popup_read_needs_no_grep_on_a_long_non_ascii_dump(self):
+        d = tempfile.mkdtemp()
+        try:
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            env = self._broken_grep_env(d)
+            for game, want in (('"/r/Okami (USA).iso"', "/r/Okami (USA).iso"), ("null", "null")):
+                dump = self._long_dump(game)
+                self.assertGreater(len(dump.encode()), 4096)
+                with open(os.path.join(d, "dump.json"), "w", encoding="utf-8") as f: f.write(dump)
+                # the stand-in really misses it (as on the device) ...
+                r = subprocess.run(["sh", "-c", f"grep -o popupGame {d}/dump.json"], env=env, capture_output=True, text=True)
+                self.assertEqual(r.stdout, "")
+                # ... and wg_popup still reads the field (QaClip answers the request with that dump)
+                script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+( while [ ! -e $F/qa_clip_req ]; do sleep 0.05; done; rm -f $F/qa_clip_req; cp {d}/dump.json $F/qa_clip/t_wg.json ) &
+echo "[$(wg_popup)]"
+"""
+                r = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, timeout=30)
+                self.assertIn(f"[{want}]", r.stdout, r.stdout + r.stderr)
+            # and the abort line's look at a late dump reads it the same way
+            with open(os.path.join(fdir, "qa_clip", "t_wg.json"), "w", encoding="utf-8") as f: f.write(self._long_dump("null"))
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+logcat() {{ :; }}
+. {self.DEV}/winguard.sh
+wg_nodump_why
+"""
+            r = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, timeout=30)
+            self.assertIn('"popupGame":null; kept as t_wg_late.json', r.stdout, r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_armed_confirmation_seen_in_a_long_non_ascii_dump(self):
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = next(l for l in src.split("\n") if l.startswith("confirmtext() {"))
+        d = tempfile.mkdtemp()
+        try:
+            env = self._broken_grep_env(d)
+            armed = self._long_dump("null").replace('"Row 3 ', '"HIDE FROM LIBRARY/PRESS A AGAIN TO CONFIRM \u00b7 MOVE AWAY ', 1)
+            for name, text in (("armed", armed), ("plain", self._long_dump("null"))):
+                with open(os.path.join(d, name + ".json"), "w", encoding="utf-8") as f: f.write(text)
+            r = subprocess.run(["sh", "-c", f"{fn}\nconfirmtext {d}/armed.json && echo YES; confirmtext {d}/plain.json || echo NO;"
+                                f" confirmtext {d}/missing.json || echo GONE"], env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(r.stdout.split(), ["YES", "NO", "GONE"], r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])

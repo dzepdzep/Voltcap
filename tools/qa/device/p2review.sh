@@ -37,8 +37,11 @@ closewin() { for i in 1 2 3; do [ "$(wg_popup)" = null ] && break; wg_key_win B;
   wg_home; }
 # (682r) the armed confirmation read twice (a dump taken while the row was still growing called a shown confirmation missing
 # at x1.0, review 44280831400) - a second READ, never a second key
-armed() { grep -qiE 'again to confirm|cover lifted|guarded switch|are you sure' $O/${TAG}_$1.json 2>/dev/null && return 0
-  sleep 0.8; shot $1; grep -qiE 'again to confirm|cover lifted|guarded switch|are you sure' $O/${TAG}_$1.json 2>/dev/null; }
+# (748a, review 45566681915 p2r10: "A showed no confirmation" while the kept dump says "PRESS A AGAIN TO CONFIRM" - the device's
+# grep -qiE missed it in the dump's one long line with a '·' in it; read like onhide: short lines, fixed strings)
+confirmtext() { [ -s "$1" ] && tr -d '\n' < "$1" | tr '{' '\n' | grep -qiF -e 'again to confirm' -e 'cover lifted' -e 'guarded switch' -e 'are you sure'; }
+armed() { confirmtext $O/${TAG}_$1.json && return 0
+  sleep 0.8; shot $1; confirmtext $O/${TAG}_$1.json; }
 dr() { [ -s "$1" ] && [ "$(tail -c 1 "$1" 2>/dev/null)" = "}" ]; }
 shot() { rm -f $F/qa_clip/${TAG}_$1.json; screencap -p $O/$1.png; echo "${TAG}_$1" > $F/qa_clip_req; chmod 666 $F/qa_clip_req; sleep 1.1
   i=0; while ! dr $F/qa_clip/${TAG}_$1.json && [ $i -lt 40 ]; do sleep 0.2; i=$((i + 1)); done
@@ -679,7 +682,7 @@ run)
         # confirmation missing)
         if armed ${n}_app_armed; then
           k DPAD_UP 0.9; shot ${n}_app_disarmed
-          if grep -qiE 'again to confirm|cover lifted|guarded switch|are you sure' $O/${TAG}_${n}_app_disarmed.json 2>/dev/null; then log "$lay: FAIL - the confirmation stayed after moving off"
+          if confirmtext $O/${TAG}_${n}_app_disarmed.json; then log "$lay: FAIL - the confirmation stayed after moving off"
           else log "$lay: destructive row armed (confirmation shown) and left (cancelled; never confirmed)"; fi
         else log "$lay: FAIL - A on 'Hide from library' showed no confirmation"; fi
       fi
