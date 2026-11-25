@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 746a · 2026-11-25 05:35 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 2ed1c9f (dev); RED on df0f0c3 (P2, stale test) - fixed in 86344b2, CI pending · effort: medium
+**1. LATEST UPDATE** - 747a-c · 2026-11-25 07:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on b44d63f (dev) and 86344b2 (native pages); emulator review 45560074265 and 45563249574 INFRA (tooling), 45566681915 running · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic checks on the native-pages test branch had turned red after the last layout got its own pages: one test still expected at least one layout to use the shared pages. The test now checks the opposite - every layout's game window must keep its own pages - so a layout slipping back to the shared pages would be caught. No app change.
+**2. WHAT CLAUDE JUST FIXED** - The automatic emulator review that photographs the new game-window pages for you had been stopping early since 18 November. This run reproduced it, made the safety guard explain why it stops, and fixed one way it could misread the app's screen description. The guard now shows the app had answered in time, so the remaining fault is in how the test script reads that answer; the next review run keeps the exact file so it can be fixed. Pocket classic's pages were photographed at both text sizes. No app change.
 
 **3. LAST 24 HOURS** (most important first)
 - **App** (745a): The three Pocket layouts' game windows now each have their own Details, Achievements and Options pages in their own style: Pocket classic looks like the handheld's own menu - the blue title bar names the page with arrows and its number, facts and options are pixel-type menu lines with a little cursor, and achievements show as medals with a bar of ten pixel blocks, the menu stepping in like an old LCD; Pocket ribbon keeps its plain white information sheet with the cartridge art on the left, a row of page names with the current one underlined, a table on thin grey lines, and a thin progress line for achievements; Pocket Quest keeps its deep panel with cut corners, labelled Status, Quest log and Commands, with a ten-cell gauge and a scan line running down as a page opens. Play stays exactly where it was on the first page (it had been sitting lower on the pages beside the tall cartridge art; fixed). Every layout that draws its own game window now has its own pages (52 of 53; only Disc station still uses the shared pages). On the test branch only; not yet checked on a handheld or approved.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Check CI on 86344b2 (P2) and this push; then: Emulator review sheet of batches 5-8 (incl. the Pocket faces) for the owner; Task 1 residual / Disc station only after the owner decides
+**5. WORKING ON NEXT** - now: Read emulator review 45566681915 and fix the dump reader; then: Emulator review sheets of all class C native pages for the owner (sets of 4); Disc station's own page bodies after the owner decides
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

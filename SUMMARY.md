@@ -1,3 +1,19 @@
+# Update 747a-c (25 Nov 2026, cloud run) - P2 emulator review restarted: the review walk's "no dump" stops diagnosed and narrowed (QA tooling, native-pages branch)
+- CI first: Verify 310 on b44d63f (dev line) and 86344b2 (P2) GREEN.
+- Item: the emulator p2review sheet of the newest native pages (handoff NEXT). Every P2 emulator review since 18 Nov stopped as
+  INFRA "game window expected / home expected, QaClip: 'no dump'"; reproduced on 86344b2 (run 45560074265, Pocket classic /
+  ribbon / Pocket Quest / Layout Studio): Pocket classic walked at x1.3 and x1.0 (sheet captured), then the guard stopped.
+- 747a (P2 dc5f873): winguard's abort says why a dump did not come; waits up to 15 s more while a dump is being written.
+- 747b (P2 e13bbd1): wg_popup reads the dump ONCE (the old code looked three times; a dump being replaced in between read as
+  none). Selftest churn test fails on the old code (ok=7/8), passes on the new.
+- Rerun 45563249574 on e13bbd1: still INFRA, but the new line shows the dump WAS written ("request taken, the dump is there")
+  while the read gave up within ~1 s - so not a slow app. 747c (P2 9be5fab): such an abort keeps that dump beside the log
+  (<tag>_wg_late.json) with its size / last byte / popupGame as the reader sees it. Review re-dispatched: run 45566681915.
+- Also seen (rerun, x1.3): Pocket classic "A on 'Hide from library' showed no confirmation" - the first run armed it fine on
+  the same code; likely the same dump-read problem (the check reads a dump), not counted as an app defect yet.
+- Checked: tools/qa/selftest/test_qa.py 275/275 (P2 worktree). No app code changed. Hardware: NOT TESTED (QA tooling;
+  emulator evidence only). Files (P2 branch): tools/qa/device/winguard.sh, tools/qa/selftest/test_qa.py.
+
 # Update 746a (25 Nov 2026, cloud run) - P2 branch CI fix: the native-pages test follows the finished set
 - CI first: Verify 310 on 2ed1c9f (dev line) GREEN; on df0f0c3 (P2, Pocket family) RED - 4963 tests, 1 failure:
   PopupNativeStorageTest.storageKeepsItsOwnPages asserted "some scenes still use the shared pages". 745a converted the last one,

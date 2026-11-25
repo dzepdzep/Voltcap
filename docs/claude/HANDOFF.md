@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 07:45 UTC, 747a-c (cloud, QA tooling for the P2 emulator review):** Verify 310 on b44d63f (dev) + 86344b2 (P2) GREEN.
+The P2 emulator review has stopped on "QaClip: 'no dump'" since 18 Nov (reproduced: run 45560074265). P2 branch 9be5fab:
+winguard reads the dump once (747b) and an abort names why (747a/c) - rerun 45563249574 showed the dump WAS written while the
+read gave up within ~1 s; 747c keeps that file as <tag>_wg_late.json (+ size / last byte / popupGame) in the artifact.
+Run 45566681915 (9be5fab, P2:POCKET_CLASSIC POCKET_RIBBON POCKET CUSTOM) was dispatched at the end of this run.
+NEXT: check Verify 310 on 9be5fab (P2) and this push FIRST. Then read run 45566681915: if it still stops, open raw/p2r*/
+p2r*_wg_late.json and the abort line - fix the reader (likely a shell / grep read on the device, not the app), selftest it,
+re-dispatch (one at a time - the workflow's concurrency queue keeps only one pending). Once a review passes, dispatch the class C
+layouts in sets of 4 (x1.3 + x1.0 take ~17 min): CIRCUIT CHAN TIMELINE HERO / HERO_TILES MEMCARD BOX FILESELECT / CASEFLOW ORBIT
+AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE + the Pocket set, and put the sheets in front of the owner.
+
 **25 Nov 05:35 UTC, 746a (cloud, CI fix):** Verify 310 on 2ed1c9f (dev) GREEN; on df0f0c3 (P2) RED - one test,
 PopupNativeStorageTest.storageKeepsItsOwnPages, still assumed some scene used the shared pages; 745a's Pocket family was the last,
 so the set is empty. Test now requires every WinScene to draw its own pages (stronger, guards a fall-back). P2 branch 86344b2,
