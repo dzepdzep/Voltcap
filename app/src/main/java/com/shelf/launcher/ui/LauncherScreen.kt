@@ -1112,6 +1112,40 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (i >= 0) viewModel.setFocus(i)
         TestHooks.game.value = null
     }
+    // (682av: R1 Focus position's own change for a QA run - FocusPosTile.next / pick, as the tile - and its QA line.)
+    TestHooks.focusPos.value?.let { v -> val qaCtx = androidx.compose.ui.platform.LocalContext.current; LaunchedEffect(v) {
+        TestHooks.focusPos.value = null
+        val a0 = state.appearance
+        val a1 = when (v) { "NEXT" -> FocusPosTile.next(a0); "LOG" -> a0; else -> v.toIntOrNull()?.let { FocusPosTile.pick(a0, it) } ?: a0 }
+        if (a1 != a0) { if (TestHooks.previewOnly) viewModel.previewAppearance(a1) else viewModel.setAppearance(a1) }
+        val fit = r1TileFit(FocusPosTile.ID, R1Ctx(a1, secondDisplay = false, bluetooth = false, lights = false, romm = false,
+            raAccounts = 0, themeRecolorable = false, chargeLimitWorks = false))
+        val r1 = qaCtx.getSharedPreferences("r1_tiles", android.content.Context.MODE_PRIVATE).all.toSortedMap().toString().hashCode()
+        android.util.Log.e("VoltcapQA", "focuspos $v layout=${a1.homeLayout.name} choice=${FocusPosTile.current(a1)}/${FocusPosTile.choices(a1).size} " +
+            "label='${FocusPosTile.label(a1).replace('\n', ' ')}' fit=${fit.javaClass.simpleName} r1=$r1 preview=${TestHooks.previewOnly}")
+    } }
+    // (682av: START › Categories' own calls for a QA run, on an app in the QA app's own library - and where it is listed.)
+    TestHooks.appCat.value?.let { v -> LaunchedEffect(v) {
+        TestHooks.appCat.value = null
+        val parts = v.split(':'); val verb = parts[0]; val pkg = parts.getOrNull(1).orEmpty()
+        val game = state.games.firstOrNull { it.sourceType == com.shelf.launcher.data.SourceType.APP && it.packageName == pkg }
+        when (verb) {
+            "recomp" -> viewModel.setAppRecomp(pkg, parts.getOrNull(2) == "on")
+            "kind" -> com.shelf.launcher.data.AppKind.values().firstOrNull { it.name == parts.getOrNull(2) }?.let { viewModel.setAppKind(pkg, it) }
+            "console" -> parts.getOrNull(2)?.let { viewModel.setAppConsole(pkg, it, parts.getOrNull(3) == "on") }
+            "options" -> game?.let { closeAllDialogs(); optionsForGame = it }
+            "cats" -> game?.let { closeAllDialogs(); categoriesForGame = it }
+        }
+        kotlinx.coroutines.delay(600)
+        val u = viewModel.uiState.value
+        val g = u.games.firstOrNull { it.sourceType == com.shelf.launcher.data.SourceType.APP && it.packageName == pkg }
+        val inAll = u.copy(platformFilter = null, specialFilter = null).visibleGames.count { it.packageName == pkg && it.sourceType == com.shelf.launcher.data.SourceType.APP }
+        val listed = u.availablePlatforms.filter { p -> u.copy(platformFilter = p, specialFilter = null).visibleGames.any { it.packageName == pkg && it.sourceType == com.shelf.launcher.data.SourceType.APP } }
+        android.util.Log.e("VoltcapQA", "appcat $v pkg=$pkg found=${g != null} key=${g?.stableKey?.hashCode()} recomp=${g?.let { u.isRecomp(it) }} " +
+            "android=${g?.let { u.isAndroidGame(it) }} other=${g?.let { u.isOtherApp(it) }} kind=${u.libraryApps.kindOf(pkg)} " +
+            "consoles=${com.shelf.launcher.data.AppCategories.consolesOf(u.libraryApps, pkg).sorted()} inAll=$inAll listed=$listed " +
+            "platforms=${u.availablePlatforms.size} hasRecomps=${com.shelf.launcher.RECOMPS_PLATFORM in u.availablePlatforms}")
+    } }
     // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)
     TestHooks.libApp.value?.let { v -> LaunchedEffect(v) {
         val add = v.startsWith("add:"); val pkg = v.substringAfter(':')

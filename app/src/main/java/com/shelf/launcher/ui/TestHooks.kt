@@ -238,6 +238,20 @@ internal object TestHooks {
      * asks first). Nothing is launched or hidden by this; the real Voltcap is never touched.
      */
     val libApp = mutableStateOf<String?>(null)
+    /**
+     * 682av (owner 25 Nov - hardware QA of 723a, never through the R1 panel's system tiles): `--es voltcap_test_focuspos NEXT|<i>|LOG`
+     * - ONLY in the isolated QA app: the R1 Focus position tile's own change (FocusPosTile.next / pick, the same calls the tile
+     * makes) saved in the QA app's own settings (previewed only during a preview run), and one `focuspos ...` QA line.
+     */
+    val focusPos = mutableStateOf<String?>(null)
+    /**
+     * 682av (owner 25 Nov - hardware QA of 724a / 725a): `--es voltcap_test_appcat <verb>:<package>[:<arg>[:on|off]]` - ONLY in
+     * the isolated QA app, on an app in its OWN library: `recomp:<pkg>:on|off` (setAppRecomp), `kind:<pkg>:AUTO|GAME|APP`
+     * (setAppKind), `console:<pkg>:<key>:on|off` (setAppConsole) - the same view-model calls START › Categories makes;
+     * `options:<pkg>` / `cats:<pkg>` open the app's real START window / its Categories window; `log:<pkg>` one `appcat ...` line
+     * (where it is listed, how often in All, its record key). Nothing is launched by this.
+     */
+    val appCat = mutableStateOf<String?>(null)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
@@ -336,6 +350,8 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        intent?.getStringExtra("voltcap_test_focuspos")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context)) focusPos.value = v }
+        intent?.getStringExtra("voltcap_test_appcat")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && v.contains(':')) appCat.value = v }
         intent?.getStringExtra("voltcap_test_libapp")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && (v.startsWith("add:") || v.startsWith("remove:"))) libApp.value = v }
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
@@ -687,6 +703,8 @@ internal object TestHooks {
                 }
                 // Update 491: the R1 panel's own prefs too (saved order, hidden tiles, use counts — a tile tap counts a use).
                 runCatching { qaSavePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
+                // (682av: the app choices too - Recomps marks, START › Categories, kinds, apps added - a 724a / 725a run changes them.)
+                runCatching { qaSavePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
@@ -726,6 +744,7 @@ internal object TestHooks {
                     android.util.Log.e("VoltcapTest", "appearance restored: home_layout=${o.optString("home_layout")}")
                 }
                 runCatching { qaRestorePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
+                runCatching { if (java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_libapps.json").exists()) qaRestorePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
