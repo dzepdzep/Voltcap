@@ -16,9 +16,8 @@ TWO_STEP="CUBE GREENCORE"   # layouts whose home opens a console (Cube) / its GA
 # (751a, review 45593862011: Bubble home's A unfolds the LiveArea INSIDE the home - no game window - and the LiveArea's A is
 # Start, i.e. Play. The A walk aborted there (QaClip popupGame null) at x1.3 and x1.0. A layout listed here gets its game
 # window from the QA hook (voltcap_test_window: the focused game's window, never starts a game), not from an A on the home.)
-# (682ba, v0.7.0 gallery, both handhelds: Green core's home is a menu - GAMES / SYSTEMS / APPS ... - its A opens the games list,
-# not a window; winguard stopped the run there. Its window comes from the QA hook too.)
-HOOK_OPEN="BUBBLES GREENCORE"
+# (682ba: Green core stopped the v0.7.0 gallery capture the same way - handled as two-step by 753a, above; not repeated here.)
+HOOK_OPEN="BUBBLES"
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 SC=${3:-off}; LAYS=${4:-CRATE}
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
