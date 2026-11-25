@@ -433,7 +433,7 @@ fun ShelfDialog(
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (682ax: QA only - a Dialog window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         // The popup is capped to the screen, and the body — not the header or
         // the buttons — is what shrinks and scrolls. Before, a tall popup on a
@@ -470,7 +470,7 @@ fun ShelfDialog(
                 }
             }
         } }
-    }
+    } }
 }
 
 /**
@@ -496,7 +496,7 @@ fun ShelfMenuDialog(
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (682ax: QA only - a Dialog window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         // Same look as the Select menu: icon badge header, rows as cards.
         Box(
@@ -552,7 +552,7 @@ fun ShelfMenuDialog(
                 )
             }
         }
-    }
+    } }
 }
 
 @Composable

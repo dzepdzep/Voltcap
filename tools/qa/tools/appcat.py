@@ -16,7 +16,7 @@ def parse(d):
     rows = []
     for l in raw:
         if not l.startswith('appcat '): continue
-        r = dict(re.findall(r'(\w+)=(\[[^\]]*\]|\S+)', l)); r['cmd'] = l.split()[1]; rows.append(r)
+        r = dict(re.findall(r'(\w+)=(\{[^}]*\}|\[[^\]]*\]|\S+)', l)); r['cmd'] = l.split()[1]; rows.append(r)
     return rows, [l for l in raw if 'LAUNCH blocked' in l]
 
 def touch(d):
@@ -48,8 +48,10 @@ def has(r, cat): return cat in r.get('listed', '')
 def grade(d):
     rows, launches = parse(d); out = []
     if not rows: return ['INFRA no appcat lines'], 'INFRA'
-    keys = {r.get('key') for r in rows if r.get('found') == 'true'}
-    out.append(('PASS' if len(keys) == 1 and all(r.get('found') == 'true' for r in rows) else 'FAIL') + ' the same record throughout (%s)' % keys)
+    # ucoll / collnew lines are about the collection or its ROM game, not the app under test
+    app = [r for r in rows if not r['cmd'].startswith(('ucoll', 'collnew'))]
+    keys = {r.get('key') for r in app if r.get('found') == 'true'}
+    out.append(('PASS' if len(keys) == 1 and all(r.get('found') == 'true' for r in app) else 'FAIL') + ' the same record throughout (%s)' % keys)
     base = rows[0]
     out.append(('PASS' if base.get('hasRecomps') == 'false' else 'FAIL') + ' no Recomps before the mark (%s)' % base.get('hasRecomps'))
     def first(prefix): return next((r for r in rows if r['cmd'].startswith(prefix)), None)
@@ -72,6 +74,18 @@ def grade(d):
         out.append(('PASS' if not has(c, 'N64') and has(c, 'Recomps') else 'FAIL') + ' console off: out of N64, still in Recomps (%s)' % c.get('listed'))
         out.append(('PASS' if r.get('hasRecomps') == 'false' and not has(r, 'Recomps') else 'FAIL') + ' recomp off: Recomps gone (empty) (%s)' % r.get('hasRecomps'))
         out.append(('PASS' if k.get('found') == 'true' and k.get('inAll') == '1' else 'FAIL') + ' all choices off: the app still there, once in All (found=%s inAll=%s)' % (k.get('found'), k.get('inAll')))
+    # (682aw) collections: the app put in an existing collection of your own (made with a ROM game), with its other choices kept;
+    # taken out again - the collection and its ROM game stay
+    cols = [r for r in rows if r['cmd'].startswith('coll:')]
+    if len(cols) < 2: out.append('INFRA collections: %d toggle lines' % len(cols))
+    else:
+        a, b = cols[0], cols[-1]
+        ok_in = 'QA Collection' in a.get('colls', '') and has(a, 'Recomps') and has(a, 'N64') and a.get('android') == 'true'
+        ok_out = 'QA Collection' not in b.get('colls', '') and "'QA Collection': 1" in b.get('collSizes', '').replace('=', ': ').replace('QA Collection', "'QA Collection'") or ('QA Collection=1' in b.get('collSizes', ''))
+        out.append(('PASS' if ok_in else 'FAIL') + ' in an existing collection too, with Recomps + Android games + N64 kept (colls=%s)' % a.get('colls'))
+        out.append(('PASS' if 'QA Collection' not in b.get('colls', '') and 'QA Collection=1' in b.get('collSizes', '') else 'FAIL') + ' taken out of it: the collection and its ROM game stay (colls=%s sizes=%s)' % (b.get('colls'), b.get('collSizes')))
+    log = open(os.path.join(d, 'log.txt')).read() if os.path.exists(os.path.join(d, 'log.txt')) else ''
+    out.append(('PASS' if 'Collections... opened' in log else 'INFRA') + ' the Categories window\'s Collections... opens its picker (shot AC_collpicker)')
     out.append(('PASS' if len(launches) == 1 else 'INFRA' if not launches else 'FAIL') + ' its Play recorded %d launch(es) %s' % (len(launches), [l.split('blocked')[-1].strip()[:60] for l in launches]))
     v = 'FAIL' if any(o.startswith('FAIL') for o in out) else 'INFRA' if any(o.startswith('INFRA') for o in out) else 'PASS'
     return out, v

@@ -625,10 +625,12 @@ appcat)
     wg_key_dlg D; sleep 0.5; shot AC_cats_cl
   done
   if [ $coll = 1 ]; then wg_key_dlg A; sleep 1.5; f=$(wg_hash "$(wg_focus)"); shot AC_collpicker; log "Collections... opened (focus $f, dialog $WG_DLG)"
-    [ "$f" = "$WG_DLG" ] || wg_dialog; wg_key_dlg B; sleep 1.2; wg_dialog
+    # (the picker replaces the Categories window - its B goes back to the home)
+    [ "$f" = "$WG_DLG" ] || wg_dialog; wg_key_dlg B; sleep 1.2
   else log "Collections... NOT TESTED: never focused"; fi
   # Collections... (its own picker) - shot, then back
-  wg_key_dlg B; sleep 1.2; [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || { wg_dialog; wg_key_dlg B; sleep 1.2; }
+  [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || { wg_dialog; wg_key_dlg B; sleep 1.2; }
+  [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || { wg_dialog; wg_key_dlg B; sleep 1.2; }
   # where it is listed now: Recomps, Android games, Nintendo 64 - once in All
   ac log:$APP_PKG
   A --es voltcap_test_category Recomps; sleep 2; shot AC_home_recomps

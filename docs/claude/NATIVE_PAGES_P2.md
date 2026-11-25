@@ -1197,3 +1197,25 @@ and taps only inside a confirmed QA dialog). QA app qa682av / qa682av2 (9bd9b52)
   package name, AppCategories725aTest), Collections... picker.
 - **RP Classic: NOT TESTED** - a `com.rp.settings` window holds the screen focus there (RP's own panel), the QA guard stops before
   any key; the owner asked to close it.
+
+### 682aw - remaining 723a / 724a / 725a QA (owner 25 Nov 10:42) - tested as built
+QA app qa682aw (db1389d), Level 1, both handhelds over USB (KONKR BW0306N230000845, RP Classic MC94516AQF091001112).
+New hook verbs (isolated QA app only): `voltcap_test_appcat coll|collnew|ucoll` (toggleInCollection / createCollection /
+User collections preview); the QA snapshot also keeps the `collections` prefs. appcat.py: collection checks; the same-record
+check ignores the collection's own lines (ucoll / collnew are about the collection and its ROM game, not the app).
+- **723a Focus position:** KONKR x1.3 PASS incl. the saved choice after a restart (kfp13b); RP Classic x1.0 PASS (rfp10) and
+  x1.3 PASS (rfp13): Classic L / M, Tile home Edges / L / M / R, a press steps round, saved choice back, hidden on Arcade, Cube,
+  Grid, Hero, R1 prefs unchanged.
+- **724a / 725a:** KONKR x1.0 PASS (kac10c, Files) incl. touch on the Recomps row (tick changes both ways); RP Classic x1.0 PASS
+  (rac10, Clock) and x1.3 PASS functionally (rac13). All runs: the app also in an existing custom collection ("QA Collection",
+  holding a ROM game) with Recomps + Android games + N64 kept; taken out again, the collection and its ROM game stay; START >
+  Categories > Collections... opens the picker (app ticked, "2 games"); kept after a QA app restart (fresh app scan, same
+  record key); console / Recomps / all choices off as before; Play records one launch of the app's own record, never starts it.
+- **Found (682ax):** the QA text-scale override (`voltcap_test_scale`) never reached ShelfDialog / ShelfMenuDialog windows (a
+  Dialog provides its own density again - the game window was fixed for this on 12 Nov). The x1.3 runs drew the Categories /
+  Collections windows at x1.0 (rac13 vs rac10 identical). Real users' x1.3 (system font) was never affected. Fixed QA-side:
+  both dialogs wrap their content in WithTestScale (null in production -> unchanged). The x1.3 dialog checks are re-run on qa682ax.
+- **APK update persistence: NOT TESTED on hardware.** The install tool only installs the QA app (guard), so a synthetic test
+  package can't be installed and updated; no bypass. Covered by AppCategories725aTest (choices kept by package name).
+- **QA hooks in production:** HooksIsolated682awTest PASS - every new hook (focuspos, appcat incl. coll / collnew / ucoll) does
+  nothing unless `QaVariant.isolated` (the QA package); production package -> no state change, no log.
