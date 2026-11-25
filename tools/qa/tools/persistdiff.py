@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""682bd: what changed between two copies of the QA app's settings (persist682.sh snap_*.tar).
+"""682bd: what changed between two copies of the QA app's settings (persist682.sh snap_*.json, or snap_*.tar).
 
   python3 persistdiff.py RUN_DIR            every consecutive pair of snap_*.tar in RUN_DIR
 Prints, per step, each file / key added, removed or changed. Keys that change on their own by design (time stamps, counters,
 session state) are listed under VOLATILE and do not count. Exit 0 = no other change anywhere, 1 = changes, 2 = no input.
 """
-import glob, os, re, sys, tarfile
+import glob, json, os, re, sys, tarfile
 import xml.etree.ElementTree as ET
 
 # Bookkeeping that moves by itself: the clock, counts, caches of what was seen.
@@ -19,6 +19,8 @@ VOLATILE_FILES = {"session", "crash_guard", "migrations", "sync_status", "launch
 
 
 def load(tar):
+    if tar.endswith(".json"):  # QaPrefsDump: {file: {key: "type:value"}}
+        return json.load(open(tar, encoding="utf-8"))
     out = {}
     with tarfile.open(tar) as t:
         for m in t.getmembers():
@@ -59,11 +61,11 @@ def diff(a, b):
 def main(argv):
     if len(argv) < 2:
         print(__doc__); return 2
-    snaps = sorted(glob.glob(os.path.join(argv[1], "snap_*.tar")))
+    snaps = sorted(glob.glob(os.path.join(argv[1], "snap_*.tar")) + glob.glob(os.path.join(argv[1], "snap_*.json")))
     if len(snaps) < 2:
         print("INFRA: fewer than two copies in", argv[1]); return 2
     bad = 0
-    loaded = [(os.path.basename(s)[5:-4], load(s)) for s in snaps]
+    loaded = [(os.path.basename(s)[5:].rsplit(".", 1)[0], load(s)) for s in snaps]
     for (n1, a), (n2, b) in zip(loaded, loaded[1:]):
         real, vol = diff(a, b)
         print(f"== {n1} -> {n2}: {'PASS' if not real else 'CHANGED'} ({len(real)} changes, {len(vol)} volatile)")

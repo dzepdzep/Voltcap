@@ -1,8 +1,8 @@
 #!/system/bin/sh
 # 682bd (owner 25 Nov 21:24 - "verify that each setting survives navigation, restart, rescan, layout changes ... without
 # modifying unrelated settings"): LEVEL 1, the isolated QA app com.shelf.launcher.qa only, synthetic games, nothing launched.
-# After each operation a copy of the QA app's settings files (run-as; the QA app is debug-signed) goes to
-# /sdcard/pc/$TAG/snap_<n>.tar; tools/qa/tools/persistdiff.py lists every key that changed between two copies.
+# After each operation a copy of the QA app's settings files (its own dump, voltcap_test_prefsdump) goes to
+# /sdcard/pc/$TAG/snap_<n>.json; tools/qa/tools/persistdiff.py lists every key that changed between two copies.
 #   sh persist682.sh run TAG          the walk below (about 4 minutes)
 #   sh persist682.sh snap TAG NAME    one copy
 # Every key a step changes on purpose is put back by the step itself; the QA snapshot hook covers the rest.
@@ -12,7 +12,10 @@ log() { echo "$(date +%T) $*" >> $L; }
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 front() { dumpsys window | grep mCurrentFocus | grep -q "$P/"; }
 stop() { log "STOP $*"; echo DONE >> $L; exit 4; }
-snap() { run-as $P tar cf - shared_prefs 2>/dev/null > $O/snap_$1.tar; log "snap $1 $(wc -c < $O/snap_$1.tar) bytes"; }
+# (The QA app is not debuggable - no run-as: it writes its own copy, QaPrefsDump, voltcap_test_prefsdump.)
+snap() { F=/sdcard/Android/data/$P/files/prefsdump; rm -f $F/$1.json; A --es voltcap_test_prefsdump "$1"; i=0
+  while [ ! -s $F/$1.json ] && [ $i -lt 20 ]; do sleep 0.5; i=$((i+1)); done
+  cp $F/$1.json $O/snap_$1.json 2>/dev/null; log "snap $1 $(wc -c < $O/snap_$1.json 2>/dev/null || echo 0) bytes"; }
 case "$MODE" in
 snap) snap "$3" ;;
 run)

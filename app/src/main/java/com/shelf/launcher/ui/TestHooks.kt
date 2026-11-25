@@ -490,6 +490,11 @@ internal object TestHooks {
                 android.util.Log.i("VoltcapTdp", "test profile $t -> ${r?.getOrNull()?.summaryForQa() ?: "saved profiles"}")
             }
         }
+        // 682bd: `--es voltcap_test_prefsdump <tag>` - every settings file, to <external files>/prefsdump/<tag>.json (QaPrefsDump).
+        intent?.getStringExtra("voltcap_test_prefsdump")?.let { t ->
+            val app = context.applicationContext
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) Thread { runCatching { QaPrefsDump.dump(app, t) } }.start()
+        }
         // 682bd: `--es voltcap_test_tunesim on|off|temp:<C>|launch:<key>|<name>|<package>[|<platform>|<console>]|end|fg:<package>`
         // - the tuner on SIMULATED hardware (TuneSim: in memory, isolated QA app only - no clock, fan or thermal file is
         // touched), a temperature for the heat guard, and the tuner's game start / end / foreground calls WITHOUT starting
