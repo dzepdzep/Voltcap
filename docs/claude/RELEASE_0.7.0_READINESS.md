@@ -1,71 +1,57 @@
-# v0.7.0 release readiness (25 Nov 2026, evening)
+# v0.7.0 release readiness (25 Nov 2026, 23:40)
 
-(Same as the claude.ai project doc claude/RELEASE_0.7.0_READINESS.md.)
+(Same as the claude.ai project doc claude/RELEASE_0.7.0_READINESS.md. Full audit: docs/claude/AUDIT_0.7.0.md.)
 
 Status: **NOT ready. No merge, production install or release without the owner's GO.**
-- Branch `claude/v0674-native-pages`, commit `d08182f` (682bb fixes `6f6fd73` + the hourly run's 755a). QA app `qa682bb`.
-- CI: Verify GREEN on `d08182f` (run 45652106664) - the code commit with the 682bb fixes. Later commits are docs only.
+- Branch `claude/v0674-native-pages`; last code commit `f094d6c` (QA build qa-682bh). CI: Verify GREEN on `b4e37b2`; the
+  Verify run on the newest commits was still running when this was written - a release candidate needs green on its exact
+  commit anyway.
 - Arcade B: on `claude/exp-arcadeb-focus` (`1257ec6`, Verify GREEN). Not merged.
-- Versioning is unchanged (0.6.73 / QA identity). It changes only when release preparation is authorised.
+- Versioning unchanged (0.6.73 / QA identity) until release preparation is authorised.
 
-## 1. Implementation: 53 / 53
-Every layout draws its own Details, Achievements and Options pages. Disc station (682az) was the last one.
-This is implemented only: it is not hardware-approved and not visually approved.
+## 1. Implementation: 53 / 53 native layouts
+Every layout draws its own Details, Achievements and Options pages. Implemented; not owner-approved.
 
-## 2. Hardware QA coverage (QA app only, synthetic games, 0 launches throughout)
-| Area | KONKR | RP Classic | Notes |
-|---|---|---|---|
-| Visual capture: all 53 layouts, Home + 4 pages, x1.0 / x1.3 | done | done | v0.7.0 gallery (qa682az / az2, before the 682bb fixes) |
-| Play same place across pages, 53 layouts x 4 | 2 defects | 2 defects | Graded from the gallery dumps (playplace_hw.py). Found: Cardboard box x1.3, Pocket camera RP Classic. Both fixed in 682bb; hardware re-check pending |
-| 723a / 724a / 725a features | PASS | PASS | APK-update persistence NOT TESTED on hardware (unit covered) |
-| Record crate / Dock safety (D393) | PASS | PASS | |
-| Spotlight, Terminal, Dashboard, Library, Card binder pages | PASS | PASS | P2 review on b06044b (older build) |
-| HW-28: 23 class C layouts, functional | NOT TESTED | NOT TESTED | Runs prepared (HW-29, qachain.sh); stopped because the PC left the bridge |
-| Batches 6-7 (Tile home, Grid, Night menu, Blades) | NOT TESTED | NOT TESTED | Same runs |
-| Disc station popup geometry gate | NOT TESTED | NOT TESTED | Same runs; PlayPlace / AchFirstRow pass in tests |
-| 682bb fixes on hardware | NOT TESTED | NOT TESTED | Emulated page sheets only (Disc station, Cardboard box, Pocket camera) |
+## 2. Hardware QA (QA app only, synthetic games, 0 launches throughout)
+| Area | KONKR | RP Classic |
+|---|---|---|
+| Visual capture, 53 layouts x 4 pages, x1.0 / x1.3 (gallery) | done | done |
+| 682bb review fixes (Green core, Disc station MODE, row line gap, Cardboard box, Pocket camera) | PASS | PASS |
+| Stress section (long names, no art, 120 achievements, x1.3) | captured | captured |
+| HW-28 functional walk, 28 class-C layouts, x1.3 | PASS (28, 0 launches, 28 confirmations cancelled, Play in place) | PASS (same) |
+| HW-28 walk at x1.0 | NOT TESTED | NOT TESTED |
+| Popup geometry gate, 28 layouts, x1.0 + x1.3 | PASS 56 / 56 | PASS 56 / 56 |
+| Upgrade v0.6.73 -> v0.7.0, settings kept | PASS (0 changes) | PASS (0 changes) |
+| Restart / rescan / layout previews / Edit Home discard | PASS (0 changes) | PASS (0 changes) |
+| Tuner on simulated hardware: profile source, explicit Off, Heat Guard, Recents, precedence, R1 tile | PASS | PASS |
+| Real tuner clocks (AYN / Retroid vendor service) | NOT TESTED (QA app never uses root) | NOT TESTED |
 
 ## 3. Visual defects
-Fixed in code (682bb); hardware check and owner preview still pending:
-- Green core home x1.3: PLAY TIME value slid ("AYED N"). Now the label and value share a line only when both fit whole;
-  otherwise the value sits under its label.
-- Disc station PROGRAM: the MODE key was too narrow. The deck now uses its own short words (IN ORDER, TO GET FIRST ...); the key
-  sits on the PROG line when it fits, otherwise on its own line; the music calendar joins the track line.
-- Categories / Collections and every shared row description: wrapped lines at x1.3 had a ~31 sp gap; now 16 sp. One-line rows
-  are unchanged.
-- Cardboard box x1.3: Play was out of view on its pages.
-- Pocket camera on the RP Classic: Play moved on Details, and the picture covered the name.
-
-Open (minor; candidates to defer): D336 (Classic capsule progress line ends in an ellipsis at x1.3, rule 11); Pocket camera
-ALBUM order key narrow (its words slide); a banner-shaped "cover" dithers to a flat picture (RP Classic QA data); static
-rule-11 count on this branch TRUNCATE 66 (the dev line is at 51; integration brings that work in).
+Fixed and hardware-checked: Green core PLAY TIME, Disc station MODE, Categories / Collections line gap, Cardboard box Play,
+Pocket camera, the key row that stopped between keys after More (D397). Open, minor (deferrable): D336, D399, D400.
+New screens for the owner's look approval: the tuner's notification wording, the R1 Heat guard tile and its sheet, the
+tuner page's Heat guard rows.
 
 ## 4. Performance
-- Arcade B: about 100 ms stall per game change on the RP Classic Arcade (p95 95-110 ms). The experimental focus-save change
-  removes the second whole-home rebuild (40-50 % fewer rebuilds, fewer slow frames) but does not change the stall itself. Not a
-  correctness issue: include/defer decided separately.
-- Logged, not blocking: KONKR still home drawing ~60 fps; D322; D64; D24; D379 / D386 (partly fixed).
+Arcade B stall (~100 ms per game change, RP Classic) - isolated on its branch, include / defer is the owner's call. No new
+performance work in this audit.
 
 ## 5. Safety / data integrity
-- No accidental launches in any QA run (the gallery's 212 layout runs and the safety runs all logged 0).
-- Library rescan bug 681r: fix on `claude/v0674-rescan-fix`, unmerged; HW-25 PASS except the SD-card-out case; merge conflicts
-  in LauncherScreen.kt / TestHooks.kt. Recommended in v0.7.0 (data integrity).
-- Play / chip anchor rule 682e on `claude/v0674-play-anchor`, unmerged (conflicts in TestHooks.kt and QA tooling) - owner decision.
-- Production VoltCap untouched throughout.
-
-## 6. Integration (needed before any release candidate)
-Dry merge into the native-pages branch: `main` (74 commits) clean; dev line `claude/qa-0672-repair` (22 commits, rule-11 work
-748a-750a) docs-only conflicts; rescan fix and play anchor conflict in code. A v0.7.0 integration branch is needed, with Verify
-GREEN on that exact commit, then the gates in tools/release/PRE_RELEASE_CHECKLIST.md.
+- Upgrade, backup / restore, snapshot undo, cross-device import, repeated migrations: no data lost or changed (audit summary).
+- Explicit per-game Underclock Off is kept, named and never moved by AutoTDP; the Heat Guard's cut is temporary and shown
+  apart; the firmware's thermal control is never written.
+- D401 fixed: the stock-clock record no longer travels with backups.
+- **Library rescan with the SD card out (681r): fix on `claude/v0674-rescan-fix`, not on this branch - BLOCKER until the owner
+  decides (recommended in).**
+- Production VoltCap untouched and never read.
 
 ## Blocks v0.7.0
-1. Hardware check of the 682bb fixes and the owner's targeted preview of the corrected screens.
-2. HW-28 functional QA (class C, batches 6-7, Disc station popclip) on both handhelds.
-3. Owner visual approval.
-4. Owner decisions: rescan fix (recommended in), play anchor rule, Arcade B focus-save (in or defer).
-5. Integration branch + green CI on its exact commit; version bump to 0.7.0 only when authorised; signed build, upgrade test
-   and publish per the checklist.
+1. 681r rescan fix - owner decision (recommended in), then its hardware check on the integration build.
+2. Owner visual approval (targeted preview + the new tuner screens).
+3. Owner decisions: play-anchor rule (682e), Arcade B focus-save.
+4. Integration branch (main + dev line + this branch), Verify GREEN on that exact commit, versioning when authorised, signed
+   build, upgrade test, publish per tools/release/PRE_RELEASE_CHECKLIST.md.
 
 ## Can be deferred
-Arcade B stall; the performance backlog; D336, Pocket camera ALBUM order key, banner-art dither; D332 (Flip 2), D342 (RP Nova);
-APK-update persistence on hardware.
+HW-28 walk at x1.0; D336 / D399 / D400; the scope review of 31 unlisted settings files; a real-hardware tuner check on an
+AYN / Retroid handheld (production, owner-approved steps); the performance backlog; APK-update persistence on the real app.
