@@ -1134,6 +1134,10 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             "recomp" -> viewModel.setAppRecomp(pkg, parts.getOrNull(2) == "on")
             "kind" -> com.shelf.launcher.data.AppKind.values().firstOrNull { it.name == parts.getOrNull(2) }?.let { viewModel.setAppKind(pkg, it) }
             "console" -> parts.getOrNull(2)?.let { viewModel.setAppConsole(pkg, it, parts.getOrNull(3) == "on") }
+            // (682aw: collections - the picker's own toggle, a collection made with a ROM game in it first, the switch that shows them)
+            "coll" -> game?.let { g -> parts.getOrNull(2)?.let { viewModel.toggleInCollection(it, g) } }
+            "collnew" -> parts.getOrNull(2)?.let { name -> TestHooks.matchGame(state.games, pkg)?.let { viewModel.createCollection(name, it) } }
+            "ucoll" -> if (TestHooks.previewOnly) viewModel.previewAppearance(state.appearance.copy(userCollections = parts.getOrNull(2) == "on"))
             "options" -> game?.let { closeAllDialogs(); optionsForGame = it }
             "cats" -> game?.let { closeAllDialogs(); categoriesForGame = it }
         }
@@ -1145,7 +1149,9 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         android.util.Log.e("VoltcapQA", "appcat $v pkg=$pkg found=${g != null} key=${g?.stableKey?.hashCode()} recomp=${g?.let { u.isRecomp(it) }} " +
             "android=${g?.let { u.isAndroidGame(it) }} other=${g?.let { u.isOtherApp(it) }} kind=${u.libraryApps.kindOf(pkg)} " +
             "consoles=${com.shelf.launcher.data.AppCategories.consolesOf(u.libraryApps, pkg).sorted()} inAll=$inAll listed=$listed " +
-            "platforms=${u.availablePlatforms.size} hasRecomps=${com.shelf.launcher.RECOMPS_PLATFORM in u.availablePlatforms}")
+            "platforms=${u.availablePlatforms.size} hasRecomps=${com.shelf.launcher.RECOMPS_PLATFORM in u.availablePlatforms} " +
+            "colls=${g?.let { gg -> u.userCollections.filter { gg.stableKey in it.value }.keys.sorted() }} " +
+            "collSizes=${u.userCollections.mapValues { it.value.size }.toSortedMap()}")
         TestHooks.appCat.value = null
     } }
     // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)

@@ -705,6 +705,7 @@ internal object TestHooks {
                 runCatching { qaSavePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
                 // (682av: the app choices too - Recomps marks, START › Categories, kinds, apps added - a 724a / 725a run changes them.)
                 runCatching { qaSavePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
+                runCatching { qaSavePrefs(context, "collections", "voltcap_test_snapshot_collections.json") }
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
@@ -745,6 +746,7 @@ internal object TestHooks {
                 }
                 runCatching { qaRestorePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
                 runCatching { if (java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_libapps.json").exists()) qaRestorePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
+                runCatching { if (java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_collections.json").exists()) qaRestorePrefs(context, "collections", "voltcap_test_snapshot_collections.json") }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }

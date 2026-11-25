@@ -166,7 +166,8 @@ fp_layout() {
   lay=$1; A --es voltcap_test_layout $lay; sleep 3; gate
   A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
   # (All - the fixture's ~30 games; a console holds 2-5)
-  A --es voltcap_test_category ALL; sleep 2; gate; wg_home
+  # (RP Classic x1.3: the QA app showed its profile picker again after the restart + scale - passed as at the start)
+  A --es voltcap_test_category ALL; sleep 2; gate; [ "$(wg_mark)" = PICKER ] && { wg_pass_picker; sleep 1; }; wg_home
   for c in 0 1 2 3; do
     A --es voltcap_test_focuspos $c; sleep 1.4
     shot FP_${lay}_c${c}_a
@@ -590,7 +591,10 @@ appcat)
   A --es voltcap_test_layout CLASSIC; sleep 3; gate
   A --es voltcap_test_libapp add:$APP_PKG; sleep 2.5
   logcat -c; ac log:$APP_PKG
-  ac recomp:$APP_PKG:on; ac kind:$APP_PKG:GAME; ac console:$APP_PKG:N64:on; qa_keep appcat.txt " appcat |LAUNCH|libapp"
+  ac recomp:$APP_PKG:on; ac kind:$APP_PKG:GAME; ac console:$APP_PKG:N64:on
+  # (682aw) an existing collection of your own - made first with a ROM game in it - and the app put in it too (the picker's own
+  # toggle); the collections shown (preview only)
+  ac "ucoll:-:on"; ac "collnew:Super Mario World:QA Collection"; ac "coll:$APP_PKG:QA Collection"; qa_keep appcat.txt " appcat |LAUNCH|libapp"
   # the START window and its Categories window, as a player reaches them
   wg_home
   ac options:$APP_PKG; sleep 1; wg_dialog; shot AC_options
@@ -614,6 +618,15 @@ appcat)
     fi
   done
   [ $tapped = 1 ] || log "touch NOT TESTED: the Recomps row never had the focus"
+  # (682aw) on down to "Collections...", A: its collection picker - a shot - and back
+  coll=0
+  for cj in $(seq 1 30); do
+    if tr -d '\n' < $O/${TAG}_AC_cats_cl.json 2>/dev/null | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | grep -qi '"label":"Collections'; then coll=1; break; fi
+    wg_key_dlg D; sleep 0.5; shot AC_cats_cl
+  done
+  if [ $coll = 1 ]; then wg_key_dlg A; sleep 1.5; f=$(wg_hash "$(wg_focus)"); shot AC_collpicker; log "Collections... opened (focus $f, dialog $WG_DLG)"
+    [ "$f" = "$WG_DLG" ] || wg_dialog; wg_key_dlg B; sleep 1.2; wg_dialog
+  else log "Collections... NOT TESTED: never focused"; fi
   # Collections... (its own picker) - shot, then back
   wg_key_dlg B; sleep 1.2; [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || { wg_dialog; wg_key_dlg B; sleep 1.2; }
   # where it is listed now: Recomps, Android games, Nintendo 64 - once in All
@@ -631,6 +644,7 @@ appcat)
   qa_keep appcat.txt " appcat |LAUNCH|libapp"; log "app Play: $(grep 'LAUNCH blocked' $O/appcat.txt | tail -1 | sed 's/.*VoltcapQA: //')"
   [ "$(wg_hash "$(wg_focus)")" = "$WG_DLG" ] && { wg_key_dlg B; sleep 1; }
   # taken off one by one - the app stays (found, same key), each category gone when empty
+  ac "coll:$APP_PKG:QA Collection"
   ac console:$APP_PKG:N64:off; ac recomp:$APP_PKG:off; ac kind:$APP_PKG:AUTO
   A --es voltcap_test_libapp remove:$APP_PKG; sleep 2
   qa_keep appcat.txt " appcat |LAUNCH|libapp"
