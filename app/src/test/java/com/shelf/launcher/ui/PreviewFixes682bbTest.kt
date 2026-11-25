@@ -95,4 +95,11 @@ class PreviewFixes682bbTest {
         assertFalse(s.contains("if (to != offset.targetValue)"))
         assertTrue(s.contains("if (to != offset.value) { if (anim) offset.animateTo(to"))
     }
+
+    @Test fun discTrackLabelAlternativesGiveWay() {
+        // 682bc (HW-29 kpop13_4 DISCS x1.3): the long / short track label left unplaced was read as a dropped fact.
+        val s = src("WinPagesDisc.kt")
+        val line = s.substring(s.indexOf("internal fun DiscTrackLine("), s.indexOf("internal fun discTrackLineFit"))
+        assertEquals(2, Regex("QaClip.GivesWay\\] = true").findAll(line).count())
+    }
 }

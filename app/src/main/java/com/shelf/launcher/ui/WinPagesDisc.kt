@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -138,8 +139,10 @@ internal fun DiscCalendar(tracks: List<WinPage>, shown: WinPage, k: DiscInk) {
 internal fun DiscTrackLine(track: String, page: String, tracks: List<WinPage>, shown: WinPage, k: DiscInk) {
     val style = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
     androidx.compose.ui.layout.Layout(content = {
-        Text(track, color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false)
-        Text(track.substringBefore(" ·"), color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false)
+        // (682bc, HW-29 kpop13_4: the two labels are one fact said long or short - the one left unplaced gives way, it is not
+        // a fact the deck dropped. QaClip.GivesWay.)
+        Text(track, color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false, modifier = Modifier.semantics { this[QaClip.GivesWay] = true })
+        Text(track.substringBefore(" ·"), color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false, modifier = Modifier.semantics { this[QaClip.GivesWay] = true })
         DiscCalendar(tracks, shown, k)
         Text(page, color = k.lcd, style = style, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
     }) { ms, c ->

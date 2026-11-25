@@ -1661,6 +1661,17 @@
    "base_commit": "claude/v0674-native-pages 6f6fd73",
    "tree_hash": "claude/v0674-native-pages 6f6fd73",
    "note": "v0.7.0 review fixes (682bb) - HW-29: fix check, stress section, HW-28 popup gate + functional walk"
+  },
+  {
+   "id": "qa-682bc-8ff8108",
+   "apk_sha256": "308f104c6e9d2780cbce48d8265e2c7446cc1a4a00cf59f44d2db82087010a51",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 8ff8108 + Disc track label GivesWay",
+   "tree_hash": "claude/v0674-native-pages 8ff8108+",
+   "note": "HW-29: key-row scroll finishes after a cancel, measure-only refs out of the QA dump, Disc label alternatives give way"
   }
  ]
 }
