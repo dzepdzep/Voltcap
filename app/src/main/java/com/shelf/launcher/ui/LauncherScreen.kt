@@ -1126,7 +1126,8 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
     } }
     // (682av: START › Categories' own calls for a QA run, on an app in the QA app's own library - and where it is listed.)
     TestHooks.appCat.value?.let { v -> LaunchedEffect(v) {
-        TestHooks.appCat.value = null
+        // (cleared only at the end: clearing it first took this effect out of composition during its wait - the change ran,
+        // its QA line never came)
         val parts = v.split(':'); val verb = parts[0]; val pkg = parts.getOrNull(1).orEmpty()
         val game = state.games.firstOrNull { it.sourceType == com.shelf.launcher.data.SourceType.APP && it.packageName == pkg }
         when (verb) {
@@ -1145,6 +1146,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
             "android=${g?.let { u.isAndroidGame(it) }} other=${g?.let { u.isOtherApp(it) }} kind=${u.libraryApps.kindOf(pkg)} " +
             "consoles=${com.shelf.launcher.data.AppCategories.consolesOf(u.libraryApps, pkg).sorted()} inAll=$inAll listed=$listed " +
             "platforms=${u.availablePlatforms.size} hasRecomps=${com.shelf.launcher.RECOMPS_PLATFORM in u.availablePlatforms}")
+        TestHooks.appCat.value = null
     } }
     // (Update 500: the isolated QA app's fixture library — empty stand-in ROM files in its OWN folder, scanned like a ROM folder.)
     TestHooks.libApp.value?.let { v -> LaunchedEffect(v) {

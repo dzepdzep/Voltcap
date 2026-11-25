@@ -152,9 +152,18 @@ k_home() { gate; wg_key_home $1; }
 # Voltcap row and Tile home, every choice, the home browsed right and back with a QaClip dump (where the game you're on sits),
 # Endless on at the first game; a press cycling through all; 3) other layouts (GRID HERO ARCADE COVERFLOW): the tile hidden.
 #   APP-free.  sh p2review.sh focuspos TAG SCALE   then  sh p2review.sh restore TAG
+# (682av: after the QA app is force-stopped, the app behind it comes to the front for a moment (RP Classic: its Settings) - wait
+# until the QA app is in front again before anything else; nothing pressed meanwhile)
+# (682av: the QA lines kept as they come - a long run's logcat ring dropped the first section's lines on the KONKR)
+qa_keep() { logcat -d -s VoltcapQA | grep -E "$2" >> $O/$1; logcat -c; }
+qa_back() { A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; i=0
+  while [ $i -lt 30 ]; do dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity" | grep -q "$P/" && break; sleep 0.5; i=$((i + 1)); done
+  sleep 4; gate; }
 fp_layout() {
   lay=$1; A --es voltcap_test_layout $lay; sleep 3; gate
-  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2; gate; wg_home
+  A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2
+  # (All - the fixture's ~30 games; a console holds 2-5)
+  A --es voltcap_test_category ALL; sleep 2; gate; wg_home
   for c in 0 1 2 3; do
     A --es voltcap_test_focuspos $c; sleep 1.4
     shot FP_${lay}_c${c}_a
@@ -174,7 +183,7 @@ fp_layout() {
 # D-pad and one touch, the QA app restarted (kept), the choices taken off one by one (the app stays, same record), and its
 # window's Play pressed once (the QA launch block records the launch of that app's own record).
 #   APP_PKG=<package> sh p2review.sh appcat TAG SCALE   then  APP_PKG=<package> sh p2review.sh restore TAG
-ac() { A --es voltcap_test_appcat "$1"; sleep 1.6; }
+ac() { A --es voltcap_test_appcat "$1"; sleep 1.6; qa_keep appcat.txt " appcat |LAUNCH|libapp"; }
 fs_ab() {
   n=FS_$1_$2; A --es voltcap_test_fitsearch $1; sleep 2; gate; wg_home
   phase nav; for r in 1 2; do for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; done; sleep 0.8; phase_end nav
@@ -552,17 +561,17 @@ focuspos)
   A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
   # 1) saved for real (the QA app's own settings) and kept across a restart
-  A --es voltcap_test_layout CLASSIC; sleep 3; gate
-  A --es voltcap_test_focuspos LOG; sleep 1; A --es voltcap_test_focuspos 1; sleep 1.5
-  am force-stop $P; sleep 1.5; A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 6; gate; wg_pass_picker
+  A --es voltcap_test_layout CLASSIC; sleep 3; gate; logcat -c
+  A --es voltcap_test_focuspos LOG; sleep 1; A --es voltcap_test_focuspos 1; sleep 1.5; qa_keep focuspos.txt " focuspos |LAUNCH"
+  am force-stop $P; sleep 1.5; qa_back; wg_pass_picker
   A --es voltcap_test_focuspos LOG; sleep 1.2; log "restart check logged"
-  A --es voltcap_test_focuspos 0; sleep 1
+  A --es voltcap_test_focuspos 0; sleep 1; qa_keep focuspos.txt " focuspos |LAUNCH"
   # 2) previewed browsing on the two layouts that have it
   A --ez voltcap_test_preview true; sleep 1
-  for lay in CLASSIC TILES; do fp_layout $lay; done
+  for lay in CLASSIC TILES; do fp_layout $lay; qa_keep focuspos.txt " focuspos |LAUNCH"; done
   # 3) the tile hidden elsewhere
-  for lay in GRID HERO ARCADE COVERFLOW; do A --es voltcap_test_layout $lay; sleep 2.5; A --es voltcap_test_focuspos LOG; sleep 1; done
-  logcat -d -s VoltcapQA | grep -E " focuspos |LAUNCH" > $O/focuspos.txt
+  for lay in GRID HERO ARCADE CUBE; do A --es voltcap_test_layout $lay; sleep 2.5; A --es voltcap_test_focuspos LOG; sleep 1; done
+  qa_keep focuspos.txt " focuspos |LAUNCH"
   log "focuspos done (launches: $(launches))"; echo DONE >> $L;;
 appcat)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
@@ -577,32 +586,45 @@ appcat)
   A --es voltcap_test_scale "$SC"; sleep 2
   A --es voltcap_test_layout CLASSIC; sleep 3; gate
   A --es voltcap_test_libapp add:$APP_PKG; sleep 2.5
-  ac log:$APP_PKG
-  ac recomp:$APP_PKG:on; ac kind:$APP_PKG:GAME; ac console:$APP_PKG:N64:on
+  logcat -c; ac log:$APP_PKG
+  ac recomp:$APP_PKG:on; ac kind:$APP_PKG:GAME; ac console:$APP_PKG:N64:on; qa_keep appcat.txt " appcat |LAUNCH|libapp"
   # the START window and its Categories window, as a player reaches them
-  ac options:$APP_PKG; sleep 1; shot AC_options
-  ac cats:$APP_PKG; sleep 1; shot AC_cats_0
-  for i in 1 2 3 4 5 6 7 8; do k DPAD_DOWN 0.6; shot AC_cats_d$i; done
-  # one touch: the Recomps row, by its own bounds in the dump (its tick goes off, then the same tap puts it back)
-  xy=$(tr -d '\n' < $O/AC_cats_0.json | tr '{' '\n' | grep -F '"kind":"control"' | grep -i '"label":"[^"]*Recomps' | head -1 | sed -n 's/.*"shown":\[\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p')
-  if [ -n "$xy" ]; then set -- $xy; tx=$(( $1 + $3 / 2 )); ty=$(( $2 + $4 / 2 )); gate; input tap $tx $ty; sleep 1.4; shot AC_cats_tap1
-    ac log:$APP_PKG; gate; input tap $tx $ty; sleep 1.4; shot AC_cats_tap2; ac log:$APP_PKG; log "touch on Recomps at $tx,$ty"
-  else log "touch NOT TESTED: no Recomps row in the dump"; fi
-  k BUTTON_B 1.0; [ "$(wg_popup)" = null ] || k BUTTON_B 1.0
+  wg_home
+  ac options:$APP_PKG; sleep 1; wg_dialog; shot AC_options
+  wg_key_dlg B; sleep 1.2; wg_home
+  ac cats:$APP_PKG; sleep 1; wg_dialog; shot AC_cats_0
+  # the D-pad down the list; where it is on Recomps (the dump's focused row), one touch on that row - its tick goes off - and
+  # the same tap again - back on (no QA hook call while the window is open: an `am start` takes the focus from it)
+  tapped=0
+  for i in 1 2 3 4 5 6 7 8; do wg_key_dlg D; sleep 0.6; shot AC_cats_d$i
+    if [ $tapped = 0 ]; then
+      xy=$(tr -d '\n' < $O/${TAG}_AC_cats_d$i.json 2>/dev/null | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | grep -i '"label":"[^"]*Recomps' | head -1 | sed -n 's/.*"shown":\[\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p')
+      if [ -n "$xy" ]; then set -- $xy; tx=$(( $1 + $3 / 2 )); ty=$(( $2 + $4 / 2 ))
+        wg_tap_dlg $tx $ty; sleep 1.4; shot AC_cats_tap1; wg_tap_dlg $tx $ty; sleep 1.4; shot AC_cats_tap2
+        log "touch on the Recomps row at $tx,$ty (tap1 / tap2 shots)"; tapped=1; fi
+    fi
+  done
+  [ $tapped = 1 ] || log "touch NOT TESTED: the Recomps row never had the focus"
+  # Collections... (its own picker) - shot, then back
+  wg_key_dlg B; sleep 1.2; [ "$(wg_hash "$(wg_focus)")" = "$WG_MAIN" ] || { wg_dialog; wg_key_dlg B; sleep 1.2; }
   # where it is listed now: Recomps, Android games, Nintendo 64 - once in All
   ac log:$APP_PKG
   A --es voltcap_test_category Recomps; sleep 2; shot AC_home_recomps
   A --es voltcap_test_category N64; sleep 2; shot AC_home_n64
+  qa_keep appcat.txt " appcat |LAUNCH|libapp"
   # the QA app restarted: kept
-  am force-stop $P; sleep 1.5; A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 6; gate; wg_pass_picker
+  am force-stop $P; sleep 1.5; qa_back; wg_pass_picker
   A --ez voltcap_test_preview true; sleep 1; ac log:$APP_PKG; log "restart check logged"
   # its window's Play, once: the launch of the app's own record (recorded, never started)
   A --es voltcap_test_game "${APP_NAME:-$APP_PKG}"; sleep 2
-  if openw CLASSIC AC_win; then shot AC_win_focus; k BUTTON_A 2; log "app Play: $(logcat -d -s VoltcapQA | grep 'LAUNCH blocked' | tail -1 | sed 's/.*VoltcapQA: //')"; closewin; fi
+  # (its START window's Play - the first row - as a player starts an app from START)
+  wg_home; ac options:$APP_PKG; sleep 1; wg_dialog; shot AC_play_focus; wg_key_dlg A; sleep 2
+  qa_keep appcat.txt " appcat |LAUNCH|libapp"; log "app Play: $(grep 'LAUNCH blocked' $O/appcat.txt | tail -1 | sed 's/.*VoltcapQA: //')"
+  [ "$(wg_hash "$(wg_focus)")" = "$WG_DLG" ] && { wg_key_dlg B; sleep 1; }
   # taken off one by one - the app stays (found, same key), each category gone when empty
   ac console:$APP_PKG:N64:off; ac recomp:$APP_PKG:off; ac kind:$APP_PKG:AUTO
   A --es voltcap_test_libapp remove:$APP_PKG; sleep 2
-  logcat -d -s VoltcapQA | grep -E " appcat |LAUNCH|libapp" > $O/appcat.txt
+  qa_keep appcat.txt " appcat |LAUNCH|libapp"
   log "appcat done (launches: $(launches))"; echo DONE >> $L;;
 arab)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"

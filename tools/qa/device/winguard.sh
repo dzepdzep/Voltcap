@@ -87,6 +87,19 @@ wg_window() {
   h=$(wg_hash "$(wg_focus)"); [ "$(wg_type $h)" = ty=APPLICATION ] || wg_abort "game window expected, focused window is $(wg_type $h)"
   [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] && wg_abort "game window expected, the home window has the focus"
   WG_WIN=$h; WG_GAME=$pg; }
+# (682av) a dialog of the QA app's own (START window, Categories): the focused window is the QA app's, an APPLICATION window,
+# not its home window - its hash kept; keys only while it still has the focus (wg_key_dlg)
+wg_dialog() {
+  f=$(wg_focus); case "$f" in *"$P/"*) ;; *) wg_abort "QA dialog expected, in front: $(wg_what "$f")";; esac
+  h=$(wg_hash "$(wg_focus)"); [ "$(wg_type $h)" = ty=APPLICATION ] || wg_abort "QA dialog expected, focused window is $(wg_type $h)"
+  [ -n "$WG_MAIN" ] && [ "$h" = "$WG_MAIN" ] && wg_abort "QA dialog expected, the home window has the focus"
+  WG_DLG=$h; }
+wg_key_dlg() { wg_time_ok; k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
+  h=$(wg_hash "$(wg_focus)"); [ -n "$WG_DLG" ] && [ "$h" = "$WG_DLG" ] || wg_abort "before $1: the QA dialog lost the focus to $(wg_what "$(wg_focus)")"
+  input keyevent KEYCODE_$k; }
+# (682av) a tap inside the confirmed QA dialog only
+wg_tap_dlg() { wg_time_ok; h=$(wg_hash "$(wg_focus)"); [ -n "$WG_DLG" ] && [ "$h" = "$WG_DLG" ] || wg_abort "before a tap: the QA dialog lost the focus to $(wg_what "$(wg_focus)")"
+  input tap $1 $2; }
 wg_kc() { case $1 in R1) echo BUTTON_R1;; L1) echo BUTTON_L1;; R2) echo BUTTON_R2;; L2) echo BUTTON_L2;; A) echo BUTTON_A;; B) echo BUTTON_B;;
   L) echo DPAD_LEFT;; R) echo DPAD_RIGHT;; U) echo DPAD_UP;; D) echo DPAD_DOWN;; *) echo "";; esac; }
 wg_key_win() { wg_time_ok; k=$(wg_kc $1); [ -n "$k" ] || wg_abort "unknown key $1"
