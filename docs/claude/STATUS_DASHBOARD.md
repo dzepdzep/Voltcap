@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 748a · 2026-11-25 08:35 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 4d6b6b9 (dev) and ae4ad42 (native pages); emulator review 45570243363 PASS; 45576064795 running · effort: medium
+**1. LATEST UPDATE** - 749a · 2026-11-25 09:35 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 435538a (dev); emulator review 45576064795 PASS; 45584303713 running · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
+**2. WHAT CLAUDE JUST FIXED** - A game's play-time statistics, the performance page's six tiles and the status rows in a game's popup now always show their whole text: long values shrink to a still-readable size or slide slowly instead of ending in '...'; the tiles keep one size. The emulator review of the Circuit, Channel, Timeline and Hero game-window pages passed at both text sizes with no game started; the next four layouts are being photographed.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Read emulator review 45576064795 and dispatch the next set of native-page layouts; then: Emulator review sheets of all class C native pages for the owner; Disc station's own page bodies after the owner decides
+**5. WORKING ON NEXT** - now: Read emulator review 45584303713 and dispatch the next set of native-page layouts; then: Next batch of whole-text fixes (60 places left); Emulator review sheets of all native pages for the owner
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 9 items (see Owner actions below); cloud work continues without them.
 

@@ -1,3 +1,18 @@
+# Update 749a (25 Nov 2026, cloud run) - rule 11: play stats, performance tiles and game popup status rows show their text whole
+- CI first: Verify 310 on 435538a (748a) GREEN. P2 emulator review 45576064795 (CIRCUIT CHAN TIMELINE HERO, x1.3 + x1.0) VERDICT
+  PASS, 0 launches, every destructive row armed and cancelled - sheets in its artifact. Next set dispatched: run 45584303713
+  (P2:HERO_TILES MEMCARD BOX FILESELECT) on a524ded.
+- The owner's live session is pushing to claude/v0674-native-pages (682av, 09:10-10:08 Berlin, KONKR hardware results) - this
+  run left that branch alone apart from the read-only review dispatch.
+- Dev line, rule 11 (matrix P13): GamePlayStats.kt (stat value + label), PerfPage.kt (tile value + sub line, the sub keeps its two
+  lines so all six tiles stay one size) and GamePopupStatus.kt (status row label + value) go through FullText (wrap, readable size,
+  then slide; reserve = false where the row height must stay). 6 TRUNCATE places -> 0.
+- Test: StatsFullText749aTest 2/2 PASS in the cloud (fails on 748a: 6 Ellipsis); Batch482Test 7/7 + Tuner373Test 3/3 PASS (touch
+  GamePopupStatus). App + tests compiled. Static checks PASS, TRUNCATE 66 -> 60.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/GamePlayStats.kt, ui/PerfPage.kt, ui/GamePopupStatus.kt,
+  app/src/test/java/com/shelf/launcher/ui/StatsFullText749aTest.kt.
+- Hardware NOT TESTED: HW-24 749a (KONKR, with 713a).
+
 # Update 748a (25 Nov 2026, cloud run) - P2 emulator review works again: the review walk reads the app's screen dumps without the device's grep (QA tooling, native-pages branch)
 - CI first: Verify 310 on 4d6b6b9 (dev lock) GREEN; 9be5fab (P2) superseded by this push; ae4ad42 (P2) GREEN.
 - Item (handoff NEXT): review 45566681915 on 9be5fab still INFRA at both scales, but 747c's kept files settled it: both kept

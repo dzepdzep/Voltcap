@@ -90,6 +90,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   menu), and chips in a narrow row (Settings chip rows, RA "Play as") - whole (shrink, then slide), never an ellipsis; chips
   keep their size, focus ring and touch target. D-pad + touch still work. Screenshots.
   Unit evidence only (DialogChromeFullText713aTest; static TRUNCATE 69 -> 66).
+- Also (749a, rule 11, dev line 749a or later, ~2 min, KONKR x1.3 + x1.0, with 713a): a game's play-stats boxes (long
+  values / labels), the performance page's six tiles (long sub lines: all six stay one size) and the game popup's status rows
+  (long label / value, a destructive row in red) - whole (wrap, shrink, then slide), never an ellipsis; rows keep their height,
+  focus ring and touch target. D-pad + touch still work. Screenshots.
+  Unit evidence only (StatsFullText749aTest; static TRUNCATE 66 -> 60).
 - Also (715a, Task 1 Row-position, dev line 715a or later, ~2 min, KONKR x1.0, with 714a): Voltcap row, game header OFF,
   Edit Home + Add "Play / Continue" (leave it at its spot, upper right); R1 Row tile Top: from the games ▲ must reach Play (▼ did
   before); move the part low, Row Bottom: ▼ reaches it. Header ON again: ▲ / ▼ as before (Row Top -> ▼ to the header under the

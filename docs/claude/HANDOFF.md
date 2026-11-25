@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 09:35 UTC, 749a (cloud, rule 11 + P2 review):** Verify 310 on 435538a GREEN. P2 review 45576064795 (CIRCUIT CHAN TIMELINE
+HERO) VERDICT PASS, 0 launches; next set 45584303713 (P2:HERO_TILES MEMCARD BOX FILESELECT, on a524ded = the owner's live 682av
+push) dispatched. Dev line: play stats / performance tiles / popup status rows through FullText (StatsFullText749aTest 2/2,
+TRUNCATE 66 -> 60; HW-24 749a). The owner's live session is pushing to the P2 branch (682av) - fetch + merge before any P2 push.
+NEXT: check Verify 310 on this push FIRST. Read review 45584303713; if PASS dispatch the next set (one at a time): CASEFLOW ORBIT
+AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL / INFRA is the next item (if it fails on a524ded's new
+p2review changes, compare with ae4ad42 before touching the owner's scripts). Between dispatches: the next rule 11 batch (60 left;
+e.g. NewArrival, GlanceWindow, LaunchAnimation, CompanionActivity). When all sets PASS, one owner action with the sheets' run links.
+
 **25 Nov 08:35 UTC, 748a (cloud, QA tooling - the P2 emulator review works again):** Verify 310 on 4d6b6b9 (dev) + ae4ad42 (P2)
 GREEN. Root of the "no dump" stops: the dump WAS there and held popupGame, but the device's grep -o found nothing in its one long
 line with non-ASCII page text; the same grep fault hid an armed confirmation ("A showed no confirmation"). P2 ae4ad42: winguard

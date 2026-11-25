@@ -139,7 +139,8 @@ private fun StatBox(label: String, value: String, modifier: Modifier = Modifier)
             .background(ShelfTheme.colors.surfaceRaised)
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
-        Text(value, color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-        Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        // (749a, rule 11: value and label shown whole - readable size, then a slide; reserve = false keeps the box as it was.)
+        FullText(value, color = ShelfTheme.colors.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
+        FullText(label, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 1, reserve = false)
     }
 }
