@@ -1,3 +1,18 @@
+# Update 757a (25 Nov 2026, cloud run) - rule 11: classic row game name, badge wall line and Pocket Quest Play key show their text whole
+- CI first: Verify 310 on afe1c5e (756a) GREEN.
+- Rule 11 (no "..." truncation): GameDock's home game name (two lines, then a slow slide; same size as before - autoFit off -
+  and no reserved second line, so nothing around it moves while the selection moves), BadgeWall's percentage / points line and
+  Pocket Quest's Play / Continue key (readable size, then slide) move to FullText. HomeChrome's status-bar progress counters
+  keep their ellipsis on purpose (qa-ok: live counters that change every second in the bar's leftover room - with the player
+  there that box is nearly empty; the whole readouts are in the Background work dialog: tap them, or Notifications). FitText's
+  doc comment marked qa-ok.
+- Test: DockBadgeFullText757aTest 2/2 (fails on the 756a sources); 15 source-reading suites over the touched files PASS
+  (PqTabs456Test, Batch478-521 set, CategoryBar453Test, ClipLightTest, ...). Static TRUNCATE 13 -> 8. Cloud compiled
+  (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{GameDock,BadgeWall,StylePocketQuest,HomeChrome,FitText}.kt,
+  app/src/test/java/com/shelf/launcher/ui/DockBadgeFullText757aTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 757a KONKR).
+
 # Update 756a (25 Nov 2026, cloud run) - rule 11: state badges, Cube hub labels, Cross progress line, Volt tabs and second-screen names show their text whole
 - CI first: Verify 310 on e0604ce (755a) GREEN. P2 branch moved (owner's 682bb) - untouched by this run.
 - Rule 11 (no "..." truncation): six texts move from `maxLines + TextOverflow.Ellipsis` to FullText (wrap, readable size,

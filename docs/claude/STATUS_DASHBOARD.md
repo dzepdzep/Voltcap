@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 756a · 2026-11-25 16:45 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on e0604ce (755a) · effort: medium
+**1. LATEST UPDATE** - 757a · 2026-11-25 17:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on afe1c5e (756a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Six more places now show their whole text instead of cutting it with dots: a game's completion badge, the Cube hub's console names and game counts, the achievement progress line in the Cross menu, the Volt layout's tab names, and game names on the second screen.
+**2. WHAT CLAUDE JUST FIXED** - Three more places now show their whole text instead of cutting it with dots: the game name under the logo on the classic row (still the same size, nothing around it moves), the percentage and points line on the badge wall, and Pocket Quest's Play Game key. The scraping counters in the status bar may still end in dots beside the music player, on purpose - tapping them shows the whole readout.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Last whole-text fixes (13 places left, the harder ones); badgecheck fixtures and profile-picture corner (v0.6.74 list)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Last whole-text fixes (8 places left, each needs a careful choice); badgecheck fixtures and profile-picture corner (v0.6.74 list)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 

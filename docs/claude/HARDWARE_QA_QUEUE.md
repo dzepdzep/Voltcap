@@ -106,6 +106,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (757a, rule 11, dev line 757a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-756a): the classic row's game name under
+  the logo (a very long name: two lines, then a slow slide; the row and the logo do not move between short and long names),
+  the badge wall's percentage / points line, Pocket Quest's Play Game / Continue key with the screenshots column open - whole
+  (shrink, then slide), never an ellipsis. Status-bar progress counters (scraping) still may end in an ellipsis beside the mini
+  player - tapping them opens Background work with the whole readouts. D-pad + touch still work. Screenshots.
+  Unit evidence only (DockBadgeFullText757aTest; static TRUNCATE 13 -> 8).
 - Also (756a, rule 11, dev line 756a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-754a): a game's state badge (e.g.
   MASTERED) on the game-look card, the Cube hub's console label + game count, Cross menu's achievement progress line under the
   focused game (Trophies category), the Volt tab names - whole (shrink, then slide), never an ellipsis; rows keep their

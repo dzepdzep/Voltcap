@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 17:40 UTC, 757a (cloud, rule 11):** Verify 310 on afe1c5e GREEN. GameDock home name (autoFit off, no reserve -
+layout unchanged), BadgeWall % / points line, Pocket Quest Play key through FullText; HomeChrome status-bar progress counters
+qa-ok (live counters; whole in Background work); FitText doc comment qa-ok (DockBadgeFullText757aTest 2/2, TRUNCATE 13 -> 8;
+HW-24 757a).
+NEXT: check Verify 310 on this push FIRST. The last 8 rule 11 places each need a decision: LauncherScreen:4120 category name
+(CATSHELL rule 14 - FullText with autoFit + reserve, check CategoryStable394Test), ScrollingName:56 (the shared helper - read
+its callers), StyleCustom (the user's own maxLines - likely qa-ok: the user chose the lines), StyleMagazine story (fills its
+column - Details shows it whole?), WholeRows story (gives way by design - qa-ok with where it is whole), TileHome game name
+(riseOnChange + custom layout), CollectorBacks canvas x2 (drawn bitmap - wrap in StaticLayout or qa-ok). Then the v0.6.74 list
+(badgecheck D357 fixtures, profile-picture corner, H16 polish). P2: only on an owner push / review or a red CI.
+
 **25 Nov 16:45 UTC, 756a (cloud, rule 11):** Verify 310 on e0604ce GREEN. P2 branch moved (owner's live 682bb 6f6fd73 +
 merge d08182f) - left alone, P2 still waits for the owner's sheet review. Dev line: GameLookUi state badge, CubeHub console label
 + count, StyleCrossMenu progress line, VoltUi tab, SecondShowcase name, SecondScreen details name through FullText

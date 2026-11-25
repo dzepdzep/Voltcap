@@ -381,16 +381,19 @@ internal fun StatusBar(
         // With the player there it takes (nearly) all the spare room; the readouts get the rest.
         Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
             if (progress.isNotEmpty() && !minimal && !(nowPlaying != null && widthDp < 600)) {
+                // (757a, rule 11: live counters that change every second would never be readable as a slide, and with the
+                // player there this box is nearly empty; they shrink to the readable minimum, then the whole readouts are in
+                // the Background work dialog - tap them, or Notifications > Background work.)
                 Text(
                     modifier = Modifier.tapOnly(onProgressClick),
-                    text = 
+                    text =
                     progress.joinToString("  ·  "),
                     color = barAccent,
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // qa-ok: TRUNCATE (live counters in the status bar's leftover room; whole in the Background work dialog - tap, or Notifications)
                 )
             }
         }

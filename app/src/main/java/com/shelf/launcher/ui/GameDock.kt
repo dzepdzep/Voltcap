@@ -1007,7 +1007,9 @@ private fun FocusedLine(
                 centered = centered,
                 modifier = Modifier.weight(1f, fill = false)
             ) { m ->
-                androidx.compose.material3.Text(
+                // (757a, rule 11: FullText - a name longer than two lines slides instead of ending in "…". Same size as before
+                // (no shrinking while the selection moves) and no reserved second line, so nothing around it moves.)
+                FullText(
                     name,
                     color = androidx.compose.ui.graphics.Color.White,
                     fontSize = androidx.compose.ui.unit.TextUnit(15f, androidx.compose.ui.unit.TextUnitType.Sp),
@@ -1016,8 +1018,7 @@ private fun FocusedLine(
                     maxLines = 2,
                     lineHeight = androidx.compose.ui.unit.TextUnit(18f, androidx.compose.ui.unit.TextUnitType.Sp),
                     textAlign = if (centered) androidx.compose.ui.text.style.TextAlign.Center else androidx.compose.ui.text.style.TextAlign.Start,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    style = shadowStyle,
+                    style = shadowStyle, autoFit = false, reserve = false,
                     // (Update 250: where the name is, for the Shared move game window — GlanceOrigin.)
                     modifier = m.onGloballyPositioned { c ->
                         GlanceOrigin.name = GlanceOrigin.onScreen(c); GlanceOrigin.at = android.os.SystemClock.uptimeMillis()
