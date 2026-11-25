@@ -3192,6 +3192,53 @@ wg_nodump_why
         out = subprocess.run(["sh", "-c", f"echo '{line}' | {sed}"], capture_output=True, text=True).stdout.strip()
         self.assertEqual(out, "true")
 
+    def _menu_list_run(self, opened, closes):
+        # menu_list() of p2review.sh with every device call stubbed: the focus is the home ("MAIN") until the hook opens the
+        # list ("DLG" when [opened]); B closes it only when [closes]. Returns (log lines, keys pressed).
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = src[src.index("pctexts() {"):src.index("\nP=com.shelf.launcher.qa;")]
+        d = tempfile.mkdtemp()
+        home = '{"windows":[{"texts":[{"text":"Okami (USA)","len":11,"full":[0,0,1,1]}]}]}'
+        lst = '{"windows":[{"texts":[{"text":"Okami (USA)","len":11},{"text":"2 / 5  \u00b7  40 %","len":15,"full":[0,0,1,1]}]}]}'
+        stubs = f"""
+O={d}; TAG=t; MP=cross_trophies; WG_MAIN=MAIN; FOC=MAIN; MIX=g
+log() {{ echo "LOG $*"; }}; A() {{ case "$*" in *voltcap_test_achlist*) [ {1 if opened else 0} = 1 ] && FOC=DLG;; esac; }}
+sleep() {{ :; }}; gate() {{ :; }}; qawins() {{ echo 1; }}; wg_home() {{ [ $FOC = MAIN ] || echo "ABORT home"; }}
+wg_focus() {{ echo $FOC; }}; wg_hash() {{ echo $1; }}; wg_popup() {{ echo null; }}; wg_nodump_why() {{ :; }}
+wg_dialog() {{ WG_DLG=$FOC; }}; wg_key_dlg() {{ echo "KEY $1"; [ {1 if closes else 0} = 1 ] && FOC=MAIN; }}
+wg_window() {{ echo "ABORT win"; }}; closewin() {{ :; }}
+shot() {{ case $1 in *_home) printf '%s' '{home}' > $O/${{TAG}}_$1.json;; *) [ $FOC = DLG ] && printf '%s' '{lst}' > $O/${{TAG}}_$1.json || printf '%s' '{home}' > $O/${{TAG}}_$1.json;; esac; }}
+"""
+        out = subprocess.run(["sh", "-c", stubs + fn + "\nmenu_list CROSS CROSS"], capture_output=True, text=True).stdout.splitlines()
+        return [l[4:] for l in out if l.startswith("LOG ")], [l[4:] for l in out if l.startswith("KEY ")], out
+
+    def test_cross_default_menu_list_is_checked_not_left_untested_755a(self):
+        # (755a, review 45633462166: the Cross walk was NOT TESTED only because its default Achievements list (cross_trophies on)
+        # was never opened. After the walk, with the setting back on, menu_list() opens it the way the Achievements key does,
+        # checks the menu's own list came up (a dialog has the focus, its "earned / total  ·  N %" line) and B closes it.)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        run = src[src.index("\nrun)\n"):]
+        run = run[:run.index("\nrestore)\n")]
+        note = [l for l in run.splitlines() if "off for this walk" in l]
+        self.assertTrue(note); self.assertNotIn("NOT TESTED", note[0])
+        back = run.index('A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1')
+        self.assertLess(back, run.index("menu_list $lay"))
+        self.assertLess(run.index("menu_list $lay"), run.index('log "$lay done'))
+        self.assertIn('if [ "${MP_OLD:-true}" = true ]; then menu_list', run)
+        logs, keys, _ = self._menu_list_run(opened=True, closes=True)
+        self.assertEqual(keys, ["B"])
+        self.assertTrue(any("opened (count lines 0 -> 1) and B closed it" in l for l in logs), logs)
+        self.assertFalse(any("FAIL" in l for l in logs), logs)
+        # not opened: FAIL, nothing pressed
+        logs, keys, _ = self._menu_list_run(opened=False, closes=True)
+        self.assertEqual(keys, [])
+        self.assertTrue(any(l.startswith("CROSS: FAIL - its Achievements did not open") for l in logs), logs)
+        # B leaves it open: FAIL, one more B (only while the list has the focus), never the success line
+        logs, keys, out = self._menu_list_run(opened=True, closes=False)
+        self.assertEqual(keys, ["B", "B"])
+        self.assertTrue(any("FAIL - B left the menu's achievement list open" in l for l in logs), logs)
+        self.assertFalse(any("B closed it" in l for l in logs), logs)
+
     def test_the_main_window_is_not_a_game_window(self):
         rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
         self.assertEqual(rc, 4); self.assertEqual(keys, [])
