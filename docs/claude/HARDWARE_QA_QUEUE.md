@@ -106,6 +106,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (756a, rule 11, dev line 756a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-754a): a game's state badge (e.g.
+  MASTERED) on the game-look card, the Cube hub's console label + game count, Cross menu's achievement progress line under the
+  focused game (Trophies category), the Volt tab names - whole (shrink, then slide), never an ellipsis; rows keep their
+  heights. Second-screen showcase name (long name, 3 lines, centred) + second-screen details name (2 lines) on the Thor with
+  HW-26. D-pad + touch still work. Screenshots. Unit evidence only (LookTabsFullText756aTest; static TRUNCATE 19 -> 13).
 - Also (754a, rule 11, dev line 754a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-753a): the emulator picker (long emulator
   subtitles, two lines), the first-run accounts card's "Connected" mark, the who-is-playing profile names, a saved preset's long
   name, the manual reader's title + page counter, the game-look option labels (two lines) - whole (wrap, shrink, then slide),

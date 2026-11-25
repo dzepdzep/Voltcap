@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 16:45 UTC, 756a (cloud, rule 11):** Verify 310 on e0604ce GREEN. P2 branch moved (owner's live 682bb 6f6fd73 +
+merge d08182f) - left alone, P2 still waits for the owner's sheet review. Dev line: GameLookUi state badge, CubeHub console label
++ count, StyleCrossMenu progress line, VoltUi tab, SecondShowcase name, SecondScreen details name through FullText
+(LookTabsFullText756aTest 2/2, TRUNCATE 19 -> 13; HW-24 756a).
+NEXT: check Verify 310 on this push FIRST. Then the last rule 11 places (13 left; each needs care: StyleCustom (the user's own
+maxLines), StyleMagazine story (fills its column - scroll on focus?), WholeRows story (gives way by design - may deserve qa-ok
+with where it is whole), GameDock, HomeChrome, LauncherScreen, ScrollingName, StylePocketQuest, TileHome game name, BadgeWall,
+CollectorBacks canvas x2; FitText.kt:126 is a doc comment - mark it qa-ok), then the v0.6.74 list (badgecheck D357 fixtures,
+profile-picture corner, H16 polish). P2: only on an owner push / review or a red CI.
+
 **25 Nov 16:05 UTC, 755a (cloud, P2 review - all sets PASS):** Verify 310 on 9e7a8de GREEN. Review 45633462166 (CROSS) was NOT
 TESTED only because the walk logged Cross's default menu list (cross_trophies ON) as untested. P2 8dfd4f6 (ff on 777afa8):
 p2review menu_list() checks that list after the walk with the setting back on (QA hook = the Achievements key's state; the

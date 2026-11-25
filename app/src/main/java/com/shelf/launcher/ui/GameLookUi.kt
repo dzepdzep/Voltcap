@@ -75,13 +75,12 @@ internal fun GameStateTag(state: GameState, modifier: Modifier = Modifier, compa
     ) {
         Spacer(Modifier.size(6.dp).drawBehind { drawCircle(tint) })
         Spacer(Modifier.width(4.dp))
-        Text(
+        FullText( // (756a, rule 11: the state's name whole - readable size, then a slow slide)
             state.label,
             color = if (state == GameState.MASTERED || state == GameState.PERFECT) tint else Color.White,
-            fontSize = if (compact) 8.sp else 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 8.sp else 9.sp), maxFontSize = if (compact) 8.sp else 9.sp),
+            fontSize = if (compact) 8.sp else 9.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 0.6.sp,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            letterSpacing = 0.6.sp
         )
     }
 }

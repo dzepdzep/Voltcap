@@ -1,3 +1,16 @@
+# Update 756a (25 Nov 2026, cloud run) - rule 11: state badges, Cube hub labels, Cross progress line, Volt tabs and second-screen names show their text whole
+- CI first: Verify 310 on e0604ce (755a) GREEN. P2 branch moved (owner's 682bb) - untouched by this run.
+- Rule 11 (no "..." truncation): six texts move from `maxLines + TextOverflow.Ellipsis` to FullText (wrap, readable size,
+  then a slow slide): GameLookUi state badge (MASTERED / PERFECT ...), CubeHub console label (+ its "N games" line, which was
+  clipped silently), StyleCrossMenu's "e / t achievements · N %" line (Trophies category; "loading…" is the text's own
+  ellipsis), VoltUi tab names, SecondShowcase game name (3 lines, no reserved height - centred alone) and SecondScreen details
+  name (2 lines, no reserved height, so the console line under it sits where it did).
+- Test: LookTabsFullText756aTest 2/2 (fails on the 755a sources); PickerGuideFullText754aTest 2/2, CategoryStable394Test 6/6.
+  Static TRUNCATE 19 -> 13, TRUNCATE-CLIP 269 (unchanged). Cloud compiled (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{GameLookUi,CubeHub,StyleCrossMenu,VoltUi,SecondShowcase,SecondScreen}.kt,
+  app/src/test/java/com/shelf/launcher/ui/LookTabsFullText756aTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 756a KONKR; second screen with HW-26 Thor).
+
 # Update 755a (25 Nov 2026, cloud run) - P2 emulator review: Cross's default Achievements list is now checked instead of left untested
 - CI first: Verify 310 on 9e7a8de (754a) GREEN. P2 emulator review 45633462166 (P2:CROSS on 777afa8) VERDICT NOT TESTED at
   x1.3 + x1.0: the window walk itself was clean (all pages shot, destructive row armed and left, 0 launches, 0 FATAL, restore
