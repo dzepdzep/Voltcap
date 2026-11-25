@@ -1160,7 +1160,22 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if ((pkg in viewModel.uiState.value.libraryApps.added) != add) viewModel.toggleAppInLibrary(pkg)
         android.util.Log.e("VoltcapQA", "libapp ${if (add) "added" else "removed"} $pkg"); TestHooks.libApp.value = null
     } }
-    TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir), true); TestHooks.fixtureRoms.value = null } }
+    TestHooks.fixtureRoms.value?.let { dir -> LaunchedEffect(dir) { viewModel.scanLibraryFolders(listOf(dir) + listOfNotNull(TestHooks.extraRoot.value), true); TestHooks.fixtureRoms.value = null } }
+    // (681r: the library as shown - QA app only; the rescan check reads it after each step.)
+    val libDumpN = TestHooks.libDump.intValue
+    if (libDumpN > 0) LaunchedEffect(libDumpN) {
+        kotlinx.coroutines.delay(400)
+        val st = viewModel.uiState.value
+        val lines = buildList {
+            add("filter=${st.platformFilter ?: "ALL"} special=${st.specialFilter?.name ?: "-"} scanning=${st.isScanning}")
+            add("platforms=" + st.availablePlatforms.joinToString(","))
+            add("stops=" + com.shelf.launcher.data.CategoryStops.keys(st).joinToString(","))
+            add("visible=" + st.visibleGames.size)
+            st.games.filter { it.sourceType == com.shelf.launcher.data.SourceType.ROM }.forEach { add("game=${it.platform}|${it.name}|${it.romPath}") }
+        }
+        runCatching { java.io.File(viewModel.getApplication<android.app.Application>().getExternalFilesDir(null), "voltcap_qa_lib.txt").writeText(lines.joinToString("\n", postfix = "\n")) }
+        android.util.Log.e("VoltcapQA", "libdump " + lines.take(3).joinToString(" ; "))
+    }
     // (Update 503: the fixture library's late-arriving art + achievements, QA app only — QaArtFixture.kt.)
     QaArtFixture.spec.value?.let { d -> LaunchedEffect(d, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaArtFixture() } }
     QaArtFixture.scans.value?.let { on -> LaunchedEffect(on, state.games.size) { if (state.games.isNotEmpty()) viewModel.qaScanFixture(on) } }

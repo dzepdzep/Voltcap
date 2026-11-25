@@ -87,8 +87,8 @@ timeout 30 adb logcat -d | grep -iE "UnsatisfiedLink|dlopen|native|FATAL|$P" | t
 if [ -z "$PID" ]; then note "LAUNCH: FAILED (no process; see crash_log.txt / launch_log.txt) - every check BLOCKED"; exit 0; fi
 note "LAUNCH: running pid=$PID; crash buffer lines=$(wc -l < "$OUT/crash_log.txt") (FATAL: $(grep -c 'FATAL EXCEPTION' "$OUT/crash_log.txt"); processes: $(grep -o 'Process: [^,]*' "$OUT/crash_log.txt" | sort -u | tr '\n' ' '))"
 adb shell mkdir -p /data/local/tmp
-# (682r: p2review.sh sources winguard.sh beside it - without it the review ended before its first log line, 44339661824)
-for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh p2review.sh winguard.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
+# (682r: p2review.sh sources winguard.sh beside it; 681r: rescan681r.sh)
+for f in pop529.sh popclip.sh qaguard.sh evidence.sh rec.sh shelfpages529.sh p2review.sh winguard.sh rescan681r.sh; do adb push "tools/qa/device/$f" /data/local/tmp/ > /dev/null; done
 # 529p: preconditions before each sequence - emulator there, the QA app in front with nothing over its home (one visible
 # QA window: an in-app dialog is a second window with the same title), not on the profile picker. A failed precondition stops
 # the run: its sequence and every later one are NOT TESTED, with a screenshot of what was in front.
@@ -146,6 +146,24 @@ run_pop() { # tag scale layouts
 }
 # (679a, owner 17 Nov H9 pixel-font before / after: review mode - workflow_dispatch input review_layouts runs only those
 # layouts at x1.3 then x1.0 (screens for a side-by-side, graded as usual) and stops. Empty: the standard trial below.)
+# (681r: review_layouts "RESCAN" - the deleted-game rescan check, tools/qa/device/rescan681r.sh, on synthetic stand-ins in the
+# QA app's own folder. PASS only with every case PASS and no FAIL / STOP line.)
+if [ "${QA_REVIEW_LAYOUTS:-}" = RESCAN ]; then
+  precheck rs681r || finish
+  timeout 60 adb shell "cd /data/local/tmp && setsid sh rescan681r.sh run rs681r > /dev/null 2>&1 < /dev/null &"
+  if waitdone /sdcard/pc/rs681r rs681r 600; then note "rescan check: run finished"; else note "rescan check: DID NOT FINISH (NOT TESTED)"; fi
+  if [ "$(timeout 10 adb get-state 2>/dev/null)" = device ]; then
+    timeout 60 adb shell "cd /data/local/tmp && sh rescan681r.sh restore rs681r"
+    timeout 120 adb pull -a /sdcard/pc/rs681r "$OUT/raw/" > /dev/null 2>&1
+    { echo '```'; echo "rs681r log:"; cat "$OUT/raw/rs681r/log.txt" 2>/dev/null; echo '```'; } | tee -a "$S"
+    if grep -q "PASS c7" "$OUT/raw/rs681r/log.txt" 2>/dev/null && ! grep -qE "FAIL|STOP" "$OUT/raw/rs681r/log.txt"; then RS=PASS; else RS=FAIL; fi
+  else note "EMULATOR OFFLINE after rs681r - nothing pulled"; offline_why; RS=INFRA; fi
+  # (its own verdict: this mode is no popup gate - grade_trial has nothing to grade)
+  timeout 30 adb logcat -d -b crash > "$OUT/crash_log_end.txt" 2>&1
+  [ "$(grep -c 'FATAL EXCEPTION' "$OUT/crash_log_end.txt" 2>/dev/null)" = 0 ] || RS=FAIL
+  { echo "VERDICT: $RS"; echo "rescan check 681r (synthetic stand-ins in the QA app's own folder): $RS"; } > "$OUT/verdict.txt"
+  note "RESCAN 681r verdict: $RS"; exit 0
+fi
 # (P2 681b: review_layouts "P2:CRATE ..." - the native pages' review walk (tools/qa/device/p2review.sh) at x1.3 then x1.0:
 # a shot per page and its focused row, a track opened, the long list scrolled, a destructive row armed, the walk recorded.)
 p2run() { # tag scale layouts

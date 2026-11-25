@@ -5347,6 +5347,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     @Suppress("SENSELESS_COMPARISON")
     /** A real scan has set [currentRomGames]: the saved list (read in the background) must not replace it. */
     @Volatile private var romScanApplied = false
+    /** (681r) A ROM scan's verdict is in: an empty console may now be dropped from the selection (never from the saved list alone). */
+    private fun libraryReady(): Boolean = romScanApplied
 
     // (Update 188: read from the moment Voltcap starts — RomLibraryPrefetch.)
     private fun loadRomCache(): List<Game> = com.shelf.launcher.data.RomLibraryPrefetch.take { romCacheFile }
@@ -5438,6 +5440,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 return@launch
             }
 
+            // (681r, owner 17 Nov: the only game of a console folder, deleted, stayed listed after a rescan; a card that was out
+            // took its games off the list. One verdict for every scan - data/RomReconcile.kt: what the scan read and didn't find
+            // is gone, what it couldn't read stays, nothing at all read is no verdict.)
+            val next = result?.let { com.shelf.launcher.data.RomReconcile.apply(currentRomGames, it, roots, explicit = !silent) }
             when {
                 result == null -> _uiState.update {
                     it.copy(
@@ -5446,12 +5452,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             "Couldn't read $rootPath — check the path and storage permission."
                     )
                 }
-                result.games.isEmpty() -> {
-                    // (Batch 523, owner: deleted games stayed after a rescan. A rescan YOU started that read every folder and
-                    // found no games means they are gone: the list follows. An automatic scan finding nothing is still
-                    // treated as storage not mounted yet - the saved list stays, as before.)
-                    if (!silent && result.unreadable.isEmpty() && currentRomGames.isNotEmpty()) {
+                next == null || next.isEmpty() -> {
+                    if (next != null && currentRomGames.isNotEmpty()) {
                         currentRomGames = emptyList()
+                        romScanApplied = true
                         withContext(Dispatchers.IO) { saveRomCache(emptyList()) }
                         recombineGames()
                     }
@@ -5459,7 +5463,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                         it.copy(
                             isScanning = false,
                             statusMessage = if (silent) it.statusMessage else
-                                "No ROMs found in $rootPath for the known file types."
+                                if (next == null && result.unreadable.isNotEmpty()) "Couldn't read ${result.unreadable.joinToString(", ")} — nothing was taken off your library."
+                                else "No ROMs found in $rootPath for the known file types."
                         )
                     }
                 }
@@ -5467,13 +5472,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                     // The game you're on stays selected (the startup scan finishes after the saved list is
                     // already showing and the last game re-selected: it used to jump back to the first game).
                     val keyBefore = _uiState.value.let { it.visibleGames.getOrNull(it.focusedIndex)?.stableKey }
-                    currentRomGames = result.games
+                    currentRomGames = next
                     romScanApplied = true
                     // Update 177: multi-disc games without a playlist and doubles, for Library check.
                     com.shelf.launcher.data.LibraryCheck.missingM3u = result.missingM3u
                     com.shelf.launcher.data.LibraryCheck.duplicates = result.duplicates
                     com.shelf.launcher.data.LibraryCheck.scanned = true
-                    withContext(Dispatchers.IO) { saveRomCache(result.games) }
+                    withContext(Dispatchers.IO) { saveRomCache(next) }
                     recombineGames()
                     val discNote = when {
                         result.multiDiscGroupsCreated > 0 && result.multiDiscWriteFailures > 0 ->
@@ -5492,6 +5497,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                             focusedIndex = if (kept >= 0) kept else it.focusedIndex.coerceIn(0, (it.visibleGames.size - 1).coerceAtLeast(0)),
                             isScanning = false,
                             statusMessage = if (silent) null else "Found ${result.games.size} ROMs.$discNote" +
+                                (if (next.size > result.games.size) " Kept ${next.size - result.games.size} from folders that couldn't be read." else "") +
                                 (if (result.unreadable.isNotEmpty()) " Couldn't read: ${result.unreadable.joinToString(", ")}." else "")
                         )
                     }
@@ -5537,9 +5543,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             // (While restoring after a game the library may not be complete yet: finishRestore checks later.)
             val stillThere = restoreActive || !com.shelf.launcher.data.isCollectionKey(it.platformFilter) ||
                 built.any { c -> c.key == it.platformFilter }
+            // (681r: a console whose last game is gone is no category any more - its selection falls back to All, at once.
+            // Not while the library is still being restored, and never for a collection or the Android games list.)
+            val pf = if (!stillThere) null else if (restoreActive || !libraryReady()) it.platformFilter
+                else com.shelf.launcher.data.RomReconcile.platformFilterAfter(it.platformFilter, it.availablePlatforms,
+                    com.shelf.launcher.data.isCollectionKey(it.platformFilter), it.platformFilter == ANDROID_GAMES_PLATFORM)
+            if (pf != it.platformFilter) preferencesStore.setLastPlatformFilter(pf)
             it.copy(
                 collections = built, userCollections = user, playStatuses = statuses,
-                platformFilter = if (stillThere) it.platformFilter else null
+                platformFilter = pf
             )
         }
         // The saved game may live in a collection that only exists now.
