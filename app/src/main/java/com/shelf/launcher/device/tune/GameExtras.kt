@@ -52,6 +52,7 @@ object GameExtras {
     }
 
     fun apply(context: Context, p: TuneProfile) {
+        if (TuneSim.on) return // (682bd: the QA app's simulated tuner never changes the real screen rate, buttons or charging)
         if (p.refreshHz <= 0 && p.buttonLayout == null && p.chargeLimit == null) return
         runCatching {
             // A game started straight after another: keep the values from before the first one.
@@ -72,6 +73,7 @@ object GameExtras {
 
     /** Back in Voltcap: put back what the game changed (also after Voltcap was closed in between). */
     fun restore(context: Context) {
+        if (TuneSim.on) return
         val s = saved ?: load(context) ?: return
         saved = null
         appliedHz = null

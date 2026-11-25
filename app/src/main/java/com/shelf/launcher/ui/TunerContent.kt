@@ -73,6 +73,7 @@ fun TunerSettingsContent() {
     var perConsole by remember { mutableStateOf(store.consoleProfiles) }
     var heatGuard by remember { mutableStateOf(store.heatGuard) }
     var heatC by remember { mutableStateOf(store.heatGuardC) }
+    var heatPreset by remember { mutableStateOf(store.heatGuardPreset) }
     var measure by remember { mutableStateOf(store.measure) }
     val status by Tuner.status.collectAsState()
     val hw = rememberTuneHw()
@@ -84,7 +85,7 @@ fun TunerSettingsContent() {
     androidx.compose.runtime.LaunchedEffect(sync) {
         if (sync > 0) {
             profile = store.global(); led = store.ledStatus; sleep = store.sleepProfile
-            perConsole = store.consoleProfiles; heatGuard = store.heatGuard; heatC = store.heatGuardC; measure = store.measure
+            perConsole = store.consoleProfiles; heatGuard = store.heatGuard; heatC = store.heatGuardC; heatPreset = store.heatGuardPreset; measure = store.measure
         }
     }
 
@@ -121,17 +122,11 @@ fun TunerSettingsContent() {
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.Thermostat, "Heat guard",
-        "While a game runs hot, the underclock steps down one level at a time (up to Heavy) and back up once it has cooled down.",
+        "While a game runs hot, Voltcap lowers its own speed caps a little at a time and gives the speed back once it has cooled. Temporary: your profiles stay as they are, and the handheld's own thermal protection always stays in charge.",
         heatGuard, onChange = { heatGuard = it; store.heatGuard = it; Tuner.profileChanged(context, null) }
     )
-    if (heatGuard) {
-        ChipFlow {
-            listOf(75, 80, 85, 90).forEach { c ->
-                Chip("$c °C", accent = heatC == c) { heatC = c; store.heatGuardC = c; Tuner.profileChanged(context, null) }
-            }
-        }
-        MutedNote("Steps down after 8 seconds at or above $heatC °C, back up after 45 seconds below ${heatC - 8} °C.")
-    }
+    if (heatGuard) HeatGuardChoices(heatPreset, heatC, { heatPreset = it; store.heatGuardPreset = it; Tuner.profileChanged(context, null) },
+        { heatC = it; store.heatGuardC = it; Tuner.profileChanged(context, null) })
     Spacer(Modifier.height(8.dp))
     SwitchRow(
         Icons.Filled.QueryStats, "Measure each game",
@@ -184,7 +179,9 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
             val auc = s.autoUnderclock
             if (auc != null && !s.sleeping) add("Underclock ${auc.label} (set by AutoTDP)")
             else p.underclockPart()?.let { add(it) }
-            if (s.heatStep > 0) add("heat guard: ${s.heatStep} step${if (s.heatStep == 1) "" else "s"} lower")
+            // (682bd: what is temporary, said apart from the profile - the heat guard's cut and the handheld's own limit.)
+            if (s.heatCut > 0) add("heat guard −${s.heatCut} % for now")
+            if (s.vendorThrottle) add("the handheld's own thermal limit is holding it")
             s.targetFps?.let { add("target $it fps") }
             // (Update 429: e.g. "target not reachable within the power budget" — said, not hidden.)
             if (p.autoTdp && !s.sleeping) s.tdpState?.label?.let { add(it) }
@@ -716,4 +713,35 @@ private fun TierBreakdown(p: TuneProfile, h: TuneHw?) {
             }
         }
     }
+}
+
+/**
+ * (682bd) The heat guard's behaviour and limit - the tuner page and the R1 tile's sheet use the same rows. The limits offered
+ * stay 5 °C under the handheld's own first thermal trip where it is known ([TuneHardware.vendorTripC]).
+ */
+@Composable
+internal fun HeatGuardChoices(
+    preset: com.shelf.launcher.device.tune.HeatGuardPreset, limitC: Int,
+    onPreset: (com.shelf.launcher.device.tune.HeatGuardPreset) -> Unit, onLimit: (Int) -> Unit
+) {
+    val trip by androidx.compose.runtime.produceState<Int?>(null) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { runCatching { TuneHardware.vendorTripC() }.getOrNull() }
+    }
+    val maxC = com.shelf.launcher.device.tune.HeatGuard.maxLimitFor(trip)
+    Spacer(Modifier.height(6.dp))
+    Text("Behaviour", color = ShelfTheme.textMuted, fontSize = 12.sp)
+    ChipFlow {
+        com.shelf.launcher.device.tune.HeatGuardPreset.values().forEach { p -> Chip(p.label, accent = preset == p) { onPreset(p) } }
+    }
+    MutedNote(preset.blurb + ".")
+    Spacer(Modifier.height(6.dp))
+    Text("Limit", color = ShelfTheme.textMuted, fontSize = 12.sp)
+    ChipFlow {
+        com.shelf.launcher.device.tune.HeatGuard.THRESHOLDS.filter { it <= maxC }.forEach { c -> Chip("$c °C", accent = limitC == c) { onLimit(c) } }
+    }
+    MutedNote(
+        "Reads the hottest CPU / GPU core. Steps in after ${preset.triggerMs / 1000} s over $limitC °C (spikes shorter than about " +
+            "${preset.tauS.toInt()} s don't count), ${preset.stepPercent} % at a time; gives it back after ${preset.coolMs / 1000} s under " +
+            "${limitC - preset.coolBelowC.toInt()} °C." + (trip?.let { " This handheld starts its own throttling at $it °C." } ?: "")
+    )
 }

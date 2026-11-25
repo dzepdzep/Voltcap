@@ -29,7 +29,9 @@ enum class DeviceControl(val label: String) {
     /** AutoTDP on / off for the device-wide tuner profile. */
     AUTO_TDP("AutoTDP"),
     /** Underclock, ClusterTune / PULSE style: Off → Light → Medium → Heavy (→ Custom) ceilings per cluster. */
-    UNDERCLOCK("Underclock")
+    UNDERCLOCK("Underclock"),
+    /** 682bd: the tuner's heat guard - on / off, its behaviour and limit (hold: the choices and what it is doing). */
+    HEAT_GUARD("Heat guard")
 }
 
 /** What a tile shows: on/off look plus a short value ("Smart", "120 Hz"); null value = plain toggle. */
@@ -90,6 +92,8 @@ object DeviceControls {
                 DeviceControl.CPU_CAP -> RootShell.available && (com.shelf.launcher.device.tune.Tuner.supported || CpuTuning.capSupported())
                 DeviceControl.AUTO_TDP -> RootShell.available && com.shelf.launcher.device.tune.Tuner.supported
                 DeviceControl.UNDERCLOCK -> RootShell.available && com.shelf.launcher.device.tune.Tuner.supported
+                // (Wherever the tuner works - also on the QA app's simulated hardware; it never needs Android's quick settings.)
+                DeviceControl.HEAT_GUARD -> com.shelf.launcher.device.tune.Tuner.supported
                 else -> root
             }
         }
@@ -144,6 +148,11 @@ object DeviceControls {
             } else CpuTuning.currentCap().let { ControlState(it < 98, if (it >= 98) "Off" else "$it%") }
             DeviceControl.AUTO_TDP -> com.shelf.launcher.device.tune.TuneStore(context).global().let {
                 ControlState(it.autoTdp, if (it.autoTdp) it.autoMode.label else "Off")
+            }
+            DeviceControl.HEAT_GUARD -> com.shelf.launcher.device.tune.TuneStore(context).let { st ->
+                val live = com.shelf.launcher.device.tune.Tuner.status.value
+                ControlState(st.heatGuard, if (!st.heatGuard) "Off" else if (live.heatCut > 0) "−${live.heatCut} % now"
+                    else "${st.heatGuardPreset.label} ${st.heatGuardC} °C")
             }
             DeviceControl.UNDERCLOCK -> com.shelf.launcher.device.tune.TuneStore(context).global().let {
                 // While it is on, the top speed it holds right now follows the level ("Light 2.4 GHz").
@@ -220,6 +229,11 @@ object DeviceControls {
                 else CpuTuning.cycleCap() != null
             DeviceControl.AUTO_TDP -> { com.shelf.launcher.device.tune.Tuner.cycleAutoTdp(context); true }
             DeviceControl.UNDERCLOCK -> { com.shelf.launcher.device.tune.Tuner.cycleUnderclock(context); true }
+            DeviceControl.HEAT_GUARD -> com.shelf.launcher.device.tune.TuneStore(context).let { st ->
+                st.heatGuard = !st.heatGuard
+                com.shelf.launcher.device.tune.Tuner.profileChanged(context, null)
+                true
+            }
         }
     }
 

@@ -7,6 +7,7 @@ import com.shelf.launcher.data.withDockHere
 import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.AspectRatio
@@ -282,6 +283,7 @@ fun QuickSettingsCard(
     var showBattery by remember { mutableStateOf(false) }
     var showBatteryWatch by remember { mutableStateOf(false) }
     var showSaver by remember { mutableStateOf(false) } // (Update 187)
+    var showHeat by remember { mutableStateOf(false) } // (682bd: the heat guard tile's hold)
     var showProfile by remember { mutableStateOf(false) }
     // The game's power profile, short ("Own · Balanced"): a prefs read, off the main thread.
     val profileLabel by produceState<String?>(null, home?.gameKey, refresh, sync, showProfile) {
@@ -1084,7 +1086,7 @@ fun QuickSettingsCard(
             // 0.6.18: hold Controller style: the handheld's own settings (Input › Controller style), else Voltcap's Controls.
             val hold: (() -> Unit)? = if (control == com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE || control == com.shelf.launcher.device.DeviceControl.TRIGGER_MODE) {
                 com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context)?.let { i -> { runCatching { context.startActivity(i) }; Unit } }
-            } else null
+            } else if (control == com.shelf.launcher.device.DeviceControl.HEAT_GUARD) { { showHeat = true } } else null
             add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on, longAction = hold) {
                 scope.launch {
                     if (!st.supported) {
@@ -1449,6 +1451,7 @@ fun QuickSettingsCard(
     if (showSpacing && home != null) GameSpacingPopup(home, onDismiss = { showSpacing = false })
     if (showBatteryWatch) BatteryWatchPopup(onDismiss = { showBatteryWatch = false })
     if (showSaver) BatterySaverPopup(onDismiss = { showSaver = false })
+    if (showHeat) HeatGuardPopup(onDismiss = { showHeat = false; deviceRefresh++ })
     if (showBattery) BatteryChargePopup(onDismiss = { showBattery = false; refresh++ })
     if (showProfile && home != null) GameProfilePopup(home, onDismiss = { showProfile = false })
     if (showLights) {
@@ -1620,6 +1623,7 @@ private fun deviceLabel(c: com.shelf.launcher.device.DeviceControl, value: Strin
         com.shelf.launcher.device.DeviceControl.CPU_CAP -> "Power"
         com.shelf.launcher.device.DeviceControl.AUTO_TDP -> "AutoTDP"
         com.shelf.launcher.device.DeviceControl.UNDERCLOCK -> "Underclock"
+        com.shelf.launcher.device.DeviceControl.HEAT_GUARD -> "Heat guard"
     }
     // Controller layout names follow the legend's wording (Xbox / Retro).
     val v = value?.replace("Nintendo", "Retro")
@@ -1642,6 +1646,7 @@ private fun deviceIcon(c: com.shelf.launcher.device.DeviceControl): ImageVector 
     com.shelf.launcher.device.DeviceControl.CPU_CAP -> Icons.Filled.Memory
     com.shelf.launcher.device.DeviceControl.AUTO_TDP -> Icons.Filled.Speed
     com.shelf.launcher.device.DeviceControl.UNDERCLOCK -> Icons.Filled.DeveloperBoard
+    com.shelf.launcher.device.DeviceControl.HEAT_GUARD -> Icons.Filled.Thermostat
 }
 
 @Composable

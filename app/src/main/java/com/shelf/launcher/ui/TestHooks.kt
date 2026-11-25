@@ -490,6 +490,38 @@ internal object TestHooks {
                 android.util.Log.i("VoltcapTdp", "test profile $t -> ${r?.getOrNull()?.summaryForQa() ?: "saved profiles"}")
             }
         }
+        // 682bd: `--es voltcap_test_tunesim on|off|temp:<C>|launch:<key>|<name>|<package>[|<platform>|<console>]|end|fg:<package>`
+        // - the tuner on SIMULATED hardware (TuneSim: in memory, isolated QA app only - no clock, fan or thermal file is
+        // touched), a temperature for the heat guard, and the tuner's game start / end / foreground calls WITHOUT starting
+        // anything (no game is launched). For the notification, the heat guard, the R1 tile and the resume rule on handhelds.
+        intent?.getStringExtra("voltcap_test_tunesim")?.let { t ->
+            val iso = com.shelf.launcher.data.QaVariant.isolated(context)
+            if (enabled(context) && iso) {
+                val app = context.applicationContext
+                val T = com.shelf.launcher.device.tune.Tuner
+                Thread {
+                    runCatching {
+                        when {
+                            t == "on" || t == "off" -> {
+                                com.shelf.launcher.device.tune.TuneSim.set(t == "on", iso)
+                                T.resetSupported(); T.start(app); if (t == "on") T.applyGlobal(app)
+                            }
+                            t.startsWith("temp:") -> com.shelf.launcher.device.tune.TuneSim.tempC = t.removePrefix("temp:").toFloat()
+                            t.startsWith("launch:") && com.shelf.launcher.device.tune.TuneSim.on -> {
+                                val a = t.removePrefix("launch:").split('|')
+                                T.onGameLaunch(app, a[0], a.getOrElse(1) { a[0] }, a.getOrNull(2)?.ifBlank { null }, a.getOrNull(3)?.ifBlank { null }, a.getOrNull(4)?.ifBlank { null })
+                            }
+                            t == "end" && com.shelf.launcher.device.tune.TuneSim.on -> T.onGameEnded(app)
+                            t.startsWith("fg:") && com.shelf.launcher.device.tune.TuneSim.on -> T.onForeground(app, t.removePrefix("fg:"))
+                        }
+                        val st = T.status.value
+                        android.util.Log.i("VoltcapTdp", "tunesim $t -> on=${com.shelf.launcher.device.tune.TuneSim.on} supported=${st.supported} source=${st.source} kind=${st.sourceKind} " +
+                            "uc=${st.profile.underclock} auto=${st.profile.autoTdp}:${st.profile.autoMode} heatStep=${st.heatStep} heatCut=${st.heatCut} heatC=${st.heatC} " +
+                            "line='" + com.shelf.launcher.device.tune.powerLine(st.profile, st.autoUnderclock, st.heatCut, st.sourceKind, st.source, st.vendorThrottle) + "' writes=${com.shelf.launcher.device.tune.TuneSim.writes.size}")
+                    }.onFailure { android.util.Log.e("VoltcapTdp", "tunesim $t failed: $it") }
+                }.start()
+            } else android.util.Log.e("VoltcapTdp", "tunesim $t refused (not the isolated QA app or hooks off)")
+        }
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
         val snap = intent?.getStringExtra("voltcap_test_snapshot")

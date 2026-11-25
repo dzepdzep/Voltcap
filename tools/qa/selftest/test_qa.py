@@ -2991,6 +2991,25 @@ echo FINISHED >> {d}/log.txt
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
+    def test_682bd_persistdiff_names_a_changed_setting_and_ignores_time_stamps(self):
+        import tempfile, tarfile, io
+        d = tempfile.mkdtemp()
+        try:
+            def tar(name, xmls):
+                with tarfile.open(os.path.join(d, name), "w") as t:
+                    for fn, body in xmls.items():
+                        b = body.encode(); ti = tarfile.TarInfo("shared_prefs/" + fn + ".xml"); ti.size = len(b); t.addfile(ti, io.BytesIO(b))
+            x = lambda inner: "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map>" + inner + "</map>"
+            tar("snap_0_a.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"OFF"}}</string><long name="last_at" value="1" />')})
+            tar("snap_1_b.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"OFF"}}</string><long name="last_at" value="2" />')})
+            r = subprocess.run([sys.executable, os.path.join(HERE, "..", "tools", "persistdiff.py"), d], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            tar("snap_2_c.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"AUTO"}}</string><long name="last_at" value="3" />')})
+            r = subprocess.run([sys.executable, os.path.join(HERE, "..", "tools", "persistdiff.py"), d], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("tuner › per_game: changed", r.stdout)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
     def test_682bc_d395_a_finished_run_leaves_no_watchdog_sleep(self):
         # D395 (HW-29 krc13_1 / rrc13_1): the device's sh held the TERM until the dog's sleep ended - the dog of a finished run
         # sat on, due to put the QA app back over the next run. The EXIT trap kills the dog with KILL and then its sleep.

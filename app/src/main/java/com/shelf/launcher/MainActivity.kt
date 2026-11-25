@@ -411,6 +411,8 @@ class MainActivity : ComponentActivity() {
         com.shelf.launcher.data.ChargeLog.inFront = false
         // Update 274: when Voltcap left the front — a game picked from Recents afterwards still gets its play time.
         runCatching { com.shelf.launcher.data.PlaytimeStore(app).markAway(System.currentTimeMillis()) }
+        // 682bd (owner 25 Nov 21:24): a library game picked from Recents afterwards gets its own performance profile.
+        runCatching { com.shelf.launcher.device.tune.Tuner.onVoltcapLeft(app) }
     }
 
     // A game started (Voltcap hidden) or Android needs memory: give the decoded art back, all of it

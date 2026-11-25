@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -376,7 +378,7 @@ internal fun r1Order(saved: List<String>, built: List<String>): List<String> {
  * Game size and the carousel's spacing stay separate controls.
  */
 /** Update 491 (R0): tiles added after the owner's arrangement existed — always after the older tiles, in More. */
-internal val R1_APPENDED = listOf("layoutopts", "spacing", "focuspos") // (723a: Focus position)
+internal val R1_APPENDED = listOf("layoutopts", "spacing", "focuspos", "dev_HEAT_GUARD") // (723a: Focus position; 682bd: Heat guard)
 
 internal object R1Spacing {
     fun prefFor(l: com.shelf.launcher.data.HomeLayout): com.shelf.launcher.data.Features.IntPref? = when (l) {
@@ -413,4 +415,37 @@ internal object R1Spacing {
     val STEPS = listOf(80, 100, 120, 150)
     fun next(now: Int): Int = STEPS.firstOrNull { it > now + 2 } ?: STEPS.first()
     fun label(v: Int): String = when { v < 93 -> "Tight"; v > 135 -> "Wide"; v > 107 -> "Roomy"; else -> "Normal" }
+}
+
+/**
+ * 682bd: holding the R1 heat guard tile - on / off, Gentle / Balanced / Aggressive, the limit, and what it is doing now (the
+ * temporary cut, the smoothed reading, the handheld's own thermal limit) - kept apart from any profile.
+ */
+@Composable
+internal fun HeatGuardPopup(onDismiss: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val store = remember { com.shelf.launcher.device.tune.TuneStore(context) }
+    var on by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(store.heatGuard) }
+    var preset by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(store.heatGuardPreset) }
+    var limit by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(store.heatGuardC) }
+    val st by com.shelf.launcher.device.tune.Tuner.status.collectAsState()
+    fun changed() = com.shelf.launcher.device.tune.Tuner.profileChanged(context, null)
+    ShelfDialog(
+        icon = androidx.compose.material.icons.Icons.Filled.Thermostat, title = "Heat guard",
+        subtitle = "Temporary: lowers Voltcap's own speed caps while a game runs hot. Your profiles stay as they are.",
+        onDismiss = onDismiss, maxContentHeightFraction = 0.75f
+    ) {
+        SwitchRow(androidx.compose.material.icons.Icons.Filled.Thermostat, "Heat guard", if (on) "On" else "Off", on,
+            onChange = { on = it; store.heatGuard = it; changed() })
+        if (on) HeatGuardChoices(preset, limit, { preset = it; store.heatGuardPreset = it; changed() }, { limit = it; store.heatGuardC = it; changed() })
+        Spacer(Modifier.height(8.dp))
+        MutedNote(
+            when {
+                !on -> "Off: only the handheld's own thermal protection acts."
+                st.heatCut > 0 -> "Now: −${st.heatCut} % on the speed caps" + (st.heatC?.let { " (about ${it.toInt()} °C)" } ?: "") + " - comes back once it cools."
+                st.source == "Device" -> "Now: waiting for a game (it acts only while one runs)."
+                else -> "Now: not restricting" + (st.heatC?.let { " (about ${it.toInt()} °C)" } ?: "") + "."
+            } + if (st.vendorThrottle) " The handheld's own thermal limit is holding the clocks lower right now." else ""
+        )
+    }
 }

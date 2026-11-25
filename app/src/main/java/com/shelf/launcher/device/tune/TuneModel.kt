@@ -319,8 +319,13 @@ class TuneStore(context: Context) {
         set(v) { prefs.edit().putBoolean("heat_guard", v).apply() }
 
     var heatGuardC: Int
-        get() = prefs.getInt("heat_guard_c", 85).coerceIn(60, 95)
-        set(v) { prefs.edit().putInt("heat_guard_c", v.coerceIn(60, 95)).apply() }
+        get() = prefs.getInt("heat_guard_c", 85).coerceIn(HeatGuard.MIN_C, HeatGuard.MAX_C)
+        set(v) { prefs.edit().putInt("heat_guard_c", v.coerceIn(HeatGuard.MIN_C, HeatGuard.MAX_C)).apply() }
+
+    /** (682bd) How the heat guard acts: Gentle / Balanced (default) / Aggressive ([HeatGuardPreset]). */
+    var heatGuardPreset: HeatGuardPreset
+        get() = HeatGuardPreset.of(prefs.getString("heat_guard_preset", null))
+        set(v) { prefs.edit().putString("heat_guard_preset", v.name).apply() }
 
     /** Records what each profile costs per game (battery, watts, temperature, frame rate). */
     var measure: Boolean

@@ -140,8 +140,10 @@ class TuneOverride682bdTest {
         assertEquals("AutoTDP Balanced · Underclock Light (with power) · Device-wide", powerLine(withPower, null, 0, TuneSource.DEVICE, "Device"))
         assertEquals("AutoTDP Balanced · Underclock Medium (with power) · PS2 profile",
             powerLine(withPower, Underclock.MEDIUM, 0, TuneSource.CONSOLE, "PS2 profile"))
-        assertEquals("Stock · Underclock Off · hot: 1 lower · App profile",
-            powerLine(TuneProfile(underclock = Underclock.OFF), null, 1, TuneSource.APP, "Doom"))
+        assertEquals("Stock · Underclock Off · Heat guard −7 % for now · App profile",
+            powerLine(TuneProfile(underclock = Underclock.OFF), null, 7, TuneSource.APP, "Doom"))
+        assertEquals("Stock · Underclock Off · Handheld's own thermal limit · Device-wide",
+            powerLine(TuneProfile(underclock = Underclock.OFF), null, 0, TuneSource.DEVICE, "Device", vendorThrottle = true))
         assertEquals("Game profile: Doom", TuneSource.GAME.text("Doom"))
         assertEquals("PS2 profile", TuneSource.CONSOLE.text("PS2 profile"))
         // "With power" that lowers nothing names nothing; a chosen level is named plainly.

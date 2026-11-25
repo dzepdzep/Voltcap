@@ -7029,6 +7029,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     init {
+        // 682bd: the Android games the tuner may recognise in front (their stableKey is their package) - Tuner.libraryApps.
+        viewModelScope.launch {
+            // (Only when the games list itself changes - not on every focus move.)
+            uiState.map { it.games }.distinctUntilChanged { a, b -> a === b }.collect { games ->
+                val m = games.asSequence().filter { it.sourceType == SourceType.APP && it.packageName != null && it.stableKey == it.packageName }
+                    .associate { it.packageName!! to it.name }
+                if (m != com.shelf.launcher.device.tune.Tuner.libraryApps) com.shelf.launcher.device.tune.Tuner.libraryApps = m
+            }
+        }
         // Update 450: read-only QA probe (voltcap_test_appinfo).
         com.shelf.launcher.ui.TestHooks.appProbe = { pkg -> runCatching { appProbe(pkg) }.getOrElse { "voltcap_state=error ${it.message}" } }
         // Update 451: QA snapshots keep / put back / check the selected category, focused game and profile.

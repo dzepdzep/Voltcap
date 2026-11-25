@@ -45,12 +45,17 @@ object TuneHardware {
     @Volatile private var fanProbed = false
     @Volatile private var fanPeriod: Int? = null
 
-    val available: Boolean get() = RootShell.available
+    // (682bd: or the QA app's simulated hardware - TuneSim, isolated QA app only, never real files.)
+    val available: Boolean get() = TuneSim.on || RootShell.available
+
+    /** (682bd) Forget what was probed (TuneSim switched on / off). */
+    fun resetCaches() { clusterCache = null; gpuCache = null; gpuProbed = false; fanProbed = false; fanPeriod = null; overridesCache = null; overridesProbed = false; zones = null; tripCache = null; tripProbed = false }
 
     private fun safe(path: String) = path.matches(Regex("[A-Za-z0-9_/.@\\-]+"))
 
     fun read(path: String): String? {
         if (!safe(path)) return null
+        if (TuneSim.on) return TuneSim.read(path)
         val out = RootShell.exec("cat $path") ?: return null
         return out.trim().takeUnless { it.isEmpty() || it.contains("No such file") || it.contains("denied") }
     }
@@ -66,6 +71,7 @@ object TuneHardware {
         val parts = writes.filter { (p, v) -> safe(p) && v.matches(Regex("[A-Za-z0-9_.:\\- ]+")) }
             .map { (p, v) -> if (v.contains(' ') || v.contains(':')) "echo '$v' > $p" else "echo $v > $p" }
         if (parts.isEmpty()) return true
+        if (TuneSim.on) { writes.filter { (p, v) -> safe(p) && v.matches(Regex("[A-Za-z0-9_.:\\- ]+")) }.forEach { (p, v) -> TuneSim.write(p, v) }; return true }
         return RootShell.execAll(parts)
     }
 
@@ -75,6 +81,7 @@ object TuneHardware {
      */
     fun readMany(paths: List<String>): List<String?> {
         if (paths.isEmpty()) return emptyList()
+        if (TuneSim.on) return paths.map { TuneSim.read(it) }
         val out = ArrayList<String?>(paths.size)
         // "cd <dir> && for f in a b; do echo "$(cat $f)"; done", joined: as many files per call as fit.
         fun command(chunk: List<String>): String {
@@ -115,7 +122,7 @@ object TuneHardware {
         // Update 201: `ls -d` printed one policy per line and AYN's root service only returns the first line, so every
         // AYN handheld showed a single "CPU (cores 0 1 2)" cluster: Big and Prime were never capped, AutoTDP only moved
         // the little cores and the prime-core slider was missing. The shell's glob prints them all on one line.
-        val ls = RootShell.exec("echo $CPUFREQ/policy*") ?: return emptyList()
+        val ls = (if (TuneSim.on) TuneSim.policies() else RootShell.exec("echo $CPUFREQ/policy*")) ?: return emptyList()
         val raw = ls.split(Regex("\\s+")).map { it.trim() }.filter { it.matches(Regex("$CPUFREQ/policy[0-9]+")) }.mapNotNull { p ->
             val max = read("$p/cpuinfo_max_freq")?.toIntOrNull() ?: return@mapNotNull null
             val min = read("$p/cpuinfo_min_freq")?.toIntOrNull() ?: 0
@@ -291,9 +298,9 @@ object TuneHardware {
 
     fun hasCustomFan(): Boolean = fanPeriod() != null
 
-    fun fanMode(): Int? = RootShell.exec("settings get system fan_mode")?.trim()?.toIntOrNull()
+    fun fanMode(): Int? = if (TuneSim.on) TuneSim.fanMode else RootShell.exec("settings get system fan_mode")?.trim()?.toIntOrNull()
 
-    fun setFanMode(mode: Int) { RootShell.exec("settings put system fan_mode $mode") }
+    fun setFanMode(mode: Int) { if (TuneSim.on) { TuneSim.fanMode = mode; TuneSim.writes += "fan_mode=$mode" } else RootShell.exec("settings put system fan_mode $mode") }
 
     fun setFanPercent(percent: Int): Boolean {
         val period = fanPeriod() ?: return false
@@ -316,6 +323,7 @@ object TuneHardware {
      */
     fun socTempC(): Float? {
         if (!available) return null
+        if (TuneSim.on) return TuneSim.tempC
         val z = zones ?: run {
             val out = RootShell.execJoined("for z in /sys/class/thermal/thermal_zone*; do echo \"\${z##*zone} \$(cat \$z/type)\"; done", ';')
                 ?: return null
@@ -331,5 +339,25 @@ object TuneHardware {
         val out = RootShell.execJoined("for n in ${z.joinToString(" ")}; do cat /sys/class/thermal/thermal_zone\$n/temp; done") ?: return null
         return out.split(Regex("\\s+")).mapNotNull { it.trim().toFloatOrNull() }
             .map { if (it > 1000f) it / 1000f else it }.filter { it in 5f..130f }.maxOrNull()
+    }
+
+    @Volatile private var tripCache: Int? = null
+    @Volatile private var tripProbed = false
+
+    /**
+     * (682bd) The handheld's own first thermal trip on the zones the heat guard reads, °C - the lowest trip point between 60
+     * and 130 °C (the RP Classic: 95). Read only - Voltcap never writes a thermal file. Null: not known.
+     */
+    fun vendorTripC(): Int? {
+        if (tripProbed) return tripCache
+        tripProbed = true
+        if (!available) return null
+        if (TuneSim.on) { tripCache = TuneSim.TRIP_C; return tripCache }
+        socTempC() // finds the zones
+        val z = zones?.takeIf { it.isNotEmpty() } ?: return null
+        val out = RootShell.execJoined("for n in ${z.joinToString(" ")}; do cat /sys/class/thermal/thermal_zone\$n/trip_point_*_temp; done") ?: return null
+        tripCache = out.split(Regex("\\s+")).mapNotNull { it.trim().toFloatOrNull() }.map { if (it > 1000f) it / 1000f else it }
+            .filter { it in 60f..130f }.minOrNull()?.toInt()
+        return tripCache
     }
 }
