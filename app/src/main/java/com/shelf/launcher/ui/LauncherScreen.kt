@@ -1198,7 +1198,7 @@ private fun LauncherScreenContent(viewModel: LauncherViewModel) {
         if (viewModel.uiState.value.visibleGames.isEmpty()) {
             if (before.second != null) viewModel.setSpecialFilter(before.second) else viewModel.setPlatformFilter(before.first)
             android.util.Log.e("VoltcapQA", "category $c is empty here; left as it was")
-        } else viewModel.setFocus(0)
+        } else { viewModel.setFocus(0); android.util.Log.e("VoltcapQA", "category $c games=${viewModel.uiState.value.visibleGames.size}") }
         TestHooks.category.value = null
     }
     // (Update 432: a background style for this session only — theme QA behind games that have art; nothing saved.)

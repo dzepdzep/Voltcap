@@ -2236,11 +2236,22 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private suspend fun flushFocusSave() {
         val key = unsavedFocusKey ?: return
         unsavedFocusKey = null
-        if (key == _uiState.value.categories.lastFocusedKey) return
-        _uiState.update { it.copy(categories = it.categories.copy(lastFocusedKey = key)) }
-        val toSave = _uiState.value.categories
-        withContext(Dispatchers.IO) { categoryStore.save(toSave) }
+        if (FocusSave.legacy) {
+            if (key == _uiState.value.categories.lastFocusedKey) return
+            _uiState.update { it.copy(categories = it.categories.copy(lastFocusedKey = key)) }
+            val toSave = _uiState.value.categories
+            withContext(Dispatchers.IO) { categoryStore.save(toSave) }
+            return
+        }
+        // (682ay, Arcade B: the game you were on is saved for the next start only - nothing on screen reads it. Writing it into the
+        // UI state rebuilt the whole home ~400 ms after every game change; now only the saved setting changes. Category saves
+        // carry it over - FocusSave.merge.)
+        if (key == (savedFocusKey ?: _uiState.value.categories.lastFocusedKey)) return
+        savedFocusKey = key
+        withContext(Dispatchers.IO) { categoryStore.saveLastFocused(key) }
     }
+    /** 682ay: the last focus key written by [flushFocusSave] (newer than the UI state's copy, which it no longer updates). */
+    @Volatile private var savedFocusKey: String? = null
 
     fun setSearchQuery(query: String) {
         // 0.6.15 (#120, Thor): closing the search without typing jumped back to the category's first game.
@@ -3430,7 +3441,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // ---- Category order, and where you left off ----
 
     private fun updateCategories(transform: (CategorySettings) -> CategorySettings) {
-        val updated = transform(_uiState.value.categories)
+        val updated = FocusSave.merge(transform(_uiState.value.categories), savedFocusKey)
         categoryStore.save(updated)
         _uiState.update { it.copy(categories = updated) }
     }

@@ -442,6 +442,10 @@ internal object TestHooks {
             saverIdleS = intent.getIntExtra("voltcap_test_saveridle", 0).coerceAtLeast(0)
             android.util.Log.e("VoltcapQA", "saver idle ${saverIdleS}s")
         }
+        intent?.getStringExtra("voltcap_test_focussave")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) com.shelf.launcher.FocusSave.legacy = v == "legacy"
+            android.util.Log.e("VoltcapQA", "focussave $v")
+        }
         intent?.getStringExtra("voltcap_test_fitsearch")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) FitSearch.legacy.value = v == "legacy"
             android.util.Log.e("VoltcapQA", "fitsearch $v")

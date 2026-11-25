@@ -62,6 +62,9 @@ class CategoryStore(context: Context) {
         lastSettingsSection = prefs.getString("last_settings_section", null)
     )
 
+    /** 682ay: only the game the launcher reopens on (the rest of the settings untouched). */
+    fun saveLastFocused(key: String) = prefs.edit().putString("last_focused", key).apply()
+
     fun save(s: CategorySettings) = prefs.edit()
         .putString("order", s.order.joinToString(","))
         .putStringSet("hidden", s.hidden)

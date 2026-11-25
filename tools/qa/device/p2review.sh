@@ -192,6 +192,17 @@ fs_ab() {
   n=FS_$1_$2; A --es voltcap_test_fitsearch $1; sleep 2; gate; wg_home
   phase nav; for r in 1 2; do for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; done; sleep 0.8; phase_end nav
   log "fs $n done"; }
+# (682ay, owner 25 Nov 10:42 - Arcade B on its own branch: "a new reproducible baseline on the ~30-game All category"):
+# per layout, the All category (its game count logged), the same build legacy / new by the QA-only switch voltcap_test_focussave
+# (a build without it: both halves the same - the baseline), interleaved twice; each: 2 x 12 home moves 0.5 s apart (gfxinfo +
+# framestats) and the home's own rebuild counts (QaTrace "recomp ... Screen=N" lines). Level 1, QA app, synthetic games only.
+#   sh p2review.sh isoab TAG SCALE "ARCADE CLASSIC TILES GRID CUBE"   then  sh p2review.sh restore TAG
+is_ab() {
+  n=IS_$3_$1_$2; A --es voltcap_test_focussave $1; sleep 2; gate; wg_home; logcat -c
+  phase nav; for r in 1 2; do for i in 1 2 3 4 5 6; do k_home R; sleep 0.5; done; for i in 1 2 3 4 5 6; do k_home L; sleep 0.5; done; done; sleep 0.8; phase_end nav
+  sleep 1.2; k_home R; sleep 1.5; k_home L; sleep 1.5
+  qa_keep ${n}_recomp.txt " recomp | focussave| category "
+  log "is $n done ($(grep -c ' recomp ' $O/${n}_recomp.txt) recomp lines)"; }
 ch_ab() {
   n=CH_$1_$2; A --es voltcap_test_chargelight $1 --es voltcap_test_battery "77|true"; sleep 6; gate; wg_home
   k_home R; sleep 0.7; k_home L; sleep 1.2
@@ -687,6 +698,29 @@ fsab)
   fs_ab legacy 1; fs_ab new 1; fs_ab legacy 2; fs_ab new 2
   A --es voltcap_test_fitsearch new
   log "fsab done (launches: $(launches))"; echo DONE >> $L;;
+isoab)
+  dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
+  dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
+  [ -d $O/snapbak ] || { mkdir -p $O/snapbak; cp $F/voltcap_test_snapshot* $O/snapbak/ 2>/dev/null; log "owner snapshot files kept"; }
+  touch $F/qa_nolaunch
+  A --ez voltcap_test_fixture_roms true --ez voltcap_test_nolaunch true; sleep 5; gate
+  wg_pass_picker; log "home: $(wg_mark)"
+  A --es voltcap_test_snapshot save; sleep 2
+  A --ez voltcap_test_preview true; sleep 1
+  A --es voltcap_test_artfix "delay=0"; sleep 2
+  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  A --es voltcap_test_scale "$SC"; sleep 2
+  A --es voltcap_test_pref "motion_level=NORMAL"; sleep 0.5
+  for lay in ${4:-ARCADE}; do
+    A --es voltcap_test_layout $lay; sleep 4; gate
+    [ $lay = ARCADE ] && for kv in ar_mode=SHOWCASE arcade_glow=true ar_side_art=true ar_video=true arcade_lines=true ar_motion=true; do A --es voltcap_test_pref "$kv"; sleep 0.3; done
+    logcat -c; A --es voltcap_test_category ALL; sleep 2; A --es voltcap_test_game "${PERF_GAME:-Shadow of the Colossus}"; sleep 2; gate
+    qa_keep IS_${lay}_cat.txt " category |focus"
+    log "$lay: All $(grep -o 'games=[0-9]*' $O/IS_${lay}_cat.txt | tail -1)"
+    is_ab legacy 1 $lay; is_ab new 1 $lay; is_ab legacy 2 $lay; is_ab new 2 $lay
+  done
+  A --es voltcap_test_focussave new
+  log "isoab done (launches: $(launches))"; echo DONE >> $L;;
 chab)
   dumpsys power | grep -q "mWakefulness=Awake" || stop "asleep - not woken"
   dumpsys window | grep -qE "isKeyguardShowing=true|mDreamingLockscreen=true" && stop locked
