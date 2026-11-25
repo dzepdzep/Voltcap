@@ -4,7 +4,7 @@
 
 Status: **NOT ready. No merge, production install or release without the owner's GO.**
 - Branch `claude/v0674-native-pages`, commit `d08182f` (682bb fixes `6f6fd73` + the hourly run's 755a). QA app `qa682bb`.
-- CI on `d08182f`: Verify running at the time of writing. Last finished Verify GREEN on `8dfd4f6` (755a).
+- CI: Verify GREEN on `d08182f` (run 45652106664) - the code commit with the 682bb fixes. Later commits are docs only.
 - Arcade B: on `claude/exp-arcadeb-focus` (`1257ec6`, Verify GREEN). Not merged.
 - Versioning is unchanged (0.6.73 / QA identity). It changes only when release preparation is authorised.
 
