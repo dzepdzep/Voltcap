@@ -252,6 +252,7 @@ internal object TestHooks {
      * (where it is listed, how often in All, its record key). Nothing is launched by this.
      */
     val appCat = mutableStateOf<String?>(null)
+    /**
      * 682b (HW-25): `--es voltcap_test_extra_root <folder>` with voltcap_test_fixture_roms - ONLY in the isolated QA app: a second
      * ROM folder scanned with the fixture one (the QA app's own folder on an SD card), so a card taken out can be checked.
      */
