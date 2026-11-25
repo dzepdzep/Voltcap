@@ -1143,3 +1143,33 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   Batch506, Layouts330, R1Compat326, WinFocus*, UniformKeys673, NativeConfirm681, NativePages*: 2,903 tests, 0 failures. Static
   PASS. Hardware NOT TESTED (HW-28 extended), emulator review not run, not approved.
 - Audit: class C 19 scenes done (own designs 49 / 53). Left: the Pocket family (POCKET_LCD, three faces in one batch).
+
+### 745a - P2 class C, last scene: the Pocket family (POCKET_LCD, three faces, WinPagesPocket.kt) - implemented, NOT owner-approved, HW NOT TESTED
+- One scene, three homes - each face draws its own pages (WinScenesStyled.PocketPopup picks the face from the layout):
+  - Pocket classic = the handheld's system menu: on its pages the blue (your accent) title bar names the page "‹ DATA ›" with
+    its place "2/4". DATA (facts as menu lines in pixel type, a rule under each, the description in a framed TEXT box), MEDALS
+    ("MEDALS 3/12", ten pixel blocks - one earned always shows one, full only when all are earned; each achievement a menu line
+    with the drawn ▶ cursor on the one you are on, a square-framed badge, GOT <date> / NOT YET, +N), MENU (menu lines, the one
+    you are on filled in the bar's colour, removing ones red + second A). Motion: the LCD steps the menu in - four hard steps
+    sideways (lcdSteps), no glide.
+  - Pocket ribbon = the white information sheet, art kept on the left: a ribbon of page names in pixel type, the shown one
+    underlined in the accent, over a grey rule (Overview / Details / Records / Settings). Details (two-column table on grey
+    rules, About on the sheet), Records ("3 of 12 earned", per cent, a hairline bar; rows on grey rules), Settings (rows with ›,
+    the accent's edge mark on the one you are on, red removing ones). Motion: the sheet slides in from its side. Short window:
+    the bar carries the name (AchFirstRow x1.3 caught the first record 2 px short, then 16 px).
+  - Pocket Quest = the deep cut-corner panel in pqPalette, art kept beside it (large text: name + page, no art): cut-corner
+    chips (Overview / Status / Quest log / Commands). Status (stat lines, fading accent divider, LORE well), Quest log (QUESTS
+    CLEARED "3 / 12", a gauge of ten cut-corner cells, deep wells, CLEARED / OPEN), Commands (cut-corner buttons). Motion: the
+    page rises a little and the panel's scan line runs down over it once.
+- Play stays put: on its pages the window grows upward only (livePageHeight) and, where the art beside the facts is taller than
+  them (ribbon, Quest), the room the first page left under its keys is kept under them (PocketPlace.keyGap). PlayPlace (+ Rpc)
+  plus a temporary first-page probe: Play's bottom edge on the first page and all three pages equal in every face x1.0 / x1.3
+  on both screens (2 px on the ribbon x1.3 KONKR, where Play takes two lines on the pages); Play is wider on the pages (two
+  slots), as on every layout with More. First run without the gap: ribbon Play 80 px (RPC 161 px) lower - fixed.
+- Tests: NativePagesPocket745aTest 6/6 (new); POCKET_CLASSIC / POCKET_RIBBON / POCKET added to AchFirstRow (+ Rpc, PlayPlace via
+  NATIVE) and ShelfText; ShelfText + PlayPlace learned Pocket Quest's "Status" (Details) and "Play game" (PlayPlace had found no
+  Play there). WindowWordsSurvey caught the classic cursor's blank glyph cut at x1.3 - now drawn. With PlayPlace*, AchFirstRow*,
+  NoStrayPlay682j, WinFocus, ShelfText, NativeConfirm681, NativePages*, UniformKeys673 and the Pocket source tests: 3,050 tests,
+  0 failures after the fixes (last rerun of the touched suites green). Static PASS. Hardware NOT TESTED (HW-28 extended),
+  emulator review not run, not approved.
+- Audit: class C 20 scenes done - own designs 52 / 53 (49 + the three Pocket faces). Class C is complete; the one layout left is not a class C scene - see the tracker table before picking it.

@@ -109,7 +109,10 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (743a, P2 class C: Live tiles - about, achievements and options under a pivot, turning in like the panel, WinPagesLive.kt.)
     WinScene.LIVE_PANEL,
     // (744a, P2 class C: Layout Studio - Properties, Milestones and Actions under the editor's tab strip, WinPagesStudio.kt.)
-    WinScene.STUDIO_PANEL)
+    WinScene.STUDIO_PANEL,
+    // (745a, P2 class C: the Pocket family - Pocket classic's menu pages, Pocket ribbon's sheet pages, Pocket Quest's panel
+    // pages, one face per layout, WinPagesPocket.kt.)
+    WinScene.POCKET_LCD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
