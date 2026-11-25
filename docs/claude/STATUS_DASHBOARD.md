@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 761a · 2026-11-25 22:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 3beb14f (760a) · effort: medium
+**1. LATEST UPDATE** - 762a · 2026-11-25 23:30 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 776a3c1 (761a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Generations (the release-year timeline on the category screen): with bigger text (x1.3) a long console name made the block at the bottom - generation, name, maker / year / games - grow so tall that it covered the handheld consoles drawn just above it and their years. The block now always stays below them; a long name first gets a little smaller and then slides, the other two lines stay whole. Normal-size text looks the same. A one-minute handheld check is queued.
+**2. WHAT CLAUDE JUST FIXED** - Slides (the category screen with one big slide per console): the line with the number of games and the line with the maker and year were simply cut off at their right edge when they did not fit - with bigger text (x1.3) the built-in 'MICROSOFT 2005' only just fit, and a longer maker name from scraped media or a part made smaller in the slide editor was cut. Both lines now get a little smaller and then slide, like the console name above them; nothing else on the slide moves. A one-minute handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Slides, Vault, Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Vault, Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 

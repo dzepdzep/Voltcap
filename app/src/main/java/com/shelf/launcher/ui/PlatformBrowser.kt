@@ -651,12 +651,16 @@ private fun SlidePart(el: SlideEl, tile: CategoryTile, art: TileArt) {
         SlideEl.NAME -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
             FullText(tile.label, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
         }
+        // (762a, P5 polish: the count and the maker line were plain one-line Texts in a box of a fixed share of the slide - at
+        // x1.3 on the KONKR (640 x 427 dp) "MICROSOFT 2005" needs ~179 of the maker box's 192 dp, a scraped maker ("Sony
+        // Computer Entertainment 1994") or a box made smaller in the slide editor was simply cut off. Both now shrink to their
+        // readable minimum, then slide, like the name line above them; the boxes keep their sizes.)
         SlideEl.COUNT -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
-            Text(countText(tile), color = ShelfTheme.accent, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            FullText(countText(tile), color = ShelfTheme.accent, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
         }
         SlideEl.MAKER -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterStart) {
             val line = tile.platform?.let { PlatformInfo.line(it) }
-            if (line != null) Text(line, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1)
+            if (line != null) FullText(line, color = Color.White.copy(alpha = 0.75f), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, maxLines = 1, reserve = false)
         }
         SlideEl.LASTPLAYED -> {
             val cover = tile.lastPlayedCover

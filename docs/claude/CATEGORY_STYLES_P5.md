@@ -12,7 +12,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | # | Look (picker name) | Enum | Drawn by | Keys | Follows these home layouts | Unit | Hardware (last) | Owner |
 |---|---|---|---|---|---|---|---|---|
 | 1 | Tiles | TILES | PlatformBrowser grid | its grid | every layout not listed below | 527 (name + count) | KONKR x1.0 / x1.3, 12 Nov, older build | no |
-| 2 | Slides | SLIDES | SlidesView | ◀ ▶ / swipe | - | 678j (text) | KONKR 12 Nov | no |
+| 2 | Slides | SLIDES | SlidesView | ◀ ▶ / swipe | - | 678j (text), 762a (count + maker whole) | KONKR 12 Nov | no |
 | 3 | Wall | WALL | WallView | ◀ ▶ | Arcade | 527 (slices under the header) | KONKR 12 Nov; header fix (Sprint 528) not re-run | no |
 | 4 | Grid | GRID | GridView | ◀ ▶ ▲ ▼ (2 rows) + Start move | Grid, Hub, Live | - | KONKR 12 Nov | no |
 | 5 | System Stage | STAGE | StageLook | ◀ ▶ | Shelf, Stacks, Caseflow, Hero, Spot | 527 (plate wraps), 760a (plate ends at the object's foot) | KONKR 12 Nov | no |
@@ -54,9 +54,12 @@ Green Core, Pocket classic).
   focused handheld and its year. It now ends at the lane's foot (`generationsInfoRoom`, a 56 dp minimum on short phone
   screens); the name gives way first (shrink to 10 sp, then slide), the generation line and the facts (two lines) stay whole.
   `GenerationsInfoRoom761aTest` 3/3 (source half fails on 760a). Hardware NOT TESTED (HW-24 761a).
+- 762a Slides: the game count and the maker / year line were plain one-line Texts in fixed boxes (KONKR maker box 192 dp;
+  "MICROSOFT 2005" at x1.3 ~179 dp, a scraped maker or an editor-shrunk box clipped). Both through FullText now (shrink, then
+  slide; no reserve, boxes unchanged). `SlidesFactsFullText762aTest` 2/2. Hardware NOT TESTED (HW-24 762a).
 
 ## Remaining (from Sprint 527 + this pass)
-- Third-priority polish still to do: Slides, Vault, Grid / Dashboard / Constellation (Wall's header
+- Third-priority polish still to do: Vault, Grid / Dashboard / Constellation (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.

@@ -111,6 +111,9 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   block at the bottom (generation line, name, maker / year / count) stays below the handheld lane (the focused handheld and its
   year are never covered); a long name shrinks or slides, the other two lines are whole. Screenshot x1.3. Unit evidence only
   (GenerationsInfoRoom761aTest).
+- Also (762a, matrix P5, dev line 762a or later, ~1 min, KONKR x1.3 + x1.0, with the 761a pass): category screen look Slides,
+  step to Xbox 360 / Amiga / 3DO and a console with favourites - the game count ("N Games (M Favorites)") and the maker / year
+  line are whole (shrink or slide, never cut at the right edge). Screenshot x1.3. Unit evidence only (SlidesFactsFullText762aTest).
 - Also (760a, matrix P5, dev line 760a or later, ~1 min, KONKR x1.3 + x1.0, with the 759a pass below): System Stage with a
   long console name (e.g. Nintendo Entertainment System) - the museum plate on the middle plinth stays below the object's foot
   and the plinth's lit top (never over them); the name shrinks or slides, the maker / year / count line is whole. Screenshot

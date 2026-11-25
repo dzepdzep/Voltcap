@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 23:30 UTC, 762a (cloud, P5 polish - Slides):** Verify 310 on 776a3c1 GREEN. Slides' game count and maker / year line
+now go through FullText (were plain clipping one-line Texts; KONKR maker box 192 dp, "MICROSOFT 2005" at x1.3 ~179 dp, scraped
+makers / editor-shrunk boxes were cut) - boxes unchanged (SlidesFactsFullText762aTest 2/2; HW-24 762a).
+NEXT: check Verify 310 on this push FIRST. Then P5 polish, next look: System Vault (then Grid / Pocket Dashboard /
+Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses (ONEPRESS), rule 14. Wall's
+count line (PlatformBrowser WallView, plain one-line Text) is a candidate for the same FullText treatment. P2: only on an owner
+push / review or a red CI.
+
 **25 Nov 22:40 UTC, 761a (cloud, P5 polish - Generations):** Verify 310 on 3beb14f GREEN. Generations' info block (generation
 line, name, facts) is capped at the handheld lane's foot (generationsInfoRoom; on the KONKR at x1.3 a two-line name reached
 ~40 dp into the focused handheld); the name gives way first, the other lines stay whole (GenerationsInfoRoom761aTest 3/3;

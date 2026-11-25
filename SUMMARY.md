@@ -1,3 +1,21 @@
+# Update 762a (25 Nov 2026, cloud run) - matrix P5 polish: Slides' game count and maker / year line are never cut
+- CI first: Verify 310 on 776a3c1 (761a) GREEN.
+- P5 third-priority polish, third look (Slides). The slide's parts sit in boxes of a fixed share of the slide; the name and
+  logo lines went through FullText (678j), but the game count and the maker / year line were plain one-line Texts that clip.
+  On the KONKR (640 x 427 dp) the maker box is 192 dp wide: the built-in "MICROSOFT 2005" at x1.3 already needs ~179 dp, a
+  scraped maker ("Sony Computer Entertainment 1994") or a box made smaller in the slide editor was cut off; "123 Games
+  (45 Favorites)" at x1.3 needs ~290 of the count box's 320 dp.
+- Fix (PlatformBrowser.kt SlidePart COUNT / MAKER): both through FullText (shrink to the readable minimum, then slide), no
+  reserved height - the boxes and the slide's layout (and saved slide designs) are unchanged. Keys / swipe unchanged
+  (◀ ▶, AnimatedContent keyed by the platform you're on, not a home category change).
+- Test: SlidesFactsFullText762aTest 2/2 (source guards fail on 761a; maker box is tight at x1.3), PlatformBrowserFullText678jTest
+  1/1 (FullText count 7 -> 9, still 0 ellipses), CategoryLooks527Test 7/7. Compiled: :app:compileDebugUnitTestKotlin (cloud).
+  Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 762a, ~1 min KONKR).
+- Files: app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt,
+  app/src/test/java/com/shelf/launcher/ui/SlidesFactsFullText762aTest.kt,
+  app/src/test/java/com/shelf/launcher/ui/PlatformBrowserFullText678jTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF,
+  HW queue, dashboard).
+
 # Update 761a (25 Nov 2026, cloud run) - matrix P5 polish: Generations' info block never rises into the handheld lane
 - CI first: Verify 310 on 3beb14f (760a) GREEN.
 - P5 third-priority polish, second look (Generations). Arithmetic on the KONKR (640 x 427 dp): the line sits at 46 % of the
