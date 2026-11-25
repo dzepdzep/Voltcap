@@ -37,7 +37,8 @@ import androidx.compose.ui.unit.sp
  *  - Details      = DISC INFO: the disc's CD-text - each fact a readout line (the label in a small lit-edge segment box, the value
  *                   beside it), then the story as LINER NOTES in a framed well with a ▶ mark (a D-pad stop).
  *  - Achievements = PROGRAM: the deck's program list - a line with "PROG", "N / M", a level meter of 16 bars (one earned always
- *                   lights one, all only when every one is earned) and the order as the deck's MODE key; each achievement a
+ *                   lights one, all only when every one is earned) and the order as the deck's MODE key in its own short words
+ *                   (on its own line under them when the line is too narrow - 682bb); each achievement a
  *                   track: its number "01", ▶ when yours / "--" when not, the title, "PLAYED <date>" / "NOT PLAYED", the points
  *                   as "+N"; the track you are on shown inverted on the LCD; A opens the whole text and how rare it is.
  *  - Options      = SETUP: the deck's menu - each option a line led by its key mark (a square), one that removes something led
@@ -80,6 +81,22 @@ internal fun discLevel(earned: Int, total: Int, bars: Int): Int {
 }
 
 internal const val DISC_LEVEL_BARS = 16
+/** 682bb: the level meter's least / most width on the PROG line. */
+internal val DISC_METER_MIN = 40.dp
+internal val DISC_METER_MAX = 96.dp
+
+/** 682bb (pure): the MODE key shares the PROG line only when it fits whole beside the count and a meter of [minMeter] (px). */
+internal fun discModeOneLine(countW: Int, keyW: Int, maxW: Int, gap: Int, minMeter: Int): Boolean = countW + gap + minMeter + gap + keyW <= maxW
+
+/** 682bb (pure): the deck's own word for the list's order - short, so the MODE key reads at once. */
+internal fun discModeWord(o: com.shelf.launcher.data.Features.TrophyOrder): String = when (o) {
+    com.shelf.launcher.data.Features.TrophyOrder.SET -> "IN ORDER"
+    com.shelf.launcher.data.Features.TrophyOrder.TO_GET -> "TO GET FIRST"
+    com.shelf.launcher.data.Features.TrophyOrder.EARNED -> "EARNED FIRST"
+    com.shelf.launcher.data.Features.TrophyOrder.LATEST -> "LATEST FIRST"
+    com.shelf.launcher.data.Features.TrophyOrder.POINTS -> "TOP POINTS"
+    com.shelf.launcher.data.Features.TrophyOrder.RARE -> "RAREST FIRST"
+}
 
 private val DiscWarn = Color(0xFFFF6A4D)
 private val DiscCell = RoundedCornerShape(2.dp)
@@ -99,16 +116,61 @@ internal class DiscInk(val lcd: Color, val glass: Color) {
 /** The deck's music calendar: a numbered cell per track ([tracks]), the one playing ([shown]) lit. */
 @Composable
 internal fun DiscCalendar(tracks: List<WinPage>, shown: WinPage, k: DiscInk) {
-    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
         tracks.forEachIndexed { i, t ->
             val on = t == shown
-            Box(Modifier.widthIn(min = 18.dp).background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
+            Box(Modifier.widthIn(min = 16.dp).background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
                 .padding(horizontal = 3.dp), contentAlignment = Alignment.Center) {
                 Text((i + 1).toString(), color = if (on) k.onLit else k.label, fontSize = 9.sp, lineHeight = 12.sp, fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold, softWrap = false, maxLines = 1)
             }
         }
     }
+}
+
+/**
+ * 682bb: the LCD's track line on the pages - "DISC 1 · TRACK 03", the music calendar and the page's name on ONE line where they
+ * fit; else "DISC 1", the calendar and the name (the calendar says the track); only where even that does not fit, the calendar on
+ * a line of its own under them. (A calendar row of its own cost the PROGRAM page the room its first track needed at x1.3 once the
+ * MODE key took a line of its own - AchFirstRow DISCS.)
+ */
+@Composable
+internal fun DiscTrackLine(track: String, page: String, tracks: List<WinPage>, shown: WinPage, k: DiscInk) {
+    val style = androidx.compose.ui.text.TextStyle(fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+    androidx.compose.ui.layout.Layout(content = {
+        Text(track, color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false)
+        Text(track.substringBefore(" ·"), color = k.lcd.copy(alpha = 0.7f), style = style, maxLines = 1, softWrap = false)
+        DiscCalendar(tracks, shown, k)
+        Text(page, color = k.lcd, style = style, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
+    }) { ms, c ->
+        val w = c.maxWidth; val gap = 6.dp.roundToPx()
+        val loose = androidx.compose.ui.unit.Constraints(maxWidth = w)
+        val full = ms[0].measure(loose); val short = ms[1].measure(loose); val cal = ms[2].measure(loose); val name = ms[3].measure(loose)
+        val fit = discTrackLineFit(full.width, short.width, cal.width, name.width, w, gap)
+        when (fit) {
+            0, 1 -> {
+                val lab = if (fit == 0) full else short
+                val h = maxOf(lab.height, cal.height, name.height)
+                layout(w, h) {
+                    lab.place(0, (h - lab.height) / 2); cal.place(lab.width + gap, (h - cal.height) / 2); name.place(w - name.width, (h - name.height) / 2)
+                }
+            }
+            else -> {
+                val h1 = maxOf(full.height, name.height); val top = 4.dp.roundToPx()
+                layout(w, h1 + top + cal.height) {
+                    full.place(0, (h1 - full.height) / 2); name.place(w - name.width, (h1 - name.height) / 2); cal.place(0, h1 + top)
+                }
+            }
+        }
+    }
+}
+
+/** 682bb (pure): 0 = the full track label, the calendar and the name on one line; 1 = "DISC 1", the calendar and the name; 2 = the
+ *  calendar on its own line under the track label and the name. */
+internal fun discTrackLineFit(fullW: Int, shortW: Int, calW: Int, nameW: Int, maxW: Int, gap: Int): Int = when {
+    fullW + gap + calW + gap + nameW <= maxW -> 0
+    shortW + gap + calW + gap + nameW <= maxW -> 1
+    else -> 2
 }
 
 /** One track of the deck (Info is the deck itself, drawn by DiscPlayerPanel). */
@@ -170,36 +232,59 @@ private fun DiscProgram(ctx: WinSceneCtx, live: Boolean, k: DiscInk, modifier: M
     val focus = nativeListFocus(ctx, live)
     var openId by rememberOpenTrophy(ctx)
     Column(modifier) {
-        // One line: PROG and the count, the level meter, the MODE key in the rest of the line (its words slide on one
-        // line, rule 11) - so the first track stays whole at x1.3 (AchFirstRow).
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("PROG", color = k.label, fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, lineHeight = 13.sp,
-                letterSpacing = 1.sp, softWrap = false, maxLines = 1)
-            Spacer(Modifier.width(6.dp))
-            Text(discAwardCount(t.earned, t.total), color = k.lcd, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
-                fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
-            val lit = discLevel(t.earned, t.total, DISC_LEVEL_BARS)
-            // (682az, hardware x1.3: a meter that took half the line squeezed the MODE key to a sliver - the meter keeps a fixed
-            // 56 dp, the key the rest.)
-            Row(Modifier.padding(horizontal = 8.dp).width(56.dp).height(12.dp), horizontalArrangement = Arrangement.spacedBy(1.dp),
-                verticalAlignment = Alignment.Bottom) {
+        // (682bb, owner review of the v0.7.0 preview: the MODE key slid its words in a sliver - "MODE: S" even on the RP Classic
+        // at x1.3. The deck says its mode in its own short words (discModeWord) and the line is responsive: PROG, the count, the
+        // level meter and the MODE key on one line when the key fits whole beside a meter of at least DISC_METER_MIN; otherwise
+        // the key goes whole onto its own line under them and the meter takes the room. Never sliding, never shrunk.)
+        val lit = discLevel(t.earned, t.total, DISC_LEVEL_BARS)
+        androidx.compose.ui.layout.Layout(content = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("PROG", color = k.label, fontSize = 10.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, lineHeight = 13.sp,
+                    letterSpacing = 1.sp, softWrap = false, maxLines = 1)
+                Spacer(Modifier.width(6.dp))
+                Text(discAwardCount(t.earned, t.total), color = k.lcd, fontSize = 13.sp, fontWeight = FontWeight.Bold, lineHeight = 16.sp,
+                    fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false)
+            }
+            Row(Modifier.height(12.dp), horizontalArrangement = Arrangement.spacedBy(1.dp), verticalAlignment = Alignment.Bottom) {
                 repeat(DISC_LEVEL_BARS) { i ->
                     // The meter's bars rise left to right, like the deck's level display.
                     val h = 0.35f + 0.65f * (i + 1) / DISC_LEVEL_BARS
                     Box(Modifier.weight(1f).fillMaxHeight(h).background(if (i < lit) k.lcd else k.tile).border(0.5.dp, k.line))
                 }
             }
-            Box(Modifier.weight(1f), contentAlignment = Alignment.CenterEnd) {
-                NativeItem(onClick = t.nextOrder, focus = focus, live = live) { on ->
-                    Box(Modifier.background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
-                        .padding(horizontal = 9.dp, vertical = 4.dp)) {
-                        WinFullText("MODE: " + t.order.label.uppercase(), color = if (on) k.onLit else k.lcd, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp,
-                            fontFamily = FontFamily.Monospace)
-                    }
+            NativeItem(onClick = t.nextOrder, focus = focus, live = live) { on ->
+                Box(Modifier.background(if (on) k.lit else Color.Transparent, DiscCell).border(1.dp, if (on) k.lit else k.line, DiscCell)
+                    .padding(horizontal = 9.dp, vertical = 4.dp)) {
+                    WinFullText("MODE: " + discModeWord(t.order), color = if (on) k.onLit else k.lcd, fontSize = 11.sp, maxLines = 1, lineHeight = 14.sp,
+                        fontFamily = FontFamily.Monospace)
+                }
+            }
+        }) { ms, c ->
+            val w = c.maxWidth
+            val gap = 8.dp.roundToPx(); val minMeter = DISC_METER_MIN.roundToPx(); val maxMeter = DISC_METER_MAX.roundToPx()
+            val count = ms[0].measure(androidx.compose.ui.unit.Constraints(maxWidth = w))
+            val key = ms[2].measure(androidx.compose.ui.unit.Constraints(maxWidth = w))
+            if (discModeOneLine(count.width, key.width, w, gap, minMeter)) {
+                val mw = (w - count.width - key.width - gap * 2).coerceIn(minMeter, maxMeter)
+                val meter = ms[1].measure(androidx.compose.ui.unit.Constraints.fixed(mw, 12.dp.roundToPx()))
+                val h = maxOf(count.height, key.height, meter.height)
+                layout(w, h) {
+                    count.place(0, (h - count.height) / 2)
+                    meter.place(count.width + gap, (h - meter.height) / 2)
+                    key.place(w - key.width, (h - key.height) / 2)
+                }
+            } else {
+                val mw = (w - count.width - gap).coerceIn(0, maxMeter * 2)
+                val meter = ms[1].measure(androidx.compose.ui.unit.Constraints.fixed(mw, 12.dp.roundToPx()))
+                val h1 = maxOf(count.height, meter.height); val top = 3.dp.roundToPx()
+                layout(w, h1 + top + key.height) {
+                    count.place(0, (h1 - count.height) / 2)
+                    meter.place(count.width + gap, (h1 - meter.height) / 2)
+                    key.place(0, h1 + top)
                 }
             }
         }
-        Spacer(Modifier.height(5.dp))
+        Spacer(Modifier.height(4.dp))
         NativeRows(k.lcd, Modifier.weight(1f).fillMaxWidth(), spacing = 2.dp) {
             nativeItems(t.all, { it.id }) { i, ach ->
                 val earned = ach.isUnlocked

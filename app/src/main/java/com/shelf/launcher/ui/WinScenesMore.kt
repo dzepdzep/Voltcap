@@ -305,7 +305,10 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
                         androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
                     }
                     keys.forEachIndexed { i, a ->
-                        Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i }, propagateMinConstraints = true) {
+                        // (682bb, v0.7.0 preview HW-28 - Cardboard box x1.3 KONKR: one key in view, the row stayed scrolled to the
+                        // key last focused after the focus went into the page, so Play was out of view on Details / Achievements.
+                        // A row the focus has left shows its first key, Play, again - uniformRowScrollFor(-1) = 0.)
+                        Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i else if (focused == i) focused = -1 }, propagateMinConstraints = true) {
                             androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) }
                         }
                     }
@@ -361,15 +364,23 @@ internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = fa
     slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
+    // (682bb, v0.7.0 preview HW-28 - Pocket camera on the RP Classic: "FULL DETAILS" took two lines in the pixel font, so on Details
+    // every key grew and Play sat higher than on Achievements / Options. On a window's own pages the column is measured with the
+    // page key that asks the most room (PAGE_KEY_REF, measure-only, as UniformKeyRow 682ab) - the keys are one size on every page.)
+    val pageRef = slots == PAGE_SLOTS
     androidx.compose.ui.layout.Layout(content = {
         keys.forEach { a ->
             Box(propagateMinConstraints = true) { androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) } }
         }
-    }) { ms, c ->
+        if (pageRef) Box(Modifier.clearAndSetSemantics { }, propagateMinConstraints = true) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
+        }
+    }) { all, c ->
+        val ms = if (pageRef) all.dropLast(1) else all
         // (the widest key's width - or, [fill], the column's whole width - for every key)
-        val need = runCatching { ms.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0 }.getOrElse { if (c.hasBoundedWidth) c.maxWidth else 0 }
+        val need = runCatching { all.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0 }.getOrElse { if (c.hasBoundedWidth) c.maxWidth else 0 }
         val w = if (fill && c.hasBoundedWidth) c.maxWidth else need.coerceIn(c.minWidth, if (c.hasBoundedWidth) c.maxWidth else Int.MAX_VALUE)
-        val h = runCatching { ms.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
+        val h = runCatching { all.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
         val ps = ms.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
         val rows = maxOf(ps.size, if (ps.isEmpty()) 0 else slots)
         val total = if (rows == 0) 0 else rows * h + (rows - 1) * gapPx
@@ -952,13 +963,11 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
                 val live = p == ctx.page
                 androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p, LocalNativeLive provides live) {
                 Column(Modifier.fillMaxWidth().then(if (p == WinPage.MAIN) Modifier else Modifier.fillMaxHeight()).padding(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (p == WinPage.MAIN) labels.second else discTrackLabel(p, tracks), color = lcd.copy(alpha = 0.7f), fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+                    if (p == WinPage.MAIN) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
                         Spacer(Modifier.weight(1f))
-                        Text(if (p == WinPage.MAIN) ctx.played.uppercase() else discPageName(p).uppercase(), color = lcd, fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp, fontWeight = if (p == WinPage.MAIN) null else FontWeight.Bold)
-                    }
+                        Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+                    } else DiscTrackLine(discTrackLabel(p, tracks), discPageName(p).uppercase(), tracks, p, discInk)
                     if (p == WinPage.MAIN) {
                         StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, reserve = false)
                         Spacer(Modifier.height(4.dp))
@@ -968,8 +977,6 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
                         // SETUP, WinPagesDisc.kt; the shared page bodies played here before). The music calendar under the track
                         // line: a numbered cell per track, the one playing lit.
                         Spacer(Modifier.height(4.dp))
-                        DiscCalendar(tracks, p, discInk)
-                        Spacer(Modifier.height(6.dp))
                         Box(Modifier.weight(1f).fillMaxWidth()) {
                             DiscPage(ctx, p, live, discInk, Modifier.fillMaxSize())
                         }

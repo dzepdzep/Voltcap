@@ -738,10 +738,12 @@ gallery)
   A --es voltcap_test_snapshot save; sleep 2
   A --ez voltcap_test_preview true; sleep 1
   logcat -c; A --es voltcap_test_artfix "delay=0"; sleep 3
-  A --es voltcap_test_fixture "names=real,art=covers,meta=real"; sleep 2
+  # (682bb, the preview's stress section: GAL_FIX = the fixture (e.g. names=long,art=none,meta=real - long names, no art),
+  # GAL_PICK = which fixture game opens (e.g. "achmix n=120 " - 120 achievements).)
+  A --es voltcap_test_fixture "${GAL_FIX:-names=real,art=covers,meta=real}"; sleep 2
   A --es voltcap_test_scale "$SC"; sleep 2
-  MIX=$(pick "achmix n=10 ")
-  log "setup gallery scale=$SC nav=${GAL_NAV:-0} mixed='$MIX' layouts=$LAYS"
+  MIX=$(pick "${GAL_PICK:-achmix n=10 }"); [ -n "$MIX" ] || MIX=$(pick "achfix n=120 ")
+  log "setup gallery scale=$SC nav=${GAL_NAV:-0} fixture='${GAL_FIX:-names=real,art=covers,meta=real}' game='$MIX' layouts=$LAYS"
   for lay in $LAYS; do gallery_layout $lay; done
   log "gallery done (launches: $(launches))"; echo DONE >> $L;;
 chab)

@@ -620,7 +620,10 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             // most of the width and the commands broke inside words — "OPTION / S", "ACHIEV / EMENTS". It keeps its shape but
             // never takes more than 45 % of the window now; on 16:9 it never reached that.)
             Column(if (land) Modifier.fillMaxHeight().fillMaxWidth(0.46f) else Modifier.fillMaxHeight().widthIn(max = w * 0.45f)) {
-                val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
+                // (682bb, v0.7.0 preview - RP Classic: weighted to the column's full height, the portrait picture could not fall back
+                // to the column's width - aspectRatio drew it 0.875 x the height wide, over the name ("ETRIS"). Not forced to fill, it
+                // takes the height where it fits and the width where it does not.)
+                val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f, fill = false).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
                 Box(pic.border(1.dp, c0).background(c2)) {
                     if (bmp != null) androidx.compose.foundation.Image(bmp, ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
                         filterQuality = androidx.compose.ui.graphics.FilterQuality.None)

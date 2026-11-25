@@ -21,7 +21,7 @@ class NativePagesDisc682azTest {
         for (p in WinPage.values()) assertFalse("$p", sharedPageFor(WinScene.DISC_PANEL, p))
         val c = panel()
         assertTrue(c.contains("DiscPage(ctx, p, live, discInk, Modifier.fillMaxSize())"))
-        assertTrue(c.contains("DiscCalendar(tracks, p, discInk)"))
+        assertTrue(c.contains("DiscTrackLine(discTrackLabel(p, tracks), discPageName(p).uppercase(), tracks, p, discInk)"))
         assertFalse("no shared page body left on the deck's LCD", c.contains("ctx.pageFor("))
         assertFalse(c.contains("ctx.pageBody("))
         assertTrue(c.contains("discPageName(p).uppercase()"))
