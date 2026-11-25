@@ -106,6 +106,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (754a, rule 11, dev line 754a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-753a): the emulator picker (long emulator
+  subtitles, two lines), the first-run accounts card's "Connected" mark, the who-is-playing profile names, a saved preset's long
+  name, the manual reader's title + page counter, the game-look option labels (two lines) - whole (wrap, shrink, then slide),
+  never an ellipsis; rows keep their heights. Second-screen guide title + second-screen details console label on the Thor with
+  HW-26. D-pad + touch still work. Screenshots. Unit evidence only (PickerGuideFullText754aTest; static TRUNCATE 27 -> 19).
 - Also (752a, rule 11, dev line 752a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-751a): the quick-settings tile list (long
   tile names, "In the menu"), Arch stacks home (a long game name centred - no late pop-in on a game change - and the storage /
   games line), Twin showcase (category name in CURRENT mode, game name under the grid) and the cartridge shell picker (long shell

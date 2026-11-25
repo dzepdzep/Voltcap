@@ -226,7 +226,7 @@ internal fun PresetsCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(c.name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    FullText(c.name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp,
                         modifier = Modifier.weight(1f))
                     Chip("Rename", accent = false) { managing = false; naming = c.id }
                     Chip("Share", accent = false) {

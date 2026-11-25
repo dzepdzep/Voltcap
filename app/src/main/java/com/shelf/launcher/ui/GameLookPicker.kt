@@ -932,9 +932,9 @@ private fun LookChoiceCard(label: String, about: String, on: Boolean, enabled: B
     ) {
         LookSample(sample, Modifier.fillMaxWidth().height(84.dp))
         Spacer(Modifier.height(6.dp))
-        Text(
+        FullText(
             (if (on) "✓ " else "") + label, color = ShelfTheme.colors.textPrimary.copy(alpha = if (enabled) 1f else 0.5f),
-            fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, maxLines = 2
         )
         Text(about, color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
     }

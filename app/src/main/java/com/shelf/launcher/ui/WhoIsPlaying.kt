@@ -71,7 +71,7 @@ internal fun WhoIsPlayingScreen(names: List<String?>, active: Int, onPick: (Int)
                                 modifier = Modifier.size(96.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f))
                             )
                             Spacer(Modifier.height(12.dp))
-                            Text(name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            FullText(name, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                             if (slot == active) Text("Last played", color = ShelfTheme.accent, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
                         }
                     }

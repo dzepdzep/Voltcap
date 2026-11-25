@@ -73,6 +73,19 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 14:50 UTC, 754a (cloud, P2 review fix + rule 11):** Verify 310 on b56caf8 GREEN. P2 review 45623176605: GREENCORE,
+ARTLIB, LIVE PASS x1.3 + x1.0 (0 launches); CROSS FAIL = QA script: Cross's "Achievements in the menu's style" (cross_trophies,
+default ON, update 127) replaces the window's Achievements page with the menu's own list, so the walk's Downs reached Options.
+P2 777afa8 (ff on the owner's 4dfb336): p2review turns it off for the Cross walk only and puts it back; selftest 281/281.
+Dispatched 45633462166 (P2:CROSS). Design question noted for the owner (default: 742a page vs the update-127 list) - not decided.
+Dev line: EmulatorPicker / FirstRun / WhoIsPlaying / PresetsCard / ManualReader / GuideSecondScreen / GameLookPicker /
+SecondScreenDetails through FullText (PickerGuideFullText754aTest 2/2, TRUNCATE 27 -> 19; HW-24 754a).
+NEXT: check Verify 310 on this push FIRST. Read review 45633462166; if PASS every P2 set has an emulator PASS -> ONE owner action
+listing the sheets' run links (45576064795, 45584303713, 45603942465, 45612718815 x1.0, 45623176605 for GREENCORE ARTLIB LIVE,
+45633462166 CROSS) plus the Cross default-page question; FAIL / INFRA = next item (fetch the P2 branch first - the owner pushes
+to it live). Then the next rule 11 batch (19 left; e.g. GameLookUi, CubeHub, GameDock, StyleCrossMenu, StyleCustom,
+StyleMagazine, WholeRows; TileHome game name + CollectorBacks canvas need care).
+
 **25 Nov 13:40 UTC, 753a (cloud, P2 review fix + rule 11):** Verify 310 on b8d00ea GREEN. P2 review 45612718815 INFRA: x1.0
 4/4 PASS, x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely - its home opens on the MENU page (A = GAMES, window one A
 further; QA script, no app defect). P2 3077309 (ff on the owner's c4dbd6e): TWO_STEP="CUBE GREENCORE", selftest 280/280.

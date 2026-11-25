@@ -1,3 +1,27 @@
+# Update 754a (25 Nov 2026, cloud run) - P2 emulator review: Cross's walk fixed (its achievements open the menu's own list by default); rule 11: emulator picker, first-run accounts, who-is-playing, presets, manual reader, second-screen guide / details and game-look options show their text whole
+- CI first: Verify 310 on b56caf8 (753a) GREEN. P2 emulator review 45623176605 (GREENCORE ARTLIB CROSS LIVE on 3077309)
+  VERDICT FAIL on CROSS only (x1.3 + x1.0); GREENCORE (two-step fix of 753a works), ARTLIB and LIVE PASS at both scales, 0
+  launches, 0 FATAL, restore OK. Cause (QA script, no app defect): Cross's "Achievements in the menu's style" (cross_trophies,
+  update 127, ON by default) opens the menu's own full-screen list from the window's Achievements key, so the window has only
+  Game / Information / Options pages - six R1 presses came back to the first page and Down Down from Start game landed on
+  Options. Nothing was pressed on a key (the guard held).
+- P2 branch 777afa8 (fast-forward on the owner's live 4dfb336): p2review turns cross_trophies off for the Cross walk only (QA
+  app; old value read from the app's own log and put back, also when the window does not open; the snapshot restores every
+  setting anyway), so the window's own Achievements page (742a) is reviewed; the default list is logged NOT TESTED by this walk.
+  Selftest 281/281 (1 new, fails on the old script). Review dispatched: run 45633462166 (P2:CROSS).
+- Design note for the owner (not decided here): with the default setting a player never sees Cross's 742a Achievements page -
+  the update-127 menu list takes its place. Which one Cross should show by default is the owner's call.
+- Dev line, rule 11 (matrix P13): EmulatorPickerDialog.kt (subtitle, two lines), FirstRunDialog.kt ("Connected" mark),
+  WhoIsPlaying.kt (player name), PresetsCard.kt (preset name), ManualReader.kt (title + page), GuideSecondScreen.kt (guide title,
+  two lines), GameLookPicker.kt (option label, two lines), SecondScreenDetails.kt (console label) go through FullText (wrap,
+  readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: PickerGuideFullText754aTest 2/2 PASS in the cloud (fails on 753a: 8 Ellipsis); FolderAppsFullText753aTest 2/2 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 27 -> 19.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/EmulatorPickerDialog.kt, ui/FirstRunDialog.kt, ui/WhoIsPlaying.kt,
+  ui/PresetsCard.kt, ui/ManualReader.kt, ui/GuideSecondScreen.kt, ui/GameLookPicker.kt, ui/SecondScreenDetails.kt,
+  app/src/test/java/com/shelf/launcher/ui/PickerGuideFullText754aTest.kt.
+- Not tested: hardware (HW-24 754a KONKR x1.3 + x1.0; the second-screen pieces on the Thor with HW-26).
+
 # Update 753a (25 Nov 2026, cloud run) - P2 emulator review: Green Core's game window opened as a two-step home; rule 11: folders, artwork gallery, apps library, settings groups / sliders, L1 shortcuts and the Tiles achievement count show their text whole
 - CI first: Verify 310 on b8d00ea (752a) GREEN. P2 emulator review 45612718815 (CAMERA PANELS SHOP GREENCORE on 12f3b28)
   VERDICT INFRA: x1.0 PASS (all four), x1.3 CAMERA / PANELS / SHOP PASS, GREENCORE aborted safely ("game window expected",
