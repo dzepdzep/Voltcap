@@ -53,7 +53,7 @@ internal fun ScrollingName(
         } else {
             Text(
                 text, color = color, fontSize = fontSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(fontSize), maxFontSize = fontSize), lineHeight = lineHeight, fontWeight = fontWeight, textAlign = textAlign, style = style,
-                maxLines = lines, minLines = lines, overflow = TextOverflow.Ellipsis,
+                maxLines = lines, minLines = lines, overflow = TextOverflow.Ellipsis, // qa-ok: TRUNCATE (unfocused name in a fixed-height row, update 274; the focused one slides whole, above)
                 onTextLayout = { overflows = it.hasVisualOverflow }
             )
         }

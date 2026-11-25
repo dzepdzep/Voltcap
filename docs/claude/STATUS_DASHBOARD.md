@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 757a · 2026-11-25 17:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on afe1c5e (756a) · effort: medium
+**1. LATEST UPDATE** - 757b · 2026-11-25 18:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on dce5a85 (757a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Three more places now show their whole text instead of cutting it with dots: the game name under the logo on the classic row (still the same size, nothing around it moves), the percentage and points line on the badge wall, and Pocket Quest's Play Game key. The scraping counters in the status bar may still end in dots beside the music player, on purpose - tapping them shows the whole readout.
+**2. WHAT CLAUDE JUST FIXED** - More places now show their whole text instead of cutting it with dots: the small print on the printed case backs (publisher, release and the foot note get a little smaller or narrower instead), text pieces in your own custom layouts (they shrink, then slide), and the Magazine home's story, which now ends with "Full story on Details" when it is too long for its column. Only two places with dots are left, both on the home screen's category and tile names.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Last whole-text fixes (8 places left, each needs a careful choice); badgecheck fixtures and profile-picture corner (v0.6.74 list)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Last two whole-text fixes (category name, Tiles game name - must not disturb category switching); badgecheck fixtures and profile-picture corner (v0.6.74 list)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 

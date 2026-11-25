@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 18:40 UTC, 757b (cloud, rule 11):** Verify 310 on dce5a85 GREEN. CollectorBacks detail lines + foot note drawn whole
+(wholeLineFit: smaller to 70 %, then narrower), StyleCustom text pieces through FullText (reserve off), StyleMagazine story ends
+on the STORY_CUE line when cut; ScrollingName (unfocused fixed-height name) + StoryLines qa-ok (CollectorFit757bTest 4/4,
+TRUNCATE 8 -> 2; HW-24 757b).
+NEXT: check Verify 310 on this push FIRST. The last 2 rule 11 places: LauncherScreen:4120 category name (CATSHELL rule 14 -
+FullText with autoFit + reserve, check CategoryStable394Test + static CATSHELL) and TileHome:442 game name (riseOnChange +
+custom layout; keep the tile height). Then the v0.6.74 list (badgecheck D357 fixtures, profile-picture corner, H16 polish).
+P2: only on an owner push / review or a red CI.
+
 **25 Nov 17:40 UTC, 757a (cloud, rule 11):** Verify 310 on afe1c5e GREEN. GameDock home name (autoFit off, no reserve -
 layout unchanged), BadgeWall % / points line, Pocket Quest Play key through FullText; HomeChrome status-bar progress counters
 qa-ok (live counters; whole in Background work); FitText doc comment qa-ok (DockBadgeFullText757aTest 2/2, TRUNCATE 13 -> 8;

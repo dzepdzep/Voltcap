@@ -1,3 +1,20 @@
+# Update 757b (25 Nov 2026, cloud run) - rule 11: printed case backs, custom layout texts and the Magazine story no longer end in "..."
+- CI first: Verify 310 on dce5a85 (757a) GREEN.
+- Rule 11 (no "..." truncation): the printed case back (CollectorBacks) draws its detail lines (publisher, release, players)
+  and its foot note whole - a smaller size (to 70 %), then narrower letters - instead of TextUtils.ellipsize (new pure helper
+  wholeLineFit). A custom layout's text pieces (StyleCustom) keep the piece's own line count but shrink to a readable size and
+  then slide instead of "..." (FullText, no reserved height - the piece's box is the user's). The Magazine home's story keeps
+  filling its column and, when it is longer, now ends on the "Full story on Details ›" cue line like every other cut summary
+  (owner-approved D255). Kept on purpose with qa-ok: ScrollingName's unfocused name in a fixed-height row (the focused one
+  slides whole), StoryLines (summary in the room left; whole on Details), the case back's title / paragraph StaticLayouts
+  (only past their readable minimum).
+- Test: CollectorFit757bTest 4/4 (fails on the 757a sources); DockBadgeFullText757aTest, LookTabsFullText756aTest,
+  InputContract462Test, Batch503Test, Batch520Test PASS. Static TRUNCATE 8 -> 2 (LauncherScreen category name, TileHome game
+  name - both need the rule 14 category-switch care). Cloud compiled (compileDebugUnitTestKotlin).
+- Files: app/src/main/java/com/shelf/launcher/ui/{CollectorBacks,StyleCustom,StyleMagazine,ScrollingName,WholeRows}.kt,
+  app/src/test/java/com/shelf/launcher/ui/CollectorFit757bTest.kt (cloud: edited in app/ directly).
+- Not tested: hardware (HW-24 757b KONKR).
+
 # Update 757a (25 Nov 2026, cloud run) - rule 11: classic row game name, badge wall line and Pocket Quest Play key show their text whole
 - CI first: Verify 310 on afe1c5e (756a) GREEN.
 - Rule 11 (no "..." truncation): GameDock's home game name (two lines, then a slow slide; same size as before - autoFit off -

@@ -106,6 +106,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   Tiles home's achievement count pill (e.g. 120/120 beside a console badge) - whole (wrap, shrink, then slide), never an
   ellipsis; rows / panels keep their heights. D-pad + touch still work. Screenshots.
   Unit evidence only (FolderAppsFullText753aTest; static TRUNCATE 35 -> 27).
+- Also (757b, rule 11, dev line 757b or later, ~2 min, KONKR x1.3 + x1.0, with 749a-757a): a printed case back (Collector's
+  case / printed back of a game with a long publisher + developer line) - detail lines and the foot note whole (smaller /
+  narrower, never "..."); a custom layout (e.g. the Marquee preset) with a very long game name - shrinks, then slides; the
+  Magazine home with a long summary - the story ends on "Full story on Details ›" and Details shows it whole. D-pad + touch
+  still work. Screenshots. Unit evidence only (CollectorFit757bTest; static TRUNCATE 8 -> 2).
 - Also (757a, rule 11, dev line 757a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-756a): the classic row's game name under
   the logo (a very long name: two lines, then a slow slide; the row and the logo do not move between short and long names),
   the badge wall's percentage / points line, Pocket Quest's Play Game / Continue key with the screenshots column open - whole

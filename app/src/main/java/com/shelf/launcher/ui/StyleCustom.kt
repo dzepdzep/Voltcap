@@ -58,7 +58,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -337,8 +336,10 @@ private fun SceneText(c: StyleCtx, p: ScenePart, g: Game, h: Float) {
         Modifier.fillMaxSize(),
         contentAlignment = when (p.align) { "center" -> Alignment.TopCenter; "end" -> Alignment.TopEnd; else -> Alignment.TopStart }
     ) {
-        Text(
-            text,
+        // (757b, rule 11: the piece's own line count, as before, but a text longer than it shrinks to a readable size and
+        // then slides instead of ending in "…". reserve off: the piece's box is the user's, nothing is laid out under it.)
+        FullText(
+            text, color = sceneColor(p.color ?: "#FFFFFF"), fontSize = fontSp, maxLines = p.maxLines, reserve = false,
             style = TextStyle(
                 color = sceneColor(p.color ?: "#FFFFFF"),
                 fontSize = fontSp,
@@ -348,9 +349,7 @@ private fun SceneText(c: StyleCtx, p: ScenePart, g: Game, h: Float) {
                 fontFamily = family,
                 textAlign = align,
                 shadow = if (p.shadow) Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 2f), 6f) else null
-            ),
-            maxLines = p.maxLines,
-            overflow = TextOverflow.Ellipsis
+            )
         )
     }
 }
