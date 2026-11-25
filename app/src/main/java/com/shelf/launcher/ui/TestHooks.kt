@@ -518,6 +518,40 @@ internal object TestHooks {
                             }
                             t == "end" && com.shelf.launcher.device.tune.TuneSim.on -> T.onGameEnded(app)
                             t.startsWith("fg:") && com.shelf.launcher.device.tune.TuneSim.on -> T.onForeground(app, t.removePrefix("fg:"))
+                            // own:<key>|<UNDERCLOCK>|<AutoTDP mode or none> - a game's own profile in the QA app's tuner store;
+                            // clear:<key> takes it away; heat:<on|off>|<PRESET>|<C>; lib:<pkg>|<name>[,<pkg>|<name>] - the
+                            // library games the resume rule may recognise (synthetic).
+                            t.startsWith("own:") -> t.removePrefix("own:").split('|').let { a ->
+                                val auto = a.getOrNull(2)?.takeIf { it != "none" }?.let { com.shelf.launcher.device.tune.AutoTdpMode.valueOf(it) }
+                                com.shelf.launcher.device.tune.TuneStore(app).setForKey(a[0], com.shelf.launcher.device.tune.TuneProfile(
+                                    underclock = com.shelf.launcher.device.tune.Underclock.valueOf(a[1]), autoTdp = auto != null,
+                                    autoMode = auto ?: com.shelf.launcher.device.tune.AutoTdpMode.BALANCED))
+                                T.profileChanged(app, a[0])
+                            }
+                            t.startsWith("clear:") -> { com.shelf.launcher.device.tune.TuneStore(app).setForKey(t.removePrefix("clear:"), null); T.profileChanged(app, t.removePrefix("clear:")) }
+                            t.startsWith("global:") -> t.removePrefix("global:").split('|').let { a ->
+                                val auto = a.getOrNull(1)?.takeIf { it != "none" }?.let { com.shelf.launcher.device.tune.AutoTdpMode.valueOf(it) }
+                                com.shelf.launcher.device.tune.TuneStore(app).setGlobal(com.shelf.launcher.device.tune.TuneProfile(
+                                    underclock = com.shelf.launcher.device.tune.Underclock.valueOf(a[0]), autoTdp = auto != null,
+                                    autoMode = auto ?: com.shelf.launcher.device.tune.AutoTdpMode.BALANCED))
+                                T.profileChanged(app, null)
+                            }
+                            t.startsWith("heat:") -> t.removePrefix("heat:").split('|').let { a ->
+                                val st = com.shelf.launcher.device.tune.TuneStore(app)
+                                st.heatGuard = a[0] == "on"
+                                a.getOrNull(1)?.let { st.heatGuardPreset = com.shelf.launcher.device.tune.HeatGuardPreset.of(it) }
+                                a.getOrNull(2)?.toIntOrNull()?.let { st.heatGuardC = it }
+                                T.profileChanged(app, null)
+                            }
+                            // reset: the QA app's tuner settings that these steps wrote go away again (its own store only).
+                            t == "reset" -> {
+                                app.getSharedPreferences("tuner", android.content.Context.MODE_PRIVATE).edit()
+                                    .remove("global").remove("per_game").remove("heat_guard").remove("heat_guard_preset").remove("heat_guard_c")
+                                    .remove("measured").remove("learned").commit()
+                                T.libraryApps = emptyMap()
+                            }
+                            t.startsWith("lib:") -> T.libraryApps = t.removePrefix("lib:").split(',').mapNotNull { e ->
+                                e.split('|').takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
                         }
                         val st = T.status.value
                         android.util.Log.i("VoltcapTdp", "tunesim $t -> on=${com.shelf.launcher.device.tune.TuneSim.on} supported=${st.supported} source=${st.source} kind=${st.sourceKind} " +

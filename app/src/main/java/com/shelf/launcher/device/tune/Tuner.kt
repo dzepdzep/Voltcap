@@ -881,7 +881,7 @@ object Tuner {
                     }.toMap()
                     // (Update 255: kept with the stock clocks, for a Voltcap that restarts while its limits are on.)
                     appCtx?.let { c -> runCatching {
-                        c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit()
+                        c.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE).edit()
                             .putString("vendor", org.json.JSONObject().also { o -> vendorSaved?.forEach { (k, v) -> o.put(k, v) } }.toString()).apply()
                     } }
                 }
@@ -934,6 +934,8 @@ object Tuner {
     @Volatile private var appCtx: Context? = null
     @Volatile private var dirtyWritten: Boolean? = null
     private const val STOCK_PREFS = "tuner_stock"
+    /** (682bd: the QA app's simulated hardware keeps its "stock" apart - TuneSim never leaves a trace in the real record.) */
+    private fun stockPrefs(): String = if (TuneSim.on) "tuner_stock_sim" else STOCK_PREFS
 
     /** When this boot started (wall clock, ±1 s): a different value means the handheld restarted since. */
     private fun bootStamp(): Long = (System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()) / 1000L
@@ -942,7 +944,7 @@ object Tuner {
 
     private fun captureStock(context: Context) {
         if (stock != null) return
-        val prefs = context.applicationContext.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE)
+        val prefs = context.applicationContext.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE)
         val kept = runCatching {
             if (prefs.getBoolean("dirty", false) && sameBoot(prefs.getLong("boot", 0L)))
                 prefs.getString("stock", null)?.let { stockFromJson(it) }
@@ -989,7 +991,7 @@ object Tuner {
         if (dirtyWritten == on) return
         val c = appCtx ?: return
         runCatching {
-            c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit().putBoolean("dirty", on).putLong("boot", bootStamp()).apply()
+            c.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE).edit().putBoolean("dirty", on).putLong("boot", bootStamp()).apply()
             dirtyWritten = on
         }
     }

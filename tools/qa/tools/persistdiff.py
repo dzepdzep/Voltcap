@@ -12,10 +12,14 @@ import xml.etree.ElementTree as ET
 VOLATILE = re.compile(r"(_at$|_ms$|_time$|time$|stamp|_since|last_|_last|count|seen|session|warm|cache|_ts$|^ts_|recent|"
                       r"open_game|open_since|playtime_own|launch|crash|frame|battery|lastScan|scan_|_v\d+$|"
                       # the tuner's own records of a (simulated) play session: what it cost, what AutoTDP learned
-                      r"^measured$|^learned$)", re.I)
+                      r"^measured$|^learned$|"
+                      # when the update check last ran
+                      r"^last$)", re.I)
 VOLATILE_FILES = {"session", "crash_guard", "migrations", "sync_status", "launch_context", "achievement_seen", "running_games",
                   "emulator_guard", "quick_resume", "game_extras", "sync_log", "theme_rotation_state", "other_devices",
-                  "WebViewChromiumPrefs", "charge_log", "battery_log", "frame_watch", "art_cache", "metadata_cache"}
+                  "WebViewChromiumPrefs", "charge_log", "battery_log", "frame_watch", "art_cache", "metadata_cache",
+                  # the battery watcher's own running totals (CPU / wall time in front, screen off)
+                  "battery_watch"}
 
 
 def load(tar):

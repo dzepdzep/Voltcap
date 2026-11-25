@@ -97,7 +97,10 @@ object SettingsScopes {
         // RomM downloads Android is running here, and which radios sleep mode switched off here.
         "other_devices", "romm_downloads", "sleep_radios_state",
         // Batch 517: this installation's random ID for Voltcap's service (VoltcapService) — never travels.
-        "voltcap_service"
+        "voltcap_service",
+        // 682bd: the tuner's record of THIS handheld's own clocks (to put back after a reboot) - another device's would be
+        // wrong here (it was GLOBAL by default and travelled with backups) - and the QA simulator's (TuneSim).
+        "tuner_stock", "tuner_stock_sim"
     )
 
     private val AUTH_PATTERN = Regex("(_encrypted$|credential|secret|token|password|oauth|api_?key|_auth$)", RegexOption.IGNORE_CASE)
