@@ -1219,3 +1219,29 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
   package can't be installed and updated; no bypass. Covered by AppCategories725aTest (choices kept by package name).
 - **QA hooks in production:** HooksIsolated682awTest PASS - every new hook (focuspos, appcat incl. coll / collnew / ucoll) does
   nothing unless `QaVariant.isolated` (the QA package); production package -> no state change, no log.
+
+### 682ay - Arcade B on the EXPERIMENTAL branch claude/exp-arcadeb-focus (owner 25 Nov 10:42) - measured, NOT merged
+- **Baseline + cause:** All category (RP Classic 34 games, KONKR 32; the game hook jumps to the game's console, so the walk now
+  sets All after it and every half must log `focus ... null|null` - an earlier run that ended on PS2 was rejected as INFRA).
+  The home re-ran its whole body ~2.3 times per game change (QaTrace `Screen=` counts, 26 moves): the change itself, then
+  ~400 ms later the save of "the game you were on" (flushFocusSave wrote `categories.lastFocusedKey` into the UI state, which
+  nothing on screen reads).
+- **Narrow change:** that save writes only the stored setting (CategoryStore.saveLastFocused); category saves carry the newest
+  key (FocusSave.merge, FocusSave682ayTest 3/3). Same-build switch `voltcap_test_focussave legacy|new` (isolated QA app only).
+  Nothing drawn changes: visuals, animations, focus and artwork paths untouched.
+- **Same-build A/B (`p2review.sh isoab`, interleaved twice, 26 moves each; grader isoab.py + selftest):**
+  | Run | Layout | rebuilds legacy -> new | slow UI frames | p95 ms | p99 ms | grader |
+  |---|---|---|---|---|---|---|
+  | RPC ris2 | Arcade | 63 / 61 -> 36 / 32 | 80 / 78 -> 65 / 62 | 117 / 105 -> 97 / 93 | 150 / 133 -> 133 / 113 | GAIN |
+  | RPC ris4 (new first) | Arcade | 58 / 57 -> 38 / 33 | 80 / 71 -> 68 / 65 | 109 / 97 -> 113 / 105 | 133 / 129 -> 150 / 129 | NO GAIN (p99) |
+  | RPC ris3 | Voltcap row | 70 / 69 -> 39 / 41 | 84 / 61 -> 60 / 53 | 93 / 77 -> 81 / 77 | 125 / 113 -> 125 / 117 | GAIN |
+  | RPC ris3 | Tile home | 57 / 57 -> 32 / 31 | 60 / 60 -> 46 / 56 | 73 / 73 -> 77 / 77 | 101 / 109 -> 105 / 113 | GAIN |
+  | KONKR kis1 | Arcade | 60 / 55 -> 33 / 28 | 114 / 60 -> 59 / 51 | 57 / 40 -> 44 / 36 | 69 / 53 -> 57 / 48 | GAIN |
+  | KONKR kis1 | Grid | 53 / 54 -> 27 / 26 | 33 / 39 -> 20 / 18 | 29 / 32 -> 28 / 27 | 36 / 38 -> 36 / 36 | GAIN |
+  | KONKR kis1 | Cube (3D) | 54 / 56 -> 36 / 29 | 45 / 44 -> 48 / 39 | 61 / 57 -> 61 / 53 | 77 / 73 -> 77 / 65 | NO GAIN |
+  Reading: whole-home rebuilds ~40-50 % fewer everywhere and slow UI frames fewer in almost every pair - a real, repeatable
+  gain. The first half of a run is slower whichever variant runs first (warm-up; ris4 reversed the order), so **p95 / p99 - the
+  ~100 ms stall of the game change itself - is NOT claimed improved**: this removes the second rebuild, not the first.
+- Restart keeps the game you were on with the new save path: RPC ris4 PASS (Crazy Taxi before / after a QA app restart).
+- Open: the change's own stall (~95-110 ms p95 on RP Classic Arcade) - the next narrow step is the ~0.3 extra rebuilds per move
+  left (rebuilds 1.3 / move), then the structural one (the home body reading the focused game). Arcade B stays OPEN.

@@ -3437,5 +3437,41 @@ class TestPlay720Grader720a(unittest.TestCase):
         self.assertLess(sh.rindex(" ek "), sh.index("voltcap_test_snapshot restore"))
 
 
+class TestIsoab682ay(unittest.TestCase):
+    """682ay: isoab.py grades the Arcade B A/B - a half not on All (the game hook's own console) is INFRA, never a result; GAIN
+    needs fewer rebuilds AND better p95 / slow UI in BOTH pairs; the restart keeps the focused game."""
+    GFX = "Total frames rendered: %d\nJanky frames: 10 (1%%)\nNumber Slow UI thread: %d\nHISTOGRAM: 16ms=%d 32ms=%d 100ms=%d 150ms=%d\n"
+
+    def _run(self, on_all=True, newer_better=True, keep_after="/r/b.sfc"):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import isoab
+        d = tempfile.mkdtemp()
+        w = lambda n, t: open(os.path.join(d, n), "w").write(t)
+        w("IS_ARCADE_cat.txt", "E VoltcapQA: category ALL games=34\n")
+        plat = "null|null" if on_all else "PS2|null"
+        for v in ("legacy", "new"):
+            good = (v == "new") == newer_better
+            for i in (1, 2):
+                n = "IS_ARCADE_%s_%d" % (v, i)
+                w(n + "_P_nav_gfx0.txt", self.GFX % (0, 0, 0, 0, 0, 0))
+                w(n + "_P_nav_gfx.txt", self.GFX % (100, 60 if good else 80, 70, 20, 8 if good else 2, 2 if good else 8))
+                w(n + "_recomp.txt", "E VoltcapQA: 1 focus 3 %s /r/a.sfc\nE VoltcapQA: 2 recomp 1000ms Screen=%d StatusBar=1\n" % (plat, 30 if good else 60))
+        w("IS_keep_before.txt", "E VoltcapQA: 5 focus 3 null|null /r/b.sfc\n")
+        w("IS_keep_after.txt", "E VoltcapQA: 6 focus 3 null|null %s\n" % keep_after)
+        return isoab.grade(d)[1]
+
+    def test_gain(self):
+        self.assertEqual(self._run(), {"ARCADE": "GAIN", "keep": "PASS"})
+
+    def test_not_on_all_is_infra(self):
+        self.assertEqual(self._run(on_all=False)["ARCADE"], "INFRA")
+
+    def test_worse_is_no_gain(self):
+        self.assertEqual(self._run(newer_better=False)["ARCADE"], "NO GAIN")
+
+    def test_restart_on_another_game_fails(self):
+        self.assertEqual(self._run(keep_after="/r/z.sfc")["keep"], "FAIL")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
