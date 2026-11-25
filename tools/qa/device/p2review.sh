@@ -596,10 +596,16 @@ appcat)
   # the D-pad down the list; where it is on Recomps (the dump's focused row), one touch on that row - its tick goes off - and
   # the same tap again - back on (no QA hook call while the window is open: an `am start` takes the focus from it)
   tapped=0
-  for i in 1 2 3 4 5 6 7 8; do wg_key_dlg D; sleep 0.6; shot AC_cats_d$i
+  # (its own counter: shot() runs its own `i` loop - D390's lesson)
+  for ci in 1 2 3 4 5 6 7 8; do wg_key_dlg D; sleep 0.6; shot AC_cats_d$ci
     if [ $tapped = 0 ]; then
-      xy=$(tr -d '\n' < $O/${TAG}_AC_cats_d$i.json 2>/dev/null | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | grep -i '"label":"[^"]*Recomps' | head -1 | sed -n 's/.*"shown":\[\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p')
-      if [ -n "$xy" ]; then set -- $xy; tx=$(( $1 + $3 / 2 )); ty=$(( $2 + $4 / 2 ))
+      xy=$(tr -d '\n' < $O/${TAG}_AC_cats_d$ci.json 2>/dev/null | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | grep -i '"label":"[^"]*Recomps' | head -1 | sed -n 's/.*"shown":\[\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p')
+      # (the list scrolls to the row it moved onto - the dump taken just after showed it still moving and the tap fell between
+      # two rows (KONKR x1.3): once on Recomps, a still second dump, and its bounds)
+      [ -n "$xy" ] && { sleep 1.2; shot AC_cats_pre; xy=$(tr -d '\n' < $O/${TAG}_AC_cats_pre.json 2>/dev/null | tr '{' '\n' | grep -F '"focused":true' | grep -F '"kind":"control"' | grep -i '"label":"[^"]*Recomps' | head -1 | sed -n 's/.*"shown":\[\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)\].*/\1 \2 \3 \4/p'); }
+      # (QaClip's rows are placed inside their own window: the dialog window's top - its "at" - is added for the screen tap)
+      wy=$(tr -d '\n' < $O/${TAG}_AC_cats_pre.json 2>/dev/null | grep -o '"at":\[[0-9]*,[0-9]*,[0-9]*,[0-9]*\],"focus":true' | sed -n 's/"at":\[[0-9]*,\([0-9]*\),.*/\1/p'); wy=${wy:-0}
+      if [ -n "$xy" ]; then set -- $xy; tx=$(( $1 + $3 / 2 )); ty=$(( $2 + $4 / 2 + wy ))
         wg_tap_dlg $tx $ty; sleep 1.4; shot AC_cats_tap1; wg_tap_dlg $tx $ty; sleep 1.4; shot AC_cats_tap2
         log "touch on the Recomps row at $tx,$ty (tap1 / tap2 shots)"; tapped=1; fi
     fi

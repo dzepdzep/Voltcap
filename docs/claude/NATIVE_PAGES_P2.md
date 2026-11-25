@@ -1173,3 +1173,27 @@ Task 1 Row Position (714a / 715a / 716a) hardware results stay as recorded under
   0 failures after the fixes (last rerun of the touched suites green). Static PASS. Hardware NOT TESTED (HW-28 extended),
   emulator review not run, not approved.
 - Audit: class C 20 scenes done - own designs 52 / 53 (49 + the three Pocket faces). Class C is complete; the one layout left is not a class C scene - see the tracker table before picking it.
+
+### 682av - hardware QA of 723a / 724a / 725a (owner 25 Nov 08:40) - not re-implemented, tested as built
+QA-only hooks (isolated QA app; they call the production functions, never the R1 panel's system tiles): `voltcap_test_focuspos
+NEXT|<i>|LOG` (FocusPosTile.next / pick - the tile's own change), `voltcap_test_appcat recomp|kind|console|options|cats|log`
+(setAppRecomp / setAppKind / setAppConsole - START > Categories' own calls - and its real START / Categories windows). QA snapshot
+now also keeps `library_apps`. Graders: tools/qa/tools/focuspos.py, appcat.py. winguard: wg_dialog / wg_key_dlg / wg_tap_dlg (keys
+and taps only inside a confirmed QA dialog). QA app qa682av / qa682av2 (9bd9b52), Level 1, KONKR BW0306N230000845 over USB.
+- **723a R1 Focus position - KONKR x1.0 PASS (kfp10b):** saved choice back after a QA app restart; Voltcap row Left / Middle and
+  Tile home Edges / Left / Middle / Right each taken as asked and held while browsing All (the focused card's centre 0.24 / 0.50;
+  0.14 / 0.50 / 0.82; Edges moves to the edges); a press steps round every choice; Endless on: the first game's Left goes round to
+  the last; the tile hidden on Grid, Hero, Arcade, Cube; the R1 panel's own prefs unchanged throughout (hash). Tile home's title
+  follows the focused tile (left / centre / right). **x1.3 (kfp13):** positions and Tile home PASS, Voltcap row's choice lines lost
+  to the logcat ring (tooling fixed: qa_keep) - persistence at x1.3 NOT TESTED.
+- **724a Recomps + 725a START multi-category - KONKR x1.3 PASS (kac13c), x1.0 functional PASS (kac10, touch NOT TESTED there):**
+  subject app = Files by Google (already installed; put in the QA app's own library only): no Recomps before the mark; marked ->
+  Recomps appears (and the app leaves Other apps); + Android games + Nintendo 64 -> listed in all three at once, once in All; the
+  same record (key) throughout; START window shows "Categories... Android games · Recomps · Nintendo 64"; the Categories window
+  walked with the D-pad; one touch on Recomps takes the tick off, a second puts it back (x1.3); kept after a QA app restart (a
+  fresh app scan); its START > Play records exactly one launch of that app's own record (`startGame <package>`); console off ->
+  out of N64 (the console stays, it has ROMs), Recomps off -> the category gone (empty), kind Automatic -> back in Other apps;
+  the app stays in All with the same record. NOT TESTED on hardware: an APK update of the app (no update to install - kept by
+  package name, AppCategories725aTest), Collections... picker.
+- **RP Classic: NOT TESTED** - a `com.rp.settings` window holds the screen focus there (RP's own panel), the QA guard stops before
+  any key; the owner asked to close it.
