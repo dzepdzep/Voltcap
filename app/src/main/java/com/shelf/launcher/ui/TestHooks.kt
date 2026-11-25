@@ -553,10 +553,14 @@ internal object TestHooks {
                             t.startsWith("lib:") -> T.libraryApps = t.removePrefix("lib:").split(',').mapNotNull { e ->
                                 e.split('|').takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
                         }
+                        Thread.sleep(400)
                         val st = T.status.value
-                        android.util.Log.i("VoltcapTdp", "tunesim $t -> on=${com.shelf.launcher.device.tune.TuneSim.on} supported=${st.supported} source=${st.source} kind=${st.sourceKind} " +
+                        val line = "tunesim $t -> on=${com.shelf.launcher.device.tune.TuneSim.on} supported=${st.supported} source=${st.source} kind=${st.sourceKind} " +
                             "uc=${st.profile.underclock} auto=${st.profile.autoTdp}:${st.profile.autoMode} heatStep=${st.heatStep} heatCut=${st.heatCut} heatC=${st.heatC} " +
-                            "line='" + com.shelf.launcher.device.tune.powerLine(st.profile, st.autoUnderclock, st.heatCut, st.sourceKind, st.source, st.vendorThrottle) + "' writes=${com.shelf.launcher.device.tune.TuneSim.writes.size}")
+                            "line='" + com.shelf.launcher.device.tune.powerLine(st.profile, st.autoUnderclock, st.heatCut, st.sourceKind, st.source, st.vendorThrottle) + "' writes=${com.shelf.launcher.device.tune.TuneSim.writes.size}"
+                        // (Error level: some handhelds keep only errors in the log - and a file the script copies.)
+                        android.util.Log.e("VoltcapTdp", line)
+                        runCatching { java.io.File(app.getExternalFilesDir(null), "qa_tunesim.log").appendText(java.time.LocalTime.now().toString().take(8) + " " + line + "\n") }
                     }.onFailure { android.util.Log.e("VoltcapTdp", "tunesim $t failed: $it") }
                 }.start()
             } else android.util.Log.e("VoltcapTdp", "tunesim $t refused (not the isolated QA app or hooks off)")

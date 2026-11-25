@@ -1979,7 +1979,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             com.shelf.launcher.data.RaOverlayData.clear()
             val app = getApplication<Application>()
             Thread {
-                runCatching { com.shelf.launcher.device.tune.Tuner.onGameEnded(app) }
+                // (682bd QA: with the QA app's simulated tuner on, Voltcap coming to the front is the test's own hook intent, not a
+                // return from a game - TuneSim; never on in the real app.)
+                if (!com.shelf.launcher.device.tune.TuneSim.on) runCatching { com.shelf.launcher.device.tune.Tuner.onGameEnded(app) }
                 // A game's own volume for its emulator ends with it.
                 runCatching { com.shelf.launcher.device.audio.AppMixer.onGameEnded(app) }
             }.start()

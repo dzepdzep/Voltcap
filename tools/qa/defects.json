@@ -4400,6 +4400,14 @@
    "severity": "low",
    "status": "open (minor, deferrable)",
    "found": "2026-11-25"
+  },
+  {
+   "id": "D401",
+   "title": "Settings scopes: the tuner's record of this handheld's stock clocks (tuner_stock) was GLOBAL by default and travelled with backups / transfers to other devices",
+   "rule": "data-integrity",
+   "severity": "low",
+   "status": "fixed 682bd (INTERNAL, with the QA simulator's tuner_stock_sim)",
+   "found": "2026-11-25"
   }
  ]
 }
