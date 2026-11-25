@@ -89,11 +89,9 @@ object GameNotification {
         // Update 200: while a game's (or its console's) own profile is in charge, that one is what runs: the notification
         // showed the device-wide profile's "Underclock Medium" even then.
         val p = if (!tuner) null else if (st.source != "Device") st.profile else TuneStore(context).global()
-        val powerLabel = p?.let {
-            (if (it.autoTdp) "AutoTDP ${it.autoMode.label}" else it.tier.label) +
-                (if (it.underclocked) " · Underclock ${it.effectiveUnderclock.label}" else "") +
-                if (st.heatStep > 0) " · hot: ${st.heatStep} lower" else ""
-        }
+        // (682bd, owner 25 Nov 20:58: "AutoTDP Balanced · Underclock Light" read as if it were a choice - now whose profile
+        // runs and whether the underclock is your own pick or follows the power - powerLine.)
+        val powerLabel = p?.let { powerLine(it, st.autoUnderclock, st.heatStep, if (st.source != "Device") st.sourceKind else TuneSource.DEVICE, st.source) }
         val overlays = listOfNotNull(
             "Stats".takeIf { cfg.showDuringGames }, "Music".takeIf { cfg.musicDuringGames }, "Trophies".takeIf { cfg.raDuringGames }
         ).joinToString("+").ifEmpty { "off" }
@@ -224,3 +222,16 @@ class GameNotificationReceiver : BroadcastReceiver() {
         }.start()
     }
 }
+
+/**
+ * (682bd) The power line of the in-game notification: the mode, the underclock with where it comes from (your own pick -
+ * Off included - or "(with power)", with AutoTDP's live step), the heat guard's extra steps, and whose profile runs
+ * ("Game profile", "App profile", "PS2 profile", "Device-wide").
+ */
+internal fun powerLine(p: TuneProfile, liveUc: Underclock?, heatStep: Int, kind: TuneSource, sourceName: String): String =
+    listOfNotNull(
+        if (p.autoTdp) "AutoTDP ${p.autoMode.label}" else p.tier.label,
+        p.underclockPart(liveUc),
+        "hot: $heatStep lower".takeIf { heatStep > 0 },
+        if (kind == TuneSource.CONSOLE) sourceName else kind.label
+    ).joinToString(" · ")

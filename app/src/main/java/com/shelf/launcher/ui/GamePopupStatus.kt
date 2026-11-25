@@ -98,13 +98,15 @@ internal fun rememberGamePerf(g: Game, packageName: String?): GamePerfState? {
     val edits by TuneStore.edits.collectAsState()
     val perf = remember(g.stableKey, packageName, v, sync, edits) {
         val own = store.forKey(g.stableKey)
-        val pkg = packageName?.let { store.forKey("pkg:$it") }
         val platform = g.platform.takeIf { g.sourceType == SourceType.ROM && it.isNotBlank() }
-        val cons = if (store.consoleProfiles && platform != null) store.forKey("plat:$platform") else null
-        val (inh, from) = when {
-            pkg != null -> pkg to (if (g.sourceType == SourceType.APP) "App default" else "Emulator default")
-            cons != null -> cons to "${com.shelf.launcher.data.ConsoleNames.display(platform!!)} default"
-            else -> store.global() to "Device default"
+        // (682bd: the launch's own rule - TuneResolve - with the game's own profile left out: what it would inherit.)
+        val (inh, inhKey) = com.shelf.launcher.device.tune.TuneResolve.pick(
+            { k -> if (k == g.stableKey) null else store.forKey(k) }, store::global, g.stableKey, packageName, platform, store.consoleProfiles)
+        val from = when {
+            inhKey == null -> "Device default"
+            inhKey.startsWith("plat:") -> "${com.shelf.launcher.data.ConsoleNames.display(platform!!)} default"
+            g.sourceType == SourceType.APP -> "App default"
+            else -> "Emulator default"
         }
         GamePerf(g.stableKey, g.name, own, inh, from)
     }
@@ -134,7 +136,8 @@ internal class PerfRow(val label: String, val value: String, val destructive: Bo
 /** The Performance page's rows (the same in every popup style). [hasFan]: the handheld's fan can be set (null: not known yet). */
 internal fun perfRows(s: GamePerfState, hasFan: Boolean?, onAdvanced: () -> Unit): List<PerfRow> {
     val p = s.perf.effective
-    val from = if (s.perf.own == null) " · " + s.perf.inheritedFrom else ""
+    // (682bd: whose values these are - the game's own too, so a chosen Off is plainly this game's.)
+    val from = " · " + if (s.perf.own == null) s.perf.inheritedFrom else "this game"
     fun <T> next(list: List<T>, now: T): T = list[(list.indexOf(now) + 1).mod(list.size)]
     val tiers = listOf(PowerTier.OFF, PowerTier.BALANCED, PowerTier.SAVER, PowerTier.ECO, PowerTier.MAX)
     val ucs = listOf(Underclock.AUTO, Underclock.OFF, Underclock.LIGHT, Underclock.MEDIUM, Underclock.HEAVY)

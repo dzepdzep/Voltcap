@@ -177,12 +177,13 @@ private fun TunerLiveCard(s: com.shelf.launcher.device.tune.TunerStatus) {
         SectionLabel("Now")
         val p = s.profile
         val parts = buildList {
-            add(if (s.sleeping) "Screen-off profile" else "${p.tier.label} · from ${s.source}")
+            // (682bd: whose profile - "Game profile: Doom", "PS2 profile", "Device-wide".)
+            add(if (s.sleeping) "Screen-off profile" else "${p.tier.label} · " + s.sourceKind.text(s.source))
             if (p.autoTdp) add("AutoTDP ${p.autoMode.label}, level ${(s.level * 100).toInt()} %")
             // (Update 237, #85: with AutoTDP moving the underclock, the preset it is on right now.)
             val auc = s.autoUnderclock
             if (auc != null && !s.sleeping) add("Underclock ${auc.label} (set by AutoTDP)")
-            else if (p.underclocked) add("Underclock ${p.effectiveUnderclock.label}")
+            else p.underclockPart()?.let { add(it) }
             if (s.heatStep > 0) add("heat guard: ${s.heatStep} step${if (s.heatStep == 1) "" else "s"} lower")
             s.targetFps?.let { add("target $it fps") }
             // (Update 429: e.g. "target not reachable within the power budget" — said, not hidden.)
@@ -438,7 +439,7 @@ private fun UnderclockCard(p: TuneProfile, h: TuneHw?, onChange: (TuneProfile) -
 private fun profileSummary(p: TuneProfile): String = listOfNotNull(
     p.tier.label,
     "AutoTDP ${p.autoMode.label}".takeIf { p.autoTdp },
-    "Underclock ${p.effectiveUnderclock.label}".takeIf { p.underclocked },
+    p.underclockPart(), // (682bd: a chosen Off is named; "With power" says so)
     "Fan ${p.fan.label}".takeIf { p.fan != FanMode.SYSTEM },
     when (p.buttonLayout) { "XBOX" -> "Xbox buttons"; "NINTENDO" -> "Retro buttons"; else -> null },
     "${p.refreshHz} Hz".takeIf { p.refreshHz > 0 }

@@ -1,3 +1,20 @@
+# Update 682bd (25 Nov 2026, live session) - per-game performance profile: an explicit Underclock Off, and whose profile runs
+- Audit (owner 25 Nov 20:58, "Underclock Off came back as AutoTDP Balanced · Underclock Light"): a game's saved Off is kept
+  (TuneStore per_game under the game's stableKey = the package for an Android game; the launch reads the same key); AutoTDP moves
+  the underclock only when it is "With power" (AUTO); the one-time migration (uc_with_power) only converts data from before
+  Update 237. "AutoTDP Balanced · Underclock Light" = a profile whose underclock is With power (AUTO + Balanced = Light) - most
+  likely the device-wide one: returning to Voltcap ends the game's profile, and a game brought back from Android's recents (no
+  Voltcap launch) runs the device-wide profile; the notification never said whose profile it showed. Production prefs not read
+  (the tool guard refuses the real app's files).
+- Changes: TuneResolve (one rule for the launch and the popup), TuneSource + TunerStatus.sourceKind (Game / App / Emulator /
+  Console / Device-wide), notification power line names the source and says "(with power)" or "Underclock Off"; tuner Now card
+  and profile summaries the same; every save writes the migration flag (a profile saved now is never migrated). Heat guard
+  (opt-in) can still lower an explicit Off while hot - shown as "hot: N lower"; owner decision pending.
+- Tests: TuneOverride682bdTest (9: restart, legacy migration, flag on every save, backup restore, AutoTDP vs Off, resolve order,
+  same key settings / launch, copy-to-console, source labels) + Tuner373 / 710a / Readability476 - PASS. Static checks unchanged.
+- Files: device/tune/TuneModel.kt, Tuner.kt, GameNotification.kt, ui/TunerContent.kt, ui/GamePopupStatus.kt, test
+  device/tune/TuneOverride682bdTest.kt. Hardware: NOT TESTED (QA app build pending). Production untouched.
+
 # Update 682aw-682ba (25 Nov 2026, live session) - feature QA done, Disc station's own pages (53 / 53), v0.7.0 preview capture
 - 723a / 724a / 725a hardware QA (QA app, both handhelds, x1.0 + x1.3): Focus position, Recomps + START Categories incl. touch,
   Collections picker + an existing custom collection, restart / rescan / same record - PASS. The QA text-scale switch did not reach

@@ -12,6 +12,8 @@ data class TunerStatus(
     val supported: Boolean = false,
     /** "Device" or the game / app the active profile belongs to. */
     val source: String = "Device",
+    /** (682bd) Whose profile that is: the game's own, its app / emulator package's, its console's or the device-wide one. */
+    val sourceKind: TuneSource = TuneSource.DEVICE,
     val profile: TuneProfile = TuneProfile(),
     /** AutoTDP's current scale (1 = the profile's own caps). */
     val level: Float = 1f,
@@ -156,9 +158,10 @@ object Tuner {
         val g = game
         if (g != null && currentKey != null) {
             Thread { runCatching { synchronized(this) {
-                val (profile, _, label) = resolve(TuneStore(context), g)
+                val (profile, sourceKey, label) = resolve(TuneStore(context), g)
                 level = if (profile.autoTdp) AutoTdpController.startLevel(null) else 1f
                 ucStep = -1; ucMode = null
+                currentSourceKey = sourceKey
                 apply(context, profile, g.key, label)
             } } }.start()
         } else Thread { runCatching { synchronized(this) { applyGlobal(context) } } }.start()
@@ -182,12 +185,14 @@ object Tuner {
      */
     private fun resolve(store: TuneStore, g: RunningGame): Triple<TuneProfile, String?, String> {
         testProfile?.let { return Triple(it, null, "QA test") }
-        store.forKey(g.key)?.let { return Triple(it, g.key, g.name) }
-        g.packageName?.let { pkg -> store.forKey("pkg:$pkg")?.let { return Triple(it, "pkg:$pkg", g.name) } }
-        if (store.consoleProfiles && !g.platform.isNullOrBlank()) {
-            store.forKey("plat:${g.platform}")?.let { return Triple(it, "plat:${g.platform}", "${g.consoleName ?: g.platform} profile") }
+        // (682bd: the one rule the popup and the settings use too - TuneResolve.)
+        val (p, key) = TuneResolve.pick(store::forKey, store::global, g.key, g.packageName, g.platform, store.consoleProfiles)
+        val label = when {
+            key == null -> "Device"
+            key.startsWith("plat:") -> "${g.consoleName ?: g.platform} profile"
+            else -> g.name
         }
-        return Triple(store.global(), null, "Device")
+        return Triple(p, key, label)
     }
 
     /**
@@ -289,7 +294,10 @@ object Tuner {
         resets = 0
         lastResetAt = 0L
         write(t)
-        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep, resets = 0, autoUnderclock = liveUcLabel())
+        // (682bd: whose profile it is, for the notification and the screens - a game back in front without a Voltcap launch
+        // runs the device-wide one, and now says so.)
+        val kind = when { testProfile != null -> TuneSource.QA_TEST; key == null -> TuneSource.DEVICE; else -> TuneSource.of(currentSourceKey, key) }
+        _status.value = _status.value.copy(supported = true, source = source, sourceKind = kind, profile = p, level = level, heatStep = heatStep, resets = 0, autoUnderclock = liveUcLabel())
         // Any active profile needs the loop: the vendor's daemon lifts caps within seconds, also
         // outside games (the device-wide tier used to be written once and then quietly undone).
         // During a game the heat guard and the measurements need it too.
@@ -332,7 +340,9 @@ object Tuner {
     private val ucCtl = AutoUnderclock()
     private val UC_LADDER = listOf(Underclock.OFF, Underclock.LIGHT, Underclock.MEDIUM, Underclock.HEAVY)
 
-    private fun adaptiveUc(p: TuneProfile): Boolean = p.autoTdp && p.underclock == Underclock.AUTO
+    private fun adaptiveUc(p: TuneProfile): Boolean = autoTdpMovesUnderclock(p)
+    /** (682bd) AutoTDP moves the underclock only when it is "With power": a chosen Off (or Light…Custom) stays as chosen. */
+    internal fun autoTdpMovesUnderclock(p: TuneProfile): Boolean = p.autoTdp && p.underclock == Underclock.AUTO
     private fun ucRange(p: TuneProfile): IntRange = 0..UC_LADDER.indexOf(p.autoMode.ucDeepest).coerceAtLeast(0)
     private fun ucDefault(p: TuneProfile): Int = UC_LADDER.indexOf(p.effectiveUnderclock).coerceIn(ucRange(p))
 
