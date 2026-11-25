@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 16:05 UTC, 755a (cloud, P2 review - all sets PASS):** Verify 310 on 9e7a8de GREEN. Review 45633462166 (CROSS) was NOT
+TESTED only because the walk logged Cross's default menu list (cross_trophies ON) as untested. P2 8dfd4f6 (ff on 777afa8):
+p2review menu_list() checks that list after the walk with the setting back on (QA hook = the Achievements key's state; the
+menu's own list must take the focus with its earned / total line; one B back to the home; else FAIL); selftest 282/282.
+Re-review 45644606025 VERDICT PASS x1.3 + x1.0 (list opened and closed at both). Verify 310 on 8dfd4f6 GREEN. Every P2 review
+set now has an emulator PASS -> ONE owner action added (sheets' run links + Cross default-view question). No app code changed.
+NEXT: check Verify 310 on this push FIRST. P2 waits for the owner's sheet review (do not start new P2 polish without it; a red
+CI or an owner push to the P2 branch comes first). Then the next rule 11 batch (19 left; e.g. GameLookUi, CubeHub, GameDock,
+StyleCrossMenu, StyleCustom, StyleMagazine, WholeRows; TileHome game name + CollectorBacks canvas need care), then the v0.6.74
+list (badgecheck D357 fixtures, profile-picture corner, H16 polish).
+
 **25 Nov 14:50 UTC, 754a (cloud, P2 review fix + rule 11):** Verify 310 on b56caf8 GREEN. P2 review 45623176605: GREENCORE,
 ARTLIB, LIVE PASS x1.3 + x1.0 (0 launches); CROSS FAIL = QA script: Cross's "Achievements in the menu's style" (cross_trophies,
 default ON, update 127) replaces the window's Achievements page with the menu's own list, so the walk's Downs reached Options.

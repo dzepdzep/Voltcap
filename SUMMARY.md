@@ -1,3 +1,21 @@
+# Update 755a (25 Nov 2026, cloud run) - P2 emulator review: Cross's default Achievements list is now checked instead of left untested
+- CI first: Verify 310 on 9e7a8de (754a) GREEN. P2 emulator review 45633462166 (P2:CROSS on 777afa8) VERDICT NOT TESTED at
+  x1.3 + x1.0: the window walk itself was clean (all pages shot, destructive row armed and left, 0 launches, 0 FATAL, restore
+  OK), but the walk logged Cross's default list (cross_trophies ON, update 127) as NOT TESTED, which the grader counts.
+- P2 branch 8dfd4f6 (fast-forward on 777afa8): p2review's new menu_list() runs after the Cross walk with the setting back on
+  (only when it was on before): opens the game's achievements the way the window's Achievements key does (QA hook
+  voltcap_test_achlist = the same viewingAchievementsForGame state; no key that could start a game), requires the menu's own
+  list as a QA-app dialog with the focus (not the home, no game window) and more "earned / total  ·  N %" lines than the home,
+  then one B (wg_key_dlg, only while that list has the focus) must give the home back. Not opened / not closed = FAIL; a
+  missing dump = NOT TESTED. Shots CROSS_mlist_home / _open / _closed. No assertion weakened.
+- Selftest 282/282 (new behavioural test with stubbed device calls: opened + closed, not opened = FAIL with no key, B leaving it
+  open = FAIL; fails on the old script). Review dispatched: run 45644606025 (P2:CROSS on 8dfd4f6).
+- Copy: nothing for app/ (QA tools on the P2 branch only). Dev line: hand-off docs only.
+- Result: review 45644606025 VERDICT PASS (x1.3 + x1.0; the menu list opened, count lines 0 -> 1, and B closed it to the home
+  at both scales; 0 launches). Verify 310 on 8dfd4f6 GREEN. Every P2 review set now has an emulator PASS: one owner action
+  (owner_actions.json) lists the runs holding the sheets and asks which Achievements view Cross should show by default.
+- Not tested: hardware (none needed for a QA-script change). EMULATOR evidence only.
+
 # Update 754a (25 Nov 2026, cloud run) - P2 emulator review: Cross's walk fixed (its achievements open the menu's own list by default); rule 11: emulator picker, first-run accounts, who-is-playing, presets, manual reader, second-screen guide / details and game-look options show their text whole
 - CI first: Verify 310 on b56caf8 (753a) GREEN. P2 emulator review 45623176605 (GREENCORE ARTLIB CROSS LIVE on 3077309)
   VERDICT FAIL on CROSS only (x1.3 + x1.0); GREENCORE (two-step fix of 753a works), ARTLIB and LIVE PASS at both scales, 0
