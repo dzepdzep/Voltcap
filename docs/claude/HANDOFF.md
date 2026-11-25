@@ -73,6 +73,18 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 08:35 UTC, 748a (cloud, QA tooling - the P2 emulator review works again):** Verify 310 on 4d6b6b9 (dev) + ae4ad42 (P2)
+GREEN. Root of the "no dump" stops: the dump WAS there and held popupGame, but the device's grep -o found nothing in its one long
+line with non-ASCII page text; the same grep fault hid an armed confirmation ("A showed no confirmation"). P2 ae4ad42: winguard
+wg_jval reads popupGame in pure shell; p2review confirmtext reads like onhide (split on '{', grep -F). Selftest 277/277 (2 new,
+fail on the old scripts). Review 45570243363 (Pocket classic / ribbon / Quest / Layout Studio, x1.3 + x1.0) VERDICT PASS, 0
+launches - sheets in its artifact for the owner. Review 45576064795 (CIRCUIT CHAN TIMELINE HERO) dispatched.
+NEXT: check Verify 310 on this push FIRST. Read review 45576064795; if PASS dispatch the next set (one at a time, ~27 min each):
+HERO_TILES MEMCARD BOX FILESELECT / CASEFLOW ORBIT AIRY BUBBLES / CAMERA PANELS SHOP GREENCORE / ARTLIB CROSS LIVE; a FAIL /
+INFRA there is the next item. Between dispatches: other v0.6.74 work (Task 1 residual etc.). When all sets PASS, one owner
+action with the sheets' run links (owner 0 / 53 approved). Other grep -o reads on whole dumps (p2review density at the start of
+the file) are early ASCII fields - left as they are.
+
 **25 Nov 07:45 UTC, 747a-c (cloud, QA tooling for the P2 emulator review):** Verify 310 on b44d63f (dev) + 86344b2 (P2) GREEN.
 The P2 emulator review has stopped on "QaClip: 'no dump'" since 18 Nov (reproduced: run 45560074265). P2 branch 9be5fab:
 winguard reads the dump once (747b) and an abort names why (747a/c) - rerun 45563249574 showed the dump WAS written while the

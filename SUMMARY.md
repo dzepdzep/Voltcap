@@ -1,3 +1,25 @@
+# Update 748a (25 Nov 2026, cloud run) - P2 emulator review works again: the review walk reads the app's screen dumps without the device's grep (QA tooling, native-pages branch)
+- CI first: Verify 310 on 4d6b6b9 (dev lock) GREEN; 9be5fab (P2) superseded by this push; ae4ad42 (P2) GREEN.
+- Item (handoff NEXT): review 45566681915 on 9be5fab still INFRA at both scales, but 747c's kept files settled it: both kept
+  dumps ended in '}' and held "popupGame" (null / the Okami path), yet the device's grep -o found no popupGame in the same file
+  ("no popupGame read"). Both carried non-ASCII page text ('·' / '›') in the dump's one long line. The same review's
+  "Pocket classic: A on 'Hide from library' showed no confirmation" was the same fault: the kept dump says "PRESS A AGAIN TO
+  CONFIRM · MOVE AWAY TO CANCEL" and the device's grep -qiE missed it. GNU grep and Debian toybox 0.8.9 find both (the device
+  uses Android's own regex), so the exact grep defect is not reproduced off-device; the reads no longer depend on it.
+- 748a (P2 ae4ad42): winguard.sh wg_jval - the popupGame field read by the shell itself (no grep / regex / other program), used
+  by wg_popup and by the abort line; p2review.sh confirmtext - the armed / disarmed confirmation read like onhide (short lines
+  split on '{', fixed strings). Checked in dash, bash and mksh on the two real kept dumps.
+- Tests: two new selftests with a grep stand-in that finds nothing in a >4 KB line with a non-ASCII byte (a model of the device,
+  labelled as such): wg_popup / the abort line read popupGame, confirmtext sees "AGAIN TO CONFIRM" - both FAIL on 9be5fab's
+  scripts, PASS now. Selftest 277/277. Static checks PASS (no app code changed).
+- EMULATOR result: review 45570243363 on ae4ad42 (P2:POCKET_CLASSIC POCKET_RIBBON POCKET CUSTOM) VERDICT PASS - x1.3 and x1.0
+  walks complete for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio; each destructive row armed (confirmation
+  shown) and left, never confirmed; 0 launches; restore OK. First complete P2 emulator review since 18 Nov. The look stays
+  the owner's review (sheets in the run's artifact). Emulator evidence only - not handheld.
+- Dispatched: review 45576064795 (P2:CIRCUIT CHAN TIMELINE HERO).
+- Copy: nothing for the owner's PC (QA tools on branch claude/v0674-native-pages: tools/qa/device/winguard.sh,
+  tools/qa/device/p2review.sh, tools/qa/selftest/test_qa.py). Hardware: not needed for this change (HW-28 unchanged).
+
 # Update 747a-c (25 Nov 2026, cloud run) - P2 emulator review restarted: the review walk's "no dump" stops diagnosed and narrowed (QA tooling, native-pages branch)
 - CI first: Verify 310 on b44d63f (dev line) and 86344b2 (P2) GREEN.
 - Item: the emulator p2review sheet of the newest native pages (handoff NEXT). Every P2 emulator review since 18 Nov stopped as
