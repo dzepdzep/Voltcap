@@ -1672,6 +1672,17 @@
    "base_commit": "claude/v0674-native-pages 8ff8108",
    "tree_hash": "claude/v0674-native-pages 8ff8108",
    "note": "HW-29: key-row scroll finishes after a cancel, measure-only refs out of the QA dump (the Disc label GivesWay of 65cf01c is NOT in this APK - built before it)"
+  },
+  {
+   "id": "qa-682bd-386c84d",
+   "apk_sha256": "f2523f607bae8f0720ebc2a5ccf84ce20f51f05e55d210591ef561f1802c6182",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 386c84d",
+   "tree_hash": "claude/v0674-native-pages 386c84d",
+   "note": "HW-29: 682bc + Disc track label GivesWay + Night panels Tilted (QA marks only)"
   }
  ]
 }
