@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 12:40 UTC, 752a (cloud, rule 11 + P2 review):** Verify 310 on 4f14f72 (dev) + 12f3b28 (P2) GREEN. P2 review 45603942465
+(CASEFLOW ORBIT AIRY BUBBLES) VERDICT PASS, 0 launches; next set 45612718815 (P2:CAMERA PANELS SHOP GREENCORE, on 12f3b28 = the
+owner's live 682az) dispatched. Dev line: QsTilesCard / StacksArch / TwinShowcase / CartShellPicker through FullText /
+StableFullText (ShowcaseFullText752aTest 2/2, TRUNCATE 43 -> 35; HW-24 752a).
+NEXT: check Verify 310 on this push FIRST. Read review 45612718815; if PASS dispatch the last set: ARTLIB CROSS LIVE; a FAIL /
+INFRA is the next item (fetch the P2 branch first - the owner pushes to it live). Between dispatches: the next rule 11 batch
+(35 left; e.g. FolderIcons, TileHome, CollectorBacks, ArtworkGallery). When all sets PASS, one owner action with the sheets'
+run links.
+
 **25 Nov 11:50 UTC, 751a (cloud, P2 review fix + rule 11):** Verify 310 on aaf96c1 GREEN. P2 review 45593862011 (CASEFLOW ORBIT
 AIRY BUBBLES) INFRA, two QA-script causes, no app defect: the shown "Press A again to remove" was not a phrase confirmtext knew
 (3 false FAILs), and Bubble home's A opens the LiveArea in the home (its next A = Play) so no window came (BUBBLES aborted safely).

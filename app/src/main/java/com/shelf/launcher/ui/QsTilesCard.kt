@@ -34,7 +34,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.device.QsTiles
@@ -93,12 +92,13 @@ internal fun QsTilesCard(compact: Boolean = false) {
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(t.label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // (752a, rule 11: the whole tile name - a readable size, then a slide)
+                    FullText(t.label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, reserve = false)
                     if (!compact) Text(t.what, color = ShelfTheme.textMuted, fontSize = 11.sp, lineHeight = 14.sp)
                 }
                 Spacer(Modifier.width(8.dp))
                 if (added == true) {
-                    Text("✓ In the menu", color = ShelfTheme.accent, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    FullText("✓ In the menu", color = ShelfTheme.accent, fontSize = 12.sp, fontWeight = FontWeight.Bold, reserve = false)
                 } else if (QsTiles.canAsk) {
                     Chip("Add", accent = true) {
                         val activity = context.findActivity()

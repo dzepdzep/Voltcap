@@ -100,6 +100,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   names / source lines) and the RomM browser (long ROM names in the tiles - tiles stay one height - and a long dialog title) -
   whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work. Screenshots.
   Unit evidence only (SaveImportFullText751aTest; static TRUNCATE 51 -> 43).
+- Also (752a, rule 11, dev line 752a or later, ~2 min, KONKR x1.3 + x1.0, with 749a-751a): the quick-settings tile list (long
+  tile names, "In the menu"), Arch stacks home (a long game name centred - no late pop-in on a game change - and the storage /
+  games line), Twin showcase (category name in CURRENT mode, game name under the grid) and the cartridge shell picker (long shell
+  / edition names; cards stay one height) - whole (wrap, shrink, then slide), never an ellipsis. D-pad + touch still work.
+  Category switch on Arch stacks / Twin showcase: nothing reloads (catswitch). Screenshots.
+  Unit evidence only (ShowcaseFullText752aTest; static TRUNCATE 43 -> 35).
 - Also (750a, rule 11, dev line 750a or later, ~2 min, KONKR x1.3 + x1.0, with 749a): the new-arrival card after a scan
   (a long name types in: the card never grows; long console / "+N more" tail), the glance window (long title, facts line
   closed and with All details), the launch animation (long title + console, centred) and the companion screen's titles

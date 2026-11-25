@@ -1,3 +1,17 @@
+# Update 752a (25 Nov 2026, cloud run) - P2 review of Case flow / Orbit / Airy / Bubble home PASS; rule 11: quick-settings tiles, Arch stacks, Twin showcase and cartridge shell picker show their text whole
+- CI first: Verify 310 on 4f14f72 (751a) GREEN; on the P2 branch 12f3b28 (owner's live 682az) GREEN. P2 emulator review
+  45603942465 (P2:CASEFLOW ORBIT AIRY BUBBLES on 1dbd311) VERDICT PASS at x1.3 and x1.0, 0 launches. Next set dispatched:
+  run 45612718815 (P2:CAMERA PANELS SHOP GREENCORE, on 12f3b28).
+- Dev line, rule 11 (matrix P13): QsTilesCard.kt (tile name, "In the menu" mark), StacksArch.kt (game name - StableFullText so
+  it never pops in late inside its gameSwap - and the storage / games line), TwinShowcase.kt (category name, game name under the
+  grid, both StableFullText) and CartShellPicker.kt (shell name, edition name - two lines kept so the cards line up) go through
+  FullText (wrap, readable size, then slide). 8 TRUNCATE places -> 0.
+- Test: ShowcaseFullText752aTest 2/2 PASS in the cloud (fails on 751a: 8 Ellipsis); CategoryStable394Test 6/6 PASS.
+  App + tests compiled. Static checks PASS, TRUNCATE 43 -> 35.
+- Files to copy: app/src/main/java/com/shelf/launcher/ui/QsTilesCard.kt, ui/StacksArch.kt, ui/TwinShowcase.kt,
+  ui/CartShellPicker.kt, app/src/test/java/com/shelf/launcher/ui/ShowcaseFullText752aTest.kt.
+- Not tested: hardware (HW-24 752a, KONKR x1.3 + x1.0, with 749a-751a).
+
 # Update 751a (25 Nov 2026, cloud run) - P2 emulator review fixed for "remove" confirmations and Bubble home; rule 11: save inspector, save sync, Steam import and RomM browser show their text whole
 - CI first: Verify 310 on aaf96c1 (750a) GREEN. P2 emulator review 45593862011 (CASEFLOW ORBIT AIRY BUBBLES, on a524ded)
   VERDICT INFRA: (1) CASEFLOW / ORBIT / AIRY "A on 'Hide from library' showed no confirmation" at x1.3 and x1.0 - the screenshots
