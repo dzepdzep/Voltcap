@@ -196,7 +196,7 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
 
 ## Requests
 
-### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages (v0674-native-pages 9831e03) - OPEN (batch with the next KONKR + RP Classic P2 session)
+### HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages (v0674-native-pages 7477b77) - OPEN (batch with the next KONKR + RP Classic P2 session)
 - 738a adds Panel dashboard (same session, build fb72ff4 or later): p2review walk Info -> Overview -> Achievements -> Manage (R1 x3,
   L1 back); the page name + flat segments change after the old page has gone; the next page slides in from its side (none with
   Motion Off); the art strip says the console only; Play same size and place on every page; facts tiles, the ABOUT panel and the
@@ -225,6 +225,14 @@ Owner 16 Nov: replacing an incompatible QA app (uninstalling com.shelf.launcher.
   rarity; a removing placard armed (deep red) and left; on a short wall's pages the placard keeps the name only; popclip.sh +
   popclip.py PASS; 0 launches.
   Evidence: Robolectric only (NativePagesGallery741aTest + ARTLIB suites, cloud).
+- 742a adds the Cross menu (same session, build 7477b77 or later): p2review walk Game -> Information -> Trophies -> Options (R1 x3,
+  L1 back); the cross bar's lit icon + page name change after the old page has gone; the next page slides in along the bar from
+  the side you moved to (none with Motion Off); Start game in the SAME place on the first page and every page (it was lower on the
+  pages before 742a); the information list, the description row and the trophy rows whole at x1.0 / x1.3 in the three washes
+  (Dusk / Ocean / Ember) + the theme's; on the RP Classic's narrower left side the facts stack; Trophies lazywalk (120-set) with the
+  progress line and the order key (words slide); a trophy opened (A) shows the whole text + rarity; a removing row armed (orange)
+  and left; popclip.sh + popclip.py PASS; 0 launches.
+  Evidence: Robolectric only (NativePagesCross742aTest + CROSS suites, cloud).
 - Device(s): KONKR (GT78 BW0306N230000845) + RP Classic, USB. Level 1 (QA app only). Branch `claude/v0674-native-pages` at 5d53277
   or later. ~6 min per handheld, x1.0 + x1.3.
 - Why not emulator: the popup gate (popclip, R26) and Play-same-place are hardware gates; emulator sheets are preview only.

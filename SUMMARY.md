@@ -1,3 +1,27 @@
+# Update 742a (25 Nov 2026, cloud run) - P2 class C: the Cross menu reads out its own pages (native-pages branch)
+- CI first: Verify 310 on 993d193 (dev line) and 9831e03 (P2, Art library) GREEN.
+- Task 5 on `claude/v0674-native-pages` (worktree), 9831e03 -> 7477b77: the seventeenth class C scene (batch 6; the last class C
+  scene that still showed the shared bodies through sharedPageFor's own Cross exception). The Cross menu reads its pages out on the
+  left in its thin white type under a "cross bar" (one small icon per page on a fine line, the shown one bright and named):
+  Information (system-information list - grey labels right-aligned against a fine divider, white values beside them, stacked on a
+  narrow column; the description as one row of the menu), Trophies (cup, "N / M", per cent + a fine progress line - one earned
+  always shows, full only when all are earned - the order as a band key; each trophy a row of the menu, its icon drawn larger on
+  the row you are on; A shows the whole text and how rare it is), Options (rows of the menu; removing ones in warning orange,
+  second A). The next page slides in along the bar from the side you moved to; none with Motion Off. Own designs 47 / 53.
+- Found and fixed on the way (PlayPlace CROSS, newly reachable): the centred options column put Play 26 dp (x1.0) / 54 dp (x1.3)
+  lower on the pages than on the first page. The first page stays centred as before; the pages' keys keep the page slots and start
+  where the first page's keys did; the column's scroll starts at its top on every page. PlayPlace had skipped Cross (its Play is
+  "Start game", its Details "Information") - both words taught to PlayPlace / ShelfText.
+- Checked (cloud): NativePagesCross742aTest 4/4 (new; fails on the old code: no crossPageName, CROSS_OPTIONS not native); CROSS added
+  to AchFirstRow (+ Rpc, PlayPlace via NATIVE) + ShelfText; PlayPlace / PlayPlaceRpc CROSS x1.0 / x1.3 Play at the same place on the
+  first page and all three pages; with NoStrayPlay682j, InputContract462, WindowWordsSurvey682, Popup421, WinFocus*, Layouts344,
+  Readability476, Batch505, Visual426, PopupMore451, WinPresentation, NativeConfirm681, NativePages*, UniformKeys673,
+  PopupNativeStorage - 2,499 tests, 0 failures. Static PASS.
+- Not tested: hardware (HW-28 extended), emulator review; not owner-approved.
+- Files (P2 branch): ui/WinPagesCross.kt (new), ui/WinScenesHomes2.kt (CrossOptions, KeyColumn slots / scrollKey), ui/WinPageFlow.kt;
+  tests NativePagesCross742aTest (new), AchFirstRowRoboTest, ShelfTextRoboTest, PlayPlace682abRoboTest, UniformKeys673Test; docs
+  NATIVE_PAGES_P2.md. Dev line: hand-off docs only.
+
 # Update 741a (24 Nov 2026, cloud run) - P2 class C: the Art library's gallery wall gets its own pages (native-pages branch)
 - CI first: Verify 310 on c466cf8 (dev line) and 945bb17 (P2, Green core) GREEN.
 - Task 5 on `claude/v0674-native-pages` (worktree), 945bb17 -> 9831e03: the sixteenth class C scene (batch 6). The Art library's

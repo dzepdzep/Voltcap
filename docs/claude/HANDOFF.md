@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**25 Nov 00:55 UTC, 742a (cloud, Task 5):** Verify 310 on 993d193 (dev) + 9831e03 (P2) GREEN. P2 branch 7477b77: the Cross menu
+(CROSS_OPTIONS) reads out its own pages on the left - Information / Trophies (fine progress line) / Options in its thin type under a
+cross bar of page icons, sliding in along the bar (WinPagesCross.kt; class C 17 scenes done, own designs 47 / 53). PlayPlace CROSS
+(newly reachable: taught "Start game" / "Information") caught Play 26 / 54 dp lower on the pages than on the first page - fixed (the
+pages' keys start where the first page's did). HW-28 extended. Not approved.
+NEXT: check Verify 310 on this push AND on 7477b77 (P2) FIRST (red -> fix first). Then Task 5: next class C layout on the P2
+branch (Live (LIVE_PANEL), Layout Studio; the Pocket family (POCKET_LCD) needs all three faces in one batch) - or an emulator
+p2review sheet of batch 5/6 for the owner, or the Task 1 residual. Same pre-push checks as below (PlayPlace output must show Play
+found on the pages - a layout with its own key words is skipped, not failed).
+
 **24 Nov 23:50 UTC, 741a (cloud, Task 5):** Verify 310 on c466cf8 (dev) + 945bb17 (P2) GREEN. P2 branch 9831e03: the Art
 library (GALLERY_PLACARD) hangs its own pages on its mat - Catalogue / Collection (10-frame hang) / Curator in the placard's serif,
 coming up like the gallery lights (WinPagesGallery.kt; class C 16 scenes done, own designs 46 / 53). PlayPlace ARTLIB found Play
