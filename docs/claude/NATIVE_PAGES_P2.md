@@ -1219,3 +1219,6 @@ check ignores the collection's own lines (ucoll / collnew are about the collecti
   package can't be installed and updated; no bypass. Covered by AppCategories725aTest (choices kept by package name).
 - **QA hooks in production:** HooksIsolated682awTest PASS - every new hook (focuspos, appcat incl. coll / collnew / ucoll) does
   nothing unless `QaVariant.isolated` (the QA package); production package -> no state change, no log.
+- **682ax re-run on qa682ax (the dialogs now at x1.3): KONKR kac13x PASS, RP Classic rac13x PASS** - Categories rows larger and
+  the touch point moved with them (RPC y 899 -> 870), the Collections picker at x1.3 (Close in view, the body scrolls). Visual
+  note for review (not graded): a wrapped row subtitle at x1.3 shows a wide gap between its lines ("... and the / rest").
