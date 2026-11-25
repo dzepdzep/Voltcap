@@ -37,8 +37,11 @@ class PopupNativeStorageTest {
         // every scene still on the shared pages answers false (734a: was CASE_MEDIA by name, which 733a gave its own pages;
         // P2 converts one scene per run, so the check follows the set instead of naming a scene that will move)
         val shared = WinScene.entries.filterNot { it in NATIVE_PAGE_SCENES }
-        assertTrue("some scenes still use the shared pages", shared.isNotEmpty())
         shared.forEach { assertFalse(it.name, nativePages(it)) }
+        // (746a: 745a's Pocket family was the last class C scene - every layout window now draws its own pages; a scene
+        // falling back to the shared pages is a regression. The old "some scenes still shared" assumption no longer holds.)
+        assertTrue("scenes back on the shared pages: $shared", shared.isEmpty())
+        WinScene.entries.forEach { assertTrue(it.name, nativePages(it)) }
         assertTrue(nativePages(WinScene.CASE_MEDIA))
         assertFalse(nativePages(null))
         val gw = src("GameWindow.kt")
