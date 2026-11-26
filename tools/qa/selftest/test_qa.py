@@ -3022,8 +3022,11 @@ wg_watchdog
 echo FINISHED >> {d}/log.txt
 """
             subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=20)
-            time.sleep(0.5)
-            left = subprocess.run(["pgrep", "-f", "sleep 417[45]"], capture_output=True, text=True).stdout.split()
+            # (26 Nov: a busy CI runner can take a moment to reap the killed sleep - poll up to 5 s instead of one look at 0.5 s)
+            for _ in range(20):
+                time.sleep(0.25)
+                left = subprocess.run(["pgrep", "-f", "sleep 417[45]"], capture_output=True, text=True).stdout.split()
+                if not left: break
             for pid in left: subprocess.run(["kill", pid])
             self.assertEqual(left, [], "the watchdog's sleep outlived the run")
             src = open(f"{self.DEV}/winguard.sh").read()

@@ -9,6 +9,8 @@
 #                                 out (a person pulls it - nothing is unmounted by the script) and put back, and checks that the
 #                                 card's game is never taken off the library while the card is out.
 #   sh rescan681r.sh restore TAG  removes the stand-ins it made, rescans, puts the QA app's snapshot back
+# (D390: every input this script sends goes through qaguard.sh's deadline - nothing is pressed past 15 minutes)
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing" >&2; exit 3; }
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; R=$F/roms; MODE=$1; TAG=$2; O=/sdcard/pc/$TAG; mkdir -p $O; L=$O/log.txt
 A() { am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null 2>&1; }
 log() { echo "$(date +%T) $*" >> $L; }
