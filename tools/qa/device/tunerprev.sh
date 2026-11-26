@@ -53,8 +53,11 @@ if [ -z "$h" ]; then m=$(ctl 4 "More tiles"); [ -n "$m" ] && { tap $(mid "$m") 1
 log "tile: $h"
 if [ -n "$h" ]; then
   hold $(mid "$h"); clip 5; shot 5_sheet_balanced
+  # the sheet is its own window: QaClip gives its nodes relative to the window ("at" of the focused window; RP Classic 74,61)
+  off=$(grep -o '"at":\[[0-9-]*,[0-9-]*,[0-9]*,[0-9]*\],"focus":true' $O/5.json | head -1 | sed 's/"at":\[//;s/\].*//' | awk -F, '{print $1, $2}')
+  [ -n "$off" ] || off="0 0"; log "sheet window at $off"
   for pr in Gentle Aggressive Balanced; do c=$(ctl 5 "$pr"); log "preset $pr: $c"
-    [ -n "$c" ] && { tap $(mid "$c") 1.5; shot 5_sheet_$(echo $pr | tr A-Z a-z); }; done
+    [ -n "$c" ] && { set -- $(mid "$c") $off; tap $(($1 + $3)) $(($2 + $4)) 1.5; shot 5_sheet_$(echo $pr | tr A-Z a-z); }; done
   key KEYCODE_BUTTON_B 1.2
 fi
 key KEYCODE_BUTTON_B 1.2
