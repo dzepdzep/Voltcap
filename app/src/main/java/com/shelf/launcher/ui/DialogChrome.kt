@@ -1,6 +1,9 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -579,6 +582,18 @@ private fun DialogHeader(icon: ImageVector, title: String, subtitle: String?, on
         CloseButton(onDismiss)
     }
 }
+
+/**
+ * 767a (P12, TalkBack labels): a control that reacts only to raw taps (pointerInput / detectTapGestures) and shows only an
+ * icon had no name, no role and no click action, so TalkBack read nothing and could not press it. This gives it all three;
+ * touch, controller focus and the look are unchanged.
+ */
+internal fun Modifier.tapButtonSemantics(label: String, action: () -> Unit): Modifier =
+    this.semantics {
+        contentDescription = label
+        role = androidx.compose.ui.semantics.Role.Button
+        onClick(label = label) { action(); true }
+    }
 
 @Composable
 internal fun CloseButton(onClick: () -> Unit, size: Dp = 36.dp) {

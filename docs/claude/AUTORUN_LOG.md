@@ -382,3 +382,4 @@
 - ~01:18 UTC 26 Nov 764a: lock free, taken. Verify 310 on 46666fc GREEN. P5 polish Grid: two-row D-pad steps by column / row (gridStep; ▲ ▼ no longer jump columns or wrap last -> first) (GridSteps764aTest 5/5). Lock released.
 - ~02:18 UTC 26 Nov 765a: lock free, taken. Verify 310 on b995c00 GREEN. P5 polish Pocket Dashboard: preview text column bounded inside the panel, name sized to the room (DashboardTextRoom765aTest 3/3). Lock released.
 - ~03:18 UTC 26 Nov 766a: lock free, taken. Verify 310 on dd3f057 GREEN. P5 polish Constellation: info column bounded above the legend, tap on the console in the light opens (ConstellationInfoRoom766aTest 3/3). Maven Central 429 once (retried). Lock released.
+- ~04:18 UTC 26 Nov 767a: lock free, taken. Verify 310 on b08dfd9 GREEN. P12 TalkBack: icon-only tap controls (Icon bar round buttons, classic card star / More) named + pressable (TapButtonLabels767aTest 3/3). Lock released.

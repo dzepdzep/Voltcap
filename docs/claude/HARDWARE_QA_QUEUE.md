@@ -120,6 +120,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   preview (nothing cut at its top or bottom edge); at x1.3 the name is a little smaller (or slides), the other lines whole.
   Thor (two screens, if connected): the name keeps its full size on the top screen. Screenshot x1.3. Unit evidence only
   (DashboardTextRoom765aTest).
+- Also (767a, matrix P12, dev line 767a or later, ~2 min, KONKR, QA app only): with TalkBack on (QA session; restore it off
+  afterwards), Icon bar home - the three round buttons next to Play are read as "Options", "Save sync", "Achievements" and a
+  double tap opens each; classic row home - the focused card's star reads "Add to favourites" / "Remove from favourites" and
+  the dots "More options", double tap works. Touch and D-pad unchanged. Unit evidence only (TapButtonLabels767aTest).
 - Also (766a, matrix P5, dev line 766a or later, ~1 min, KONKR x1.0 + x1.3, with the 765a pass): category screen look
   Constellation, step to a console with a two-line name and favourites (e.g. Nintendo Entertainment System) - the name, the
   games / maker / year line and the favourites line under the console in the light all end above the legend (nothing behind

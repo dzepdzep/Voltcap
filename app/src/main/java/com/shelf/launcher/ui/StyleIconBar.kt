@@ -305,11 +305,11 @@ private fun BarTitle(c: StyleCtx, g: com.shelf.launcher.data.Game, compact: Bool
                 val options by rememberUpdatedState(c.actions.options)
                 val sync by rememberUpdatedState(c.actions.sync)
                 val trophies by rememberUpdatedState(c.actions.achievements)
-                BarRound(Icons.Filled.Settings, on = StyleNav.on(StyleNav.Zone.BAR, 1)) { StyleNav.tapped(StyleNav.Zone.BAR, 1); options(g) }
+                BarRound(Icons.Filled.Settings, "Options", on = StyleNav.on(StyleNav.Zone.BAR, 1)) { StyleNav.tapped(StyleNav.Zone.BAR, 1); options(g) }
                 Spacer(Modifier.width(8.dp))
-                BarRound(Icons.Filled.CloudSync, on = StyleNav.on(StyleNav.Zone.BAR, 2)) { StyleNav.tapped(StyleNav.Zone.BAR, 2); sync(g) }
+                BarRound(Icons.Filled.CloudSync, "Save sync", on = StyleNav.on(StyleNav.Zone.BAR, 2)) { StyleNav.tapped(StyleNav.Zone.BAR, 2); sync(g) }
                 Spacer(Modifier.width(8.dp))
-                BarRound(Icons.Filled.EmojiEvents, tint = Color(0xFFE8BE48), on = StyleNav.on(StyleNav.Zone.BAR, 3)) { StyleNav.tapped(StyleNav.Zone.BAR, 3); trophies(g) }
+                BarRound(Icons.Filled.EmojiEvents, "Achievements", tint = Color(0xFFE8BE48), on = StyleNav.on(StyleNav.Zone.BAR, 3)) { StyleNav.tapped(StyleNav.Zone.BAR, 3); trophies(g) }
             }
             // A small achievements card under it, where there's room (like the console's activity cards).
             if (roomy) c.progress(g)?.let { (earned, total) ->
@@ -338,14 +338,15 @@ private fun BarTitle(c: StyleCtx, g: com.shelf.launcher.data.Game, compact: Bool
 
 /** A small round button next to Play (settings, sync, trophies). */
 @Composable
-private fun BarRound(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Color = Color.White, on: Boolean = false, onClick: () -> Unit) {
+private fun BarRound(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color = Color.White, on: Boolean = false, onClick: () -> Unit) {
     val click by rememberUpdatedState(onClick)
     Box(
         Modifier.size(34.dp)
             .graphicsLayer { val k = if (on) 1.12f else 1f; scaleX = k; scaleY = k }
             .clip(CircleShape).background(Color.White.copy(alpha = if (on) 0.32f else 0.14f))
             .border(if (on) 2.dp else 0.dp, if (on) Color.White else Color.Transparent, CircleShape)
-            .pointerInput(Unit) { detectTapGestures { click() } },
+            .pointerInput(Unit) { detectTapGestures { click() } }
+            .tapButtonSemantics(label) { click() }, // 767a: TalkBack name + press (was unnamed)
         contentAlignment = Alignment.Center
     ) { Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp)) }
 }

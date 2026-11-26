@@ -982,6 +982,7 @@ fun GameCard(
                         if (onToggleFavorite != null) {
                             MiniIcon(
                                 if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                                label = if (isFavorite) "Remove from favourites" else "Add to favourites",
                                 onClick = onToggleFavorite,
                                 tint = if (isFavorite) ShelfTheme.accent else Color.White
                             )
@@ -989,7 +990,7 @@ fun GameCard(
                         // Everything else — artwork, details, emulator,
                         // achievements — lives behind this one control now.
                         if (onOpenOptions != null) {
-                            MiniIcon(Icons.Filled.MoreHoriz, onClick = onOpenOptions)
+                            MiniIcon(Icons.Filled.MoreHoriz, label = "More options", onClick = onOpenOptions)
                         }
                     }
                 }
@@ -1196,6 +1197,7 @@ internal fun AccentIcon(imageVector: androidx.compose.ui.graphics.vector.ImageVe
 @Composable
 private fun MiniIcon(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
     onClick: (() -> Unit)? = null,
     tint: Color = Color.White
 ) {
@@ -1212,6 +1214,7 @@ private fun MiniIcon(
                     // recomposition (a new lambda each time), swallowing taps — the "press twice" bug.
                     val latest = androidx.compose.runtime.rememberUpdatedState(onClick)
                     Modifier.pointerInput(Unit) { detectTapGestures { latest.value() } }
+                        .tapButtonSemantics(label) { latest.value() } // 767a: TalkBack name + press (was unnamed)
                 } else Modifier
             ),
         contentAlignment = Alignment.Center

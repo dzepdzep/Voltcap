@@ -1,3 +1,18 @@
+# Update 767a (26 Nov 2026, cloud run) - P12: TalkBack names for icon-only tap controls
+- CI first: Verify 310 on b08dfd9 (766a) GREEN.
+- Matrix P12 (TalkBack labels). Icon-only controls that react only to raw taps (pointerInput / detectTapGestures) had no
+  name, no role and no click action - TalkBack read nothing and could not press them: Icon bar's three round buttons next to
+  Play (Options, Save sync, Achievements) and the classic card's favourite star + More dots (GameCard MiniIcon). The other
+  tap-only icon controls found by a scan already carry a name or sit next to their own text.
+- Fix: shared modifier tapButtonSemantics(label, action) in DialogChrome.kt (contentDescription, Role.Button, onClick action
+  named like the control); BarRound / MiniIcon take a label ("Options", "Save sync", "Achievements", "Add to favourites" /
+  "Remove from favourites", "More options"). Touch, controller focus (StyleNav), look and second screen unchanged.
+- Test: TapButtonLabels767aTest 3/3 (Robolectric: name, Button role, the semantics click presses it once; source checks of
+  both controls - fails on 766a: tapButtonSemantics missing). Compiled: :app:compileDebugUnitTestKotlin (cloud). Static checks
+  [PASS]. Full suite: CI. TalkBack on a handheld NOT TESTED (HW-24 767a).
+- Files: app/src/main/java/com/shelf/launcher/ui/DialogChrome.kt, ui/StyleIconBar.kt, ui/GameCard.kt,
+  app/src/test/java/com/shelf/launcher/ui/TapButtonLabels767aTest.kt; docs (matrix P12, HANDOFF, HW queue, dashboard).
+
 # Update 766a (26 Nov 2026, cloud run) - P5 polish: Constellation's info column ends above the legend; the console in the light opens on a tap
 - CI first: Verify 310 on dd3f057 (765a) GREEN.
 - P5 third-priority polish, Constellation. KONKR 640 x 427 dp: the info column under the console in the light starts at

@@ -73,6 +73,14 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 04:45 UTC, 767a (cloud, matrix P12 - TalkBack labels):** Verify 310 on b08dfd9 GREEN. Icon-only tap controls
+(Icon bar's Options / Save sync / Achievements next to Play, the classic card's favourite star + More dots) had no TalkBack
+name, role or click action - shared tapButtonSemantics (DialogChrome.kt) gives all three (TapButtonLabels767aTest 3/3;
+HW-24 767a). A scan found no other unnamed tap-only icon control.
+NEXT: check Verify 310 on this push FIRST (red -> fix first; a D358 Case flow "concurrent change" row again -> fix it).
+Then P8 performance notes (matrix row OPEN, D10 / F16: what can be measured or bounded without a handheld), or P12's next
+part (touch-size >= 24 dp of small tap targets by source scan). P2: only on an owner push / review or a red CI.
+
 **26 Nov 03:45 UTC, 766a (cloud, P5 polish - Constellation):** Verify 310 on dd3f057 GREEN. The info column under the
 console in the light grew down unbounded into the legend (KONKR x1.3, two-line name + wrapped facts + favourites: ~55 dp
 behind it) - bounded (constellationInfoRoom), the name gives way first, facts / favourites through FullText; a tap on the
