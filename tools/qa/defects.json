@@ -4408,6 +4408,14 @@
    "severity": "low",
    "status": "fixed 682bd (INTERNAL, with the QA simulator's tuner_stock_sim)",
    "found": "2026-11-25"
+  },
+  {
+   "id": "D402",
+   "title": "QA script tunerprev.sh (KONKR x1.3): a coordinate tap aimed at the R1 panel's Device tab during its slide-in hit the panel's volume slider - media volume 2 -> 7 (audio log: setStreamVolume index 7 from com.shelf.launcher.qa, 06:01:27). The owner then lowered it on the device (1).",
+   "rule": "QA safety (restore volume)",
+   "severity": "medium",
+   "status": "fixed in the script: no coordinate taps in the R1 panel, R1 key only; the owner's own later level (1) left as set",
+   "found": "2026-11-26"
   }
  ]
 }

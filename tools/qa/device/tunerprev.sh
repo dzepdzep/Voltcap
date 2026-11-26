@@ -36,7 +36,11 @@ S temp:97 1; sleep 25
 A --es voltcap_test_settings Performance; sleep 3; shot 3_tuner_heat; clip 3
 key KEYCODE_BUTTON_B 1.5
 # 4. R1 panel, Device tab: the Heat guard tile while it restricts; its sheet with each preset
-key KEYCODE_BUTTON_R1 1.8; key KEYCODE_BUTTON_R1 1.5; clip 4; shot 4_r1_device
+key KEYCODE_BUTTON_R1 1.8; key KEYCODE_BUTTON_R1 1.5; clip 4
+# (KONKR x1.3: the panel's R1 tab switch can land before the panel is ready - then R1 once more. NEVER a coordinate tap in
+# the panel: on 26 Nov a tap aimed at the Device tab during the slide-in hit the volume slider and set the media volume (D402).)
+grep -q '"label":"Airplane\|"label":"Android settings\|"label":"Heat guard' $O/4.json || { key KEYCODE_BUTTON_R1 1.5; clip 4; }
+shot 4_r1_device
 h=$(ctl 4 "Heat guard")
 if [ -z "$h" ]; then m=$(ctl 4 "More tiles"); [ -n "$m" ] && { tap $(mid "$m") 1.5; clip 4; shot 4_r1_device_more; h=$(ctl 4 "Heat guard"); }; fi
 log "tile: $h"
