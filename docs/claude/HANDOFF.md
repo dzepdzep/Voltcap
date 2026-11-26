@@ -73,6 +73,15 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 03:45 UTC, 766a (cloud, P5 polish - Constellation):** Verify 310 on dd3f057 GREEN. The info column under the
+console in the light grew down unbounded into the legend (KONKR x1.3, two-line name + wrapped facts + favourites: ~55 dp
+behind it) - bounded (constellationInfoRoom), the name gives way first, facts / favourites through FullText; a tap on the
+console in the light (or its info) now opens it (ConstellationInfoRoom766aTest 3/3; HW-24 766a). With this every one of the
+17 category looks has had its third-priority polish look in code (760a-766a); hardware pass queued (HW-24).
+NEXT: check Verify 310 on this push FIRST (red -> fix first; a D358 Case flow "concurrent change" row again -> fix it).
+Then the matrix rows open without hardware: P8 performance notes, P12 accessibility labels (grep the matrix rows, pick the
+first OPEN one that needs no handheld). P2: only on an owner push / review or a red CI.
+
 **26 Nov 02:40 UTC, 765a (cloud, P5 polish - Pocket Dashboard):** Verify 310 on b995c00 GREEN. The preview's text column
 (facts, name, counts, last played) overflowed the rounded panel on the KONKR (144 dp room; ~170 dp at x1.0 with a two-line
 name, more at x1.3) - now bounded (18 dp top / bottom padding, dashboardTextRoom), the name gives way first at a size the

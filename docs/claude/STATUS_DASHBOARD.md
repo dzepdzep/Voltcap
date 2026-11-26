@@ -2,15 +2,15 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 765a · 2026-11-26 02:40 UTC · commit `this update (being pushed)` · CI: Verify 310 on b995c00 (764a) GREEN · effort: medium
+**1. LATEST UPDATE** - 766a · 2026-11-26 03:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on dd3f057 (765a) GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Pocket Dashboard (the category screen with a big preview of the console over a row of round icons): the text in the preview - maker and year, the console's name, games and favourites, last played - needed more height than the preview has on smaller screens like the KONKR. A two-line name, or bigger text (x1.3), pushed the maker line off the top and the last-played line off the bottom of the rounded panel. The text now always stays inside the panel: the name takes what is left and gets a little smaller where needed (on the Thor's big top screen it keeps its full size). A one-minute handheld check is queued.
+**2. WHAT CLAUDE JUST FIXED** - Constellation (the category screen where the consoles circle a glowing core and the one you're on is shown big on the right): the text under the big console - its name, games, maker and year, favourites - could run down behind the button legend at the bottom on smaller screens like the KONKR, especially with a two-line name and bigger text (x1.3). It now always ends above the legend; a long name gets a little smaller first. Tapping the big console or its text now opens it (before, only the small dimmed one on the ring did). With this, every one of the 17 category looks has had its polish check in code; a short handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
 - **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
 - **App** (745a): The three Pocket layouts' game windows now each have their own Details, Achievements and Options pages in their own style: Pocket classic looks like the handheld's own menu - the blue title bar names the page with arrows and its number, facts and options are pixel-type menu lines with a little cursor, and achievements show as medals with a bar of ten pixel blocks, the menu stepping in like an old LCD; Pocket ribbon keeps its plain white information sheet with the cartridge art on the left, a row of page names with the current one underlined, a table on thin grey lines, and a thin progress line for achievements; Pocket Quest keeps its deep panel with cut corners, labelled Status, Quest log and Commands, with a ten-cell gauge and a scan line running down as a page opens. Play stays exactly where it was on the first page (it had been sitting lower on the pages beside the tall cartridge art; fixed). Every layout that draws its own game window now has its own pages (52 of 53; only Disc station still uses the shared pages). On the test branch only; not yet checked on a handheld or approved.
-- **App** (744a): The Layout Studio game window now has its own Details, Achievements and Options pages in the studio's editor style, under a rounded tab strip with the page you are on filled in your accent colour: Properties is an inspector with each fact's label on the left, its value on the right and a dashed guide line under each row, then the description in a framed text box; Milestones shows how many you have, the per cent and a ruler-style bar with a tick every tenth, with each achievement as a layer row whose badge sits in a small frame; Actions lists the choices as rounded buttons like the window's keys (removing ones are outlined in red and ask for a second press). Each page snaps in from one grid step below. Play stays in exactly the same place on every page. On a short screen with large text the console line steps back so the first achievement is always whole. On the test branch only; not yet checked on a handheld or approved.
+- **App** (766a): Constellation (the category screen where the consoles circle a glowing core and the one you're on is shown big on the right): the text under the big console - its name, games, maker and year, favourites - could run down behind the button legend at the bottom on smaller screens like the KONKR, especially with a two-line name and bigger text (x1.3). It now always ends above the legend; a long name gets a little smaller first. Tapping the big console or its text now opens it (before, only the small dimmed one on the ring did). With this, every one of the 17 category looks has had its polish check in code; a short handheld check is queued.
 - **App** (765a): Pocket Dashboard (the category screen with a big preview of the console over a row of round icons): the text in the preview - maker and year, the console's name, games and favourites, last played - needed more height than the preview has on smaller screens like the KONKR. A two-line name, or bigger text (x1.3), pushed the maker line off the top and the last-played line off the bottom of the rounded panel. The text now always stays inside the panel: the name takes what is left and gets a little smaller where needed (on the Thor's big top screen it keeps its full size). A one-minute handheld check is queued.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels); Category looks: one short handheld pass of all 17 (queued)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 
@@ -254,12 +254,12 @@ _Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batche
 **Category styles (looks)**
 - Total: 17
 - Implemented: 17 (100 %)
-- Unit-tested: all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 10 / 17
+- Unit-tested: all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 14 / 17
 - Emulator-tested: 0 (0 %)
 - Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued
 - Owner approved: 0 (0 %)
 - Released: 17 (older state)
-- Remaining / blocked: third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review
+- Remaining / blocked: third-priority polish done in code for all 17 (760a-766a, unit tests only); one short KONKR pass on the dev line (HW-24); owner visual review
 - Source: docs/claude/CATEGORY_STYLES_P5.md (759a); project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
 
 **Uniform buttons / menus**

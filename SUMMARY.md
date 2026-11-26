@@ -1,3 +1,21 @@
+# Update 766a (26 Nov 2026, cloud run) - P5 polish: Constellation's info column ends above the legend; the console in the light opens on a tap
+- CI first: Verify 310 on dd3f057 (765a) GREEN.
+- P5 third-priority polish, Constellation. KONKR 640 x 427 dp: the info column under the console in the light starts at
+  0.64 h (273 dp) and grew down unbounded; above the legend (54 dp, as Generations keeps) it had ~100 dp. A two-line 24 sp
+  name + facts + favourites needed ~103 dp at x1.0 and ~155 dp at x1.3 with the facts wrapped - ~55 dp behind the legend.
+- Fix (CategoryLooks.kt): the column bounded (constellationInfoRoom = 0.36 h - 54 dp, min 44 dp; CONST_INFO_TOP 0.64 kept,
+  under the object's foot at 0.60), the name weighted (gives way first: shrinks to 14.4 sp, then slides; reserve off), the
+  facts (up to two lines) and favourites through FullText; "1 favourite" singular. Touch: the console in the light and its
+  info take lookTap (a tap opens it; before only the dimmed ring node did). Ring, keys, second screen unchanged; rule 14
+  unaffected (no new transition).
+- Test: ConstellationInfoRoom766aTest 3/3 (fails on 765a: helpers missing; old overflow case asserted > 50 dp),
+  CategoryLooksInventory759aTest 4/4, CategoryStable394Test 6/6, GenerationsInfoRoom761aTest 3/3. Compiled:
+  :app:compileDebugUnitTestKotlin (cloud; one Maven Central 429, retried). Static checks [PASS]. Full suite: CI. Hardware NOT
+  TESTED (HW-24 766a).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/ConstellationInfoRoom766aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
 # Update 765a (26 Nov 2026, cloud run) - P5 polish: Pocket Dashboard's preview text stays inside the panel
 - CI first: Verify 310 on b995c00 (764a) GREEN.
 - P5 third-priority polish, Pocket Dashboard. KONKR 640 x 427 dp: the preview is 46 % of the height (~196 dp); inside its

@@ -120,6 +120,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   preview (nothing cut at its top or bottom edge); at x1.3 the name is a little smaller (or slides), the other lines whole.
   Thor (two screens, if connected): the name keeps its full size on the top screen. Screenshot x1.3. Unit evidence only
   (DashboardTextRoom765aTest).
+- Also (766a, matrix P5, dev line 766a or later, ~1 min, KONKR x1.0 + x1.3, with the 765a pass): category screen look
+  Constellation, step to a console with a two-line name and favourites (e.g. Nintendo Entertainment System) - the name, the
+  games / maker / year line and the favourites line under the console in the light all end above the legend (nothing behind
+  or under it); at x1.3 the name is smaller (or slides), the other lines whole. Touch: a tap on the console in the light (or
+  its text) opens it. Screenshot x1.3. Unit evidence only (ConstellationInfoRoom766aTest).
 - Also (764a, matrix P5, dev line 764a or later, ~1 min, KONKR x1.0, with the 763a pass): category screen look Grid (wide
   cards, two rows) with an odd number of categories - ▲ on a top card and ▼ on a bottom card do nothing; ▼ on the last
   (top-only) card does nothing (was: jumped to the first); ◀ on the first card goes to the last column; ▶ from a bottom card

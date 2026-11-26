@@ -22,7 +22,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | 9 | Archive 1994 | ARCHIVE | ArchiveLook | ◀ ▶ | Library, Airy, Resume | - | KONKR 12 Nov | no |
 | 10 | Channel Surf | CHANNEL | ChannelLook | ▲ ▼ | TV room | 527 (CRT roll) | Flip 2 before / after + KONKR 12 Nov | no |
 | 11 | Generations | GENERATIONS | GenerationsLook | ◀ ▶ (release order) | Timeline, Console stack | 761a (info block ends at the handheld lane) | KONKR 12 Nov | no |
-| 12 | Constellation | CONSTELLATION | ConstellationLook | ◀ ▶ | Orbit, Circuit, Cube, Bubbles | - | KONKR 12 Nov | no |
+| 12 | Constellation | CONSTELLATION | ConstellationLook | ◀ ▶ | Orbit, Circuit, Cube, Bubbles | 766a (info bounded above the legend, tap in the light opens) | KONKR 12 Nov | no |
 | 13 | System Vault | VAULT | VaultLook | ▲ ▼ | Memory card, File select, Disc station | 763a (reader text wraps) | KONKR 12 Nov | no |
 | 14 | Pocket Dashboard | DASHBOARD | DashboardLook (Thor: row on the lower screen) | ◀ ▶ | Pocket classic, Pocket ribbon, Twin showcase / desk / icons, Panels, Dash | 759a, 765a (preview text inside the panel) | KONKR 12 Nov; Thor two-screen NOT TESTED | no |
 | 15 | Channel Menu | WIICHAN | WiiChannelLook | ◀ ▶ ▲ ▼ (4 across) | Channel grid (also its themed picker) | - | KONKR 12 Nov | no |
@@ -73,7 +73,13 @@ Green Core, Pocket classic).
   bottom padding, the column bounded (dashboardTextRoom, 160 dp), the name weighted (gives way first, line height 1.133 em
   follows the shrink) at a largest size the room allows (dashboardNameSp: 30 sp at x1.0, ~24 sp at x1.3 on the KONKR, 30 sp
   on the Thor's top screen), facts one line (FullText). `DashboardTextRoom765aTest` 3/3. Hardware NOT TESTED (HW-24 765a).
-- Third-priority polish still to do: Constellation (Wall's header
+- 766a Constellation: the info column under the console in the light started at 0.64 of the height and grew down
+  unbounded - on the KONKR (427 dp) it had ~100 dp above the legend; a two-line 24 sp name + wrapped facts + favourites
+  needed ~155 dp at x1.3 (~55 dp behind the legend), ~103 dp at x1.0. Now bounded (constellationInfoRoom = 0.36 h - 54 dp,
+  min 44 dp), the name weighted (gives way first: shrinks to 14.4 sp, then slides), facts (two lines) and favourites
+  through FullText ("1 favourite" singular). Touch: the console in the light and its info open it (lookTap; before, only
+  the dimmed ring node did). Keys / rule 14 unchanged. `ConstellationInfoRoom766aTest` 3/3. Hardware NOT TESTED (HW-24 766a).
+- Third-priority polish: all 17 looked at once (760a-766a); the hardware pass below is what remains (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.

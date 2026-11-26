@@ -1226,6 +1226,18 @@ internal fun GenerationsLook(tiles: List<CategoryTile>, selected: Int, animate: 
 // 8. Constellation — an orbital diagram: systems spread round a core; the one you're on comes forward
 // ---------------------------------------------------------------------------------------------
 
+/** 766a: where the focused system's info column starts (x height) - under the object in the light (its foot at 0.60). */
+internal const val CONST_INFO_TOP = 0.64f
+/** 766a: the least room the info column keeps (a name line at its readable minimum + the facts line). */
+internal val CONST_INFO_MIN = 44.dp
+
+/**
+ * 766a: the most the info column may grow - from its top down to its gap above the legend (the same 54 dp Generations keeps),
+ * never into it. Before, the column grew down unbounded: on the KONKR (427 dp) it had 100 dp, but a two-line name with
+ * wrapped facts and the favourites line needed ~155 dp at x1.3.
+ */
+internal fun constellationInfoRoom(h: Dp): Dp = maxOf(h * (1f - CONST_INFO_TOP) - GEN_INFO_BOTTOM, CONST_INFO_MIN)
+
 @Composable
 internal fun ConstellationLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     val n = tiles.size.coerceAtLeast(1)
@@ -1298,15 +1310,25 @@ internal fun ConstellationLook(tiles: List<CategoryTile>, selected: Int, animate
                         translationX = w.toPx() * 0.72f - (w * 0.15f).toPx()
                         translationY = h.toPx() * 0.42f - (h * 0.18f).toPx()
                     }
+                    // (766a: touch - the system in the light opens with a tap, like its node on the ring.)
+                    .lookTap(selected, selected, onFocus, onPick)
             ) {
                 Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(lookHue(t, 0.5f).copy(alpha = 0.35f), Color.Transparent))))
                 LookObject(t, Modifier.fillMaxSize().padding(10.dp))
             }
-            Column(Modifier.align(Alignment.TopStart).offset(w * 0.58f, h * 0.64f).width(w * 0.36f).graphicsLayer { alpha = come.now() }) {
-                LookTitle(t, 24)
+            // (766a: bounded above the legend (constellationInfoRoom) - on the KONKR at x1.3 a two-line name with wrapped facts
+            // reached ~55 dp into the legend; the name gives way first (shrinks, then slides), the facts and favourites stay whole.)
+            Column(
+                Modifier.align(Alignment.TopStart).offset(w * 0.58f, h * CONST_INFO_TOP).width(w * 0.36f)
+                    .heightIn(max = constellationInfoRoom(h)).graphicsLayer { alpha = come.now() }
+                    .lookTap(selected, selected, onFocus, onPick)
+            ) {
+                FullText(t.label, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, maxLines = 2, reserve = false,
+                    modifier = Modifier.weight(1f, fill = false))
                 Spacer(Modifier.height(4.dp))
-                Text(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = accent, fontSize = 13.sp)
-                if (t.favorites > 0) Text("${t.favorites} favourites", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+                FullText(listOfNotNull(lookCount(t), lookFacts(t)).joinToString("  ·  "), color = accent, fontSize = 13.sp, maxLines = 2, reserve = false)
+                if (t.favorites > 0) FullText(if (t.favorites == 1) "1\u00A0favourite" else "${t.favorites}\u00A0favourites",
+                    color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp, reserve = false)
             }
         }
     }
