@@ -73,6 +73,17 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 06:50 UTC, 769a (cloud, matrix P12 - contrast):** Verify 310 on 1b08d00 GREEN. Every layout's status-bar type
+measured on its own box for every theme (4.5:1 ink, 3:1 accent): Live tiles' white on the theme accent failed on 200 of 203
+themes (1.3-2.5:1) - one guard legibleBar in statusLookFor: readable looks unchanged; white / black type keeps its colour and
+the box deepens (same hue); tinted inks move their lightness only. Pocket camera's 4-shade palette opted out (owner question
+in owner_actions). BarContrast769aTest 4/4; HW-24 769a.
+Found, not fixed (design question, logged): the Live tiles layout's own shortcut tiles (StyleLiveTiles.kt ~139-142) also write
+white on the bright theme accent.
+NEXT: check Verify 310 on this push FIRST (red -> fix first; a D358 Case flow "concurrent change" row again -> fix it).
+Then P12 contrast part 2 without hardware: the Live tiles' own tiles / labels on a pale accent (deepen the tile like 769a,
+keep white type) or text over cover art scrims; or P8 performance bounds. P2: only on an owner push / review or a red CI.
+
 **26 Nov 05:50 UTC, 768a (cloud, matrix P12 - touch size, no app change):** Verify 310 on 035c194 GREEN. Source scan for
 tap targets drawn under 24 dp: the music players' seek bars (mini 10 dp, now-playing panel 18 dp, full player 20 dp) and the
 mini player's 18 dp keys. A 24 dp hit box was tried and dropped: Robolectric showed Compose already takes taps up to 24 dp

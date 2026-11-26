@@ -1,3 +1,23 @@
+# Update 769a (26 Nov 2026, cloud run) - P12 contrast: status-bar type readable on its own box, every layout x theme
+- CI first: Verify 310 on 1b08d00 (768a) GREEN.
+- Matrix P12, contrast. Every home layout's status-bar look (53 layouts x every theme x dark / pale backdrop, theme-coloured
+  variants too) was measured: type on its own box (alpha >= 0.6, laid over the theme's background, or white where the layout
+  has a pale backdrop) against 4.5:1, a specified accent (points, progress line) against 3:1.
+- Found: Live tiles (theme colour, dark) wrote white on the theme's accent at 92 % - 200 of 203 themes below 4.5:1 (Voltcap
+  orange 2.5:1, a yellow theme ~1.3:1); its pale-backdrop accent on 22 themes, and small misses on the Lobby theme's Side menu
+  / Disc station / Circuit / Console stack bars.
+- Fix: legibleBar (StatusLooks.kt) runs every look statusLookFor returns through one guard: looks that read come back
+  unchanged (same instance); white / black type keeps its colour and the box gets a deeper / paler tone of the same hue (the
+  Live tiles' bar: deeper tile, white type as designed); a tinted ink / accent only has its lightness moved (legibleOn, hue
+  kept); white or black only when nothing else reaches. Pocket camera's four-shade palette is left as designed
+  (StatusLook.ownPalette; its lightest-on-second shade is ~3.2:1) - owner decision recorded.
+- Test: BarContrast769aTest 4/4 (Robolectric: every layout x theme x backdrop with defaults and with the theme-coloured
+  variants; the guard is settled; only Pocket camera opts out; Live yellow / orange tiles deepen with white type; a tinted LCD
+  ink moves itself; readable / boxless looks untouched; source check). Fails on 768a (helper missing / 57 unreadable looks).
+  Compiled: :app:compileDebugUnitTestKotlin (cloud). Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 769a).
+- Files: app/src/main/java/com/shelf/launcher/ui/StatusLooks.kt, app/src/test/java/com/shelf/launcher/ui/BarContrast769aTest.kt;
+  docs (matrix P12, HANDOFF, HW queue, dashboard, owner actions).
+
 # Update 768a (26 Nov 2026, cloud run) - P12 touch size: thin tap controls checked, Compose's touch target locked in by a test
 - CI first: Verify 310 on 035c194 (767a) GREEN.
 - Matrix P12, touch size >= 24 dp. Source scan of tap / drag targets drawn smaller than 24 dp: the music players' seek bars

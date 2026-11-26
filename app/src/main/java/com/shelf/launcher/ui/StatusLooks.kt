@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.HomeLayout
 import com.shelf.launcher.ui.theme.ShelfTheme
+import com.shelf.launcher.ui.theme.legibleOn
 
 /*
  * Updates 333 / 334: the status bar dressed for the layout it's on (Settings › Look & feel › "Status bar matches the
@@ -121,7 +122,9 @@ internal data class StatusLook(
     /** Battery cells in the ink, not the theme's colours (red only when it's really low). */
     val plainBattery: Boolean = true,
     /** Update 339: in the top left corner instead of the right (Night menu: its list fills the right). */
-    val left: Boolean = false
+    val left: Boolean = false,
+    /** 769a: built from a fixed few-shade palette (Pocket camera's four shades): the contrast guard leaves it as designed. */
+    val ownPalette: Boolean = false
 )
 
 /** The plain look (every layout before update 333, and with the switch off). */
@@ -139,7 +142,9 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         else -> ShelfTheme.accent
     }
     val pixel = pocketFont()
-    return when (layout) {
+    // (769a, P12 contrast: every look's type checked against its own box; unchanged where it already reads.)
+    val backdrop = if (paleBehind) Color.White else ShelfTheme.colors.background
+    return legibleBar(when (layout) {
         // Voltcap row: Voltcap's own — the edge shade only, clean.
         HomeLayout.CLASSIC -> StatusLook(BarBacking.SHADE, shade = if (paleBehind) 0.55f else 0.26f)
         // Tile home: a bolder, bigger time, square picture, wider calm gaps.
@@ -331,7 +336,7 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         HomeLayout.BUBBLES -> StatusLook(BarBacking.NONE, ink = Color.White, accent = Color(0xFF7FD0FF), shadowed = true, weight = FontWeight.Medium, clockWeight = FontWeight.Medium, clockSize = 13.sp, gap = 9.dp, avatar = AvatarShape.CIRCLE, avatarSize = 22.dp)
         // Update 344, Pocket camera: its four shades and pixel type, each group in a small chunky box.
         HomeLayout.CAMERA -> Features.pcPalette.state.value.shades.let { s ->
-            StatusLook(BarBacking.SEGMENTS, bg = Color(s[1]), ink = Color(s[3]), accent = Color(s[2]), rim = Color(s[0]), rimWidth = 2.dp, corner = 0.dp, font = pixel, clockSize = 12.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp)
+            StatusLook(BarBacking.SEGMENTS, bg = Color(s[1]), ink = Color(s[3]), accent = Color(s[2]), rim = Color(s[0]), rimWidth = 2.dp, corner = 0.dp, font = pixel, clockSize = 12.sp, gap = 5.dp, avatar = AvatarShape.SQUARE, avatarSize = 20.dp, ownPalette = true)
         }
         // Update 344, Panel dashboard: a clean light strip in the dashboard's own ink.
         HomeLayout.PANELS -> panelPalette().let { pp ->
@@ -351,7 +356,7 @@ internal fun statusLookFor(layout: HomeLayout, paleBehind: Boolean): StatusLook 
         HomeLayout.CUSTOM -> StatusLook(BarBacking.CAPSULE, bg = mixC(acc, Color.Black, 0.7f).copy(alpha = 0.7f), rim = acc.copy(alpha = 0.45f), corner = 10.dp, avatarSize = 24.dp)
         // The Pocket Classic / Ribbon bars are their own (Voltcap's isn't drawn there); anything else: the plain look.
         else -> PlainStatusLook.copy(shade = if (paleBehind) 0.62f else 0.32f)
-    }
+    }, backdrop)
 }
 
 private class LabelColors(val bg: Color, val ink: Color, val accent: Color)
@@ -373,6 +378,47 @@ private fun themedLabel(tint: Color, paleBehind: Boolean): LabelColors {
 private fun contrast(a: Color, b: Color): Float {
     val l1 = a.luminance() + 0.05f; val l2 = b.luminance() + 0.05f
     return if (l1 > l2) l1 / l2 else l2 / l1
+}
+
+/** The backings that put a box / band behind the type (its colour decides what the ink is read against). */
+private val BoxedBackings = setOf(BarBacking.TOOLBAR, BarBacking.CAPSULE, BarBacking.SEGMENTS, BarBacking.LCD, BarBacking.LABEL, BarBacking.FACET)
+
+/** [box] (translucent) laid over [under]. */
+internal fun barBoxOver(box: Color, under: Color): Color {
+    val a = box.alpha
+    return Color(box.red * a + under.red * (1 - a), box.green * a + under.green * (1 - a), box.blue * a + under.blue * (1 - a), 1f)
+}
+
+/** 769a (P12 contrast): the look's box is mostly opaque (below 60 % the scene decides; the bar's shade / shadow carry the type). */
+internal fun barIsBoxed(look: StatusLook): Boolean = look.backing in BoxedBackings && look.bg.alpha >= 0.6f
+
+/**
+ * 769a (P12 contrast): the status bar's type kept readable on its own box, laid over [backdrop] (white where the layout says a
+ * pale backdrop is under the bar, else the theme's background). The ink must reach 4.5:1, a specified accent (points, the
+ * progress line) 3:1; one that doesn't only has its lightness moved (hue and saturation kept, legibleOn) just far enough. White /
+ * black type keeps its colour and the box moves instead: the Live tiles' white type on the theme's accent (an orange tile
+ * 2.5:1, a yellow one ~1.3:1) now sits on a deeper tile of the same hue. Looks that already read come
+ * back unchanged (the same instance), so every layout's own colours stay as designed; [StatusLook.ownPalette] looks (a fixed
+ * few-shade palette) are left to the owner's decision.
+ */
+internal fun legibleBar(look: StatusLook, backdrop: Color): StatusLook {
+    if (!barIsBoxed(look) || look.ownPalette) return look
+    var bg = look.bg
+    var under = barBoxOver(bg, backdrop)
+    // White or black type is the look's identity (the Live tiles' white on the tile colour): the box gets deeper / paler
+    // instead, its hue kept; a tinted ink (an LCD's readout colour) is moved itself.
+    val neutralInk = look.ink.alpha >= 0.99f && (look.ink == Color.White || look.ink == Color.Black)
+    if (neutralInk && contrast(look.ink, under) < 4.5f) {
+        val moved = bg.copy(alpha = 1f).legibleOn(4.6f, listOf(look.ink)).copy(alpha = bg.alpha)
+        if (contrast(look.ink, barBoxOver(moved, backdrop)) >= 4.5f) { bg = moved; under = barBoxOver(bg, backdrop) }
+    }
+    // (A mid-tone box - an orange tile - can't be reached by moving away from its "side": then white or black, whichever reads.)
+    fun fit(c: Color, min: Float): Color = c.legibleOn(min, listOf(under)).let { f ->
+        if (contrast(f, under) >= min) f else if (contrast(Color.White, under) >= contrast(Color.Black, under)) Color.White else Color.Black
+    }
+    val ink = fit(look.ink, 4.5f)
+    val accent = if (look.accent == Color.Unspecified) look.accent else fit(look.accent, 3f)
+    return if (ink == look.ink && accent == look.accent && bg == look.bg) look else look.copy(bg = bg, ink = ink, accent = accent)
 }
 
 /** [pref] when it reads on [bg] (contrast >= [min]), else white or black, whichever reads better. */

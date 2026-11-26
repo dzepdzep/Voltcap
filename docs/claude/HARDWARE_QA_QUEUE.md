@@ -120,6 +120,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   preview (nothing cut at its top or bottom edge); at x1.3 the name is a little smaller (or slides), the other lines whole.
   Thor (two screens, if connected): the name keeps its full size on the top screen. Screenshot x1.3. Unit evidence only
   (DashboardTextRoom765aTest).
+- Also (769a, matrix P12 contrast, with the 767a / 768a pass, ~1 min, KONKR, QA app only): Live tiles home with its theme
+  colour (Live colour: Theme, dark) on Voltcap (orange) and a yellow theme (e.g. Spark 32-bit) - the status bar's tiles are a
+  deeper tone of the same colour and the white time / icons on them read clearly (before: white on the bright accent, ~2.5:1
+  orange, ~1.3:1 yellow); the layout's own tiles unchanged. Lobby theme: Side menu / Disc station / Circuit bars still look
+  like their own (only small tone nudges). Screenshot each. Unit evidence only (BarContrast769aTest).
 - Also (768a, matrix P12, with the 767a pass, ~1 min, KONKR, QA app only): music player open (any song with a length) - a
   tap about 5 dp above or below the thin seek bar of the mini player (10 dp), the now-playing panel (18 dp) and the full
   player (20 dp) still seeks; a tap on the mini player's 18 dp play / skip keys hits that key, not the bar. No code change

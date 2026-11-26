@@ -70,6 +70,13 @@
    "device": "none",
    "urgent": false,
    "blocks": "the next P2 layouts' polish and merging claude/v0674-native-pages into the v0.6.74 line"
+  },
+  {
+   "what": "Pocket camera's status bar: keep its authentic four-shade colours, or lift its type for readability?",
+   "why": "769a checked every layout's status-bar type for readability (4.5:1). Pocket camera writes its lightest shade on its second shade (Classic green: about 3.2:1, below the usual 4.5:1 for small text). It is left exactly as designed until you choose: keep the four shades, or let its type go a little paler than the palette (same hue) only in the bar. Every other layout was fixed in code where needed (Live tiles' bar: deeper tile, white type kept).",
+   "device": "none",
+   "urgent": false,
+   "blocks": "nothing (cloud work continues)"
   }
  ]
 }
