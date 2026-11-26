@@ -73,6 +73,13 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 01:30 UTC, 764a (cloud, P5 polish - Grid):** Verify 310 on 46666fc GREEN (D358 did not recur). Grid's two rows:
+▲ ▼ now stay in the column (stopped jumping to the neighbour column / wrapping from the last card to the first), ◀ ▶ keep the
+row (gridStep; GridSteps764aTest 5/5; HW-24 764a). Grid's text room fits at x1.3 (no change).
+NEXT: check Verify 310 on this push FIRST (red -> fix first; a D358 Case flow "concurrent change" row again -> fix it).
+Then P5 polish, next look: Pocket Dashboard (then Constellation) - cut or overlapping text at x1.3 by the same room
+arithmetic, ignored first presses / wrong steps (ONEPRESS), rule 14. P2: only on an owner push / review or a red CI.
+
 **26 Nov 00:30 UTC, 763a (cloud, CI flake triage + P5 polish - System Vault / Wall):** Verify 310 on 7c5bf06 RED on ONE runner:
 EndlessFillLitRoboTestShard3 [CASEFLOW n=5 fill=true] "Unsupported concurrent change during composition"; the twin runner
 passed the same suite on the same commit and 762a touched only Slides' text -> flaky, recorded as D358 (tools/qa/defects.json,

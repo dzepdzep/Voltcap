@@ -1,3 +1,19 @@
+# Update 764a (26 Nov 2026, cloud run) - P5 polish: Grid's ▲ ▼ stay in the column, ◀ ▶ in the row
+- CI first: Verify 310 on 46666fc (763a) GREEN (the D358 Case flow flake did not recur).
+- P5 third-priority polish, Grid (wide cards in two rows, filled column by column). ▲ ▼ stepped through the list (index ± 1,
+  wrapping): ▲ on a top card jumped to the previous column's bottom, ▼ on a bottom card to the next column's top, ▼ on the
+  last card of an odd count wrapped to the very first; ◀ from the first card landed in the middle column, ▶ from a bottom
+  card skipped the shorter last column.
+- Fix: gridStep (CategoryLooks.kt, pure): ▲ ▼ stay inside the column and stop at its top / bottom / an empty slot; ◀ ▶ keep
+  the row and wrap round the columns (a shorter last column gives its card); picked up (Start / hold) it stops at the ends.
+  Used by platformBrowserKey only for Grid's two-row case (other looks unchanged). A picked-up card's hint reads "◀ ▶ ▲ ▼"
+  with wide cards (tall cards: one row, "◀ ▶"). Text room checked: KONKR x1.3 card ~141 dp high, logo + name + count ~107 dp.
+- Test: GridSteps764aTest 5/5 (fails on 763a: gridStep missing; old index ± 1 values noted per case), CategoryLooksInventory759aTest
+  4/4, CategoryStable394Test 6/6, PlatformBrowserFullText678jTest 1/1. Compiled: :app:compileDebugUnitTestKotlin (cloud).
+  Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 764a).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt, app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt,
+  app/src/test/java/com/shelf/launcher/ui/GridSteps764aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue, dashboard).
+
 # Update 763a (26 Nov 2026, cloud run) - CI flake triage + P5 polish: System Vault's reader screen wraps, Wall's count whole
 - CI first: Verify 310 on 7c5bf06 (762a) RED on one of two runners: EndlessFillLitRoboTestShard3 [CASEFLOW n=5 fill=true]
   "Unsupported concurrent change during composition" (Compose Recomposer.applyAndCheck; a state written by composition and by

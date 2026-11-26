@@ -114,6 +114,11 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Also (762a, matrix P5, dev line 762a or later, ~1 min, KONKR x1.3 + x1.0, with the 761a pass): category screen look Slides,
   step to Xbox 360 / Amiga / 3DO and a console with favourites - the game count ("N Games (M Favorites)") and the maker / year
   line are whole (shrink or slide, never cut at the right edge). Screenshot x1.3. Unit evidence only (SlidesFactsFullText762aTest).
+- Also (764a, matrix P5, dev line 764a or later, ~1 min, KONKR x1.0, with the 763a pass): category screen look Grid (wide
+  cards, two rows) with an odd number of categories - ▲ on a top card and ▼ on a bottom card do nothing; ▼ on the last
+  (top-only) card does nothing (was: jumped to the first); ◀ on the first card goes to the last column; ▶ from a bottom card
+  into the shorter last column focuses its card; Start on a console, ▲ ▼ swap it inside its column, ◀ ▶ stop at the ends,
+  hint reads "◀ ▶ ▲ ▼". Each first press moves. Unit evidence only (GridSteps764aTest).
 - Also (763a, matrix P5, dev line 763a or later, ~1 min, KONKR x1.3 + x1.0, with the 762a pass): category screen look System
   Vault, step to PlayStation Portable and a console with favourites - the reader screen's "READING" header and facts line
   wrap onto two lines (not cut, not sliding when two lines fit), covers keep one height from system to system; Wall: the

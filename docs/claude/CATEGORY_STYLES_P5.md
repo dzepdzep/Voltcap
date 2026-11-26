@@ -14,7 +14,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | 1 | Tiles | TILES | PlatformBrowser grid | its grid | every layout not listed below | 527 (name + count) | KONKR x1.0 / x1.3, 12 Nov, older build | no |
 | 2 | Slides | SLIDES | SlidesView | ◀ ▶ / swipe | - | 678j (text), 762a (count + maker whole) | KONKR 12 Nov | no |
 | 3 | Wall | WALL | WallView | ◀ ▶ | Arcade | 527 (slices under the header) | KONKR 12 Nov; header fix (Sprint 528) not re-run | no |
-| 4 | Grid | GRID | GridView | ◀ ▶ ▲ ▼ (2 rows) + Start move | Grid, Hub, Live | - | KONKR 12 Nov | no |
+| 4 | Grid | GRID | GridView | ◀ ▶ ▲ ▼ (2 rows) + Start move | Grid, Hub, Live | 764a (▲ ▼ stay in the column) | KONKR 12 Nov | no |
 | 5 | System Stage | STAGE | StageLook | ◀ ▶ | Shelf, Stacks, Caseflow, Hero, Spot | 527 (plate wraps), 760a (plate ends at the object's foot) | KONKR 12 Nov | no |
 | 6 | System Blades | BLADES | BladesLook | ◀ ▶ | Blades, Side, Cross, Night | 759a | KONKR 12 Nov | no |
 | 7 | Collector's Drawers | DRAWERS | DrawersLook | ◀ ▶ ▲ ▼ (4 across) | Box, Storage, Crate, Cards | 527 (whole names) | KONKR 12 Nov (names on two lines fixed + re-checked) | no |
@@ -62,7 +62,12 @@ Green Core, Pocket classic).
 - 763a System Vault: the reader screen's "READING" header and facts line wrap onto a reserved second line before they
   shrink / slide (KONKR text width ~202 dp, x1.3 monospace needs ~280); Wall's game count through FullText.
   `VaultWallText763aTest` 3/3. Hardware NOT TESTED (HW-24 763a).
-- Third-priority polish still to do: Grid / Dashboard / Constellation (Wall's header
+- 764a Grid: ▲ ▼ stepped through the list (▲ on a top card -> previous column's bottom, ▼ on the last card of an odd count
+  -> the first card, ◀ from the first card -> the middle column). gridStep: ▲ ▼ stay in the column (stop at top / bottom /
+  an empty slot), ◀ ▶ keep the row and wrap round the columns (picked up: stop at the ends); a picked-up card's hint shows
+  "◀ ▶ ▲ ▼". Text room checked: KONKR x1.3 card ~141 dp high, content ~107 dp - fits. `GridSteps764aTest` 5/5. Hardware NOT
+  TESTED (HW-24 764a).
+- Third-priority polish still to do: Dashboard / Constellation (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.

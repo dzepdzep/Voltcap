@@ -90,6 +90,7 @@ import com.shelf.launcher.data.Features
 import com.shelf.launcher.data.PlatformInfo
 import com.shelf.launcher.ui.theme.ShelfTheme
 import kotlin.math.abs
+import kotlin.math.sign
 
 /*
  * The platform browser: the category screen as Slides (one platform at a time, like a console's shelf
@@ -291,7 +292,10 @@ internal fun platformBrowserKey(
         if (step != 0 && count > 0) {
             // Wraps round at both ends (the last platform goes on to the first); picked up for moving, it stops at the ends.
             // (A grid of drawers: ▲ ▼ stop at the top / bottom row instead of wrapping onto another column.)
-            val next = if (st.grabbed >= 0) (index + step).coerceIn(0, count - 1)
+            // (764a: Grid's two rows go by column and row - ▲ ▼ stay in the column, ◀ ▶ in the row; gridStep.)
+            val vertical = event.key == Key.DirectionUp || event.key == Key.DirectionDown
+            val next = if (nav == LookNav.ROW && rows > 1) gridStep(index, if (vertical) 0 else step.sign, if (vertical) step.sign else 0, count, rows, wrap = st.grabbed < 0)
+                else if (st.grabbed >= 0) (index + step).coerceIn(0, count - 1)
                 else if (nav == LookNav.GRID && abs(step) == DRAWER_COLS) (index + step).let { if (it in 0 until count) it else index }
                 else (index + step).mod(count)
             // A platform picked up only swaps with other platforms (not "All games", Favorites…).
@@ -1014,8 +1018,9 @@ private fun GridCard(tile: CategoryTile, tall: Boolean, selected: Boolean, grabb
             if (Features.pbShowName.value) FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = androidx.compose.ui.unit.TextUnit(1.143f, androidx.compose.ui.unit.TextUnitType.Em), reserve = false)
             if (Features.pbShowCount.value) FullText(countText(tile), color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp, maxLines = 1, reserve = false)
         }
+        // (764a: two rows of wide cards - a picked-up card also moves ▲ ▼ inside its column.)
         if (grabbed) Text(
-            "◀ ▶", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            if (tall) "◀ ▶" else "◀ ▶ ▲ ▼", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 6.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 8.dp, vertical = 2.dp)
         )
     }

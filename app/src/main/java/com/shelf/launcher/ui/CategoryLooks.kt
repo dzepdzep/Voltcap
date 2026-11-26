@@ -289,6 +289,29 @@ internal fun lookNavOf(v: Features.PlatformView): LookNav = when (v) {
 /** Drawers per row in Collector's Drawers. */
 internal const val DRAWER_COLS = 4
 
+/**
+ * 764a: Grid's wide cards sit in [rows] rows filled column by column (index / rows = column). ▲ ▼ ([dy]) stay inside the
+ * column and stop at its top / bottom (and at a last column's empty bottom slot) - they used to step through the list, so ▲
+ * on a top card jumped to the previous column's bottom and ▼ on the last card wrapped to the first. ◀ ▶ ([dx]) keep the row
+ * and wrap round the columns ([wrap]; off while a platform is picked up, it stops at the ends); a shorter last column gives
+ * its last card. Returns [index] when there is nowhere to go.
+ */
+internal fun gridStep(index: Int, dx: Int, dy: Int, count: Int, rows: Int, wrap: Boolean = true): Int {
+    if (count <= 0 || rows <= 0 || index !in 0 until count) return index
+    val col = index / rows
+    val row = index % rows
+    val cols = (count + rows - 1) / rows
+    if (dy != 0) {
+        val r = row + dy
+        if (r !in 0 until rows) return index
+        val t = col * rows + r
+        return if (t < count) t else index
+    }
+    if (dx == 0) return index
+    val c = if (wrap) (col + dx).mod(cols) else (col + dx).also { if (it !in 0 until cols) return index }
+    return (c * rows + row).coerceAtMost(count - 1)
+}
+
 /** The order the D-pad goes through the categories in a look (Generations: by release year); null = the saved order. */
 internal fun lookOrder(v: Features.PlatformView, tiles: List<CategoryTile>): List<Int>? =
     if (v == Features.PlatformView.GENERATIONS) generationOrder(tiles) else null
