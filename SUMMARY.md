@@ -1,3 +1,14 @@
+# Update 682be (26 Nov 2026) - v0.7.0 release candidate: Heat guard status on top, QA x1.3 reaches Settings and the R1 panel, version 0.7.0 (81)
+- Owner GO (26 Nov 06:37): release v0.7.0 from `claude/v070-rc` once the release checks pass.
+- Heat guard sheet: the "Now: ..." status (active restriction, vendor throttling) is the first line under the title - seen
+  without scrolling at x1.0 and x1.3 (KONKR / RP Classic QA app, simulated tuner). The switch stays the first focus.
+- QA only: `voltcap_test_scale` now reaches the Settings window and the R1 sheet (each a Dialog window providing its own
+  density); null in production -> unchanged. Hardware: Performance page x1.3 on both, R1 panel x1.3 on RP Classic.
+- Version 0.7.0 / versionCode 81 staged.
+- QA findings for v0.7.1 (not release blocking): R1 panel tile labels crowd at x1.3 (RP Classic); KONKR R1 Device-tab tap
+  in tunerprev hits the volume slider at x1.3 (guard put the volume back each time, D402).
+- Files: ui/R1Extras.kt, ui/NotificationsPanel.kt, ui/SettingsDialog.kt, app/build.gradle.kts, tools/qa/device/tunerprev.sh.
+
 # Update 682bd-2 (25 Nov 2026, live session) - v0.7.0 functional + data-integrity audit, Heat Guard rework, R1 Heat guard tile, Recents profile restore
 - Audit report: docs/claude/AUDIT_0.7.0.md (also the project doc claude/AUDIT_0.7.0.md). Upgrade v0.6.73 -> v0.7.0 on both
   handhelds (QA app): 0 setting changes. Backup / restore / snapshot / cross-device import / migrations twice: identical

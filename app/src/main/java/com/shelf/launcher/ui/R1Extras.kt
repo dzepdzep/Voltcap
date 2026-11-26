@@ -435,10 +435,7 @@ internal fun HeatGuardPopup(onDismiss: () -> Unit) {
         subtitle = "Temporary: lowers Voltcap's own speed caps while a game runs hot. Your profiles stay as they are.",
         onDismiss = onDismiss, maxContentHeightFraction = 0.75f
     ) {
-        SwitchRow(androidx.compose.material.icons.Icons.Filled.Thermostat, "Heat guard", if (on) "On" else "Off", on,
-            onChange = { on = it; store.heatGuard = it; changed() })
-        if (on) HeatGuardChoices(preset, limit, { preset = it; store.heatGuardPreset = it; changed() }, { limit = it; store.heatGuardC = it; changed() })
-        Spacer(Modifier.height(8.dp))
+        // (owner 26 Nov: the active restriction is seen at once, near the top - never only after scrolling, at any text size)
         MutedNote(
             when {
                 !on -> "Off: only the handheld's own thermal protection acts."
@@ -447,5 +444,9 @@ internal fun HeatGuardPopup(onDismiss: () -> Unit) {
                 else -> "Now: not restricting" + (st.heatC?.let { " (about ${it.toInt()} °C)" } ?: "") + "."
             } + if (st.vendorThrottle) " The handheld's own thermal limit is holding the clocks lower right now." else ""
         )
+        Spacer(Modifier.height(8.dp))
+        SwitchRow(androidx.compose.material.icons.Icons.Filled.Thermostat, "Heat guard", if (on) "On" else "Off", on,
+            onChange = { on = it; store.heatGuard = it; changed() })
+        if (on) HeatGuardChoices(preset, limit, { preset = it; store.heatGuardPreset = it; changed() }, { limit = it; store.heatGuardC = it; changed() })
     }
 }

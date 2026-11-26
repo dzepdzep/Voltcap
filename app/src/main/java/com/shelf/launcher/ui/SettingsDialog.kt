@@ -371,7 +371,7 @@ fun SettingsDialog(
             if (openSubpage != null) setSubpage(null) else onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (26 Nov: QA only - this window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         SettingsWindowFlat()
         // Small screens (Retroid Pocket Classic and the like): the dialog fills
@@ -759,7 +759,7 @@ fun SettingsDialog(
             }
         } }
         }
-    }
+    } }
 }
 
 // ---- Category bodies ----

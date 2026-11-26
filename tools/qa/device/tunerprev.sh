@@ -44,8 +44,11 @@ vol() { cmd media_session volume --get --stream 3 2>/dev/null | sed -n 's/.*volu
 gtap() { v0=$(vol); tap $1 $2 1.5; v1=$(vol); [ "$v0" = "$v1" ] && return 0
   [ -n "$v0" ] && cmd media_session volume --stream 3 --set $v0 >/dev/null 2>&1; log "STOP: volume moved $v0 -> $v1 by a tap - put back to $v0"; fin 4; }
 if ! grep -q '"label":"Airplane\|"label":"Android settings\|"label":"Heat guard' $O/4.json; then
-  sleep 1.5; clip 4; d=$(ctl 4 "Device"); log "Device tab: $d"
-  [ -n "$d" ] && { gtap $(mid "$d"); clip 4; }
+  sleep 1.5; clip 4
+  # first the panel's own R1 once more (KONKR; no tap at all), then - only if still not there - the guarded tap (RP Classic)
+  grep -q '"label":"Airplane\|"label":"Android settings\|"label":"Heat guard' $O/4.json || { key KEYCODE_BUTTON_R1 1.5; clip 4; }
+  if ! grep -q '"label":"Airplane\|"label":"Android settings\|"label":"Heat guard' $O/4.json; then
+    d=$(ctl 4 "Device"); log "Device tab: $d"; [ -n "$d" ] && { gtap $(mid "$d"); clip 4; }; fi
 fi
 shot 4_r1_device
 h=$(ctl 4 "Heat guard")
