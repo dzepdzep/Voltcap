@@ -1,3 +1,21 @@
+# Update 765a (26 Nov 2026, cloud run) - P5 polish: Pocket Dashboard's preview text stays inside the panel
+- CI first: Verify 310 on b995c00 (764a) GREEN.
+- P5 third-priority polish, Pocket Dashboard. KONKR 640 x 427 dp: the preview is 46 % of the height (~196 dp); inside its
+  26 dp padding the text column had 144 dp. Facts + a two-line 30 sp name + games / favourites + "Last played" needed ~170 dp
+  at x1.0 and more at x1.3 (any name) - the vertically centred column overflowed both ends of the rounded, clipped panel: the
+  facts line and the last-played line were cut.
+- Fix (CategoryLooks.kt): top / bottom padding 18 dp (sides 26 as before, DASH_PAD_H / DASH_PAD_V); the column bounded
+  (dashboardTextRoom = preview less padding); the name weighted (gives way first), line height 1.133 em (= the old 34 sp at
+  30 sp, now follows the shrink) and its largest size from the room (dashboardNameSp: 30 sp at x1.0 KONKR, ~24 sp at x1.3,
+  30 sp on the Thor's top screen; never below 18), so even a name that slides is whole in height; facts through FullText
+  (one line, slide if long). Icons row, glide, keys, second screen unchanged; rule 14 unaffected (no new transition).
+- Test: DashboardTextRoom765aTest 3/3 (fails on 764a: helpers missing; old 144 dp overflow cases asserted),
+  CategoryLooksInventory759aTest 4/4, CategoryStable394Test 6/6. Compiled: :app:compileDebugUnitTestKotlin (cloud). Static
+  checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 765a).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt,
+  app/src/test/java/com/shelf/launcher/ui/DashboardTextRoom765aTest.kt; docs (CATEGORY_STYLES_P5, matrix P5, HANDOFF, HW queue,
+  dashboard).
+
 # Update 764a (26 Nov 2026, cloud run) - P5 polish: Grid's ▲ ▼ stay in the column, ◀ ▶ in the row
 - CI first: Verify 310 on 46666fc (763a) GREEN (the D358 Case flow flake did not recur).
 - P5 third-priority polish, Grid (wide cards in two rows, filled column by column). ▲ ▼ stepped through the list (index ± 1,

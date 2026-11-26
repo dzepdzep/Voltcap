@@ -1447,6 +1447,24 @@ internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
 // 10. Pocket Dashboard — a big preview of the system you're on over a row of round system icons
 // ---------------------------------------------------------------------------------------------
 
+/** 765a: the preview's inner padding - the sides as before, top and bottom 18 dp (was 26) so the text column has room at x1.3. */
+internal const val DASH_PAD_H = 26
+internal const val DASH_PAD_V = 18
+
+/** 765a: the height the preview's text column may use - the preview less its top and bottom padding, never more. */
+internal fun dashboardTextRoom(previewH: Dp): Dp = previewH - (DASH_PAD_V * 2).dp
+
+/**
+ * 765a: the name's largest size - 30 sp where the column has room, smaller where the facts, counts and last-played line (one
+ * line each, ~1.35 em) leave less, so that even a name that has to slide along one line is whole in height (a slide runs at
+ * this size). Never below 18 sp.
+ */
+internal fun dashboardNameSp(room: Dp, fontScale: Float): Float {
+    val k = fontScale * 1.35f
+    val others = (11f + 22f + 11f + 12f) * k + 20f
+    return ((room.value - others) / k).coerceIn(18f, 30f)
+}
+
 @Composable
 internal fun DashboardLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     val pos = rememberLookGlide(selected, animate, Spring.StiffnessMedium)
@@ -1472,10 +1490,18 @@ internal fun DashboardLook(tiles: List<CategoryTile>, selected: Int, animate: Bo
         ) {
             CategoryArt(t, CardShape.WIDE, Modifier.fillMaxSize().graphicsLayer { alpha = 0.7f })
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.85f), 0.55f to Color.Black.copy(alpha = 0.35f), 1f to Color.Transparent)))
-            Row(Modifier.fillMaxSize().padding(26.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(lookFacts(t)?.uppercase() ?: if (t.platform == null) "LIST" else "", color = accent, fontSize = 11.sp, letterSpacing = 2.sp)
-                    FullText(t.label, color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black, lineHeight = 34.sp, maxLines = 2)
+            // (765a, P5: on the KONKR (640 x 427 dp) the preview is ~196 dp; inside 26 dp padding its text column had 144 dp,
+            // and the facts, a two-line name, the counts and the last-played line took ~164 dp at x1.0 and ~200 dp at x1.3 -
+            // the column overflowed both ends of the rounded panel and its top (the facts) and bottom (last played) were cut.
+            // The column is now bounded (dashboardTextRoom, 18 dp top / bottom padding); the name gives way first - it takes
+            // what the other lines leave, shrinks (its line height follows the size) and slides only past its readable
+            // minimum at a size whose one line still fits the room (dashboardNameSp); the facts keep to one line (they slide if a
+            // maker's name is long) instead of growing the column without end.)
+            val nameSp = dashboardNameSp(dashboardTextRoom(previewH), androidx.compose.ui.platform.LocalDensity.current.fontScale)
+            Row(Modifier.fillMaxSize().padding(horizontal = DASH_PAD_H.dp, vertical = DASH_PAD_V.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f).heightIn(max = dashboardTextRoom(previewH))) {
+                    FullText(lookFacts(t)?.uppercase() ?: if (t.platform == null) "LIST" else "", color = accent, fontSize = 11.sp, letterSpacing = 2.sp)
+                    FullText(t.label, color = Color.White, fontSize = nameSp.sp, fontWeight = FontWeight.Black, lineHeight = 1.133.em, maxLines = 2, modifier = Modifier.weight(1f, fill = false))
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                         @Composable fun stat(v: String, k: String) = Column {

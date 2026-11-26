@@ -24,7 +24,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | 11 | Generations | GENERATIONS | GenerationsLook | ◀ ▶ (release order) | Timeline, Console stack | 761a (info block ends at the handheld lane) | KONKR 12 Nov | no |
 | 12 | Constellation | CONSTELLATION | ConstellationLook | ◀ ▶ | Orbit, Circuit, Cube, Bubbles | - | KONKR 12 Nov | no |
 | 13 | System Vault | VAULT | VaultLook | ▲ ▼ | Memory card, File select, Disc station | 763a (reader text wraps) | KONKR 12 Nov | no |
-| 14 | Pocket Dashboard | DASHBOARD | DashboardLook (Thor: row on the lower screen) | ◀ ▶ | Pocket classic, Pocket ribbon, Twin showcase / desk / icons, Panels, Dash | 759a | KONKR 12 Nov; Thor two-screen NOT TESTED | no |
+| 14 | Pocket Dashboard | DASHBOARD | DashboardLook (Thor: row on the lower screen) | ◀ ▶ | Pocket classic, Pocket ribbon, Twin showcase / desk / icons, Panels, Dash | 759a, 765a (preview text inside the panel) | KONKR 12 Nov; Thor two-screen NOT TESTED | no |
 | 15 | Channel Menu | WIICHAN | WiiChannelLook | ◀ ▶ ▲ ▼ (4 across) | Channel grid (also its themed picker) | - | KONKR 12 Nov | no |
 | 16 | Cinema | CINEMA | CinemaLook | ◀ ▶ | Cinema (also its themed picker) | 527 (cross-fade, art under header) | Flip 2 before / after + KONKR 12 Nov | no |
 | 17 | Arctic Panes | ARCTIC | ArcticLook | ▲ ▼ | Arctic hub (also its themed picker) | 527 (cross-fade) | Flip 2 before / after + KONKR 12 Nov | no |
@@ -67,7 +67,13 @@ Green Core, Pocket classic).
   an empty slot), ◀ ▶ keep the row and wrap round the columns (picked up: stop at the ends); a picked-up card's hint shows
   "◀ ▶ ▲ ▼". Text room checked: KONKR x1.3 card ~141 dp high, content ~107 dp - fits. `GridSteps764aTest` 5/5. Hardware NOT
   TESTED (HW-24 764a).
-- Third-priority polish still to do: Dashboard / Constellation (Wall's header
+- 765a Pocket Dashboard: the preview (46 % of the height, ~196 dp on the KONKR) had a 144 dp text column inside 26 dp
+  padding; facts + a two-line 30 sp name + counts + last played needed ~170 dp at x1.0 and ~170-200 dp at x1.3 - the
+  centred column overflowed the rounded panel and its facts (top) and last-played line (bottom) were cut. Now: 18 dp top /
+  bottom padding, the column bounded (dashboardTextRoom, 160 dp), the name weighted (gives way first, line height 1.133 em
+  follows the shrink) at a largest size the room allows (dashboardNameSp: 30 sp at x1.0, ~24 sp at x1.3 on the KONKR, 30 sp
+  on the Thor's top screen), facts one line (FullText). `DashboardTextRoom765aTest` 3/3. Hardware NOT TESTED (HW-24 765a).
+- Third-priority polish still to do: Constellation (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.

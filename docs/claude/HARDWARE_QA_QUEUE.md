@@ -114,6 +114,12 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
 - Also (762a, matrix P5, dev line 762a or later, ~1 min, KONKR x1.3 + x1.0, with the 761a pass): category screen look Slides,
   step to Xbox 360 / Amiga / 3DO and a console with favourites - the game count ("N Games (M Favorites)") and the maker / year
   line are whole (shrink or slide, never cut at the right edge). Screenshot x1.3. Unit evidence only (SlidesFactsFullText762aTest).
+- Also (765a, matrix P5, dev line 765a or later, ~1 min, KONKR x1.0 + x1.3, with the 764a pass): category screen look Pocket
+  Dashboard, step to a console with a two-line name (e.g. Nintendo Entertainment System, PlayStation Portable) and one with
+  a last-played game - the facts line, the name, the games / favourites counts and "Last played" are all inside the rounded
+  preview (nothing cut at its top or bottom edge); at x1.3 the name is a little smaller (or slides), the other lines whole.
+  Thor (two screens, if connected): the name keeps its full size on the top screen. Screenshot x1.3. Unit evidence only
+  (DashboardTextRoom765aTest).
 - Also (764a, matrix P5, dev line 764a or later, ~1 min, KONKR x1.0, with the 763a pass): category screen look Grid (wide
   cards, two rows) with an odd number of categories - ▲ on a top card and ▼ on a bottom card do nothing; ▼ on the last
   (top-only) card does nothing (was: jumped to the first); ◀ on the first card goes to the last column; ▶ from a bottom card

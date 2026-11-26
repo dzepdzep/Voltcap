@@ -380,3 +380,4 @@
 - ~23:18 UTC 25 Nov 762a: lock free, taken. Verify 310 on 776a3c1 GREEN. P5 polish Slides: game count + maker / year line through FullText (were clipping one-line Texts; tight at x1.3 on KONKR) (SlidesFactsFullText762aTest 2/2). Lock released.
 - ~00:18 UTC 26 Nov 763a: lock free, taken. Verify 310 on 7c5bf06 RED on one runner (flaky Case flow Robolectric row, D358; twin runner green). P5 polish Vault reader header + facts wrap to two lines, Wall count through FullText (VaultWallText763aTest 3/3). Lock released.
 - ~01:18 UTC 26 Nov 764a: lock free, taken. Verify 310 on 46666fc GREEN. P5 polish Grid: two-row D-pad steps by column / row (gridStep; ▲ ▼ no longer jump columns or wrap last -> first) (GridSteps764aTest 5/5). Lock released.
+- ~02:18 UTC 26 Nov 765a: lock free, taken. Verify 310 on b995c00 GREEN. P5 polish Pocket Dashboard: preview text column bounded inside the panel, name sized to the room (DashboardTextRoom765aTest 3/3). Lock released.
