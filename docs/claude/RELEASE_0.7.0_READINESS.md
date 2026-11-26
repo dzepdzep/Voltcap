@@ -1,5 +1,16 @@
 # v0.7.0 release readiness (25 Nov 2026, 23:40)
 
+# Update 26 Nov 2026, ~06:25
+- x1.0 HW-28 Play placement (playplace_hw.py): KONKR 28 / 28 PASS, RP Classic 28 / 28 PASS. x1.0 walk complete on both.
+- Upgrade v0.6.73 QA -> RC: RP Classic PASS 0 changes (KONKR earlier PASS 0).
+- 681r on the RC build, RP Classic: c0-c7 PASS + sd1 (card game listed) - 16 PASS, 0 FAIL. Card out / back: NOT TESTED (the
+  card was not taken out within the 3-minute window); the script restored the QA files, the card's stand-in removed.
+- Tuner targeted preview (simulated tuner, QA app): KONKR x1.0 / x1.3 and RP Classic x1.0 / x1.3 captured and sent. Note: the
+  QA scale hook (voltcap_test_scale) reaches the Heat guard sheet but not the Settings window or the R1 panel - those show x1.0
+  in the x1.3 sets. At x1.3 the sheet's "Now: -N %" line sits below the fold (it scrolls; Close stays outside the scroll).
+- D402 (QA script, fixed): an unguarded tap in the R1 panel set the KONKR's media volume 2 -> 7; the owner set it back down
+  himself; the script now taps only with a before / after volume check and never during the panel's slide-in.
+
 # Update 26 Nov 2026, ~01:20 - release-candidate branch `claude/v070-rc`
 - RC = main + dev line (`claude/qa-0672-repair`) + P2 (`claude/v0674-native-pages`) + 681r (`claude/v0674-rescan-fix`, reviewed
   against P2: kept P2's libApp hook and 681r's extraRoot / libdump hooks; run_trial push lists combined). A merge slip in
