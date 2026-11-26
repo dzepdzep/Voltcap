@@ -120,6 +120,10 @@ RP Classic, AYN Thor (3140972f, two screens), Odin.
   preview (nothing cut at its top or bottom edge); at x1.3 the name is a little smaller (or slides), the other lines whole.
   Thor (two screens, if connected): the name keeps its full size on the top screen. Screenshot x1.3. Unit evidence only
   (DashboardTextRoom765aTest).
+- Also (768a, matrix P12, with the 767a pass, ~1 min, KONKR, QA app only): music player open (any song with a length) - a
+  tap about 5 dp above or below the thin seek bar of the mini player (10 dp), the now-playing panel (18 dp) and the full
+  player (20 dp) still seeks; a tap on the mini player's 18 dp play / skip keys hits that key, not the bar. No code change
+  (they rely on Compose's 48 dp touch target); unit evidence only (SmallTapTargets768aTest).
 - Also (767a, matrix P12, dev line 767a or later, ~2 min, KONKR, QA app only): with TalkBack on (QA session; restore it off
   afterwards), Icon bar home - the three round buttons next to Play are read as "Options", "Save sync", "Achievements" and a
   double tap opens each; classic row home - the focused card's star reads "Add to favourites" / "Remove from favourites" and

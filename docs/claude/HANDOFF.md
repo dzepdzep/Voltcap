@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 05:50 UTC, 768a (cloud, matrix P12 - touch size, no app change):** Verify 310 on 035c194 GREEN. Source scan for
+tap targets drawn under 24 dp: the music players' seek bars (mini 10 dp, now-playing panel 18 dp, full player 20 dp) and the
+mini player's 18 dp keys. A 24 dp hit box was tried and dropped: Robolectric showed Compose already takes taps up to 24 dp
+round a pointerInput node's centre (ViewConfiguration.minimumTouchTargetSize 48 dp), even inside the player's own gesture
+handler, and a directly-hit neighbour still wins - the same finding as update 487. Locked in by SmallTapTargets768aTest 4/4
+(also fails on any app-wide ViewConfiguration override). Player designs untouched. HW-24 768a (1 min near-tap check).
+NEXT: check Verify 310 on this push FIRST (red -> fix first; a D358 Case flow "concurrent change" row again -> fix it).
+Then P12 contrast (text-on-art legibility rules that can be checked from source / unit: e.g. a contrast helper for tinted
+labels) or P8 performance bounds that need no handheld. P2: only on an owner push / review or a red CI.
+
 **26 Nov 04:45 UTC, 767a (cloud, matrix P12 - TalkBack labels):** Verify 310 on b08dfd9 GREEN. Icon-only tap controls
 (Icon bar's Options / Save sync / Achievements next to Play, the classic card's favourite star + More dots) had no TalkBack
 name, role or click action - shared tapButtonSemantics (DialogChrome.kt) gives all three (TapButtonLabels767aTest 3/3;

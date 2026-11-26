@@ -1,3 +1,19 @@
+# Update 768a (26 Nov 2026, cloud run) - P12 touch size: thin tap controls checked, Compose's touch target locked in by a test
+- CI first: Verify 310 on 035c194 (767a) GREEN.
+- Matrix P12, touch size >= 24 dp. Source scan of tap / drag targets drawn smaller than 24 dp: the music players' seek bars
+  (MiniSeekBar 10 dp, NowPlayingPanel 18 dp, SeekBar 20 dp) and the mini player's 18 dp play / skip keys. The popup keys were
+  settled in update 487.
+- Tried and dropped: a layout helper giving the bars a 24 dp hit box with the same room in the row. A Robolectric test showed
+  the old 10 dp bar already took a tap 4 dp (and 10 dp) off its edge, inside a panel with its own tap handler: Compose widens a
+  pointerInput node's hit area to ViewConfiguration.minimumTouchTargetSize (48 dp) when nothing else is directly under the
+  finger. No app code changed; the approved player designs stay as they are.
+- Test: SmallTapTargets768aTest 4/4 (a thin bar takes taps 4 / 10 dp off its edge, not the panel's; 33 dp away the panel gets
+  it; a key directly under the finger wins over the bar next to it; no app-wide ViewConfiguration override in the sources) -
+  guards the safety net against a Compose update or an override. TapButtonLabels767aTest 3/3. Compiled:
+  :app:compileDebugUnitTestKotlin (cloud; Maven Central 429 once, Google mirror). Static checks [PASS]. Full suite: CI.
+  Hardware NOT TESTED (HW-24 768a: near taps on the three seek bars).
+- Files: app/src/test/java/com/shelf/launcher/ui/SmallTapTargets768aTest.kt; docs (matrix P12, HANDOFF, HW queue, dashboard).
+
 # Update 767a (26 Nov 2026, cloud run) - P12: TalkBack names for icon-only tap controls
 - CI first: Verify 310 on b08dfd9 (766a) GREEN.
 - Matrix P12 (TalkBack labels). Icon-only controls that react only to raw taps (pointerInput / detectTapGestures) had no

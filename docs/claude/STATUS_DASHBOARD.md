@@ -2,16 +2,16 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 767a · 2026-11-26 04:45 UTC · commit `this update (being pushed)` · CI: Verify 310 on b08dfd9 (766a) GREEN · effort: medium
+**1. LATEST UPDATE** - 768a · 2026-11-26 05:50 UTC · commit `this update (being pushed)` · CI: Verify 310 on 035c194 (767a) GREEN · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Accessibility: a few small buttons that only show an icon were silent for the screen reader (TalkBack) and could not be pressed with it - the three round buttons next to Play on the Icon bar home (options, save sync, achievements) and the favourite star and the More dots on the classic home's game card. They now say what they are and can be pressed with TalkBack. Nothing changes for touch or the controller; a short handheld check is queued.
+**2. WHAT CLAUDE JUST FIXED** - Accessibility check of small touch controls: the thin seek bars of the music players and the mini player's small play / skip keys are drawn smaller than the 24 dp touch size, but Android's touch handling already accepts taps a little around them. Nothing in the app changed (the player designs stay); a new test makes sure this keeps working. A one-minute handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
 - **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
+- **QA tools** (768a): Accessibility check of small touch controls: the thin seek bars of the music players and the mini player's small play / skip keys are drawn smaller than the 24 dp touch size, but Android's touch handling already accepts taps a little around them. Nothing in the app changed (the player designs stay); a new test makes sure this keeps working. A one-minute handheld check is queued.
 - **App** (767a): Accessibility: a few small buttons that only show an icon were silent for the screen reader (TalkBack) and could not be pressed with it - the three round buttons next to Play on the Icon bar home (options, save sync, achievements) and the favourite star and the More dots on the classic home's game card. They now say what they are and can be pressed with TalkBack. Nothing changes for touch or the controller; a short handheld check is queued.
 - **App** (766a): Constellation (the category screen where the consoles circle a glowing core and the one you're on is shown big on the right): the text under the big console - its name, games, maker and year, favourites - could run down behind the button legend at the bottom on smaller screens like the KONKR, especially with a two-line name and bigger text (x1.3). It now always ends above the legend; a long name gets a little smaller first. Tapping the big console or its text now opens it (before, only the small dimmed one on the ring did). With this, every one of the 17 category looks has had its polish check in code; a short handheld check is queued.
-- **App** (765a): Pocket Dashboard (the category screen with a big preview of the console over a row of round icons): the text in the preview - maker and year, the console's name, games and favourites, last played - needed more height than the preview has on smaller screens like the KONKR. A two-line name, or bigger text (x1.3), pushed the maker line off the top and the last-played line off the bottom of the rounded panel. The text now always stays inside the panel: the name takes what is left and gets a little smaller where needed (on the Thor's big top screen it keeps its full size). A one-minute handheld check is queued.
 
 **4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Matrix rows still open without hardware (P8 performance notes, P12 touch sizes); Category looks + TalkBack names: one short handheld pass (queued)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Accessibility: text contrast checks that need no handheld; Category looks + TalkBack + seek-bar taps: one short handheld pass (queued)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 
