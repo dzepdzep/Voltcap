@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523 (v2): Endless with few games + Case flow continuous movement, isolated QA app ONLY, on the QA fixture library
 # (GB 1 game, N64 2, GC 3, PS1 3, ALL many). Per layout x category x Endless fill (on = the owner's repeats, off = each game
 # once): the start, 6 fast steps (80 ms) and 3 back, a shot after each burst; QaClip dump; Case flow also a 5 s screen

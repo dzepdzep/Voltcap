@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 481 (A5) — a very long category name in every layout: still + QaClip dump per layout. Preview / QA hooks only.
 #   setsid sh cat481.sh TAG "LAYOUTS" &   → /sdcard/pc/TAG/<L>.png + <L>.json; grade: geomcheck.py --clip (texts with the name)
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT

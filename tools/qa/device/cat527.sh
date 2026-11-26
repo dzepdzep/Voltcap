@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Sprint 527 - category-screen look audit (owner: audit the 17 existing looks before any redesign), isolated QA app ONLY.
 # Never wakes / unlocks; keys only while the QA app is in front (else STOP). Preview on (nothing saved) and the settings snapshot
 # around it; the owner's QA snapshot files copied aside first and put back byte-for-byte.

@@ -207,9 +207,16 @@ def item_verified(it):
     return dev.startswith("PASS") and not ITEM_DONE_BLOCK.search(dev) and (own.startswith("APPROVED") or own == "not needed")
 
 
-def release_status(rel):
-    """Derived, never typed: DEVELOPMENT (an item not built) > BLOCKED (a gate FAIL / BLOCKED) > TESTING (a gate not PASS
+def is_published(rel, current):
+    """A release whose version is the current stable one (releases.json 'current') is out: it is never 'ready' again."""
+    return bool(current) and str(rel.get("version", "")).strip() == str(current.get("version", "")).strip()
+
+
+def release_status(rel, current=None):
+    """Derived, never typed: PUBLISHED (its version is the current stable, releases.json 'current') > DEVELOPMENT (an item not built) > BLOCKED (a gate FAIL / BLOCKED) > TESTING (a gate not PASS
     other than the owner's own steps) > READY FOR OWNER APPROVAL (only the upgrade install and the owner's GO are left)."""
+    if is_published(rel, current):
+        return "PUBLISHED"
     if any(not it.get("impl") for it in rel["items"]):
         return "DEVELOPMENT"
     states = [g["state"].upper() for g in rel["gates"]]
@@ -227,7 +234,7 @@ def gen_release():
     cur = d["current"]
     out = [f"**Current stable:** {cur['version']} ({cur['commit']}, {cur['date']}) - {cur['note']}", ""]
     for rel in d["releases"]:
-        st = release_status(rel)
+        st = release_status(rel, cur)
         items = rel["items"]
         apps = [i for i in items if i.get("kind") == "app"]
         impl = [i for i in apps if i.get("impl")]
@@ -250,12 +257,15 @@ def gen_release():
         for ex in rel.get("excluded", []):
             out.append(f"- **Left out on purpose:** {ex['what']} - {ex['why']}. Kept: {ex['kept']}.")
         reasons = [g["gate"] + f" ({g['state']})" for g in sorted(rel["gates"], key=lambda g: 0 if g["state"].upper() in ("BLOCKED", "FAIL") else 1) if g["state"].upper() not in ("PASS", "HISTORICAL")]
+        if st == "PUBLISHED":
+            out += ["", f"Published: this is the current stable release ({cur['commit']}, {cur['date']}). Nothing to approve.", ""]
+            continue
         out += ["", "Why it cannot ship yet: " + ("; ".join(reasons) if reasons else "nothing - waiting for your GO") + ".",
                 "Merging, the production install and publishing always wait for your explicit GO.", ""]
     return "\n".join(out).rstrip()
 
 
-SUMMARY_AREAS = [("Home layouts (popup gate)", "Home layouts"), ("Native popup pages", "Native pages"),
+SUMMARY_AREAS = [("Home layouts (popup gate)", "Home layouts"), ("Native popup pages", "Native pages (own designs)"),
                  ("Physical pickup / return animations", "Pickup animations"), ("Category styles (looks)", "Category styles"),
                  ("Save Vault + Save Sync 529", "Save Vault + Sync")]
 
@@ -295,18 +305,20 @@ def gen_summary():
         for r in recent[:5]:
             out.append(f"- **{label.get(r.get('kind'), r.get('kind'))}** ({r['update']}): {r['plain']}")
         out.append("")
-    out += ["**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)", "",
-            "| Area | Implemented | Verified on handhelds | Approved by you |", "|---|---|---|---|"]
+    out += ["**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)", "",
+            "| Area | Implemented | Verified on handhelds | Approved by you | Released |", "|---|---|---|---|---|"]
     for key, name in SUMMARY_AREAS:
         a = prog.get(key)
         if not a:
             continue
         t = a.get("total")
-        out.append(f"| {name} | {bar(a.get('impl'), t)} | {bar(a.get('device'), t)} | {bar(a.get('owner'), t)} |")
+        note = f" · {a['branch']}" if a.get("branch") else ""
+        func = f" · functional: {a['functional_owner']}" if a.get("functional_owner") else ""
+        out.append(f"| {name} | {bar(a.get('impl'), t)}{note} | {bar(a.get('device'), t)} | {bar(a.get('owner'), t)}{func} | {bar(a.get('released'), t)} |")
     emu = prog.get("Cloud emulator QA coverage")
     if emu:
         home = prog.get("Home layouts (popup gate)", {})
-        out.append(f"| Emulator QA (layouts) | {bar(home.get('emulator'), home.get('total'))} | emulator never counts as handheld | - |")
+        out.append(f"| Emulator QA (layouts) | {bar(home.get('emulator'), home.get('total'))} | emulator never counts as handheld | - | - |")
     out.append("")
     if reps and reps[-1].get("next"):
         nx = reps[-1]["next"]
@@ -319,8 +331,11 @@ def gen_summary():
         out.append(f"**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: {len(acts)} items (see Owner actions below); "
                    f"cloud work continues without them.")
     out.append("")
-    for n, rel in enumerate(rels["releases"]):
-        st = release_status(rel)
+    pending = [r for r in rels["releases"] if not is_published(r, rels.get("current"))]
+    if not pending:
+        out.append(f"**7. NEXT RELEASE** - current {rels['current']['version']} (published) · no next release planned yet")
+    for n, rel in enumerate(pending):
+        st = release_status(rel, rels.get("current"))
         if n:  # later releases: one short line each
             out.append(f"- later: **{rel['version']}: {st}** - {rel['scope']} ({rel['window'].split(' - ')[0]})")
             continue

@@ -15,7 +15,7 @@ import androidx.compose.ui.semantics.semantics
 internal val StatusClusterTag = SemanticsPropertyKey<Boolean>("VoltcapStatusCluster")
 /** A picture of the playing profile (its avatar or initial) - one per screen (the profile switcher's row is not one). */
 internal val AvatarTag = SemanticsPropertyKey<String>("VoltcapAvatar")
-/** 677k: a measured-only StatusFit probe - never placed; QaClip leaves its whole subtree out of every dump. */
+/** 677k: a measured-only probe (StatusFit, 679e Cube dock label) - never placed; QaClip leaves its whole subtree out of every dump. */
 internal val StatusProbeTag = SemanticsPropertyKey<Boolean>("VoltcapStatusProbe")
 internal var SemanticsPropertyReceiver.statusProbe by StatusProbeTag
 private var SemanticsPropertyReceiver.statusClusterTag by StatusClusterTag

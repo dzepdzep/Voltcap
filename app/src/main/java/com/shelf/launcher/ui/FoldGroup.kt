@@ -74,7 +74,8 @@ internal fun FoldGroup(
             Column(Modifier.weight(1f)) {
                 Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 if (summary != null && !open) {
-                    Text(summary, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    // (753a, rule 11: the folded group's whole summary.)
+                    FullText(summary, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
                 }
             }
             Spacer(Modifier.width(8.dp))

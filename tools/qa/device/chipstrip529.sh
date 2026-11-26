@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 529j (owner video VID20261113180355, compact screens: "incoming categories suddenly spawn at the edge") - category strips,
 # same build before / after: the old instant strip (voltcap_test_chipglide legacy) and the 529j glide (new), each recorded
 # and logged frame by frame (VoltcapQA chipglide lines). Isolated QA app ONLY, fixture library, launches blocked, preview on

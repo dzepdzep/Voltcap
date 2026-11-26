@@ -1,5 +1,8 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.material.icons.filled.Description
+
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.horizontalScrollAxisRange
 import androidx.compose.ui.semantics.semantics
@@ -26,6 +29,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -122,11 +126,15 @@ internal val KEY_ROW_GUTTER = 16.dp
  * (Was update 423's wrapping FlowRow: keys of every width on as many lines as they needed.)
  */
 @Composable
-internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (WinAction) -> Unit) {
+internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp,
+    /** D354 (681p): two-line keys only where one-line keys would show a single key at a time (uniformRowPick). */
+    twoLineOnlyWhenAlone: Boolean = false,
+    /** 682t: the main page's key count - on the window's own pages the keys keep the main page's slots (rememberKeySlots). */
+    slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(gap)) {
-        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key = key)
+        if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, slots = slots, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -136,7 +144,9 @@ internal fun KeyRow(keys: List<WinAction>, gap: Dp = 6.dp, key: @Composable (Win
  * room each side when it scrolls. Where all fit, every key gets an equal share of the whole width. Where not, as many whole keys
  * as fit show at once (each widened to fill that view exactly, never narrower than [need]) and the row scrolls by whole keys.
  */
-internal data class UniformRowGeom(val keyW: Int, val visible: Int, val scrolls: Boolean, val pitch: Int, val maxOffset: Int, val viewStart: Int, val viewW: Int)
+internal data class UniformRowGeom(val keyW: Int, val visible: Int, val scrolls: Boolean, val pitch: Int, val maxOffset: Int, val viewStart: Int, val viewW: Int,
+    /** 682t: the first key's own width (Play keeping the main page's slot) - 0: as every key. */
+    val firstW: Int = 0)
 
 internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
     if (n <= 0) return UniformRowGeom(need, 0, false, need + gap, 0, 0, 0)
@@ -156,13 +166,81 @@ internal fun uniformRowGeom(n: Int, need: Int, width: Int, gap: Int, gutter: Int
 }
 
 /**
+ * 682t (pure; owner 18 Nov: "keep Play button size and positioning consistent between native pages within each layout"): a page's
+ * key row that has fewer keys than the main page's [slots] keeps the main page's key size and starts where it does - Play stays
+ * the same size in the same place, the page's other keys in the main page's next slots. Null where the main page's row would
+ * not fit all its keys whole ([need] wider than a slot): the usual row then.
+ */
+internal fun uniformSlotGeom(n: Int, slots: Int, need: Int, width: Int, gap: Int, mainFit: Boolean = false): UniformRowGeom? {
+    if (n <= 0 || slots <= n) return null
+    val w = (width - (slots - 1) * gap) / slots
+    if (w <= 0) return null
+    if (need <= w) return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
+    // A page key wider than a slot ("FULL DETAILS" at x1.3, RP Classic 22 Nov: Dashboard, Library, Card binder): Play keeps its
+    // slot and the page's other keys share the rest - only where the main page's row showed all its keys whole in their slots
+    // ([mainFit]), so Play's word is known to fit its slot. (682v: without that check Play was cut where the main row had
+    // scrolled - ShelfText CUBE / CRATE x1.3.)
+    if (!mainFit || n < 2) return null
+    val rest = (width - w - gap - (n - 2) * gap) / (n - 1)
+    if (rest < need) return null
+    return UniformRowGeom(rest, n, false, rest + gap, 0, 0, width, firstW = w)
+}
+
+/** 682v: [rememberKeySlots] for a window's own key row (sceneKeys). */
+@Composable
+internal fun sceneKeySlots(ctx: WinSceneCtx): Int = rememberKeySlots(ctx.page, sceneKeys(ctx))
+
+/** 682t: the main page's action-key count, kept while the window turns its own pages (KeyRow's slots) - counted on the main
+ *  page with More closed (its open list - "Less" - is not the row Play sits in). [keys] are this page's. */
+@Composable
+internal fun rememberKeySlots(page: WinPage, keys: List<WinAction>): Int {
+    val kept = remember { androidx.compose.runtime.mutableIntStateOf(0) }
+    val count = keys.count { !it.status }
+    if (page == WinPage.MAIN && keys.none { it.label == "Less" } && kept.intValue != count) kept.intValue = count
+    return pageKeySlots(page, kept.intValue)
+}
+
+/**
+ * 682y (Card binder, KONKR / RP Classic x1.3, run pk13 / pr13): a main page with Play alone kept 1 slot, so its pages' rows
+ * were laid out each on its own - Play half the row on Details / Achievements (Play + Full details / Full list) but a short
+ * key in the middle on Options (Play alone). A page's row has room for Play and the page's own key at least: Play keeps the
+ * same slot on every page.
+ */
+internal fun pageKeySlots(page: WinPage, mainCount: Int): Int = if (page == WinPage.MAIN) mainCount else PAGE_SLOTS
+
+/** 682ab: a window's own page lays its keys out in two slots - Play and the page's own key (Full details, Full list). */
+internal const val PAGE_SLOTS = 2
+
+/** 682ab: the page key a page row is measured with (UniformKeyRow) - the widest of the pages' own keys. */
+internal val PAGE_KEY_REF = WinAction("Full details", androidx.compose.material.icons.Icons.Filled.Description, {})
+
+/** 682ab: a key drawn only to be measured - no focus, touch or sound (SceneControl). */
+internal val LocalMeasureOnly = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/**
+ * 682ab (pure; KONKR + RP Classic x1.0 fk10 / fr10: Play was a third on Achievements, half on Details and a short key in the
+ * middle on Options - Card binder, Console hub, Cube, Cinema, Record crate, Resume): a page's keys always take the two halves
+ * of the row - Play the first half, the page's own key the second; Play alone keeps the first half. Where a word doesn't fit
+ * half the row on one line the keys take two lines ([need2], the longest word); where not even that fits, null (the usual row).
+ */
+internal fun pageRowGeom(n: Int, need: Int, need2: Int, width: Int, gap: Int): UniformRowGeom? {
+    if (n !in 1..2) return null
+    val w = (width - gap) / 2
+    if (w <= 0 || (need > w && (need2 <= 0 || need2 > w))) return null
+    return UniformRowGeom(w, n, false, w + gap, 0, 0, n * w + (n - 1) * gap)
+}
+
+/**
  * 674c (pure, item 4 of the 15 Nov directive - narrow windows at x1.3 showed one key at a time): [need] is the widest key's
  * one-line width, [need2] the width at which every key's word takes two lines at most (0: a key can't take a second line).
  * The two-line keys are used only where the one-line row would scroll and the two-line one shows more keys at once.
  */
-internal fun uniformRowPick(n: Int, need: Int, need2: Int, width: Int, gap: Int, gutter: Int): UniformRowGeom {
+internal fun uniformRowPick(n: Int, need: Int, need2: Int, width: Int, gap: Int, gutter: Int, onlyWhenAlone: Boolean = false): UniformRowGeom {
     val one = uniformRowGeom(n, need, width, gap, gutter)
     if (!one.scrolls || need2 <= 0 || need2 >= need) return one
+    // (D354, 681p: a window whose keys' words must stay on one line - Pocket Quest's "Play game" - keeps one-line keys
+    // while at least two show at once; the row scrolls to the rest.)
+    if (onlyWhenAlone && one.visible >= 2) return one
     val two = uniformRowGeom(n, need2, width, gap, gutter)
     return if (!two.scrolls || two.visible > one.visible) two else one
 }
@@ -189,7 +267,7 @@ internal fun uniformRowScrollFor(i: Int, current: Int, g: UniformRowGeom): Int {
  * clipped away (not drawn, not counted as shown). Each key is drawn by [key] - the layout's own look - at the group's size.
  */
 @Composable
-internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = true, twoLineOnlyWhenAlone: Boolean = false, slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
     val gutterPx = with(density) { KEY_ROW_GUTTER.roundToPx() }
@@ -201,14 +279,20 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
     androidx.compose.runtime.LaunchedEffect(focused, geom) {
         val g = geom ?: return@LaunchedEffect
         val to = uniformRowScrollFor(focused, offset.targetValue.toInt().coerceIn(0, g.maxOffset), g).toFloat()
-        if (to != offset.targetValue) { if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to) }
+        // (682bc, HW-29 kpop13_3 TILES / rpop13_1 HERO x1.3: a tap on More left the focus - the row turned back to Play - and
+        // More's keys came in on the same frame. The new geometry restarted this effect, which cancelled the running scroll
+        // between two keys while its target already said 0: the row stayed there, Play cut by 201 px. The VALUE is compared,
+        // so a cancelled scroll always finishes on its key.)
+        if (to != offset.value) { if (anim) offset.animateTo(to, androidx.compose.animation.core.tween(170)) else offset.snapTo(to) }
     }
     val drag = androidx.compose.foundation.gestures.rememberDraggableState { d ->
         val g = geom
         if (g != null && g.scrolls) scope.launch { offset.snapTo((offset.value - d).coerceIn(0f, g.maxOffset.toFloat())) }
     }
-    val keyW = remember { IntArray(1) }
-    val inner = remember(gapPx) { uniformKeysPolicy(gapPx, keyW) { offset.value } }
+    val keyW = remember { IntArray(2) }
+    val mainFit = remember { BooleanArray(1) }
+    val pageRef = slots == PAGE_SLOTS
+    val inner = remember(gapPx, pageRef) { uniformKeysPolicy(gapPx, keyW, { pageRef }) { offset.value } }
     androidx.compose.ui.layout.Layout(
         content = {
             // (The row says it scrolls, as a scrolling list does - accessibility, and the popup gate, which counts a key scrolled
@@ -218,8 +302,17 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
                     value = { offset.value }, maxValue = { (geom?.maxOffset ?: 0).toFloat() })
             }) {
                 androidx.compose.ui.layout.Layout(content = {
+                    // (682ab: on a window's own page the row is measured with the page key that asks the most room ("Full
+                    // details") even where the page has no such key - Play is the same size on Options as on Details. The
+                    // reference is drawn outside the row's view (clipped), without semantics, focus or touch - LocalMeasureOnly.)
+                    if (slots == PAGE_SLOTS) Box(Modifier.clearAndSetSemantics { statusProbe = true }, propagateMinConstraints = true) {
+                        androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
+                    }
                     keys.forEachIndexed { i, a ->
-                        Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i }, propagateMinConstraints = true) {
+                        // (682bb, v0.7.0 preview HW-28 - Cardboard box x1.3 KONKR: one key in view, the row stayed scrolled to the
+                        // key last focused after the focus went into the page, so Play was out of view on Details / Achievements.
+                        // A row the focus has left shows its first key, Play, again - uniformRowScrollFor(-1) = 0.)
+                        Box(Modifier.onFocusChanged { if (it.hasFocus) focused = i else if (focused == i) focused = -1 }, propagateMinConstraints = true) {
                             androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) }
                         }
                     }
@@ -251,10 +344,12 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
         // (674c: two-line keys where the one-line row would show fewer keys - see uniformRowPick.)
         // ([twoLine] false: a row whose height the window can't give - Storage's keys on its name line at x1.3.)
         val need2 = if (!twoLine) 0 else runCatching { box.minIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) }.getOrElse { 0 }
-        val g = uniformRowPick(n, need, need2, width, gapPx, gutterPx)
+        val g = (if (slots == PAGE_SLOTS) pageRowGeom(n, need, need2, width, gapPx) else uniformSlotGeom(n, slots, need, width, gapPx, mainFit[0])) ?: uniformRowPick(n, need, need2, width, gapPx, gutterPx, onlyWhenAlone = twoLineOnlyWhenAlone)
+        // (682x: the main page's row - all its [slots] keys - showed them all whole, unscrolled: its pages may keep Play's slot)
+        if (slots > 0 && n == slots) mainFit[0] = !g.scrolls && g.visible >= n
         val h = runCatching { box.maxIntrinsicHeight(g.keyW) }.getOrElse { if (c.hasBoundedHeight) c.maxHeight.coerceAtMost(with(density) { 48.dp.roundToPx() }) else with(density) { 48.dp.roundToPx() } }
             .coerceAtMost(if (c.hasBoundedHeight) c.maxHeight else Int.MAX_VALUE)
-        keyW[0] = g.keyW
+        keyW[0] = g.keyW; keyW[1] = g.firstW
         val p = box.measure(androidx.compose.ui.unit.Constraints.fixed(g.viewW.coerceAtLeast(0), h))
         if (g != geom) geom = g
         layout(width, h) { p.place(g.viewStart, 0) }
@@ -266,20 +361,33 @@ internal fun UniformKeyRow(keys: List<WinAction>, gap: Dp, twoLine: Boolean = tr
  * key's height, [gap] apart - edges in line, nothing resizing as the D-pad moves. Each key is drawn by [key] at that size.
  */
 @Composable
-internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = false, key: @Composable (WinAction) -> Unit) {
+internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = false,
+    /** (737a, PlayPlace CAMERA: Options has Play alone, Details / Achievements Play + their own key - a column under a weighted
+     *  page put Play a key lower on Options.) The column keeps the room of at least [slots] keys, the keys from its top: Play
+     *  stays put on every page. */
+    slots: Int = 0, key: @Composable (WinAction) -> Unit) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val gapPx = with(density) { gap.roundToPx() }
+    // (682bb, v0.7.0 preview HW-28 - Pocket camera on the RP Classic: "FULL DETAILS" took two lines in the pixel font, so on Details
+    // every key grew and Play sat higher than on Achievements / Options. On a window's own pages the column is measured with the
+    // page key that asks the most room (PAGE_KEY_REF, measure-only, as UniformKeyRow 682ab) - the keys are one size on every page.)
+    val pageRef = slots == PAGE_SLOTS
     androidx.compose.ui.layout.Layout(content = {
         keys.forEach { a ->
             Box(propagateMinConstraints = true) { androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true) { key(a) } }
         }
-    }) { ms, c ->
+        if (pageRef) Box(Modifier.clearAndSetSemantics { statusProbe = true }, propagateMinConstraints = true) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalUniformKey provides true, LocalMeasureOnly provides true) { key(PAGE_KEY_REF) }
+        }
+    }) { all, c ->
+        val ms = if (pageRef) all.dropLast(1) else all
         // (the widest key's width - or, [fill], the column's whole width - for every key)
-        val need = runCatching { ms.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0 }.getOrElse { if (c.hasBoundedWidth) c.maxWidth else 0 }
+        val need = runCatching { all.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0 }.getOrElse { if (c.hasBoundedWidth) c.maxWidth else 0 }
         val w = if (fill && c.hasBoundedWidth) c.maxWidth else need.coerceIn(c.minWidth, if (c.hasBoundedWidth) c.maxWidth else Int.MAX_VALUE)
-        val h = runCatching { ms.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
+        val h = runCatching { all.maxOfOrNull { it.maxIntrinsicHeight(w) } ?: 0 }.getOrElse { with(density) { 44.dp.roundToPx() } }
         val ps = ms.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
-        val total = if (ps.isEmpty()) 0 else ps.size * h + (ps.size - 1) * gapPx
+        val rows = maxOf(ps.size, if (ps.isEmpty()) 0 else slots)
+        val total = if (rows == 0) 0 else rows * h + (rows - 1) * gapPx
         layout(w, total) { ps.forEachIndexed { i, p -> p.place(0, i * (h + gapPx)) } }
     }
 }
@@ -289,18 +397,24 @@ internal fun UniformKeyColumn(keys: List<WinAction>, gap: Dp, fill: Boolean = fa
  * ([offset], read while placing only). Its intrinsic width is the widest key's, its intrinsic height the tallest key's at
  * the width asked (what UniformKeyRow sizes the group by).
  */
-private fun uniformKeysPolicy(gap: Int, keyW: IntArray, offset: () -> Float) = object : androidx.compose.ui.layout.MeasurePolicy {
+private fun uniformKeysPolicy(gap: Int, keyW: IntArray, refFirst: () -> Boolean = { false }, offset: () -> Float) = object : androidx.compose.ui.layout.MeasurePolicy {
     override fun androidx.compose.ui.layout.MeasureScope.measure(
         measurables: List<androidx.compose.ui.layout.Measurable>, constraints: androidx.compose.ui.unit.Constraints
     ): androidx.compose.ui.layout.MeasureResult {
         val viewW = constraints.maxWidth
         // (the key width UniformKeyRow worked out in the same pass - the view holds whole keys exactly)
         val w = keyW[0].takeIf { it > 0 } ?: (measurables.maxOfOrNull { it.maxIntrinsicWidth(androidx.compose.ui.unit.Constraints.Infinity) } ?: 0)
+        val first = keyW.getOrElse(1) { 0 }.takeIf { it > 0 } ?: w
         val h = constraints.maxHeight
-        val ps = measurables.map { it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h)) }
+        // (682ab: a page row's measuring reference comes first - it is measured with the keys and placed past the view's end)
+        val ref = if (refFirst()) 1 else 0
+        val ps = measurables.mapIndexed { i, m -> m.measure(androidx.compose.ui.unit.Constraints.fixed(if (i == ref) first else w, h)) }
         return layout(viewW, h) {
             val ox = offset().toInt()
-            ps.forEachIndexed { i, p -> p.place(i * (w + gap) - ox, 0) }
+            ps.forEachIndexed { i, p ->
+                if (i < ref) p.place(viewW + w + gap, 0)
+                else { val k = i - ref; p.place(if (k == 0) -ox else first + gap + (k - 1) * (w + gap) - ox, 0) }
+            }
         }
     }
     override fun androidx.compose.ui.layout.IntrinsicMeasureScope.maxIntrinsicWidth(measurables: List<androidx.compose.ui.layout.IntrinsicMeasurable>, height: Int) =
@@ -525,7 +639,9 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     // run showed three facts of four.)
                     Text(if (upperLabels) l.uppercase() else l, color = label, style = labelStyle,
                         softWrap = true, modifier = Modifier.width(labelW).padding(top = 3.dp, end = 4.dp))
-                    Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
+                    // (682t, H16 survey x1.3: Pocket ribbon's pixel font broke "PlayStation 2" inside the word - the value's
+                    // words stay whole, stepping down to the readable minimum only when the longest one does not fit.)
+                    WholeWordsText(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font, modifier = Modifier.weight(1f))
                 }
               } }
             } else facts.chunked(2).forEach { pair ->
@@ -533,7 +649,7 @@ internal fun ColumnScope.SceneFactsBody(ctx: WinSceneCtx, label: Color, value: C
                     pair.forEach { (l, v) ->
                         Column(Modifier.weight(1f).padding(end = 8.dp)) {
                             Text(if (upperLabels) l.uppercase() else l, color = label, fontSize = 9.sp * scale, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, fontFamily = font, softWrap = false)
-                            Text(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font)
+                            WholeWordsText(v, color = value, fontSize = 12.sp * scale, lineHeight = 14.sp * scale, fontWeight = FontWeight.SemiBold, fontFamily = font)
                         }
                     }
                     if (pair.size == 1) Spacer(Modifier.weight(1f))
@@ -572,7 +688,8 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
     // (529t, owner P3: with a pickup the sleeve itself comes out of the crate as it stands there (PickupOverlay, the home's own
     // picture), comes forward and turns over: this, its back, turns in from edge-on once it is here; closing, the other way.)
     val flip = LocalSceneOrigin.current != null
-    Box(Modifier.size(side).pickupFlipTarget(flip).graphicsLayer {
+    // (P2 / 681a: L1 / R1 turn the sleeve's pages wherever the D-pad is - NativePageKit.nativeBumpers.)
+    Box(Modifier.size(side).nativeBumpers(ctx).pickupFlipTarget(flip).graphicsLayer {
         if (flip) {
             val k = ctx.reveal()
             // (Edge-on until the front has turned away - drawn, not hidden: its first drawing (art, text) is done before it
@@ -597,26 +714,36 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             drawRect(Brush.linearGradient(listOf(Color.Transparent, ink.copy(alpha = 0.10f)), Offset(size.width * 0.8f, size.height * 0.8f), Offset(size.width, size.height)))
         }
         Column(Modifier.fillMaxSize().padding(16.dp)) {
+            // (681s, emulator review 44194071430: at x1.3 the sleeve's full header left the insert one or two tracks - on the
+            // sleeve's own pages the header steps back to a small sleeve, so the printed matter gets the room; Info keeps it.)
+            val head = crateHeader(ctx.page != WinPage.MAIN)
+            val anim = rememberAnimationsEnabled()
+            val coverSide by androidx.compose.animation.core.animateDpAsState(side * head.cover,
+                if (anim) androidx.compose.animation.core.tween(NATIVE_PAGE_MS) else androidx.compose.animation.core.snap(), label = "crateCover")
             Row(verticalAlignment = Alignment.Top) {
-                Box(Modifier.size(side * 0.26f).background(ink.copy(alpha = 0.08f)).border(1.dp, ink.copy(alpha = 0.3f))) {
+                Box(Modifier.size(coverSide).background(ink.copy(alpha = 0.08f)).border(1.dp, ink.copy(alpha = 0.3f))) {
                     ctx.cover?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("SIDE A", color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                    // (P2 / 681a: the sleeve's other printed matter names its page here - LINER NOTES, TRACKLIST, PRESSING NOTES.)
+                    Text(crateHeaderName(ctx.page, ctx.earned, ctx.total), color = red, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                     // (672c, KONKR x1.3 k673b: the name kept three lines' height for a two-line name - the sleeve's keys then had no
                     // room for More's rows. A window's own name takes the lines it needs.)
-                    StableFullText(ctx.name, color = ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Black, lineHeight = 21.sp, reserve = false)
-                    Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
+                    StableFullText(ctx.name, color = ink, fontSize = head.name.sp, maxLines = head.lines, fontWeight = FontWeight.Black, lineHeight = head.line.sp, reserve = false)
+                    if (head.console) Text(ctx.console + (ctx.year?.let { " · $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
                 }
             }
-            Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(2.dp).background(ink))
+            Box(Modifier.padding(vertical = head.rule.dp).fillMaxWidth().height(2.dp).background(ink))
             // (674f: the room under the rule, measured - the vertical menu shows whole keys only, as many as leave the track list
             // two rows (k674e KONKR x1.3: three keys took all of it; f674e Flip 2: the third key cut at the stack's foot).)
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val regionH = maxHeight
             Column(Modifier.fillMaxSize()) {
-            if (ctx.page == WinPage.MAIN) {
+            // (P2 / 681a: Info and the sleeve's own pages share the room under the rule - NativePages carries one to the next, the
+            // paper inner sleeve sliding out sideways (WinPagesCrate.kt); the keys stay below.)
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "cratePage", move = ::crateMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) {
                 // The facts as the track list.
                 // (672a, Flip 2 x1.3 popup gate f672e: with More open the keys left the list 2 px - the top of one row, "1. Console",
                 // and no whole one. Under one whole row's room the list gives its room away (as SceneFactsBody since 467): the
@@ -631,7 +758,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                 // (675r, RP Nova x1.3 n675d: with More open the list had less than one whole row and drew none, but kept its
                 // weight - an empty band between the rule and PLAY. fill = false: a list that shows no row takes no room; the keys
                 // stand under the rule and the sleeve's own paper is left below them.)
-                Column(Modifier.weight(1f, fill = false).layout { m, c ->
+                Column(Modifier.layout { m, c ->
                     val minRow = if (rowH > 0) rowH else guess
                     if (c.hasBoundedHeight && c.maxHeight < minRow) layout(c.minWidth, c.minHeight) {}
                     else {
@@ -649,8 +776,10 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else ctx.pageBody(Modifier.weight(1f).fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
+            } else CratePage(ctx, pg, pageLive, paper, ink, red, Modifier.fillMaxSize())
+            }
+            // (682v: 4 dp on the sleeve's own pages - with the keys kept vertical there, the tracklist's second track was 2 px short)
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
             // (672a, f672e hierarchy: PLAY 218 px wide beside SLEEVE NOTES 378 px - the sleeve's long word made Play the smaller
             // key. Play is as wide as Sleeve notes now, its word centred - as far as the two still share their row: KONKR x1.3
             // (k673a) has no room for two keys that wide, and a Play alone on its row pushed the ••• off the sleeve.)
@@ -668,17 +797,29 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
             // scrolling the stack smoothly; the track list keeps its room above. Only here - no other row turns vertical.)
             val actions = keys.filterNot { it.status }
             val widest = actions.maxOfOrNull { sceneKeyWidth(it, 11.sp, null, upper = true) } ?: 0.dp
-            if (crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)) {
+            // (682v, owner 18 Nov: Play the same size in the same place on every page - the sleeve's own pages keep the main
+            // page's arrangement: a vertical menu there (x1.3) stays a vertical menu on the liner notes, the tracklist and the
+            // pressing notes, instead of a row whose Play changed size page by page.)
+            val vertNow = crateKeysVertical(widest, side - 32.dp, 6.dp, KEY_ROW_GUTTER)
+            val mainVert = remember { mutableStateOf<Boolean?>(null) }
+            if (ctx.page == WinPage.MAIN && keys.none { it.label == "Less" } && mainVert.value != vertNow) mainVert.value = vertNow
+            if (if (ctx.page == WinPage.MAIN) vertNow else mainVert.value ?: vertNow) {
                 val keyH = 34.dp
                 // (675r, n675d: the status line under the keys ("Save sync is not set up", ~36 dp at x1.3) was not counted, so three
                 // keys left the list less than one row. Its height is measured and reserved too.)
                 val status = keys.filter { it.status }
                 var statusH by remember { mutableStateOf(0.dp) }
                 val statusRoom = if (status.isEmpty()) 0.dp else if (statusH > 0.dp) statusH + 6.dp else CRATE_STATUS_GUESS * status.size
+                // (682v: on the sleeve's own pages, kept vertical as on the main page, one key in view at a time (the stack scrolls) - the tracklist
+                // keeps two whole tracks at x1.3 (CrateInsertRoom681s); Play stays the first, the same width.)
                 val shown = crateVisibleKeys(regionH, keyH, 6.dp, (if (ctx.page == WinPage.MAIN) 46.dp else 0.dp) + statusRoom, actions.size)
+                    .let { if (ctx.page == WinPage.MAIN) it else it.coerceAtMost(1) }
                 // (674g, owner review prep f674f / k674f: the fade at the stack's foot hid the last key's lower edge - it read as cut.
                 // The view holds whole keys exactly, so no fade; a hair of room for the keys' borders.)
-                Box(Modifier.fillMaxWidth().heightIn(max = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp).verticalScroll(keyScroll)) {
+                // (682ab, PlayPlace x1.3: on Options - Play alone - the stack's box was 2 dp shorter than on the pages with two keys
+                // and Play sat 2 px lower. A page's stack keeps its whole view height.)
+                val viewH = keyH * shown + 6.dp * (shown - 1).coerceAtLeast(0) + 2.dp
+                Box(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.heightIn(max = viewH) else Modifier.height(viewH)).verticalScroll(keyScroll)) {
                     UniformKeyColumn(actions, 6.dp, fill = true) { a ->
                         SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red,
                             RoundedCornerShape(3.dp), upper = true, size = 11.sp, height = keyH, lineHeight = 14.sp)
@@ -691,7 +832,7 @@ internal fun RecordSleeve(ctx: WinSceneCtx) {
                     }
                 }
             } else Box(Modifier.sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
-                KeyRow(keys) { a ->
+                KeyRow(keys, slots = rememberKeySlots(ctx.page, keys)) { a ->
                     SceneKey(a, if (a.primary) red else paper, ink, if (a.primary) com.shelf.launcher.ui.theme.textOn(red, Color.White) else ink, paper, ink.copy(alpha = 0.5f), red, RoundedCornerShape(3.dp), upper = true, size = 11.sp,
                         minWidth = if (a.primary) playMin else Dp.Unspecified)
                 }
@@ -753,6 +894,20 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
     // its tray and keys stay. L1 / R1 skip a track back / on, as the deck's own skip keys would.)
     val tracks = DISC_TRACKS.filter { it in ctx.pages }
     val anim = rememberAnimationsEnabled()
+    val discInk = androidx.compose.runtime.remember(lcd) { DiscInk(lcd, lcdBg) }
+    // (682az: Play stays put - as on Live tiles (743a): the Info page's height is taken with More closed (its open list is not
+    // the row Play sits in); on the tracks the panel takes a fixed height grown from it upward only (livePageHeight), so the key
+    // row stays where the Info page had it whatever the track holds.)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val mainH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val pageH = mainH.value?.let { livePageHeight(it, ctx.maxH) }
+    val moreShut = sceneKeys(ctx).none { it.label == "Less" }
+    val onMain = ctx.page == WinPage.MAIN
+    val box = when {
+        onMain -> Modifier.heightIn(max = ctx.maxH).onSizeChanged { if (moreShut) mainH.value = with(dens) { it.height.toDp() } }
+        pageH != null -> Modifier.height(pageH).offset(y = -(pageH - mainH.value!!) / 2)
+        else -> Modifier.heightIn(max = ctx.maxH)
+    }
     Box(Modifier.width(ctx.maxW).height(ctx.maxH).onPreviewKeyEvent { e ->
         if (e.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
         val step = when (e.key) { androidx.compose.ui.input.key.Key.ButtonL1 -> -1; androidx.compose.ui.input.key.Key.ButtonR1 -> 1; else -> return@onPreviewKeyEvent false }
@@ -766,7 +921,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             scaleX = e; transformOrigin = TransformOrigin(0f, 0.5f); alpha = e
         }.clip(RoundedCornerShape(3.dp)).background(Brush.verticalGradient(listOf(Color(0xFF2A3346), Color(0xFF0B0F18))))
             .border(1.dp, rim, RoundedCornerShape(3.dp)))
-        Column(Modifier.align(Alignment.CenterStart).padding(start = left).width(w).heightIn(max = ctx.maxH).graphicsLayer {
+        Column(Modifier.align(Alignment.CenterStart).padding(start = left).width(w).then(box).graphicsLayer {
             // Out of the deck's edge: the panel slides right from behind the tray as the tray reaches it; back in on close.
             val e = sceneEase(((ctx.reveal() - 0.15f) / 0.85f).coerceIn(0f, 1f))
             translationX = (1f - e) * -48.dp.toPx()
@@ -805,32 +960,29 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
                     }
                 },
                 contentKey = { it },
-                modifier = Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(6.dp)).background(lcdBg)
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = !onMain).clip(RoundedCornerShape(6.dp)).background(lcdBg)
                     .border(2.dp, Color(0xFF232B3B), RoundedCornerShape(6.dp)),
                 label = "discTrack"
             ) { p ->
                 val live = p == ctx.page
-                androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p) {
+                androidx.compose.runtime.CompositionLocalProvider(LocalShownPage provides p, LocalNativeLive provides live) {
                 Column(Modifier.fillMaxWidth().then(if (p == WinPage.MAIN) Modifier else Modifier.fillMaxHeight()).padding(10.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(if (p == WinPage.MAIN) labels.second else discTrackLabel(p, tracks), color = lcd.copy(alpha = 0.7f), fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+                    if (p == WinPage.MAIN) Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(labels.second, color = lcd.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
                         Spacer(Modifier.weight(1f))
-                        Text(if (p == WinPage.MAIN) ctx.played.uppercase() else winPageTitle(p).uppercase(), color = lcd, fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace, lineHeight = 13.sp, fontWeight = if (p == WinPage.MAIN) null else FontWeight.Bold)
-                    }
+                        Text(ctx.played.uppercase(), color = lcd, fontSize = 10.sp, fontFamily = FontFamily.Monospace, lineHeight = 13.sp)
+                    } else DiscTrackLine(discTrackLabel(p, tracks), discPageName(p).uppercase(), tracks, p, discInk)
                     if (p == WinPage.MAIN) {
                         StableFullText(ctx.name.uppercase(), color = lcd, fontSize = 18.sp, maxLines = 3, fontWeight = FontWeight.Bold, letterSpacing = 1.sp, reserve = false)
                         Spacer(Modifier.height(4.dp))
                         SceneFactsBody(ctx, lcd.copy(alpha = 0.55f), lcd, FontFamily.Monospace, cueLineHeight = 12.sp)
                     } else {
-                        // The track itself: the page's list on the display (its paper is the LCD; the disc in the deck is the
-                        // cover, the name stays the page's own heading).
-                        Spacer(Modifier.height(6.dp))
+                        // The track itself: the deck's own readout on the display (682az, P2 - the 53rd layout: DISC INFO / PROGRAM /
+                        // SETUP, WinPagesDisc.kt; the shared page bodies played here before). The music calendar under the track
+                        // line: a numbered cell per track, the one playing lit.
+                        Spacer(Modifier.height(4.dp))
                         Box(Modifier.weight(1f).fillMaxWidth()) {
-                            androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = false)) {
-                                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-                            }
+                            DiscPage(ctx, p, live, discInk, Modifier.fillMaxSize())
                         }
                     }
                 }
@@ -843,7 +995,7 @@ internal fun DiscPlayerPanel(ctx: WinSceneCtx) {
             // past it (the D-pad brings the key it is on into view); the LCD keeps the rest. Where they fit, nothing changes.)
             val keyScroll = rememberScrollState()
             Box(Modifier.heightIn(max = ctx.maxH * 0.45f).sceneFadeEdges(keyScroll).verticalScroll(keyScroll)) {
-                KeyRow(sceneKeys(ctx), 8.dp) { a ->
+                KeyRow(sceneKeys(ctx), 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> // (682az: the main page's slots on the tracks - Play stays put)
                     SceneKey(a, Color(0xFF263044), Color(0xFF121826), Color(0xFFE6E8EB), lcd, Color.Black.copy(alpha = 0.5f), lcd, RoundedCornerShape(4.dp),
                         font = FontFamily.Monospace, upper = true, size = 11.sp, height = 32.dp)
                 }
@@ -895,11 +1047,13 @@ internal fun CorePanel(ctx: WinSceneCtx) {
         transformOrigin = TransformOrigin(0.5f, 0.5f)
         alpha = (ctx.reveal() * 3f).coerceIn(0f, 1f)
     }.clip(CutCornerShapeCompat).background(Brush.verticalGradient(listOf(androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.93f).copy(alpha = 0.96f), androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.97f).copy(alpha = 0.98f))))
-        .border(1.5.dp, glow.copy(alpha = 0.8f), CutCornerShapeCompat).padding(14.dp)) {
+        .border(1.5.dp, glow.copy(alpha = 0.8f), CutCornerShapeCompat)
+        // (740a, P2 class C: L1 / R1 from anywhere on the console - its own pages SPEC / UNLOCKS / CONTROL, WinPagesCore.kt.)
+        .nativeBumpers(ctx).padding(14.dp)) {
         Text("// SYSTEM  ›  TITLE", color = glow.copy(alpha = 0.7f), fontSize = 10.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
         StableFullText(ctx.name, color = ink, fontSize = 22.sp, maxLines = 2, fontWeight = FontWeight.Bold)
         Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(glow, glow.copy(alpha = 0f)))))
-        Row(Modifier.weight(1f, fill = false)) {
+        if (ctx.page == WinPage.MAIN) Row(Modifier.weight(1f, fill = false)) {
             // (Update 423: the cover follows the room left under the keys — sized by its width it grew past the row and covered
             // the title once the keys wrapped onto more lines.)
             Box(Modifier.widthIn(max = minOf(w * 0.34f, 180.dp)).aspectRatio(0.75f, matchHeightConstraintsFirst = true).border(1.dp, glow.copy(alpha = 0.5f)).background(dim)) {
@@ -907,9 +1061,15 @@ internal fun CorePanel(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, glow.copy(alpha = 0.6f), ink, FontFamily.Monospace) }
+        } else {
+            // (740a, P2 class C: the console's own pages read out under the glow rule - SPEC / UNLOCKS / CONTROL in its monospace
+            // capitals and glow (WinPagesCore.kt); was the cover with the shared page bodies in the facts' place. On its pages the
+            // console takes its whole height and its keys keep the page slots, Play first, so Play stays put.)
+            val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+            CorePageArea(ctx, CoreInk(glow, ink, dim), Modifier.weight(1f).fillMaxWidth(), short)
         }
         Spacer(Modifier.height(10.dp))
-        KeyRow(sceneKeys(ctx)) { a ->
+        KeyRow(sceneKeys(ctx), slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
             SceneKey(a, dim, glow, glow, androidx.compose.ui.graphics.lerp(glow, Color.Black, 0.9f), glow.copy(alpha = 0.4f), glow, CutCornerShapeCompat, font = FontFamily.Monospace, upper = true, size = 11.sp)
         }
     }
@@ -1014,9 +1174,13 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
         scaleX = s; scaleY = s
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         shape = RoundedCornerShape(4.dp); clip = true
-    }.background(wall).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    }.background(wall)
+        // (741a, P2 class C: L1 / R1 from anywhere on the wall - its own pages Catalogue / Collection / Curator, WinPagesGallery.kt.)
+        .nativeBumpers(ctx).padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        val onPage = ctx.page != WinPage.MAIN
+        val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
         // The work itself, whole, in a dark frame with a mat — never stretched.
-        Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(10.dp)) {
+        Box(Modifier.weight(1f).fillMaxWidth().background(sceneDark(wall, 0.02f)).border(1.dp, lit.copy(alpha = 0.35f)).padding(6.dp).background(Color(0xFFF7F5F0)).padding(if (onPage && short) 6.dp else 10.dp)) {
             if (ctx.page == WinPage.MAIN) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Batch 523: the work in a frame of ITS shape - the mat hugs it instead of a whole picture floating in a wide mat.)
@@ -1027,19 +1191,27 @@ internal fun GalleryPlacard(ctx: WinSceneCtx) {
                         contentScale = ContentScale.Fit,
                         onSuccess = { st -> val sz = st.painter.intrinsicSize; if (sz.width > 0f && sz.height > 0f && sz.width.isFinite()) { CoverAspects.note(art, sz.width, sz.height); shape = sz.width / sz.height } })
                 }
-            } else ctx.pageBody(Modifier.fillMaxSize())
+            } else {
+                // (741a, P2 class C: the gallery's own pages hang on the mat - Catalogue / Collection / Curator in the placard's serif
+                // and ink, lit in the layout's colour (WinPagesGallery.kt); was the shared page bodies on the mat. On its pages the
+                // wall keeps its size and its keys keep the page slots, Play first, so Play stays put.)
+                GalleryPageArea(ctx, GalleryInk(lit, ink), Modifier.fillMaxSize(), short)
+            }
         }
-        Spacer(Modifier.height(10.dp))
-        // The placard.
+        Spacer(Modifier.height(if (onPage && short) 6.dp else 10.dp))
+        // The placard. (741a: on a short wall's pages it keeps the name alone - the maker / year / console and play time are on the
+        // Catalogue, the count on the Collection - so the page above keeps its room.)
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Column(Modifier.weight(1f).background(Color.White).border(1.dp, ink.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 6.dp)) {
-                StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-                Text(listOfNotNull(ctx.developer, ctx.year, ctx.console).joinToString(", "), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
-                Text(ctx.played + (if (ctx.total > 0) "  ·  ${ctx.earned} / ${ctx.total} trophies" else ""), color = ink.copy(alpha = 0.6f), fontSize = 10.sp, fontFamily = FontFamily.Serif)
+            Column(Modifier.weight(1f).background(Color.White).border(1.dp, ink.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = if (onPage && short) 4.dp else 6.dp)) {
+                StableFullText(ctx.name, color = ink, fontSize = if (onPage && short) 13.sp else 15.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+                if (!(onPage && short)) {
+                    Text(listOfNotNull(ctx.developer, ctx.year, ctx.console).joinToString(", "), color = ink.copy(alpha = 0.7f), fontSize = 11.sp, fontFamily = FontFamily.Serif)
+                    Text(ctx.played + (if (ctx.total > 0) "  ·  ${ctx.earned} / ${ctx.total} trophies" else ""), color = ink.copy(alpha = 0.6f), fontSize = 10.sp, fontFamily = FontFamily.Serif)
+                }
             }
         }
         Spacer(Modifier.height(8.dp))
-        KeyRow(sceneKeys(ctx)) { a ->
+        KeyRow(sceneKeys(ctx), slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
             SceneKey(a, if (a.primary) lit else Color.White, lit, if (a.primary) com.shelf.launcher.ui.theme.textOn(lit, Color.White) else ink, com.shelf.launcher.ui.theme.textOn(lit, Color.White),
                 Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(2.dp))
         }

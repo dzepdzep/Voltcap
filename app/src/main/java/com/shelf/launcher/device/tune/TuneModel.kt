@@ -141,6 +141,18 @@ data class TuneProfile(
             else -> Underclock.OFF
         }
     }
+    /**
+     * (682bd, owner 25 Nov 20:58 - "make the active profile source clear"): the underclock as one part of a status line, saying
+     * whose it is. Your own pick is named as it is - "Underclock Off" too, so a chosen Off is visible next to AutoTDP; "With
+     * power" says it follows the power / AutoTDP ("Underclock Light (with power)"); [live] = the step AutoTDP moved it to.
+     * Null: "With power" that lowers nothing right now.
+     */
+    fun underclockPart(live: Underclock? = null): String? = when {
+        underclock == Underclock.AUTO -> (live ?: effectiveUnderclock).takeIf { it != Underclock.OFF }?.let { "Underclock ${it.label} (with power)" }
+        underclock == Underclock.OFF -> "Underclock Off"
+        underclocked -> "Underclock ${underclock.label}"
+        else -> null
+    }
     /** Needs the background loop (re-asserting, AutoTDP, fan control). */
     val needsLoop: Boolean get() = autoTdp || fan == FanMode.CURVE || fan == FanMode.HOLD_TEMP
 
@@ -155,6 +167,43 @@ data class TuneProfile(
         "Fan ${fan.label}".takeIf { fan != FanMode.SYSTEM },
         "$refreshHz Hz".takeIf { refreshHz > 0 }
     ).joinToString(" · ")
+}
+
+/** (682bd) Where the profile in charge comes from - shown beside it (notification, game settings, popup). */
+enum class TuneSource(val label: String) {
+    GAME("Game profile"), APP("App profile"), EMULATOR("Emulator profile"), CONSOLE("Console profile"), DEVICE("Device-wide"), QA_TEST("QA test");
+
+    /** "Game profile: Doom", "PS2 profile" (the console's own name), "Device-wide". [name]: TunerStatus.source. */
+    fun text(name: String): String = when (this) {
+        CONSOLE -> name
+        DEVICE, QA_TEST -> label
+        else -> "$label: $name"
+    }
+
+    companion object {
+        /** From the store key the profile was found under (null = the device-wide one) and the running game's key. */
+        fun of(sourceKey: String?, gameKey: String?): TuneSource = when {
+            sourceKey == null -> DEVICE
+            sourceKey.startsWith("plat:") -> CONSOLE
+            sourceKey.startsWith("pkg:") -> if (gameKey != null && sourceKey == "pkg:$gameKey") APP else EMULATOR
+            else -> GAME
+        }
+    }
+}
+
+/**
+ * (682bd) Which saved profile a game uses - the one rule for the launch (Tuner), the popup and the settings: the game's own
+ * (its stableKey: the ROM path, or the package for an Android game), else its app / emulator package's ("pkg:"), else its
+ * console's ("plat:", when console profiles are on), else the device-wide one. Returns (profile, store key or null).
+ */
+object TuneResolve {
+    fun pick(lookup: (String) -> TuneProfile?, global: () -> TuneProfile, gameKey: String, packageName: String?,
+             platform: String?, consoleOn: Boolean): Pair<TuneProfile, String?> {
+        lookup(gameKey)?.let { return it to gameKey }
+        packageName?.let { pkg -> lookup("pkg:$pkg")?.let { return it to "pkg:$pkg" } }
+        if (consoleOn && !platform.isNullOrBlank()) lookup("plat:$platform")?.let { return it to "plat:$platform" }
+        return global() to null
+    }
 }
 
 /**
@@ -204,15 +253,22 @@ class TuneStore(context: Context) {
         val edits = kotlinx.coroutines.flow.MutableStateFlow(0)
 
         fun bumpEdits() { edits.value = edits.value + 1 }
+
+        /** Set once the store holds "With power"-era data (migrateUnderclockOnce). */
+        internal const val UC_FLAG = "uc_with_power"
     }
 
     /**
      * Once: profiles saved with the underclock "Off" (the old default) follow the power tier from now on ("With
      * power") — a tier of Stock / Max still means no underclock. A level you picked (Light…Custom) stays.
      */
+    // (682bd, owner 25 Nov 20:58: may this turn a chosen Off into "With power"? Only data written before "With power" existed
+    // (Update 237), where Off was the default nobody chose: the flag is set in the same write, and since 682bd every save
+    // sets it too (markCurrent) - a profile saved by this build is never migrated, also when something removed the flag (a
+    // backup restore replaces the whole "tuner" file with the backup's, flag included or not).)
     private fun migrateUnderclockOnce() {
-        if (prefs.getBoolean("uc_with_power", false)) return
-        val e = prefs.edit().putBoolean("uc_with_power", true)
+        if (prefs.getBoolean(UC_FLAG, false)) return
+        val e = prefs.edit().putBoolean(UC_FLAG, true)
         fun fix(json: String?): String? = json?.replace("\"underclock\":\"OFF\"", "\"underclock\":\"AUTO\"")
         prefs.getString("global", null)?.let { e.putString("global", fix(it)) }
         prefs.getString("per_game", null)?.let { e.putString("per_game", fix(it)) }
@@ -220,7 +276,7 @@ class TuneStore(context: Context) {
     }
 
     fun global(): TuneProfile = runCatching { gson.fromJson(prefs.getString("global", null), TuneProfile::class.java) }.getOrNull()?.sane() ?: TuneProfile()
-    fun setGlobal(p: TuneProfile) { prefs.edit().putString("global", gson.toJson(p)).apply(); bumpEdits() }
+    fun setGlobal(p: TuneProfile) { prefs.edit().putString("global", gson.toJson(p)).putBoolean(UC_FLAG, true).apply(); bumpEdits() }
 
     fun perGame(): Map<String, TuneProfile> =
         runCatching { gson.fromJson<Map<String, TuneProfile>>(prefs.getString("per_game", null), mapType) }.getOrNull()
@@ -231,7 +287,7 @@ class TuneStore(context: Context) {
     fun setForKey(key: String, p: TuneProfile?) {
         val m = perGame().toMutableMap()
         if (p == null) m.remove(key) else m[key] = p
-        prefs.edit().putString("per_game", gson.toJson(m)).apply()
+        prefs.edit().putString("per_game", gson.toJson(m)).putBoolean(UC_FLAG, true).apply()
         bumpEdits()
     }
 
@@ -263,8 +319,13 @@ class TuneStore(context: Context) {
         set(v) { prefs.edit().putBoolean("heat_guard", v).apply() }
 
     var heatGuardC: Int
-        get() = prefs.getInt("heat_guard_c", 85).coerceIn(60, 95)
-        set(v) { prefs.edit().putInt("heat_guard_c", v.coerceIn(60, 95)).apply() }
+        get() = prefs.getInt("heat_guard_c", 85).coerceIn(HeatGuard.MIN_C, HeatGuard.MAX_C)
+        set(v) { prefs.edit().putInt("heat_guard_c", v.coerceIn(HeatGuard.MIN_C, HeatGuard.MAX_C)).apply() }
+
+    /** (682bd) How the heat guard acts: Gentle / Balanced (default) / Aggressive ([HeatGuardPreset]). */
+    var heatGuardPreset: HeatGuardPreset
+        get() = HeatGuardPreset.of(prefs.getString("heat_guard_preset", null))
+        set(v) { prefs.edit().putString("heat_guard_preset", v.name).apply() }
 
     /** Records what each profile costs per game (battery, watts, temperature, frame rate). */
     var measure: Boolean
@@ -300,7 +361,7 @@ class TuneStore(context: Context) {
     fun setForKeys(keys: Collection<String>, p: TuneProfile) {
         val m = perGame().toMutableMap()
         keys.forEach { m[it] = p }
-        prefs.edit().putString("per_game", gson.toJson(m)).apply()
+        prefs.edit().putString("per_game", gson.toJson(m)).putBoolean(UC_FLAG, true).apply()
         bumpEdits()
     }
 

@@ -1056,7 +1056,7 @@ internal fun StyleArt(
         val url = if (wide) c.wide(g) else cover ?: c.wide(g)
         // (Update 113: the game you're on reports where it is, so the game window grows out of it.)
         val lane = rememberBadgeLane() // (676a: the tile's badges never overlap - BadgeLane.kt)
-        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue)).badgeTile(lane)) {
+        Box(modifier.gameOrigin(k, k == c.game?.stableKey).then(if (lit) Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha) else Modifier).clip(shape).background(placeholderBrush(g.hue)).badgeTile(lane, LocalBadgeOverlayBottom.current)) {
             when {
                 // (Update 202: a cover with its file's flat strips trimmed — TrimMargins.kt; Crop fills the tile.)
                 url != null -> AsyncImage(rememberStyleArtRequest(url, trim = url == cover), g.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().pixelArtwork()) // (Update 156: StyleArtRequests.kt)
@@ -1096,7 +1096,7 @@ internal fun StyleArt(
     val fxMod = if (!lit) Modifier else if (free) Modifier.mediaFloorGlow(true, ring, fx ?: 0f) else Modifier.styleFocus(true, corner, fx ?: 0f, ring, outline, focusAlpha)
     val here = modifier.gameOrigin(k, k == c.game?.stableKey)
     val lane = rememberBadgeLane() // (676a: BadgeLane.kt)
-    Box((if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))).badgeTile(lane)) {
+    Box((if (free) here.then(fxMod) else here.then(fxMod).clip(shape).background(placeholderBrush(g.hue))).badgeTile(lane, LocalBadgeOverlayBottom.current)) {
         when {
             pick != null -> MediaFocus(g.stableKey == c.game?.stableKey) { PhysicalMedia(pick.shell, labelScan ?: url ?: appIcon, Modifier.fillMaxSize().padding(4.dp).awardShine(k, focused), platform = pick.platform, labelIsScan = labelScan != null || (typed != null && url == typed), caseCover = cover ?: appIcon, title = g.name) }
             box3d != null -> MediaFocus(g.stableKey == c.game?.stableKey) { CaseArt(

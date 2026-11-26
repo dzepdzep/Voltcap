@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 676b: Hide navigation bar check on a handheld - the isolated QA app only (com.shelf.launcher.qa). Read-only for the device:
 # no setting is written (no settings put, no wm, no root); the QA app's own "Hide navigation bar" is never changed (the OFF
 # case uses the session-only test hook voltcap_test_navshown, Compose state only).

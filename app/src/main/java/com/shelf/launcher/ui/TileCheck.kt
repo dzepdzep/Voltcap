@@ -26,7 +26,7 @@ internal object TileCheck {
     val HOME_TILES = listOf(
         "gamelook", "badges", "outline", "cartlook", "discstyle", "casestyle", "spinestyle", "popupstyle", "twingap",
         "shelflook", "spotlight", "bartabs", "crosscut", "headertight", "pqtheme", "magnifier", "musicspot", "endless",
-        "roundshort", "progressbar", "gamesize", "artdrop", "corners", "categories", "rowpos", "carousel", "background",
+        "roundshort", "progressbar", "gamesize", "artdrop", "corners", "categories", "rowpos", "focuspos", "carousel", "background",
         "herofit", "sort", "edithome"
     )
 

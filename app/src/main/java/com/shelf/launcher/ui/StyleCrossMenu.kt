@@ -376,9 +376,9 @@ private fun CrossList(c: StyleCtx, left: Dp, iconTop: Dp, anchor: Dp, k: Float, 
                     if (trophyRow) Column(Modifier.riseOnEnter()) {
                         val p = c.progress(g)
                         Spacer(Modifier.height(2.dp))
-                        Text(
+                        FullText( // (756a, rule 11: the progress line whole; "loading…" is the text's own ellipsis)
                             p?.let { (e, t) -> "$e / $t achievements · ${(e * 100) / t} %" } ?: "Achievements loading…",
-                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k, maxLines = 1, overflow = TextOverflow.Ellipsis, // (Update 234, #14: ends in "…")
+                            color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp * k,
                             style = nameTextStyle(NameBackdrop.SHADOW) // (Update 252, #94: readable over light art, as the name)
                         )
                         if (p != null) {

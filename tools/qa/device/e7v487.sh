@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 487 — E7 verification on the Thor (owner-approved changes): Cover details paged story (D263 / D281), Twin window
 # story pages by R2 / L2 (D265), popup Play / keys (Tiles, Case Flow, Cinema, Classic). Preview hooks only, nothing saved,
 # launches blocked (qa_nolaunch). Screens + QaClip dumps into /sdcard/pc/e7v487.

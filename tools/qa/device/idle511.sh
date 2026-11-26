@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 511: idle cost after a real input (QA app only). usage: sh idle511.sh <tag> <wait_s> <layouts...>
 # Opens the layout, presses a no-op key (SHIFT_LEFT: counts as input, moves nothing), waits <wait_s> s with no input,
 # then 6 s of: CPU % (top), frames rendered + janky (gfxinfo), PSS.

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 511: rapid A-B-A-B (0.12 s) N times on a layout in the QA app; C = popup closed after it, O = still open (then closed with B).
 P=com.shelf.launcher.qa; L=$1; N=${2:-10}
 W() { dumpsys window | grep mCurrentFocus | grep -o "Window{[0-9a-f]*" | tail -1; }

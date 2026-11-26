@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 522b: Tile home independence through Edit Home's own actions (voltcap_test_edithome): moved row + moved round buttons,
 # Edit Home open (the layout must not move), Reset this part (buttons, then row), Reset this layout, Save, and R1 Row
 # Top / Bottom / Middle - a QaClip dump + screenshot per step (tools/qa/tools/tile522.py compares the parts' boxes).

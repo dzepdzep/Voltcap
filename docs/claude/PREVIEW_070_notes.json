@@ -1,0 +1,496 @@
+{
+ "summary": "QA app builds qa682az / qa682az2 (claude/v0674-native-pages), synthetic games, KONKR (960x640) and RP Classic (1240x1080), x1.0 and x1.3. Captured 25 Nov 2026.",
+ "layouts": {
+  "CHAN": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "CIRCUIT": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "TIMELINE": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "HERO": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "HERO_TILES": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "MEMCARD": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "BOX": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "FILESELECT": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "CASEFLOW": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "ORBIT": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "AIRY": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "BUBBLES": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "CAMERA": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "PANELS": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "SHOP": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "GREENCORE": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "ARTLIB": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "CROSS": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "LIVE": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "CUSTOM": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "POCKET_CLASSIC": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "POCKET_RIBBON": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "POCKET": {
+   "impl": "yes (class C, 726a-745a)",
+   "hw": "NOT TESTED - functional hardware QA (HW-28) not run; visual capture only"
+  },
+  "SPOT": {
+   "impl": "yes (682t / 682w)",
+   "hw": "PASS x1.0 + x1.3 on both (P2 review b06044b - an earlier build)"
+  },
+  "TERMINAL": {
+   "impl": "yes (682t / 682w)",
+   "hw": "PASS x1.0 + x1.3 on both (P2 review b06044b - an earlier build)"
+  },
+  "DASH": {
+   "impl": "yes (682t / 682w)",
+   "hw": "PASS x1.0 + x1.3 on both (P2 review b06044b - an earlier build)"
+  },
+  "LIBRARY": {
+   "impl": "yes (682t / 682w)",
+   "hw": "PASS x1.0 + x1.3 on both (P2 review b06044b - an earlier build)"
+  },
+  "CARDS": {
+   "impl": "yes (682t / 682w)",
+   "hw": "PASS x1.0 + x1.3 on both (P2 review b06044b - an earlier build)"
+  },
+  "TV": {
+   "impl": "yes (681g, 682u)",
+   "hw": "Partial: RP Classic x1.0 + x1.3 PASS; KONKR x1.3 before 682u only"
+  },
+  "CRATE": {
+   "impl": "yes (batch 1, 682s / 682v refinements)",
+   "hw": "Partial: x1.3 walks before the refinements; Achievements safety PASS (both, x1.0 + x1.3)"
+  },
+  "CLASSIC": {
+   "impl": "yes (batch 1, 682s / 682v refinements)",
+   "hw": "Partial: x1.3 walks before the refinements; R1 Focus position PASS (both, x1.0 + x1.3)"
+  },
+  "HUB": {
+   "impl": "yes (batch 1, 682s / 682v refinements)",
+   "hw": "Partial: x1.3 walks before the refinements"
+  },
+  "RESUME": {
+   "impl": "yes (batch 1, 682s / 682v refinements)",
+   "hw": "Partial: x1.3 walks before the refinements"
+  },
+  "MAGAZINE": {
+   "impl": "yes (batch 2, 682n-q)",
+   "hw": "Partial: x1.3 walks"
+  },
+  "CINEMA": {
+   "impl": "yes (batch 2, 682n-q)",
+   "hw": "Partial: x1.3 walks"
+  },
+  "CUBE": {
+   "impl": "yes (batch 2, 682n-q)",
+   "hw": "Partial: x1.3 walks"
+  },
+  "ARCADE": {
+   "impl": "yes (682p) + Arcade A static titles (682as)",
+   "hw": "Partial: x1.3 walks; Arcade A accepted (RP Classic); Arcade B open"
+  },
+  "SIDE": {
+   "impl": "yes (batch 4, 682y)",
+   "hw": "Partial: focused x1.0 checks"
+  },
+  "BAR": {
+   "impl": "yes (batch 4, 682y)",
+   "hw": "Partial: focused x1.0 checks; Achievements safety PASS (both, x1.0 + x1.3)"
+  },
+  "ARCTIC": {
+   "impl": "yes (batch 4, 682y)",
+   "hw": "Partial: focused x1.0 checks"
+  },
+  "STORAGE": {
+   "impl": "yes (batch 4, 682y)",
+   "hw": "Partial: focused x1.0 checks"
+  },
+  "SHELF": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "STACKS": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "CONSOLES": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "COVERDETAILS": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "TWIN_DESK": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "TWIN_ICONS": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "TWIN_SHOWCASE": {
+   "impl": "yes (batch 5, 682aa)",
+   "hw": "Partial: 22 Nov evening capture (gk10 / gr10)"
+  },
+  "TILES": {
+   "impl": "yes (batch 6, 682ad)",
+   "hw": "NOT TESTED (batch 6); R1 Focus position PASS (both, x1.0 + x1.3)"
+  },
+  "GRID": {
+   "impl": "yes (batch 6, 682ad)",
+   "hw": "NOT TESTED (batch 6)"
+  },
+  "NIGHT": {
+   "impl": "yes (batch 7, 682ae)",
+   "hw": "NOT TESTED (batch 7)"
+  },
+  "BLADES": {
+   "impl": "yes (batch 7, 682ae)",
+   "hw": "NOT TESTED (batch 7)"
+  },
+  "DISCS": {
+   "impl": "yes (682az, this session - the 53rd)",
+   "hw": "Partial: PlayPlace / AchFirstRow / ShelfText in tests; hardware visual capture only",
+   "note": "New today: the deck's tracks play its own DISC INFO / PROGRAM / SETUP pages; before / after below."
+  }
+ },
+ "sections": [
+  {
+   "id": "features",
+   "title": "New features (723a / 724a / 725a)",
+   "text": "Implemented: yes. Hardware QA: PASS on both handhelds at x1.0 and x1.3 (APK-update persistence NOT TESTED on hardware). Owner visual approval: NOT APPROVED.",
+   "items": [
+    {
+     "title": "R1 Focus position - Voltcap row (KONKR x1.0)",
+     "text": "Left / Middle: the focused card's place in the row.",
+     "images": [
+      "kfp10b/FP_CLASSIC_c0_a.png",
+      "kfp10b/FP_CLASSIC_c1_a.png"
+     ]
+    },
+    {
+     "title": "R1 Focus position - Tile home (KONKR x1.0)",
+     "text": "Edges / Left / Middle / Right.",
+     "images": [
+      "kfp10b/FP_TILES_c0_a.png",
+      "kfp10b/FP_TILES_c1_a.png",
+      "kfp10b/FP_TILES_c2_a.png",
+      "kfp10b/FP_TILES_c3_a.png"
+     ]
+    },
+    {
+     "title": "R1 Focus position - RP Classic x1.3",
+     "text": "",
+     "images": [
+      "rfp13/FP_CLASSIC_c0_a.png",
+      "rfp13/FP_TILES_c3_a.png"
+     ]
+    },
+    {
+     "title": "Recomps category + START > Categories (KONKR x1.0)",
+     "text": "An Android app marked Recomp, also in Android games and N64; the Categories window; the Collections picker.",
+     "images": [
+      "kac10c/AC_home_recomps.png",
+      "kac10c/AC_options.png",
+      "kac10c/AC_cats_pre.png",
+      "kac10c/AC_collpicker.png"
+     ]
+    },
+    {
+     "title": "Recomps + START > Categories (RP Classic x1.0 / x1.3)",
+     "text": "",
+     "images": [
+      "rac10/AC_home_recomps.png",
+      "rac10/AC_cats_pre.png",
+      "rac13x/AC_cats_pre.png",
+      "rac13x/AC_collpicker.png"
+     ]
+    },
+    {
+     "title": "Collections picker at x1.3 (KONKR)",
+     "text": "",
+     "images": [
+      "kac13x/AC_collpicker.png",
+      "kac13x/AC_cats_pre.png"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "beforeafter",
+   "title": "Before / after",
+   "text": "Same handheld, same QA library.",
+   "items": [
+    {
+     "title": "Disc station Details / Achievements / Options - before (shared pages; RP Classic, KONKR x1.0)",
+     "text": "Each track played the generic white page cards; Play moved between Info and the pages.",
+     "images": [
+      "before/rdb10_before.jpg",
+      "before/kdb10_before.jpg"
+     ]
+    },
+    {
+     "title": "Disc station - after (its own pages; KONKR x1.0 / x1.3, RP Classic x1.0 / x1.3)",
+     "text": "DISC INFO, PROGRAM and SETUP on the deck's LCD; Play stays put.",
+     "images": [
+      "after/k10_after.jpg",
+      "after/k13_after.jpg",
+      "after/r10_after.jpg",
+      "after/r13_after.jpg"
+     ]
+    },
+    {
+     "title": "Charging light - before (legacy) / after (two sweeps, then still) - RP Classic",
+     "text": "Same moment after the level changes; at rest the new light stays still.",
+     "images": [
+      "rch2/CH_legacy_1_light_3.png",
+      "rch2/CH_new_1_light_3.png",
+      "rch2/CH_legacy_1_rest.png",
+      "rch2/CH_new_1_rest.png"
+     ]
+    },
+    {
+     "title": "Open issue: wide line gap in wrapped subtitles at x1.3 (RP Classic Categories window)",
+     "text": "x1.0 (left) vs x1.3 (right): 'Set by you: an app - with Spotify, YouTube and the / rest' - the second line sits far below the first.",
+     "images": [
+      "rac10/AC_cats_pre.png",
+      "rac13x/AC_cats_pre.png"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "arcadeb",
+   "title": "Arcade B (experimental branch, not merged)",
+   "text": "claude/exp-arcadeb-focus: the save of 'the game you were on' no longer rebuilds the whole home 400 ms after each game change. Same-build A/B on All (34 / 32 games). Not merged; no larger rendering refactor until you have reviewed this preview.",
+   "table": [
+    [
+     "Run",
+     "Layout",
+     "Rebuilds legacy -> new",
+     "Slow UI frames",
+     "p95 ms",
+     "Grader"
+    ],
+    [
+     "RPC ris2",
+     "Arcade",
+     "63 / 61 -> 36 / 32",
+     "80 / 78 -> 65 / 62",
+     "117 / 105 -> 97 / 93",
+     "GAIN"
+    ],
+    [
+     "RPC ris4 (new first)",
+     "Arcade",
+     "58 / 57 -> 38 / 33",
+     "80 / 71 -> 68 / 65",
+     "109 / 97 -> 113 / 105",
+     "NO GAIN (p99)"
+    ],
+    [
+     "RPC ris3",
+     "Voltcap row",
+     "70 / 69 -> 39 / 41",
+     "84 / 61 -> 60 / 53",
+     "93 / 77 -> 81 / 77",
+     "GAIN"
+    ],
+    [
+     "RPC ris3",
+     "Tile home",
+     "57 / 57 -> 32 / 31",
+     "60 / 60 -> 46 / 56",
+     "73 / 73 -> 77 / 77",
+     "GAIN"
+    ],
+    [
+     "KONKR kis1",
+     "Arcade",
+     "60 / 55 -> 33 / 28",
+     "114 / 60 -> 59 / 51",
+     "57 / 40 -> 44 / 36",
+     "GAIN"
+    ],
+    [
+     "KONKR kis1",
+     "Grid",
+     "53 / 54 -> 27 / 26",
+     "33 / 39 -> 20 / 18",
+     "29 / 32 -> 28 / 27",
+     "GAIN"
+    ],
+    [
+     "KONKR kis1",
+     "Cube",
+     "54 / 56 -> 36 / 29",
+     "45 / 44 -> 48 / 39",
+     "61 / 57 -> 61 / 53",
+     "NO GAIN"
+    ]
+   ]
+  },
+  {
+   "id": "issues",
+   "title": "Open issues and unverified tests",
+   "table": [
+    [
+     "Item",
+     "Status",
+     "Notes"
+    ],
+    [
+     "Green core home x1.3 (KONKR): the PLAY TIME value cut ('AYED  N') in the selected-title panel",
+     "OPEN (found in this capture)",
+     "Rule 11; see Green core x1.3 home"
+    ],
+    [
+     "Disc station PROGRAM at x1.3 on the KONKR: the MODE key is narrow, its words slide in place",
+     "For review",
+     "New page; RP Classic has room"
+    ],
+    [
+     "Wrapped subtitle line gap at x1.3 (dialog rows, e.g. Categories)",
+     "OPEN",
+     "Found 682ax; real x1.3 users see it too"
+    ],
+    [
+     "Arcade B: ~100 ms stall per game change (RP Classic Arcade p95 ~95-110 ms)",
+     "OPEN",
+     "Experimental fix removes the second rebuild only; not merged"
+    ],
+    [
+     "KONKR still home drawing ~60 fps with nothing pressed",
+     "OPEN (logged separately)",
+     "Unexplained; not investigated yet"
+    ],
+    [
+     "Category assignments kept across an APK update",
+     "NOT TESTED on hardware",
+     "Install guard allows the QA app only; covered by AppCategories725aTest"
+    ],
+    [
+     "Class C native pages (23 layouts) functional hardware QA (HW-28)",
+     "NOT TESTED",
+     "This gallery is a visual capture, not the functional gate"
+    ],
+    [
+     "Batches 6-7 (Tile home, Grid, Night menu, Blades) hardware QA",
+     "NOT TESTED",
+     ""
+    ],
+    [
+     "Disc station's new pages: popup geometry gate (popclip) on hardware",
+     "NOT TESTED",
+     "Tests PASS; gallery capture only"
+    ],
+    [
+     "Owner visual approval of all 53 layouts",
+     "NOT APPROVED",
+     "This preview is for that review"
+    ],
+    [
+     "D379 / D386 Arcade cabinets and native page-change first frames",
+     "Partly fixed",
+     "From defects.json"
+    ],
+    [
+     "D322 pickup windows on the KONKR: 0.10-0.14 s to first motion",
+     "OPEN",
+     "From defects.json"
+    ],
+    [
+     "D332 Flip 2 x1.3 popup gate 45 / 53",
+     "OPEN",
+     "Flip 2 not in this capture"
+    ],
+    [
+     "D336 Classic capsule progress line ends in an ellipsis at x1.3",
+     "OPEN",
+     "Rule 11"
+    ],
+    [
+     "D342 home texts cut in height (RP Nova x1.3)",
+     "OPEN",
+     "Nova not in this capture"
+    ],
+    [
+     "D64 RP Classic home clip keeps the GPU at ~30 fps while idle",
+     "OPEN",
+     ""
+    ],
+    [
+     "D24 cold start first frame 830-960 ms",
+     "OPEN",
+     ""
+    ],
+    [
+     "Rescan fix branch: SD card physically out",
+     "NOT TESTED",
+     "Owner 'not now'; branch not merged"
+    ]
+   ]
+  }
+ ]
+}

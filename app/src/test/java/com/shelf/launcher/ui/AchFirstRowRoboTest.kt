@@ -36,11 +36,63 @@ import java.time.Duration
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w640dp-h427dp-land-mdpi")
-class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boolean, private val count: Int) {
+open class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boolean, private val count: Int) {
     companion object {
         /** The layouts whose own pages are native (their family's card) - every list size, both scales. */
-        private val NATIVE = listOf(HomeLayout.COVERDETAILS, HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES,
-            HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE)
+        internal val NATIVE = listOf(HomeLayout.COVERDETAILS, HomeLayout.SHELF, HomeLayout.STACKS, HomeLayout.CONSOLES,
+            HomeLayout.TWIN_DESK, HomeLayout.TWIN_ICONS, HomeLayout.TWIN_SHOWCASE,
+            // (P2 681f: the native-page batch 1 layouts - every list size, both scales)
+            HomeLayout.CRATE, HomeLayout.CLASSIC, HomeLayout.HUB, HomeLayout.RESUME,
+            // (682r: batch 2 - KONKR x1.3 showed the magazine's CHECKLIST with no row at all)
+            HomeLayout.MAGAZINE, HomeLayout.CINEMA, HomeLayout.ARCADE, HomeLayout.CUBE, HomeLayout.SPOT,
+            // (682w: batch 3)
+            HomeLayout.TERMINAL, HomeLayout.DASH, HomeLayout.LIBRARY, HomeLayout.CARDS, HomeLayout.SIDE, HomeLayout.BAR, HomeLayout.ARCTIC, HomeLayout.STORAGE,
+            // (682ad: batch 6)
+            HomeLayout.TILES, HomeLayout.GRID,
+            // (682ae: batch 7)
+            HomeLayout.NIGHT, HomeLayout.BLADES,
+            // (726a: class C - Circuit board's datasheet sections)
+            HomeLayout.CIRCUIT,
+            // (727a: class C - Channel grid's own screens)
+            HomeLayout.CHAN,
+            // (728a: class C - the Timeline entry's own pages)
+            HomeLayout.TIMELINE,
+            // (729a: class C - the Hero banner's own pages, both layouts that share it)
+            HomeLayout.HERO, HomeLayout.HERO_TILES,
+            // (730a: class C - the Memory card browser's own screens)
+            HomeLayout.MEMCARD,
+            // (731a: class C - the Cardboard box insert's own sheets)
+            HomeLayout.BOX,
+            // (732a: class C - the File select file's own screens)
+            HomeLayout.FILESELECT,
+            // (733a: class C - the Case flow case's own pages)
+            HomeLayout.CASEFLOW,
+            // (734b: class C - the Orbit deck console's own screens)
+            HomeLayout.ORBIT,
+            // (735a: class C - the Airy home panel's own pages)
+            HomeLayout.AIRY,
+            // (736a: class C - the Bubble home card's own pages)
+            HomeLayout.BUBBLES,
+            // (737a: class C - the Pocket camera menu's own pages)
+            HomeLayout.CAMERA,
+            // (738a: class C - the Panel dashboard's own pages)
+            HomeLayout.PANELS,
+            // (739a: class C - the Rental shop's own tag pages)
+            HomeLayout.SHOP,
+            // (740a: class C - Green core's own console pages)
+            HomeLayout.GREENCORE,
+            // (741a: class C - the Art library's own gallery pages)
+            HomeLayout.ARTLIB,
+            // (742a: class C - the Cross menu's own pages)
+            HomeLayout.CROSS,
+            // (743a: class C - the Live tiles panel's own pages)
+            HomeLayout.LIVE,
+            // (744a: class C - Layout Studio's own pages)
+            HomeLayout.CUSTOM,
+            // (745a: class C - the Pocket family's three faces)
+            HomeLayout.POCKET_CLASSIC, HomeLayout.POCKET_RIBBON, HomeLayout.POCKET,
+            // (682az: Disc station's own tracks - DISC INFO / PROGRAM / SETUP on the deck's LCD)
+            HomeLayout.DISCS)
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "{0} big={1} n={2}")
         fun cases(): List<Array<Any>> {
@@ -107,6 +159,8 @@ class AchFirstRowRoboTest(private val layout: HomeLayout, private val big: Boole
             if (rows.isEmpty()) println("ACHFIRST $layout: no page - clickable now: " + compose.onAllNodes(SemanticsMatcher("clickable") {
                 it.config.contains(SemanticsActions.OnClick) }).fetchSemanticsNodes().map { words(it).trim().take(30) }.filter { it.isNotBlank() })
             org.junit.Assume.assumeTrue("$layout: no Achievements page with rows reached", rows.isNotEmpty())
+            if (System.getenv("VOLTCAP_ACHPROBE") != null) compose.onAllNodes(SemanticsMatcher("clickable") { it.config.contains(SemanticsActions.OnClick) })
+                .fetchSemanticsNodes().forEach { println("ACHPROBE ${words(it).trim().take(40)} size=${it.size} at=${it.boundsInRoot} parent=${it.parent?.boundsInRoot}") }
             val r = rows.last()
             val full = r.size.height.toFloat(); val shown = r.boundsInRoot.height
             // (the page as drawn, for the review of a failure: build/achfirst/<case>.png)

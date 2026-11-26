@@ -47,7 +47,7 @@ internal fun GuideSecondScreenPage(game: Game?, state: GuideUiState?, onNeedGuid
             val cur = pos.current
             val spoiler = st.spoiler
             Column(Modifier.fillMaxSize()) {
-                Text(pos.guide.title, color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                FullText(pos.guide.title, color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2)
                 Text(
                     cur?.title?.ifBlank { "Introduction" } ?: "—",
                     color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold

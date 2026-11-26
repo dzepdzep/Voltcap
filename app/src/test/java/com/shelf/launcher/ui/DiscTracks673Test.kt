@@ -38,10 +38,10 @@ class DiscTracks673Test {
         val s = src("WinScenesMore.kt")
         val i = s.indexOf("internal fun DiscPlayerPanel(")
         val body = s.substring(i, s.indexOf("internal fun discPanelGeometry", i))
-        // the page plays on the LCD with the LCD as its paper; the leaving track draws its own page, inert
-        assertTrue(body.contains("LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = false)"))
-        assertTrue(body.contains("ctx.pageFor(p, Modifier.fillMaxSize(), live)"))
-        assertTrue(body.contains("CompositionLocalProvider(LocalShownPage provides p)"))
+        // the page plays on the LCD; the leaving track draws its own page, inert (682az: the deck's own pages, WinPagesDisc.kt -
+        // NativePagesDisc682azTest; the shared bodies played here before)
+        assertTrue(body.contains("DiscPage(ctx, p, live, discInk, Modifier.fillMaxSize())"))
+        assertTrue(body.contains("CompositionLocalProvider(LocalShownPage provides p, LocalNativeLive provides live)"))
         assertTrue(body.contains("val to = pageStep(tracks, ctx.page, step)"))
     }
 }

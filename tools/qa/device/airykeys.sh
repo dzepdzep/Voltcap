@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 477 (D266): Airy's More-open keys reached with the controller only. Opens the window with A, walks RIGHT to More, A,
 # then DOWN / RIGHT through the pill row; a dump after each key records which control has focus. setsid sh airykeys.sh TAG GAME
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; GAME=$2

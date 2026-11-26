@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 521b: console badge audit - isolated Voltcap QA app ONLY. (1) the QA gallery (voltcap_test_badgegallery) page by page,
 # badges view and assets view; (2) real layouts with Console badges / Logo badges on stand-in games of the consoles under
 # audit (empty files in the QA app's own fixture library). QA settings snapshotted and restored.  sh badge521.sh TAG [PAGES]

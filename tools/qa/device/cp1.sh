@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # cp1.sh — Continue playing on the Thor (update 451): tile launch path, return, first press after return.
 P=com.shelf.launcher/.MainActivity; F=/sdcard/Android/data/com.shelf.launcher/files; O=/sdcard/cp451; mkdir -p $O
 A() { am start -n $P "$@" > /dev/null 2>&1; }

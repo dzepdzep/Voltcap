@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: Game shelf / Case stacks "incoming art flashes before the case moves" — QA app only. Records the screen while
 # moving: 3 single steps right, 3 left, a burst of 5 rights, then A (window) and B (close). Keys only while the QA app has focus.
 #   sh flash513.sh TAG [LAYOUT]   -> /data/local/tmp/flash513/<TAG>_<LAYOUT>.mp4 + key times (uptime ms) in <TAG>_<LAYOUT>.keys

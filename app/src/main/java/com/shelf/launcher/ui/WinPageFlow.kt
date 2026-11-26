@@ -16,9 +16,15 @@ internal enum class PageFocus { LIST, PERF, OPENER, PLAY }
  * The page's focus target. Back on the first page the D-pad returns to the control that opened the page (B never lands on
  * Play first: Play lit for a moment after B made a quick A start the game). Pure.
  */
-internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolean): PageFocus = when (page) {
+/**
+ * 682j (owner 18 Nov: "correct focus ownership rather than a cooldown"): the page you land on owns the focus - Info its Play,
+ * Achievements / Options their first row, and Details its own first item wherever the window draws its own Details ([ownDetails]:
+ * the native pages, the TV set's teletext). Details on Play was the shared page's rule (an information page with nothing of its
+ * own to stand on); on a native page it made a quick L1 / R1 then A start the game.
+ */
+internal fun pageFocusTarget(page: WinPage, fromPerf: Boolean, hasOpener: Boolean, ownDetails: Boolean = false): PageFocus = when (page) {
     WinPage.OPTIONS, WinPage.TROPHIES, WinPage.PERF -> PageFocus.LIST
-    WinPage.DETAILS -> PageFocus.PLAY
+    WinPage.DETAILS -> if (ownDetails) PageFocus.LIST else PageFocus.PLAY
     WinPage.MAIN -> when {
         fromPerf -> PageFocus.PERF
         hasOpener -> PageFocus.OPENER
@@ -37,7 +43,76 @@ internal val NATIVE_PAGE_SCENES: Set<WinScene> = setOf(WinScene.STORAGE_RECORD, 
     // (529l: the Twin family - Twin desk, Twin icons, Twin showcase - pages on the touch screen, TwinTouchPages.)
     WinScene.TWIN_HINGE,
     // (673f: Disc station - the pages are the deck's tracks, played on its LCD; DiscPlayerPanel.)
-    WinScene.DISC_PANEL)
+    WinScene.DISC_PANEL,
+    // (P2 batch 1 - owner 17 Nov: each of the remaining layouts its own pages, NativePageKit + WinPages*.kt.)
+    WinScene.RECORD_SLEEVE,
+    // (P2 681c: Classic - the charged panel's readout, cells and switches, WinPagesVolt.kt.)
+    WinScene.VOLT_PANEL,
+    // (P2 681d: Console hub - the nameplate's engraving, service medals and switch panel, WinPagesHub.kt.)
+    WinScene.HUB_PLATE,
+    // (P2 681e: Resume & discover - the discover feed's about cards, progress shelves and settings pills, WinPagesDiscover.kt.)
+    WinScene.DISCOVER_CARD,
+    // (P2 batch 2, 682n: Game magazine - the review, the checklist and the reader-service coupons, WinPagesMag.kt.)
+    WinScene.MAG_PAGE,
+    // (682o: Cinema - the streaming service's More info, Episodes and My List screens, WinPagesCinema.kt.)
+    WinScene.CINEMA_PREMIERE,
+    // (682p: Arcade cabinets - the machine's instruction card, high-score table and service mode, WinPagesArcade.kt.)
+    WinScene.ARCADE_MENU,
+    // (682q: Cube menu - the cube's other faces: specs tiles, a wall of little cubes, square control keys, WinPagesCube.kt.)
+    WinScene.CUBE_FACE,
+    // (682t: Spotlight - the poster's billing block, the end credits and backstage, WinPagesSpot.kt.)
+    WinScene.SPOT_POSTER,
+    // (682w, P2 batch 3: Terminal - TYPE / DIR / SETUP at the prompt, WinPagesTerm.kt.)
+    WinScene.TERM_RUN,
+    // (682w: Dashboard - Overview / Progress / Settings tabs, WinPagesDash.kt.)
+    WinScene.DASH_CARD,
+    // (682w: Library - About this game / Achievements / Manage under a tab strip, WinPagesLibrary.kt.)
+    WinScene.LIBRARY_PAGE,
+    // (682w: Card binder - CARD TEXT / MOVES / RULES in the card's text box, WinPagesCard.kt.)
+    WinScene.CARD_BACK,
+    // (682y, P2 batch 4: Side menu - the drawer's submenus, WinPagesSide.kt.)
+    WinScene.SIDE_DRAWER, WinScene.ARCTIC_DRAWER, WinScene.DOCK_FLYOUT,
+    // (726a, P2 class C: Circuit board - the datasheet's CHARACTERISTICS, PIN STATES and JUMPERS sections, WinPagesChip.kt.)
+    WinScene.CHIP_SHEET,
+    // (727a, P2 class C: Channel grid - the channel's CHANNEL INFO, STAMPS and SETTINGS screens in the preview well, WinPagesChan.kt.)
+    WinScene.WII_PREVIEW,
+    // (728a, P2 class C: Timeline - the entry's CHRONICLE, MILESTONES and BRANCHES along its own line, WinPagesTime.kt.)
+    WinScene.TIMELINE_ENTRY,
+    // (729a, P2 class C: Hero carousel / Hero tiles - the banner's THE FEATURE, HALL OF FAME and QUICK ACTIONS, WinPagesHero.kt.)
+    WinScene.HERO_BANNER,
+    // (730a, P2 class C: Memory card - the save browser's INFORMATION, MEMORY BLOCKS and COMMANDS screens, WinPagesMemCard.kt.)
+    WinScene.MEMCARD_INFO,
+    // (731a, P2 class C: Cardboard box - the insert's CONTENTS, CHECKLIST and SERVICE sheets, WinPagesBox.kt.)
+    WinScene.BOX_SHEET,
+    // (732a, P2 class C: File select - the file's DETAILS, STARS and OPTIONS screens on its inset panel, WinPagesFile.kt.)
+    WinScene.FILE_CARD,
+    // (733a, P2 class C: Case flow - the disc menu's DETAILS, EXTRAS and SETUP in the picture's glass well, WinPagesCase.kt.)
+    WinScene.CASE_MEDIA,
+    // (734b, P2 class C: Orbit deck - the console's DATA, TRACKS and COMMANDS screens, WinPagesOrbit.kt.)
+    WinScene.ORBIT_TERMINAL,
+    // (735a, P2 class C: Airy home - the floating panel's ABOUT, STARS and SETTINGS in its soft bubbles, WinPagesAiry.kt.)
+    WinScene.AIRY_PANEL,
+    // (736a, P2 class C: Bubble home - the LiveArea card's INFO, AWARDS and SETTINGS on its white panel, WinPagesBubble.kt.)
+    WinScene.BUBBLE_CARD,
+    // (737a, P2 class C: Pocket camera - the cartridge menu's DATA, ALBUM and SETUP in its pixel font and four shades, WinPagesCamera.kt.)
+    WinScene.CAMERA_MENU,
+    // (738a, P2 class C: Panel dashboard - the swung-round panel's OVERVIEW, ACHIEVEMENTS and MANAGE as flat tiles, WinPagesPanels.kt.)
+    WinScene.PANEL_DETAIL,
+    // (739a, P2 class C: Rental shop - the rental tag's BOX BACK, REWARDS CARD and COUNTER in its black capitals, WinPagesShop.kt.)
+    WinScene.SHOP_TAG,
+    // (740a, P2 class C: Green core - the glowing console's SPEC, UNLOCKS and CONTROL in its monospace capitals, WinPagesCore.kt.)
+    WinScene.CORE_PANEL,
+    // (741a, P2 class C: Art library - the gallery wall's Catalogue, Collection and Curator on its mat, WinPagesGallery.kt.)
+    WinScene.GALLERY_PLACARD,
+    // (742a, P2 class C: Cross menu - Information, Trophies and Options read out on the left in its thin type, WinPagesCross.kt.)
+    WinScene.CROSS_OPTIONS,
+    // (743a, P2 class C: Live tiles - about, achievements and options under a pivot, turning in like the panel, WinPagesLive.kt.)
+    WinScene.LIVE_PANEL,
+    // (744a, P2 class C: Layout Studio - Properties, Milestones and Actions under the editor's tab strip, WinPagesStudio.kt.)
+    WinScene.STUDIO_PANEL,
+    // (745a, P2 class C: the Pocket family - Pocket classic's menu pages, Pocket ribbon's sheet pages, Pocket Quest's panel
+    // pages, one face per layout, WinPagesPocket.kt.)
+    WinScene.POCKET_LCD)
 
 internal fun nativePages(scene: WinScene?): Boolean = scene != null && scene in NATIVE_PAGE_SCENES
 
@@ -119,6 +194,8 @@ internal fun sharedPageFor(scene: WinScene?, page: WinPage): Boolean =
  */
 internal class PageOpeners(private val slot: Array<FocusRequester?>) {
     private val byName = HashMap<String, FocusRequester>()
+    // (682j: the plain / TV windows' Details key is the return's second choice - GameWindow's page effect.)
+    init { if (slot.size > 1 && slot[1] == null) slot[1] = requester(OPENER_DETAILS) }
     /** The requester of the control called [name] (made once per window). */
     fun requester(name: String): FocusRequester = byName.getOrPut(name) { FocusRequester() }
     /** The control called [name] is opening a page: B comes back onto it. */
@@ -126,3 +203,71 @@ internal class PageOpeners(private val slot: Array<FocusRequester?>) {
 }
 
 internal val LocalPageOpeners = androidx.compose.runtime.staticCompositionLocalOf<PageOpeners?> { null }
+
+
+/**
+ * 682j (owner 18 Nov, "prefer correct focus ownership, event consumption and action routing rather than a fixed cooldown"): a
+ * page change of a window that draws its own pages hands the focus over in the same event. Root cause of "A after L1 / R1 starts
+ * the game": for the frames between the turn and the new page lighting its own control, the focus stayed where it was - on
+ * Play (the TV set's keys stay on screen on every page), or it fell to the next control (the B Back hint under the window, so A
+ * closed it) - and Details itself put the focus on Play. Now the control that had the focus gives it up at once to this
+ * holder, an invisible stop that can only take the focus while it holds; every press that comes in meanwhile (A, the D-pad,
+ * more L1 / R1) is kept in order and delivered to whatever the new page lights - nothing is suppressed, nothing is lost, and
+ * nothing reaches the control that was lit before the turn. B / Back is not kept: it goes back at once and drops the presses
+ * meant for the page it leaves.
+ */
+internal class PageHandoff {
+    val focus = FocusRequester()
+    @Volatile var holding = false
+        private set
+    /** Whether the holder has the focus (its onFocusChanged). */
+    var focused = false
+    private val held = ArrayList<android.view.KeyEvent>()
+    /** Take the focus off whatever has it - called by the page change itself, inside the event that turns the page. */
+    fun hold() {
+        holding = true
+        val r = runCatching { focus.requestFocus() }
+        if (r.isFailure || r.getOrNull() == false) holding = false
+    }
+    /** A key that reached the holder: kept for the new page (true), or let through (B / Back, or not holding). */
+    fun keep(e: android.view.KeyEvent): Boolean {
+        if (!holding) return false
+        if (e.keyCode in HANDOFF_BACK_KEYS) { held.clear(); return false }
+        if (held.size < HANDOFF_MAX_KEPT) held += android.view.KeyEvent(e)
+        return true
+    }
+    /** The new page lit its control: deliver what was kept, in order (a press that turns the page again is kept anew).
+     *  [onPlay]: what got the focus is Play (the page's own control could not be lit, or the page starts on Play) - then a
+     *  confirm press kept while the page changed ([HANDOFF_CONFIRM_KEYS], down and up) is dropped: it was pressed before Play was
+     *  on screen lit, so it never starts the game (682ar, owner 24 Nov). The D-pad and the bumpers still go through, in order;
+     *  a press made once Play is lit starts the game as always. */
+    fun release(onPlay: Boolean = false, deliver: (android.view.KeyEvent) -> Unit) {
+        holding = false
+        if (held.isEmpty()) return
+        val out = ArrayList(held); held.clear()
+        out.forEach { if (!(onPlay && it.keyCode in HANDOFF_CONFIRM_KEYS)) deliver(it) }
+    }
+    internal val keptCount: Int get() = held.size
+}
+
+internal val HANDOFF_BACK_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_BACK, android.view.KeyEvent.KEYCODE_BUTTON_B, android.view.KeyEvent.KEYCODE_ESCAPE)
+internal const val HANDOFF_MAX_KEPT = 48
+/** 682ar: the keys that press the lit control - never handed to Play from a page change ([PageHandoff.release]). */
+internal val HANDOFF_CONFIRM_KEYS = intArrayOf(android.view.KeyEvent.KEYCODE_DPAD_CENTER, android.view.KeyEvent.KEYCODE_ENTER,
+    android.view.KeyEvent.KEYCODE_NUMPAD_ENTER, android.view.KeyEvent.KEYCODE_BUTTON_A, android.view.KeyEvent.KEYCODE_SPACE,
+    android.view.KeyEvent.KEYCODE_BUTTON_START)
+
+/** The window's page with [PageHandoff]: a change in a window with its own pages ([own]) hands the focus over as it happens. */
+internal class HandoffPage(initial: WinPage, private val h: PageHandoff) {
+    private val s = androidx.compose.runtime.mutableStateOf(initial)
+    /** 682ar: one more for every page change that took the focus for the hand-over - the window's hand-over effect is keyed by it,
+     *  not by the page alone: an L1 and an R1 in the same frame end on the page they started from, the page "did not change",
+     *  the effect never ran again and the holder kept every press after it (a storm on the KONKR: the D-pad did nothing). */
+    val turns = androidx.compose.runtime.mutableIntStateOf(0)
+    var own = false
+    operator fun getValue(r: Any?, p: kotlin.reflect.KProperty<*>): WinPage = s.value
+    operator fun setValue(r: Any?, p: kotlin.reflect.KProperty<*>, v: WinPage) {
+        if (v != s.value && own) { h.hold(); turns.intValue++ }
+        s.value = v
+    }
+}

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # stacks461c.sh OUT [on|off|noprepare] — D137 Case stacks, from a cold start: Voltcap restarted, profile picker closed (B), Case stacks preview on
 # Advance Wars 2 (GBA); 2 sets x 3 runs of 20 RIGHT presses at 150 ms (gfxinfo), memory after each set, pop-in shots.
 O=$1; rm -f $O; P=com.shelf.launcher

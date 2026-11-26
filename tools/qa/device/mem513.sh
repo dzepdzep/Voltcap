@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: a longer navigation session in the QA app — memory and responsiveness over time. Per round: 4 layouts x 60
 # D-pad steps (0.12 s apart) + R2 / L2 (category) presses + A / B; after each round PSS (KB), Java heap, graphics, and the frame
 # stats of the round (janky %, p90). sh mem513.sh TAG [ROUNDS]

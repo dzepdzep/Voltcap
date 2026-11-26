@@ -24,6 +24,14 @@ on:
         description: 'Renderer modes to try (comma list of swiftshader_indirect, swangle_indirect, guest)'
         default: 'swangle_indirect'
         required: false
+      review_layouts:
+        description: 'Review mode (679a): only these layouts, x1.3 then x1.0, e.g. "POCKET_CLASSIC POCKET_RIBBON" - empty = the standard trial'
+        default: ''
+        required: false
+      qa_pref:
+        description: 'One QA-app setting for the run (pop529 QA_PREF), e.g. ui_font=PIXEL - empty = none'
+        default: ''
+        required: false
   push:
     branches: [claude/qa-0672-repair]
 
@@ -63,11 +71,11 @@ jobs:
           cache-read-only: true
       - name: Build (debug = com.shelf.launcher.qa, Discord SDK stub, debug key, + x86_64)
         # (529t: lint's own tool download failed once on Maven Central - lint is not part of this test; one retry for a
-        # passing network hiccup.)
+        # passing network hiccup; 682r: the lint REPORT task fetches the same tool - 44332100351 failed on it - skipped too.)
         timeout-minutes: 20
         run: |
           for i in 1 2; do
-            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true -PvoltcapEmulatorAbi=true :app:assembleDebug -x lintVitalAnalyzeDebug && exit 0
+            bash ./gradlew --no-daemon -PvoltcapCiWithoutDiscord=true -PvoltcapEmulatorAbi=true :app:assembleDebug -x lintVitalDebug -x lintVitalAnalyzeDebug -x lintVitalReportDebug && exit 0
             echo "build attempt $i failed"; sleep 20
           done
           exit 1
@@ -109,6 +117,8 @@ jobs:
       QA_SKIN: 960x640
       QA_DENSITY: '240'
       QA_GPU: ${{ matrix.gpu }}
+      QA_REVIEW_LAYOUTS: ${{ github.event.inputs.review_layouts }}
+      QA_PREF: ${{ github.event.inputs.qa_pref }}
     steps:
       - name: Checkout exact commit (no stored credentials)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

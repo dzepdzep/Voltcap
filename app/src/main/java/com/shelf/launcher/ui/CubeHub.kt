@@ -735,8 +735,8 @@ private fun HubSystems(c: StyleCtx, tint: Color, on: Boolean, modifier: Modifier
                         if (logo != null) Image(logo, st.label, colorFilter = ColorFilter.tint(Color.White), modifier = Modifier.fillMaxWidth().weight(1f))
                         else Icon(Icons.Filled.SportsEsports, null, tint = Color.White, modifier = Modifier.size(34.dp).weight(1f))
                         Spacer(Modifier.height(4.dp))
-                        Text(st.label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("${counts[p] ?: 0} games", color = Color.White.copy(alpha = 0.65f), fontSize = 10.sp, maxLines = 1)
+                        FullText(st.label, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) // (756a, rule 11)
+                        FullText("${counts[p] ?: 0} games", color = Color.White.copy(alpha = 0.65f), fontSize = 10.sp)
                     }
                 }
             }

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 529 hotfix (blur): identical-frame captures of every blurred surface - isolated QA app ONLY (com.shelf.launcher.qa).
 # Never wakes / unlocks; a key only while the QA app is in front. Owner settings: snapshot saved first, restored by `restore`.
 #   sh blur529.sh shots TAG     blurred hero (bright / dark art), popup over it, Night menu, Moon blade scene (half / full res),

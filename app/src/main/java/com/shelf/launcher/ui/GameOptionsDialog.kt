@@ -5,6 +5,7 @@ import androidx.compose.material.icons.automirrored.filled.ScreenShare
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.CollectionsBookmark
 import androidx.compose.material.icons.filled.Flag
@@ -91,7 +92,10 @@ fun GameOptionsDialog(
     /** Update 450: what Continue playing knows about the app (last used, time in front, Usage access); shown under the switch. */
     continueAppNote: String? = null,
     /** Update 450: "Clear from Continue playing" — forgets the app's history on this profile; null hides it. */
-    onClearContinue: (() -> Unit)? = null
+    onClearContinue: (() -> Unit)? = null,
+    /** 725a (owner Task 4): "Categories…" on an installed app / Android game - where it is listed; null hides it. */
+    onCategories: (() -> Unit)? = null,
+    categoriesSummary: String? = null
 ) {
     com.shelf.launcher.Breadcrumbs.mark("GameOptionsDialog")
     ShelfMenuDialog(
@@ -107,6 +111,9 @@ fun GameOptionsDialog(
             onClick = onToggleFavorite
         )
         MenuRow(Icons.Filled.Info, "Details", "Score, summary, how long to beat", onClick = onShowDetails)
+        if (onCategories != null) {
+            MenuRow(Icons.Filled.Category, "Categories…", categoriesSummary ?: "Where it's listed", onClick = onCategories)
+        }
         if (onRemoveFromContinue != null) {
             // (Update 244: until it's played again; its play time stays.)
             MenuRow(Icons.Filled.History, "Remove from Continue playing", "Until you play it again — play time stays", onClick = onRemoveFromContinue)

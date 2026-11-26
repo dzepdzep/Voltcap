@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 514: wide / square / portrait covers on the 3D cases — isolated Voltcap QA app ONLY (fixture art, preview layouts,
 # settings snapshotted and restored). sh case514.sh TAG [modes] [layouts]
 #   per art mode: each case layout's home (and one D-pad step later), then fixture games held in Inspect at 4 angles,

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Native popup motion recording (owner, 12 Nov) - QA app only. One layout per call: the layout as a preview, the run's game,
 # launches blocked; records A (open), R1 x3 (pages forward), L1 x3 (back), B (close), then fast A B A B, then B.
 # Every key only while the QA app is in front, awake and unlocked, with its picker mark not PICKER; else it stops (no key sent).

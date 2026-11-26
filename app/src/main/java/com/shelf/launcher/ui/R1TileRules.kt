@@ -233,6 +233,11 @@ internal fun r1TileFit(id: String, x: R1Ctx): R1Fit {
         // Row position: the Voltcap row and the Tile home (update 235, #15/#16: a layout again — Where the tiles sit).
         // (Update 230, #09: on Hero carousel it puts the covers on the left / right — QuickSettings.kt.)
         "rowpos" -> on(classic || l == HomeLayout.HERO)
+        // 723a (owner Task 2): Focus position - only the two layouts with a horizontal focus anchor of their own (Voltcap
+        // row, Tile home; FocusPosTile); greyed while their carousel look / "first one wide" keeps the game in one place.
+        FocusPosTile.ID -> if (!FocusPosTile.applies(l)) R1Fit.Hide else FocusPosTile.greyReason(
+            a, carousel = l.name in Features.carouselLayouts.state.value, pinnedFirst = pinnedFirstOn(a)
+        )?.let { R1Fit.Grey(it) } ?: R1Fit.Show
         // Update 307: the category names — the layouts with the category bar (Voltcap row, Tile home, Grid), and any layout
         // with the category bar added as a part (Edit Home › + Add).
         // (Update 315: every layout — each keeps its own choice, CategoryBars; where the categories are the layout's own
@@ -302,7 +307,7 @@ internal val R1_RULED_TILES: Set<String> = setOf(
     "bt", "lights", "dual", "rescan", "scrape", "theme", "colors", "romm", "whoplays", "profile",
     "layout", "layoutopts", "spacing", "sort", "edithome", "popupstyle", "musicspot", "roundshort", "corners",
     "gamelook", "cartlook", "discstyle", "casestyle", "spinestyle", "artdrop",
-    "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "categories", "headertight", "twingap",
+    "badges", "outline", "progressbar", "gamesize", "endless", "carousel", "rowpos", "focuspos", "categories", "headertight", "twingap",
     "shelflook", "spotlight", "bartabs", "crosscut", "pqtheme", "magnifier", "background", "herofit"
 )
 

@@ -2,11 +2,11 @@
  "_rules": "Only what genuinely needs the owner. urgent=true only when cloud work or a release is stuck on it now. Rendered by tools/cloud/dashboard.py; 'WHAT I NEED TO DO' shows NONE when nothing is urgent.",
  "actions": [
   {
-   "what": "GO given 17 Nov 15:22 Berlin (reply '1': GO v0.6.73, upgrade test on the KONKR) - release steps running",
-   "why": "RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR",
-   "device": "none to answer; the upgrade test needs one handheld with your real Voltcap (you pick which)",
+   "what": "Achievement reveal animation: pick NOW (Volt capsule), A Trophy flip, B Glow burst, or a mix - see docs/evidence/h12_reveal_682k/storyboard.png (one row per option, left to right over time)",
+   "why": "H12 redesign of the reveal / trophy moment; a new look never becomes the default without your OK on the comparison. Nothing changes in the app until you pick",
+   "device": "none (image on GitHub)",
    "urgent": false,
-   "blocks": "v0.6.73 release"
+   "blocks": "H12 reveal redesign only"
   },
   {
    "what": "Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready",
@@ -49,6 +49,27 @@
    "device": "none",
    "urgent": false,
    "blocks": "nothing"
+  },
+  {
+   "what": "Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended)",
+   "why": "cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet",
+   "device": "none (HW-19 later: you start the game, Claude only reads)",
+   "urgent": false,
+   "blocks": "v0.6.74 Thor dual-screen fix (H13)"
+  },
+  {
+   "what": "Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum",
+   "why": "pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font",
+   "device": "none",
+   "urgent": false,
+   "blocks": "merging the pixel font into the v0.6.74 line"
+  },
+  {
+   "what": "Review the native game-window pages (P2) on the emulator review sheets, and choose Cross's default Achievements view",
+   "why": "Every P2 review set now has an emulator walk PASS (EMULATOR only, not handheld): runs 45576064795, 45584303713, 45603942465, 45612718815 (x1.0), 45623176605 (Green core, Art library, Live), 45644606025 (Cross) - each run's artifact holds sheet_p2_<LAYOUT>.jpg. Question: Cross's Achievements key opens the menu's own list by default (setting 'Achievements in the menu's style', update 127), so players never see Cross's new window Achievements page unless they switch it off - keep that default, or show the new page by default?",
+   "device": "none",
+   "urgent": false,
+   "blocks": "the next P2 layouts' polish and merging claude/v0674-native-pages into the v0.6.74 line"
   }
  ]
 }

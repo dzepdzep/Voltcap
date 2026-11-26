@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523 items 1 / 2 / 4: frame recordings of the case coming out of / going back into Game shelf (spines) and Coverflow
 # details, and Details kept in the window (Row opens / Row reveal / Shared). Isolated QA app ONLY, fixture library, preview,
 # settings snapshotted / restored.  sh motion523.sh TAG [det]   (det: the Details part only)

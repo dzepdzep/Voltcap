@@ -12,8 +12,20 @@ import androidx.compose.runtime.mutableStateOf
 internal object TestHooks {
     /** The layout asked for (by its enum name), taken by the home screen. */
     val layout = mutableStateOf<String?>(null)
-    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved). */
+    /** Batch 521: `--es voltcap_test_dock TOP|MIDDLE|BOTTOM|NEXT` — where the layout in use puts its games, exactly as R1's Row tile sets it (preview: nothing saved; 718a NEXT = one tile press, rowTilePress). */
     val dock = mutableStateOf<String?>(null)
+    /** 719a: `--es voltcap_test_rowcombo on|off` - the 716a combination (game header + Game info / news + category bar of every category + a song in the status bar's player) as a preview (nothing saved; RowCombo719). */
+    val rowCombo = mutableStateOf<String?>(null)
+    /** 719a: `--ez voltcap_test_rowcol true` - one `rowcol ...` QA line: where the Voltcap row's column sits vs the status bar (RowCombo719.line). */
+    val rowCol = androidx.compose.runtime.mutableIntStateOf(0)
+    /** 720a: `--ez voltcap_test_reach true` - one `reach ...` QA line: the added Play part's place and where ▲ / ▼ go (PlayReach720.line). */
+    val reach = androidx.compose.runtime.mutableIntStateOf(0)
+
+    /** 720a: voltcap_qa_edit - "EDIT <part>" while Edit Home is open, else "HOME" (play720.sh presses D-pad keys in Edit Home only on EDIT). */
+    fun markEdit(context: android.content.Context, mark: String) {
+        if (!enabled(context)) return
+        runCatching { java.io.File(context.getExternalFilesDir(null), "voltcap_qa_edit").writeText(mark + "\n") }
+    }
     /** Batch 523r: `--es voltcap_test_loop true|false` — Endless (Home › the row goes round) for a preview only (nothing saved). */
     val loop = mutableStateOf<Boolean?>(null)
     /** Batch 521b: `--es voltcap_test_badgegallery N|aN|off` — the console badge audit page N (aN: its assets view), QaBadgeGallery.kt. */
@@ -26,6 +38,9 @@ internal object TestHooks {
     val settings = mutableStateOf<String?>(null)
     /** Update 490 (search QA): `--es voltcap_test_settings Home --es voltcap_test_settings_search spacing` — typed into Settings' own search box. */
     val settingsSearch = mutableStateOf<String?>(null)
+    /** 682ar (D391 QA): `--ei voltcap_test_saveridle S` - the screensaver's idle time in seconds for this session (0 = the
+     *  setting again). Isolated QA app only; nothing saved. */
+    @Volatile var saverIdleS: Int = 0
     /** Update 488 (K2 QA): `--ez voltcap_test_screensaver true` — start the screensaver now (as the idle timer would). */
     val screensaver = mutableStateOf(false)
     /**
@@ -217,6 +232,36 @@ internal object TestHooks {
      * ordinary Voltcap ignores it, hooks file or not.
      */
     val fixtureRoms = mutableStateOf<String?>(null)
+    /**
+     * 682c: `--es voltcap_test_libapp add:<package>` / `remove:<package>` - ONLY in the isolated QA app: puts an installed app in
+     * (or takes it out of) the QA app's OWN library, so a review can open an app's window and its Options ("Hide from library"
+     * asks first). Nothing is launched or hidden by this; the real Voltcap is never touched.
+     */
+    val libApp = mutableStateOf<String?>(null)
+    /**
+     * 682av (owner 25 Nov - hardware QA of 723a, never through the R1 panel's system tiles): `--es voltcap_test_focuspos NEXT|<i>|LOG`
+     * - ONLY in the isolated QA app: the R1 Focus position tile's own change (FocusPosTile.next / pick, the same calls the tile
+     * makes) saved in the QA app's own settings (previewed only during a preview run), and one `focuspos ...` QA line.
+     */
+    val focusPos = mutableStateOf<String?>(null)
+    /**
+     * 682av (owner 25 Nov - hardware QA of 724a / 725a): `--es voltcap_test_appcat <verb>:<package>[:<arg>[:on|off]]` - ONLY in
+     * the isolated QA app, on an app in its OWN library: `recomp:<pkg>:on|off` (setAppRecomp), `kind:<pkg>:AUTO|GAME|APP`
+     * (setAppKind), `console:<pkg>:<key>:on|off` (setAppConsole) - the same view-model calls START › Categories makes;
+     * `options:<pkg>` / `cats:<pkg>` open the app's real START window / its Categories window; `log:<pkg>` one `appcat ...` line
+     * (where it is listed, how often in All, its record key). Nothing is launched by this.
+     */
+    val appCat = mutableStateOf<String?>(null)
+    /**
+     * 682b (HW-25): `--es voltcap_test_extra_root <folder>` with voltcap_test_fixture_roms - ONLY in the isolated QA app: a second
+     * ROM folder scanned with the fixture one (the QA app's own folder on an SD card), so a card taken out can be checked.
+     */
+    val extraRoot = mutableStateOf<String?>(null)
+    /**
+     * 681r: `--ez voltcap_test_libdump true` - ONLY in the isolated QA app: the library as the screen has it (selected category,
+     * the console categories, every game with its console and file) into <its external files>/voltcap_qa_lib.txt.
+     */
+    val libDump = androidx.compose.runtime.mutableIntStateOf(0)
     /** Update 460b (D173): `--es voltcap_test_mediadump "part of a name"` — what each matching game's case is drawn from, into <external files>/media_dump.txt. */
     val mediaDump = mutableStateOf<String?>(null)
     /** Batch 517 (security review, QA app only): `--es voltcap_test_ss517 "Super Mario World"` — QaSs517, counts into qa_ss517.txt. */
@@ -281,6 +326,9 @@ internal object TestHooks {
     @Volatile var appProbe: ((String) -> String)? = null
     /** Update 452: `--es voltcap_test_winmore on` — the open game window's More opened (as its button does), for the More QA. */
     val winMore = mutableStateOf<Boolean?>(null)
+    /** 682s: `--es voltcap_test_winpage details|options|trophies` — the open game window turns to that page as its own button
+     *  does (Options / Achievements through the window's own callbacks), for the H16 page survey and page QA. */
+    val winPage = mutableStateOf<WinPage?>(null)
     /** 673b: `--es voltcap_test_wininspect on` — the open game window's Inspect pressed (as its key does), QA only. (A request file
      *  written by adb's shell user could not be read by the app on the KONKR's Android 12 - pkk673j: never seen.) */
     val winInspect = mutableStateOf<Boolean?>(null)
@@ -312,9 +360,16 @@ internal object TestHooks {
     }
 
     fun fromIntent(context: android.content.Context, intent: android.content.Intent?) {
+        intent?.getStringExtra("voltcap_test_focuspos")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context)) focusPos.value = v }
+        intent?.getStringExtra("voltcap_test_appcat")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && v.contains(':')) appCat.value = v }
+        intent?.getStringExtra("voltcap_test_libapp")?.let { v -> if (com.shelf.launcher.data.QaVariant.isolated(context) && (v.startsWith("add:") || v.startsWith("remove:"))) libApp.value = v }
+        if (intent?.hasExtra("voltcap_test_extra_root") == true && com.shelf.launcher.data.QaVariant.isolated(context))
+            extraRoot.value = intent.getStringExtra("voltcap_test_extra_root")?.takeIf { it.isNotBlank() && it != "off" }
         if (intent?.getBooleanExtra("voltcap_test_fixture_roms", false) == true && com.shelf.launcher.data.QaVariant.isolated(context))
             fixtureRoms.value = context.getExternalFilesDir("roms")?.absolutePath
+        if (intent?.getBooleanExtra("voltcap_test_libdump", false) == true && com.shelf.launcher.data.QaVariant.isolated(context)) libDump.intValue++
         intent?.getStringExtra("voltcap_test_winmore")?.let { v -> if (enabled(context)) winMore.value = v == "on" }
+        intent?.getStringExtra("voltcap_test_winpage")?.let { v -> if (enabled(context)) winPage.value = qaWinPage(v) }
         intent?.getStringExtra("voltcap_test_wininspect")?.let { v -> if (enabled(context)) winInspect.value = v == "on" }
         intent?.getStringExtra("voltcap_test_appinfo")?.let { v ->
             if (enabled(context)) appInfo(context, v.split(',').map { it.trim() }.filter { it.isNotEmpty() })
@@ -344,7 +399,10 @@ internal object TestHooks {
             }.onFailure { android.util.Log.w("VoltcapTest", "edithome $v: ${it.message}") }
             android.util.Log.i("VoltcapTest", "edithome $v active=${HomeEditState.active}")
         }
-        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && com.shelf.launcher.data.DockPosition.values().any { it.name == d }) dock.value = d }
+        intent?.getStringExtra("voltcap_test_dock")?.let { d -> if (enabled(context) && (d == "NEXT" || com.shelf.launcher.data.DockPosition.values().any { it.name == d })) dock.value = d }
+        intent?.getStringExtra("voltcap_test_rowcombo")?.let { v -> if (enabled(context) && (v == "on" || v == "off")) rowCombo.value = v }
+        if (intent?.getBooleanExtra("voltcap_test_rowcol", false) == true && enabled(context)) rowCol.intValue++
+        if (intent?.getBooleanExtra("voltcap_test_reach", false) == true && enabled(context)) reach.intValue++
         intent?.getStringExtra("voltcap_test_loop")?.let { v -> if (enabled(context) && (v == "true" || v == "false")) loop.value = v == "true" }
         val g = intent?.getStringExtra("voltcap_test_game")
         val st = intent?.getStringExtra("voltcap_test_settings")
@@ -393,6 +451,22 @@ internal object TestHooks {
         intent?.getStringExtra("voltcap_test_bg")?.let { if (enabled(context)) { previewOnly = true; bg.value = it } }
         // Sprint 527: `--es voltcap_test_clipshade legacy|new` - the background clip's old (theme fog) or new shading, for a
         // same-frame before / after (isolated QA app only, session only).
+        if (intent?.hasExtra("voltcap_test_saveridle") == true && com.shelf.launcher.data.QaVariant.isolated(context)) {
+            saverIdleS = intent.getIntExtra("voltcap_test_saveridle", 0).coerceAtLeast(0)
+            android.util.Log.e("VoltcapQA", "saver idle ${saverIdleS}s")
+        }
+        intent?.getStringExtra("voltcap_test_fitsearch")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) FitSearch.legacy.value = v == "legacy"
+            android.util.Log.e("VoltcapQA", "fitsearch $v")
+        }
+        intent?.getStringExtra("voltcap_test_chargelight")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) ChargeLight.legacy.value = v == "legacy"
+            android.util.Log.e("VoltcapQA", "chargelight $v")
+        }
+        intent?.getStringExtra("voltcap_test_arattract")?.let { v ->
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) ArcadeTubeText.legacy.value = v == "legacy"
+            android.util.Log.e("VoltcapQA", "arattract $v")
+        }
         intent?.getStringExtra("voltcap_test_clipshade")?.let { v ->
             if (com.shelf.launcher.data.QaVariant.isolated(context)) ClipBackdrop.legacy = v == "legacy"
             android.util.Log.e("VoltcapQA", "clipshade $v")
@@ -428,6 +502,81 @@ internal object TestHooks {
                 if (r != null || t == "off") com.shelf.launcher.device.tune.Tuner.setTestProfile(context.applicationContext, r?.getOrNull())
                 android.util.Log.i("VoltcapTdp", "test profile $t -> ${r?.getOrNull()?.summaryForQa() ?: "saved profiles"}")
             }
+        }
+        // 682bd: `--es voltcap_test_prefsdump <tag>` - every settings file, to <external files>/prefsdump/<tag>.json (QaPrefsDump).
+        intent?.getStringExtra("voltcap_test_prefsdump")?.let { t ->
+            val app = context.applicationContext
+            if (com.shelf.launcher.data.QaVariant.isolated(context)) Thread { runCatching { QaPrefsDump.dump(app, t) } }.start()
+        }
+        // 682bd: `--es voltcap_test_tunesim on|off|temp:<C>|launch:<key>|<name>|<package>[|<platform>|<console>]|end|fg:<package>`
+        // - the tuner on SIMULATED hardware (TuneSim: in memory, isolated QA app only - no clock, fan or thermal file is
+        // touched), a temperature for the heat guard, and the tuner's game start / end / foreground calls WITHOUT starting
+        // anything (no game is launched). For the notification, the heat guard, the R1 tile and the resume rule on handhelds.
+        intent?.getStringExtra("voltcap_test_tunesim")?.let { t ->
+            val iso = com.shelf.launcher.data.QaVariant.isolated(context)
+            if (enabled(context) && iso) {
+                val app = context.applicationContext
+                val T = com.shelf.launcher.device.tune.Tuner
+                Thread {
+                    runCatching {
+                        when {
+                            t == "on" || t == "off" -> {
+                                com.shelf.launcher.device.tune.TuneSim.set(t == "on", iso)
+                                T.resetSupported(); T.start(app); if (t == "on") T.applyGlobal(app)
+                            }
+                            t.startsWith("temp:") -> com.shelf.launcher.device.tune.TuneSim.tempC = t.removePrefix("temp:").toFloat()
+                            t.startsWith("launch:") && com.shelf.launcher.device.tune.TuneSim.on -> {
+                                val a = t.removePrefix("launch:").split('|')
+                                T.onGameLaunch(app, a[0], a.getOrElse(1) { a[0] }, a.getOrNull(2)?.ifBlank { null }, a.getOrNull(3)?.ifBlank { null }, a.getOrNull(4)?.ifBlank { null })
+                            }
+                            t == "end" && com.shelf.launcher.device.tune.TuneSim.on -> T.onGameEnded(app)
+                            t.startsWith("fg:") && com.shelf.launcher.device.tune.TuneSim.on -> T.onForeground(app, t.removePrefix("fg:"))
+                            // own:<key>|<UNDERCLOCK>|<AutoTDP mode or none> - a game's own profile in the QA app's tuner store;
+                            // clear:<key> takes it away; heat:<on|off>|<PRESET>|<C>; lib:<pkg>|<name>[,<pkg>|<name>] - the
+                            // library games the resume rule may recognise (synthetic).
+                            t.startsWith("own:") -> t.removePrefix("own:").split('|').let { a ->
+                                val auto = a.getOrNull(2)?.takeIf { it != "none" }?.let { com.shelf.launcher.device.tune.AutoTdpMode.valueOf(it) }
+                                com.shelf.launcher.device.tune.TuneStore(app).setForKey(a[0], com.shelf.launcher.device.tune.TuneProfile(
+                                    underclock = com.shelf.launcher.device.tune.Underclock.valueOf(a[1]), autoTdp = auto != null,
+                                    autoMode = auto ?: com.shelf.launcher.device.tune.AutoTdpMode.BALANCED))
+                                T.profileChanged(app, a[0])
+                            }
+                            t.startsWith("clear:") -> { com.shelf.launcher.device.tune.TuneStore(app).setForKey(t.removePrefix("clear:"), null); T.profileChanged(app, t.removePrefix("clear:")) }
+                            t.startsWith("global:") -> t.removePrefix("global:").split('|').let { a ->
+                                val auto = a.getOrNull(1)?.takeIf { it != "none" }?.let { com.shelf.launcher.device.tune.AutoTdpMode.valueOf(it) }
+                                com.shelf.launcher.device.tune.TuneStore(app).setGlobal(com.shelf.launcher.device.tune.TuneProfile(
+                                    underclock = com.shelf.launcher.device.tune.Underclock.valueOf(a[0]), autoTdp = auto != null,
+                                    autoMode = auto ?: com.shelf.launcher.device.tune.AutoTdpMode.BALANCED))
+                                T.profileChanged(app, null)
+                            }
+                            t.startsWith("heat:") -> t.removePrefix("heat:").split('|').let { a ->
+                                val st = com.shelf.launcher.device.tune.TuneStore(app)
+                                st.heatGuard = a[0] == "on"
+                                a.getOrNull(1)?.let { st.heatGuardPreset = com.shelf.launcher.device.tune.HeatGuardPreset.of(it) }
+                                a.getOrNull(2)?.toIntOrNull()?.let { st.heatGuardC = it }
+                                T.profileChanged(app, null)
+                            }
+                            // reset: the QA app's tuner settings that these steps wrote go away again (its own store only).
+                            t == "reset" -> {
+                                app.getSharedPreferences("tuner", android.content.Context.MODE_PRIVATE).edit()
+                                    .remove("global").remove("per_game").remove("heat_guard").remove("heat_guard_preset").remove("heat_guard_c")
+                                    .remove("measured").remove("learned").commit()
+                                T.libraryApps = emptyMap()
+                            }
+                            t.startsWith("lib:") -> T.libraryApps = t.removePrefix("lib:").split(',').mapNotNull { e ->
+                                e.split('|').takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+                        }
+                        Thread.sleep(400)
+                        val st = T.status.value
+                        val line = "tunesim $t -> on=${com.shelf.launcher.device.tune.TuneSim.on} supported=${st.supported} source=${st.source} kind=${st.sourceKind} " +
+                            "uc=${st.profile.underclock} auto=${st.profile.autoTdp}:${st.profile.autoMode} heatStep=${st.heatStep} heatCut=${st.heatCut} heatC=${st.heatC} " +
+                            "line='" + com.shelf.launcher.device.tune.powerLine(st.profile, st.autoUnderclock, st.heatCut, st.sourceKind, st.source, st.vendorThrottle) + "' writes=${com.shelf.launcher.device.tune.TuneSim.writes.size}"
+                        // (Error level: some handhelds keep only errors in the log - and a file the script copies.)
+                        android.util.Log.e("VoltcapTdp", line)
+                        runCatching { java.io.File(app.getExternalFilesDir(null), "qa_tunesim.log").appendText(java.time.LocalTime.now().toString().take(8) + " " + line + "\n") }
+                    }.onFailure { android.util.Log.e("VoltcapTdp", "tunesim $t failed: $it") }
+                }.start()
+            } else android.util.Log.e("VoltcapTdp", "tunesim $t refused (not the isolated QA app or hooks off)")
         }
         // Update 280: `--es voltcap_test_snapshot save|restore` — every Features setting kept in <external files>/
         // voltcap_test_snapshot.json and put back afterwards, so a test walk leaves the settings as they were.
@@ -642,6 +791,9 @@ internal object TestHooks {
                 }
                 // Update 491: the R1 panel's own prefs too (saved order, hidden tiles, use counts — a tile tap counts a use).
                 runCatching { qaSavePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
+                // (682av: the app choices too - Recomps marks, START › Categories, kinds, apps added - a 724a / 725a run changes them.)
+                runCatching { qaSavePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
+                runCatching { qaSavePrefs(context, "collections", "voltcap_test_snapshot_collections.json") }
                 android.util.Log.e("VoltcapTest", "snapshot saved")
             } else if (snap == "restore" && f.exists()) {
                 val j = org.json.JSONObject(f.readText())
@@ -681,6 +833,8 @@ internal object TestHooks {
                     android.util.Log.e("VoltcapTest", "appearance restored: home_layout=${o.optString("home_layout")}")
                 }
                 runCatching { qaRestorePrefs(context, "r1_tiles", "voltcap_test_snapshot_r1.json") }
+                runCatching { if (java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_libapps.json").exists()) qaRestorePrefs(context, "library_apps", "voltcap_test_snapshot_libapps.json") }
+                runCatching { if (java.io.File(context.getExternalFilesDir(null), "voltcap_test_snapshot_collections.json").exists()) qaRestorePrefs(context, "collections", "voltcap_test_snapshot_collections.json") }
                 android.util.Log.e("VoltcapTest", "snapshot restored")
             }
         }.onFailure { android.util.Log.e("VoltcapTest", "snapshot: ${it.message}") }
@@ -892,4 +1046,13 @@ internal fun WithTestScale(content: @androidx.compose.runtime.Composable () -> U
             androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density * s.second, base.fontScale * s.first)
         ) { content() }
     }
+}
+
+/** 682s: the page named by `voltcap_test_winpage` (details / options / trophies, or main); anything else is no request. Pure. */
+internal fun qaWinPage(v: String): WinPage? = when (v.trim().lowercase()) {
+    "main" -> WinPage.MAIN
+    "details" -> WinPage.DETAILS
+    "options" -> WinPage.OPTIONS
+    "trophies", "achievements" -> WinPage.TROPHIES
+    else -> null
 }

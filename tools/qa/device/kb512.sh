@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 512: the hero Ken Burns drift after entering a layout (QA app only). Shelf first, then <layout>; a no-op key;
 # three 6 s windows (CPU %, frames, janky, 90th pct frame time) + PSS. sh kb512.sh <tag> <layout>
 P=com.shelf.launcher.qa; T=$1; L=${2:-TILES}

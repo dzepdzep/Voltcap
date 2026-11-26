@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 475 (D252 triage): after a touch, is the first D-pad press lost? Per round on LAYOUT (game GAME, preview, launches
 # blocked): (a) arrive and press RIGHT with no touch before; (b) tap the screen's top-left corner (the status area — nothing
 # there opens anything), then press RIGHT. Focus before / after from the app's own dump. setsid sh touchkey.sh TAG LAYOUT GAME N

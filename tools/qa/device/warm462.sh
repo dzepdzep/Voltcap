@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 P=com.shelf.launcher
 input keyevent 224; am start -n $P/.MainActivity >/dev/null; sleep 7; input keyevent 97; sleep 2; logcat -c
 for s in "Fool|gb|0|0" "Silver_Version|gbc_dual~m:pkmn_silver|0|0" "Prism_Version|gbc|0|0" "Emerald_Kaizo|gba|0|0"; do am start -n $P/.MainActivity --es voltcap_test_inspect "$s" >/dev/null; sleep 14; input keyevent 97; sleep 1; input keyevent 97; sleep 1; done

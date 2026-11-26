@@ -135,7 +135,7 @@ internal fun pocketCameraKey(event: KeyEvent, reach: (Boolean) -> Boolean): Bool
 // ---- Pixel icons (7 × 7, "#" lit) ----
 
 private val PX_CAMERA = arrayOf("  ###  ", "#######", "#     #", "#  #  #", "# ### #", "#  #  #", "#######")
-private val PX_TROPHY = arrayOf("#######", "# ### #", " ##### ", "  ###  ", "   #   ", "  ###  ", " ##### ")
+internal val PX_TROPHY = arrayOf("#######", "# ### #", " ##### ", "  ###  ", "   #   ", "  ###  ", " ##### ")
 private val PX_CLOCK = arrayOf(" ##### ", "#  #  #", "#  #  #", "#  ## #", "#     #", "#     #", " ##### ")
 private val PX_STAR = arrayOf("   #   ", "   #   ", "#######", " ##### ", "  ###  ", " ## ## ", "##   ##")
 internal val PX_CURSOR = arrayOf("#      ", "##     ", "###    ", "####   ", "###    ", "##     ", "#      ")

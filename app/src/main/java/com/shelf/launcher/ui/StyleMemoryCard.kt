@@ -46,6 +46,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -76,6 +77,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -118,9 +120,9 @@ internal object MemCardNav {
     @Volatile var cols: Int = 6
 }
 
-private val McYellow = Color(0xFFF6DA4E)
+internal val McYellow = Color(0xFFF6DA4E)
 private val McArrow = Color(0xFF2E63E6)
-private val McShadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(1.5f, 1.5f), 3f)
+internal val McShadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(1.5f, 1.5f), 3f)
 
 /** Update 330: the screen behind the icons (Layout options › Background; Your theme: nothing drawn here). */
 @Composable
@@ -644,24 +646,43 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
     val outline = TextStyle(shadow = McShadow)
     val l1 = save?.takeIf { !it.fromDb }?.sys?.line1?.takeIf { it.isNotBlank() }
     val l2 = save?.takeIf { !it.fromDb }?.sys?.line2?.takeIf { it.isNotBlank() }
-    Box(Modifier.size(ctx.maxW, ctx.maxH)) {
+    // (730a, P2 class C: the browser's own screens on the glass panel - WinPagesMemCard.kt. L1 / R1 turn the pages wherever the
+    // D-pad is; on a page the facts make way (they are on INFORMATION) and the panel takes the room from under the title to
+    // above the choices, measured.)
+    val onPage = ctx.page != WinPage.MAIN
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    var bottomRoom by remember { androidx.compose.runtime.mutableStateOf(96.dp) }
+    Box(Modifier.size(ctx.maxW, ctx.maxH).nativeBumpers(ctx)) {
         // The card and its console, top left.
-        Row(Modifier.align(Alignment.TopStart).padding(start = 8.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        // (730a, ShelfText MEMCARD x1.3: a long console name ran one line under the save's title at the right - and was cut
+        // there. The block keeps to the left of the title's column and the name wraps.)
+        Row(Modifier.align(Alignment.TopStart).padding(start = 8.dp, top = 4.dp).fillMaxWidth(0.44f), verticalAlignment = Alignment.CenterVertically) {
             GenericCardSymbol(Modifier.size(30.dp))
             Spacer(Modifier.width(8.dp))
-            Column {
+            Column(Modifier.weight(1f, fill = false)) {
                 Text("Memory card", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, style = outline)
-                Text(ctx.console, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, style = outline, maxLines = 1)
+                Text(ctx.console, color = Color.White.copy(alpha = 0.92f), fontSize = 13.sp, lineHeight = 16.sp, style = outline)
             }
         }
         // The save's title and the facts, top right.
-        Column(Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 4.dp).fillMaxWidth(0.52f), horizontalAlignment = Alignment.End) {
+        Column(Modifier.align(Alignment.TopEnd).padding(end = 8.dp, top = 4.dp, bottom = bottomRoom).fillMaxWidth(0.52f).fillMaxHeight(),
+            horizontalAlignment = Alignment.End) {
             if (l1 != null) {
                 FullText(l1, color = McYellow, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
                 if (l2 != null) FullText(l2, color = McYellow, fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1, textAlign = TextAlign.End, style = outline)
             } else FullText(ctx.name, color = McYellow, fontSize = 21.sp, lineHeight = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.End, style = outline)
             Spacer(Modifier.height(6.dp))
-            listOfNotNull(
+            if (onPage) {
+                val heading = rememberHeadingPage(ctx.page)
+                Column(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(0xFF1C1E22).copy(alpha = 0.72f))
+                    .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 8.dp)) {
+                    McPageHeading(nativeTabs(ctx.pages), if (heading == WinPage.MAIN) ctx.page else heading)
+                    Spacer(Modifier.height(6.dp))
+                    NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "mcPage", move = ::mcMove) { pg, pageLive ->
+                        MemCardPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                    }
+                }
+            } else listOfNotNull(
                 listOfNotNull(ctx.year, ctx.developer).joinToString("  ·  ").takeIf { it.isNotBlank() },
                 ctx.genres,
                 "Played  " + ctx.played + (ctx.last?.let { "  ·  $it" } ?: ""),
@@ -702,17 +723,17 @@ internal fun MemCardWindow(ctx: WinSceneCtx) {
                 }
             }
         }
-        // Another page: on dark glass on the right.
-        if (ctx.page != WinPage.MAIN) Box(
-            Modifier.align(Alignment.CenterEnd).padding(end = 8.dp, top = 40.dp, bottom = 70.dp).fillMaxWidth(0.52f).fillMaxHeight(0.62f)
-                .clip(RoundedCornerShape(10.dp)).background(Color(0xFF1C1E22).copy(alpha = 0.72f))
-                .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
-        ) { ctx.pageBody(Modifier.fillMaxSize()) }
         // The choices along the bottom, then the hints.
-        Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).onSizeChanged { sz ->
+            val r = with(density) { sz.height.toDp() } + 4.dp + 6.dp
+            if (r != bottomRoom) bottomRoom = r
+        }, horizontalAlignment = Alignment.CenterHorizontally) {
             // (673g, owner brief 15 Nov: the choices one row of identical choices - each word's glow the same size - scrolling
             // a whole choice at a time where they don't fit; the save status stays its own line under them.)
-            UniformKeyRow(ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList(), 6.dp) { a ->
+            // (682as, CI on 730a - PlayPlace682ab MEMCARD: Start was 295 dp wide on INFORMATION / MEMORY BLOCKS and 73 dp on COMMANDS.
+            // On a page the row is measured with the page keys' reference, as the other native layouts do - Start keeps its place.)
+            UniformKeyRow(ctx.buttons + if (ctx.page == WinPage.MAIN) ctx.tools else emptyList(), 6.dp,
+                slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val glow by animateFloatAsState(if (on) 1f else 0f, tween(180), label = "mcWord")
                         Box(

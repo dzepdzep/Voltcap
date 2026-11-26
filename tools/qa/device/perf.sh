@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # perf.sh TAG REPS — frame cadence per action (QaTrace "cadence n= missed= maxgap=" lines, 1 s windows) in the owner's own layout.
 # Actions: R1 open/close · Settings (hook) open/close · R2 x4 then L2 x4 (back where it was) · game window A/B (launch blocked) ·
 # return from Android Settings (HOME) · drawer scroll (Tile home preview, dock ▼ A, ▼ x8). Prints per action: frames, missed vsyncs, max gap.

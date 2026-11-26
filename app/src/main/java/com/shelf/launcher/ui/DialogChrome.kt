@@ -328,16 +328,16 @@ internal fun ShelfTextField(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(label, color = ShelfTheme.textMuted, fontSize = 11.sp)
-                Text(
+                // 713a (rule 11): the typed value whole - readable size, then slide (was cut with an ellipsis).
+                FullText(
                     when {
                         value.isBlank() -> "Press A to type"
                         password -> "•".repeat(value.length.coerceAtMost(16))
                         else -> value
                     },
                     color = if (value.isBlank()) ShelfTheme.textMuted else ShelfTheme.colors.textPrimary,
-                    fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp),
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    fontSize = 14.sp,
+                    reserve = false
                 )
             }
         }
@@ -433,7 +433,7 @@ fun ShelfDialog(
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (682ax: QA only - a Dialog window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         // The popup is capped to the screen, and the body — not the header or
         // the buttons — is what shrinks and scrolls. Before, a tall popup on a
@@ -470,7 +470,7 @@ fun ShelfDialog(
                 }
             }
         } }
-    }
+    } }
 }
 
 /**
@@ -496,7 +496,7 @@ fun ShelfMenuDialog(
             onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (682ax: QA only - a Dialog window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         // Same look as the Select menu: icon badge header, rows as cards.
         Box(
@@ -525,13 +525,14 @@ fun ShelfMenuDialog(
                         Spacer(Modifier.width(14.dp))
                     }
                     Column(Modifier.weight(1f)) {
-                        Text(
-                            title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(20.sp), maxFontSize = 20.sp), fontWeight = FontWeight.Bold,
-                            maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        // 713a (rule 11): the menu's title whole - 2 lines, readable size, then slide.
+                        FullText(
+                            title, color = ShelfTheme.colors.textPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                            maxLines = 2, reserve = false
                         )
                         if (subtitle != null) {
                             Spacer(Modifier.height(2.dp))
-                            Text(subtitle, color = ShelfTheme.textMuted, fontSize = 13.sp)
+                            RowSubtitle(subtitle, 13.sp, 17.sp)
                         }
                     }
                     Spacer(Modifier.width(12.dp))
@@ -551,7 +552,7 @@ fun ShelfMenuDialog(
                 )
             }
         }
-    }
+    } }
 }
 
 @Composable
@@ -676,7 +677,7 @@ internal fun ActionCard(icon: ImageVector, title: String, subtitle: String, onCl
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp)
+            RowSubtitle(subtitle, 12.sp, 16.sp)
         }
     }
 }
@@ -696,7 +697,7 @@ internal fun ConnectionCard(name: String, subtitle: String, connected: Boolean, 
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
             Text(name, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp)
+            RowSubtitle(subtitle, 12.sp, 16.sp)
         }
         Chip(if (connected) "Connected" else "Set up", accent = !connected, onClick = onClick)
     }
@@ -705,6 +706,16 @@ internal fun ConnectionCard(name: String, subtitle: String, connected: Boolean, 
 /** A compact, full-bleed row for menus (game options, category lists) —
  * icon, title, optional subtitle. [destructive] tints it toward red for
  * things like "Remove" or "Hide". */
+/**
+ * 682bb (owner review of the v0.7.0 preview - Categories / Collections at x1.3: a wrapped description's lines stood far apart). A
+ * row's muted second line set only its font size and so kept the theme's 24 sp line height - at x1.3 its wrapped lines were
+ * ~31 sp apart for a ~16 sp text. Its lines are now [lineHeight] apart (the SwitchRow's 16 sp for 12 sp text). The theme's styles
+ * are trimmed (676v, Trim.Both), so a description on one line is as tall as its letters either way - no single-line row moves.
+ */
+@Composable
+internal fun RowSubtitle(text: String, fontSize: androidx.compose.ui.unit.TextUnit, lineHeight: androidx.compose.ui.unit.TextUnit) =
+    Text(text, color = ShelfTheme.textMuted, fontSize = fontSize, lineHeight = lineHeight)
+
 @Composable
 internal fun MenuRow(icon: ImageVector, title: String, subtitle: String? = null, destructive: Boolean = false, focusFirst: Boolean = false, onClick: () -> Unit) {
     com.shelf.launcher.Breadcrumbs.mark("MenuRow")
@@ -740,7 +751,7 @@ internal fun MenuRow(icon: ImageVector, title: String, subtitle: String? = null,
                 fontWeight = FontWeight.SemiBold
             )
             if (subtitle != null) {
-                Text(subtitle, color = ShelfTheme.textMuted, fontSize = 12.sp)
+                RowSubtitle(subtitle, 12.sp, 16.sp)
             }
         }
     }
@@ -874,7 +885,7 @@ internal fun RadioLine(label: String, selected: Boolean, blurb: String? = null, 
         Column {
             Text(label, color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             if (blurb != null) {
-                Text(blurb, color = ShelfTheme.textMuted, fontSize = 11.sp)
+                RowSubtitle(blurb, 11.sp, 15.sp)
             }
         }
     }
@@ -901,17 +912,17 @@ internal fun Chip(label: String, accent: Boolean = true, enabled: Boolean = true
             .shelfClickable(uiRounded(50), enabled = enabled) { onClick() }
             .padding(horizontal = 16.dp, vertical = 9.dp)
     ) {
-        Text(
+        // 713a (rule 11): a chip's label whole - readable size, then slide when its row leaves too little room.
+        FullText(
             label,
             color = when {
                 !enabled -> ShelfTheme.textMuted
                 accent -> onAccentColor()
                 else -> ShelfTheme.colors.textPrimary
             },
-            fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
+            fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
-            maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            softWrap = false
+            reserve = false
         )
     }
 }

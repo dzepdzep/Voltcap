@@ -154,7 +154,33 @@ internal fun VoltBattery(percent: Int, charging: Boolean, low: Color, outline: C
     val second = lerpColor(accent, ShelfTheme.colors.secondary, 0.6f)
     val pixel = VoltUi.pixel
     // (Update 493: the pulse read while drawing — read here it re-ran the gauge every frame of the pulse.)
-    val pulseS = rememberFocusPulseState(animate = charging)
+    // (682at, owner 24 Nov - option 2: the bolt breathed again for ~10 s after every press. Now, like the plain battery's light,
+    // only as charging feedback - charging starting, its level changing, Voltcap back in front: two breaths at the full frame
+    // rate, then eased to its steady glow and still. ChargeLight.legacy: the old rule, QA A/B only.)
+    val legacyLight = ChargeLight.legacy.value
+    val legacyPulse = rememberFocusPulseState(animate = charging && legacyLight)
+    val boltS = remember { androidx.compose.runtime.mutableFloatStateOf(FOCUS_PULSE_REST) }
+    val active = rememberIsActive()
+    val may by androidx.compose.runtime.rememberUpdatedState(charging && active && rememberAnimationsEnabled() && !calmHere())
+    LaunchedEffect(charging, percent, active, legacyLight) {
+        if (legacyLight) return@LaunchedEffect
+        if (!may) { boltS.floatValue = FOCUS_PULSE_REST; return@LaunchedEffect }
+        // (from the breath's place at its steady glow: no dip first)
+        val t0 = androidx.compose.runtime.withFrameMillis { it } - focusPulsePhaseMs(FOCUS_PULSE_REST)
+        var ms = 0L
+        while (ms < CHARGE_FEEDBACK_SWEEPS * 2200L && may) {
+            ms = androidx.compose.runtime.withFrameMillis { it } - t0
+            boltS.floatValue = focusPulseAt(ms)
+        }
+        val from = boltS.floatValue
+        val e0 = androidx.compose.runtime.withFrameMillis { it }
+        while (true) {
+            val k = ((androidx.compose.runtime.withFrameMillis { it } - e0) / FOCUS_PULSE_SETTLE_MS.toFloat()).coerceIn(0f, 1f)
+            boltS.floatValue = from + (FOCUS_PULSE_REST - from) * (k * k * (3f - 2f * k))
+            if (k >= 1f) break
+        }
+    }
+    val pulseS: androidx.compose.runtime.State<Float> = if (legacyLight) legacyPulse else boltS
     Canvas(Modifier.size(width = 26.dp, height = 13.dp)) {
         val nub = 2.5.dp.toPx()
         val w = size.width - nub

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # setnav.sh REPS — Settings (main menu) navigation A/B for update 456: ▼x10 ▲x10 (vertical) and ▶x4 ◀x4 (tabs) per mode.
 # Prints frames, missed vsyncs, max gap (QaTrace cadence) and gfxinfo janky % / GPU 50th-90th. Nothing saved.
 P=com.shelf.launcher; R=${1:-3}; A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

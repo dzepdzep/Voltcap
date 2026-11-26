@@ -197,7 +197,7 @@
    "base_commit": "f0dfe14",
    "patch_sha256": "d0f57ae8477ddc7326203aeba41ad3a5ec845a62af26b17effaa751b29b8eae8",
    "tree_hash": "0aa0811b78338338a433c411c0ce1279d04d265e610419bdef64e1d156d57ea2",
-   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built — app sources identical"
+   "note": "update 478: 478c + Blades guide name on one line (shrink, then slide), Cinema's story column a focus stop only when it has text; never published; the committed patch adds one more source-check test (Batch478Test) after the APK was built \u2014 app sources identical"
   },
   {
    "id": "qa-0.6.68-479a",
@@ -802,7 +802,7 @@
    "id": "qa-0.6.71-pnat-fd7bcc52",
    "apk_sha256": "c4f1be8761518575a42ac0b1b383272e92ff27196a88e85e01355081fedf1031",
    "base_commit": "fd7bcc52",
-   "note": "Update 529b: ••• after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
+   "note": "Update 529b: \u2022\u2022\u2022 after the save line in sceneKeys. assembleQa in worktree pnat 13 Nov 12:41Z; testDebugUnitTest BUILD SUCCESSFUL 12:39Z. sha256 = installed base.apk on the Flip 2 (manifest of mlast529c)."
   },
   {
    "version_name": "0.6.71-qa",
@@ -912,7 +912,7 @@
    "id": "qa-0.6.72-repair-529p",
    "apk_sha256": "4116b9c83983fd411757798ec2fcec7dcc4cb89d72f0544e67ed24e7115a9933",
    "base_commit": "26949935",
-   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round ••• kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
+   "note": "529p: shelf-family page keys as bars spanning the card (PageBars: fewest whole-word rows, round \u2022\u2022\u2022 kept), scroll cue on native pages, Coverflow pages without the second name and at the panel's full height, Achievements counter one line, Details line heights, Order row wraps; the same bars on Twin (both screens) and Resume & discover; ShelfTextRoboTest click diagnostics (WinClickProbe). assembleQa 14 Nov 12:22 (BUILD SUCCESSFUL, verifyNoEmbeddedSecrets). testDebugUnitTest BUILD SUCCESSFUL."
   },
   {
    "version_name": "0.6.71-qa",
@@ -1474,6 +1474,281 @@
    "patch_sha256": null,
    "tree_hash": "claude/qa-0672-repair eadd00f - clean (CI run 44098184174, push [qa-apk])",
    "note": "678r: KONKR Channel x1.3 recheck (D350)"
+  },
+  {
+   "id": "qa-679c-e4669b9-ci",
+   "apk_sha256": "76c553860654efdab37adbee38558d4574f6d8d607f2e6466ecedbf67f414861",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/qa-0672-repair e4669b9",
+   "patch_sha256": null,
+   "tree_hash": "claude/qa-0672-repair e4669b9 - clean (CI run 44153799854, workflow_dispatch)",
+   "note": "v0.6.74 dev line after 679c"
+  },
+  {
+   "id": "qa-682c-2ca480f-ci",
+   "apk_sha256": "5063b00a7dc62b7fb59d233d6ce46df3d457cffb3466467645013b367ce21c1b",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-native-pages 2ca480f",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-native-pages 2ca480f - clean (CI run 44264347681, [qa-apk])",
+   "note": "P2 batch 1 + page-turn Play guard 682a + libapp hook 682c"
+  },
+  {
+   "id": "qa-682b-3ec7e45-ci",
+   "apk_sha256": "76b11b977f77c1406c44efe899eaa8233f6c4b1580a97c0d05d5c83e97d15741",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-rescan-fix 3ec7e45",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-rescan-fix 3ec7e45 - clean (CI run 44263366886, [qa-apk])",
+   "note": "rescan fix 681r + extra-root hook 682b"
+  },
+  {
+   "id": "qa-681r-d082e7f-ci",
+   "apk_sha256": "74e3ccf90e1acca4030b04fcd8d6e605e245ac836475669ebea7de7f615baed1",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-rescan-fix d082e7f",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-rescan-fix d082e7f - clean (CI run 44190741288, [qa-apk])",
+   "note": "rescan fix 681r"
+  },
+  {
+   "id": "qa-682k-6a81717-ci",
+   "apk_sha256": "c3362e64de551537b376cad448fa8b5fe5040e6446f2c764221a1b8101158c2c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "base_commit": "claude/v0674-native-pages 6a81717",
+   "patch_sha256": null,
+   "tree_hash": "claude/v0674-native-pages 6a81717",
+   "note": "P2 682j focus hand-over + 682k confirmation room"
+  },
+  {
+   "id": "qa-682q-73d6766-ci",
+   "apk_sha256": "f76d32371354f2ef989adc57df869c855b4f2d1b9e529901ce1b1ca5778b57e4",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 73d6766",
+   "tree_hash": "claude/v0674-native-pages 73d6766",
+   "note": "P2 batch 2 (Magazine, Cinema, Arcade, Cube) - KONKR p2k13 (Magazine checklist no rows, D360)"
+  },
+  {
+   "id": "qa-682r-50f5004-ci",
+   "apk_sha256": "47ff38503023f1c3179f6785ab192e2fb02e026c36917e212cb656c96e3646e3",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 50f5004",
+   "tree_hash": "claude/v0674-native-pages 50f5004",
+   "note": "682r x1.3 room - KONKR p2k13b / RP Classic p2r13b"
+  },
+  {
+   "id": "qa-682r2-ef2694a-ci",
+   "apk_sha256": "f54bb52eb384edf12da6e1ad20b77973958cf6a67389b081caa4ec20d12184ac",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages ef2694a",
+   "tree_hash": "claude/v0674-native-pages ef2694a",
+   "note": "682r-2 RP Classic fixes - KONKR p2k13c / RP Classic p2r13c"
+  },
+  {
+   "id": "qa-682s-f816912-ci",
+   "apk_sha256": "0645fb4b4107c105faf6a0aacd931024d43ef7a5dedc03cc8de19db48bb88d56",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages f816912",
+   "tree_hash": "claude/v0674-native-pages f816912",
+   "note": "682s batch-1 visual pass (Classic switches / chip, Hub tags first) - not on a device yet"
+  },
+  {
+   "id": "qa-682x-69aafaf-ci",
+   "apk_sha256": "93d12536f396701b20fa63eae09fae7fad7d58e8fc2584db880de3b0d0af53ed",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 69aafaf",
+   "tree_hash": "claude/v0674-native-pages 69aafaf",
+   "note": "682x Play slot (mainFit) - KONKR pk13 / RP Classic pr13 x1.3 Dashboard, Library, Card binder, Terminal"
+  },
+  {
+   "id": "qa-682y-d294cf2-ci",
+   "apk_sha256": "ac10b20340047d4902e752e33cee5fdbf6485fc3730103dad4719aee6775a2ea",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages d294cf2",
+   "tree_hash": "claude/v0674-native-pages d294cf2",
+   "note": "682y P2 batch 4 - KONKR pk14 / RP Classic pr14 x1.3"
+  },
+  {
+   "id": "qa-682z-3d6d46f-ci",
+   "apk_sha256": "edc80e912b568097bcf7248ecbd35b2473d0876ebc5cfa17e5c17331f2c7760f",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 3d6d46f",
+   "tree_hash": "claude/v0674-native-pages 3d6d46f",
+   "note": "682z Side / Storage Play place - KONKR pk15 / RP Classic pr15 x1.3"
+  },
+  {
+   "id": "qa-682z2-2763331-ci",
+   "apk_sha256": "a558651de613cd4cce272a5aba958ced6bbaf6c882d0f64dadf20bea9f8d271f",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 2763331",
+   "tree_hash": "claude/v0674-native-pages 2763331",
+   "note": "D364 - fk10/fr10 (18 layouts x1.0), fk13/fr13 (x1.3)"
+  },
+  {
+   "id": "qa-682ab-1ada6c8-ci",
+   "apk_sha256": "eab2b6e441856e13c4f2a02efda973a0fa1796311c8cb879b4f2cd2d54d4c9b2",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 1ada6c8",
+   "tree_hash": "claude/v0674-native-pages 1ada6c8",
+   "note": "Play on every page + batch 5 - gk10 / gr10 (25 layouts x1.0)"
+  },
+  {
+   "id": "qa-682ae-b316b8f-ci",
+   "apk_sha256": "23087d3fe2ec4accef1e61ca5fdaba40c29d3636e080084dc72ae581e2967c23",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages b316b8f",
+   "tree_hash": "claude/v0674-native-pages b316b8f",
+   "note": "batches 6-7 - gk13 (29 layouts x1.3, KONKR)"
+  },
+  {
+   "id": "qa-682af-9192a89-ci",
+   "apk_sha256": "998a807fe74fd21a6b65c723bf3cbe1a4541d676844834cdc50c71da16c0ba4c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 9192a89",
+   "tree_hash": "claude/v0674-native-pages 9192a89",
+   "note": "final review capture - gr13 (29 x1.3 RP Classic), hk10 / hr10 / hk13 deltas"
+  },
+  {
+   "id": "qa-682bb-6f6fd73",
+   "apk_sha256": "21246769bf334d3424f4631c537126d07808a42885213fbd3af78e843029f8fe",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 6f6fd73",
+   "tree_hash": "claude/v0674-native-pages 6f6fd73",
+   "note": "v0.7.0 review fixes (682bb) - HW-29: fix check, stress section, HW-28 popup gate + functional walk"
+  },
+  {
+   "id": "qa-682bc-8ff8108",
+   "apk_sha256": "308f104c6e9d2780cbce48d8265e2c7446cc1a4a00cf59f44d2db82087010a51",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 8ff8108",
+   "tree_hash": "claude/v0674-native-pages 8ff8108",
+   "note": "HW-29: key-row scroll finishes after a cancel, measure-only refs out of the QA dump (the Disc label GivesWay of 65cf01c is NOT in this APK - built before it)"
+  },
+  {
+   "id": "qa-682bd-386c84d",
+   "apk_sha256": "f2523f607bae8f0720ebc2a5ccf84ce20f51f05e55d210591ef561f1802c6182",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 386c84d",
+   "tree_hash": "claude/v0674-native-pages 386c84d",
+   "note": "HW-29: 682bc + Disc track label GivesWay + Night panels Tilted (QA marks only)"
+  },
+  {
+   "id": "qa-682be-b4e37b2",
+   "apk_sha256": "3209868db3c2eb37e5586231071fc21a3240fb3699a92ef9d14e293ac644544a",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages b4e37b2",
+   "tree_hash": "claude/v0674-native-pages b4e37b2",
+   "note": "682bd audit: profile source + explicit Off, Heat Guard presets, R1 Heat guard tile, resume restore, TuneSim (QA)"
+  },
+  {
+   "id": "qa-0673-a401221-prefsdump",
+   "apk_sha256": "d7930c4a5ec8ff10a5c3db7cf4f5b7480a29d55c8b42ae15758ffdf64d99dba9",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "main a401221 (v0.6.73) + QA-only voltcap_test_prefsdump hook (not committed to main)",
+   "tree_hash": "main a401221 + QaPrefsDump",
+   "note": "682bd upgrade audit: the v0.6.73 release code as the QA app, so its settings can be dumped before the v0.7.0 QA build goes over it"
+  },
+  {
+   "id": "qa-682bf-53a0f05",
+   "apk_sha256": "78a5af587d710f0141b4e2b5f992fceaa9826204ca25eaa01085711c8697a5d0",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 53a0f05",
+   "tree_hash": "claude/v0674-native-pages 53a0f05",
+   "note": "682bd audit build: qa682be + QA prefs dump hook (the intended v0.7.0 code)"
+  },
+  {
+   "id": "qa-682bg-75b9443",
+   "apk_sha256": "fb7f586717e535e4b59d5fb639184dab29f5875ee3cfab32ef0cf7e80645933c",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages 75b9443",
+   "tree_hash": "claude/v0674-native-pages 75b9443",
+   "note": "682bd audit: + tuner QA hooks, TuneSim stock apart, tuner_stock INTERNAL"
+  },
+  {
+   "id": "qa-682bh-f094d6c",
+   "apk_sha256": "aed6a8b5ba4a91b15124e2af540f187a28b9906c13442de089b5536a17aa903d",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v0674-native-pages f094d6c",
+   "tree_hash": "claude/v0674-native-pages f094d6c",
+   "note": "682bd audit: simulated tuner walk build"
+  },
+  {
+   "id": "qa-070rc-7eaccbd",
+   "apk_sha256": "7fcd76503b68985be8c0ec5b9e84cb39d9f0226b827d7ef822fe2c58855247df",
+   "version_name": "0.6.73-qa",
+   "version_code": 80,
+   "variant": "debug (isolated QA app com.shelf.launcher.qa, pinned QA key 4d133dde, Discord stub; never over the real app)",
+   "patch_sha256": null,
+   "base_commit": "claude/v070-rc 7eaccbd",
+   "tree_hash": "claude/v070-rc 7eaccbd",
+   "note": "v0.7.0 RC integration (P2 + dev + 681r rescan): rescan / upgrade / data-integrity checks"
   }
  ]
 }

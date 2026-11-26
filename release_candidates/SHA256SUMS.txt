@@ -17,3 +17,15 @@ e4c17267bf01d0f69915898954408b91d7e7d476365bec6af814766514b68696  0.6.72/Voltcap
 de3c2b941f0a11578ff36bbab9e7b15d4f37311e95a6f0c9838ae6d87514f9b5  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94.apk  # 2026-11-14 21:35 versionCode 79 
 6a1049ba770dbefdcfc4f2674a974063eeaed96451b641adc071bad63252b73c  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94-api28.dm  # 2026-11-14 21:35 versionCode 79 
 37e61d9fb0a792a33eb81321dc6cdc8e6d335692376b22dc407f0842648e048c  0.6.72/Voltcap-0.6.72-rc2-compat-de3c2b94-api31.dm  # 2026-11-14 21:35 versionCode 79 
+72a94b5816220c68bfff82a9524c6e5768ba3e8c7c45386656fe7ae3399efff5  0.6.73/Voltcap-0.6.73-rc1-release-72a94b58.apk  # 2026-11-17 15:43 versionCode 80 
+97d8d7e8d20c95154489fcbece049d4838aef3a4cdc879ebc06bbb8a84802eca  0.6.73/Voltcap-0.6.73-rc1-release-72a94b58-api28.dm  # 2026-11-17 15:43 versionCode 80 
+2a5d15f65f0322566ddd3f381601f9a9d850b13100f80ab9c6dfc143655b1e0a  0.6.73/Voltcap-0.6.73-rc1-release-72a94b58-api31.dm  # 2026-11-17 15:43 versionCode 80 
+2b6b9e3cb28ef8ccd2322c66b4d6bc9e21d718a8050702f5d96d4eb9944ec0cf  0.6.73/Voltcap-0.6.73-rc1-compat-2b6b9e3c.apk  # 2026-11-17 15:43 versionCode 80 
+5af87bd2a4d87f8269c0873129b7e898df837aeb97cbb5797a8d911175b76df3  0.6.73/Voltcap-0.6.73-rc1-compat-2b6b9e3c-api28.dm  # 2026-11-17 15:43 versionCode 80 
+c3ddb0a0dcc87892615de597a8bbf7cb372206a079caeeb09d71ac77d7328b11  0.6.73/Voltcap-0.6.73-rc1-compat-2b6b9e3c-api31.dm  # 2026-11-17 15:43 versionCode 80 
+ffed2e8b2aac72d0158b3f5ae9c375dae3bf04a2454b648b380d2da1350775d0  0.7.0/Voltcap-0.7.0-rc1-release-ffed2e8b.apk  # 2026-11-26 06:25 versionCode 81 
+0a2821a9406b6d743f4df31c4813ad71ca3ff317f3e44ba588f425291ac9806e  0.7.0/Voltcap-0.7.0-rc1-release-ffed2e8b-api28.dm  # 2026-11-26 06:25 versionCode 81 
+b2c6b4f2264cc0fb1ab802b64b42ce58983da3e3d62a5ac3782a5b9e044a0bfe  0.7.0/Voltcap-0.7.0-rc1-release-ffed2e8b-api31.dm  # 2026-11-26 06:25 versionCode 81 
+9a7b5d4aeb1823a2bac7d03f26aede952d979868cb07678cf2ef815aedd125a6  0.7.0/Voltcap-0.7.0-rc1-compat-9a7b5d4a.apk  # 2026-11-26 06:25 versionCode 81 
+cce406df3298a79853401011455a19f50fd9e9f0fd6b5f4fbea69855dd665588  0.7.0/Voltcap-0.7.0-rc1-compat-9a7b5d4a-api28.dm  # 2026-11-26 06:25 versionCode 81 
+f4659a097e75d4c72452a3e1cad5470a4366f3743beb38222e9c8fa91b3fcb16  0.7.0/Voltcap-0.7.0-rc1-compat-9a7b5d4a-api31.dm  # 2026-11-26 06:25 versionCode 81 

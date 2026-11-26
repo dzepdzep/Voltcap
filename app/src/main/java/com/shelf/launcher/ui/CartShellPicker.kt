@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.shelf.launcher.data.Game
@@ -176,9 +175,10 @@ internal fun CartShellPicker(game: Game, cover: Any?, onDismiss: () -> Unit) {
                         CartShellArt("$SHELL_PREFIX$id~$colour|$platform", cover, Modifier.fillMaxSize(), title = gameDisplayName(game.name), maxPx = 240)
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text(
+                    // (752a, rule 11: the whole shell name - two lines kept so the cards line up)
+                    FullText(
                         (if (id == original) "★ " else "") + name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center
+                        fontWeight = FontWeight.SemiBold, maxLines = 2, textAlign = TextAlign.Center
                     )
                     if (shell != null) Text(shell.check.label, color = ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 1, textAlign = TextAlign.Center)
                 }
@@ -208,8 +208,8 @@ private fun EditionCard(e: Edition, raw: String, platform: String, cover: Any?, 
             CartShellArt("$SHELL_PREFIX$raw|$platform", cover, Modifier.fillMaxSize(), title = gameDisplayName(game.name), maxPx = 240)
         }
         Spacer(Modifier.height(4.dp))
-        Text(e.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
-            overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+        FullText(e.name, color = ShelfTheme.colors.textPrimary, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+            textAlign = TextAlign.Center)
         Text(
             e.status.label + " · " + e.regions.sorted().joinToString("/") + (if (picked) " · Picked by itself" else ""),
             color = if (e.status == EditionStatus.PENDING) ShelfTheme.warning else ShelfTheme.textMuted, fontSize = 9.sp, maxLines = 2, textAlign = TextAlign.Center

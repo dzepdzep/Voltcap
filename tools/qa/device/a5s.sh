@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 482 (A5 rest) — stale headings / counts after L2 / R2: per layout, the texts on screen after each R2 step (QaClip
 # dump) against the same category opened fresh (voltcap_test_category). Preview only.  setsid sh a5s.sh TAG "LAYOUTS" &
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; TAG=$1; LAYS=$2; OUT=/sdcard/pc/$TAG; rm -rf $OUT; mkdir -p $OUT

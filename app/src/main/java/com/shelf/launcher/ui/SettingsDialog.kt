@@ -371,7 +371,7 @@ fun SettingsDialog(
             if (openSubpage != null) setSubpage(null) else onDismiss()
         },
         properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (26 Nov: QA only - this window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         SettingsWindowFlat()
         // Small screens (Retroid Pocket Classic and the like): the dialog fills
@@ -759,7 +759,7 @@ fun SettingsDialog(
             }
         } }
         }
-    }
+    } }
 }
 
 // ---- Category bodies ----
@@ -3902,7 +3902,7 @@ private fun LayoutOptionsCard(appearance: AppearanceSettings, onChange: (Appeara
             // (Update 315: Tile home's own place, in the middle by default — the Voltcap row keeps its own.)
             RowChoice("Where the tiles sit", com.shelf.launcher.data.DockPosition.values(), appearance.tileDockPosition, { it.label }) {
                 // (Batch 521: a new place drops the row's Edit Home move up / down, as R1's Row tile does.)
-                if (it != appearance.tileDockPosition) tileRowPlaceReset(appearance)
+                if (it != appearance.tileDockPosition) tileRowPlaceReset(appearance, it)
                 onChange(appearance.copy(tileDockPosition = it))
             }
             RowChoice("Game you're on", com.shelf.launcher.data.TileFocus.values(), appearance.tileFocus, { it.label }) {

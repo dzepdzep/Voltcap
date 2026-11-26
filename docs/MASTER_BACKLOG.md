@@ -13,6 +13,142 @@ Statuses:
 - **BLOCKED-HW / BLOCKED-REF / BLOCKED-OWNER**: needs a device, a photo / measurement, or an owner action or approval.
 - **DEFER**: not planned (risk or scope).
 
+## 000000000. Owner 23 Nov 22:43 - continue from 682am / Task 1 (newest - this order wins; do not repeat finished work)
+1. **P2 performance first.** D379 Arcade navigation: the fair 30-game run is the baseline (the single-game run is void); 24 % slow
+   frames is not an acceptable final result - find the remaining CPU / drawing cost with comparable tests, no 60 fps claim without
+   real frame pacing. D386 Cinema page change 130-140 ms: keep investigating (StableFullText / layout), compare with earlier builds,
+   never change how text looks just for numbers. D389 120 achievements: 1031 -> 132 ms is progress, not final - efficient / lazy
+   rows without blocking or visible staggered filling; keep full counts and order, immediate access to the selected row, fast
+   D-pad scrolling, stable focus, Back / reopen, native styling and details; test 0, 1, 10 and 120 achievements with fast input and
+   early close; realistic categories and equal recording conditions.
+2. **Coverflow details:** option A stays on for QA. Confirm at x1.3 every fact is reachable by scrolling and the synopsis is not
+   hidden under the fixed key bar. Not final visual approval.
+3. **Task 1:** continue from 714a / 715a / 716a (no second implementation). 716a passed with defaults - still the combination
+   game header + game / news + full category bar + music / status widgets. 714a / 715a NOT TESTED: a QA-only path that runs the EXACT
+   R1 Row handler without the panel or any Wi-Fi / Bluetooth tile (717a's row714.sh - verify it is the exact handler), and a safe
+   path for the real Edit Home D-pad movement and the added Play part. KONKR + RP Classic, x1.0 / x1.3. Saved placements, Undo /
+   Reset, widget bounds and Edit Home previews kept; no collision after Top / Middle / Bottom.
+4. **Then R1 Focus Position** (audit 53 layouts; reuse the Voltcap row / Classic and Tile home focus-anchor prefs; only where
+   genuinely supported; A cycles, long-press direct; R1 order and smooth navigation kept).
+5. **Then Recomps + START -> Classification & Categories** (multiple categories per installed game / app, manual beats automatic,
+   no duplicate records, launching / metadata / saves unchanged).
+6. **Native pages:** keep the remaining 24 tracked toward 53 / 53; functional QA is not visual approval; the 29 stay on the P2 branch.
+Rules: bounded tests (no needless full sweeps), no system quick-setting toggles, no production Voltcap, QA safety checks + restore,
+CI on the exact final code commit, no merge / production install / release without GO, continue autonomously in this order.
+
+## 00000000. Owner 23 Nov 18:23 - P2 decisions, smoothness, then Tasks 1-5 (v0.6.74; newest - this order wins)
+CI green on P2 46ade24 acknowledged; functional + motion QA acknowledged; NO blanket visual approval (12 layouts, 29-layout batch),
+no merge / production install / publication without GO. Finish the P2 corrections + performance work first, then Tasks 1-5 in order.
+- **P2-g Coverflow details = option A** (QA trial, not visual approval): compact facts ON in the QA branch; panel width kept, title
+  visible (long titles too), facts whole words, story gains space, no overlap, controller scroll / focus right; x1.0 + x1.3
+  before / after shown. DONE on the P2 branch 682aj (dfdb561) - hardware before / after both handhelds; a very long title NOT TESTED.
+- **P2-h TV room:** keep the one-button strip (Play first, Full details / Full list reachable, B, Sonic's zone); no redesign unless
+  testing finds a genuine defect.
+- **P2-i Arcade stutter (priority):** profile recording on / off, still vs page change, idle vs navigation, GPU / CPU, recomposition,
+  earlier builds; fix real rendering problems keeping Arcade's look. DONE 682aj: KONKR x1.0 home navigation 48.7 -> 4.0 % slow,
+  window still 88 -> 0 % (D379). Found D386: every native page change has one 50-115 ms frame (all layouts) - OPEN, next.
+- **P2-j RP Classic slowdown (separately):** D387 - home moves on current builds are one 65-85 ms frame each, no glide (Lite turned
+  on by itself); the 17 Nov build glided with 2-20 ms per move. Not recording, not the P2 pages. OPEN - bisect 17 -> 23 Nov next.
+- **P2-k evidence ZIP** must physically contain the newest files - DONE 682aj (voltcap_p2_review_682aj.zip, 115 files).
+- Then Task 1 (row-position collisions; note: the hourly run already started it in 714a), Task 2 (R1 Focus Position tile + 53-layout
+  matrix), Task 3 (Recomps), Task 4 (START -> multiple categories), Task 5 (remaining 24 native-page layouts incl. Disc Station's
+  shared bodies; a shared page in a new frame never counts) - details as in the 13:32 section below plus the 18:23 refinements:
+  Task 1 also covers VoltCap Row, category bars, game info, Play controls, shortcuts, screen shapes, resized widgets, restart;
+  Task 3 reliable auto-suggestions + manual; Task 4 other apps / consoles / collections, persists across APK updates / rescans /
+  restarts. Targeted handheld tests, no needless full sweeps; statuses kept apart; report only blockers / design decisions.
+
+## 0000000. Owner 23 Nov 13:32 - P2 finish, then Tasks 1-5 in order (v0.6.74; newest - this order wins)
+Owner accepted the Night menu + Arcade x1.3 corrections as improved. NOT granted: blanket visual approval of the 12 changed
+layouts, merge, release GO. Isolated v0.6.74 branches, QA app + synthetic data + targeted hardware, statuses kept apart
+(implemented / hardware-tested / visually approved / released), CI on exact final commits, no merge / production install /
+release without the owner's explicit GO. Finish the P2 items first; then Tasks 1-4 in order without asking again; Task 5 runs on.
+
+**P2 finish (branch claude/v0674-native-pages) - HANDED OVER (live session P2-23c, 17:15 UTC; owner review / Coverflow proposal pending):**
+- P2-a x1.0 hardware checks of the changed layouts (TV, Spotlight, Arctic, Arcade, Icon bar, Magazine, Cinema, Cube, Terminal,
+  Library, Side, Night), KONKR + RP Classic. OPEN.
+- P2-b real-device page-transition audit: Arctic, Game magazine, Library, Cube - old / new page overlap, flicker, clipping, jumps,
+  focus hand-off. Needs on-device frame capture (not RP Classic screenrecord fps; not Robolectric - animations off there). OPEN.
+- P2-c Spotlight: headings must not compete with busy cover art; keep the no-art stage. OPEN.
+- P2-d Terminal: the destructive confirmation stays fully readable. OPEN.
+- P2-e TV room (owner decision): KEEP the one-key-at-a-time strip, Play first in view, other actions horizontally; never Play-only;
+  B = Back; Sonic's safe zone kept; Play consistent between pages. Teletext readability WITHOUT continuously shrinking fonts. OPEN.
+- P2-f Coverflow details (owner decision): do NOT widen the reading panel over the only visible game title. Better reading area by
+  responsive internal layout / scrolling / another arrangement that keeps the physical coverflow; show the owner a comparison
+  before changing its look significantly. OPEN.
+- Keep the improvements made; no redesign of layouts that work.
+
+**TASK 1 - Row-position collisions (after P2):** Row Position Top / Middle / Bottom (R1) sometimes makes other UI collide. Audit R1
+Row Position, TileRows, TileHome, Edit Home, manually saved placements. Rows and neighbours rearrange naturally where supported; no
+collisions of tiles / covers, titles / info, category bars, Play buttons, round shortcuts, profile / status, moved / resized widgets.
+Saved customizations kept (never silently erased); Edit Home preview = real Home; Undo and Reset. Test every position at x1.0 /
+x1.3, small screens, enlarged elements, custom placements. IN PROGRESS (714a: Tile home Row change keeps the round buttons' hand-placed spot per place instead of deleting it; 715a: Voltcap row with the header off - ▲ / ▼ go where an added Play part is drawn, not by the row's place; 716a: Voltcap row Middle / Bottom - a column taller than the room the status bar leaves no longer starts under the bar; next: Tile home Top vs the profile row at x1.3, corner shortcuts, Edit Home preview vs Home).
+
+**TASK 2 - New R1 Focus Position tile:** a separate R1 control for where the highlighted game stays horizontally while browsing (NOT
+the vertical Row Position tile). Audit all 53 layouts first; candidates: VoltCap row / Classic (reuse its Focus Position setting),
+Tile home (reuse Edges / Left / Center / Right). Others only if they genuinely support it; Hero's cover side is not focus position.
+A cycles, long-press opens direct choices, shows the current choice, keeps R1 customization / order. Test focus movement, endless
+scrolling, animations, category-label alignment, unusual game counts. Deliver a compatibility matrix. IN PROGRESS (723a: tile on Voltcap row + Tile home, matrix docs/claude/R1_FOCUS_POSITION_723.md; unit-tested, handheld HW-24 723a NOT TESTED).
+
+**TASK 3 - Recomps category:** separate category for native recompiled games / compatible ports: installed Android recomp APKs and
+manual shortcuts (never assume Windows builds run on Android). Auto-suggest only when reliable. Shown when it has games, hidden from
+auto navigation when empty, assignments kept. IN PROGRESS (724a: manual Recomp mark + category, unit-tested; auto-suggest OPEN - no reliable detector; HW-24 724a NOT TESTED).
+
+**TASK 4 - START -> Classification & categories:** on an installed game / Android app, START picks its categories - MULTIPLE at once
+(Recomps, Android games, Other apps, N64, GameCube, other consoles, user collections where supported; e.g. a Zelda recomp in Recomps +
+Android games + N64). Manual beats automatic; never changes how it launches; kept across rescans, restarts, APK updates; no duplicate
+records in All Games; artwork, saves, favorites, achievements, playtime, emulator settings and metadata untouched; visible at once
+and editable later. IN PROGRESS (725a: START > Categories on installed apps / Android games - kind, Recomps, consoles, Collections link; unit-tested; HW-24 725a NOT TESTED).
+
+**TASK 5 - All 53 native page designs:** the 29 are not the end; track the remaining 24 (incl. Disc station's shared page bodies).
+Every layout gets genuinely individual Details / Achievements / Options in its own identity. The count stays on the dashboard
+(progress.json "Native popup pages"). OPEN (29 / 53 implemented, 0 visually approved).
+
+## 000000. 682e Play / category-chip anchor rule (owner 18 Nov 09:44 - system rule, v0.6.74)
+Branch claude/v0674-play-anchor. IMPLEMENTED for every layout using the shared home header + category row (HomeAnchor.kt;
+PlayChipAnchor682eTest; anchorcheck.py). KONKR hardware before/after all 53 layouts: CLASSIC PASS (0.0 dp). OPEN: adapted rule
+for layouts with their own Play / chips - DONE 682g/i (a4382ac): BAR, DASH exact (KONKR PASS), LIBRARY adapted (lit tab leads
+after L2); CINEMA / CUSTOM already aligned; ARTLIB n/a. Hardware 18 Nov, KONKR + RP Classic (QA app, a4382ac; before =
+the rule off / 3ec7e45): anchorcheck 33/33 PASS at every L2 / R2 step (end of the list included) + 9/9 sheet shots each;
+category order off vs on identical 14/14 x 4 layouts x 2 (catorder682.py); catswitch frames 15/16 PASS, 1 INFRA (an RP Classic
+recording not written whole). Before / after sheet published for the owner ("Play and chip alignment review"). QA tooling:
+catswitch.sh / picker.sh pointed at the real app - fixed before any run (D358). Owner 18 Nov 14:54: APPROVED WITH ONE
+ADJUSTMENT (keep Classic, Bar, Dash, Cinema, Custom; the strip starts on Play's edge but scrolls naturally, neighbours kept;
+Library's L2 / R2 placement approved, keep context). DONE 682m (2c688ce): PlayChipAnchor.natural, no end room, ChipLead one
+chip of context; hardware KONKR + RP Classic: walk order same 4/4, selected chip whole 10/10 per walk, Xbox 360 on the right
+with its neighbours; sheet "Category strip scroll review" for the owner. Not merged; no merge without GO.
+
+## 00000. 681r Library rescan: a deleted last game / empty console (owner 17 Nov 23:09 - focused v0.6.74 bug fix, data integrity)
+Branch claude/v0674-rescan-fix. IMPLEMENTED + unit-tested (RescanPrune681rTest 8/8, DeletedRoms523Test 3/3) + emulator
+end-to-end PASS 15/15 (run 44190749178); HARDWARE PASS 18/18 on KONKR + RP Classic (18 Nov, 682b); SD card physically out:
+NOT TESTED (owner 18 Nov 12:12: no physical pull now - record NOT TESTED, never PASS; the protection stays: unit tests
+RescanPrune681rTest unreadable / unmounted roots + emulator unreadable-folder case). READY FOR REVIEW (owner 18 Nov 12:12):
+draft PR into claude/qa-0672-repair; no merge / release without GO.
+Rules kept: unreadable / unmounted / refused storage never counts as deleted; saves, history, achievements, art, metadata,
+favourites, settings untouched; your own collections kept (empty ones are no stop, as before).
+
+## 0000. P2 native pages - main priority (owner 17 Nov 21:31): alternate with the v0.6.74 list; plan + tracker in
+docs/claude/NATIVE_PAGES_P2.md on branch claude/v0674-native-pages. Batch 1 implemented 5/5 (Record crate 681a-b, Classic 681c,
+Console hub 681d, Resume 681e-f, TV room 681g) = 18/53 implemented; batch 1 hardware 0/5, owner-approved 0/5.
+18 Nov 14:54 owner GO for batch 2 (batch 1 NOT visually approved, its visual fixes remain): Game magazine, Cinema, Arcade,
+Cube implemented (682n-q) = 22/53 implemented. 682r (branch claude/v0674-native-pages e45fe3e): x1.3 room fixed after KONKR /
+RP Classic walks (Magazine checklist had no rows, Arcade's title 0 px on the RP Classic, Cinema / Cube first row part-cut - D360);
+AchFirstRow now at the KONKR and RP Classic sizes for every native layout. HW (QA app, x1.3): Magazine, Cinema, Arcade walked on
+both, 0 launches, restore OK; Cube first walk OK, its 2nd open aborted safely (script fixed, not re-run); x1.0 NOT TESTED on HW.
+Not owner-approved (neither batch). Owner 18 Nov 18:20 chose batch-1 visual fixes first: hardware walk x1.3 KONKR + RP Classic
+(all five layouts, every page, 0 launches, restore OK); 682s fixed Classic's misleading ON / OFF switch words, the no-art chip
+("SNES" one letter a line) and Hub ENGRAVED scrolling its tags away; ShelfText now covers batch 1. Build qa-682s-f816912-ci
+is NOT on a device yet - re-check of Classic / Hub on hardware and x1.0 pending.
+QA safety (owner 14:54): winguard.sh - nav682j / p2review / catswitch / anchors682 press keys only while the QA app's confirmed
+window has the focus; picker / Android quick settings / production / other window = ABORT, no blind retries (D359 follow-up).
+18 Nov (owner 12:12): A after L1 / R1 fixed by focus ownership, no cooldown (682j focus hand-over; 300 ms guard removed);
+TV teletext / crate confirmations whole at x1.0 / x1.3 (682k). Hardware: nav682j.sh KONKR + RP Classic 8/8 PASS (0 stray
+launches, deliberate A = 1); D359 (script reached the QA quick-settings Wi-Fi tile on the first run, nothing changed, fixed).
+
+## 000. v0.6.74 owner priorities 17 Nov 20:52 (v0.6.73 published - this list wins; details in docs/claude/HANDOFF.md)
+1. D356 Channel progress pill vs name (680a). 2. Pixel font 62.5 % + the 7 layouts' typography (branch). 3. Badge styles Classic+
+Compact (default) / Top Clip / Hanging Bottom, progress kept visible, Twin Icons spacing D352 (branch). 4. 53-window polish (H16).
+5. badgecheck D357. 6. Profile picture corner. 7. Achievements animations, Thor dual-screen, Save Sync 529, the rest.
+
 ## 00. Owner priorities 17 Nov 2026 (consolidated request; newest - this order wins)
 Each line points at its matrix row (docs/REQUIREMENTS_MATRIX.md section H); no item is repeated elsewhere - older lines that
 cover the same thing are marked "-> H<n>".

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # verify461.sh — update 461 checks on the staging build (hooks on): label fronts (Inspect hook) and the popup combos fixed by WindowShade.
 P=com.shelf.launcher; O=/sdcard/q461v; rm -rf $O; mkdir -p $O
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

@@ -79,7 +79,7 @@ class BadgeLane676Test {
         // the tiles: a lane, the tile's size and the badges handed it
         for (f in listOf("GameCard.kt", "TileHome.kt", "GridHome.kt", "StyleHomes.kt", "StyleCaseStacks.kt")) {
             val s = src(f)
-            assertTrue(f, s.contains("rememberBadgeLane()") && s.contains(".badgeTile(lane)"))
+            assertTrue(f, s.contains("rememberBadgeLane()") && (s.contains(".badgeTile(lane)") || s.contains(".badgeTile(lane, LocalBadgeOverlayBottom.current)"))) // (680a: StyleArt passes the overlay band)
         }
         assertTrue(src("GameCard.kt").contains("laneBadge(lane, BadgeKind.PROGRESS, trophyAlign"))
         assertTrue(src("TileHome.kt").contains("laneBadge(lane, BadgeKind.PROGRESS, pillAt, chipPad)"))

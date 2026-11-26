@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # v0.6.67 "Who's playing?" — D-pad and touch on sample profiles (ids 900+, never yours; nothing saved).
 # usage: sh pickerux.sh TAG TAPX TAPY   (TAPX/TAPY = the 3rd sample's picture in px). Stills in /sdcard/pp/TAG/.
 P=com.shelf.launcher; TAG=$1; OUT=/sdcard/pp/$TAG; rm -rf $OUT; mkdir -p $OUT

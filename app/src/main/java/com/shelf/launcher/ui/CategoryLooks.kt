@@ -329,6 +329,13 @@ internal fun LookObject(tile: CategoryTile, modifier: Modifier, stand: Boolean =
 // 1. System Stage — a museum hall: each system on its own lit plinth
 // ---------------------------------------------------------------------------------------------
 
+/** 760a: how far the object's foot sinks into the plinth's top face, and the museum plate's gap above the floor (x plinth height). */
+internal const val STAGE_FOOT_SINK = 0.62f
+internal const val STAGE_PLATE_BOTTOM = 0.14f
+
+/** 760a: the most the museum plate may rise - from its gap above the floor up to the object's foot, never over it. */
+internal fun stagePlateRoom(plinthH: Dp, topFace: Dp): Dp = plinthH - topFace * STAGE_FOOT_SINK - plinthH * STAGE_PLATE_BOTTOM
+
 @Composable
 internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     val pos = rememberLookGlide(selected, animate, Spring.StiffnessLow)
@@ -382,15 +389,20 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     drawOval(Brush.radialGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent), Offset(size.width / 2f, tf * 0.62f), size.width * 0.36f), Offset(size.width * 0.14f, tf * 0.30f), Size(size.width * 0.72f, tf * 0.66f))
                 }
                 // The museum label on the front: a small dark plate with the name, maker and year, the count.
+                // (760a, P5: at x1.3 on the KONKR a two-line name over the facts made the plate ~100 dp tall against ~83 dp of
+                // plinth front - it rose over the plinth's top and the object's foot. The plate now ends at the object's foot
+                // (stagePlateRoom); the name gives way first - it shrinks to its readable minimum, then slides; the facts keep
+                // their two lines.)
                 Column(
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = plH * 0.14f).width(plW * 0.80f)
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = plH * STAGE_PLATE_BOTTOM).width(plW * 0.80f)
+                        .heightIn(max = stagePlateRoom(plH, topFace))
                         .graphicsLayer { alpha = near() }
                         .clip(RoundedCornerShape(3.dp)).background(Color(0xFF0B0B0D)).border(0.5.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(3.dp))
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     // (Sprint 528, KONKR: on the narrow plate the facts slid on one line - a still showed "O · 1996"; the name and
                     // the facts wrap onto a second line first.)
-                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+                    FullText(tile.label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false, modifier = Modifier.weight(1f, fill = false))
                     Spacer(Modifier.height(3.dp))
                     FullText(
                         listOfNotNull(lookFacts(tile)?.uppercase(), lookCount(tile)).joinToString("  ·  "), color = accent.copy(alpha = 0.9f), fontSize = 10.sp, letterSpacing = 1.sp,
@@ -398,7 +410,7 @@ internal fun StageLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
                     )
                 }
                 // The object, standing on the plinth's top.
-                LookObject(tile, Modifier.align(Alignment.BottomCenter).padding(bottom = plH - topFace * 0.62f).size(objW, objH), stand = true)
+                LookObject(tile, Modifier.align(Alignment.BottomCenter).padding(bottom = plH - topFace * STAGE_FOOT_SINK).size(objW, objH), stand = true)
             }
         }
     }
@@ -1031,6 +1043,24 @@ internal fun generationOrder(tiles: List<CategoryTile>): List<Int> {
     return dated.sortedWith(compareBy({ yearOf(tiles[it]) }, { it })) + rest
 }
 
+/** 761a: the timeline's line (x height), a year's width (x width) and the info block's gap above the legend. */
+internal const val GEN_AXIS = 0.46f
+internal const val GEN_YEAR_W = 0.11f
+internal val GEN_INFO_BOTTOM = 54.dp
+/** 761a: the least room the info block keeps (generation line + a name line at its readable minimum + the facts). */
+internal val GEN_INFO_MIN = 56.dp
+
+/**
+ * 761a: the most the info block of the system you're on may rise - from its gap above the legend up to the foot of the
+ * handheld lane (the focused handheld at its 1.15 scale, its year line allowed for at x1.3 text), never into it. Before,
+ * the block grew upwards unbounded: at x1.3 a two-line name on the KONKR reached ~40 dp into the handhelds.
+ */
+internal fun generationsInfoRoom(w: Dp, h: Dp): Dp {
+    val objW = w * GEN_YEAR_W * 1.05f
+    val handFoot = h * GEN_AXIS + 24.dp + (objW / 1.8f + 20.dp) * 1.15f
+    return maxOf(h - GEN_INFO_BOTTOM - handFoot, GEN_INFO_MIN)
+}
+
 private fun ordinal(n: Int) = n.toString() + when { n % 100 in 11..13 -> "th"; n % 10 == 1 -> "st"; n % 10 == 2 -> "nd"; n % 10 == 3 -> "rd"; else -> "th" }
 
 @Composable
@@ -1055,9 +1085,9 @@ internal fun GenerationsLook(tiles: List<CategoryTile>, selected: Int, animate: 
     val pos = rememberLookGlide(at, animate)
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF101318), Color(0xFF181C23))))) {
         val w = maxWidth; val h = maxHeight
-        val yearW = w * 0.11f
+        val yearW = w * GEN_YEAR_W
         // (Line a little above the middle: at 0.50 the handheld lane reached down into the name of the system you're on.)
-        val axisY = h * 0.46f
+        val axisY = h * GEN_AXIS
         fun slotX(p: Float): Float { // fractional stop → slot position (interpolated)
             val k = p.toInt().coerceIn(0, slots.lastIndex); val f = p - k
             val a = slots[k]; val b = slots.getOrElse(k + 1) { a + 1f }
@@ -1148,14 +1178,22 @@ internal fun GenerationsLook(tiles: List<CategoryTile>, selected: Int, animate: 
             modifier = Modifier.align(Alignment.TopStart).offset(x = (-26).dp, y = axisY + 46.dp).graphicsLayer { rotationZ = -90f })
         // The system you're on, at the top: its generation (or lane), name and facts.
         tiles.getOrNull(selected)?.let { t ->
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 54.dp).width(w * 0.6f), horizontalAlignment = Alignment.CenterHorizontally) {
+            // (761a: bounded under the handheld lane (generationsInfoRoom); the name gives way first - shrinks to its readable
+            // minimum, then slides; the generation line and the facts are measured first and stay whole.)
+            Column(
+                Modifier.align(Alignment.BottomCenter).padding(bottom = GEN_INFO_BOTTOM).width(w * 0.6f)
+                    .heightIn(max = generationsInfoRoom(w, h)),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 val g = generationOf(t)
-                Text(
+                FullText(
                     when { g != null -> "${ordinal(g)} generation · home"; handheldOf(t) -> "Handheld"; else -> "Other systems & lists" }.uppercase(),
-                    color = accent, fontSize = 11.sp, letterSpacing = 2.sp
+                    color = accent, fontSize = 11.sp, letterSpacing = 2.sp, textAlign = TextAlign.Center, reserve = false
                 )
-                LookTitle(t, 24, align = TextAlign.Center)
-                Text(listOfNotNull(lookFacts(t), lookCount(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                FullText(t.label, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, textAlign = TextAlign.Center,
+                    maxLines = 2, reserve = false, modifier = Modifier.weight(1f, fill = false))
+                FullText(listOfNotNull(lookFacts(t), lookCount(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp,
+                    textAlign = TextAlign.Center, maxLines = 2, reserve = false)
             }
         }
     }

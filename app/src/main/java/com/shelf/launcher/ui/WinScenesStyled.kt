@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,11 +109,16 @@ private fun ArtWell(art: String?, modifier: Modifier, frame: Color, well: Color,
 
 /** Title, facts and keys: the shared inside of these windows. */
 @Composable
-private fun ColumnScope.FactsAndKeys(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily?, key: @Composable (WinAction) -> Unit) {
+private fun ColumnScope.FactsAndKeys(ctx: WinSceneCtx, label: Color, value: Color, font: FontFamily?, keys: Modifier = Modifier, key: @Composable (WinAction) -> Unit) {
     SceneFactsBody(ctx, label, value, font)
     Spacer(Modifier.height(8.dp))
-    KeyRow(sceneKeys(ctx), 6.dp) { key(it) }
+    Box(keys) { PocketKeys(ctx, key) }
 }
+
+/** (745a) The Pocket faces' keys: on the window's own pages the row keeps the first page's slots - Play stays put. */
+@Composable
+private fun PocketKeys(ctx: WinSceneCtx, key: @Composable (WinAction) -> Unit) =
+    KeyRow(sceneKeys(ctx), 6.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { key(it) }
 
 // ───────────────────────────── Pocket classic ─────────────────────────────
 
@@ -127,23 +133,36 @@ private fun PocketClassicMenu(ctx: WinSceneCtx) {
     val rule = androidx.compose.ui.graphics.lerp(blue, paper, 0.72f)
     val font = pocketFont()
     val w = minOf(ctx.maxW, 500.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, squash = true)
+    // (745a, P2 class C: the handheld menu's own pages - DATA / MEDALS / MENU, WinPagesPocket.kt; the title bar names the page.)
+    val main = ctx.page == WinPage.MAIN
+    val short = pocketShort(ctx)
+    val place = rememberPocketPlace(ctx)
+    val key: @Composable (WinAction) -> Unit = { a ->
+        SceneKey(a, paper, blue, ink, onColour(blue), rule, blue, RoundedCornerShape(2.dp), font = font, size = 13.sp, pad = 8.dp, height = 28.dp)
+    }
+    Column(Modifier.width(w).then(pocketPageBox(ctx, place)).nativeBumpers(ctx).sceneEnter(ctx, squash = true)
         .clip(RoundedCornerShape(4.dp)).background(paper).border(2.dp, rule, RoundedCornerShape(4.dp))) {
         // The title bar of the handheld's own menu.
-        Row(Modifier.fillMaxWidth().background(blue).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (!main) ClassicPageBar(ctx, blue, onColour(blue), font)
+        else Row(Modifier.fillMaxWidth().background(blue).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(ctx.console.uppercase(), color = onColour(blue), fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
             ctx.year?.let { Text(it, color = onColour(blue), fontSize = 13.sp, fontFamily = font) }
         }
-        Column(Modifier.padding(10.dp)) {
+        if (!main) Column(Modifier.weight(1f).padding(10.dp)) {
+            StableFullText(ctx.name, color = ink, fontSize = if (short) 13.sp else 14.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+            Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(2.dp).background(rule))
+            PocketPageArea(ctx, PocketInk(PocketFace.CLASSIC, paper, ink, Color(0xFF6E7380), blue, rule, androidx.compose.ui.graphics.lerp(blue, paper, 0.88f), font),
+                Modifier.fillMaxWidth().weight(1f), short)
+            Spacer(Modifier.height(8.dp))
+            PocketKeys(ctx, key)
+        } else Column(Modifier.padding(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ArtWell(ctx.cover, Modifier.size(64.dp), blue, androidx.compose.ui.graphics.lerp(blue, paper, 0.88f), RoundedCornerShape(2.dp))
                 Spacer(Modifier.width(10.dp))
                 StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 3, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
             }
             Box(Modifier.padding(vertical = 7.dp).fillMaxWidth().height(2.dp).background(rule))
-            FactsAndKeys(ctx, blue, ink, font) { a ->
-                SceneKey(a, paper, blue, ink, onColour(blue), rule, blue, RoundedCornerShape(2.dp), font = font, size = 13.sp, pad = 8.dp, height = 28.dp)
-            }
+            FactsAndKeys(ctx, blue, ink, font) { a -> key(a) }
         }
     }
 }
@@ -155,21 +174,42 @@ private fun PocketRibbonSheet(ctx: WinSceneCtx) {
     val a = ctx.accent; val paper = Color(0xFFF8F9FA); val ink = Color(0xFF2E3136); val grey = Color(0xFFD3D6DB); val muted = Color(0xFF8A8F98)
     val font = pocketFont()
     val w = minOf(ctx.maxW, 620.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.06f).background(paper).border(1.dp, grey)) {
+    // (745a, P2 class C: the information sheet's own pages - Details / Records / Settings under a ribbon of page names,
+    // WinPagesPocket.kt; the cartridge's art stays on the left.)
+    val main = ctx.page == WinPage.MAIN
+    val short = pocketShort(ctx)
+    val place = rememberPocketPlace(ctx)
+    Column(Modifier.width(w).then(pocketPageBox(ctx, place)).nativeBumpers(ctx).sceneEnter(ctx, rise = 0.06f).pocketPanel(place).background(paper).border(1.dp, grey)) {
         // The thin information bar, as along the ribbon's top.
-        Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        // (745a: on its pages in a short window the bar carries the game's name - the sheet's own name line steps back, so the
+        // first record stays whole, AchFirstRow x1.3.)
+        if (!main && short) StableFullText(ctx.name, color = ink, fontSize = 13.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp))
+        else Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(ctx.console, color = a, fontSize = 13.sp, fontFamily = font, modifier = Modifier.weight(1f))
             Text(ctx.played, color = muted, fontSize = 13.sp, fontFamily = font)
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(grey))
-        Row(Modifier.padding(10.dp)) {
+        Row(Modifier.padding(10.dp).then(if (main) Modifier else Modifier.weight(1f))) {
             // The cartridge's art, big, in the ribbon's pale frame.
             ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.34f, 190.dp)).aspectRatio(0.82f), grey, Color(0xFFE4E7EB), RoundedCornerShape(0.dp))
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+            if (!main) Column(Modifier.weight(1f).fillMaxHeight()) {
+                if (!short) {
+                    StableFullText(ctx.name, color = ink, fontSize = 15.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+                    Spacer(Modifier.height(4.dp))
+                }
+                PocketPageArea(ctx, PocketInk(PocketFace.RIBBON, paper, ink, muted, a, grey, Color(0xFFE4E7EB), font), Modifier.fillMaxWidth().weight(1f), short)
+                Spacer(Modifier.height(if (short) 4.dp else 8.dp))
+                PocketKeys(ctx) { k ->
+                    SceneKey(k, Color.White, a, ink, onColour(a), grey, a, RoundedCornerShape(0.dp), font = font, size = 12.sp, pad = 8.dp, height = 26.dp)
+                }
+                // (the room the first page left under its keys: Play stays where it was - the art beside it is taller than the facts)
+                PocketKeyGap(ctx, place, 10.dp)
+            } else Column(Modifier.weight(1f)) {
                 StableFullText(ctx.name, color = ink, fontSize = 17.sp, maxLines = 3, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(6.dp))
-                FactsAndKeys(ctx, muted, ink, font) { k ->
+                FactsAndKeys(ctx, muted, ink, font, Modifier.pocketKeys(ctx, place)) { k ->
                     SceneKey(k, Color.White, a, ink, onColour(a), grey, a, RoundedCornerShape(0.dp), font = font, size = 12.sp, pad = 8.dp, height = 26.dp)
                 }
             }
@@ -188,19 +228,46 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
     // column right of the art — seven lines — and the window's height cut the last ones (Inspect, the Saves line). With
     // larger text the keys take the window's whole width under the art.)
     val under = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
-    val key: @Composable (WinAction) -> Unit = { k ->
-        SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = 12.sp, height = 30.dp)
-    }
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).sceneEnter(ctx, rise = 0.1f)
-        .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape).padding(14.dp)) {
-        if (!under) Row {
+    // (D354, 681p: with large text the keys' words take the size at which two whole one-line keys share the row - 12 sp down
+    // to a readable 10 sp - before any word takes a second line.)
+    val keySize = if (under) pqKeyTextSize(sceneKeys(ctx).filterNot { it.status }, w - pqPanelPadX(true) * 2, 6.dp) else 12.sp
+    val key: @Composable (WinAction) -> Unit = { k -> PqSceneKey(k, p, under, keySize) }
+    // (745a, P2 class C: the panel's own pages - Status / Quest log / Commands under cut-corner chips, WinPagesPocket.kt.)
+    val main = ctx.page == WinPage.MAIN
+    val short = pocketShort(ctx)
+    val ink = PocketInk(PocketFace.QUEST, p.top, p.ink, p.muted, p.accent, p.accent.copy(alpha = 0.45f), p.deep, null, light = p.accentLight)
+    val place = rememberPocketPlace(ctx)
+    Column(Modifier.width(w).then(pocketPageBox(ctx, place)).nativeBumpers(ctx).sceneEnter(ctx, rise = 0.1f).pocketPanel(place)
+        .clip(shape).background(Brush.verticalGradient(listOf(p.top, p.bottom))).border(2.dp, p.accent, shape)
+        .padding(horizontal = pqPanelPadX(under), vertical = 14.dp)) {
+        if (!main && !under) Row(Modifier.weight(1f)) {
+            ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.28f, 150.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                StableFullText(ctx.name, color = p.ink, fontSize = if (short) 15.sp else 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+                Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
+                PocketPageArea(ctx, ink, Modifier.fillMaxWidth().weight(1f), short)
+                Spacer(Modifier.height(8.dp))
+                PocketKeys(ctx) { k -> key(k) }
+                PocketKeyGap(ctx, place, 14.dp)
+            }
+        } else if (!main) {
+            // (Large text, keys across the whole width: on its pages the name, the chips and the page above them - no art, so the
+            // first quest stays whole.)
+            Column(Modifier.weight(1f)) {
+                StableFullText(ctx.name, color = p.ink, fontSize = if (short) 15.sp else 17.sp, maxLines = 2, fontWeight = FontWeight.Bold, reserve = false)
+                Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
+                PocketPageArea(ctx, ink, Modifier.fillMaxWidth().weight(1f), short)
+            }
+            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp, twoLineOnlyWhenAlone = true, slots = PAGE_SLOTS) { key(it) }
+        } else if (!under) Row {
             ArtWell(ctx.cover ?: ctx.wide, Modifier.width(minOf(w * 0.28f, 150.dp)).aspectRatio(0.75f), p.accent, p.deep, CutCornerShape(6.dp))
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(ctx.console.uppercase(), color = p.accentLight, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 StableFullText(ctx.name, color = p.ink, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold)
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
-                FactsAndKeys(ctx, p.muted, p.ink, null) { k -> key(k) }
+                FactsAndKeys(ctx, p.muted, p.ink, null, Modifier.pocketKeys(ctx, place)) { k -> key(k) }
             }
         } else {
             // (Update 469, owner review of the 469 PDF: the facts in the narrow column right of the art ended in a faded
@@ -218,10 +285,54 @@ private fun PocketQuestPanel(ctx: WinSceneCtx) {
                 Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(1.dp).background(Brush.horizontalGradient(listOf(p.accent, p.accent.copy(alpha = 0f)))))
                 SceneFactsBody(ctx, p.muted, p.ink, null)
             }
-            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp) { key(it) }
+            Spacer(Modifier.height(8.dp)); KeyRow(sceneKeys(ctx), 6.dp, twoLineOnlyWhenAlone = true) { key(it) }
         }
     }
 }
+
+/** D354 (681p): the Pocket Quest window's side padding - 14 dp; 10 dp with large text, where the keys run under the art. */
+internal fun pqPanelPadX(under: Boolean): Dp = if (under) 10.dp else 14.dp
+
+/**
+ * A Pocket Quest window key. D354 (681p, emulator e679r13, x1.3 beside the pulled-out disc): the window is ~294 dp wide there
+ * and "Play game" missed one line by a few px, so the uniform row fell back to two-line keys ("Play / game"). With large text the
+ * key's side padding is 6 dp (10 dp otherwise) and the panel's 10 dp: two whole one-line keys between the row's arrows.
+ */
+@Composable
+internal fun PqSceneKey(k: WinAction, p: PqPalette, under: Boolean, size: TextUnit = 12.sp) =
+    SceneKey(k, p.deep, p.accent, p.ink, p.onAccent, p.accent.copy(alpha = 0.45f), p.accentLight, CutCornerShape(5.dp), size = size,
+        pad = pqKeyPad(under), height = 30.dp)
+
+internal fun pqKeyPad(under: Boolean): Dp = if (under) 6.dp else 10.dp
+
+/** The readable sizes a Pocket Quest key's word may take with large text, largest first (Play draws 15 % larger). */
+internal val PQ_KEY_SIZES = listOf(12f, 11.5f, 11f, 10.5f, 10f)
+
+/**
+ * D354 (681p): the largest of [PQ_KEY_SIZES] at which every key's word stays on one line with at least two whole keys in a row
+ * [rowW] wide (the row's ‹ › gutters left out when it scrolls) - each key measured as SceneKey draws it (sceneKeyWidth's sum).
+ * 12 sp when even 10 sp can't (the row then takes its two-line keys, 674c), or when there's a single key.
+ */
+@Composable
+internal fun pqKeyTextSize(actions: List<WinAction>, rowW: Dp, gap: Dp): TextUnit {
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val style = androidx.compose.material3.LocalTextStyle.current
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val words = actions.map { sceneLabel(it.label) to it.primary }
+    val sz = remember(words, rowW, gap, style, density) {
+        fun need(s: Float): Dp = words.maxOf { (w, primary) ->
+            val px = measurer.measure(w, style.merge(androidx.compose.ui.text.TextStyle(fontSize = (if (primary) s * 1.15f else s).sp,
+                fontWeight = FontWeight.Bold)), maxLines = 1, softWrap = false).size.width
+            with(density) { px.toDp() } + (if (primary) 16.dp else 13.dp) + 5.dp + pqKeyPad(true) * 2 + 2.dp // (2 dp: font metrics on devices)
+        }
+        if (words.size < 2) 12f else PQ_KEY_SIZES.firstOrNull { s -> pqTwoFit(words.size, need(s), rowW, gap) } ?: 12f
+    }
+    return sz.sp
+}
+
+/** D354 (pure): [n] one-line keys [need] wide fit [rowW]: all at once, or two at a time between the scrolling row's gutters. */
+internal fun pqTwoFit(n: Int, need: Dp, rowW: Dp, gap: Dp): Boolean =
+    need * n + gap * (n - 1) <= rowW || need * 2 + gap <= rowW - KEY_ROW_GUTTER * 2
 
 // ───────────────────────────── Game shelf ─────────────────────────────
 
@@ -328,10 +439,12 @@ private fun CoverDetailPanel(ctx: WinSceneCtx) {
             }
             // (529k: Details / Achievements / Options are further panels beside the big case - ShelfFamilyPages; the case stays.)
             // (529o: the pages' card shows no second name - the home's big title beside the case already shows it in full.)
+            androidx.compose.runtime.CompositionLocalProvider(LocalCoverReading provides CoverReadingProposal.on.value) {
             ShelfFamilyPages(ctx, Modifier, a, ink, Color.White.copy(alpha = 0.05f), pageKey, nameOnCard = false,
                 // (529o: the pages take the panel's whole height - it was 86 % of it, the rest unused under the panel.)
                 pageHeight = (ctx.maxH - 32.dp).coerceAtLeast(200.dp)) { _, keys ->
                 CoverMainBody(ctx, keys, a, ink, muted, shortPanel, moreOpen)
+            }
             }
         }
     }

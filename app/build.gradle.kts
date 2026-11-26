@@ -72,6 +72,10 @@ if (debugIsProduction) logger.warn("Voltcap: qa_variant.properties debugIsProduc
 // Unit-test JVM settings shared by AGP's unit-test tasks and testDebugHeavyRoboUnitTest (675a).
 fun voltcapTestJvm(t: Test, firstOfBuild: Boolean) {
     t.maxHeapSize = "2g"
+    // (706a: Robolectric fetches android-all-instrumented itself, outside Gradle - the same mirror as settings.gradle.kts.)
+    System.getenv("VOLTCAP_MAVEN_MIRROR")?.trim()?.takeIf { it.startsWith("https://") }?.let {
+        t.systemProperty("robolectric.dependency.repo.url", it)
+    }
     // (674e, D325: CI 60fd7c4e - the test worker grew to 9.6 GB (native memory of the Compose / Robolectric UI tests, outside
     // the 2 GB heap) and the watchdog stopped the 16 GB runner. A fresh worker every 400 tests gives that memory back.)
     // (674o: CI c7ad53a7 - 9.6 GB again within ~320 tests of one worker (EndlessFillLitRoboTest's parameter rows) and
@@ -133,8 +137,8 @@ android {
         minSdk = 24
         // Android 16. Play needs 36 for new apps since 31 Aug 2026; GitHub builds just benefit.
         targetSdk = 36
-        versionCode = 80
-        versionName = "0.6.73"
+        versionCode = 81
+        versionName = "0.7.0"
 
         // (Batch 517: no credential is built in any more — see above. Only these two non-secret values.)
         buildConfigField("String", "SS_SOFT_NAME", buildConfigString(screenScraperProps.getProperty("softName")))
@@ -278,6 +282,9 @@ dependencies {
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("androidx.compose.ui:ui-test-manifest")
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
+    // (682as, owner 24 Nov - Arcade B "profile exactly what happens when moving from one game to the next": composable names in
+    // an atrace of the QA app. Only in a build asked for with -PvoltcapComposeTracing=true, debug (QA app) only; never a release.)
+    if (providers.gradleProperty("voltcapComposeTracing").orNull == "true") debugImplementation("androidx.compose.runtime:runtime-tracing")
 
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.0")

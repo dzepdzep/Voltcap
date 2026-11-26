@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # settab.sh PAGE — Settings-only A/B of the update 456 panel hold on one Settings page (idle 4 s), 2 reps per mode.
 P=com.shelf.launcher; A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }
 m() { logcat -d -s VoltcapQA | grep -o "cadence n=[0-9]* missed=[0-9]*" | awk -v a="$1" '{split($2,n,"=");N+=n[2]} END{printf "%s frames=%d\n",a,N}'; }

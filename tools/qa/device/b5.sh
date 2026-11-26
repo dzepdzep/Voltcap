@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 482 (B5) — scrolling / layout stability per layout: the selected card's rectangle per frame (QaGeom) and the app's
 # focus events while pressing R / L slowly, in a burst and reversed; then two stills of one rest (0.6 s and 3 s after a press)
 # to catch late labels, stale art and placeholders. Preview + novideo (nothing saved).  setsid sh b5.sh TAG "LAYOUTS" &

@@ -2,6 +2,7 @@ package com.shelf.launcher.ui
 
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.getValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -40,6 +42,10 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,11 +68,17 @@ private fun onColor(c: Color) = if (c.luminance() > 0.5f) Color(0xFF111111) else
  * - the tallest item's - edges in line, the gaps even; status lines (Save sync not set up) under the keys, not among them.)
  */
 @Composable
-private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true, key: @Composable (WinAction) -> Unit) {
+private fun KeyColumn(keys: List<WinAction>, modifier: Modifier, scroll: Boolean = true,
+    /** (742a: Cross's own pages - the column keeps the page slots, Play first, so Play stays put; 0 = as many as it has.) */
+    slots: Int = 0,
+    /** (742a, PlayPlace CROSS: the main page's column had scrolled to Achievements and kept that scroll on Trophies - Play 26 dp
+     *  higher there than on Information / Options. A new [scrollKey] starts the column at its top.) */
+    scrollKey: Any? = null, key: @Composable (WinAction) -> Unit) {
     val actions = keys.filterNot { it.status }
     val status = keys.filter { it.status }
-    Column(if (scroll) modifier.verticalScroll(rememberScrollState()) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        UniformKeyColumn(actions, 4.dp, fill = true, key = key)
+    val scrollState = androidx.compose.runtime.remember(scrollKey) { androidx.compose.foundation.ScrollState(0) }
+    Column(if (scroll) modifier.verticalScroll(scrollState) else modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        UniformKeyColumn(actions, 4.dp, fill = true, slots = slots, key = key)
         if (status.isNotEmpty()) androidx.compose.runtime.CompositionLocalProvider(LocalKeyAsStatus provides true) { status.forEach { key(it) } }
     }
 }
@@ -109,27 +121,50 @@ private fun ListKey(a: WinAction, ink: Color, lit: Color, litInk: Color, height:
 @Composable
 internal fun CrossOptions(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW * 0.46f, 380.dp).coerceAtLeast(minOf(ctx.maxW, 280.dp))
-    Box(Modifier.fillMaxSize()) {
-        // The title and facts stay on the left, as the column of the selected item would.
-        Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = w + 16.dp).graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 22.sp, maxLines = 3, fontWeight = FontWeight.Light)
-            Box(Modifier.padding(vertical = 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
-            if (ctx.page == WinPage.MAIN) SceneFactsColumn(ctx, Color.White.copy(alpha = 0.55f), Color.White)
-            else ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.75f))
+    // (Update 505: the column in the home's own wash — Dusk / Ocean / Ember, or the theme's — its lit row in the wash's light
+    // colour (your accent when this layout has its own colours), readable on the column; was always black and white.)
+    val wash = crossWash(com.shelf.launcher.data.Features.crossTint.state.value, com.shelf.launcher.ui.theme.ShelfTheme.colors.background,
+        com.shelf.launcher.ui.theme.ShelfTheme.accent)
+    val deep = sceneDark(wash?.first ?: Color.Black)
+    val lit = sceneLit(com.shelf.launcher.data.HomeLayout.CROSS, wash?.second ?: com.shelf.launcher.ui.theme.ShelfTheme.accent, deep)
+    val band = androidx.compose.ui.graphics.lerp(deep, lit, 0.34f)
+    // (742a: where the first page's keys start in the options column - its pages put Play at the same place.)
+    val crossKeysTop = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // (742a, P2 class C: L1 / R1 from anywhere on the menu - its own pages Information / Trophies / Options, WinPagesCross.kt.)
+    Box(Modifier.fillMaxSize().nativeBumpers(ctx)) {
+        if (ctx.page == WinPage.MAIN) {
+            // The title and facts stay on the left, as the column of the selected item would.
+            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(end = w + 16.dp).graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
+                StableFullText(ctx.name, color = Color.White, fontSize = 22.sp, maxLines = 3, fontWeight = FontWeight.Light)
+                Box(Modifier.padding(vertical = 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
+                SceneFactsColumn(ctx, Color.White.copy(alpha = 0.55f), Color.White)
+            }
+        } else {
+            // (742a: the menu's own pages read out on the left in its thin type, under the cross bar (WinPagesCross.kt) - was the
+            // shared page bodies under the name. The page takes the left side's whole height; the name steps down to two lines.)
+            val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().fillMaxHeight().padding(end = w + 16.dp, top = 8.dp, bottom = 8.dp)
+                .graphicsLayer { alpha = ctx.reveal().coerceIn(0f, 1f) }) {
+                StableFullText(ctx.name, color = Color.White, fontSize = if (short) 17.sp else 20.sp, maxLines = 2, fontWeight = FontWeight.Light)
+                Box(Modifier.padding(vertical = if (short) 4.dp else 6.dp).fillMaxWidth(0.8f).height(1.dp).background(Color.White.copy(alpha = 0.5f)))
+                CrossPageArea(ctx, CrossInk(band), Modifier.fillMaxWidth().weight(1f), short, narrow = ctx.maxW - w - 16.dp < 300.dp)
+            }
         }
-        // (Update 505: the column in the home's own wash — Dusk / Ocean / Ember, or the theme's — its lit row in the wash's light
-        // colour (your accent when this layout has its own colours), readable on the column; was always black and white.)
-        val wash = crossWash(com.shelf.launcher.data.Features.crossTint.state.value, com.shelf.launcher.ui.theme.ShelfTheme.colors.background,
-            com.shelf.launcher.ui.theme.ShelfTheme.accent)
-        val deep = sceneDark(wash?.first ?: Color.Black)
-        val lit = sceneLit(com.shelf.launcher.data.HomeLayout.CROSS, wash?.second ?: com.shelf.launcher.ui.theme.ShelfTheme.accent, deep)
-        val band = androidx.compose.ui.graphics.lerp(deep, lit, 0.34f)
         Column(Modifier.align(Alignment.CenterEnd).width(w).fillMaxHeight().graphicsLayer {
             // The options panel slides in from the screen's right edge (and back out).
             translationX = (1f - sceneEase(ctx.reveal())) * size.width
         }.background(Brush.horizontalGradient(listOf(deep.copy(alpha = 0.0f), deep.copy(alpha = 0.74f), deep.copy(alpha = 0.88f))))
-            .padding(start = 28.dp, end = 12.dp), verticalArrangement = Arrangement.Center) {
-            KeyColumn(sceneKeys(ctx), Modifier.fillMaxWidth()) { a ->
+            // (742a, PlayPlace CROSS: centred, the column put Play 26 dp (x1.3: 54 dp) lower on its pages (Play + one key) than on
+            // the first page (seven keys and the Save sync line). The first page stays centred as it was; on the pages the keys start
+            // where the first page's did - Play stays put everywhere. Before the first page was ever laid out: a fifth down.)
+            .padding(start = 28.dp, end = 12.dp),
+            verticalArrangement = if (ctx.page == WinPage.MAIN) Arrangement.Center else Arrangement.Top) {
+            val keysTop = crossKeysTop.value ?: minOf(ctx.maxH * 0.2f, 72.dp)
+            KeyColumn(sceneKeys(ctx), Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.onGloballyPositioned { c ->
+                    crossKeysTop.value = with(density) { c.positionInParent().y.coerceAtLeast(0f).toDp() }
+                } else Modifier.padding(top = keysTop)),
+                slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS, scrollKey = ctx.page) { a ->
                 ListKey(a, Color.White.copy(alpha = 0.85f), band, com.shelf.launcher.ui.theme.textOn(band, Color.White))
             }
         }
@@ -155,7 +190,24 @@ private fun SceneFactsColumn(ctx: WinSceneCtx, label: Color, value: Color, font:
 internal fun LiveTilesPanel(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 620.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (743a, P2 class C: the panel's own pages - about / achievements / options under a pivot heading, WinPagesLive.kt; L1 / R1
+    // from anywhere on the panel. On a short window (or large text on a mid one) the name and pivot step down.)
+    val main = ctx.page == WinPage.MAIN
+    val short = ctx.maxH < 380.dp || (androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f && ctx.maxH < 480.dp)
+    // (743a, PlayPlace probe: grown to the window's height on its pages, the centred panel put Play 8 dp (RP Classic: 60 dp) lower
+    // than on the first page. On its pages the panel grows upward only - by at most what keeps its top on screen - so the key row,
+    // and Play, stay where the first page had them.)
+    val dens = androidx.compose.ui.platform.LocalDensity.current
+    val mainH = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<androidx.compose.ui.unit.Dp?>(null) }
+    val pageH = mainH.value?.let { livePageHeight(it, ctx.maxH) }
+    val moreShut = sceneKeys(ctx).none { it.label == "Less" }
+    val box = when {
+        // (measured with More closed - its open list, "Less", is not the row Play sits in; rememberKeySlots counts the same way)
+        main -> Modifier.heightIn(max = ctx.maxH).onSizeChanged { if (moreShut) mainH.value = with(dens) { it.height.toDp() } }
+        pageH != null -> Modifier.height(pageH).offset(y = -(pageH - mainH.value!!) / 2)
+        else -> Modifier.heightIn(max = ctx.maxH)
+    }
+    Column(Modifier.width(w).then(box).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         rotationY = (1f - e) * 70f
         transformOrigin = TransformOrigin(0f, 0.5f)
@@ -165,22 +217,31 @@ internal fun LiveTilesPanel(ctx: WinSceneCtx) {
         flatTextFor3d()
     }.background(Color(0xFF111111).copy(alpha = 0.94f)).padding(16.dp)) {
         Text(ctx.console.lowercase(), color = a, fontSize = 13.sp, fontWeight = FontWeight.Light)
-        StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = 30.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 32.sp)
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.weight(1f, fill = false)) {
+        if (main) StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = 30.sp, maxLines = 2, fontWeight = FontWeight.Light, lineHeight = 32.sp)
+        else StableFullText(ctx.name.lowercase(), color = Color.White, fontSize = if (short) 18.sp else 22.sp, maxLines = 2, fontWeight = FontWeight.Light,
+            lineHeight = if (short) 21.sp else 26.sp)
+        Spacer(Modifier.height(if (main || !short) 8.dp else 4.dp))
+        if (main) Row(Modifier.weight(1f, fill = false)) {
             Box(Modifier.width(minOf(w * 0.3f, 160.dp)).aspectRatio(1f).background(a)) {
                 (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, upperLabels = false) }
-        }
+        } else LivePageArea(ctx, LiveInk(a), Modifier.fillMaxWidth().weight(1f), short)
         Spacer(Modifier.height(10.dp))
-        // The keys as small flat tiles in the accent.
-        KeyRow(sceneKeys(ctx), 4.dp) { k ->
+        // The keys as small flat tiles in the accent. (743a: on its pages the row keeps the first page's slots - Play stays put.)
+        KeyRow(sceneKeys(ctx), 4.dp, slots = sceneKeySlots(ctx)) { k ->
             SceneKeyStyled(k, if (k.primary) a else Color(0xFF2A2A2A), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
                 Color.Transparent, Color.White, RectangleShape, height = 40.dp)
         }
     }
+}
+
+/** 743a (pure): the Live panel's height on its pages - grown from the first page's [mainH] towards the window's [maxH], upward
+ *  only: a centred panel moved up by half its growth keeps its bottom (the key row) in place while its top stays on screen. */
+internal fun livePageHeight(mainH: androidx.compose.ui.unit.Dp, maxH: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp {
+    if (mainH >= maxH) return maxH
+    return ((maxH + mainH) / 2).coerceIn(mainH, maxH)
 }
 
 // ───────────── Dashboard: a widget card rising from the row ─────────────
@@ -209,9 +270,11 @@ internal fun DashCard(ctx: WinSceneCtx) {
         // two titles fought. The name now sits just under the art, on the card; the art strip is unchanged.)
         Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 2.dp)) {
             StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(if (ctx.page == WinPage.MAIN) ctx.console else ctx.console + "  ·  " + dashPageName(ctx.page), color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = false)) {
+        // (682w, P2 batch 3: the dashboard's other tabs - Overview, Progress, Settings - WinPagesDash.kt, in the card's room above
+        // the keys; the tab's name beside the console line.)
+        Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
             if (ctx.page == WinPage.MAIN) {
                 // Three stat widgets.
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -225,10 +288,12 @@ internal fun DashCard(ctx: WinSceneCtx) {
                 // (Update 476, D255: the story ended after 3 lines, cut silently mid-sentence. Whole lines, and a cue to Details
                 // when there's more.)
                 ctx.summary?.let { StoryWithCue(it, Color.White.copy(alpha = 0.7f), a, 11.sp, 14.sp, 3, Modifier.padding(top = 8.dp).fillMaxWidth()) }
-            } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
+            } else NativePages(ctx, Modifier.fillMaxWidth().weight(1f), label = "dashPage", move = ::dashMove) { pg, pageLive ->
+                DashPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
         }
         Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 12.dp)) {
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color(0xFF111111),
                     Color.White.copy(alpha = 0.1f), a, RoundedCornerShape(8.dp), height = 34.dp)
             }
@@ -251,7 +316,10 @@ internal val SIDE_ART_MIN = 44.dp
 @Composable
 internal fun SideDrawer(ctx: WinSceneCtx) {
     val a = ctx.accent
-    val w = minOf(ctx.maxW * 0.5f, 420.dp).coerceAtLeast(minOf(ctx.maxW, 300.dp))
+    // (682ag, owner review 23 Nov - "responsive drawer width": half the window on a wide screen; a squarer screen (RP Classic
+    // 4:3-ish) and larger text give the drawer more of it - sideDrawerShare.)
+    val w = minOf(ctx.maxW * sideDrawerShare(ctx.maxW.value, ctx.maxH.value, androidx.compose.ui.platform.LocalDensity.current.fontScale), 460.dp)
+        .coerceAtLeast(minOf(ctx.maxW, 300.dp))
     // (Update 514, RP Nova 4:3, 480 dp high: the picture at the top took its full 2.1 : 1 (152 dp) and the menu below scrolled —
     // Inspect sat under the drawer's edge. On a short screen the picture gives up height first, down to 64 dp, so every row
     // fits at its smallest readable height (30 dp); where there is room (the Thor) it keeps its whole 2.1 : 1.)
@@ -263,7 +331,9 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
     val nStat = keys.size - nAct
     val statusNeed = (SIDE_STATUS_H + SIDE_KEY_GAP) * nStat
     val rowsNeed = 30.dp * nAct + SIDE_KEY_GAP * (nAct - 1).coerceAtLeast(0) + statusNeed + SIDE_ROUNDING
-    val headerH = if (ctx.page != WinPage.MAIN) w / 2.1f else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
+    // (682y: on the drawer's submenus the picture steps back to a strip - the submenu gets the room; on a short screen
+    // (RP Classic x1.3: the first achievement was cut in half under the drawer's rows) only a top margin stays.)
+    val headerH = if (ctx.page != WinPage.MAIN) (if (ctx.maxH < 460.dp) 14.dp else maxOf(w / 5f, SIDE_ART_MIN)) else minOf(w / 2.1f, (ctx.maxH - rowsNeed - SIDE_DRAWER_TEXT).coerceAtLeast(SIDE_ART_MIN))
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.align(Alignment.CenterStart).width(w).fillMaxHeight().graphicsLayer {
             translationX = -(1f - sceneEase(ctx.reveal())) * size.width
@@ -271,6 +341,7 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
         }.background(Color(0xFF15171C)).border(1.dp, Color.White.copy(alpha = 0.06f))) {
             Box(Modifier.fillMaxWidth().height(headerH)) {
                 (ctx.wide ?: ctx.backdrop ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                    ?: NoArtBanner(ctx, Modifier.fillMaxSize()) // (682ag: not an empty dark header)
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color(0xFF15171C)))))
             }
             Column(Modifier.padding(horizontal = 14.dp)) {
@@ -278,11 +349,16 @@ internal fun SideDrawer(ctx: WinSceneCtx) {
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString(" · "), color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
             }
             Spacer(Modifier.height(8.dp))
-            if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp))
+            // (682y, P2 batch 4: the drawer's submenus - ABOUT, ACHIEVEMENTS, OPTIONS - WinPagesSide.kt.)
+            if (ctx.page != WinPage.MAIN) NativePages(ctx, Modifier.fillMaxWidth().weight(1f).padding(horizontal = 8.dp), label = "sidePage", move = ::sideMove) { pg, pageLive ->
+                SidePage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
             // The menu's own rows, with the accent bar on the one you're on.
             // (Update 488, D284: the rows share the drawer's room — Back was cut 13 px under the Thor's 1080p screen edge; 40 dp
             // when there is room, down to 30 dp when not, scrolling only below that.)
-            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(max = 140.dp))) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (ctx.page == WinPage.MAIN) Modifier.weight(1f) else Modifier.heightIn(min = if (nAct < 2) 40.dp * 2 + SIDE_KEY_GAP else 0.dp, max = 140.dp))) {
+            // (682y, KONKR / RPC pk14 / pr14: on Options - Play alone - the rows' box was one row shorter and Play sat a row lower
+            // than on Details / Achievements. A page keeps two rows' room, Play at the top of it.)
             // (674o, Flip 2 x1.0 f674o: the fit filled the room to the last dp and pixel rounding left the status line 51 px -
             // under its 24 dp (54 px) touch size. 2 dp stay free for rounding.)
             val rowRoom = maxHeight - statusNeed - SIDE_ROUNDING
@@ -333,26 +409,54 @@ internal fun SpotPoster(ctx: WinSceneCtx) {
         // drawn across the whole window: 2.7–3.8× upscaled, soft. Window-wide pictures in the scenes now use the backdrop
         // request (the screen's long side), as the classic window already did; the picture itself is the owner's choice.)
         (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize().graphicsLayer { alpha = 0.75f }, request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+        // (682ag, owner review 23 Nov - "an intentional no-art layout instead of a huge black empty screen": without a picture the
+        // poster is a stage - curtains at its sides, the light on the bill (WinPagesSpot.SpotNoArtStage).)
+        val noArt = (ctx.backdrop ?: ctx.wide) == null
+        if (noArt) SpotNoArtStage(ctx, Modifier.fillMaxSize())
+        // (682t, P2 batch 2: Spotlight's own pages - THE PLOT, THE CREDITS, BACKSTAGE - WinPagesSpot.kt. On them the pool of light
+        // moves down from the title onto the page, the title steps up small, and the Play pill row stays where it is.)
+        val onPage = ctx.page != WinPage.MAIN
+        val anim = rememberAnimationsEnabled()
+        val pool by androidx.compose.animation.core.animateFloatAsState(if (onPage) 0.62f else 0.3f,
+            if (anim) androidx.compose.animation.core.tween(420, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(),
+            label = "spotPool")
         // The spotlight: dark round the edges, a pool of light on the title.
         Canvas(Modifier.fillMaxSize()) {
-            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * 0.3f), radius = size.maxDimension * 0.7f))
-            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)), startY = size.height * 0.45f))
+            drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)), center = Offset(size.width * 0.5f, size.height * pool), radius = size.maxDimension * 0.7f))
+            drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)), startY = size.height * (if (onPage) 0.2f else 0.45f)))
         }
-        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
-            // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
-            val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
-            ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.55f).height(minOf(h * 0.18f, 90.dp)),
-                contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
-                ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
-            Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
-                modifier = Modifier.padding(vertical = 6.dp))
-            if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().height(h * 0.4f))
-            // (Update 505: as on the Spotlight home — its light Play pill, the other keys on its dark themed cards, the one you're on
-            // lit in the theme's accent (was a fixed warm yellow), readable on the poster's dark.)
-            val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
+        // (Update 505: as on the Spotlight home — its light Play pill, the other keys on its dark themed cards, the one you're on
+        // lit in the theme's accent (was a fixed warm yellow), readable on the poster's dark.)
+        val lit = sceneLit(com.shelf.launcher.data.HomeLayout.SPOT, com.shelf.launcher.ui.theme.ShelfTheme.accent, Color.Black)
+        Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().then(if (onPage) Modifier.fillMaxSize() else Modifier).padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally) {
+            // (682ag, owner 23 Nov 13:32 - "Spotlight's headings competing with busy cover artwork": over a picture the title
+            // block - the page's name, the logo or name, the facts line - sits on the bill's own dark plate, a lit hairline at
+            // its foot; the no-art stage keeps its open title.)
+            Column(Modifier.then(if (noArt) Modifier else Modifier.spotTitlePlate(lit)), horizontalAlignment = Alignment.CenterHorizontally) {
+                if (onPage) Text(spotPageName(ctx.page), color = lit, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                // (Update 476, D261: a logo address that fails to load — gone, offline, not cached — left the poster with no name at
+                // all. The name in text is the fallback for both: no logo, or a logo that didn't load.)
+                val logoFailed = androidx.compose.runtime.remember(ctx.logo) { androidx.compose.runtime.mutableStateOf(false) }
+                if (!(noArt && !onPage)) ctx.logo?.takeIf { !logoFailed.value }?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name,
+                    Modifier.fillMaxWidth(if (onPage) 0.4f else 0.55f).height(if (onPage) minOf(h * 0.10f, 44.dp) else minOf(h * 0.18f, 90.dp)),
+                    contentScale = ContentScale.Fit, onError = { logoFailed.value = true }) }
+                    ?: StableFullText(ctx.name.uppercase(), color = Color.White, fontSize = if (onPage) 17.sp else 26.sp, maxLines = 2, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                if (!onPage && !noArt) Text(listOfNotNull(ctx.console, ctx.year, ctx.genres).joinToString("  ·  ").uppercase(), color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, letterSpacing = 2.sp,
+                    modifier = Modifier.padding(vertical = 6.dp))
+            }
+            if (!onPage) Spacer(Modifier.height(6.dp))
+            // (682ag, owner review 23 Nov - "content contrast over colourful artwork with a proper readable surface": the page sits
+            // on a dark glass panel over the poster - the poster still shows round it.)
+            else NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(10.dp))
+                .background(Color.Black.copy(alpha = if (noArt) 0.35f else 0.72f)).border(1.dp, Color.White.copy(alpha = 0.10f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 10.dp, vertical = 8.dp), label = "spotPage", move = ::spotMove) { pg, pageLive ->
+                SpotPage(ctx, pg, pageLive, lit, Modifier.fillMaxSize())
+            }
             val card = themeDark(Color(0xFF1C1F25)).copy(alpha = 0.85f)
-            KeyRow(sceneKeys(ctx), 8.dp) { k ->
+            // (682t, owner 18 Nov: Play the same size in the same place on every page - the pages keep the main page's slots)
+            val keys = sceneKeys(ctx)
+            KeyRow(keys, 8.dp, slots = rememberKeySlots(ctx.page, keys)) { k ->
                 SceneKeyStyled(k, if (k.primary) Color(0xFFE9E9EC) else card, lit, if (k.primary) Color(0xFF16181C) else Color.White,
                     com.shelf.launcher.ui.theme.textOn(lit, Color.Black), Color.White.copy(alpha = 0.35f), Color.White, RoundedCornerShape(50), height = 36.dp, upper = true, size = 11.sp)
             }
@@ -372,11 +476,14 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
             translationY = (1f - e) * size.height * 0.6f
             alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
         }, horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Color(0xFF20232A).copy(alpha = 0.96f))
+            // (682y: the card takes the room the pointer leaves - its page shares it with the header and the dock keys)
+            Column(Modifier.fillMaxWidth().weight(1f, fill = false).clip(RoundedCornerShape(18.dp)).background(Color(0xFF20232A).copy(alpha = 0.96f))
                 .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(18.dp)).padding(14.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(72.dp).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
+                        // (682y, owner 18 Nov "avoid empty black areas when artwork is unavailable": the console's plate instead)
                         (ctx.cover ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                            ?: SceneNoArt(ctx, Modifier.fillMaxSize())
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
@@ -384,7 +491,10 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                         Text(ctx.console + " · " + ctx.played, color = Color.White.copy(alpha = 0.6f), fontSize = 11.sp)
                     }
                 }
-                if (ctx.page != WinPage.MAIN) ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp))
+                // (682y, P2 batch 4: the flyout's own pages - grouped cards, round icons, a grouped list - WinPagesDock.kt.)
+                if (ctx.page != WinPage.MAIN) NativePages(ctx, Modifier.fillMaxWidth().weight(1f, fill = false).heightIn(max = ctx.maxH * 0.5f).padding(top = 8.dp), label = "dockPage", move = { d -> dockMove(d) }) { pg, pageLive ->
+                    DockPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Spacer(Modifier.height(12.dp))
                 // The actions as round dock icons with their names under them.
                 // (Update 476, D258: a status key's whole text — "Balanced · AutoTDP Balanced · Device default", "Saves: up to
@@ -394,7 +504,20 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                 val keys = sceneKeys(ctx)
                 val anyShort = keys.any { dockShortLabel(sceneLabel(it.label)) != sceneLabel(it.label) }
                 val fullLine = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
-                KeyRow(keys, 10.dp) { k ->
+                // (681w, H16 - owner review of the KONKR x1.3 sheet: the Bar window's key names were cramped - in the old fixed
+                // 78 dp a long name such as "Achievements" or "Performance" broke inside the word at x1.3. Every key takes the
+                // width of the widest single word among the keys' names (78 dp at least), so names break only between words;
+                // the uniform row scrolls by whole keys where they no longer all fit.)
+                val labelStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = DOCK_LABEL_SP.sp)
+                val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 16)
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val words = keys.map { dockShortLabel(sceneLabel(it.label)) }
+                val keyW = androidx.compose.runtime.remember(words, labelStyle, density) {
+                    val widest = dockLabelWords(words).maxOfOrNull { measurer.measure(it, labelStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                    dockKeyWidthDp(with(density) { widest.toDp() }.value).dp
+                }
+                // (682y: on the flyout's pages Play keeps its place - the first half - with or without the page's own key)
+                KeyRow(keys, 10.dp, slots = rememberKeySlots(ctx.page, keys)) { k ->
                     SceneControl(k, Modifier) { on ->
                         val whole = sceneLabel(k.label)
                         val short = dockShortLabel(whole)
@@ -402,14 +525,14 @@ internal fun DockFlyout(ctx: WinSceneCtx) {
                             if (on) fullLine.value = if (short != whole) whole else null
                             else if (fullLine.value == whole) fullLine.value = null
                         }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(78.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(keyW)) {
                             Box(Modifier.size(46.dp).graphicsLayer { val s = if (on) 1.12f else 1f; scaleX = s; scaleY = s }.clip(CircleShape)
                                 .background(if (k.primary) a else Color.White.copy(alpha = 0.1f)).border(if (on) 2.dp else 0.dp, Color.White, CircleShape),
                                 contentAlignment = Alignment.Center) {
                                 Icon(k.icon, null, tint = if (k.primary) onColor(a) else Color.White, modifier = Modifier.size(22.dp))
                             }
-                            Text(short, color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = 10.sp, lineHeight = 12.sp,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.padding(top = 3.dp))
+                            Text(short, color = if (on) Color.White else Color.White.copy(alpha = 0.7f), fontSize = DOCK_LABEL_SP.sp, lineHeight = 12.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 3.dp))
                         }
                     }
                 }
@@ -439,7 +562,7 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
     // with larger text the card may take more of the screen and the keys are a little lower.)
     val big = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.1f
     val h = minOf(ctx.maxH, if (big) 460.dp else 380.dp)
-    Row(Modifier.width(w).height(h).graphicsLayer {
+    Row(Modifier.width(w).height(h).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.12f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -448,22 +571,44 @@ internal fun DiscoverCard(ctx: WinSceneCtx) {
         // keys one per line and the facts a 14 dp sliver showing half a line; it now leaves the card at least 290 dp).
         val side = minOf(h, (w - 10.dp - 290.dp).coerceAtLeast(140.dp))
         Box(Modifier.size(side).clip(RoundedCornerShape(14.dp)).background(Color.Black)) {
-            (ctx.cover ?: ctx.wide)?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+            // (682v, owner 18 Nov: "Resume & Discover: avoid large empty black areas when artwork is unavailable" - with no
+            // picture, or one that does not load, the square is the game's own discover tile: its colour, console and name.)
+            val noArt: @Composable (Modifier) -> Unit = { m -> DiscoverNoArt(ctx, a, m) }
+            (ctx.cover ?: ctx.wide)?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover), noArt = noArt) }
+                ?: noArt(Modifier.fillMaxSize())
             Text(if (ctx.lastPlayed != null) "JUMP BACK IN" else "DISCOVER", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).clip(RoundedCornerShape(50)).background(a.copy(alpha = 0.9f)).padding(horizontal = 8.dp, vertical = 3.dp))
         }
         // The discover card.
+        // (P2 / 681e: the card's own pages - the discover feed, WinPagesDiscover.kt - in the room above the pills.)
         Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(14.dp)).background(Color(0xFF1B1E24).copy(alpha = 0.97f)).padding(14.dp)) {
-            StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
-            Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
-            Spacer(Modifier.weight(0.01f))
+            NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "discoverPage", move = ::discoverMove) { pg, pageLive ->
+                if (pg == WinPage.MAIN) Column {
+                    StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+                    Text(ctx.console, color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
+                } else DiscoverPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+            }
             // (529p, owner #15 pattern: the keys as pills that span the card in whole-word rows - PageBars - Play still the filled one.)
-            PageBars(sceneKeys(ctx), 6.dp) { k ->
+            // (682ab: on its pages Play keeps the first half, as on every layout's pages - PageBars(page))
+            PageBars(sceneKeys(ctx), 6.dp, page = ctx.page != WinPage.MAIN) { k ->
                 SceneKey(k, if (k.primary) a else Color.White.copy(alpha = 0.07f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
                     Color.Transparent, a, RoundedCornerShape(50), height = if (big) 30.dp else 36.dp, primaryStyled = true, lineHeight = 15.sp, wide = true)
             }
+        }
+    }
+}
+
+/** 682v: the discover square with no picture - a tile in the game's colour washed with the theme's, its console and its name. */
+@Composable
+private fun DiscoverNoArt(ctx: WinSceneCtx, accent: Color, modifier: Modifier) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)).background(Brush.verticalGradient(listOf(accent.copy(alpha = 0.10f), Color.Black.copy(alpha = 0.55f))))
+        .padding(horizontal = 14.dp, vertical = 30.dp), contentAlignment = Alignment.BottomStart) {
+        Column {
+            Text(ctx.console.uppercase(), color = Color.White.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+            Spacer(Modifier.height(4.dp))
+            WholeWordsText(ctx.name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Black, lineHeight = 26.sp)
         }
     }
 }
@@ -476,7 +621,9 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
     // was ever drawn here, so the default "Your theme's colours" Circuit opened a green board with gold traces.)
     val (pcb, trace, silk) = circuitSheetColors()
     val w = minOf(ctx.maxW, 620.dp)
-    Box(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (726a, P2: the sheet's own sections - WinPagesChip.kt. On them the sheet takes a steady height so the pin list has room
+    // to scroll; L1 / R1 turn the sections wherever the D-pad is.)
+    Box(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         // Powers up from the trace: a line that opens into the board.
         val e = sceneEase(ctx.reveal())
         scaleY = 0.05f + 0.95f * e
@@ -496,12 +643,17 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
         Column(Modifier.padding(start = 36.dp, end = 14.dp, top = 12.dp, bottom = 12.dp)) {
             Text("DATASHEET  ·  ${ctx.console.uppercase()}", color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
             StableFullText(ctx.name, color = silk, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Bold)
+            // (726a: on its sections the sheet names the one shown - numbered as a datasheet's, after the old one has gone)
+            val heading = rememberHeadingPage(ctx.page)
+            if (heading != WinPage.MAIN) Text("SECTION ${chipSectionNo(heading)}  ·  ${chipPageName(heading)}", color = trace, fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(Modifier.height(6.dp))
-            if (ctx.page == WinPage.MAIN) {
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "chipPage", move = ::chipMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) {
                 // Pins: the facts numbered like a chip's pinout.
                 // (674g, x1.3 f674f / k674f with More open: the pinout took up to 45 % of the window first and the status line under
                 // the keys was cut (Flip 2) or 0 px (KONKR). The pinout gives way - it scrolls - and the keys and that line keep theirs.)
-                Column(Modifier.weight(1f, fill = false).heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
+                Column(Modifier.heightIn(max = ctx.maxH * 0.45f).verticalScroll(rememberScrollState())) {
                     sceneFacts(ctx).forEachIndexed { i, (l, v) ->
                         Row(Modifier.padding(vertical = 1.dp)) {
                             Text("P%02d".format(i + 1), color = trace, fontSize = 10.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(36.dp))
@@ -510,9 +662,10 @@ internal fun ChipSheet(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else ctx.pageBody(Modifier.fillMaxWidth().heightIn(max = ctx.maxH * 0.6f))
+            } else ChipPage(ctx, pg, pageLive, pcb, trace, silk, Modifier.fillMaxSize())
+            }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, Color(0xFF07261A), trace, silk, Color(0xFF07261A), trace.copy(alpha = 0.4f), trace, CutCornerShape(4.dp), font = FontFamily.Monospace, upper = true, size = 11.sp)
             }
         }
@@ -537,8 +690,12 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
         shape = RoundedCornerShape(4.dp); clip = true
     }.background(ground)) {
         // The hero banner across the top, logo on it.
-        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * 0.36f, 200.dp)).background(Color.Black)) {
+        // (682w, P2 batch 3: on the page's own sections the banner steps back to a strip - the sections get the room.)
+        Box(Modifier.fillMaxWidth().height(minOf(ctx.maxH * (if (ctx.page == WinPage.MAIN) 0.36f else 0.2f), 200.dp)).background(Color.Black)) {
             (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                // (682ag, owner review 23 Nov: no wide picture left the hero banner an empty black band - the game's colour with
+                // its console's mark, the name on it as before)
+                ?: NoArtBanner(ctx, Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, ground))))
             Box(Modifier.align(Alignment.BottomStart).padding(14.dp).fillMaxWidth(0.6f)) {
                 ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth().height(70.dp), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
@@ -548,13 +705,13 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
         // The play bar: the big green Play, then the stats.
         Row(Modifier.fillMaxWidth().background(bar).padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.weight(1f)) {
-                KeyRow(sceneKeys(ctx)) { k ->
+                KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                     SceneKeyStyled(k, if (k.primary) green else Color.White.copy(alpha = 0.08f), if (k.primary) androidx.compose.ui.graphics.lerp(green, Color.White, 0.25f) else Color.White.copy(alpha = 0.2f),
                         Color.White, com.shelf.launcher.ui.theme.textOn(if (k.primary) androidx.compose.ui.graphics.lerp(green, Color.White, 0.25f) else Color.White.copy(alpha = 0.2f), Color.White), Color.Transparent, Color.White, RoundedCornerShape(3.dp), height = if (k.primary) 40.dp else 34.dp, upper = k.primary)
                 }
             }
         }
-        Column(Modifier.padding(14.dp).weight(1f, fill = false)) {
+        Column(Modifier.padding(14.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
             if (ctx.page == WinPage.MAIN) {
                 Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     listOf("LAST PLAYED" to (ctx.last ?: "Never"), "PLAY TIME" to ctx.played, "ACHIEVEMENTS" to (if (ctx.total > 0) "${ctx.earned}/${ctx.total}" else "—")).forEach { (l, v) ->
@@ -566,7 +723,14 @@ internal fun LibraryPage(ctx: WinSceneCtx) {
                 }
                 // (674g, KONKR x1.3 k674f with More open: no room left for the story - it gives way by design (Details has it whole).)
                 ctx.summary?.let { Text(it, color = Color.White.copy(alpha = 0.72f), fontSize = 11.sp, lineHeight = 14.sp, maxLines = 4, modifier = Modifier.semantics { this[QaClip.GivesWay] = true }.padding(top = 8.dp)) }
-            } else ctx.pageBody(Modifier.fillMaxWidth().weight(1f))
+            } else {
+                // (682w: the page's sections under a tab strip - ABOUT THIS GAME, ACHIEVEMENTS, MANAGE - WinPagesLibrary.kt.)
+                LibraryTabs(ctx, green)
+                Spacer(Modifier.height(6.dp))
+                NativePages(ctx, Modifier.fillMaxWidth().weight(1f), label = "libraryPage", move = ::libraryMove) { pg, pageLive ->
+                    LibraryPagesBody(ctx, pg, pageLive, bar, green, Modifier.fillMaxSize())
+                }
+            }
         }
     }
 }
@@ -582,7 +746,10 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 860.dp)
     val h = minOf(ctx.maxH, 500.dp)
-    Box(Modifier.width(w).height(h).graphicsLayer {
+    // (729a, P2: the banner's own pages - WinPagesHero.kt. On them the hero text column widens a little and the art darkens a
+    // shade so the pages read; L1 / R1 turn the pages wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    Box(Modifier.width(w).height(h).nativeBumpers(ctx).graphicsLayer {
         // The banner grows open from its middle band (the hero strip widening into the page).
         val e = sceneEase(ctx.reveal())
         scaleY = 0.35f + 0.65f * e
@@ -591,20 +758,32 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
     }.background(Color.Black)) {
         (ctx.backdrop ?: ctx.wide ?: ctx.cover)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.88f), Color.Black.copy(alpha = 0.55f), Color.Transparent))))
-        Column(Modifier.fillMaxHeight().fillMaxWidth(0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
-            ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(0.8f).height(minOf(h * 0.2f, 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
-                ?: StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 3, fontWeight = FontWeight.Black)
-            Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString("  ·  "), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
-            // (Update 426: the summary gives way first — it scrolls — so the title is never squeezed to one cut line when the
-            // keys wrap; it was "999 Nine Hours, Nine Persons, Nin" on the Thor.)
-            if (ctx.page == WinPage.MAIN) ctx.summary?.let {
-                val sc = androidx.compose.foundation.rememberScrollState()
-                Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp,
-                    modifier = Modifier.weight(1f, fill = false).heightIn(max = 15.dp * 4).sceneFadeEdges(sc).verticalScroll(sc))
+        val shade by androidx.compose.animation.core.animateFloatAsState(if (onPage) 0.3f else 0f,
+            if (rememberAnimationsEnabled()) androidx.compose.animation.core.tween(NATIVE_PAGE_MS) else androidx.compose.animation.core.snap(), label = "heroShade")
+        if (shade > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = shade)))
+        Column(Modifier.fillMaxHeight().fillMaxWidth(if (onPage) 0.7f else 0.62f).padding(20.dp), verticalArrangement = Arrangement.Bottom) {
+            // (729a: on its pages - once the old page has gone - the name steps down to a smaller title without the reserved
+            // lines and the banner's tab strip takes the info line's place, so the page has the room; AchFirstRow HERO x1.3 had
+            // 0 px for the first achievement with the full-size title and line kept.)
+            val heading = rememberHeadingPage(ctx.page)
+            val headed = heading != WinPage.MAIN
+            ctx.logo?.let { AsyncImage(rememberStyleArtRequest(it), ctx.name, Modifier.fillMaxWidth(if (headed) 0.5f else 0.8f).height(minOf(h * (if (headed) 0.12f else 0.2f), if (headed) 56.dp else 96.dp)), contentScale = ContentScale.Fit, alignment = Alignment.BottomStart) }
+                ?: if (headed) WinFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 2, fontWeight = FontWeight.Black, lineHeight = 24.sp)
+                else StableFullText(ctx.name, color = Color.White, fontSize = 28.sp, maxLines = 3, fontWeight = FontWeight.Black)
+            if (headed) Box(Modifier.padding(top = 6.dp, bottom = 8.dp)) { HeroTabStrip(nativeTabs(ctx.pages), heading) }
+            else Text(listOfNotNull(ctx.console, ctx.year, ctx.played).joinToString("  ·  "), color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp, modifier = Modifier.padding(vertical = 6.dp))
+            NativePages(ctx, Modifier.fillMaxWidth().weight(1f, fill = onPage), label = "heroPage", move = ::heroMove) { pg, pageLive ->
+                // (Update 426: the summary gives way first — it scrolls — so the title is never squeezed to one cut line when the
+                // keys wrap; it was "999 Nine Hours, Nine Persons, Nin" on the Thor.)
+                if (pg == WinPage.MAIN) Column { ctx.summary?.let {
+                    val sc = androidx.compose.foundation.rememberScrollState()
+                    Text(it, color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, lineHeight = 15.sp,
+                        modifier = Modifier.heightIn(max = 15.dp * 4).sceneFadeEdges(sc).verticalScroll(sc))
+                } }
+                else HeroPage(ctx, pg, pageLive, a, Modifier.fillMaxSize())
             }
-            else ctx.pageBody(Modifier.fillMaxWidth().weight(1f, fill = false))
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx), 8.dp) { k ->
+            KeyRow(sceneKeys(ctx), 8.dp, slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) Color.White else Color.White.copy(alpha = 0.16f), a, if (k.primary) Color.Black else Color.White, onColor(a),
                     Color.Transparent, Color.White, RoundedCornerShape(50), height = 38.dp)
             }
@@ -622,7 +801,9 @@ internal fun HeroBanner(ctx: WinSceneCtx) {
 internal fun VoltPanel(ctx: WinSceneCtx) {
     val a = ctx.accent
     val w = minOf(ctx.maxW, 720.dp)
-    Row(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (P2 / 681c: the panel's own pages - WinPagesVolt.kt. On them the panel takes a steady height so the cells list has room
+    // to scroll; L1 / R1 turn the pages wherever the D-pad is.)
+    Row(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         val e = sceneEase(ctx.reveal())
         translationY = (1f - e) * size.height * 0.15f
         alpha = (ctx.reveal() * 2f).coerceIn(0f, 1f)
@@ -635,7 +816,8 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
         Column(Modifier.weight(1f).padding(14.dp)) {
             // (Update 452, D156: the picture and facts give way to the keys — with More open the keys' extra lines were pushed out
             // of the window's maximum height and cut off on the RP Classic, Achievements to Max unreachable.)
-            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "voltPage", move = ::voltMove) { pg, pageLive ->
+            if (pg == WinPage.MAIN) Row(verticalAlignment = Alignment.Top) {
                 Box(Modifier.width(minOf(w * 0.24f, 150.dp)).aspectRatio(0.72f).clip(RoundedCornerShape(6.dp)).background(Color.Black)) {
                     SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), noArt = { m -> SceneNoArt(ctx, m) })
                 }
@@ -646,9 +828,10 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(6.dp))
                     SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White)
                 }
+            } else VoltPage(ctx, pg, pageLive, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) onColor(a) else Color.White, Color.Black,
                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(8.dp), height = 36.dp)
             }
@@ -661,6 +844,17 @@ internal fun VoltPanel(ctx: WinSceneCtx) {
  * Update 476 (D258): the dock's label for a key — a status text ("Balanced · AutoTDP Balanced · Device default",
  * "Saves: up to date · 1 min ago") keeps its first part under the icon; the whole text is shown while the key has the focus.
  */
+/** 681w: the Bar window's key names' size (sp) and a dock key's least width / the air beside its widest word (dp). */
+internal const val DOCK_LABEL_SP = 10f
+internal const val DOCK_KEY_MIN_DP = 78f
+internal const val DOCK_KEY_AIR_DP = 6f
+
+/** 681w: the single words of the dock keys' names - a name breaks only between them. Pure. */
+internal fun dockLabelWords(names: List<String>): List<String> = names.flatMap { it.split(' ', '\n') }.filter { it.isNotBlank() }
+
+/** 681w: a dock key's width (dp) for the widest word of the keys' names: the old 78 dp, or that word plus a little air. Pure. */
+internal fun dockKeyWidthDp(widestWordDp: Float): Float = maxOf(DOCK_KEY_MIN_DP, kotlin.math.ceil(widestWordDp + DOCK_KEY_AIR_DP))
+
 internal fun dockShortLabel(label: String): String = label.substringBefore(" · ").trim().ifEmpty { label }
 
 /** Update 504: ChipSheet's board, traces and print in the Circuit layout's own colours (circuitColors), legible. */
@@ -682,3 +876,30 @@ internal fun circuitSheetColorsFor(mode: com.shelf.launcher.data.Features.Circui
     val trace = com.shelf.launcher.ui.theme.legibleArtAccent(accent, pcb, pcb)
     return Triple(pcb, trace, silk)
 }
+
+
+/** 682ag (pure): Side menu's drawer share of the window - half on a wide screen, more on a squarer one (width / height under
+ *  1.4: +8 %) and with larger text (up to +9 % at x1.3), 62 % at most. */
+internal fun sideDrawerShare(maxWdp: Float, maxHdp: Float, fontScale: Float): Float {
+    val square = if (maxHdp > 0f && maxWdp / maxHdp < 1.4f) 0.08f else 0f
+    val text = ((fontScale - 1f).coerceIn(0f, 0.3f)) * 0.3f
+    return (0.5f + square + text).coerceAtMost(0.62f)
+}
+
+/** 682ag: a banner with no wide picture - the game's colour, the console's initials large and faint at its right, decorative
+ *  (the name is drawn over it by the layout). */
+@Composable
+internal fun NoArtBanner(ctx: WinSceneCtx, modifier: Modifier) {
+    Box(modifier.background(placeholderBrush(ctx.g.hue)).clearAndSetSemantics { }, contentAlignment = Alignment.CenterEnd) {
+        Text(studioInitials(ctx.console), color = Color.White.copy(alpha = 0.16f), fontSize = 48.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false, // qa-ok: TRUNCATE-CLIP (2-4 initials, a decorative watermark)
+            modifier = Modifier.padding(end = 18.dp))
+    }
+}
+
+
+/** 682ag: Spotlight's title plate over a picture - dark glass, rounded, a hairline in the light's colour at its foot. */
+internal fun Modifier.spotTitlePlate(lit: Color): Modifier = this
+    .clip(RoundedCornerShape(10.dp))
+    .background(Color.Black.copy(alpha = 0.68f))
+    .drawBehind { drawRect(lit.copy(alpha = 0.55f), topLeft = Offset(size.width * 0.2f, size.height - 1.5.dp.toPx()), size = androidx.compose.ui.geometry.Size(size.width * 0.6f, 1.5.dp.toPx())) }
+    .padding(horizontal = 16.dp, vertical = 6.dp)

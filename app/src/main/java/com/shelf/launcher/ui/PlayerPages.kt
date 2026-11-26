@@ -46,7 +46,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -130,8 +129,8 @@ internal fun CompactPlaylists(
     Box(modifier.height(height).fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
         when {
             connection != com.shelf.launcher.spotify.SpotifyConnection.CONNECTED ->
-                Text("Connect Spotify (Settings › Accounts) for playlists", color = ink.copy(alpha = 0.8f),
-                    fontSize = textSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(textSize), maxFontSize = textSize), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 4.dp))
+                FullText("Connect Spotify (Settings › Accounts) for playlists", color = ink.copy(alpha = 0.8f),
+                    fontSize = textSize, maxLines = 2, modifier = Modifier.padding(horizontal = 4.dp), reserve = false)
             playlists == null -> Text("Loading playlists…", color = ink.copy(alpha = 0.8f), fontSize = textSize, modifier = Modifier.padding(horizontal = 4.dp))
             playlists!!.isEmpty() -> Text("No playlists", color = ink.copy(alpha = 0.8f), fontSize = textSize, modifier = Modifier.padding(horizontal = 4.dp))
             // A plain scrolling Row (not LazyRow): safe inside any parent measurement.
@@ -157,8 +156,8 @@ internal fun CompactPlaylists(
                             modifier = Modifier.size(height - 4.dp).clip(RoundedCornerShape(6.dp))
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text(p.name ?: "Playlist", color = ink, fontSize = textSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(textSize), maxFontSize = textSize), fontWeight = FontWeight.SemiBold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(height * 2.4f))
+                        FullText(p.name ?: "Playlist", color = ink, fontSize = textSize, fontWeight = FontWeight.SemiBold,
+                            maxLines = 2, modifier = Modifier.width(height * 2.4f), reserve = false)
                     }
                 }
             }
@@ -217,9 +216,9 @@ internal fun BigPlaylists(modifier: Modifier = Modifier, onPlayed: () -> Unit = 
                             modifier = Modifier.size(120.dp).clip(RoundedCornerShape(10.dp)).background(Color.White.copy(alpha = 0.1f))
                         )
                         Spacer(Modifier.height(6.dp))
-                        Text(
-                            p.name ?: "Playlist", color = Color.White, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold,
-                            maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        FullText(
+                            p.name ?: "Playlist", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                            maxLines = 2, textAlign = androidx.compose.ui.text.style.TextAlign.Center, reserve = false,
                             modifier = Modifier.width(120.dp)
                         )
                     }
@@ -252,8 +251,8 @@ internal fun CompactLyrics(nowPlaying: NowPlaying, height: Dp, textSize: TextUni
         else -> (l.plain.firstOrNull() ?: "♪") to l.plain.getOrNull(1)
     }
     Column(modifier.height(height).fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.Center) {
-        Text(now, color = ink, fontSize = textSize, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(textSize), maxFontSize = textSize), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (next != null) Text(next, color = ink.copy(alpha = 0.55f), fontSize = textSize * 0.9f, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(textSize * 0.9f), maxFontSize = textSize * 0.9f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        FullText(now, color = ink, fontSize = textSize, fontWeight = FontWeight.SemiBold, maxLines = 1, reserve = false)
+        if (next != null) FullText(next, color = ink.copy(alpha = 0.55f), fontSize = textSize * 0.9f, maxLines = 1, reserve = false)
     }
 }
 

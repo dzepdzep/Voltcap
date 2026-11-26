@@ -61,7 +61,7 @@ internal fun StoryLines(
         val fit = storyLinesThatFit(constraints.maxHeight, lineH, maxLines)
         if (fit >= 1) androidx.compose.material3.Text(
             text, color = color, fontSize = fontSize, lineHeight = lineHeight, maxLines = fit,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis   // qa-ok: TRUNCATE (summary in the room left, update 475; whole story on Details)
         )
     }
 }

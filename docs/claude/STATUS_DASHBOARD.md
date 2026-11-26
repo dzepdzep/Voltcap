@@ -2,34 +2,33 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 678r · 2026-11-17 14:25 UTC · commit `eadd00f`
+**1. LATEST UPDATE** - 761a · 2026-11-25 22:40 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 3beb14f (760a) · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
+**2. WHAT CLAUDE JUST FIXED** - Generations (the release-year timeline on the category screen): with bigger text (x1.3) a long console name made the block at the bottom - generation, name, maker / year / games - grow so tall that it covered the handheld consoles drawn just above it and their years. The block now always stays below them; a long name first gets a little smaller and then slides, the other two lines stay whole. Normal-size text looks the same. A one-minute handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
-- **App** (678r): Your 17 Nov handoff is merged into the plan without duplicates. The Channel fix is back in, done differently: at larger text a long game name now stays on one line and slides, so it never covers the achievement count, and there is no endless redraw this time. Checked by the automatic tests and on the KONKR at both text sizes. v0.6.73 is ready for your GO (candidate eadd00f). Nothing merged or published.
-- **App** (678p-q): Fixed the bug where pressing A B A B very fast could leave a game window open: when you press A while a window is closing, it now reopens in the same window instead of closing and opening a new one, so the last B can't get lost. Tested on the KONKR: 60 of 60 fast rounds closed (TV room, Record crate, Cardboard box, Card binder). Your Banner decision is in: the corner X stays and the check treats it as a close button, so Banner passes. The v0.6.73 candidate is ready: version 0.6.73, all automatic tests green, every layout passes on the KONKR at normal text. One earlier fix (Channel name over the achievement count at larger text) caused a hidden endless redraw, so I took it back out - it goes to v0.6.74. Nothing was merged or published: the release waits for your GO.
-- **QA tools** (678o): Live session with the KONKR (QA test app only, your Voltcap untouched): ran the full game-window check on all 53 layouts at normal and larger text. Normal text: 52 of 53 pass; larger text: 52 of 53, and the one fail (Channel - the achievement count hidden under a two-line game name) is fixed and passes now. The remaining fail is old: in the TV room (and Record crate, about 1 in 10 tries) pressing A B A B very fast can leave the window open. A trace showed why - the last B lands in the split second between the closing window and the re-opening one; the fix is next. Also fixed and re-tested on the KONKR: in the Banner popup style the Save sync chip and the L1/R1 tabs were too small to tap. Checked on the KONKR: the Record crate checklist (all good except the fast A B), the Achievements page opening on new unlocks, Settings / Save Vault / category screen text, and the hidden navigation bar. A review PDF of every layout at both text sizes is ready.
-- **App** (678m): Found why a game's Achievements page skipped past the new unlocks when it opened: the page put the controller focus on the first achievement in the list, and that scrolled the page down past the badges you had just earned. With new unlocks waiting, the page now opens on them (focus there, the list one press below); with nothing new it opens on the first achievement as before. An automatic test showed the fault on the old code and passes now; a handheld check is queued. The animation improvements are the next step.
-- **QA tools** (678l): Found why the full handheld popup test could not start on the RP Classic: the test setup never created its own pretend game library and relied on one left by an older script, which the freshly installed test app on the Classic did not have. The setup now creates that library itself every time (with a fallback for Android's storage rules) and stops with a clear message instead of a confusing 'no game matches'. Checked with automatic tests; the Classic run itself still needs the handheld.
+- **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
+- **QA tools** (748a): The automatic emulator review that photographs the new game-window pages for you works again. Its stops since 18 November came from the phone's own text search missing words in the app's screen description when it contained symbols like '·'; the test scripts now read it without that search. The first full review since then passed for Pocket classic, Pocket ribbon, Pocket Quest and Layout Studio at both text sizes, with no game started; the pictures are ready for your look. The next four layouts are being photographed. No app change.
+- **App** (745a): The three Pocket layouts' game windows now each have their own Details, Achievements and Options pages in their own style: Pocket classic looks like the handheld's own menu - the blue title bar names the page with arrows and its number, facts and options are pixel-type menu lines with a little cursor, and achievements show as medals with a bar of ten pixel blocks, the menu stepping in like an old LCD; Pocket ribbon keeps its plain white information sheet with the cartridge art on the left, a row of page names with the current one underlined, a table on thin grey lines, and a thin progress line for achievements; Pocket Quest keeps its deep panel with cut corners, labelled Status, Quest log and Commands, with a ten-cell gauge and a scan line running down as a page opens. Play stays exactly where it was on the first page (it had been sitting lower on the pages beside the tall cartridge art; fixed). Every layout that draws its own game window now has its own pages (52 of 53; only Disc station still uses the shared pages). On the test branch only; not yet checked on a handheld or approved.
+- **App** (744a): The Layout Studio game window now has its own Details, Achievements and Options pages in the studio's editor style, under a rounded tab strip with the page you are on filled in your accent colour: Properties is an inspector with each fact's label on the left, its value on the right and a dashed guide line under each row, then the description in a framed text box; Milestones shows how many you have, the per cent and a ruler-style bar with a tick every tenth, with each achievement as a layer row whose badge sits in a small frame; Actions lists the choices as rounded buttons like the window's keys (removing ones are outlined in red and ask for a second press). Each page snaps in from one grid step below. Play stays in exactly the same place on every page. On a short screen with large text the console line steps back so the first achievement is always whole. On the test branch only; not yet checked on a handheld or approved.
+- **App** (743a): The Live tiles layout's game window now has its own Details, Achievements and Options pages in the panel's flat tile style, under a heading that lists the page names in large thin lower-case letters with the one you are on first and bright: About shows each fact as a small coloured label over its value with the description on a flat tile, Achievements shows a big per cent, how many you have and a flat bar in your accent colour (one earned always shows, it is full only when every one is earned) with each achievement as a flat row whose badge sits on a square tile, and Options lists the choices as flat tiles (removing ones are red and ask for a second press). Each page turns in like the panel itself, swinging in from its left edge. While doing this the tests found that Play sat a little lower on these pages than on the first page (much lower on the RP Classic); the panel now grows upwards only, so Play stays in exactly the same place. On the test branch only; not yet checked on a handheld or approved.
 
-**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you)
+**4. PROJECT PROGRESS** (implemented / verified on handhelds / approved by you / released)
 
-| Area | Implemented | Verified on handhelds | Approved by you |
-|---|---|---|---|
-| Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 |
-| Native pages | `██░░░░░░░░` 13/53 | `██░░░░░░░░` 13/53 | `░░░░░░░░░░` 0/53 |
-| Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 |
-| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build) | `░░░░░░░░░░` 0/17 |
-| Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN |
-| Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - |
+| Area | Implemented | Verified on handhelds | Approved by you | Released |
+|---|---|---|---|---|
+| Home layouts | `██████████` 53/53 | `█████████░` 48/53 | `░░░░░░░░░░` 0/53 | `??????????` 53 (older state, v0.6.72) |
+| Native pages (own designs) | `██████████` 52/53 · P2 branch only | `█████░░░░░` 29/53 | `░░░░░░░░░░` 0/53 · functional: 14 accepted functionally 22 Nov (batches 1-3), not visual approval | `░░░░░░░░░░` 0/53 |
+| Pickup animations | `██████████` 14/14 | `??????????` 14 opened + no flash / black frame on the RP Nova x1.0 (pkn675, 16 Nov, build 8bd5e4a); look approval: owner | `░░░░░░░░░░` 0/14 | `??????????` UNKNOWN |
+| Category styles | `██████████` 17/17 | `??????????` UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued | `░░░░░░░░░░` 0/17 | `??????????` 17 (older state) |
+| Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
+| Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: owner GO for v0.6.73 (PR #21); then: pixel font ~60-65 % before / after for approval (H9); worst popup typography: Pocket Classic, Pocket Ribbon, Night, Pocket, Bar (H16)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Slides, Vault, Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
 
-**6. WHAT YOU NEED TO DO** - GO for v0.6.73 (or NO-GO): merge draft PR #21, build + freeze the signed RC on the PC, upgrade test on one handheld, publish (RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR)
+**6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 
-**7. NEXT RELEASE** - current v0.6.72 · **v0.6.73: TESTING** · 0 of 13 app fixes fully verified · 3 gates left (next: Signed release build, frozen RC, secret scan (main tree on the PC)) · your approval needed: yes - when it is ready · window: RC ready 17 Nov
-- later: **v0.6.74: DEVELOPMENT** - Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval (UNKNOWN)
+**7. NEXT RELEASE** - current v0.6.73 · **v0.6.74: DEVELOPMENT** · 0 of 9 app fixes fully verified · 6 gates left (blocking: Reproduce the sparkle loop on the Flip 2 with production's own limit (read-only: logcat + battery state over 15 min)) · your approval needed: yes - when it is ready · window: UNKNOWN
 <!-- /GEN:summary -->
 
 **Links:** [this dashboard](https://github.com/dzepdzep/voltcap/blob/claude/qa-0672-repair/docs/claude/STATUS_DASHBOARD.md) ·
@@ -47,11 +46,11 @@ work. Emulator results never count as handheld verification. Release status is d
 
 ## RELEASE TRACKER (generated)
 <!-- GEN:release -->
-**Current stable:** v0.6.72 (5b01ef39, 2026-11-14) - Latest stable release (main). Save Sync 529 not included.
+**Current stable:** v0.6.73 (a4012212, 2026-11-17) - Latest stable release (main, PR #21). Assets = frozen rc1 (release 72a94b58, compat 2b6b9e3c). Save Sync 529 not included.
 
-### v0.6.73 - **TESTING**
+### v0.6.73 - **PUBLISHED**
 - Base: main 5b01ef39 (v0.6.72); dev branch claude/qa-0672-repair can fast-forward main. Scope: the stable batch on the dev line since v0.6.72 (updates 673a-675i); Save Sync 529 and the Flip 2 charging fix stay out; plus the 17 Nov status-bar / profile-picture / Storage fixes (H1-H3) - merged into the dev line 17 Nov (677l); whole words moved to v0.6.74 by the owner.
-- Release window: RC ready 17 Nov - waits for the owner's GO (draft PR #21); then ~1.5 h of release steps on the PC
+- Release window: PUBLISHED 17 Nov 2026 16:15 UTC (owner GO 15:22 Berlin, option 2: KONKR upgrade before publication)
 - App fixes and features: 13 (13 implemented, 0 fully verified, 6 implemented but not yet tested on a handheld, 4 need your look or decision)
 
 | Fix / feature | Handheld evidence | Your approval |
@@ -76,22 +75,21 @@ work. Emulator results never count as handheld verification. Release status is d
 |---|---|---|
 | CI unit tests + debug build (Verify Android update 310) | PASS | GREEN on be8865c (RC: version 0.6.73 / 80) - push run + PR #21 run, 17 Nov; QA tooling checks PASS on PR #21 |
 | Emulator QA trial (KONKR-like, x1.0 + x1.3) | PASS | run 44017399771 (678j, 9d7605f): success (verdict step passes only on PASS; EMULATOR evidence only, pre-merge tree). run 43961010406 (678c, 88e3457): VERDICT PASS - e529a (x1.3) and e529b (x1.0) popup gate PASS 2/2, COVERDETAILS + SHELF every graded check PASS, FATAL 0, owner snapshot restored diff=0 (EMULATOR evidence only, 2 layouts). Same run: the e529c touch walk tapped nothing (the game had no achievement set, so the pages were one off) - fixed 678d, next trial re-checks; not part of this gate. Before: run 43929836268 (677d, c45d0ab): FAIL, 1 check. SHELF PASS at x1.0 and x1.3; COVERDETAILS only buttons=FAIL (x1.3 More step, x1.0 Details page missing) - the device grep -iE missed keys its fixed-string read found in the same dump; 678a removes the regex from label reads (selftest), next trial decides. Before: run 43887216747 (677a, 4c332f1, first trial on the 675o dump fix): FAIL. x1.0: COVERDETAILS PASS on every check (first full PASS row); SHELF did not open on the first A ('read: Play keys probe 1, home 0'). x1.3: COVERDETAILS opened 1.5 s late + More step / Details page missing; SHELF Details page missing. No crash (FATAL 0). Earlier: 43833359452 (675m). Emulator evidence supports, never replaces, the handheld gates |
-| Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) | PASS | 17 Nov 05:20-05:45 UTC, QA build qa-073rc-b76e3ef-ci (CI 44021029412, Verify 310 GREEN on b76e3ef). RP Classic crc10 (x1.0 + x1.3, Classic / Grid / Cube / Hub / Storage / Tiles x points / notes / trophy / pads): status bar + profile picture 54/54, home text 36/36 PASS; badges NOT TESTED (Classic QA library has 2 apps, no fixture - H6). RP Nova src10 + src10b: status 54/54 + 20/20, home text 36/36 + 10/10 PASS; badges: Cube cover-flow side covers (stacked behind the focused one) + a Tiles tile scrolled half off-screen FAIL the strict checker - the same findings on every run since 677c, before these fixes (not a regression; listed for review). RP Nova prc13 x1.3 popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs, Storage, Hub: 10/10 PASS (the 6 readability FAILs of j677x13 gone), status 20/20, badges 2/2; home text 9/10 - Art library 'PlayStation 2' broken inside the word = known, whole words deferred to v0.6.74 by the owner. Nav bar (navbar676, RP Classic x1.0): Retroid pill hidden in 13/13 states; Android's NavigationBar0 window reports visible in gesture mode but draws nothing in the screenshots - the strict PASS rule says FAIL: owner / rule decision (HW-8). NOT TESTED on hardware: 678k (H8 console-home names slide - newer than this build), x1.0 popup gate, KONKR. |
-| Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line | PASS | merged 17 Nov ~05:10 UTC (live session) at facet 5535531 (677l: whole-word fitting reverted per the owner, detection kept); cloud compile + StatusFit677Test, WholeWords677hTest (detection), Batch478Test, BadgeLane676Test, CubeFacet676iTest, HomeCuts676rTest, PlatformBrowserFullText678jTest PASS; static checks PASS; selftest OK. Full suite: CI on this push |
+| Focused handheld re-check of the merged candidate on RP Classic + Nova (statuscheck + homecut on the status layouts; popup gate on Art library, Greencore, Library, Live, Terminal, Twin icons, Arcade, Discs) | PASS | PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1 |
+| Candidate fixes (branch claude/cube-statusbar-facet) merged into the dev line | PASS | PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1 |
 | Full popup gates on the KONKR + the other handhelds connected today, newest build (x1.0 + x1.3 where supported) | PASS | KONKR GT78 17 Nov: RC QA build qa-0.6.73-rc-91b1ac3-ci (678p + version) full x1.0 gate krc10 53/53 PASS (TV rapid fixed, D333); final RC be8865c (Channel revert) krcq10 Channel / Twin icons / Record crate / TV / Card binder / Cardboard box 6/6 PASS; rapid A B A B 60/60 (678p). x1.3 full gate on 678n k678n13 52/53 - Channel two-line name over the count (D350) - fixed in 678r, KONKR 17 Nov 15:07: QA build qa-0.6.73-678r-ci (eadd00f, CI Verify 310 GREEN on push) Channel x1.3 kc678r13 popup gate PASS 1/1 (all 11 grades); name plate one line + sliding, 48/120 fully readable; restored (font 1.0, density 240, owner snapshot diff=0). Review sheet: Claude outputs\live678n\KONKR_popups_678n_review.pdf |
 | Flip 2 (unavailable): 15 Nov popup gates as historical evidence | HISTORICAL | f674k x1.3 52/53 (674k build), f674o x1.0 52/53 (674n build) - NOT the newest build. Owner 16 Nov: don't block v0.6.73 on the Flip 2; the gap is listed under risks |
 | Record crate checklist (focus after More, rapid A/B, no size change) | PASS | KONKR 17 Nov after the D333 fix (qa-0.6.73-678p-ci, crate678.sh k678p_crate): x1.0 + x1.3 one key size while the focus walks, one press each PLAY -> SLEEVE NOTES -> INSPECT -> MORE, MORE open + B back on MORE, B closes, rapid A B A B 10/10 at each scale, no launch; nothing clipped (popup gates). Before the fix: rapid 9/10 (k678c2). |
 | Owner visual review of the new menus and x1.3 fixes | PASS | owner 17 Nov: reviewed the KONKR sheet - designs good; pixel-font x1.3 polish (Pocket Ribbon, Pocket Classic, Night) to v0.6.74, not a v0.6.73 blocker |
-| Signed release build, frozen RC, secret scan (main tree on the PC) | NOT STARTED | after the gates above; signing keys live only on the PC |
-| Upgrade install over the real Voltcap on one handheld + smoke test | NOT STARTED | needs the owner's GO (production app) |
-| Owner GO to merge to main and publish | NOT STARTED | never automatic |
+| Signed release build, frozen RC, secret scan (main tree on the PC) | PASS | PC main a4012212: release + compat 0.6.73 (80) frozen rc1 (72a94b58 / 2b6b9e3c), freeze --verify OK, secret scan clean, signer 88ce4b67 = v0.6.72, debuggable=false, manifest / sync / charging / scopes unchanged |
+| Upgrade install over the real Voltcap on one handheld + smoke test | PASS | KONKR real Voltcap 79 -> 80 from the frozen rc1, data kept (firstInstallTime unchanged), home + library + achievements shown, crash buffer 0 |
+| Owner GO to merge to main and publish | PASS | PR #21 merged (main a4012212); GitHub release v0.6.73 published, assets byte-identical to the tested rc1 |
 - **Risk / known gap:** Flip 2 (1920x1080, 360 dpi, x1.0 / x1.3): checked only on builds 674k / 674n (15 Nov). Fixes since then that touch layouts it shows (Side menu status line, Library / Spot hints) are not seen on a Flip 2. Mitigation: the same fixes pass on the KONKR / other handhelds today; the Flip 2's 15 Nov results had 1 FAIL each (Bar arrows - fixed 674n; Side status line - fixed 674o).
 - **Risk / known gap:** Charging fix left out: the Flip 2 keeps v0.6.72's charge-limit behaviour (no change, no new risk).
 - **Risk / known gap:** Small 4:3 screens at x1.3 (RP Nova 640x480 dp) showed 4 layout-specific FAILs on 8bd5e4a; the same layouts PASS at x1.0 there and on larger screens.
 - **Left out on purpose:** Flip 2 charging sparkle fix (charge-limit pause read as unplugging) - owner 16 Nov: Flip 2 unavailable - postponed to v0.6.74 or later; never tested on the device. Kept: branch claude/charge-loop-674i + docs/claude/patches/charge-loop-674i.patch (re-applies cleanly); removed from the dev line in 675i, ChargeLimiter.kt identical to v0.6.72.
 
-Why it cannot ship yet: Signed release build, frozen RC, secret scan (main tree on the PC) (NOT STARTED); Upgrade install over the real Voltcap on one handheld + smoke test (NOT STARTED); Owner GO to merge to main and publish (NOT STARTED).
-Merging, the production install and publishing always wait for your explicit GO.
+Published: this is the current stable release (a4012212, 2026-11-17). Nothing to approve.
 
 ### v0.6.74 - **DEVELOPMENT**
 - Base: after v0.6.73. Scope: Flip 2 charging fix (674i) + Save Sync 529 - each only after its own end-to-end test and the owner's approval.
@@ -108,7 +106,7 @@ Merging, the production install and publishing always wait for your explicit GO.
 | Achievements page opens on Recently Unlocked; better reveal / trophy animations; old unlocks don't replay | not run | requested 17 Nov |
 | AYN Thor: Android Home no longer appears on the lower screen when a game opens on the top screen (cause first) | not run | requested 17 Nov |
 | Words never broken in the middle where a slightly smaller readable size keeps them whole (app-wide text fitting) | full Nova x1.3 j677x13 (677j) - see matrix H4; x1.0 + RP Classic full gates NOT TESTED | owner 17 Nov: moved to v0.6.74 (affects too many layouts without complete regression verification); kept on branch claude/whole-words-v0674 |
-| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
+| Visual polish pass of all 53 game windows (KONKR_popups_678n_review.pdf): x1.0 vs x1.3, first page vs More page; type, spacing, art, buttons, hints, empty space, collisions; each layout keeps its own look. First: Pocket Classic (pixel font + blocks too big at x1.3), Pocket Ribbon (console / Never played / achievements wrap), Night (ACHIEVED / RELEASED broken), Pocket (Play game wraps), Bar (Achievements / labels cramped). Then: Hero, Hero tiles, Live, Cross, Hub, Resume, Channel, Twin icons, Twin showcase, Memory card, Bubbles, Panels, Cinema. A functional PASS is not visual approval | KONKR x1.3 sheet (k678n13) shows the need; Pocket Play game wrap fixed in code 681p (unit test); Night ACHIEVED / RELEASED whole in code 681t-681u (unit test, cloud); Bar dock key names whole in code 681w (unit test, cloud); 682 survey test of the next 13 windows (findings from CI); handheld HW-24 NOT TESTED | owner handoff 17 Nov (sections 3-4): v0.6.74, does not delay v0.6.73; pixel font ~60-65 % first (matrix H9), before / after for approval |
 
 | Gate | State | Evidence |
 |---|---|---|
@@ -127,13 +125,16 @@ Merging, the production install and publishing always wait for your explicit GO.
 <!-- GEN:owner -->
 | # | What I need from you | Why | Device | Urgent? | Blocks |
 |---|---|---|---|---|---|
-| 1 | GO for v0.6.73 (or NO-GO): merge draft PR #21, build + freeze the signed RC on the PC, upgrade test on one handheld, publish | RC eadd00f ready: CI green (push + PR #21), KONKR x1.0 53/53 on the RC build, rapid A/B fixed (60/60), Record crate checklist PASS, Channel x1.3 name / count fixed (D350, KONKR x1.0 + x1.3 PASS); known for v0.6.74: pixel-font polish, Twin icons badge spacing (D352), whole words (D346). Thor / RP Classic not available - upgrade test on the KONKR | none to answer; the upgrade test needs one handheld with your real Voltcap (you pick which) | YES | v0.6.73 release |
+| 1 | Achievement reveal animation: pick NOW (Volt capsule), A Trophy flip, B Glow burst, or a mix - see docs/evidence/h12_reveal_682k/storyboard.png (one row per option, left to right over time) | H12 redesign of the reveal / trophy moment; a new look never becomes the default without your OK on the comparison. Nothing changes in the app until you pick | none (image on GitHub) | no | H12 reveal redesign only |
 | 2 | Same-row badges: look at the final comparison (compact badge / adaptive spacing - both badges kept visible) when it is ready | you approved the direction on 17 Nov but not hiding the achievement badge below 72 %; implementation waits for your approval of the comparison | screenshots (when Claude posts them) | no | v0.6.74 badge redesign only |
 | 3 | Status bar: which layout were you looking at, and do you prefer one single block or each layout drawing it its own way? | your request of 16 Nov - a design change needs your pick before it becomes the default | a screenshot helps | no | that design change only |
 | 4 | Next hardware session (any day): RP Classic and the Thor by USB, PC on, then say "devices ready" | left for v0.6.73 / v0.6.74 after the KONKR session of 17 Nov: RP Classic full 53-layout gate (HW-18), Thor dual-screen (HW-19), Spot START glyph re-measure (HW-6) | RP Classic + Thor (USB); KONKR done 17 Nov; Flip 2 not needed for v0.6.73 | no | nothing for v0.6.73 (KONKR covered it) |
 | 5 | Pause or retire the old PC task "VoltCap hourly backlog run" | its PC copy is behind the cloud branch; its runs can't push (harmless, wasted) | Claude app > scheduled tasks | no | nothing |
 | 6 | Save Sync real-Drive test: sign the QA app in to a spare Google account | last data-safety step before Save Sync 529 can ship (not in v0.6.73) | Flip 2 + KONKR | no | a later release |
 | 7 | Two PC-only branches (review/ai-setup-0672, feature/dual-welcome): keep on the PC or push | they change CI workflows, so they were not pushed automatically | none | no | nothing |
+| 8 | Thor lower screen (H13): pick a fix - A apps follow the screen layout like games / B 'Leave as is' keeps a live Voltcap screen / C Voltcap as the lower screen's home / D companion stays until the game ends (A first recommended) | cloud reading 17 Nov found why Android Home shows on the lower screen (docs/claude/THOR_DUAL_SCREEN.md); not reproduced on the Thor yet | none (HW-19 later: you start the game, Claude only reads) | no | v0.6.74 Thor dual-screen fix (H13) |
+| 9 | Approve the final pixel-font comparison (62.5 % + 9.5 sp readable minimum) or ask for a different minimum | pixel_font_final_emulator.pdf (emulator, 4 pixel layouts x1.0 / x1.3); branch claude/v0674-pixel-font | none | no | merging the pixel font into the v0.6.74 line |
+| 10 | Review the native game-window pages (P2) on the emulator review sheets, and choose Cross's default Achievements view | Every P2 review set now has an emulator walk PASS (EMULATOR only, not handheld): runs 45576064795, 45584303713, 45603942465, 45612718815 (x1.0), 45623176605 (Green core, Art library, Live), 45644606025 (Cross) - each run's artifact holds sheet_p2_<LAYOUT>.jpg. Question: Cross's Achievements key opens the menu's own list by default (setting 'Achievements in the menu's style', update 127), so players never see Cross's new window Achievements page unless they switch it off - keep that default, or show the new page by default? | none | no | the next P2 layouts' polish and merging claude/v0674-native-pages into the v0.6.74 line |
 
 Cloud development continues without any of these. v0.6.73 / KONKR production upgrade / merges to main need your separate GO.
 <!-- /GEN:owner -->
@@ -166,8 +167,8 @@ Tracked requirement rows: **92** = 30 in the requirements matrix (programme + re
 |---|---|---|---|
 | done | 2 | 4 | 6 (6 %) |
 | implemented, verification pending | 12 | 0 | 12 (13 %) |
-| in progress | 10 | 4 | 14 (15 %) |
-| not started / open | 3 | 7 | 10 (10 %) |
+| in progress | 11 | 4 | 15 (16 %) |
+| not started / open | 2 | 7 | 9 (9 %) |
 | waiting for hardware | 0 | 25 | 25 (27 %) |
 | waiting for owner | 1 | 19 | 20 (21 %) |
 | blocked (references) | 0 | 1 | 1 (1 %) |
@@ -183,10 +184,19 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 <!-- GEN:hw -->
 | Request | Status |
 |---|---|
+| HW-28 P2 726a + 727a + 728a + 729a + 730a + 731a + 732a + 733a + 734b + 735a + 736a + 737a + 738a + 739a + 740a + 741a + 742a + 743a + 744a + 745a Circuit board's datasheet sections + Channel grid's own screens + Timeline's own pages + Hero banner's pages + Memory card's browser screens + Cardboard box's insert sheets + File select's own screens + Case flow's own pages + Orbit deck's console screens + Airy home's panel pages + Bubble home's card pages + Pocket camera's menu pages + Panel dashboard's panel pages + Rental shop's tag pages + Green core's console pages + Art library's gallery pages + Cross menu's pages + Live tiles' pages + Layout Studio's pages + the Pocket family's pages (v0674-native-pages df0f0c3) | OPEN (batch with the next KONKR + RP Classic P2 session) |
+| HW-27 P2 682aq (v0674-native-pages) - lazy rows, Coverflow x1.3, Arcade | DONE 24 Nov night (Level 1, QA app, KONKR BW0306N230000845 + RP Classic MC94516AQF091001112, USB) |
+| HW-26 Volt second screen text shown whole (690a, rule 11) | OPEN (Thor; batch with HW-19 when the owner says the Thor is back) |
 | HW-17 v0.6.73 candidate focused re-check (status bar, profile picture, Storage; merged dev line) | DONE (b76e3ef); 678k NOT TESTED |
+| HW-25 Library rescan: deleted last game / empty console / SD card out (681r) | DONE 18 Nov except the SD card (KONKR kk682d + RP Classic rc682b: 18/18 PASS each; build qa-682b-3ec7e45-ci). SD card physically out: NOT TESTED - owner 18 Nov 12:12 does not want to pull the card now; recorded NOT TESTED, never PASS (when wanted: RP Classic, sh rescan681r.sh run TAG 453E-4658 - the owner pulls / reinserts when the log says) |
+| HW-25 Achievements progress counts each new unlock as it locks in (681y, H12) | OPEN (same KONKR session as HW-24, ~3 min) |
+| HW-24 Channel progress pill clear of the name plate (680a, D356) | OPEN (next KONKR session) |
+| HW-23 KONKR evening session 17 Nov (live, owner present) | DONE |
+| HW-22 Terminal home: path, header and preview shown whole (679d, rule 11 / D353) | OPEN (batch with other KONKR requests) |
+| HW-21 Console hub category title clear of the profile row at density 1.4 (679c, H7 / D347) | OPEN (batch with HW-18) |
 | HW-18 RP Classic full 53-layout popup gate (after the fixture fix, H6) | OPEN (tooling fixed 678l, needs the Classic) |
 | HW-20 Achievements page opens on the new unlocks (678m, H12) | DONE on the KONKR (x1.0 + x1.3); touch scroll / reduced motion NOT TESTED |
-| HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (after the cloud investigation) |
+| HW-19 AYN Thor dual-screen: Android Home on the lower screen after a top-screen launch (H13) | OPEN (cloud reading done 679b) |
 | HW-16 Category screen text shown whole (678j, rule 11) | IN PROGRESS (KONKR grid look done; Slides / Stage NOT TESTED) |
 | HW-15 Save-sync prompts text shown whole (678i, rule 11) | OPEN |
 | HW-14 Settings text shown whole (678h, rule 11) | IN PROGRESS (KONKR: search + 3 pages PASS; sub-pages NOT TESTED) |
@@ -199,15 +209,14 @@ Percentages are shares of the tracked rows, not of the whole project: the full n
 | HW-3 Flip 2 charging sparkle - reproduce first | BLOCKED - DEVICE UNAVAILABLE |
 | HW-4 Cube first A on KONKR x1.3; L2 / R2 fact 0 px | DONE (popup gate) / onepress NOT TESTED |
 | HW-5 Rapid A/B leaves a window open once (Cards, Crate, TV) | DONE 17 Nov (D333 fixed in 678p, 60/60 rounds closed on the KONKR) |
-| HW-6 Spot START glyph re-measure with the key box (675e, D-674o-1) | OPEN |
 | HW-7 Spotify screen + player: long names shown whole (675l, rule 11) | OPEN |
 
-Open hardware requests: 11 of 18.
+Open hardware requests: 16 of 26.
 <!-- /GEN:hw -->
 
 ## Progress by area (generated)
 <!-- GEN:areas -->
-_Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
+_Evidence file: docs/claude/progress.json (2026-11-23 (P2 review package, batches 4-7 on hardware)). Real-device and emulator columns are separate; emulator evidence never counts as device evidence._
 
 **Home layouts (popup gate)**
 - Total: 53
@@ -222,14 +231,14 @@ _Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-
 
 **Native popup pages**
 - Total: 53
-- Implemented: 13 (24 %)
-- Unit-tested: 13 (24 %)
+- Implemented: 52 (98 %)
+- Unit-tested: 52 (98 %)
 - Emulator-tested: 0 (0 %)
-- Real-device verified: 13 (24 %)
+- Real-device verified: 29 (54 %)
 - Owner approved: 0 (0 %)
 - Released: 0 (0 %)
-- Remaining / blocked: 40 layouts still on the shared page (P2)
-- Source: REQUIREMENTS_MATRIX P2 (673j/k gates)
+- Remaining / blocked: 52 own designs (Pocket classic + Pocket ribbon + Pocket Quest 745a + Circuit board 726a + Channel grid 727a + Timeline 728a + Hero carousel / Hero tiles 729a + Memory card 730a + Cardboard box 731a + File select 732a + Case flow 733a + Orbit deck 734b + Airy home 735a + Bubble home 736a + Pocket camera 737a + Panel dashboard 738a + Rental shop 739a + Green core 740a + Art library 741a + Cross menu 742a + Live tiles 743a + Layout Studio 744a, Robolectric only - HW-28), 0 visually approved. 29 own designs, 0 visually approved. Owner 23 Nov 13:32: Night menu + Arcade x1.3 accepted as improved (not approval). P2 finish done on the branch: page-change audit on hardware (Arctic, Magazine, Library, Cube: one page at a time, heading after the old page, no jump; Magazine fixed twice), Spotlight title plate, Terminal confirmation clear, TV kept one key at a time (owner decision), x1.0 hardware on both handhelds. Coverflow details: proposal waiting for the owner. Arcade frame time (D379) open. Left: Disc station's shared bodies (class C complete with the Pocket family 745a).
+- Source: P2 branch docs/claude/NATIVE_PAGES_P2.md (682ah / 682ai, 23 Nov). device = every page walked on KONKR + RP Classic at x1.0 AND x1.3 (p2review, QA app); the changed layouts re-walked: x1.3 kh13 / km13 / ki13 (KONKR), rh13 / ri13 (RP Classic); x1.0 kf10 (KONKR), rg10 + rh10 (RP Classic) - 0 launches, 0 crashes, restore diff 0. Play same size and place on every page: 29 of 29.
 
 **Physical pickup / return animations**
 - Total: 14
@@ -245,13 +254,13 @@ _Evidence file: docs/claude/progress.json (2026-11-17 (live 678r, KONKR)). Real-
 **Category styles (looks)**
 - Total: 17
 - Implemented: 17 (100 %)
-- Unit-tested: UNKNOWN
+- Unit-tested: all 17 by the inventory guard (CategoryLooksInventory759aTest); look-specific checks 10 / 17
 - Emulator-tested: 0 (0 %)
-- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build)
+- Real-device verified: UNKNOWN on the dev line (all 17 checked 12 Nov on an older build); HW-24 759a queued
 - Owner approved: 0 (0 %)
 - Released: 17 (older state)
 - Remaining / blocked: third-priority polish not started: Stage, Generations, Wall, Slides, Vault, Grid / Dashboard / Constellation; owner visual review
-- Source: Project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
+- Source: docs/claude/CATEGORY_STYLES_P5.md (759a); project doc SPRINT527: KONKR all 17 looks at x1.0 / x1.3 (12 Nov, feature/popup-native); not re-run on the dev line since
 
 **Uniform buttons / menus**
 - Total: UNKNOWN

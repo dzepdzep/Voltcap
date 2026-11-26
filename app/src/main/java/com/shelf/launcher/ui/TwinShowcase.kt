@@ -62,7 +62,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -416,9 +415,10 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
                             )
                         }
                     } else Spacer(Modifier.weight(1f))
-                    com.shelf.launcher.data.CategoryBar.CURRENT -> Text(
+                    com.shelf.launcher.data.CategoryBar.CURRENT -> StableFullText(
+                        // (752a, rule 11: the whole category name)
                         c.categoryLabel, color = ShowInk, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f)
                     )
                     com.shelf.launcher.data.CategoryBar.OFF -> Spacer(Modifier.weight(1f))
                 }
@@ -435,9 +435,10 @@ internal fun TwinShowcaseBottom(c: StyleCtx, modifier: Modifier, framed: Boolean
             val g = c.game
             Box(Modifier.fillMaxWidth().height(headH), contentAlignment = Alignment.Center) {
                 if (g != null) androidx.compose.animation.Crossfade(g.stableKey, animationSpec = tween(SHOW_MS / 2), label = "showName") { _ ->
-                    Text(
+                    // (752a, rule 11: the whole name under the grid)
+                    StableFullText(
                         titles.display(g.name), color = ShowInk, fontSize = if (compact) 11.sp else 13.sp, fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     )
                 }
             }

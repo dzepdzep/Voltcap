@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 529s (owner P3): frame recordings of the physical pickup - A opens the popup (the object leaves its place), B closes it
 # (back into the same place). Isolated QA app ONLY (com.shelf.launcher.qa), fixture library, launches blocked, preview on,
 # owner snapshot saved / restored. Never wakes the device (an asleep display stops the run), keys only while the QA app has

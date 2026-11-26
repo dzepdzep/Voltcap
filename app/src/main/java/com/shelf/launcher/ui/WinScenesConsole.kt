@@ -1,6 +1,7 @@
 package com.shelf.launcher.ui
 
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.snap
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -384,11 +385,13 @@ private fun BladePageBlade(ctx: WinSceneCtx, pg: WinPage, live: Boolean, p: Blad
             WinFullText(ctx.name, color = lerp(p.glow, Color.White, 0.45f), fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
             Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(3.dp)).background(Color.Black.copy(alpha = 0.22f))) {
-                ctx.pageFor(pg, Modifier.fillMaxSize(), live)
+                // (682ae, P2 batch 7: the blade's own rows - WinPagesBlade.kt; the shared rows are gone.)
+                BladePage(ctx, pg, live, p.glow, p.ink, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(8.dp))
             // (674b, owner brief 15 Nov: the page blade's keys one row of identical keys (UniformKeyRow) - was a wrapping FlowRow.)
-            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp) { a ->
+            // (682ae: two page slots - Play keeps the first half on every page)
+            UniformKeyRow(ctx.buttons.map { a0 -> if (live) a0 else a0.inert() }, 6.dp, slots = PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val k by animateFloatAsState(if (on) 1f else 0f, tween(150), label = "bgKey")
                         Row(
@@ -456,6 +459,8 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
             if (o is androidx.compose.ui.graphics.Outline.Generic) clipPath(o.path) { this@drawWithContent.drawContent() } else drawContent()
             drawPeelFlap(pk)
         }.clip(RoundedCornerShape(10.dp)).background(ground)
+            // (736a, P2 class C: L1 / R1 from anywhere in the card - its own pages INFO / AWARDS / SETTINGS, WinPagesBubble.kt.)
+            .nativeBumpers(ctx)
     ) {
         (ctx.backdrop ?: ctx.wide)?.let { SmartArt(it, null, Modifier.fillMaxSize(), request = rememberBackdropRequest(it), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
         Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color.Black.copy(alpha = 0.75f), 0.6f to Color.Black.copy(alpha = 0.3f), 1f to Color.Black.copy(alpha = 0.5f))))
@@ -524,7 +529,7 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                         }
                     }
                 }
-            } else Box(Modifier.weight(if (ctx.page == WinPage.MAIN && !rich) 0.36f else 0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Black.copy(alpha = 0.55f))) {
+            } else Box(Modifier.weight(if (ctx.page == WinPage.MAIN && !rich) 0.36f else 0.5f).fillMaxHeight().clip(RoundedCornerShape(6.dp)).background(if (ctx.page == WinPage.MAIN) Color.White.copy(alpha = 0.92f) else Color.Transparent)) {
                 if (ctx.page == WinPage.MAIN) Column(Modifier.fillMaxSize().padding(12.dp).then(fadeScroll())) {
                     // (Update 424: the LiveArea's info panel stood mostly empty white beside the bubble's keys: the game's picture
                     // heads it, as on the console's page, and its description follows the facts.)
@@ -558,7 +563,9 @@ internal fun BubbleCard(ctx: WinSceneCtx) {
                                 textDecoration = if (on) androidx.compose.ui.text.style.TextDecoration.Underline else null)
                         }
                     }
-                } else ctx.pageBody(Modifier.fillMaxSize())
+                // (736a, P2 class C: on its pages the white panel shows the card's own pages - INFO / AWARDS / SETTINGS in the
+                // LiveArea's white keys and hairlines, under a heading that names the page after the old one has gone.)
+                } else BubblePageArea(ctx, blue, Modifier.fillMaxSize(), compact)
             }
         }
     }
@@ -604,6 +611,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             scaleY = 0.015f + 0.985f * open
             alpha = if (q <= 0f) 0f else 1f
         }
+            // (737a, P2 class C: L1 / R1 from anywhere in the menu - its own pages DATA / ALBUM / SETUP, WinPagesCamera.kt.)
+            .nativeBumpers(ctx)
     ) {
         Canvas(Modifier.fillMaxSize()) { pixelFrame(u.toPx(), c3, c0, 3) }
         Row(Modifier.fillMaxSize().padding(u * 6)) {
@@ -611,7 +620,10 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             // most of the width and the commands broke inside words — "OPTION / S", "ACHIEV / EMENTS". It keeps its shape but
             // never takes more than 45 % of the window now; on 16:9 it never reached that.)
             Column(if (land) Modifier.fillMaxHeight().fillMaxWidth(0.46f) else Modifier.fillMaxHeight().widthIn(max = w * 0.45f)) {
-                val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
+                // (682bb, v0.7.0 preview - RP Classic: weighted to the column's full height, the portrait picture could not fall back
+                // to the column's width - aspectRatio drew it 0.875 x the height wide, over the name ("ETRIS"). Not forced to fill, it
+                // takes the height where it fits and the width where it does not.)
+                val pic = if (land) Modifier.fillMaxWidth().aspectRatio(128f / 112f) else Modifier.weight(1f, fill = false).aspectRatio(112f / 128f, matchHeightConstraintsFirst = true)
                 Box(pic.border(1.dp, c0).background(c2)) {
                     if (bmp != null) androidx.compose.foundation.Image(bmp, ctx.name, Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds,
                         filterQuality = androidx.compose.ui.graphics.FilterQuality.None)
@@ -625,7 +637,8 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
             }
             Spacer(Modifier.width(u * 6))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = 3, lineHeight = fs(8f))
+                // (737a: on its own pages the name keeps one sliding line - the page takes the room under it.)
+                WinFullText(ctx.name.uppercase(), color = c0, fontFamily = font, fontSize = fs(6.5f), maxLines = if (ctx.page == WinPage.MAIN) 3 else 1, lineHeight = fs(8f))
                 Spacer(Modifier.height(u))
                 Box(Modifier.fillMaxWidth().height(u).background(c0))
                 Spacer(Modifier.height(u * 3))
@@ -649,10 +662,13 @@ internal fun CameraMenu(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(u * 2))
                     if (ctx.total > 0) Text("TROPHIES ${ctx.earned}/${ctx.total}", color = c1, fontFamily = font, fontSize = fs(4.5f), maxLines = 2)
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth().background(c0)) { ctx.pageBody(Modifier.fillMaxSize().padding(u * 2)) }
+                    // (737a, P2 class C: the camera's own pages on its light screen - DATA / ALBUM / SETUP in the pixel font and the
+                    // four shades, under a heading that names the page after the old one has gone; was the shared pages in a dark box.)
+                    CameraPageArea(ctx, CameraInk(c0, c1, c2, c3, font, u, fs), Modifier.weight(1f).fillMaxWidth())
                     Spacer(Modifier.height(u * 2))
-                    // (674e: the page's keys a stack of identical rows the window's width, at least 24 dp.)
-                    UniformKeyColumn(ctx.buttons, 0.dp, fill = true) { a ->
+                    // (674e: the page's keys a stack of identical rows the window's width, at least 24 dp. 737a: the room of two
+                    // keys on every page - Play alone on Options stays where it is on Details.)
+                    UniformKeyColumn(ctx.buttons, 0.dp, fill = true, slots = PAGE_SLOTS) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 24.dp).background(if (on) c1 else Color.Transparent), contentAlignment = Alignment.CenterStart) {
                                 Text((if (on) "> " else "  ") + a.label.uppercase(), color = if (on) c0 else c1, fontFamily = font, fontSize = fs(5f), maxLines = 2)
@@ -697,6 +713,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
             // (Update 489, D285: turned text drawn flat — see flatTextFor3d.)
             flatTextFor3d()
         }.clip(RoundedCornerShape(6.dp)).background(p.panel).border(1.dp, Color.White.copy(alpha = 0.6f), RoundedCornerShape(6.dp))
+            // (738a, P2 class C: L1 / R1 from anywhere in the panel - its own pages OVERVIEW / ACHIEVEMENTS / MANAGE, WinPagesPanels.kt.)
+            .nativeBumpers(ctx)
     ) {
         Column(Modifier.fillMaxSize()) {
             // The art strip with the name.
@@ -705,7 +723,8 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0.3f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.7f))))
                 Column(Modifier.align(Alignment.BottomStart).padding(horizontal = 18.dp, vertical = 10.dp)) {
                     WinFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
-                    Text(ctx.console + (if (ctx.page != WinPage.MAIN) "  ·  " + winPageName(ctx.page) else ""), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
+                    // (738a: the page's name is the page area's own heading now - the strip keeps the console alone.)
+                    Text(ctx.console, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp, maxLines = 1)
                 }
                 Box(Modifier.fillMaxWidth().height(4.dp).align(Alignment.BottomCenter).background(p.accent))
             }
@@ -778,7 +797,10 @@ internal fun PanelDetail(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else Box(Modifier.fillMaxSize().border(1.dp, ink.copy(alpha = 0.18f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                    // (738a, P2 class C: the panel's own pages on its right side - OVERVIEW / ACHIEVEMENTS / MANAGE as flat tiles and
+                    // rows lit in the dashboard's colour, under a heading that names the page after the old one has gone; was the
+                    // shared pages in a thin frame.)
+                    } else PanelPageArea(ctx, PanelInk(ink, p.accent, p.panel), Modifier.fillMaxSize(), compact)
                 }
             }
         }
@@ -831,25 +853,54 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
         }
         Row(Modifier.fillMaxSize().padding(start = 36.dp, end = 18.dp, top = 16.dp, bottom = 14.dp)) {
             // The cover, taped on.
-            Box(Modifier.fillMaxHeight(0.78f).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
+            // (682r, RP Classic x1.3: on the magazine's own pages the taped cover steps back - its column left the checklist so
+            // narrow that titles broke inside words)
+            // (682ag, transition audit KONKR x1.3: the cover, the masthead's page name and the headline all changed in the first frame
+            // while the feature was still on the page. They follow the heading page - the moment the old sheet has gone - and the
+            // cover steps back smoothly.)
+            val headPage = rememberHeadingPage(ctx.page)
+            // (682ag, KONKR x1.3 kh13: stepping back after the old sheet had gone, the cover still moved while the new sheet faded in -
+            // its text re-wrapped and the key row slid under the page's edge for ~150 ms. It moves while the old sheet leaves
+            // [magCoverMs], so the new sheet arrives into a still column.)
+            val coverFrac by androidx.compose.animation.core.animateFloatAsState(if (ctx.page == WinPage.MAIN) 0.78f else 0.5f,
+                if (rememberAnimationsEnabled()) tween(magCoverMs(), easing = FastOutSlowInEasing) else snap(), label = "magCover")
+            Box(Modifier.fillMaxHeight(coverFrac).aspectRatio(0.72f, matchHeightConstraintsFirst = true).graphicsLayer { rotationZ = 3f }) {
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f))) {
                     if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
+                    // (682ag, owner review 23 Nov: no picture was an empty grey card - the issue's own printed cover now: its
+                    // masthead, the console's plate in the game's colour.)
+                    else MagNoArtCover(ctx, st, Modifier.fillMaxSize())
                 }
                 Box(Modifier.align(Alignment.TopCenter).offset(y = (-8).dp).size(60.dp, 18.dp).graphicsLayer { rotationZ = -6f }.background(Color(0x99F3E9C6)))
             }
             Spacer(Modifier.width(20.dp))
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Text(st.masthead + "  ·  " + (if (ctx.page == WinPage.MAIN) "FEATURE" else winPageName(ctx.page).uppercase()), color = st.accent, fontFamily = st.head,
+                // (682n: the page's own name - THE REVIEW, CHECKLIST, READER SERVICES - WinPagesMag.kt)
+                Text(st.masthead + "  ·  " + magPageName(headPage), color = st.accent, fontFamily = st.head,
                     fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
                 // (Update 424, rule 11: the headline wraps and shrinks a step when long; update 478, D271: then slides — it was cut.)
-                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight, fontSize = if (compact) 20.sp else 26.sp, lineHeight = if (compact) 22.sp else 28.sp,
-                    maxLines = 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
+                // (682n: on its own pages the headline steps down, so the page has the room)
+                val onPage = headPage != WinPage.MAIN
+                WinFullText(ctx.name.uppercase(), color = st.ink, fontFamily = st.head, fontWeight = st.headWeight,
+                    fontSize = if (onPage) 16.sp else if (compact) 20.sp else 26.sp, lineHeight = if (onPage) 18.sp else if (compact) 22.sp else 28.sp,
+                    maxLines = if (onPage) 2 else 3, style = androidx.compose.material3.LocalTextStyle.current.copy(
                         fontStyle = if (st.italicHead) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal))
-                Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
-                Box(Modifier.padding(vertical = 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
-                if (ctx.page == WinPage.MAIN) {
+                // (682r, KONKR x1.3: on its own pages the facts line steps out - THE REVIEW's FACT FILE carries them - and the rule
+                // tightens; with it there the CHECKLIST had no room left for a single achievement row.)
+                if (!onPage) Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  "), color = st.muted, fontFamily = st.body, fontSize = 11.sp, maxLines = 2)
+                Box(Modifier.padding(vertical = if (onPage) 4.dp else 6.dp).fillMaxWidth().height(2.dp).background(st.ink))
+                // (682n, P2 batch 2: the magazine's own pages - WinPagesMag.kt; the feature itself is the first page.)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "magPage", move = ::magMove) { pg, pageLive ->
+                // (the copy on its way out keeps no focus requesters and presses nothing - WinAction.inert)
+                // (682ag: and keeps the keys it had - the feature leaving showed the next page's keys for its last frames)
+                val kept = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(ctx.buttons to ctx.tools) }
+                if (pageLive) androidx.compose.runtime.SideEffect { kept.value = ctx.buttons to ctx.tools }
+                val btns = (if (pageLive) ctx.buttons else kept.value.first).map { if (pageLive) it else it.inert() }
+                val tls = (if (pageLive) ctx.tools else kept.value.second).map { if (pageLive) it else it.inert() }
+                Column(Modifier.fillMaxSize()) {
+                if (pg == WinPage.MAIN) {
                     Column(Modifier.weight(1f).then(fadeScroll()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        ctx.buttons.filter { it.primary }.forEach { a ->
+                        btns.filter { it.primary }.forEach { a ->
                             SceneControl(a, Modifier) { on ->
                                 Box(Modifier.size(if (compact) 88.dp else 112.dp, if (compact) 42.dp else 60.dp), contentAlignment = Alignment.Center) {
                                     Canvas(Modifier.fillMaxSize().graphicsLayer { rotationZ = if (on) -4f else 0f; val s = if (on) 1.08f else 1f; scaleX = s; scaleY = s }) {
@@ -869,11 +920,20 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                         }
                         // (Update 346: the "see page" callouts run in two columns, down then across, as a contents box would —
                         // in one column the last ones ran off the bottom of the page on a 16:9 handheld.)
-                        val callouts = ctx.buttons.filter { !it.primary && !it.back } + ctx.tools + ctx.buttons.filter { it.back }
-                        val half = (callouts.size + 1) / 2
+                        val callouts = btns.filter { !it.primary && !it.back } + tls + btns.filter { it.back }
+                        // (682ag, owner review 23 Nov, RP Classic x1.3: "ACHIEVEM / ENTS" - two columns only where each holds the
+                        // longest callout word at its size; otherwise one column, the words whole, the box scrolling as before.)
+                        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val cm = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+                        val cd = androidx.compose.ui.platform.LocalDensity.current
+                        val cStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = if (compact) 12.sp else 14.sp, fontWeight = FontWeight.Bold, fontFamily = st.head)
+                        val longestPx = callouts.flatMap { it.label.uppercase().split(' ') }.maxOfOrNull { cm.measure(it, cStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                        val arrowPx = cm.measure("▸ ", cStyle, softWrap = false, maxLines = 1).size.width
+                        val twoCols = magTwoColumns(constraints.maxWidth.toFloat(), longestPx.toFloat(), arrowPx.toFloat(), with(cd) { 8.dp.toPx() }, with(cd) { 20.dp.toPx() })
+                        val half = if (twoCols) (callouts.size + 1) / 2 else callouts.size
                         // (Update 470: a gutter between the two columns — at font 1.3 a wrapped callout reached the next column's edge.)
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (col in listOf(callouts.take(half), callouts.drop(half))) {
+                            for (col in listOf(callouts.take(half), callouts.drop(half)).filter { it.isNotEmpty() }) {
                                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     col.forEach { a ->
                                         // (674f: the callouts keep their own size - the magazine's contents-box links; as wide as the column
@@ -895,13 +955,17 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                                 }
                             }
                         }
+                        }
                     }
                     Text(listOfNotNull(if (ctx.playtime == null && ctx.lastPlayed == null) "NOT PLAYED YET" else "PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null).joinToString("   "),
                         color = st.muted, fontFamily = st.head, fontSize = 10.sp, letterSpacing = 1.sp, maxLines = 2)
                 } else {
-                    Box(Modifier.weight(1f).fillMaxWidth().border(1.dp, st.ink.copy(alpha = 0.35f))) { ctx.pageBody(Modifier.fillMaxSize()) }
-                    // (674e: the page's keys one vertical menu of identical keys - the page's width, 26 dp, the lit one ringed.)
-                    UniformKeyColumn(ctx.buttons, 2.dp, fill = true) { a ->
+                    MagPage(ctx, st, pg, pageLive, Modifier.weight(1f).fillMaxWidth())
+                    Spacer(Modifier.height(4.dp))
+                    // (674e: the page's keys identical keys, 26 dp, the lit one ringed; 682r: side by side in one row - stacked
+                    // they took two lines from the page at x1.3)
+                    // (682af, KONKR x1.0 gk10: PLAY IT! alone on the coupons page was a short key in the middle - two page slots)
+                    UniformKeyRow(btns, 6.dp, slots = PAGE_SLOTS) { a ->
                         SceneControl(a, Modifier) { on ->
                             Box(Modifier.uniformFill().heightIn(min = 26.dp).then(if (on) Modifier.border(2.dp, st.accent, androidx.compose.foundation.shape.RoundedCornerShape(50)) else Modifier)
                                 .padding(horizontal = 10.dp), contentAlignment = Alignment.CenterStart) {
@@ -909,6 +973,8 @@ internal fun MagazinePage(ctx: WinSceneCtx) {
                             }
                         }
                     }
+                }
+                }
                 }
             }
         }
@@ -981,6 +1047,8 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
             translationX = (1f - k) * (1f - k) * size.width * 0.35f
             alpha = (k * 2f).coerceIn(0f, 1f)
         }
+            // (739a, P2 class C: L1 / R1 from anywhere on the tag - its own pages CATALOGUE CARD / REWARDS CARD / COUNTER, WinPagesShop.kt.)
+            .nativeBumpers(ctx)
     ) {
         Canvas(Modifier.matchParentSize()) {
             translate(left = 8f, top = 10f) { drawRect(Color.Black.copy(alpha = 0.35f)) }
@@ -1067,13 +1135,14 @@ private fun RentalTagCard(ctx: WinSceneCtx, w: Dp) {
                     }
                 }
             } else {
-                Box(Modifier.weight(1f, fill = false).fillMaxWidth().heightIn(min = (h * 0.45f).coerceAtMost(260.dp)).border(2.dp, ink)) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (739a, P2 class C: the tag's own pages printed under its title - CATALOGUE CARD / REWARDS CARD / COUNTER in its black
+                // capitals, lit in the neon (WinPagesShop.kt); was the shared pages in a black frame with "▸" words under it. The tag
+                // takes its whole height on its pages and its keys keep one row of two page slots, Play first, so Play stays put.)
+                val k = ShopInk(yellow, ink, neon, onNeon, stamp)
+                ShopPageArea(ctx, k, Modifier.weight(1f).fillMaxWidth(), short)
                 Spacer(Modifier.height(4.dp))
-                ctx.buttons.forEach { a ->
-                    SceneControl(a, Modifier) { on ->
-                        Text("▸ " + a.label.uppercase(), color = if (on) stamp else ink, fontSize = 13.sp, fontWeight = FontWeight.Black)
-                    }
-                }
+                val btns = ctx.buttons.filter { it.primary } + ctx.buttons.filter { !it.primary && !it.back } + ctx.buttons.filter { it.back }
+                UniformKeyRow(btns, 4.dp, slots = PAGE_SLOTS) { a -> ShopPageKey(a, k, if (h < 440.dp) 30.dp else 36.dp) }
             }
         }
     }
@@ -1162,6 +1231,11 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         }
         Text(" RUN " + TermNav.alias(ctx.g) + " ", style = style.copy(color = tc.hiInk, shadow = null), modifier = Modifier.align(Alignment.TopCenter)
             .graphicsLayer { alpha = if (termFrame(ctx.reveal()).top >= 0.6f) 1f else 0f }.background(tc.hi))
+        val termMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 16)
+        val termDens = androidx.compose.ui.platform.LocalDensity.current
+        val termNeed = (ctx.buttons + ctx.tools).map { it.label } .plus(listOf("Full details", "Full list", "Run"))
+            .maxOf { with(termDens) { termMeasurer.measure("► " + it.uppercase(), style, softWrap = false, maxLines = 1).size.width.toDp() } } + 8.dp
+        val termMenuW = termMenuWidth(w - 44.dp - 16.dp, termNeed)
         Row(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 22.dp).drawWithContent {
             // The lines come up one at a time from the top (a whole text line at a step).
             val shown = termFrame(k).text
@@ -1171,7 +1245,19 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
             val cut = kotlin.math.floor(shown * lines) * lineH
             clipRect(0f, 0f, size.width, cut) { this@drawWithContent.drawContent() }
         }) {
-            Column(Modifier.weight(0.55f).fillMaxHeight().then(fadeScroll())) {
+            // (682w, P2 batch 3: the pages are commands typed at the prompt, their output here - WinPagesTerm.kt; the menu on
+            // the right stays as it is on every page.)
+            // (682ag, owner review 23 Nov - Terminal on a narrow screen: the menu is as wide as its longest command needs (any
+            // page's - one width on every page, so Play never moves; 30-45 % of the box), the output gets the rest; the typed
+            // command keeps its words / switches whole.)
+            if (ctx.page != WinPage.MAIN) Column(Modifier.weight(1f).fillMaxHeight()) {
+                WholeWordsText(termKeepTokens("C:\\> " + termCommand(ctx.page, TermNav.alias(ctx.g))), color = tc.dim, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
+                // (whole, wrapped in its column - a one-line sliding name ran under the command menu, ShelfText)
+                WholeWordsText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, fontFamily = style.fontFamily, lineHeight = style.fontSize * 1.3f)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth().padding(top = 4.dp), label = "termPage", move = ::termMove) { pg, pageLive ->
+                    TermPage(ctx, pg, pageLive, style, tc.fg, tc.dim, tc.accent, tc.hi, tc.hiInk, Modifier.fillMaxSize())
+                }
+            } else Column(Modifier.weight(1f).fillMaxHeight().then(fadeScroll())) {
                 Text("C:\\> TYPE " + TermNav.alias(ctx.g) + ".NFO", style = style.copy(color = tc.dim))
                 Spacer(Modifier.height(4.dp))
                 WinFullText(ctx.name.uppercase(), color = tc.accent, fontSize = style.fontSize, lineHeight = style.lineHeight, maxLines = 3, style = style)
@@ -1188,10 +1274,9 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
                     Spacer(Modifier.height(6.dp))
                     Text(it.uppercase(), style = style.copy(color = tc.dim, fontSize = fs * 0.85f), maxLines = 7)
                 }
-                if (ctx.page != WinPage.MAIN) Box(Modifier.fillMaxWidth().height(h * 0.5f).padding(top = 6.dp).border(1.dp, tc.dim)) { ctx.pageBody(Modifier.fillMaxSize()) }
             }
             Spacer(Modifier.width(16.dp))
-            Column(Modifier.weight(0.45f).fillMaxHeight().then(fadeScroll())) {
+            Column(Modifier.width(termMenuW).fillMaxHeight().then(fadeScroll())) {
                 val rows = ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }
                 // (674e, owner brief 15 Nov - vertical menus: identical rows - a label that takes two lines makes every row that tall.)
                 UniformKeyColumn(rows, 0.dp, fill = true) { a ->
@@ -1212,3 +1297,9 @@ internal fun TerminalDialog(ctx: WinSceneCtx) {
         }
     }
 }
+
+
+/** 682ag (pure): Terminal's command menu width - its longest command ([need], every page's), 30 % of the row at least and
+ *  45 % at most; the output column takes the rest. */
+internal fun termMenuWidth(row: androidx.compose.ui.unit.Dp, need: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
+    need.coerceIn(row * 0.3f, row * 0.45f)

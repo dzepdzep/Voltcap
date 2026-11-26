@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523 (Smart Fill evidence): every layout's OWN popup on one game, per artwork shape, isolated QA app ONLY.
 # QA fixture art (voltcap_test_fixture: drawn pictures of a known shape, display-only) or the real art; settings snapshotted
 # and restored; preview layouts, launches blocked. One screenshot per layout x shape: <TAG>/<SHAPE>_<LAYOUT>.png

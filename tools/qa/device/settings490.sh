@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 490 (S1 / search / colour origin) — Settings with the group headers: open, D-pad through the categories, a touch
 # swipe, the Theme page, close. Screenshots only; nothing is pressed that changes a setting (only ▲ ▼ ◀ ▶ and B, no A).
 # sh settings490.sh TAG [DISPLAY] [NEXT PREV]  (sidebar: DPAD_DOWN DPAD_UP; compact chip row: DPAD_RIGHT DPAD_LEFT)  -> /sdcard/pc/TAG/*.png + log.txt

@@ -411,10 +411,10 @@ fun GameDetailsOverlay(
                             logoMaxWidth = 300.dp,
                             modifier = mod
                         ) { m ->
-                            Text(
+                            FullText(
                                 titles.display(game.name),
-                                color = Color.White, fontSize = 26.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(26.sp), maxFontSize = 26.sp), lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                color = Color.White, fontSize = 26.sp, lineHeight = androidx.compose.ui.unit.TextUnit(1.154f, androidx.compose.ui.unit.TextUnitType.Em), fontWeight = FontWeight.Bold,
+                                maxLines = 2, reserve = false,
                                 style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
                                     shadow = androidx.compose.ui.graphics.Shadow(Color.Black.copy(alpha = 0.8f), androidx.compose.ui.geometry.Offset(0f, 2f), 10f)
                                 )),
@@ -615,17 +615,17 @@ fun GameDetailsOverlay(
                     listOfNotNull(metadata?.releaseYear?.toString(), metadata?.developer, metadata?.publisher) + metadata?.genres.orEmpty().take(3)
                 else emptyList()).joinToString("  ·  ")
                 if (infoLine.isNotBlank()) {
-                    Text(
-                        infoLine, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    FullText(
+                        infoLine, color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp, maxLines = 2, reserve = false,
                         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 14.dp)
                     )
                 }
                 // One contextual milestone (Appearance › Details window › Milestone line): only one at a time.
                 DetailsMilestoneLine(game, achievements, raProgress, raCompletion, lastPlayedAt)
                 if (!richPresence.isNullOrBlank()) {
-                    Text(
-                        "📍  Last session: $richPresence", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    FullText(
+                        "📍  Last session: $richPresence", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp,
+                        maxLines = 2, reserve = false,
                         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp)
                     )
                 }
@@ -762,8 +762,10 @@ fun GameDetailsOverlay(
                                         color = Color.White.copy(alpha = 0.85f),
                                         fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp),
                                         lineHeight = androidx.compose.ui.unit.TextUnit(1.429f, androidx.compose.ui.unit.TextUnitType.Em),
-                                        maxLines = if (summaryExpanded) Int.MAX_VALUE else SummaryCollapsedLines,
-                                        overflow = TextOverflow.Ellipsis
+                                        // (689a, rule 11: collapsed only where the More chip below opens the rest; a shorter
+                                        // summary that still runs past 4 lines on a narrow window / x1.3 is shown whole.)
+                                        maxLines = if (summaryExpanded || !detailsHasMore(metadata, sections)) Int.MAX_VALUE else SummaryCollapsedLines,
+                                        overflow = TextOverflow.Ellipsis // qa-ok: TRUNCATE (collapsed summary; the More chip right below shows all of it)
                                     )
                                     if (detailsHasMore(metadata, sections)) {
                                         Spacer(Modifier.height(6.dp))
@@ -968,8 +970,8 @@ private fun StatColumn(
             .background(if (selected) Color.White.copy(alpha = 0.12f) else Color.Transparent, shape)
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = if (compact) 10.sp else 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 10.sp else 11.sp), maxFontSize = if (compact) 10.sp else 11.sp), fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
-        Text(value, color = valueColor, fontSize = if (compact) 15.sp else 17.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(if (compact) 15.sp else 17.sp), maxFontSize = if (compact) 15.sp else 17.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false)
+        FullText(label, color = Color.White.copy(alpha = 0.6f), fontSize = if (compact) 10.sp else 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.6.sp, reserve = false)
+        FullText(value, color = valueColor, fontSize = if (compact) 15.sp else 17.sp, fontWeight = FontWeight.SemiBold, reserve = false)
     }
 }
 
@@ -1030,10 +1032,10 @@ private fun TabPill(label: String, selected: Boolean, icon: androidx.compose.ui.
             )
             Spacer(Modifier.width(7.dp))
         }
-        Text(
+        FullText(
             label,
             color = if (selected) Color.White else Color.White.copy(alpha = 0.75f),
-            fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, softWrap = false,
+            fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.8.sp, reserve = false,
             style = uiFontStyle().merge(CenteredLine)
         )
     }
@@ -1059,8 +1061,8 @@ private fun DetailsMilestoneLine(
     val total = if (achievements.isNotEmpty()) achievements.size else raProgress?.NumPossibleAchievements ?: 0
     val earned = if (achievements.isNotEmpty()) achievements.count { it.isUnlocked } else raProgress?.NumAchieved ?: 0
     rememberContextMilestone(game.stableKey, earned, total, completion, lastPlayedAt)?.let { m ->
-        Text(
-            m, color = ShelfTheme.accent, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        FullText(
+            m, color = ShelfTheme.accent, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, reserve = false,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 8.dp)
         )
     }
@@ -1213,17 +1215,17 @@ private fun ProgressStrip(
             else -> {
                 val fraction = (earned.toFloat() / total).coerceIn(0f, 1f)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "🏆  " + com.shelf.launcher.data.achievementProgress(earned, total), color = Color.White, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.Bold,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    FullText(
+                        "🏆  " + com.shelf.launcher.data.achievementProgress(earned, total), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold,
+                        reserve = false, modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(
+                    FullText(
                         if (earned >= total) "Mastered ›" else (com.shelf.launcher.data.remainingNote(earned, total) ?: "${total - earned} to go") + " ›",
                         color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                        reserve = false
                     )
                 }
                 Spacer(Modifier.height(8.dp))
@@ -1439,16 +1441,16 @@ private fun InlineAchievementRow(
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
+                    FullText(
                         a.title ?: "Unknown achievement",
                         color = if (a.isUnlocked) Color.White else Color.White.copy(alpha = 0.7f),
-                        fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     if (a.isMissable) { Spacer(Modifier.width(4.dp)); MissableIcon() }
                 }
                 if (!expanded) a.description?.let {
-                    Text(it, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    FullText(it, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, maxLines = 2, reserve = false)
                 }
             }
             Spacer(Modifier.width(6.dp))
@@ -1480,8 +1482,8 @@ private fun InlineAchievementRow(
                             color = ShelfTheme.accent, fontSize = 10.sp, fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            (c.CommentText ?: "").trim(), color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp),
-                            maxLines = 4, overflow = TextOverflow.Ellipsis
+                            // (689a, rule 11: the whole comment wraps - the details page scrolls; no 4-line cut.)
+                            (c.CommentText ?: "").trim(), color = Color.White.copy(alpha = 0.8f), fontSize = 11.sp
                         )
                         Spacer(Modifier.height(3.dp))
                     }

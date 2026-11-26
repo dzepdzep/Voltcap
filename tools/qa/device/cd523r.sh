@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523r: Cover details recomposed (big case upper left, angled 3D cases on the lower-right shelf). Isolated QA app ONLY,
 # stand-in library, preview (nothing saved), settings snapshotted / restored, Performance Full for the run (QA hook).
 # Per category (GB 1 game, N64 2, PS1 3, ALL many) x Endless on (fill on: the owner's default) / off: rest, 2 steps right,

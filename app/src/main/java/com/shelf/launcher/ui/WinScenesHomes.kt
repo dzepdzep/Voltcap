@@ -83,7 +83,10 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
         Column(Modifier.fillMaxSize()) {
             // The art: the game's backdrop with a slow drift in, fading into the page.
             // (Update 507, owner review of 506: the title no longer sits on the picture — it has its own line under it, see below.)
-            Box(Modifier.fillMaxWidth().height(h * (if (ctx.page != WinPage.MAIN) 0.26f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
+            // (682r, AchFirstRow x1.3: on the service's own screens the band steps back to a strip, the title line with it - the
+            // EPISODES list had 51 of an episode's 95 px.)
+            val onPage = ctx.page != WinPage.MAIN
+            Box(Modifier.fillMaxWidth().height(h * (if (onPage) 0.10f else if (compact) 0.30f else 0.36f)).clipToBounds()) {
                 val art = ctx.backdrop ?: ctx.wide ?: ctx.cover
                 // (Update 469: the window-wide backdrop at the screen's size — rememberBackdropRequest — not the 360–720 px card decode.)
                 // (Batch 523, Smart Fill: a cover standing in for the backdrop shows whole over its soft copy instead of a band cut
@@ -93,6 +96,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         val k = ctx.reveal().coerceIn(0f, 1f); val z = 1.14f - 0.14f * k; scaleX = z; scaleY = z
                     }, request = if (art == ctx.cover) rememberStyleArtRequest(art) else rememberBackdropRequest(art), maxCrop = SmartFill.maxCropFor(art, ctx.cover)
                 )
+                // (682ag, owner review 23 Nov: no picture left the opening scene an empty dark band - a title card instead: the
+                // projector's beam over the game's colour, the console as the studio's card.)
+                else CinemaNoArtBand(ctx, Modifier.fillMaxSize())
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.55f to Color(0xFF181818).copy(alpha = 0.35f), 1f to Color(0xFF181818))))
                 Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(0f to Color(0xFF181818).copy(alpha = 0.7f), 0.5f to Color.Transparent)))
             }
@@ -104,9 +110,9 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                 },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.width(4.dp).height(if (compact) 34.dp else 50.dp).clip(RoundedCornerShape(2.dp)).background(accent))
+                Box(Modifier.width(4.dp).height(if (onPage) 26.dp else if (compact) 34.dp else 50.dp).clip(RoundedCornerShape(2.dp)).background(accent))
                 Spacer(Modifier.width(12.dp))
-                LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 40.dp else 56.dp).fillMaxWidth(0.7f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Black, maxLines = 2) }
+                LogoOrName(ctx.logo, ctx.name, Modifier.height(if (onPage) 32.dp else if (compact) 40.dp else 56.dp).fillMaxWidth(0.7f)) { StableFullText(ctx.name, color = Color.White, fontSize = if (onPage) 18.sp else if (compact) 22.sp else 30.sp, fontWeight = FontWeight.Black, maxLines = 2) }
             }
             // Update 487 (E7 Cinema actions, owner-approved): the round keys run under both columns (the page's whole width)
             // instead of under the facts only — there, 5 of the 8 fitted and Manual / Inspect / Back wrapped below the window.
@@ -123,7 +129,7 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                         if (ctx.total > 0 && ctx.earned >= ctx.total) { Text("MASTERED", color = Color(0xFF46D369), fontSize = 13.sp, fontWeight = FontWeight.Black); Spacer(Modifier.width(10.dp)) }
                         FullText(listOfNotNull(ctx.year, ctx.console, ctx.genres?.substringBefore(",")).joinToString("   "), color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
                     }
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(if (onPage) 4.dp else 10.dp))
                     if (ctx.page == WinPage.MAIN && !playInRow) {
                         val play = ctx.buttons.filter { it.primary }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -147,10 +153,15 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
                     } else if (ctx.page != WinPage.MAIN) {
                         // (674d: only the other pages - k674c drew the page body and these keys on the main page too where Play
                         // went into the round keys' row, the main page's own keys squeezed to 5 px.)
-                        Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                        // (682o, P2 batch 2: the service's own screens - MORE INFO, EPISODES, MY LIST & MORE - WinPagesCinema.kt.)
+                        NativePages(ctx, Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(Color.White.copy(alpha = 0.05f)),
+                            label = "cinemaPage", move = ::cinemaMove) { pg, pageLive ->
+                            CinemaPage(ctx, pg, pageLive, accent, Modifier.fillMaxSize().padding(8.dp))
+                        }
                         Spacer(Modifier.height(6.dp))
                         // (674d, owner brief 15 Nov: the page's keys one row of identical keys - they were as wide as their words.)
-                        UniformKeyRow(ctx.buttons, 8.dp) { a ->
+                        // (682ab: two page slots - Play keeps the first half with or without the page's own key)
+                        UniformKeyRow(ctx.buttons, 8.dp, slots = PAGE_SLOTS) { a ->
                                 SceneControl(a, Modifier) { on ->
                                     Box(Modifier.uniformFill().clip(RoundedCornerShape(4.dp)).background(if (on) Color.White else Color(0xFF333333)).padding(horizontal = 14.dp, vertical = 6.dp),
                                         contentAlignment = Alignment.Center) {
@@ -236,6 +247,13 @@ internal fun CinemaPremiere(ctx: WinSceneCtx) {
 // Arctic info drawer
 // ---------------------------------------------------------------------------------------------------------------------
 
+/** 682ag (pure): Arctic's menu width - the split's share (45 %), more where its longest word needs it, never over 60 %. */
+internal fun arcticMenuWidth(totalDp: Float, needDp: Float, splitGap: Float): Float =
+    maxOf((totalDp - splitGap) * 0.45f, needDp).coerceAtMost((totalDp - splitGap) * 0.6f)
+
+/** 682ag (pure): the info list puts the field over its value where a 92 dp field column leaves the value under 120 dp. */
+internal fun arcticStackFacts(infoDp: Float): Boolean = infoDp - 92f < 120f
+
 @Composable
 internal fun ArcticDrawer(ctx: WinSceneCtx) {
     val w = minOf(ctx.maxW, 900.dp)
@@ -268,6 +286,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
             }.background(Color(0xFF1B2633))
         ) {
             ctx.cover?.let { SmartArt(it, ctx.name, Modifier.fillMaxSize(), maxCrop = SmartFill.maxCropFor(it, ctx.cover)) }
+                ?: ArcticNoArt(ctx, Modifier.fillMaxSize()) // (682y: no picture - the console's plate, not an empty panel)
         }
         // The drawer.
         Column(
@@ -280,13 +299,23 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                 .padding(horizontal = 22.dp, vertical = 16.dp)
         ) {
             LogoOrName(ctx.logo, ctx.name, Modifier.height(if (compact) 36.dp else 52.dp).fillMaxWidth()) { StableFullText(ctx.name, color = Color.White, fontSize = if (compact) 20.sp else 26.sp, fontWeight = FontWeight.Bold, maxLines = 2) }
-            Text(homeWinPageName(ctx.page).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+            Text(homeWinPageName(rememberHeadingPage(ctx.page)).uppercase(), color = accent, fontSize = 11.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
             Box(Modifier.padding(vertical = 8.dp).fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
-            if (ctx.page == WinPage.MAIN) {
-                Row(Modifier.weight(1f)) {
+            if (ctx.page == WinPage.MAIN) { androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f)) {
+                // (682ag, owner review 23 Nov - Arctic, RP Classic x1.3: "Achievements" was cut in the menu and the info values
+                // wrapped almost letter by letter beside a fixed 92 dp field column. The menu takes the width its longest word
+                // needs (from the split's share up to 60 % of the drawer); the info list gets the rest and, where that is too
+                // narrow for the field column and a value side by side, puts the field over its value - same text sizes.)
+                val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
+                val arcMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+                val arcDens = androidx.compose.ui.platform.LocalDensity.current
+                val arcStyle = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                val longestPx = acts.flatMap { it.label.split(' ') }.maxOfOrNull { arcMeasurer.measure(it, arcStyle, softWrap = false, maxLines = 1).size.width } ?: 0
+                val totalW = maxWidth
+                val menuW = arcticMenuWidth(maxWidth.value, with(arcDens) { longestPx.toDp() }.value + 20f + 12f + 24f + 4f, splitGap = 18f).dp
+                Row(Modifier.fillMaxSize()) {
                     // The actions as a media-centre list.
                     val s = rememberScrollState()
-                    val acts = ctx.buttons.filter { !it.back } + ctx.tools + ctx.buttons.filter { it.back }
                     @Composable fun actionRow(a: WinAction, m: Modifier, fixed: Boolean = false) {
                             SceneControl(a, m) { on ->
                                 Row(
@@ -312,7 +341,7 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                                 }
                             }
                         }
-                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(0.9f).fillMaxHeight()) {
+                    } else androidx.compose.foundation.layout.BoxWithConstraints(Modifier.then(if (compact) Modifier.weight(0.9f) else Modifier.width(menuW)).fillMaxHeight()) {
                         // (Update 488, D284: the rows share the drawer's room — on the Thor (1080p) Back was cut 57 px at the bottom of
                         // the scrolling list. Each row its design height when there is room, down to a 26 dp row; scrolling below that.)
                         val lineH = with(androidx.compose.ui.platform.LocalDensity.current) { 18.sp.toDp() }
@@ -326,12 +355,17 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                         // The info list and the plot.
                         val s2 = rememberScrollState()
                         // (Update 428, D107: the plot reachable with the D-pad — its last rows were cut for a controller.)
-                        Column(Modifier.weight(1.1f).fillMaxHeight().sceneReadable(s2, accent).sceneFadeEdges(s2).verticalScroll(s2)) {
+                        val infoW = totalW - menuW - 18.dp
+                        val stack = arcticStackFacts(infoW.value)
+                        Column(Modifier.weight(1f).fillMaxHeight().sceneReadable(s2, accent).sceneFadeEdges(s2).verticalScroll(s2)) {
                             @Composable fun line(k: String, v: String?) {
                                 if (v.isNullOrBlank()) return
-                                Row(Modifier.padding(vertical = 2.dp)) {
+                                if (stack) Column(Modifier.padding(vertical = 2.dp)) {
+                                    Text(k, color = Color.White.copy(alpha = 0.5f), fontSize = 11.sp, lineHeight = 14.sp)
+                                    WholeWordsText(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium, lineHeight = 16.sp)
+                                } else Row(Modifier.padding(vertical = 2.dp)) {
                                     Text(k, color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp, modifier = Modifier.width(92.dp))
-                                    Text(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    WholeWordsText(v, color = Color.White.copy(alpha = 0.92f), fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                                 }
                             }
                             line("System", ctx.console)
@@ -348,8 +382,12 @@ internal fun ArcticDrawer(ctx: WinSceneCtx) {
                         }
                     }
                 }
+                }
             } else {
-                Box(Modifier.weight(1f).fillMaxWidth()) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (682y, P2 batch 4: the drawer's own pages - its info list, its media-centre lists - WinPagesArctic.kt.)
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "arcticPage", move = ::arcticMove) { pg, pageLive ->
+                    ArcticPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     ctx.buttons.forEach { a ->
                         SceneControl(a, Modifier) { on ->

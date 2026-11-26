@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # v0.6.66 D137: what a playing gameplay clip costs per layout, idle (your background, clips on). Per layout: 9 s to settle (the
 # clip starts after 2 s on a game), then 5 s of QaTrace slow-frame lines -> count, mean total / cmd / gpu (ms).
 # usage: sh d137idle.sh TAG "LAYOUTS" [game]   (game: part of a name with a clip, focused first; no gfxinfo reset: D139)

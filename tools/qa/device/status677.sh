@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 677d (owner 16 Nov: RA points squashed in the status bar, the profile picture twice in Console Hub): status-bar / avatar run.
 # LEVEL 1 - the isolated QA app only (com.shelf.launcher.qa). Intents, QaClip dumps and screenshots only - no key, no tap.
 # Each step: a home layout, a text scale (x1.0 / x1.3) and a set of conditional status pieces (TestHooks voltcap_test_status:

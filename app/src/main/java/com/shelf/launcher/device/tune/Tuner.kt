@@ -12,6 +12,8 @@ data class TunerStatus(
     val supported: Boolean = false,
     /** "Device" or the game / app the active profile belongs to. */
     val source: String = "Device",
+    /** (682bd) Whose profile that is: the game's own, its app / emulator package's, its console's or the device-wide one. */
+    val sourceKind: TuneSource = TuneSource.DEVICE,
     val profile: TuneProfile = TuneProfile(),
     /** AutoTDP's current scale (1 = the profile's own caps). */
     val level: Float = 1f,
@@ -25,6 +27,12 @@ data class TunerStatus(
     val note: String? = null,
     /** Extra underclock steps the heat guard is holding (0 = none). */
     val heatStep: Int = 0,
+    /** (682bd) What those steps take off the current caps, % - temporary, never written into a profile. */
+    val heatCut: Int = 0,
+    /** (682bd) The heat guard's smoothed reading, °C (null: off or no reading). */
+    val heatC: Float? = null,
+    /** (682bd) The handheld's OWN thermal control is holding a core under Voltcap's cap (its scaling_max_freq read back lower). */
+    val vendorThrottle: Boolean = false,
     /**
      * Update 201: how often the handheld put its own clocks back over Voltcap's limits since they were set (AYN's
      * root service does it every 10 s while its performance mode is Standard / Performance / High), and Voltcap
@@ -114,6 +122,9 @@ object Tuner {
         } finally { probing = false }
     }
 
+    /** (682bd, QA - TuneSim switched): probe [supported] again. */
+    fun resetSupported() { _supportedState.value = null; probedAt = 0L; _status.value = _status.value.copy(supported = supported) }
+
     /** Once per process: applies the device-wide profile and watches the screen for the sleep profile. */
     fun start(context: Context) {
         if (started) return
@@ -156,9 +167,10 @@ object Tuner {
         val g = game
         if (g != null && currentKey != null) {
             Thread { runCatching { synchronized(this) {
-                val (profile, _, label) = resolve(TuneStore(context), g)
+                val (profile, sourceKey, label) = resolve(TuneStore(context), g)
                 level = if (profile.autoTdp) AutoTdpController.startLevel(null) else 1f
                 ucStep = -1; ucMode = null
+                currentSourceKey = sourceKey
                 apply(context, profile, g.key, label)
             } } }.start()
         } else Thread { runCatching { synchronized(this) { applyGlobal(context) } } }.start()
@@ -182,12 +194,14 @@ object Tuner {
      */
     private fun resolve(store: TuneStore, g: RunningGame): Triple<TuneProfile, String?, String> {
         testProfile?.let { return Triple(it, null, "QA test") }
-        store.forKey(g.key)?.let { return Triple(it, g.key, g.name) }
-        g.packageName?.let { pkg -> store.forKey("pkg:$pkg")?.let { return Triple(it, "pkg:$pkg", g.name) } }
-        if (store.consoleProfiles && !g.platform.isNullOrBlank()) {
-            store.forKey("plat:${g.platform}")?.let { return Triple(it, "plat:${g.platform}", "${g.consoleName ?: g.platform} profile") }
+        // (682bd: the one rule the popup and the settings use too - TuneResolve.)
+        val (p, key) = TuneResolve.pick(store::forKey, store::global, g.key, g.packageName, g.platform, store.consoleProfiles)
+        val label = when {
+            key == null -> "Device"
+            key.startsWith("plat:") -> "${g.consoleName ?: g.platform} profile"
+            else -> g.name
         }
-        return Triple(store.global(), null, "Device")
+        return Triple(p, key, label)
     }
 
     /**
@@ -213,6 +227,77 @@ object Tuner {
         // Screen rate, button layout, charge limit: a game's own or its console's profile changes those.
         if (sourceKey != null) GameExtras.apply(context, profile)
         if (store.measure && testProfile == null) measureStart(context, key, profile)
+    }
+
+    // ---- 682bd (owner 25 Nov 21:24, Recent Apps: OPTION A) - a library game back in front without a Voltcap launch ----
+
+    /**
+     * Android games in the library whose stableKey IS their package (package -> name; set by the view model). Only these can
+     * be recognised from the app in front: the package names exactly one game. Games run by an emulator or GameNative are
+     * never recognised this way - the emulator's package says nothing about which game it has open - so they keep the
+     * device-wide profile until started from Voltcap again (and the notification says "Device-wide").
+     */
+    @Volatile var libraryApps: Map<String, String> = emptyMap()
+
+    /**
+     * Voltcap left the front. If no Voltcap launch follows (nothing in charge after 1.5 s / 4 s) and the app now in front is
+     * one of [libraryApps] (Recents, a notification, another launcher), its own profile is applied - exactly as a launch
+     * from Voltcap would. Nothing without usage access, nothing for an unknown app.
+     */
+    fun onVoltcapLeft(context: Context) {
+        if (libraryApps.isEmpty()) return
+        val app = context.applicationContext
+        Thread {
+            runCatching {
+                for (wait in listOf(1_500L, 2_500L)) {
+                    Thread.sleep(wait)
+                    if (currentKey != null) return@Thread
+                    val fg = foregroundPackage(app) ?: continue
+                    if (onForeground(app, fg)) return@Thread
+                }
+            }
+        }.start()
+    }
+
+    /**
+     * [pkg] is in front: if it is a recognised library game ([libraryApps]) and not the one already in charge, its profile is
+     * applied (another game's profile ends first). Returns true when it did. Blocking.
+     */
+    @Synchronized
+    fun onForeground(context: Context, pkg: String): Boolean {
+        if (!supported) return false
+        val name = libraryApps[pkg] ?: return false // never a guess: only a package that names one library game
+        if (currentKey == pkg) return false
+        // The package already running for the game in charge (its emulator, or the app itself): nothing new is in front.
+        if (currentKey != null && game?.packageName == pkg) return false
+        if (currentKey != null) onGameEnded(context)
+        onGameLaunch(context, pkg, name, pkg)
+        android.util.Log.i("VoltcapTdp", "foreground $pkg: its profile applied (${_status.value.sourceKind})")
+        return true
+    }
+
+    /** The package of the activity in front (usage events), or null: no usage access, Voltcap itself, or not known. */
+    @Suppress("DEPRECATION")
+    fun foregroundPackage(context: Context): String? {
+        if (!com.shelf.launcher.data.Permissions.usageAccess(context)) return null
+        return runCatching {
+            val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+            val now = System.currentTimeMillis()
+            val events = usm.queryEvents(now - 10 * 60_000L, now)
+            val ev = android.app.usage.UsageEvents.Event()
+            val open = LinkedHashMap<String, String>() // pkg/class -> pkg, in resume order
+            while (events.hasNextEvent()) {
+                events.getNextEvent(ev)
+                val pkg = ev.packageName ?: continue
+                if (pkg == "com.android.systemui") continue
+                val id = pkg + "/" + (ev.className ?: "")
+                when (ev.eventType) {
+                    android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND -> { open.remove(id); open[id] = pkg }
+                    android.app.usage.UsageEvents.Event.MOVE_TO_BACKGROUND, 23, 24 -> open.remove(id)
+                }
+            }
+            open.values.lastOrNull()?.takeIf { it != context.packageName }
+        }.getOrNull()
     }
 
     /** Back in Voltcap: the game's profile ends; the device-wide one (or stock) returns. Blocking. */
@@ -278,7 +363,9 @@ object Tuner {
         val store = TuneStore(context)
         ledStatus = store.ledStatus
         heatGuardOn = store.heatGuard
-        heatGuardC = store.heatGuardC
+        // (682bd: never above 5 °C under the handheld's own first trip, where it is known.)
+        heatGuardC = HeatGuard.validLimit(store.heatGuardC, if (heatGuardOn) TuneHardware.vendorTripC() else null)
+        heatPreset = store.heatGuardPreset
         measuring = key != null && store.measure && testProfile == null
         // Heat guard switched off, or no game: its extra steps end with it.
         if (!heatGuardOn || key == null) heatReset()
@@ -289,7 +376,10 @@ object Tuner {
         resets = 0
         lastResetAt = 0L
         write(t)
-        _status.value = _status.value.copy(supported = true, source = source, profile = p, level = level, heatStep = heatStep, resets = 0, autoUnderclock = liveUcLabel())
+        // (682bd: whose profile it is, for the notification and the screens - a game back in front without a Voltcap launch
+        // runs the device-wide one, and now says so.)
+        val kind = when { testProfile != null -> TuneSource.QA_TEST; key == null -> TuneSource.DEVICE; else -> TuneSource.of(currentSourceKey, key) }
+        _status.value = _status.value.copy(supported = true, source = source, sourceKind = kind, profile = p, level = level, heatStep = heatStep, heatCut = heatCutNow(), resets = 0, autoUnderclock = liveUcLabel(), vendorThrottle = false)
         // Any active profile needs the loop: the vendor's daemon lifts caps within seconds, also
         // outside games (the device-wide tier used to be written once and then quietly undone).
         // During a game the heat guard and the measurements need it too.
@@ -332,7 +422,9 @@ object Tuner {
     private val ucCtl = AutoUnderclock()
     private val UC_LADDER = listOf(Underclock.OFF, Underclock.LIGHT, Underclock.MEDIUM, Underclock.HEAVY)
 
-    private fun adaptiveUc(p: TuneProfile): Boolean = p.autoTdp && p.underclock == Underclock.AUTO
+    private fun adaptiveUc(p: TuneProfile): Boolean = autoTdpMovesUnderclock(p)
+    /** (682bd) AutoTDP moves the underclock only when it is "With power": a chosen Off (or Light…Custom) stays as chosen. */
+    internal fun autoTdpMovesUnderclock(p: TuneProfile): Boolean = p.autoTdp && p.underclock == Underclock.AUTO
     private fun ucRange(p: TuneProfile): IntRange = 0..UC_LADDER.indexOf(p.autoMode.ucDeepest).coerceAtLeast(0)
     private fun ucDefault(p: TuneProfile): Int = UC_LADDER.indexOf(p.effectiveUnderclock).coerceIn(ucRange(p))
 
@@ -436,11 +528,15 @@ object Tuner {
         o?.boosts?.keys?.forEach { paths += it }
         val read = TuneHardware.readMany(paths)
         val v = HashMap<String, String?>().apply { paths.forEachIndexed { i, p -> put(p, read.getOrNull(i)) } }
+        // (682bd: a max read back LOWER than Voltcap's is the handheld's own thermal limit holding the core - shown, never
+        // fought: writing again would not lift it, and it must not be lifted.)
+        val vendorLow = clusters.any { c -> val m = v["${c.policy}/scaling_max_freq"]?.toIntOrNull(); val want = t.max[c.policy]; m != null && want != null && m < want }
+        if (vendorLow != _status.value.vendorThrottle) _status.value = _status.value.copy(vendorThrottle = vendorLow)
         val drifted = clusters.any { c ->
             val max = v["${c.policy}/scaling_max_freq"]?.toIntOrNull()
             val min = v["${c.policy}/scaling_min_freq"]?.toIntOrNull()
             val gov = v["${c.policy}/scaling_governor"]
-            t.max[c.policy]?.let { max != null && it != max } == true ||
+            t.max[c.policy]?.let { max != null && max > it } == true ||
                 // Update 200: AYN's root service writes its performance-mode floors (scaling_min_freq, GPU min_pwrlevel)
                 // again every 10 s (seen on both the Thor and the Odin 2 Portal): those count as drift too.
                 t.min[c.policy]?.let { want -> (min ?: want) > want } == true ||
@@ -504,7 +600,7 @@ object Tuner {
         val gov = HashMap<String, String>()
         val scale = (p.powerTarget.coerceIn(30, 100) / 100f) * lvl
         val limit = (p.active && (p.tier != PowerTier.OFF || p.powerTarget < 100 || p.autoTdp || p.primeBoost < 100 || p.underclocked)) ||
-            heatCeiling(p) != null
+            heatCutNow() > 0
         clusters.forEachIndexed { i, c ->
             val base = when (p.tier) {
                 // Update 201: before this update AYN handhelds showed one cluster named "CPU" (really the little cores, see
@@ -523,7 +619,12 @@ object Tuner {
                 val bounded = if (adaptive && p.cpuFloor > 0) maxOf(uc, TuneHardware.snap(c, (c.maxKhz * p.cpuFloor / 100f).toInt())) else uc
                 khz = minOf(khz, bounded)
             }
-            heatCeiling(p)?.let { h -> underclockKhz(h, c, i, clusters.size)?.let { khz = minOf(khz, it) } }
+            // (682bd: the heat guard takes a few % off whatever cap is in force - the little cores half as much - instead of a
+            // whole preset over it; temporary, the profile is not changed.)
+            heatCutNow().takeIf { it > 0 }?.let { cut ->
+                val share = if (i == 0 && clusters.size > 1) cut / 2f else cut.toFloat()
+                khz = maxOf(c.minKhz, TuneHardware.snap(c, (khz * (100f - share) / 100f).toInt()))
+            }
             max[c.policy] = khz
             // Update 200: with a limit the floor is the chip's own lowest speed, not the "stock" one. On AYN handhelds the
             // stock floor is the handheld's performance mode (system setting performance_mode, applied by AYN's root
@@ -547,64 +648,52 @@ object Tuner {
             // Higher level = slower: the underclock wins when it's the slower of the two.
             // (Update 237, #85: AutoTDP's own GPU underclock never goes below the profile's GPU floor; lower level = faster.)
             val ownUc = underclockGpuLevel(p, g)?.let { if (adaptive && p.gpuFloor > 0) minOf(it, TuneHardware.gpuLevelFor(g, p.gpuFloor)) else it }
-            val ucLevel = listOfNotNull(ownUc, heatCeiling(p)?.let { underclockGpuLevel(it, g) }).maxOrNull()
-            gpuMax = if (ucLevel != null) maxOf(tierMax, ucLevel) else tierMax
+            val capLevel = if (ownUc != null) maxOf(tierMax, ownUc) else tierMax
+            // (682bd: the heat guard's cut on the GPU too: the level at or under the current one's speed less the cut.)
+            val cut = heatCutNow()
+            val maxLevel = if (cut > 0) heatGpuLevel(g, capLevel, cut) else capLevel
+            gpuMax = maxLevel
             // Update 200: same for the GPU — AYN's performance mode sets min_pwrlevel 2 (550 MHz) as its floor; with a limit
             // the floor is the slowest level, and never faster than the cap (a min level below the max level is invalid).
-            gpuMin = if (p.gpuFloor > 0) maxOf(TuneHardware.gpuLevelFor(g, p.gpuFloor), gpuMax)
-                else if (limit) g.slowest else maxOf(s?.gpuMin ?: g.slowest, gpuMax)
+            gpuMin = if (p.gpuFloor > 0) maxOf(TuneHardware.gpuLevelFor(g, p.gpuFloor), maxLevel)
+                else if (limit) g.slowest else maxOf(s?.gpuMin ?: g.slowest, maxLevel)
         }
         return Target(max, min, gov, gpuMax, gpuMin, limit)
     }
 
     // ---- heat guard ----
 
-    /** Extra underclock steps the heat guard has taken (0 = none, at most 3: Heavy). */
+    /** (682bd) The heat guard: smoothing, steps and hysteresis in [HeatGuard] (pure, tested with synthetic traces). */
+    private val guard = HeatGuard()
     @Volatile private var heatStep = 0
     @Volatile private var heatGuardOn = false
     @Volatile private var heatGuardC = 85
-    private var hotMs = 0L
-    private var coolMs = 0L
-    /** Time since the last step: the chip needs a while to cool after one, so steps are at least 30 s apart. */
-    private var sinceStepMs = Long.MAX_VALUE / 2
+    @Volatile private var heatPreset = HeatGuardPreset.BALANCED
 
-    private fun heatReset() { heatStep = 0; hotMs = 0L; coolMs = 0L; sinceStepMs = Long.MAX_VALUE / 2 }
+    private fun heatReset() { guard.reset(); heatStep = 0 }
 
-    /** The preset the heat guard holds the clocks to on top of [p]'s own underclock, or null. */
-    private fun heatCeiling(p: TuneProfile): TuneProfile? {
-        if (heatStep <= 0) return null
-        val base = when (p.effectiveUnderclock) {
-            Underclock.LIGHT -> 1; Underclock.MEDIUM -> 2; Underclock.HEAVY -> 3
-            else -> 0 // Off, or Custom: its own speeds stay, the preset of the step goes over them
-        }
-        val presets = listOf(Underclock.LIGHT, Underclock.MEDIUM, Underclock.HEAVY)
-        return TuneProfile(underclock = presets[(base + heatStep - 1).coerceIn(0, 2)])
+    private fun heatCutNow(): Int = if (heatStep > 0) guard.cutPercent(heatPreset) else 0
+
+    /** The GPU level (higher = slower) whose speed is at or under [level]'s less [cut] %. */
+    internal fun heatGpuLevel(g: TuneHardware.Gpu, level: Int, cut: Int): Int {
+        val mhz = g.levelMhz.getOrNull(level) ?: return level
+        val want = mhz * (100 - cut) / 100
+        val i = g.levelMhz.indexOfFirst { it <= want }
+        return maxOf(level, if (i < 0) g.slowest else i)
     }
 
     /**
-     * Called by the service with each temperature reading while a game runs. Over the limit for 8 s:
-     * one step lower (Light → Medium → Heavy on top of the profile), at most one step per 30 s so the
-     * chip has time to react. Cooled 8 °C below it for 45 s: one step back. Steps only while a game
-     * runs; reset when it ends.
+     * Called by the service with each temperature reading while a game runs ([HeatGuard.tick]: smoothed, a sustained run
+     * over the limit steps the caps down a few %, a sustained run under limit - hysteresis gives it back). Steps only while
+     * a game runs; reset when it ends.
      */
     @Synchronized
     fun heatTick(tempC: Float?, dtMs: Long) {
         if (!heatGuardOn || currentKey == null || sleeping || tempC == null) return
-        val limit = heatGuardC.toFloat()
-        when {
-            tempC >= limit -> { hotMs += dtMs; coolMs = 0L }
-            tempC <= limit - 8f -> { coolMs += dtMs; hotMs = 0L }
-            else -> { hotMs = 0L; coolMs = 0L }
-        }
-        sinceStepMs += dtMs
-        val before = heatStep
-        if (hotMs >= 8_000L && heatStep < 3 && sinceStepMs >= 30_000L) { heatStep++; hotMs = 0L }
-        if (coolMs >= 45_000L && heatStep > 0) { heatStep--; coolMs = 0L }
-        if (heatStep != before) {
-            sinceStepMs = 0L
-            write(compute(current, level))
-            _status.value = _status.value.copy(heatStep = heatStep)
-        }
+        val changed = guard.tick(tempC, dtMs, heatGuardC, heatPreset)
+        heatStep = guard.step
+        if (changed) write(compute(current, level))
+        _status.value = _status.value.copy(heatStep = heatStep, heatCut = heatCutNow(), heatC = guard.smoothedC)
     }
 
     // ---- measurements (what each profile costs, per game) ----
@@ -792,7 +881,7 @@ object Tuner {
                     }.toMap()
                     // (Update 255: kept with the stock clocks, for a Voltcap that restarts while its limits are on.)
                     appCtx?.let { c -> runCatching {
-                        c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit()
+                        c.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE).edit()
                             .putString("vendor", org.json.JSONObject().also { o -> vendorSaved?.forEach { (k, v) -> o.put(k, v) } }.toString()).apply()
                     } }
                 }
@@ -845,6 +934,8 @@ object Tuner {
     @Volatile private var appCtx: Context? = null
     @Volatile private var dirtyWritten: Boolean? = null
     private const val STOCK_PREFS = "tuner_stock"
+    /** (682bd: the QA app's simulated hardware keeps its "stock" apart - TuneSim never leaves a trace in the real record.) */
+    private fun stockPrefs(): String = if (TuneSim.on) "tuner_stock_sim" else STOCK_PREFS
 
     /** When this boot started (wall clock, ±1 s): a different value means the handheld restarted since. */
     private fun bootStamp(): Long = (System.currentTimeMillis() - android.os.SystemClock.elapsedRealtime()) / 1000L
@@ -853,7 +944,7 @@ object Tuner {
 
     private fun captureStock(context: Context) {
         if (stock != null) return
-        val prefs = context.applicationContext.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE)
+        val prefs = context.applicationContext.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE)
         val kept = runCatching {
             if (prefs.getBoolean("dirty", false) && sameBoot(prefs.getLong("boot", 0L)))
                 prefs.getString("stock", null)?.let { stockFromJson(it) }
@@ -900,7 +991,7 @@ object Tuner {
         if (dirtyWritten == on) return
         val c = appCtx ?: return
         runCatching {
-            c.getSharedPreferences(STOCK_PREFS, Context.MODE_PRIVATE).edit().putBoolean("dirty", on).putLong("boot", bootStamp()).apply()
+            c.getSharedPreferences(stockPrefs(), Context.MODE_PRIVATE).edit().putBoolean("dirty", on).putLong("boot", bootStamp()).apply()
             dirtyWritten = on
         }
     }

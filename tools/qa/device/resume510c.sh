@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 510 (c): frames per 3 s window after a no-op key at rest on Game shelf (QA app only).
 P=com.shelf.launcher.qa; K=${1:-59}
 am start -n $P/com.shelf.launcher.MainActivity --es voltcap_test_layout SHELF --es voltcap_test_game "Mario Kart 64" >/dev/null 2>&1

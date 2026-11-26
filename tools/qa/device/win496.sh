@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 496 — screenshots / logs only (no A presses, no game, no sync): layout-aware windows phase 3 (Settings + Save Vault
 # dry view), D293 preview paths, the achievements overlay fixture, the charging light's recomposition counts.
 # sh win496.sh TAG MODE [ARG]   -> /sdcard/pc/TAG/*.png + log.txt

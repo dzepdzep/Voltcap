@@ -536,12 +536,11 @@ internal fun VoltTabs(labels: List<String>, selected: Int, modifier: Modifier = 
                     .width(IntrinsicSize.Max),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                FullText( // (756a, rule 11: the tab's name whole)
                     label,
                     color = if (on) ShelfTheme.accent else ShelfTheme.textMuted,
-                    fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp),
-                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    fontSize = 13.sp,
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium
                 )
                 Spacer(Modifier.height(4.dp))
                 Box(

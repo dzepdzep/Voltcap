@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # popscan.sh TAG [LAYOUTS] — update 451 popup clutter audit: each layout (preview only, nothing saved) with its CURRENT popup style
 # (the owner's own choice; never changed here), A opens the window (launches blocked), a settled still, B closes. Main display only.
 P=com.shelf.launcher; TAG=$1; OUT=/sdcard/ps/$TAG; rm -rf $OUT; mkdir -p $OUT

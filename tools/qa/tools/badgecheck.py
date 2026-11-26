@@ -12,6 +12,12 @@ Per tile (one badge lane) on every dump:
 A dump without the "badges" key is from a build before the lane: INFRA (never a pass). Dumps with no tile carrying two
 badges are NOT TESTED for collisions (nothing to collide) - an all-NOT-TESTED run is NOT TESTED, never PASS.
 Tiles that are off the screen (not shown at all) are skipped. Exit code: qalib (0 = PASS only).
+680b (D357, the same findings on every run since 677c - checker strictness, not a drawing fault):
+  - a tile a carousel has scrolled PARTLY off the screen / out of its row (its shown box trimmed on one side, or its laid-out
+    box past the screen edge) is CLIPPED: a badge trimmed with it (its shown box inside the tile's shown box) is not "cut" /
+    "off the screen". Its badges are still checked against each other at the tile's own scale (real collisions FAIL).
+  - a tile STACKED BEHIND another (a cover flow's side covers: its shown box overlaps a larger tile's by more than a fifth of
+    its own area) is hidden by the front one: its badges are NOT TESTED (listed, never PASS); the front tile is checked as usual.
 """
 import glob, json, os, sys
 
@@ -37,6 +43,46 @@ def gap(a, b):
     return max(dx, dy)
 
 
+def area(r):
+    return max(0, r[2]) * max(0, r[3])
+
+
+def overlap_area(a, b):
+    ax0, ay0, ax1, ay1 = rect(a)
+    bx0, by0, bx1, by1 = rect(b)
+    return max(0, min(ax1, bx1) - max(ax0, bx0)) * max(0, min(ay1, by1) - max(ay0, by0))
+
+
+def tile_clip(t, sw, sh):
+    """680b (D357): (clipped, scale) for a tile - clipped when a carousel scrolled it partly away (one side trimmed, or its
+    laid-out box past the screen edge); scale = its own drawn scale (the less trimmed side), at most 1."""
+    f, s = t["full"], t["shown"]
+    rw, rh = s[2] / max(1, f[2]), s[3] / max(1, f[3])
+    past_edge = bool(sw and sh) and (f[0] < -TOL or f[1] < -TOL or f[0] + f[2] * min(1.0, max(rw, rh)) > sw + TOL
+                                     or f[1] + f[3] * min(1.0, max(rw, rh)) > sh + TOL)
+    return (abs(rw - rh) > 0.03 or past_edge), min(1.0, max(rw, rh))
+
+
+def behind_of(tiles):
+    """680b (D357): lane -> the lane of the larger tile drawn over it (cover flow: side covers stacked behind the focused one).
+    A tile is behind when more than a fifth of its shown box lies under a tile whose shown box is larger."""
+    out = {}
+    shown = [(k, t["shown"]) for k, t in tiles.items() if t["shown"][2] > 0 and t["shown"][3] > 0]
+    for k, a in shown:
+        for k2, b in shown:
+            if k2 == k or area(b) <= area(a) * 1.02:
+                continue
+            if overlap_area(a, b) > 0.2 * area(a):
+                out[k] = k2
+                break
+    return out
+
+
+def inside(a, b):
+    """a's box inside b's (both [x, y, w, h]), within TOL."""
+    return a[0] >= b[0] - TOL and a[1] >= b[1] - TOL and a[0] + a[2] <= b[0] + b[2] + TOL and a[1] + a[3] <= b[1] + b[3] + TOL
+
+
 def check_dump(path, gap_dp=6.0):
     name = os.path.basename(path)
     try:
@@ -59,16 +105,26 @@ def check_dump(path, gap_dp=6.0):
             if not b.get("placed", True):
                 continue
             lanes.setdefault(b["lane"], []).append(b)
+        behind = behind_of(tiles)
         for lane, bs in lanes.items():
             t = tiles.get(lane)
             if t is not None and (t["shown"][2] <= 0 or t["shown"][3] <= 0):
                 continue  # the tile is off the screen
             tag = f"{name} tile {lane}"
+            if lane in behind:
+                out.append(qalib.Result(tag, qalib.NOT_TESTED, f"stacked behind tile {behind[lane]} (hidden by it) - not graded",
+                                        evidence=", ".join(f"{b['kind']}@{b['full']}" for b in bs)))
+                continue
+            clipped, tscale = tile_clip(t, sw, sh) if t is not None else (False, 1.0)
             bad, infra = [], []
             for b in bs:
                 f, s = b["full"], b["shown"]
                 if s[2] <= 0 or s[3] <= 0:
                     continue  # a badge not on the screen at all (scrolled away with its tile)
+                if clipped and inside(s, t["shown"]):
+                    # (680b, D357: trimmed with its tile by the carousel - measured at the tile's own scale, not a cut)
+                    b["_t"] = [f[0], f[1], round(f[2] * tscale), round(f[3] * tscale)]
+                    continue
                 # (f676x13, RP Nova: "full" is the laid-out size, "shown" what is on screen after the tile's own scale - an
                 # unfocused tile drawn at 0.81 read as 44 "cut" badges. The same shrink both ways is the tile's scale: the badge
                 # is measured at that scale; only an uneven shrink - one side trimmed - is a cut.)

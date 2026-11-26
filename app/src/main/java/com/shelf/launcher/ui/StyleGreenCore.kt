@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -1109,14 +1110,37 @@ private fun GcRule(accent: Color) {
 
 @Composable
 private fun GcStat(label: String, value: String, accent: Color) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = accent.copy(alpha = 0.7f), fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp, maxLines = 1, softWrap = false)
-        Spacer(Modifier.width(8.dp))
-        FullText(
-            value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, textAlign = TextAlign.End, modifier = Modifier.weight(1f)
-        )
+    // (682bb, owner review of the v0.7.0 preview - KONKR x1.3: the value slid on one line beside its label and read "AYED N" mid-
+    // slide. Label and value share the line when both fit whole; otherwise the value goes under its label, whole and right-
+    // aligned (wrapping between words if it must) - never sliding, never shrunk.)
+    val labelStyle = TextStyle(fontSize = 9.sp, fontFamily = FontFamily.Monospace, letterSpacing = 1.sp)
+    val valueStyle = TextStyle(fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val gap = 8.dp
+    // (A plain layout, not a BoxWithConstraints: this panel is rebuilt on every game change - 682al, D386.)
+    androidx.compose.ui.layout.Layout(content = {
+        Text(label, color = accent.copy(alpha = 0.7f), style = labelStyle, maxLines = 1, softWrap = false)
+        Text(value, color = Color(0xFFE4FBE8), style = valueStyle, maxLines = 1, softWrap = false, textAlign = TextAlign.End)
+        WholeWordsText(value, color = Color(0xFFE4FBE8), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, lineHeight = 14.sp,
+            textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth())
+    }, modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) { ms, c ->
+        val w = c.maxWidth
+        val lp = ms[0].measure(androidx.compose.ui.unit.Constraints(maxWidth = w))
+        val g = gap.roundToPx()
+        val natural = measurer.measure(value, valueStyle, softWrap = false).size.width
+        if (gcStatOneLine(lp.width.toFloat(), natural.toFloat(), w.toFloat(), g.toFloat())) {
+            val vp = ms[1].measure(androidx.compose.ui.unit.Constraints(maxWidth = (w - lp.width - g).coerceAtLeast(0)))
+            val h = maxOf(lp.height, vp.height)
+            layout(w, h) { lp.place(0, (h - lp.height) / 2); vp.place(w - vp.width, (h - vp.height) / 2) }
+        } else {
+            val sp = ms[2].measure(androidx.compose.ui.unit.Constraints(minWidth = w, maxWidth = w))
+            layout(w, lp.height + sp.height) { lp.place(0, 0); sp.place(0, lp.height) }
+        }
     }
 }
+
+/** 682bb (pure): a Green core stat's label and value share one line only when both fit whole ([gap] between them, widths in px). */
+internal fun gcStatOneLine(labelW: Float, valueW: Float, maxW: Float, gap: Float): Boolean = labelW + gap + valueW <= maxW
 
 /** Achievements as a row of small cells, lit up to the share earned (gold once mastered). */
 @Composable

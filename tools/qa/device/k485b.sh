@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 485 (KONKR) — Pokemon Silver in Case Flow / Case stacks / Game shelf after the cover-shape fix, and GBA logos.
 # The profile picker is closed (and checked) before every still. Preview / QA hooks only, nothing saved.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pc/k485b; rm -rf $OUT; mkdir -p $OUT

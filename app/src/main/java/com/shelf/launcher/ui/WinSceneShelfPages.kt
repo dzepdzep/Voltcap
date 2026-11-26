@@ -118,14 +118,13 @@ internal fun ShelfFamilyPages(
             val big = bigPageText()
             Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(well).padding(if (big) 5.dp else 6.dp)) {
                 // (The page draws on this card's well, without the case and name the card already shows.)
-                androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
-                    ctx.pageFor(p, Modifier.fillMaxSize(), live)
-                }
+                // (682aa, P2 batch 5: the card's own catalogue, checklist and entries - WinPagesShelf.kt; the shared rows are gone.)
+                ShelfCardPage(ctx, p, live, ink, label, Modifier.fillMaxSize())
             }
             Spacer(Modifier.height(if (big) 6.dp else 8.dp))
             // (529o, owner #15 6866376184: the page's keys as full-width bars like the Info card's, not short mixed-width keys with
             // Back alone on a second row; their room is reserved under the well, which gets the rest.)
-            PageBars(keysOf(p, live), 6.dp) { key(it) }
+            PageBars(keysOf(p, live), 6.dp, page = true) { key(it) }
         }
         }
     }
@@ -157,11 +156,15 @@ internal fun rememberPageKeys(ctx: WinSceneCtx): (WinPage, Boolean) -> List<WinA
  * the width it is given (SceneKey(wide = true)).
  */
 @Composable
-internal fun PageBars(keys: List<WinAction>, gap: Dp, key: @Composable (WinAction) -> Unit) {
+internal fun PageBars(keys: List<WinAction>, gap: Dp,
+    /** 682aa: a window's own page (not its main page) - Play keeps the first of two slots (see below). */
+    page: Boolean = false, key: @Composable (WinAction) -> Unit) {
     // (673g, owner brief 15 Nov - "Horizontal = one scrollable row", identical buttons: the page's bars are one row of equal
     // bars spanning the card where they fit, scrolling a whole bar at a time where they don't (UniformKeyRow) - no longer as few
     // rows as kept every word whole with the bars sharing out the width by their words (529o).)
-    UniformKeyRow(keys.filterNot { it.status }, gap, key = key)
+    // (682aa, batch 5 sheet: on Options - Play alone - Play was a short bar in the middle, on Details / Achievements the left
+    // half. A page's row has two slots: Play keeps the first half with or without the page's own key.)
+    UniformKeyRow(keys.filterNot { it.status }, gap, slots = if (page) PAGE_SLOTS else 0, key = key)
 }
 
 /**
@@ -199,8 +202,7 @@ internal fun pageBarRows(need: List<Int>, width: Int, gap: Int): List<List<Int>>
  * bar along its right edge shows how much more there is and where the view is. Elsewhere it is the plain verticalScroll.
  */
 @Composable
-internal fun Modifier.pageScroll(): Modifier {
-    val state = androidx.compose.foundation.rememberScrollState()
+internal fun Modifier.pageScroll(state: androidx.compose.foundation.ScrollState = androidx.compose.foundation.rememberScrollState()): Modifier {
     val host = LocalNativePageHost.current ?: return this.then(Modifier.verticalScroll(state))
     return this.pageScrollCue(state, if (host.dark) Color.White else Color(0xFF2E3640)).verticalScroll(state)
 }

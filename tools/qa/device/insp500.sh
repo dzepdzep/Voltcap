@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 500: Inspect touch check in the isolated QA app (it cannot start a game). Real fingers are needed: the Thor's
 # touchscreen ignores injected events (sendevent) and `input` has one pointer, so this opens the piece and records what
 # the app saw while the owner pinches / pans / turns / presses Y. Usage: insp500.sh <Game_name> [seconds]

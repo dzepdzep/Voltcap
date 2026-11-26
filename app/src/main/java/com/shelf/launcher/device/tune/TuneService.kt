@@ -76,6 +76,7 @@ class TuneService : Service() {
         var lastTemp: Float? = null
         var lastTempAt = 0L
         var lastTickAt = android.os.SystemClock.elapsedRealtime()
+        var lastFgAt = 0L
         while (scope.isActive) {
             val p = Tuner.currentProfile()
             val st = Tuner.status.value
@@ -88,11 +89,17 @@ class TuneService : Service() {
             val needTemp = (p.fan == FanMode.CURVE || p.fan == FanMode.HOLD_TEMP) || Tuner.ledStatus == LedStatus.TEMPERATURE ||
                 Tuner.heatGuardActive
             val nowMs = android.os.SystemClock.elapsedRealtime()
-            val temp = snap?.socTempC ?: if (needTemp || nowMs - lastTempAt > 20_000L) {
+            // (682bd: the QA app's simulated hardware reports the test's temperature - TuneSim.)
+            val temp = if (TuneSim.on) TuneSim.tempC else snap?.socTempC ?: if (needTemp || nowMs - lastTempAt > 20_000L) {
                 lastTempAt = nowMs
                 TuneHardware.socTempC().also { lastTemp = it }
             } else lastTemp
 
+            // (682bd: a recognised library game switched to from Recents while another game's profile runs - its own now.)
+            if (Tuner.libraryApps.isNotEmpty() && Tuner.status.value.source != "Device" && nowMs - lastFgAt > 5_000L) {
+                lastFgAt = nowMs
+                Tuner.foregroundPackage(applicationContext)?.let { fg -> runCatching { Tuner.onForeground(applicationContext, fg) } }
+            }
             val dt = (nowMs - lastTickAt).coerceIn(0L, 10_000L)
             lastTickAt = nowMs
             if (st.sleeping) { delay(4_000); continue }

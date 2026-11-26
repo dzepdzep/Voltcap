@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 483 (A5) — "All games" count on the category screen (B on the home) and the Dashboard's Library line. Preview only.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; OUT=/sdcard/pc/p483; rm -rf $OUT; mkdir -p $OUT
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

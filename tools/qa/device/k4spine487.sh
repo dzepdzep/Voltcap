@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 487 (K4) — generated / custom spines while scrolling: layout L, category C; 12 quick steps right, 12 back left
 # (returning to games already drawn), recorded at the screen's rate. Preview hooks only; nothing saved or launched.
 P=com.shelf.launcher; F=/sdcard/Android/data/$P/files; L=$1; C=$2; T=${3:-0.12}; OUT=/sdcard/pc/k4spine; mkdir -p $OUT

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 493 (3D media QA on the staging build, Thor) — Inspect (scan + silver material + generated / custom shells), home
 # poses and wobble, through the preview hooks only (nothing launched, saved or changed). Save Vault is done by the caller
 # (R1 tap) with `pose` afterwards. Screens to /sdcard/pc/q3d493/<part>/.

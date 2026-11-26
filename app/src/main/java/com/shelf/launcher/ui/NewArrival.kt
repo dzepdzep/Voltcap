@@ -159,13 +159,15 @@ internal fun NewArrivalShow(
                 )
                 val name = nameOf(key)
                 // Types in, letter by letter.
-                Text(
+                // (750a, rule 11: whole name - two lines, a readable size, then a slide; two lines of room kept so the card
+                // never grows while the name types in.)
+                FullText(
                     name.take((name.length * type.value).toInt().coerceAtLeast(if (type.value > 0f) 1 else 0)),
-                    color = Color.White, fontSize = 16.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(16.sp), maxFontSize = 16.sp), fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis
+                    color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 2
                 )
                 val console = consoleOf(key)
                 val tail = listOfNotNull(console, if (extra > 0 && index == shown.lastIndex) "+$extra more" else null).joinToString("  ·  ")
-                if (tail.isNotBlank()) Text(tail, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                if (tail.isNotBlank()) FullText(tail, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
             }
         }
     }

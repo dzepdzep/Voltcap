@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Batch 523p on the KONKR (GT78), isolated QA app ONLY: Coverflow details frame timing A/B (run once on 523o = blur, once on
 # 523p = soft backdrop), Performance forced to Full for the run (QA hook, own intent) and back to Automatic after; Hero and
 # Game shelf as references. Each layout twice, the first a warm-up.   sh konkr523p.sh TAG [FULL|LITE] [LAYOUTS]

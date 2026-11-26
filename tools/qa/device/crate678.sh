@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 678o (live KONKR session; HW-2 - the owner's Record crate checklist, a v0.6.73 gate): Record crate's game window at x1.0 (one
 # row) and x1.3 (the approved vertical menu). Per scale: A opens it; the D-pad walks the keys one press each until MORE has the
 # focus (a dump + screenshot every step: one size for every key, no size change while the focus moves); A on MORE opens its

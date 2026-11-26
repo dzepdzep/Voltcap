@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # v0.6.66 D137: Case stacks frame pacing on the GT78 (no screenrecord; app-side QaTrace slow-frame lines, not dumpsys gfxinfo —
 # `gfxinfo reset` aborted Voltcap once in Android 11's HWUI JankTracker on this device).
 # usage: sh d137.sh TAG ["MODES"] [game] — modes: USER (your background, clips on), NOVIDEO (your background, clips off this session:

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 462: photo-made shells on / off — the same four Inspect pieces after a cold start; PSS and the frame cadence.
 P=com.shelf.launcher; R=/sdcard/perf462.txt; : > $R
 for mode in false true false true; do

@@ -440,7 +440,9 @@ private fun RetroTv(
             Box(
                 Modifier.offset(scr.left.toDp(), scr.top.toDp()).size(scr.width.toDp(), scr.height.toDp()).clip(screen)
                     // Update 119: the game window opens right here, on the set.
-                    .onGloballyPositioned { TvScreen.rect = it.boundsInWindow(); TvScreen.displayId = tvDisplay }
+                    .onGloballyPositioned { TvScreen.rect = it.boundsInWindow(); TvScreen.displayId = tvDisplay
+                        val fr = place.map(TvRoomArt.front)
+                        TvScreen.front = androidx.compose.ui.geometry.Rect(fr.left - scr.left, fr.top - scr.top, fr.right - scr.left, fr.bottom - scr.top) }
             ) {
                 // (Update 307: the game's pictures stay on the set under its clip, which fades in on its first frame and
                 // into the next game's — VideoCrossfade — instead of a black screen while a clip loads or changes.)
@@ -816,4 +818,34 @@ private fun caseGridShown(cols: Int): Int {
     if (cell <= 0f) return LAZY_LOOP_MIN
     val aside = kotlin.math.ceil(((h - cell) / 2f).coerceAtLeast(0f) / (cell + 6f)).toInt()
     return (1 + 2 * aside) * c
+}
+
+
+/**
+ * 682u (owner 18 Nov, permanent rule R27 - a foreground character never covers a popup): where the open window keeps out of the
+ * figure standing in front of the set. [front] is the figure's box relative to the screen's top-left (px), [w] x [h] the screen.
+ * [screenStart]: the window's text and keys start past the figure's right edge (plus [gap]) - 0 where it doesn't reach into the
+ * screen; never more than 30 % of the screen. [panelStart]: the panel under the set starts past the figure where the figure
+ * reaches below the screen, else the panel's usual 6 px out to the left (-gap). Pure.
+ */
+internal class TvKeepOut(val screenStart: Float, val panelStart: Float)
+
+internal fun tvFrontKeepOut(w: Float, h: Float, front: androidx.compose.ui.geometry.Rect, gap: Float): TvKeepOut {
+    val inScreen = front.right > 0f && front.left < w && front.bottom > 0f && front.top < h
+    val start = if (inScreen) (front.right + gap).coerceIn(0f, w * 0.3f) else 0f
+    val below = front.bottom > h && front.right > -gap && front.left < w
+    val panel = if (below) (front.right + gap).coerceAtMost(w * 0.3f) else -gap
+    return TvKeepOut(start, panel)
+}
+
+/** 682u: the room's figure (tv_room_front.png) at [box] in the window, over the open TV window, dimmed by [dim] as the room is. */
+@Composable
+internal fun TvFrontFigure(box: androidx.compose.ui.geometry.Rect, dim: () -> Float) {
+    val front = com.shelf.launcher.ui.cachedImageResource(com.shelf.launcher.R.drawable.tv_room_front)
+    Canvas(Modifier.fillMaxSize()) {
+        drawImage(front, dstOffset = androidx.compose.ui.unit.IntOffset(box.left.toInt(), box.top.toInt()),
+            dstSize = androidx.compose.ui.unit.IntSize(box.width.toInt(), box.height.toInt()),
+            filterQuality = androidx.compose.ui.graphics.FilterQuality.High,
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.Black.copy(alpha = dim().coerceIn(0f, 1f)), androidx.compose.ui.graphics.BlendMode.SrcAtop))
+    }
 }

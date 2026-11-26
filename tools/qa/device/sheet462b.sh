@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 462b: the comparison sheet — each subject in Inspect at the same size: front, 45, 75, 90, back (yaw 180).
 # usage: sh sheet462b.sh OUTDIR "Name|shell|@" ...   ("@" becomes "yaw|pitch"; extra fields after it: art file | shown name)
 P=com.shelf.launcher; OUT=$1; shift; rm -rf $OUT; mkdir -p $OUT

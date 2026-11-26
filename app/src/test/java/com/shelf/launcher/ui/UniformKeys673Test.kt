@@ -67,7 +67,7 @@ class UniformKeys673Test {
         assertTrue(gw.contains("WinAction(p.perf.summary, I.Speed, st.onPerf, status = true)"))
         val more = src("WinScenesMore.kt")
         assertTrue(more.contains("val actions = keys.filterNot { it.status }"))
-        assertTrue(more.contains("if (actions.isNotEmpty()) UniformKeyRow(actions, gap, key = key)"))
+        assertTrue(more.contains("if (actions.isNotEmpty()) UniformKeyRow(actions, gap, twoLineOnlyWhenAlone = twoLineOnlyWhenAlone, slots = slots, key = key)"))
         assertTrue(more.contains("if (LocalKeyAsStatus.current) { SceneStatusLine(a, k, font, size); return }"))
         // the inert copy of a page's keys keeps the flag
         assertTrue(src("WinPageFlow.kt").contains("inert = true, status = status)"))
@@ -81,11 +81,11 @@ class UniformKeys673Test {
         assertTrue(more.contains("Modifier.then(if (uniform) Modifier.fillMaxSize() else if (wide) Modifier.fillMaxWidth() else Modifier)"))
         assertTrue(more.contains("it.measure(androidx.compose.ui.unit.Constraints.fixed(w, h))"))
         // pages' bars, the TV strip, the plain window and the shared page use the same groups
-        assertTrue(src("WinSceneShelfPages.kt").contains("UniformKeyRow(keys.filterNot { it.status }, gap, key = key)"))
+        assertTrue(src("WinSceneShelfPages.kt").contains("UniformKeyRow(keys.filterNot { it.status }, gap, slots = if (page) PAGE_SLOTS else 0, key = key)"))
         assertTrue(Regex("UniformKeyRow\\(tvItems\\.indices").containsMatchIn(src("GameWindow.kt")))
         assertTrue(src("GameWindow.kt").contains("UniformKeyColumn(all.map"))
         assertTrue(src("GameWindow.kt").contains("UniformKeyRow(ctx.buttons.filterNot { it.status }, 12.dp)"))
         // vertical menus (Cross, Side): one width, one height
-        assertTrue(src("WinScenesHomes2.kt").contains("UniformKeyColumn(actions, 4.dp, fill = true, key = key)"))
+        assertTrue(src("WinScenesHomes2.kt").contains("UniformKeyColumn(actions, 4.dp, fill = true, slots = slots, key = key)")) // (742a: Cross pages keep the page slots)
     }
 }

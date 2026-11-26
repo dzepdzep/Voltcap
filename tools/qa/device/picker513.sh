@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: "Who's playing?" left waiting — CPU % and frames per 6 s (QA app only, demo profiles, nothing saved).
 #   sh picker513.sh TAG [LOOK]   windows: 2-8 s, 12-18 s, 22-28 s after it opens, then 1-7 s after one D-pad press.
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; T=$1; LK=${2:-AURORA}

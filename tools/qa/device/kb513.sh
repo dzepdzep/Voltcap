@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: Ken Burns drift comparison in Voltcap QA only. sh kb513.sh <mode 0|1|2> <tag> [layout] [rec]
 # mode 0 = every frame (511), 1 = 512 steps, 2 = paced. Writes the mode file in the QA app's own folder (read when the layout
 # is entered; nothing is restarted, so the owner's Voltcap never comes to the front), enters <layout>, then three 6 s windows (CPU, frames, janky, p90) with framestats dumped twice a second, and PSS.

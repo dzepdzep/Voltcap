@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 529j - Night menu (Moonlight) Full vs Lite, measured fairly: the SAME key sequence per segment for each variant, gfxinfo
 # reset before each segment. Variants: full (529j bars: no offscreen buffers while they fade with a motion), full_legacy
 # (the old per-bar buffers, voltcap_test_nmlayers legacy), lite. Segments: nav (12 x down), cat (R2 R2 L2 L2), pop (A B A B),

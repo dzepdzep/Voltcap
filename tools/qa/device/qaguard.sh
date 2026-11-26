@@ -14,3 +14,19 @@ qa_guard() {
   echo "QA GUARD: launch not confirmed blocked (state='${qg_s:-no answer}') - no Play tap" >&2
   return 1
 }
+
+# (682ar, D390, owner 24 Nov: "enforce an actual maximum duration and safe abort in the QA scripts so a 30-minute accidental
+# input loop cannot happen again"): sourcing this file also puts its own `input` in front of Android's - past the run's deadline
+# (15 minutes from sourcing, the owner's physical-QA limit; QA_MAX_S may set a shorter one, never a longer) no key, tap or swipe
+# is sent: the script stops at once, exit 3, with a line in its log ($L / $WG_LOG) - nothing more pressed.
+QA_T_END=${QA_T_END:-$(( $(date +%s) + ${QA_MAX_S:-900} ))}
+[ $(( QA_T_END - $(date +%s) )) -le 900 ] || QA_T_END=$(( $(date +%s) + 900 ))
+input() {
+  if [ "$(date +%s)" -ge "$QA_T_END" ]; then
+    m="$(date +%T) STOP max run time reached (qaguard) - '$*' not sent, nothing more pressed"
+    echo "$m" >&2; [ -n "$L" ] && echo "$m" >> "$L"; [ -n "$WG_LOG" ] && [ "$WG_LOG" != "$L" ] && echo "$m" >> "$WG_LOG"
+    [ -n "$L" ] && echo DONE >> "$L"
+    exit 3
+  fi
+  command input "$@"
+}

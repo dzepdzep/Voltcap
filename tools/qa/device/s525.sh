@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Sprint 525 hardware QA - the isolated QA app ONLY (com.shelf.launcher.qa), the QA fixture library (GB 1 game, N64 2,
 # GC 3, PS1 3). Never wakes or unlocks the handheld; every key only while a QA app window has the focus (else it stops,
 # the QA app is stopped and nothing else is pressed). Preview only (nothing saved by the layouts), launches blocked.

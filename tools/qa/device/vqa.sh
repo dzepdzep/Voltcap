@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # VoltCap QA — on-device helper (runs as adb shell user). Push to /data/local/tmp/vqa/vqa.sh.
 # Real controller input through the built-in gamepad's evdev node (same path as pressing the buttons),
 # frame stats, screen recording, memory snapshots. Never touches app data, saves or settings.

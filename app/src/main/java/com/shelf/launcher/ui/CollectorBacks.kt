@@ -264,7 +264,7 @@ internal object CollectorBacks {
         while (true) {
             tp.textSize = size
             layout = StaticLayout.Builder.obtain(t, 0, t.length, tp, r.width().toInt())
-                .setMaxLines(3).setEllipsize(TextUtils.TruncateAt.END).setLineSpacing(0f, 0.92f)
+                .setMaxLines(3).setEllipsize(TextUtils.TruncateAt.END).setLineSpacing(0f, 0.92f)  // qa-ok: TRUNCATE (printed case art: only past the readable minimum; the name is whole in the window)
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
             val rule = size * 0.45f
             if ((layout.height + rule <= r.height() && !ellipsized(layout)) || size <= min) break
@@ -306,7 +306,7 @@ internal object CollectorBacks {
             tp.textSize = size
             lines = (r.height() / (tp.fontSpacing * 1.12f)).toInt().coerceAtLeast(1)
             layout = StaticLayout.Builder.obtain(text, 0, text.length, tp, r.width().toInt())
-                .setMaxLines(lines).setEllipsize(TextUtils.TruncateAt.END).setLineSpacing(0f, 1.12f).build()
+                .setMaxLines(lines).setEllipsize(TextUtils.TruncateAt.END).setLineSpacing(0f, 1.12f).build()  // qa-ok: TRUNCATE (printed case art: only past 82 %; whole story on Details)
             if (!ellipsized(layout) || size <= size0 * 0.82f) break
             size *= 0.95f
         }
@@ -344,8 +344,7 @@ internal object CollectorBacks {
             val maxW = (w - 2 * m - badge - w * 0.03f).coerceAtLeast(40f)
             var y = top + h * 0.015f - tp.ascent()
             for (line in lines) {
-                val t = TextUtils.ellipsize(line, tp, maxW, TextUtils.TruncateAt.END).toString()
-                c.drawText(t, m, y, tp)
+                drawWhole(c, line, m, y, tp, maxW)
                 y += tp.fontSpacing * 1.3f
             }
         }
@@ -356,7 +355,16 @@ internal object CollectorBacks {
             "Steam", "Android", "App" -> "VOLTCAP COLLECTOR'S CASE  ·  NOT AN OFFICIAL RETAIL RELEASE"
             else -> "VOLTCAP PRINTED BACK  ·  NOT AN ORIGINAL PACKAGING SCAN"
         }
-        c.drawText(TextUtils.ellipsize(note, tp, w - 2 * m, TextUtils.TruncateAt.END).toString(), m, h - strip / 2f - (tp.ascent() + tp.descent()) / 2f, tp)
+        drawWhole(c, note, m, h - strip / 2f - (tp.ascent() + tp.descent()) / 2f, tp, w - 2 * m)
+    }
+
+    /** 757b (rule 11): [text] drawn whole on one line in [maxW] - smaller (to 70 %), then narrower - never cut with "…". */
+    private fun drawWhole(c: Canvas, text: String, x: Float, y: Float, tp: TextPaint, maxW: Float) {
+        val size0 = tp.textSize; val scale0 = tp.textScaleX
+        val (size, scaleX) = wholeLineFit(size0, size0 * 0.7f, maxW) { tp.textSize = it; tp.measureText(text) }
+        tp.textSize = size; tp.textScaleX = scale0 * scaleX
+        c.drawText(text, x, y, tp)
+        tp.textSize = size0; tp.textScaleX = scale0
     }
 
     /**
@@ -399,4 +407,17 @@ internal object CollectorBacks {
             val ch = (b.width / want).toInt().coerceAtLeast(1); val y0 = ((b.height - ch) * vy).toInt(); Rect(0, y0, b.width, y0 + ch)
         }
     }
+}
+
+/**
+ * 757b (rule 11): the text size and horizontal scale that draw one line whole in [maxW] px. [widthAt] measures the line at a
+ * size. Full size when it fits; else the size that fits (width is proportional to size), never below [minSize]; and when even
+ * [minSize] is too wide, that size drawn narrower (scale < 1) so the whole line still fits. Unit-tested (CollectorFit757bTest).
+ */
+internal fun wholeLineFit(baseSize: Float, minSize: Float, maxW: Float, widthAt: (Float) -> Float): Pair<Float, Float> {
+    val w0 = widthAt(baseSize)
+    if (w0 <= maxW || w0 <= 0f) return baseSize to 1f
+    val size = (baseSize * maxW / w0).coerceIn(minSize.coerceAtMost(baseSize), baseSize)
+    val w = widthAt(size)
+    return size to (if (w > maxW) (maxW / w).coerceIn(0.01f, 1f) else 1f)
 }

@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 462: the cartridge contact sheet — each subject in Inspect at the same size: front, 45°, 75°, 90°, rear, and the
 # Inspect window's own resting pose. usage: sh photo462.sh OUTDIR "Name_part|shell" ...   (test hooks file needed)
 P=com.shelf.launcher; OUT=$1; shift; mkdir -p $OUT

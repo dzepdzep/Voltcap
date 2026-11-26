@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 477 (D252 triage): after a touch, is the first D-pad press lost — and by which layer? The app (QA build) logs each
 # key that reaches the activity ("key … touchMode=… focus=…", "keydone … handled=") and every touch-mode change; the home's
 # focused game comes from its own dump. Per round on LAYOUT: (a) keys only; (b) a tap on the status area then RIGHT, RIGHT;

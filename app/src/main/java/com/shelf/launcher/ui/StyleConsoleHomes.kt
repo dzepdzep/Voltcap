@@ -269,7 +269,8 @@ internal fun StyleConsoleHub(c: StyleCtx, modifier: Modifier) {
         val small = ((maxHeight * 0.17f).coerceIn(52.dp, 118.dp) * GameSize.scale(com.shelf.launcher.data.HomeLayout.HUB)).coerceAtMost(maxHeight * 0.3f)
         val big = small * 1.7f
         val cardH = (maxHeight * 0.17f).coerceIn(50.dp, 92.dp)
-        Row(Modifier.fillMaxWidth().align(Alignment.TopStart).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HUB, "top"), "Profile, icons & clock"), verticalAlignment = Alignment.CenterVertically) {
+        // (679c, H7 / D347: the category title keeps clear of this row - at density 1.4 it lay over the profile name / score.)
+        Row(Modifier.fillMaxWidth().align(Alignment.TopStart).editablePart(LayoutParts.id(com.shelf.launcher.data.HomeLayout.HUB, "top"), "Profile, icons & clock").then(if (topOff) Modifier else Modifier.keepPartsClear(PartRects.layoutId(com.shelf.launcher.data.HomeLayout.HUB, "top"))), verticalAlignment = Alignment.CenterVertically) {
             ConsoleProfile(c)
             Spacer(Modifier.weight(1f))
             if (icons.isNotEmpty()) {
@@ -587,8 +588,15 @@ private fun ChanTile(c: StyleCtx, i: Int, light: Boolean, modifier: Modifier, se
             .border(if (sel) 4.dp else 2.dp, if (sel) ShelfTheme.accent else androidx.compose.ui.graphics.lerp(if (chanOled()) Color(0xFF3A414C) else if (light) chanColors().edge else Color(0xFFB9C3D0), ShelfTheme.accent, 0.3f), shape)
             .pointerInput(i) { detectTapGestures { if (i == GridHome.focus) open() else select(i) } }
     ) {
-        StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp)
-        if (Features.chanNames.state.value && on) Box(
+        val plate = Features.chanNames.state.value && on
+        // (680a, D356, KONKR x1.3 k679p13: the progress pill reached 5 px into the name plate drawn over the art's bottom - the
+        // plate's band (6 dp margin + 2 x 3 dp padding + one line at the drawn text size, less the art's own 3 dp inset) is an
+        // overlay the tile's badge lane keeps clear of. No lane reporting from the plate (678o: Compose never idle).)
+        val plateBand = if (!plate) 0.dp else with(androidx.compose.ui.platform.LocalDensity.current) { (12.sp * 1.3f).toDp() } + 12.dp - 3.dp
+        androidx.compose.runtime.CompositionLocalProvider(LocalBadgeOverlayBottom provides plateBand) {
+            StyleArt(c, g, Modifier.fillMaxSize().padding(3.dp), wide = true, corner = 13.dp)
+        }
+        if (plate) Box(
             Modifier.fillMaxWidth().align(Alignment.BottomCenter).padding(6.dp).riseOnEnter().clip(RoundedCornerShape(50))
                 .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 3.dp)
         ) {

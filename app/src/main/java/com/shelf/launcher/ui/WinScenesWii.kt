@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
@@ -44,7 +45,8 @@ import com.shelf.launcher.data.Features
  * GameWindow). A large rounded preview of the channel on a clean white (or, in the dark variant, charcoal) surface with
  * a restrained blue focus outline, two big bottom keys, "Channels" (back to the channel tile; update 507) and "Start", and a compact
  * row of small keys for Details, Inspect, options and achievements. The banner is shown whole (Fit), never cropped.
- * Details / options / achievements / performance pages are GameWindow's own, drawn inside the preview area.
+ * (727a, P2: Details / Achievements / Options are the channel's own screens in the preview well - WinPagesChan.kt; Performance
+ * is still the shared page there.)
  */
 
 /** Update 408: the Channel grid's window colours: light (default) or the dark variant, same geometry. */
@@ -107,18 +109,22 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
     // (Kept outside the scene: a page opened from More — Details, Options… — replaces the scene, and B from it comes back
     // to the More page on the key that opened it. A window opening afresh starts on the preview.)
     androidx.compose.runtime.remember { if (ctx.reveal() < 0.5f) WiiMore.key = null; 0 }
-    val more = WiiMore.key == ctx.g.stableKey && ctx.page == WinPage.MAIN
+    // (727a: the scene now stays composed while its own pages are shown - the More page's focus effect follows More being opened
+    // or closed only ([moreOpen]), not a page turned away and back (B onto Options must land on Options, not More's first key).)
+    val moreOpen = WiiMore.key == ctx.g.stableKey
+    val more = moreOpen && ctx.page == WinPage.MAIN
     fun setMore(v: Boolean) { WiiMore.key = if (v) ctx.g.stableKey else null }
     androidx.activity.compose.BackHandler(enabled = more) { setMore(false) }
     val moreKey = androidx.compose.runtime.remember { androidx.compose.ui.focus.FocusRequester() }
     var moreTouched by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    androidx.compose.runtime.LaunchedEffect(more) {
+    androidx.compose.runtime.LaunchedEffect(moreOpen) {
         if (!moreTouched) { moreTouched = true; return@LaunchedEffect }
         kotlinx.coroutines.delay(70)
         runCatching { if (more) small.firstOrNull { it.focus != null }?.focus?.requestFocus() else moreKey.requestFocus() }
     }
     Column(
-        Modifier.width(w).height(h).graphicsLayer {
+        // (727a: L1 / R1 turn the channel's screens wherever the D-pad is in the window - on its keys too.)
+        Modifier.width(w).height(h).nativeBumpers(ctx).graphicsLayer {
             // Opens out of the channel tile and closes back into it (B).
             val k = ctx.reveal().coerceIn(0f, 1f)
             val e = 1f - (1f - k) * (1f - k) * (1f - k)
@@ -137,7 +143,9 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
         ) {
             if (ctx.page == WinPage.MAIN && more) {
                 WiiMorePage(small, pal, compact, Modifier.fillMaxSize())
-            } else if (ctx.page == WinPage.MAIN) {
+            } else NativePages(ctx, Modifier.fillMaxSize(), label = "chanPage", move = ::chanMove) { pg, pageLive ->
+            // (727a, P2 class C: the channel's own screens - CHANNEL INFO / STAMPS / SETTINGS, WinPagesChan.kt - in the well.)
+            if (pg == WinPage.MAIN) Box(Modifier.fillMaxSize()) {
                 // Update 421: wide art fills the preview (cropped to its shape, never stretched); a portrait cover is shown
                 // whole in front of a soft, filled copy of itself, so the well never shows bare bars either side.
                 val wideArt = ctx.wide ?: ctx.backdrop
@@ -151,11 +159,16 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
                     Box(Modifier.fillMaxSize().background(pal.well.copy(alpha = 0.25f)))
                     AsyncImage(rememberStyleArtRequest(ctx.cover), ctx.name, Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
                 }
-            } else {
-                ctx.pageBody(Modifier.fillMaxSize())
+            } else ChanPage(ctx, pg, pageLive, pal, LocalWiiRim.current, Modifier.fillMaxSize())
             }
         }
         Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
+        val backKey = back?.let { if (more) WinAction(it.label, it.icon, { setMore(false) }, back = true) else it }
+        val moreAct = if (small.isNotEmpty()) WinAction(if (more) "Less" else "More", androidx.compose.material.icons.Icons.Filled.Layers, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }) else null
+        val row = listOfNotNull(backKey?.let { it to (if (more) "Back" else "Channels") },
+            play?.let { it to (if (it.label.equals("Continue", true)) "Continue" else "Start") }, moreAct?.let { it to it.label })
+        // (727a: on the channel's own screens the keys keep the Info row's slots - Play in the same place on every screen.)
+        val slots = rememberKeySlots(ctx.page, if (ctx.page == WinPage.MAIN) row.map { it.first } else ctx.buttons)
         if (ctx.page == WinPage.MAIN) {
             // The banner carries the title like the real preview; without banner art the name is the one line under the picture.
             if ((ctx.wide ?: ctx.backdrop ?: ctx.cover) == null) {
@@ -172,18 +185,20 @@ private fun WiiChannelPreviewBody(ctx: WinSceneCtx) {
             // keys are now ONE row of identical Wii keys - Channels (where it is a key; B goes back to the tile), Start, then a worded
             // MORE / LESS (the stack icon, never three dots) last - that scrolls a key at a time where it doesn't fit.)
             // (Update 507: the key named the console maker's own menu; "Channels" says where B goes.)
-            val backKey = back?.let { if (more) WinAction(it.label, it.icon, { setMore(false) }, back = true) else it }
-            val moreAct = if (small.isNotEmpty()) WinAction(if (more) "Less" else "More", androidx.compose.material.icons.Icons.Filled.Layers, { setMore(!more) }, focus = moreKey, urgent = small.any { it.urgent }) else null
-            val row = listOfNotNull(backKey?.let { it to (if (more) "Back" else "Channels") },
-                play?.let { it to (if (it.label.equals("Continue", true)) "Continue" else "Start") }, moreAct?.let { it to it.label })
-            UniformKeyRow(row.map { it.first }, 12.dp) { a ->
-                val lab = row.first { it.first === a }.second
-                WiiBigKey(a, lab, pal, Modifier.uniformFill(), compact, primary = a === play)
-            }
-        } else {
-            // (674b, owner brief 15 Nov: identical keys in one row that scrolls a whole key at a time (UniformKeyRow) - was a free
-            // sideways scroll that could leave a key half under the edge.)
-            UniformKeyRow(ctx.buttons, 12.dp) { a -> WiiBigKey(a, a.label, pal, Modifier.uniformFill().widthIn(min = 140.dp), compact) }
+        }
+        // (674b, owner brief 15 Nov: identical keys in one row that scrolls a whole key at a time (UniformKeyRow) - was a free
+        // sideways scroll that could leave a key half under the edge.)
+        // (727a: ONE row for the Info page and the channel's screens - two rows swapped on every page turn, and in a quick L1 / R1
+        // storm the focus went down with the row that left (NoStrayPlay682jTest CHAN: nothing lit, so B closed the window).)
+        val main = ctx.page == WinPage.MAIN
+        // (727a: a screen turned to with L1 / R1 has its More key (Details, Options, Achievements) as its opener; with More closed
+        // those keys aren't on the card, so the closed More key answers for them - B from a screen lands on More at once, never
+        // Play, and a storm of L1 / R1 never leaves the window with nothing lit (NoStrayPlay682jTest CHAN).)
+        val behindMore = if (more) Modifier else small.mapNotNull { it.focus }.fold(Modifier as Modifier) { m, f -> m.focusRequester(f) }
+        UniformKeyRow(if (main) row.map { it.first } else ctx.buttons, 12.dp, slots = if (main) 0 else slots) { a ->
+            if (main) WiiBigKey(a, row.firstOrNull { it.first === a }?.second ?: a.label, pal,
+                if (a === moreAct) Modifier.uniformFill().then(behindMore) else Modifier.uniformFill(), compact, primary = a === play)
+            else WiiBigKey(a, a.label, pal, Modifier.uniformFill().widthIn(min = 140.dp), compact)
         }
     }
 }

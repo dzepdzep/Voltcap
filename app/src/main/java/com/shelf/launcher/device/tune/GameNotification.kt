@@ -89,11 +89,9 @@ object GameNotification {
         // Update 200: while a game's (or its console's) own profile is in charge, that one is what runs: the notification
         // showed the device-wide profile's "Underclock Medium" even then.
         val p = if (!tuner) null else if (st.source != "Device") st.profile else TuneStore(context).global()
-        val powerLabel = p?.let {
-            (if (it.autoTdp) "AutoTDP ${it.autoMode.label}" else it.tier.label) +
-                (if (it.underclocked) " · Underclock ${it.effectiveUnderclock.label}" else "") +
-                if (st.heatStep > 0) " · hot: ${st.heatStep} lower" else ""
-        }
+        // (682bd, owner 25 Nov 20:58: "AutoTDP Balanced · Underclock Light" read as if it were a choice - now whose profile
+        // runs and whether the underclock is your own pick or follows the power - powerLine.)
+        val powerLabel = p?.let { powerLine(it, st.autoUnderclock, st.heatCut, if (st.source != "Device") st.sourceKind else TuneSource.DEVICE, st.source, st.vendorThrottle) }
         val overlays = listOfNotNull(
             "Stats".takeIf { cfg.showDuringGames }, "Music".takeIf { cfg.musicDuringGames }, "Trophies".takeIf { cfg.raDuringGames }
         ).joinToString("+").ifEmpty { "off" }
@@ -224,3 +222,18 @@ class GameNotificationReceiver : BroadcastReceiver() {
         }.start()
     }
 }
+
+/**
+ * (682bd) The power line of the in-game notification, each source said apart: the mode, the SAVED underclock (your own pick -
+ * Off included - or "(with power)", with AutoTDP's live step), then what is temporary - the heat guard's cut and the handheld's
+ * own thermal limit - and whose profile runs ("Game profile", "App profile", "PS2 profile", "Device-wide"). A temporary
+ * restriction never reads as a change to the profile.
+ */
+internal fun powerLine(p: TuneProfile, liveUc: Underclock?, heatCut: Int, kind: TuneSource, sourceName: String, vendorThrottle: Boolean = false): String =
+    listOfNotNull(
+        if (p.autoTdp) "AutoTDP ${p.autoMode.label}" else p.tier.label,
+        p.underclockPart(liveUc),
+        "Heat guard −$heatCut % for now".takeIf { heatCut > 0 },
+        "Handheld's own thermal limit".takeIf { vendorThrottle },
+        if (kind == TuneSource.CONSOLE) sourceName else kind.label
+    ).joinToString(" · ")

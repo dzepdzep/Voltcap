@@ -41,14 +41,16 @@ internal fun <E : Enum<E>> FeatureChoice(label: String, values: Array<E>, pref: 
     Spacer(Modifier.height(12.dp))
 }
 
-/** What each look of the category screen is, in a line (Settings › Categories › Category screen). */
+/** What each look of the category screen is, in a line (Settings › Categories › Category screen).
+ *  (759a: the arrows named here are the keys that move the look - lookNavOf; Blades and Pocket Dashboard step with ◀ ▶,
+ *  they said ▲ ▼, which do nothing there. CategoryLooksInventory759aTest.) */
 internal fun categoryLookNote(v: Features.PlatformView): String = when (v) {
     Features.PlatformView.TILES -> "Tiles: every category as a card in a grid you scroll down, its name under / on it."
     Features.PlatformView.SLIDES -> "Slides: one platform at a time filling the screen, ◀ ▶ or swipe to the next, every part placeable (Y › Design this slide)."
     Features.PlatformView.WALL -> "Wall: slanted slices of every platform side by side, the one you're on wider, its logo or name in the middle."
     Features.PlatformView.GRID -> "Grid: a horizontal grid of cards (wide in two rows, or tall 2:3), with drag-and-drop to reorder your platforms."
     Features.PlatformView.STAGE -> "System Stage: the console on a lit exhibition platform, turning to face you; the neighbours either side. ◀ ▶."
-    Features.PlatformView.BLADES -> "System Blades: bevelled panels stacked on a slant; the one you're on slides forward with its art and count. ▲ ▼."
+    Features.PlatformView.BLADES -> "System Blades: bevelled panels stacked on a slant; the one you're on slides forward with its art and count. ◀ ▶."
     Features.PlatformView.DRAWERS -> "Collector's Drawers: a cabinet of labelled drawers; the one you're on opens on its games. ◀ ▶ ▲ ▼."
     Features.PlatformView.WORLDS -> "Pocket Worlds: each system in its own pixel landscape, the layers moving at their own speeds. ◀ ▶."
     Features.PlatformView.ARCHIVE -> "Archive 1994: a hardware catalogue page — the console large, its maker, year and your count. ◀ ▶."
@@ -56,7 +58,7 @@ internal fun categoryLookNote(v: Features.PlatformView): String = when (v) {
     Features.PlatformView.GENERATIONS -> "Generations: the consoles on a timeline by generation and release year (your category order stays as it is). ◀ ▶."
     Features.PlatformView.CONSTELLATION -> "Constellation: the systems as nodes round a glowing core; the one you're on turns to the front. ◀ ▶."
     Features.PlatformView.VAULT -> "System Vault: storage modules in a rack; the one you're on slides into the reader, which shows its games. ▲ ▼."
-    Features.PlatformView.DASHBOARD -> "Pocket Dashboard: a compact list, a big preview of the system you're on and its information panels. ▲ ▼."
+    Features.PlatformView.DASHBOARD -> "Pocket Dashboard: a big preview of the system you're on and its information panels over a row of round system icons. ◀ ▶."
     Features.PlatformView.WIICHAN -> "Channel Menu: Channel grid's own picker — white rounded channels on pinstriped grey, four across, a page of twelve."
     Features.PlatformView.CINEMA -> "Cinema: the category big as a title card, the others as a row of posters along the bottom."
     Features.PlatformView.ARCTIC -> "Arctic Panes: frosted panes down the left on the deep slate, the art of the one you're on beside them."

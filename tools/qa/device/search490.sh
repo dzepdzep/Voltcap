@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 490 (settings search QA) — types queries into Settings' own search box (QA hook) and screenshots the results; for
 # jumping to a result is done by hand after checking where the focus is (A on a focused switch would change a setting).
 # sh search490.sh TAG [DISPLAY] -> /sdcard/pc/TAG/*.png

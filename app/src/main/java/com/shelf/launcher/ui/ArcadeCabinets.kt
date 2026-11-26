@@ -12,11 +12,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -677,36 +677,36 @@ internal fun DrawScope.drawCabSide(f: CabFrame, paint: CabPaint, art: ImageBitma
     if (m.inset > 0f) drawPanelEdges(f, paint, f.innerOf(u), u, lit, dim, nearSide = true)
     drawPath(path, Brush.verticalGradient(listOf(litColor(paint.side, k + 0.1f), litColor(paint.side, k - 0.12f)), startY = top.y, endY = bottom.y))
     when (m.build) {
-        CabBuild.UPRIGHT, CabBuild.BARTOP -> if (art != null) clipPath(path) { printArt(f, art, u, 0.04f, m.d, m.foot + 0.06f, m.h, 0.88f * (1f - dim * 0.6f)) }
+        CabBuild.UPRIGHT, CabBuild.BARTOP -> if (art != null) printArt(f, art, u, 0.04f, m.d, m.foot + 0.06f, m.h, 0.88f * (1f - dim * 0.6f), within = path)
         CabBuild.NEO -> {
             // A framed art panel low on the side (the frame's aluminium round it).
             val f0 = 0.10f; val f1 = 0.55f; val y0 = 0.14f; val y1 = 0.66f
             val panel = quad(f.map(u, f0, y1), f.map(u, f1 + 0.06f, y1), f.map(u, f1, y0), f.map(u, f0, y0))
             drawPath(panel, Color(0xFF14161B))
-            if (art != null) clipPath(panel) { printArt(f, art, u, f0, f1 + 0.06f, y0, y1, 0.92f * (1f - dim * 0.6f)) }
+            if (art != null) printArt(f, art, u, f0, f1 + 0.06f, y0, y1, 0.92f * (1f - dim * 0.6f), within = panel)
             drawPath(panel, litColor(paint.edge, 0.7f), style = Stroke((f.scale * 0.006f).coerceAtLeast(1f)))
         }
-        CabBuild.CANDY -> clipPath(path) {
+        CabBuild.CANDY -> run { // (682aq: the stripes met with the side's outline, not clipped to it - see the light below)
             // The shell's two-tone sweep: a stripe in the game's colour rising from the back to the deck.
             val s = Path().apply {
                 val p0 = f.map(u, 0f, 0.30f); val p1 = f.map(u, 0.86f, 0.62f); val p2 = f.map(u, 0.86f, 0.70f); val p3 = f.map(u, 0f, 0.40f)
                 moveTo(p0.x, p0.y); lineTo(p1.x, p1.y); lineTo(p2.x, p2.y); lineTo(p3.x, p3.y); close()
             }
-            drawPath(s, litColor(paint.trim, k + 0.25f))
+            drawPath(Path().apply { op(s, path, androidx.compose.ui.graphics.PathOperation.Intersect) }, litColor(paint.trim, k + 0.25f))
             val s2 = Path().apply {
                 val p0 = f.map(u, 0f, 0.43f); val p1 = f.map(u, 0.86f, 0.72f); val p2 = f.map(u, 0.86f, 0.745f); val p3 = f.map(u, 0f, 0.46f)
                 moveTo(p0.x, p0.y); lineTo(p1.x, p1.y); lineTo(p2.x, p2.y); lineTo(p3.x, p3.y); close()
             }
-            drawPath(s2, litColor(lerp(paint.trim, Color.White, 0.3f), k + 0.25f))
+            drawPath(Path().apply { op(s2, path, androidx.compose.ui.graphics.PathOperation.Intersect) }, litColor(lerp(paint.trim, Color.White, 0.3f), k + 0.25f))
         }
     }
-    clipPath(path) {
-        // Darker towards the floor, and a faint sheen across the panel's upper part.
-        val foot = f.map(u, 0f, m.foot + 0.25f)
-        drawRect(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.32f)), startY = foot.y, endY = bottom.y))
-        val s0 = f.map(u, 0f, m.h); val s1 = f.map(u, m.d, m.h * 0.55f)
-        drawRect(Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent), start = s0, end = s1))
-    }
+    // Darker towards the floor, and a faint sheen across the panel's upper part.
+    // (682aq, D379: the side's own outline filled with the light - the same pixels as a rect inside clipPath(path), without the
+    // clip: an anti-aliased clip of this outline was a mask drawn on the CPU and uploaded as a texture every frame of a glide.)
+    val foot = f.map(u, 0f, m.foot + 0.25f)
+    drawPath(path, Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.32f)), startY = foot.y, endY = bottom.y))
+    val s0 = f.map(u, 0f, m.h); val s1 = f.map(u, m.d, m.h * 0.55f)
+    drawPath(path, Brush.linearGradient(listOf(Color.Transparent, Color.White.copy(alpha = 0.05f), Color.Transparent), start = s0, end = s1))
     when (m.edge) {
         CabEdge.ROUND -> {
             // The shell's rounded edges, on both sides of the front.
@@ -735,7 +735,7 @@ private fun DrawScope.drawGlass(f: CabFrame) {
  * The game's art printed on the side plane at across = [u], over forward [f0]…[f1] and up [y0]…[y1] — cropped to fill
  * that area (its own proportions kept), [alpha] into the paint, then the panel's shading over it.
  */
-private fun DrawScope.printArt(f: CabFrame, art: ImageBitmap, u: Float, f0: Float, f1: Float, y0: Float, y1: Float, alpha: Float) {
+private fun DrawScope.printArt(f: CabFrame, art: ImageBitmap, u: Float, f0: Float, f1: Float, y0: Float, y1: Float, alpha: Float, within: Path) {
     val o = f.map(u, f0, y0); val fx = f.map(u, f1, y0); val fy = f.map(u, f0, y1)
     val ax = fx - o; val ay = fy - o
     val pw = f1 - f0; val ph = y1 - y0
@@ -744,19 +744,21 @@ private fun DrawScope.printArt(f: CabFrame, art: ImageBitmap, u: Float, f0: Floa
     val (sw, sh) = if (ia > pa) Pair(art.height * pa, art.height.toFloat()) else Pair(art.width.toFloat(), art.width / pa)
     val sx0 = (art.width - sw) / 2f; val sy0 = (art.height - sh) / 2f
     // Image px (sx, sy) → panel (forward = f0 + sx/sw·w, up = y0 + (1 − sy/sh)·h) → screen.
-    val mtx = androidx.compose.ui.graphics.Matrix()
     val a = ax.x / sw; val b = -ay.x / sh; val c = ax.y / sw; val d = -ay.y / sh
     val tx = o.x + ay.x - a * sx0 - b * sy0; val ty = o.y + ay.y - c * sx0 - d * sy0
-    mtx.values[androidx.compose.ui.graphics.Matrix.ScaleX] = a
-    mtx.values[androidx.compose.ui.graphics.Matrix.SkewX] = b
-    mtx.values[androidx.compose.ui.graphics.Matrix.TranslateX] = tx
-    mtx.values[androidx.compose.ui.graphics.Matrix.SkewY] = c
-    mtx.values[androidx.compose.ui.graphics.Matrix.ScaleY] = d
-    mtx.values[androidx.compose.ui.graphics.Matrix.TranslateY] = ty
-    withTransform({ transform(mtx) }) { drawImage(art, alpha = alpha) }
+    // (682aq, D379: the print is the picture's own shape - the image's rectangle mapped onto the panel - met with [within], filled
+    // with the picture as a shader: what drawImage inside clipPath(within) drew, without a clip mask made on the CPU and uploaded
+    // every frame the camera glides.)
+    val shader = android.graphics.BitmapShader(art.asAndroidBitmap(), android.graphics.Shader.TileMode.CLAMP, android.graphics.Shader.TileMode.CLAMP)
+    shader.setLocalMatrix(android.graphics.Matrix().apply { setValues(floatArrayOf(a, b, tx, c, d, ty, 0f, 0f, 1f)) })
+    fun img(x: Float, y: Float) = Offset(a * x + b * y + tx, c * x + d * y + ty)
+    val iw = art.width.toFloat(); val ih = art.height.toFloat()
+    val picture = quad(img(0f, 0f), img(iw, 0f), img(iw, ih), img(0f, ih))
+    val print = Path().apply { op(within, picture, androidx.compose.ui.graphics.PathOperation.Intersect) }
+    drawPath(print, androidx.compose.ui.graphics.ShaderBrush(shader), alpha = alpha)
     // The panel's own light over the print (it's printed on, not glowing).
     val top = f.map(u, f0, y1); val bottom = f.map(u, f0, y0)
-    drawRect(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Black.copy(alpha = 0.42f)), startY = top.y, endY = bottom.y))
+    drawPath(within, Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.18f), Color.Black.copy(alpha = 0.42f)), startY = top.y, endY = bottom.y))
 }
 
 /**

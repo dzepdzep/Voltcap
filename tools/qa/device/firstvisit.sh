@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 475: D248 / D250 checks after a fresh start. Per round: force-stop + start Voltcap (as after an install or a reboot),
 # close "Who's playing?" (B, by the app's own mark), then (1) Voltcap row on GAME: the title's place on arrival and after
 # one move away and back (D248: same place every time), (2) Cinema on GAME: one RIGHT — did the focus move (D250)?

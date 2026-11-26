@@ -204,6 +204,11 @@ object RomScanner {
         val multiDiscWriteFailures: Int = 0,
         /** Folders that don't exist or can't be read. */
         val unreadable: List<String> = emptyList(),
+        /**
+         * (681r, owner: deleted last game still listed) Folders inside a root the walk could not open (a permission, an
+         * unplugged card under a mount point): what was listed under them is kept, never taken as deleted.
+         */
+        val failedDirs: List<String> = emptyList(),
         /** Update 177: multi-disc games without a .m3u playlist (listed as one game, started from disc 1). */
         val missingM3u: List<MultiDiscSet> = emptyList(),
         /** Update 177: the same game found more than once (left out: [Duplicate.skipped]; or in two places). */
@@ -316,6 +321,7 @@ object RomScanner {
             results.sumOf { it.multiDiscGroupsCreated },
             results.sumOf { it.multiDiscWriteFailures },
             unreadable = rootPaths.filterIndexed { i, _ -> results[i].unreadable.isNotEmpty() },
+            failedDirs = results.flatMap { it.failedDirs }.distinct(),
             missingM3u = results.flatMap { it.missingM3u }.distinctBy { same(it.m3u.path) },
             duplicates = (results.flatMap { it.duplicates } + twice).distinctBy { same(it.skipped) }
         )
@@ -415,12 +421,35 @@ object RomScanner {
         return false
     }
 
+    /**
+     * (681r) A ROM folder that no longer exists, on storage that is there and readable: the folder was deleted (or renamed) -
+     * its games are gone. A folder whose storage is not there (an SD card out, a volume not mounted yet) or can't be read is
+     * NOT that: [rootState] says UNREADABLE and the games listed from it stay. Nothing is touched.
+     */
+    enum class RootState { OK, GONE, UNREADABLE }
+
+    fun rootState(root: File): RootState {
+        if (root.isDirectory) return if (root.listFiles() == null) RootState.UNREADABLE else RootState.OK
+        if (root.exists()) return RootState.UNREADABLE // (a file where the folder was: not judged)
+        // The nearest folder above it that exists: the storage must be readable there, and be more than a bare mount point
+        // (/storage, /mnt/media_rw: an unplugged card's folder is missing under them, and they hold nothing of their own).
+        var up = root.absoluteFile.parentFile
+        while (up != null && !up.exists()) up = up.parentFile
+        if (up == null || !up.isDirectory || up.listFiles() == null) return RootState.UNREADABLE
+        val p = up.absolutePath.trimEnd('/')
+        if (p.isEmpty() || p == "/storage" || p == "/mnt" || p == "/mnt/media_rw" || p == "/storage/emulated" || p == "/mnt/user") return RootState.UNREADABLE
+        return RootState.GONE
+    }
+
     fun scan(rootPath: String, deep: Boolean = false): ScanResult {
         val root = File(rootPath)
-        if (!root.exists() || !root.isDirectory) {
-            return ScanResult(emptyList(), emptySet(), unreadable = listOf(rootPath))
+        when (rootState(root)) {
+            RootState.UNREADABLE -> return ScanResult(emptyList(), emptySet(), unreadable = listOf(rootPath))
+            RootState.GONE -> return ScanResult(emptyList(), emptySet()) // (read, and nothing there: its games are gone)
+            RootState.OK -> {}
         }
         val absRoot = root.absoluteFile
+        val failedDirs = mutableListOf<String>()
 
         val knownFiles = mutableListOf<File>()
         val m3uFiles = mutableListOf<File>()
@@ -433,7 +462,11 @@ object RomScanner {
         val folderGames = mutableListOf<File>()
 
         root.walkTopDown()
+            // (681r: a folder the walk can't open is remembered - what was listed under it stays listed.)
+            .onFail { f, _ -> failedDirs += f.absolutePath }
             .onEnter { dir ->
+                // (a folder whose listing is refused - File.walk's onFail is not called for it on every Android version)
+                if (dir.isDirectory && dir.listFiles() == null) { failedDirs += dir.absolutePath; return@onEnter false }
                 if (skipFolder(dir.absoluteFile, absRoot)) false
                 else if (dir.absolutePath != absRoot.absolutePath && isFolderGame(dir)) { folderGames += dir; false }
                 else true
@@ -664,7 +697,7 @@ object RomScanner {
             )
         }
 
-        return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures, missingM3u = missingM3u, duplicates = duplicates)
+        return ScanResult(games.sortedBy { it.name }, skipped, groupsCreated, groupWriteFailures, failedDirs = failedDirs.distinct(), missingM3u = missingM3u, duplicates = duplicates)
     }
 
     /** Batch 523: a .cue / .gdi naming track files of which none is there any more (one naming none is kept). */

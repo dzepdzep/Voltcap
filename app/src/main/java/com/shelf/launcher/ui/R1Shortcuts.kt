@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -67,6 +68,7 @@ internal object R1Shortcut {
         "edithome" -> Icons.Filled.OpenWith
         "dual" -> Icons.Filled.Smartphone
         "rowpos" -> Icons.Filled.SwapVert
+        "focuspos" -> Icons.Filled.CenterFocusStrong // (723a)
         "navbar" -> Icons.Filled.VisibilityOff
         "fps" -> Icons.Filled.Layers
         "gamelook", "media" -> Icons.Filled.Album

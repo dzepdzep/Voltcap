@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # popaudit461.sh TAG "LAYOUTS" — update 461 popup audit: every layout x R1 popup style (preview, launches blocked).
 # Per combo: home before, popup open (settled), B closes (window back to home?), no launch, foreground stays Voltcap.
 # Saves the owner's snapshot first and restores + verifies it at the end.

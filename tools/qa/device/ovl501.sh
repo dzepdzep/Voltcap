@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 501 (isolated QA app only): overlay fixture at text 1.0 / 1.3 / 1.6 (+ narrow) and the physical-media homes.
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=$F/ovl501; mkdir -p $O; rm -f $O/*.png
 A(){ am start -n $P/com.shelf.launcher.MainActivity "$@" >/dev/null; }

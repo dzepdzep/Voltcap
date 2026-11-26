@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 513: physical-case depth audit — QA app only. Each fixture game held in Inspect at front, 3/4, side, back and from
 # above (yaw|pitch), one screenshot each. sh case513.sh TAG
 P=com.shelf.launcher.qa; F=/sdcard/Android/data/$P/files; O=$F/$1; rm -rf $O; mkdir -p $O

@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 529o - #15 queue item 1: after a tap inside the game window, R1 / L1 reached nothing (k529l3: no "winkey" at all). This
 # records where the input focus is before and after a tap, and whether the next R1 reaches the window. Isolated QA app ONLY,
 # fixture library, launches blocked, preview on; the owner's QA snapshot is kept and put back by `restore`.

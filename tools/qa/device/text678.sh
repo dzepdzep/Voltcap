@@ -1,4 +1,5 @@
 #!/system/bin/sh
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # 678o (live KONKR session): rule-11 text pages on hardware in one pass - HW-14 Settings (search "theme", the Theme,
 # Achievements and Categories pages), HW-13 Save Vault (fixture: display only, no save read / written, nothing synced),
 # HW-16 category screen (a long console name), HW-20 a game's Achievements list (fixture: nothing new, then 2 marked new by

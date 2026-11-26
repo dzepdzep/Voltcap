@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 491 (D137, measurements only) — Case stacks walks A/B on the owner's own settings vs one draw feature off at a time.
 # Temporary prefs only (voltcap_test_pref), put back by the snapshot taken first. Preview hooks; arrows and B only.
 # sh d137ab491.sh STEPS CATEGORY "MODES" -> /sdcard/pc/k4w/ab_<MODE>_STACKS_<CATEGORY>.txt (k4ab489.sh output per mode)

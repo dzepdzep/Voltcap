@@ -15,6 +15,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -174,23 +176,47 @@ internal fun caseFlightCurve(k: Float): Float = k.coerceIn(0f, 1f)
 /** Update 508: how much larger the case is at the middle of its trip (it comes toward you). */
 internal const val CASE_FORWARD = 0.2f
 
+/** 682y (pure, estimate): whether the console's longest word fits [roomDp] at the plate's smallest readable size (~6.5 dp a letter). */
+internal fun noArtNameFits(console: String, roomDp: Float): Boolean =
+    (console.split(' ').maxOfOrNull { it.length } ?: 0) * 6.5f <= roomDp
+
 /** No picture: a purposeful plate — the console's initials big, the console's name under them — never an empty black box. */
 @Composable
-internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color.White) {
+internal fun SceneNoArt(ctx: WinSceneCtx, modifier: Modifier, ink: Color = Color.White, consoleNamedBeside: Boolean = false) {
     Box(modifier.background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(6.dp)) {
+        BoxWithConstraints(Modifier.padding(6.dp), contentAlignment = Alignment.Center) {
+        val room = constraints.maxWidth
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(studioInitials(ctx.console), color = ink, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
             // (Batch 523, Inspect test: "Super Nintendo Entertainme" - a word wider than the plate was cut; whole words now, the size
             // stepping down until the longest one fits.)
-            WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
+            // (684a, H16 survey: Timeline's compact plate is 52 dp inside - "PlayStation" at the readable minimum broke as
+            // "PlayStati / on 2". Where the window names the console beside the plate, a caption whose longest word cannot fit
+            // whole is left out: the initials stay, the full name is right beside it - never a word broken, never cut.)
+            val measurer = rememberTextMeasurer(cacheSize = 4)
+            val style = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
+            val longest = remember(ctx.console, room, style) {
+                val word = ctx.console.split(' ', '\n').maxByOrNull { it.length } ?: ""
+                if (word.isEmpty()) 0 else measurer.measure(word, style, softWrap = false, maxLines = 1).size.width
+            }
+            // (merge of 682y and 684a: and never where even the readable minimum can't hold the longest word - the Icon bar's
+            // 60 dp plate with "Super Nintendo Entertainment System" - the initials stand alone there)
+            if (noArtCaptionShown(consoleNamedBeside, longest, room) && noArtNameFits(ctx.console, with(androidx.compose.ui.platform.LocalDensity.current) { room.toDp().value }))
+                WholeWordsText(ctx.console, color = ink.copy(alpha = 0.75f), fontSize = 10.sp, fontWeight = FontWeight.SemiBold, lineHeight = 12.sp, textAlign = TextAlign.Center)
+        }
         }
     }
 }
 
+/** 684a: the no-art plate's console caption is shown unless the window names the console beside the plate and the caption's
+ *  longest word (at its readable size, [longestPx]) is wider than the plate's room ([roomPx]). Pure. */
+internal fun noArtCaptionShown(consoleNamedBeside: Boolean, longestPx: Int, roomPx: Int): Boolean =
+    !consoleNamedBeside || roomPx == androidx.compose.ui.unit.Constraints.Infinity || longestPx <= roomPx
+
 /** The game's picture filling its room (Smart Fill, Batch 523: a light crop, else whole over its soft copy — never bars), or [SceneNoArt]. */
 @Composable
-private fun SceneArt(ctx: WinSceneCtx, url: String?, modifier: Modifier, well: Color) {
-    SmartArt(url, ctx.name, modifier, well = well, noArt = { m -> SceneNoArt(ctx, m) })
+private fun SceneArt(ctx: WinSceneCtx, url: String?, modifier: Modifier, well: Color, consoleNamedBeside: Boolean = false) {
+    SmartArt(url, ctx.name, modifier, well = well, noArt = { m -> SceneNoArt(ctx, m, consoleNamedBeside = consoleNamedBeside) })
 }
 
 private fun inkOn(c: Color) = if (c.luminance() > 0.45f) Color(0xFF15171C) else Color.White
@@ -463,13 +489,12 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
         }
         Spacer(Modifier.height(if (big) 4.dp else 8.dp))
         Box(Modifier.weight(1f).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(ink.copy(alpha = 0.05f)).padding(if (big) 6.dp else 8.dp)) {
-            // (529r: with large text the page draws as the card's own native page - the heading names it, no second margin.)
-            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = true, showsCover = true, showsName = true)) {
-                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            // (682ad, P2 batch 6: the card's other side in the home's own tiles - WinPagesTile.kt; the shared rows are gone.)
+            TilePage(ctx, p, live, ink, muted, a, Modifier.fillMaxSize())
         }
         Spacer(Modifier.height(if (big) 8.dp else 10.dp))
-        KeyRow(keys, 6.dp) { k ->
+        // (682ab: Play keeps the first half of the row on every page)
+        KeyRow(keys, 6.dp, slots = PAGE_SLOTS) { k ->
             SceneKeyStyled(k, if (k.primary) a else ink.copy(alpha = 0.08f), a, if (k.primary) inkOn(a) else ink, inkOn(a),
                 ink.copy(alpha = 0.16f), a, RoundedCornerShape(50), size = (12f * type).sp, pad = if (compact) 11.dp else 10.dp, height = if (big) 32.dp else 36.dp)
         }
@@ -479,6 +504,9 @@ private fun TileLiftPage(ctx: WinSceneCtx, p: WinPage, live: Boolean, ink: Color
 // ───────────────────────────── Card binder: the card turns over ─────────────────────────────
 
 /** Update 508: the card front's bottom line — the console, and the year when it is known (no stray dash). Pure. */
+/** 685a (pure): the binder card's front is out of sight - turned edge-on (first half of the turn done) or not yet shown. */
+internal fun cardFrontAway(reveal: Float): Boolean = sceneStage(reveal, 0f, 0.5f) >= 0.999f || reveal < 0.02f
+
 internal fun cardFrontLine(console: String, year: String?): String = console.uppercase() + (year?.takeIf { it.isNotBlank() }?.let { "  ·  $it" } ?: "")
 
 @Composable
@@ -492,14 +520,19 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
     // (529t, owner P3: with a pickup the binder's own card comes out of its pocket and turns (PickupOverlay); this front isn't
     // drawn then, and the back turns in from edge-on once the card is here - flipBackTurn.)
     val pickedUp = LocalSceneOrigin.current != null
+    // (685a, H16 parent-clip guard: once the front had turned edge-on it was drawn at alpha 0 but stayed laid out, its texts
+    // still in the tree - name, console and trophies twice, "hidden by a parent" in QA dumps. Out of sight, it is not composed:
+    // frontAway changes only when the turn crosses its ends (open: in at 2 %, out at half; close: back in at half, edge-on),
+    // never per frame.)
+    val frontAway by remember(ctx.reveal) { androidx.compose.runtime.derivedStateOf { cardFrontAway(ctx.reveal()) } }
     Box(Modifier.width(w).heightIn(max = h).pickupFlipTarget(pickedUp), contentAlignment = Alignment.Center) {
         // The front, as it sits in the binder, turning away (first half of the turn)…
-        if (!pickedUp) Box(Modifier.matchParentSize().graphicsLayer {
+        if (!pickedUp && !frontAway) Box(Modifier.matchParentSize().graphicsLayer {
             val k = sceneStage(ctx.reveal(), 0f, 0.5f)
             rotationY = k * 90f
             cameraDistance = 14f * density
             flatTextFor3d()
-            alpha = if (k >= 0.999f || ctx.reveal() < 0.02f) 0f else 1f
+            alpha = if (cardFrontAway(ctx.reveal())) 0f else 1f
             shape = cardShape; clip = true
         }.background(pal.frame).padding(7.dp).clip(RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
             // (Update 508, owner: "the front face shows almost only the cover". The binder card's front as a collectable card
@@ -535,20 +568,26 @@ internal fun CardTurnOver(ctx: WinSceneCtx) {
                 if (ctx.total > 0) Text("${ctx.earned}/${ctx.total}", color = Color(0xFFB0302A), fontSize = 13.sp, fontWeight = FontWeight.Black)
             }
             Box(Modifier.padding(vertical = 5.dp).fillMaxWidth().height(2.dp).background(pal.frame))
-            Row(Modifier.weight(1f, fill = false)) {
+            // (682w, P2 batch 3: the card's text box shows its other sections - CARD TEXT, MOVES, RULES - WinPagesCard.kt; the
+            // picture window steps back to a small one beside them.)
+            val onPage = ctx.page != WinPage.MAIN
+            Row(Modifier.weight(1f, fill = onPage)) {
                 // The picture window: the cover whole, at its own shape (no strip).
-                Box(Modifier.width(minOf(w * (if (short) 0.24f else 0.3f), 150.dp)).aspectRatio(0.72f).border(3.dp, pal.frame, RoundedCornerShape(4.dp)).padding(3.dp)) {
+                Box(Modifier.width(minOf(w * (if (onPage) 0.16f else if (short) 0.24f else 0.3f), 150.dp)).aspectRatio(0.72f).border(3.dp, pal.frame, RoundedCornerShape(4.dp)).padding(3.dp)) {
                     SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color(0xFF26221C))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(ctx.console.uppercase() + (ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Text(ctx.console.uppercase() + (if (onPage) "  ·  " + cardSection(ctx.page) else ctx.year?.let { "  ·  $it" } ?: ""), color = ink.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                     Spacer(Modifier.height(4.dp))
-                    SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink, omit = setOf("Console", "Year"))
+                    if (!onPage) SceneFactsBody(ctx, ink.copy(alpha = 0.55f), ink, omit = setOf("Console", "Year"))
+                    else NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "cardPage", move = ::cardMove) { pg, pageLive ->
+                        CardPage(ctx, pg, pageLive, ink, pal.rim, pal.star, Modifier.fillMaxSize())
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, if (k.primary) Color(0xFF2A2620) else Color.White, Color(0xFF2A2620), if (k.primary) pal.star else ink, pal.star,
                     ink.copy(alpha = 0.35f), ink, RoundedCornerShape(50), size = 11.sp)
             }
@@ -614,19 +653,34 @@ internal fun CubeTurnFace(ctx: WinSceneCtx) {
             .border(2.dp, Brush.linearGradient(listOf(Color.White.copy(alpha = 0.5f), Color.Black.copy(alpha = 0.4f))), RoundedCornerShape(6.dp)).padding(14.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 // The game on the face as a square inset, whole.
-                Box(Modifier.size(minOf(side * 0.3f, 120.dp)).storageFlightSlot(true).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
-                    SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }, faceBottom)
+                // (682q: on the cube's other faces the inset is a small mark - the face's room goes to the page)
+                val inset = if (ctx.page == WinPage.MAIN) minOf(side * 0.3f, 120.dp) else 52.dp
+                Box(Modifier.size(inset).storageFlightSlot(true).clip(RoundedCornerShape(4.dp)).border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(4.dp))) {
+                    // (682q: the small mark on the other faces is the picture only - a game without one shows the face's glass,
+                    // never its console's name squeezed into 52 dp)
+                    // (682ag: not an empty square - the console's initials on the game's colour, as the no-art plates)
+                    if (ctx.page != WinPage.MAIN && (ctx.cover ?: ctx.wide) == null) Box(Modifier.fillMaxSize().background(placeholderBrush(ctx.g.hue)), contentAlignment = Alignment.Center) {
+                        Text(studioInitials(ctx.console), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, maxLines = 1, softWrap = false) // qa-ok: TRUNCATE-CLIP (2-4 initials in a 52 dp mark)
+                    }
+                    else SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize().graphicsLayer { if (storageSlotHidden(flying, ctx.reveal())) alpha = 0f }, faceBottom)
                 }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text(ctx.console.uppercase(), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
-                    StableFullText(ctx.name, color = Color.White, fontSize = 20.sp, maxLines = 3, fontWeight = FontWeight.Black, reserve = false)
+                    val facePage = rememberHeadingPage(ctx.page) // (682ag: the face's name turns with the face, not before it)
+                    Text(if (facePage == WinPage.MAIN) ctx.console.uppercase() else cubePageName(facePage), color = a, fontSize = 10.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                    StableFullText(ctx.name, color = Color.White, fontSize = if (ctx.page == WinPage.MAIN) 20.sp else 15.sp, maxLines = if (ctx.page == WinPage.MAIN) 3 else 2,
+                        fontWeight = FontWeight.Black, reserve = false)
                 }
             }
-            Spacer(Modifier.height(8.dp))
-            Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.6f), Color.White, omit = setOf("Console")) }
-            Spacer(Modifier.height(8.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            // (682r: on the other faces the gaps tighten - the face's room goes to the page)
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
+            // (682q, P2 batch 2: the cube's other faces - SPECS, CUBES, CONTROLS - WinPagesCube.kt; face 1 is the game.)
+            NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "cubePage", move = ::cubeMove) { pg, pageLive ->
+                if (pg == WinPage.MAIN) Column { SceneFactsBody(ctx, Color.White.copy(alpha = 0.6f), Color.White, omit = setOf("Console")) }
+                else CubePage(ctx, pg, pageLive, a, faceBottom, Modifier.fillMaxSize())
+            }
+            Spacer(Modifier.height(if (ctx.page == WinPage.MAIN) 8.dp else 4.dp))
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKey(k, Color.Black.copy(alpha = 0.35f), a, Color.White, inkOn(a), Color.White.copy(alpha = 0.3f), Color.White, RoundedCornerShape(6.dp))
             }
         }
@@ -646,7 +700,8 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
     val compact = ctx.maxH < 400.dp
     val metal = Brush.linearGradient(listOf(Color(0xFF3E434C), Color(0xFF262A30), Color(0xFF3A3F47)))
     val plate = RoundedCornerShape(10.dp)
-    Column(Modifier.width(w).heightIn(max = ctx.maxH).graphicsLayer {
+    // (P2 / 681d: the plate's own pages - WinPagesHub.kt; a steady height on them so the service record has room to scroll.)
+    Column(Modifier.width(w).heightIn(max = if (ctx.page != WinPage.MAIN) minOf(ctx.maxH, 460.dp) else ctx.maxH).nativeBumpers(ctx).graphicsLayer {
         // Out of the console list on the left: it slides in from that side, the nameplate first.
         val e = sceneEase(ctx.reveal())
         translationX = (1f - e) * -size.width * 0.18f
@@ -672,18 +727,29 @@ internal fun HubNameplate(ctx: WinSceneCtx) {
         }
         Box(Modifier.padding(horizontal = 22.dp, vertical = 8.dp).fillMaxWidth().height(2.dp)
             .background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.White.copy(alpha = 0.15f), Color.Black.copy(alpha = 0.5f)))))
-        Row(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp).weight(1f, fill = false)) {
-            // The game seated in the console: its own case.
+        Row(Modifier.padding(start = 22.dp, end = 22.dp, bottom = 18.dp).weight(1f, fill = ctx.page != WinPage.MAIN)) {
+            // The game seated in the console: its own case (a smaller seat while the plate shows another face).
             val aspect = sceneCaseAspect(ctx.g.platform)
-            val cw = minOf(w * (if (compact) 0.2f else 0.26f), 170.dp)
+            // (682v, owner 18 Nov: "Console Hub: improve available horizontal space for achievements and options" - on those two
+            // faces the seated case slims to a narrow seat, smoothly, and the gap tightens; Details keeps its 20 % seat.)
+            // (682ab, KONKR + RP Classic x1.0: with Details on the wider seat the keys under the plate started further right than
+            // on the other faces - Play moved. Every page has the narrow seat now; the main face keeps its own.)
+            val slim = ctx.page != WinPage.MAIN
+            val cwTarget = minOf(w * (if (slim) 0.11f else if (compact || ctx.page != WinPage.MAIN) 0.2f else 0.26f), 170.dp)
+            val cw by androidx.compose.animation.core.animateDpAsState(cwTarget,
+                if (rememberAnimationsEnabled()) tween(NATIVE_PAGE_MS, easing = androidx.compose.animation.core.FastOutSlowInEasing) else androidx.compose.animation.core.snap(), label = "hubSeat")
             SceneCase(ctx, Modifier.width(cw).height(cw / aspect))
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(if (slim) 10.dp else 16.dp))
             Column(Modifier.weight(1f)) {
-                StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
-                Spacer(Modifier.height(6.dp))
-                Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year")) }
+                NativePages(ctx, Modifier.weight(1f, fill = ctx.page != WinPage.MAIN).fillMaxWidth(), label = "hubPage", move = ::hubMove) { pg, pageLive ->
+                    if (pg == WinPage.MAIN) Column {
+                        StableFullText(ctx.name, color = Color.White, fontSize = 21.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
+                        Spacer(Modifier.height(6.dp))
+                        Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year")) }
+                    } else HubPage(ctx, pg, pageLive, Modifier.fillMaxSize())
+                }
                 Spacer(Modifier.height(8.dp))
-                KeyRow(sceneKeys(ctx)) { k ->
+                KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                     SceneKeyStyled(k, if (k.primary) a else Color.Black.copy(alpha = 0.3f), Color.White, if (k.primary) inkOn(a) else Color.White, Color.Black,
                         Color.White.copy(alpha = 0.2f), Color.White, RoundedCornerShape(4.dp))
                 }
@@ -706,7 +772,10 @@ internal fun TimelineHang(ctx: WinSceneCtx) {
     val node = 46.dp
     val dated = timelineDated(ctx.year)
     val compact = ctx.maxH < 400.dp
-    Column(Modifier.width(w).heightIn(max = ctx.maxH)) {
+    // (728a, P2: the entry's own pages - WinPagesTime.kt. On them the entry takes a steady height so the milestones have room to
+    // scroll; L1 / R1 turn the pages wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    Column(Modifier.width(w).heightIn(max = if (onPage) minOf(ctx.maxH, 480.dp) else ctx.maxH).nativeBumpers(ctx)) {
         // The year line: drawn across from the left, its node (the year) on it — inside the window, never over its edge.
         Box(Modifier.fillMaxWidth().height(node), contentAlignment = Alignment.CenterStart) {
             Box(Modifier.fillMaxWidth().height(3.dp).graphicsLayer {
@@ -731,25 +800,35 @@ internal fun TimelineHang(ctx: WinSceneCtx) {
         // The stem from the node down to the entry.
         Box(Modifier.padding(start = 28.dp + node / 2 - 1.dp).width(2.dp).height(12.dp).graphicsLayer { alpha = sceneStage(ctx.reveal(), 0.4f, 0.6f) }.background(a))
         // The entry, unrolling down from the stem.
-        Column(Modifier.fillMaxWidth().weight(1f, fill = false).graphicsLayer {
+        Column(Modifier.fillMaxWidth().weight(1f, fill = onPage).graphicsLayer {
             val e = sceneEase(sceneStage(ctx.reveal(), 0.45f, 1f))
             scaleY = 0.3f + 0.7f * e; transformOrigin = TransformOrigin(0.08f, 0f); alpha = e
             shape = RoundedCornerShape(10.dp); clip = true
             shadowElevation = 12.dp.toPx() * e
         }.background(themeDark(Color(0xFF1A1D23))).border(1.dp, a.copy(alpha = 0.45f), RoundedCornerShape(10.dp)).padding(14.dp)) {
-            Row(Modifier.weight(1f, fill = false), verticalAlignment = Alignment.Top) {
+            Row(Modifier.weight(1f, fill = onPage), verticalAlignment = Alignment.Top) {
                 val aw = if (compact) 64.dp else 86.dp
-                Box(Modifier.width(aw).aspectRatio(0.72f).clip(RoundedCornerShape(4.dp))) { SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color.Black) }
+                Box(Modifier.width(aw).aspectRatio(0.72f).clip(RoundedCornerShape(4.dp))) { SceneArt(ctx, ctx.cover ?: ctx.wide, Modifier.fillMaxSize(), Color.Black, consoleNamedBeside = ctx.console.isNotBlank()) }
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     StableFullText(ctx.name, color = Color.White, fontSize = 19.sp, maxLines = 3, fontWeight = FontWeight.Bold, reserve = false)
                     Text(listOfNotNull(ctx.console, ctx.developer).joinToString(" · "), color = a, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                    // (728a: on its pages the entry names the one shown beside the page line - after the old page has gone)
+                    val heading = rememberHeadingPage(ctx.page)
+                    if (heading != WinPage.MAIN) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(timePageName(heading), color = a, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                        Spacer(Modifier.width(8.dp))
+                        TimePageLine(nativeTabs(ctx.pages), heading, a)
+                    }
                     Spacer(Modifier.height(6.dp))
-                    Column(Modifier.weight(1f, fill = false)) { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year", "Made by")) }
+                    NativePages(ctx, Modifier.weight(1f, fill = onPage).fillMaxWidth(), label = "timePage", move = ::timeMove) { pg, pageLive ->
+                        if (pg == WinPage.MAIN) Column { SceneFactsBody(ctx, Color.White.copy(alpha = 0.5f), Color.White, omit = setOf("Console", "Year", "Made by")) }
+                        else TimePage(ctx, pg, pageLive, a, Modifier.fillMaxSize())
+                    }
                 }
             }
             Spacer(Modifier.height(10.dp))
-            KeyRow(sceneKeys(ctx)) { k ->
+            KeyRow(sceneKeys(ctx), slots = sceneKeySlots(ctx)) { k ->
                 SceneKeyStyled(k, if (k.primary) a else Color.White.copy(alpha = 0.06f), Color.White, if (k.primary) inkOn(a) else Color.White, Color.Black,
                     Color.White.copy(alpha = 0.12f), a, RoundedCornerShape(6.dp))
             }

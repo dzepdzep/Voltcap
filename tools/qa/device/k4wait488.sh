@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 488 (K4) — generated spines: how many are shown WITHOUT their name ("spine wait", QaTrace) going out and coming back.
 # sh k4wait488.sh LAYOUT CATEGORY STEPS. Preview hooks only; nothing saved or launched. A cold run first (process restarted
 # by the caller), then the same walk again warm. Output: per phase counts on stdout + /sdcard/pc/k4w/<L>_<C>.txt

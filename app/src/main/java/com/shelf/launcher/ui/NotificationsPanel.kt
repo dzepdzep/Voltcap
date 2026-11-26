@@ -449,7 +449,7 @@ internal fun QuickSheet(
     androidx.compose.ui.window.Dialog(
         onDismissRequest = { sounds?.play(UiSound.BACK); onDismiss() },
         properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
-    ) {
+    ) { WithTestScale { // (26 Nov: QA only - this window provides its own density again; null in production -> as before)
         ImmersiveDialogWindow()
         androidx.compose.foundation.layout.BoxWithConstraints(
             Modifier
@@ -487,7 +487,7 @@ internal fun QuickSheet(
                 )
             }
         }
-    }
+    } }
 }
 
 /** First line of the sheet: what the status bar showed (time · date, Wi-Fi, battery) and ✕. */

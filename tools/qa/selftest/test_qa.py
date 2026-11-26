@@ -2165,6 +2165,143 @@ class TestCiWatchdog673(unittest.TestCase):
         self.assertEqual(r.returncode, 3); self.assertNotIn("::error", r.stdout)
 
 
+class TestCiRetryInfra681q(unittest.TestCase):
+    """681q: tools/ci/retry_infra.py re-runs Gradle after a package-server 429 / 5xx only - never after a code failure."""
+    LOG429 = ("> Task :app:mergeDebugUnitTestManifest FAILED\nFAILURE: Build failed with an exception.\n"
+              "   > Could not HEAD 'https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/plugin/compose/x-2.2.10.jar'. "
+              "Received status code 429 from server: Too Many Requests\n")
+
+    def mod(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "..", "ci"))
+        import retry_infra
+        return retry_infra
+
+    def test_the_17_nov_maven_429_is_infra(self):
+        r = self.mod()
+        self.assertEqual(r.classify(self.LOG429), ("infra", "HTTP 429 from a package server"))
+        self.assertEqual(r.classify("Could not GET 'https://dl.google.com/x.pom'. Received status code 503 from server: x")[0], "infra")
+
+    def test_code_failures_are_never_infra_even_beside_a_429(self):
+        r = self.mod()
+        for code in ("There were failing tests. See the report", "812 tests completed, 1 failed",
+                     "e: file:///a/B.kt:3:1 Unresolved reference", "> Task :app:compileDebugKotlin FAILED",
+                     "> Task :app:testDebugUnitTest FAILED", "::error title=Unit tests stopped by the watchdog::x"):
+            self.assertEqual(r.classify(self.LOG429 + code + "\n")[0], "code", code)
+        self.assertEqual(r.classify("Received status code 404 from server: Not Found")[0], None)  # a missing artifact is ours
+
+    # 702a: 9073da2 ubuntu-24.04 - the test task failed only because Maven Central refused a Robolectric jar (no test ran).
+    BLOCK429 = ("* What went wrong:\nExecution failed for task ':app:%s'.\n"
+                "> Could not resolve all files for configuration ':app:debugUnitTestRuntimeClasspath'.\n"
+                "   > Could not download nativeruntime-dist-compat-1.0.18.jar (org.robolectric:nativeruntime-dist-compat:1.0.18)\n"
+                "      > Could not GET 'https://repo.maven.apache.org/maven2/org/robolectric/x.jar'. "
+                "Received status code 429 from server: Too Many Requests\n\n* Try:\n> Run with --info\n\n"
+                "* Exception is:\norg.gradle.api.tasks.TaskExecutionException: x\n\n")
+    LOG702 = ("> Task :app:testDebugUnitTest FAILED\n> Task :app:testDebugHeavyRoboUnitTest FAILED\n\n"
+              "FAILURE: Build completed with 2 failures.\n\n1: Task failed with an exception.\n-----------\n"
+              + BLOCK429 % "testDebugUnitTest" + "==============\n\n2: Task failed with an exception.\n-----------\n"
+              + BLOCK429 % "testDebugHeavyRoboUnitTest" + "BUILD FAILED in 4m 8s\n")
+
+    def test_a_test_task_failed_only_by_a_429_download_is_infra(self):
+        r = self.mod()
+        self.assertEqual(r.classify(self.LOG702), ("infra", "HTTP 429 from a package server"))
+        # GitHub's log view puts a timestamp before every line - the same verdict.
+        stamped = "".join("2026-11-23T04:30:41.0472139Z " + ln for ln in self.LOG702.splitlines(True))
+        self.assertEqual(r.classify(stamped)[0], "infra")
+
+    def test_a_429_block_never_hides_a_real_failure_beside_it(self):
+        r = self.mod()
+        real = ("* What went wrong:\nExecution failed for task ':app:testDebugUnitTest'.\n"
+                "> Process 'Gradle Test Executor 3' finished with non-zero exit value 137\n\n* Try:\n> x\n")
+        self.assertEqual(r.classify(self.LOG702.replace("BUILD FAILED", real + "BUILD FAILED"))[0], "code")
+        self.assertEqual(r.classify(self.LOG702 + "There were failing tests. See the report\n")[0], "code")
+        self.assertEqual(r.classify(self.LOG702 + "e: file:///a/B.kt:3:1 Unresolved reference\n")[0], "code")
+        # a download that is OUR fault (404: wrong coordinates) is never infra
+        self.assertEqual(r.classify(self.LOG702.replace("429", "404").replace("Too Many Requests", "Not Found"))[0], "code")
+        # a failed task with no Gradle explanation at all stays code
+        self.assertEqual(r.classify("> Task :app:testDebugUnitTest FAILED\n" + self.LOG429)[0], "code")
+
+    # 704a: 0288490 ubuntu-latest - Robolectric fetched android-all-instrumented itself, so the 429 became failing tests.
+    FAIL429 = ("%s > [%s] > classMethod FAILED\n"
+               "    java.lang.AssertionError: Failed to fetch maven artifact org.robolectric:android-all-instrumented:14-x\n\n"
+               "        Caused by:\n        java.util.concurrent.ExecutionException: java.io.IOException: Server returned HTTP "
+               "response code: 429 for URL: https://repo1.maven.org/maven2/org/robolectric/x.jar\n\n")
+    TESTS_BLOCK = ("* What went wrong:\nExecution failed for task ':app:testDebugUnitTest'.\n> There were failing tests. "
+                   "See the report at: file:///x/index.html\n\n* Try:\n> Run with --scan\n\n")
+
+    def log704(self, fails, total=None):
+        body = "".join(self.FAIL429 % (c, n) for c, n in fails)
+        n = len(fails) if total is None else total
+        return ("> Task :app:testDebugUnitTest\n\n" + body + "1783 tests completed, %d failed\n\n" % n
+                + "> Task :app:testDebugUnitTest FAILED\n\nFAILURE: Build failed with an exception.\n\n" + self.TESTS_BLOCK
+                + "BUILD FAILED in 5m\n")
+
+    def test_failing_tests_that_only_hit_a_robolectric_429_are_infra(self):
+        r = self.mod()
+        fails = [("AchFirstRowRoboTest", "CLASSIC n=1"), ("WindowWordsSurvey682Test", "TV x1.3")]
+        self.assertEqual(r.classify(self.log704(fails)), ("infra", "HTTP 429 from a package server"))
+        stamped = "".join("2026-11-23T06:33:43.7650372Z " + ln for ln in self.log704(fails).splitlines(True))
+        self.assertEqual(r.classify(stamped)[0], "infra")
+        # counted over the whole stream: a tail that lost the early stack traces still gets the whole-run verdict
+        whole = r.TestFailures.of(self.log704(fails * 50, 100))
+        self.assertEqual((whole.headers, whole.infra, whole.reported), (100, 100, 100))
+        self.assertEqual(r.classify(self.log704(fails * 50, 100)[-400:], whole)[0], "infra")
+
+    def test_one_real_test_failure_among_429s_stays_code(self):
+        r = self.mod()
+        fails = [("AchFirstRowRoboTest", "CLASSIC n=1")]
+        real = ("HomeEditFullText703aTest > widgetNamesWhole FAILED\n    java.lang.AssertionError: expected:<4> but was:<3>\n"
+                "        at org.junit.Assert.fail(Assert.java:89)\n\n")
+        log = self.log704(fails, 2).replace("1783 tests", real + "1783 tests")
+        self.assertEqual(r.classify(log)[0], "code")
+        # more failures reported than printed (a failure we cannot see) -> code
+        self.assertEqual(r.classify(self.log704(fails, 3))[0], "code")
+        # a 404 (our wrong coordinates) is never infra
+        self.assertEqual(r.classify(self.log704(fails).replace("code: 429", "code: 404"))[0], "code")
+        # a compile error beside 429 test failures -> code
+        self.assertEqual(r.classify(self.log704(fails) + "e: file:///a/B.kt:3:1 Unresolved reference\n")[0], "code")
+        # the whole-stream count wins over a tail that only shows 429s
+        mixed = r.TestFailures.of(log)
+        self.assertEqual(r.classify(self.log704(fails), mixed)[0], "code")
+
+    def test_run_once_counts_test_failures_while_streaming(self):
+        r = self.mod()
+        import io, contextlib
+        log = self.log704([("A", "1"), ("B", "2")])
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc, tail, tests = r.run_once([sys.executable, "-c", "import sys; sys.stdout.write(%r); sys.exit(1)" % log], 5)
+        self.assertEqual((rc, tests.headers, tests.infra, tests.reported), (1, 2, 2, 2))
+        self.assertEqual(r.classify(tail, tests)[0], "infra")
+
+    def test_retries_only_infra_and_keeps_the_exit_code(self):
+        r = self.mod()
+        runs, slept = [], []
+        def runner(results):
+            it = iter(results)
+            def f(cmd, keep):
+                runs.append(cmd); return next(it)
+            return f
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(r.main(["--wait", "5", "--", "gradle"], runner([(1, self.LOG429), (0, "")]), slept.append), 0)
+        self.assertEqual(len(runs), 2); self.assertEqual(slept, [5.0]); self.assertIn("::warning title=Retrying", out.getvalue())
+        runs.clear(); slept.clear()
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(r.main(["--", "gradle"], runner([(1, "There were failing tests\n" + self.LOG429)]), slept.append), 1)
+        self.assertEqual((len(runs), slept), (1, []))                     # a real failure: one run, no retry
+        runs.clear()
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(r.main(["--attempts", "2", "--wait", "1", "--", "g"], runner([(1, self.LOG429)] * 2), slept.append), 1)
+        self.assertEqual(len(runs), 2); self.assertIn("::error title=Package servers still failing", out.getvalue())
+
+    def test_the_verify_workflow_uses_it_inside_the_watchdog(self):
+        with open(os.path.join(HERE, "..", "..", "..", ".github", "workflows", "verify-update-310.yml")) as fh:
+            wf = fh.read()
+        self.assertIn("watchdog.py --progress app/build/test-progress.log --min-avail-mb 1500 --limit-min 35 -- "
+                      "python3 tools/ci/retry_infra.py -- bash ./gradlew", wf)
+        self.assertIn("python3 tools/ci/retry_infra.py -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true "
+                      ":app:assembleDebug", wf)
+
+
 class TestUniformAudit673(unittest.TestCase):
     """673g (owner brief 15 Nov): the uniform-button audit finds uneven key groups, three dots, a status line drawn as a key."""
     def test_the_disc_station_keys_before_the_uniform_system(self):
@@ -2309,6 +2446,61 @@ class TestBadgeCheck676a(unittest.TestCase):
         self.assertEqual(one.returncode, 3, one.stdout)
 
 
+class TestBadgeCheckCarousel680b(unittest.TestCase):
+    """680b (D357): a tile a carousel scrolled partly off the screen and cover-flow covers stacked behind the focused one are
+    not badge faults (the same findings on every run since 677c); real collisions on those tiles / the front tile still FAIL."""
+    _run = TestBadgeCheck676a._run
+
+    def _half_off(self, progress_full):
+        # Tiles row: the last tile scrolled half off the right edge (screen 1280 wide) - tile and badges trimmed by the row
+        return [{"nodes": [], "badgeTiles": [{"lane": "a", "full": [1180, 100, 200, 260], "shown": [1180, 100, 100, 260]}],
+                 "badges": [
+                     {"kind": "CONSOLE", "lane": "a", "full": [1186, 106, 152, 26], "shown": [1186, 106, 94, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "a", "full": progress_full, "shown": [1186, progress_full[1], 94, 22], "placed": True}]}]
+
+    def test_a_tile_scrolled_half_off_is_not_a_cut(self):
+        r = self._run(self._half_off([1186, 150, 74, 22]))
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_a_real_collision_on_a_half_off_tile_still_fails(self):
+        r = self._run(self._half_off([1186, 120, 74, 22]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("overlap", r.stdout)
+
+    def test_a_badge_cut_inside_its_whole_tile_still_fails(self):
+        # the tile is whole; only the badge is trimmed - a real cut
+        w = [{"nodes": [], "badgeTiles": [{"lane": "a", "full": [100, 100, 200, 260], "shown": [100, 100, 200, 260]}],
+              "badges": [{"kind": "CONSOLE", "lane": "a", "full": [106, 106, 152, 26], "shown": [106, 106, 120, 26], "placed": True},
+                         {"kind": "PROGRESS", "lane": "a", "full": [216, 150, 74, 22], "shown": [216, 150, 74, 22], "placed": True}]}]
+        self.assertEqual(self._run(w).returncode, 1)
+
+    def _flow(self, front_progress):
+        # Cube cover flow x1.0: the focused cover (f) drawn over the side cover (s) stacked behind it
+        return [{"nodes": [], "badgeTiles": [
+                    {"lane": "s", "full": [300, 140, 300, 440], "shown": [300, 140, 300, 440]},
+                    {"lane": "f", "full": [440, 100, 400, 520], "shown": [440, 100, 400, 520]}],
+                 "badges": [
+                     {"kind": "CONSOLE", "lane": "s", "full": [306, 146, 152, 26], "shown": [306, 146, 152, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "s", "full": [400, 150, 74, 22], "shown": [400, 150, 74, 22], "placed": True},
+                     {"kind": "CONSOLE", "lane": "f", "full": [446, 106, 152, 26], "shown": [446, 106, 152, 26], "placed": True},
+                     {"kind": "PROGRESS", "lane": "f", "full": front_progress, "shown": front_progress, "placed": True}],
+                 "texts": [{"text": "Focused game", "full": [450, 140, 300, 30], "shown": [450, 140, 300, 30], "placed": True}]}]
+
+    def test_a_cover_stacked_behind_is_not_graded(self):
+        r = self._run(self._flow([760, 106, 74, 22]))
+        self.assertEqual(r.returncode, 0, r.stdout)  # the front cover PASS; the side cover's overlapping pair is not graded
+
+    def test_the_front_cover_still_fails_a_real_collision(self):
+        r = self._run(self._flow([560, 110, 74, 22]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("f", r.stdout)
+
+    def test_only_stacked_covers_is_not_a_pass(self):
+        w = self._flow([760, 106, 74, 22])
+        w[0]["badges"] = [b for b in w[0]["badges"] if b["lane"] == "s"]
+        self.assertEqual(self._run(w).returncode, 3)
+
+
 class TestHarnessNeverReachesTheOwnersApp676d(unittest.TestCase):
     """676d (D334): QA scripts must never navigate into the owner's Voltcap - target confirmed, the QA app kept in front by
     the launch-block file (QaVariant.harnessActive), a layout switch checked before keys, keys only while the QA app has focus."""
@@ -2404,6 +2596,49 @@ class TestStatusCheck677d(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout)
         r = self._run({"statusBars": [bar, dict(probe, placed=True)], "avatars": [a1, dict(a2, placed=True)], "texts": []})
         self.assertEqual(r.returncode, 1, r.stdout)
+
+
+class TestAvatarPlace681e(unittest.TestCase):
+    """681e (owner v0.6.74 item 6): the profile picture in its corner (the bar's inside the status bar), on the screen, never
+    under a text; its own initial is part of it."""
+    def _run(self, win):
+        import tempfile, subprocess, json as _j
+        d = tempfile.mkdtemp(); f = os.path.join(d, "x_home.json")
+        _j.dump({"screen": [1280, 960], "density": 2.0, "windows": [dict(win, focus=True)]}, open(f, "w"))
+        tool = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "statuscheck.py")
+        return subprocess.run([sys.executable, "-I", tool, f], capture_output=True, text=True)
+
+    bar = {"full": [900, 10, 370, 60], "shown": [900, 10, 370, 60]}
+    pic = {"where": "bar", "full": [1210, 15, 50, 50], "shown": [1210, 15, 50, 50]}
+    initial = {"text": "P", "full": [1225, 25, 20, 30], "shown": [1225, 25, 20, 30], "placed": True}
+
+    def test_bar_picture_in_the_bar_with_its_initial_passes(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import statuscheck
+        res = statuscheck.place_avatars("x", [self.pic], [self.bar], [self.initial], 1280, 960)
+        self.assertEqual([r.status for r in res], ["PASS"]); self.assertIn("top-right", res[0].reason)
+        r = self._run({"statusBars": [self.bar], "avatars": [self.pic], "texts": [self.initial]})
+        self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_bar_picture_outside_the_bar_fails(self):
+        moved = dict(self.pic, full=[20, 880, 50, 50], shown=[20, 880, 50, 50])
+        r = self._run({"statusBars": [self.bar], "avatars": [moved], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("outside the status bar", r.stdout)
+
+    def test_text_over_the_picture_fails(self):
+        title = {"text": "All games", "full": [10, 20, 300, 60], "shown": [10, 20, 300, 60], "placed": True}
+        hub = {"where": "console", "full": [30, 30, 68, 68], "shown": [30, 30, 68, 68]}
+        r = self._run({"statusBars": [], "avatars": [hub], "texts": [title]})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("'All games' over it", r.stdout)
+        beside = dict(title, full=[110, 30, 200, 40], shown=[110, 30, 200, 40])
+        self.assertEqual(self._run({"statusBars": [], "avatars": [hub], "texts": [beside]}).returncode, 0)
+        unplaced = dict(title, placed=False)
+        self.assertEqual(self._run({"statusBars": [], "avatars": [hub], "texts": [unplaced]}).returncode, 0)
+
+    def test_picture_off_the_screen_fails(self):
+        off = {"where": "channel", "full": [1260, 10, 50, 50], "shown": [1260, 10, 50, 50]}
+        r = self._run({"statusBars": [], "avatars": [off], "texts": []})
+        self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("off the screen", r.stdout)
 
 
 class TestHomecut676o(unittest.TestCase):
@@ -2534,6 +2769,820 @@ class TestCrateChecklist678o(unittest.TestCase):
                 self.assertIn("fg; input keyevent", ln)  # every raw key behind the focus check
         self.assertIn("voltcap_test_snapshot restore", sh)
         self.assertIn("grep -q '^PICKER' $F/voltcap_qa_screen", sh)  # (k678c: the profile picker closed before the first A)
+
+
+
+class TestP2ReviewPlayFocused681x(unittest.TestCase):
+    """681x (P2 emulator review 44233448467): p2review.sh playfocused() did not match on the device (toybox grep, the old ERE's
+    [^]] bracket) - the TV dump had Play focused and A was pressed. The check uses fixed strings only, one node per line."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def _fn(self):
+        with open(os.path.join(self.DEV, "p2review.sh")) as f:
+            line = [l for l in f if l.startswith("playfocused()")]
+        self.assertEqual(1, len(line))
+        return line[0]
+
+    def _node(self, label, on, kind="control"):
+        return {"label": label, "kind": kind, "full": [1, 2, 3, 4], "shown": [1, 2, 3, 4], "focused": on, "scroll": False, "id": 7}
+
+    def _run(self, nodes, pretty=False, write=True):
+        d = tempfile.mkdtemp()
+        if write:
+            with open(os.path.join(d, "dump.json"), "w") as f:
+                json.dump({"windows": [{"id": "w", "focus": True, "nodes": nodes}]}, f, indent=1 if pretty else None, separators=None if pretty else (",", ":"))
+        r = subprocess.run(["sh", "-c", "O=%s\n%s\nplayfocused dump" % (d, self._fn())], capture_output=True, text=True)
+        return r.returncode
+
+    def test_fixed_strings_only(self):
+        fn = self._fn()
+        self.assertNotIn("[^", fn); self.assertNotIn("grep -qE", fn); self.assertNotIn("grep -E", fn)
+
+    def test_play_focused(self):
+        self.assertEqual(0, self._run([self._node("Okami", False), self._node("Play", True), self._node("Info", False)]))
+
+    def test_play_not_focused(self):
+        # Play shown but another row holds the focus; and a focused TEXT labelled Play is not the control.
+        self.assertNotEqual(0, self._run([self._node("Play", False), self._node("Info", True)]))
+        self.assertNotEqual(0, self._run([self._node("Play", True, kind="text"), self._node("Play", False)]))
+
+    def test_other_focused_label_next_to_play(self):
+        # A focused neighbour must not lend its "focused":true to the Play node before it.
+        self.assertNotEqual(0, self._run([self._node("Play", False), self._node("Options", True)]))
+        self.assertNotEqual(0, self._run([self._node("Play game", True)]))
+
+    def test_missing_dump(self):
+        self.assertNotEqual(0, self._run([], write=False))
+
+class TestGradeTrialReview681z(unittest.TestCase):
+    """681z: emulator review runs (review_layouts) are graded on their own runs - P2 walks p2r13 / p2r10 - instead of always
+    ending NOT TESTED for the standard trial's missing e529a / e529b. PASS only for a complete, clean walk."""
+    EMU = os.path.join(os.path.dirname(HERE), "emulator")
+
+    def _g(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("grade_trial_681z", os.path.join(self.EMU, "grade_trial.py"))
+        m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m); return m
+
+    def _run(self, log, shots=None, lay="TV"):
+        d = tempfile.mkdtemp()
+        with open(os.path.join(d, "log.txt"), "w") as f: f.write(log)
+        for s in (self._g().P2_SHOTS if shots is None else shots): open(os.path.join(d, f"{lay}_{s}.png"), "wb").close()
+        return d
+
+    CLEAN = ("06:07:59 setup scale=off layouts=TV\n06:10:00 TV: destructive row armed and left (never confirmed)\n"
+             "06:10:35 TV done (launches: 0)\n06:10:35 run done fatal=0\nDONE\n06:10:41 restore verify: OK {}\n"
+             "06:10:41 owner snapshot files back: diff=0\n")
+
+    def test_plan(self):
+        g = self._g()
+        self.assertEqual(["p2r13", "p2r10"], [t for t, _ in g.review_plan("P2:TV CRATE")[1]])
+        self.assertEqual(["e679r13", "e679r10"], [t for t, _ in g.review_plan("POCKET BAR")[1]])
+        self.assertEqual(["e529a", "e529b"], [t for t, _ in g.review_plan("")[1]])
+
+    def test_clean_walk_passes(self):
+        self.assertEqual("PASS", self._g().grade_p2_run(self._run(self.CLEAN), ["TV"])[0])
+
+    def test_missing_folder_and_unfinished(self):
+        g = self._g()
+        self.assertEqual("NOT TESTED", g.grade_p2_run("/nonexistent/p2r13", ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run("06:07 setup\n"), ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(self.CLEAN), ["TV", "CRATE"])[0])  # CRATE never walked
+
+    def test_script_not_tested_and_missing_shot(self):
+        g = self._g()
+        log = self.CLEAN.replace("destructive row armed and left (never confirmed)", "TV: focus left the options for Play - A NOT pressed (armed confirmation NOT TESTED)")
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(log), ["TV"])[0])
+        self.assertEqual("NOT TESTED", g.grade_p2_run(self._run(self.CLEAN, shots=("home", "info")), ["TV"])[0])
+
+    def test_failures(self):
+        g = self._g()
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("launches: 0", "launches: 1")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("fatal=0", "fatal=2")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("diff=0", "diff=1")), ["TV"])[0])
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(self.CLEAN.replace("restore verify: OK", "restore verify: MISMATCH")), ["TV"])[0])
+        self.assertEqual("INFRA", g.grade_p2_run(self._run("06:07 STOP asleep\nDONE\n"), ["TV"])[0])
+
+    def test_fail_lines_and_abort_682r(self):
+        # (682r) a finished walk with a line the script marked FAIL must not pass (the old review mode passed it); a winguard
+        # ABORT is INFRA (the walk stopped safely), never PASS.
+        g = self._g()
+        log = self.CLEAN.replace("06:10:35 TV done", "06:10:20 TV: FAIL - A on 'Hide from library' showed no confirmation\n06:10:35 TV done")
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(log), ["TV"])[0])
+        log = self.CLEAN.replace("06:10:35 TV done", "06:10:20 TV: FAIL - the confirmation stayed after moving off\n06:10:35 TV done")
+        self.assertEqual("FAIL", g.grade_p2_run(self._run(log), ["TV"])[0])
+        self.assertEqual("INFRA", g.grade_p2_run(self._run("06:07 setup\n06:08:01 ABORT focus left the game window - nothing more pressed, run stopped\n"), ["TV"])[0])
+        self.assertEqual("PASS", g.grade_p2_run(self._run(self.CLEAN.replace("setup", "setup FAILSAFE-off")), ["TV"])[0])
+
+    def test_verdict_file_never_pass_with_a_gap(self):
+        g = self._g(); d = tempfile.mkdtemp()
+        g.write_verdict(d, [("p2r13", "PASS", "ok"), ("p2r10", "NOT TESTED", "gap")], "p2")
+        self.assertEqual("VERDICT: NOT TESTED", open(os.path.join(d, "verdict.txt")).readline().strip())
+        g.write_verdict(d, [], "p2")
+        self.assertEqual("VERDICT: NOT TESTED", open(os.path.join(d, "verdict.txt")).readline().strip())
+
+
+class TestP2ReviewRestore681z(unittest.TestCase):
+    """681z: p2review.sh restore with an EMPTY keep folder (fresh emulator: no snapshot files before the run) logged diff=1 from
+    the literal glob; it now says nothing existed. A real difference still logs diff=1."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def _restore(self, keep):
+        with open(os.path.join(self.DEV, "p2review.sh")) as f: src = f.read()
+        body = src[src.index("restore)") + len("restore)"):]
+        line = [l for l in body.splitlines() if l.strip().startswith(("if [ -d $O/snapbak", "elif [ -d $O/snapbak"))]
+        d = tempfile.mkdtemp(); O = os.path.join(d, "O"); F = os.path.join(d, "F"); os.makedirs(os.path.join(O, "snapbak")); os.makedirs(F)
+        for name, (a, b) in keep.items():
+            open(os.path.join(O, "snapbak", name), "w").write(a)
+            if b is not None: open(os.path.join(F, name), "w").write(b)
+        script = "O=%s; F=%s; L=$O/log.txt\nlog() { echo \"$*\" >> $L; }\n%s\n" % (O, F, "\n".join(line) + "\nfi")
+        subprocess.run(["sh", "-c", script], capture_output=True, text=True)
+        return open(os.path.join(O, "log.txt")).read() if os.path.exists(os.path.join(O, "log.txt")) else ""
+
+    def test_empty_keep_folder(self):
+        self.assertIn("none existed", self._restore({}))
+        self.assertNotIn("diff=1", self._restore({}))
+
+    def test_files_put_back(self):
+        self.assertIn("diff=0", self._restore({"voltcap_test_snapshot.json": ("owner", "changed by the run")}))
+
+
+
+class TestWinGuard682jc(unittest.TestCase):
+    """682j-c (owner 18 Nov 14:54): navigation keys only while the QA app's expected window has the focus; the picker,
+    Android quick settings, the production app or another window = ABORT with nothing pressed. Host run with shims for
+    dumpsys / input; every key that reached `input` is logged."""
+    DEV = os.path.join(os.path.dirname(HERE), "device")
+
+    def run_guard(self, focus_lines, body, mark="HOME", popup="null", ty="APPLICATION"):
+        d = tempfile.mkdtemp()
+        try:
+            bin_ = os.path.join(d, "bin"); os.makedirs(bin_)
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            open(os.path.join(fdir, "voltcap_qa_screen"), "w").write(mark + " 123\n")
+            seq = os.path.join(d, "focus.txt"); open(seq, "w").write("\n".join(focus_lines) + "\n")
+            keys = os.path.join(d, "keys.txt"); open(keys, "w").close()
+            # dumpsys window: the next focus line each call (the last one repeats); windows: the window's type
+            open(os.path.join(bin_, "dumpsys"), "w").write(f"""#!/bin/sh
+if [ "$2" = windows ]; then echo "  Window{{abc1 u0 x}}:"; echo "    mAttrs={{ty={ty}}}"; echo "  Window{{main9 u0 x}}:"; echo "    mAttrs={{ty=BASE_APPLICATION}}"; exit 0; fi
+n=$(cat {d}/n 2>/dev/null || echo 1); l=$(sed -n "${{n}}p" {seq}); [ -z "$l" ] && l=$(tail -1 {seq})
+echo "  mCurrentFocus=$l"; echo $((n + 1)) > {d}/n
+""")
+            open(os.path.join(bin_, "input"), "w").write(f"#!/bin/sh\necho \"$*\" >> {keys}\n")
+            for f in ("dumpsys", "input"): os.chmod(os.path.join(bin_, f), 0o755)
+            # QaClip: answer every request with the given popupGame
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+wg_popup() {{ echo "{popup}"; }}
+{body}
+echo REACHED_END >> {d}/log.txt
+"""
+            r = subprocess.run(["sh", "-c", script], env={**os.environ, "PATH": bin_ + ":" + os.environ["PATH"]},
+                               capture_output=True, text=True, timeout=30)
+            log = open(os.path.join(d, "log.txt")).read() if os.path.exists(os.path.join(d, "log.txt")) else ""
+            return r.returncode, open(keys).read().split("\n")[:-1], log
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    QA = "Window{abc1 u0 com.shelf.launcher.qa/com.shelf.launcher.MainActivity}"
+    MAIN = "Window{main9 u0 com.shelf.launcher.qa/com.shelf.launcher.MainActivity}"
+
+    def test_presses_only_in_the_confirmed_game_window(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_seq_win "R1 W10 A"', popup="/r/game.sfc")
+        self.assertEqual(rc, 0, log); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1", "keyevent KEYCODE_BUTTON_A"])
+
+    def test_quick_settings_in_front_aborts_before_the_key(self):
+        shade = "Window{77 u0 NotificationShade}"
+        rc, keys, log = self.run_guard([self.QA, self.QA, self.QA, shade], 'wg_window; wg_key_win R1; wg_key_win A', popup="/r/game.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1"]); self.assertIn("quick settings", log)
+        self.assertNotIn("REACHED_END", log)
+
+    def test_production_app_or_settings_panel_aborts(self):
+        for other, word in (("Window{55 u0 com.shelf.launcher/com.shelf.launcher.HomeAlias}", "production"),
+                            ("Window{56 u0 com.android.settings/com.android.settings.panel.SettingsPanelActivity}", "settings panel")):
+            rc, keys, log = self.run_guard([self.QA, self.QA, self.QA, other], 'wg_window; wg_key_win R1; wg_key_win A', popup="/r/g.sfc")
+            self.assertEqual(rc, 4); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_R1"]); self.assertIn(word, log)
+
+    def test_682ar_d390_a_key_loop_ends_at_the_deadline(self):
+        # (D390: a walk that never ended pressed Up for 30 minutes - every key now checks the run's deadline)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; WG_DEADLINE=$(( $(date +%s) + 2 )); while true; do wg_key_win U; sleep 0.2; done',
+                                       popup="/r/game.sfc")
+        self.assertEqual(rc, 4, log); self.assertIn("max run time", log); self.assertNotIn("REACHED_END", log)
+        self.assertTrue(0 < len(keys) < 40, len(keys))
+
+    def test_682ar_d390_past_the_deadline_nothing_is_pressed(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; WG_DEADLINE=$(( $(date +%s) - 1 )); wg_key_win A', popup="/r/game.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("max run time", log)
+
+    def test_682ar_d390_a_finished_run_takes_its_watchdog_with_it(self):
+        import tempfile, time
+        d = tempfile.mkdtemp()
+        try:
+            script = f"""P=com.shelf.launcher.qa; F={d}; TAG=t; WG_LOG={d}/log.txt; WG_GRACE_S=1; WG_DEADLINE=$(( $(date +%s) + 1 ))
+done_marker() {{ echo PUTBACK >> {d}/log.txt; }}; WG_ONABORT=done_marker
+. {self.DEV}/winguard.sh
+wg_watchdog
+echo FINISHED >> {d}/log.txt
+"""
+            subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=20)
+            time.sleep(4)
+            log = open(os.path.join(d, "log.txt")).read()
+            self.assertIn("FINISHED", log); self.assertNotIn("WATCHDOG", log); self.assertNotIn("PUTBACK", log)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_682bd_persistdiff_names_a_changed_setting_and_ignores_time_stamps(self):
+        import tempfile, tarfile, io
+        d = tempfile.mkdtemp()
+        try:
+            def tar(name, xmls):
+                with tarfile.open(os.path.join(d, name), "w") as t:
+                    for fn, body in xmls.items():
+                        b = body.encode(); ti = tarfile.TarInfo("shared_prefs/" + fn + ".xml"); ti.size = len(b); t.addfile(ti, io.BytesIO(b))
+            x = lambda inner: "<?xml version='1.0' encoding='utf-8' standalone='yes' ?><map>" + inner + "</map>"
+            tar("snap_0_a.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"OFF"}}</string><long name="last_at" value="1" />')})
+            tar("snap_1_b.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"OFF"}}</string><long name="last_at" value="2" />')})
+            r = subprocess.run([sys.executable, os.path.join(HERE, "..", "tools", "persistdiff.py"), d], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            tar("snap_2_c.tar", {"tuner": x('<string name="per_game">{"g":{"underclock":"AUTO"}}</string><long name="last_at" value="3" />')})
+            r = subprocess.run([sys.executable, os.path.join(HERE, "..", "tools", "persistdiff.py"), d], capture_output=True, text=True)
+            self.assertEqual(r.returncode, 1, r.stdout); self.assertIn("tuner › per_game: changed", r.stdout)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_682bc_d395_a_finished_run_leaves_no_watchdog_sleep(self):
+        # D395 (HW-29 krc13_1 / rrc13_1): the device's sh held the TERM until the dog's sleep ended - the dog of a finished run
+        # sat on, due to put the QA app back over the next run. The EXIT trap kills the dog with KILL and then its sleep.
+        import tempfile, time
+        d = tempfile.mkdtemp()
+        try:
+            script = f"""P=com.shelf.launcher.qa; F={d}; TAG=t; WG_LOG={d}/log.txt; WG_GRACE_S=4173; WG_DEADLINE=$(( $(date +%s) + 2 ))
+. {self.DEV}/winguard.sh
+wg_watchdog
+echo FINISHED >> {d}/log.txt
+"""
+            subprocess.run(["sh", "-c", script], capture_output=True, text=True, timeout=20)
+            # (26 Nov: a busy CI runner can take a moment to reap the killed sleep - poll up to 5 s instead of one look at 0.5 s)
+            for _ in range(20):
+                time.sleep(0.25)
+                left = subprocess.run(["pgrep", "-f", "sleep 417[45]"], capture_output=True, text=True).stdout.split()
+                if not left: break
+            for pid in left: subprocess.run(["kill", pid])
+            self.assertEqual(left, [], "the watchdog's sleep outlived the run")
+            src = open(f"{self.DEV}/winguard.sh").read()
+            self.assertIn("kill -9 $WG_DOG", src)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_682ar_d390_every_device_script_that_sends_input_has_a_real_end(self):
+        import glob, re
+        missing = [os.path.basename(f) for f in glob.glob(os.path.join(self.DEV, "*.sh"))
+                   if os.path.basename(f) not in ("qaguard.sh", "winguard.sh") and re.search(r"input (keyevent|tap|swipe)", open(f).read())
+                   and "qaguard.sh" not in open(f).read()]
+        # (winguard.sh is a library: the scripts that source it source qaguard.sh themselves, and its keys check wg_time_ok)
+        self.assertEqual(missing, [], "device scripts sending input without qaguard.sh")
+
+    def test_682ar_d390_qaguard_sends_nothing_past_the_deadline(self):
+        import tempfile
+        d = tempfile.mkdtemp()
+        try:
+            bin_ = os.path.join(d, "bin"); os.makedirs(bin_); keys = os.path.join(d, "keys.txt"); open(keys, "w").close()
+            open(os.path.join(bin_, "input"), "w").write(f"#!/bin/sh\necho \"$*\" >> {keys}\n"); os.chmod(os.path.join(bin_, "input"), 0o755)
+            env = {**os.environ, "PATH": bin_ + ":" + os.environ["PATH"]}
+            ok = subprocess.run(["sh", "-c", f"L={d}/l.txt; . {self.DEV}/qaguard.sh; input keyevent KEYCODE_A; echo END >> {d}/l.txt"],
+                                env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(ok.returncode, 0); self.assertEqual(open(keys).read().split(), ["keyevent", "KEYCODE_A"])
+            late = subprocess.run(["sh", "-c", f"L={d}/l2.txt; QA_T_END=$(( $(date +%s) - 1 )); . {self.DEV}/qaguard.sh; "
+                                   f"while true; do input keyevent KEYCODE_B; done"], env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual(late.returncode, 3); self.assertNotIn("KEYCODE_B", open(keys).read())
+            self.assertIn("max run time", open(os.path.join(d, "l2.txt")).read())
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_682ar_d390_default_deadline_is_the_15_minute_limit(self):
+        src = open(f"{self.DEV}/winguard.sh").read()
+        self.assertIn("WG_MAX_S:-900", src)
+        p2 = open(f"{self.DEV}/p2review.sh").read()
+        self.assertIn("wg_watchdog", p2)
+        burst = p2[p2.index("burst() {"):p2.index("lazy_layout() {")]
+        self.assertIn("wg_time_ok", burst)
+        qtap = p2[p2.index("qtap() {"):p2.index("rowtile() {")]
+        self.assertIn("wg_time_ok", qtap)
+
+    def test_no_game_window_means_no_page_key(self):
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="null")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("game window expected", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window; wg_key_win R1', popup="")   # no dump: never a yes
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_no_dump_abort_says_why(self):
+        # (747a, emulator review 44367749650: two INFRA aborts "QaClip: 'no dump'" with nothing to tell a stalled app from a
+        # failed dump) - the abort line names it; still nothing pressed
+        rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip_req; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request file still there", log)
+        rc, keys, log = self.run_guard([self.QA], 'touch $F/qa_clip/t_wg.json.part; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("dump still being written", log)
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', popup="", ty="BASE_APPLICATION")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("no dump (request taken, no dump written", log)
+        rc, keys, log = self.run_guard([self.QA], 'printf %s \'{"popupGame":null}\' > $F/qa_clip/t_wg.json; wg_window; wg_key_win R1', popup="")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+        self.assertIn("the dump is there now (18 bytes, ends '}', \"popupGame\":null; kept as t_wg_late.json)", log)
+
+    def test_popup_read_survives_a_dump_being_replaced(self):
+        # (747b, emulator review 45560074265) QaClip replaces a dump by deleting it and renaming the new one in; a reader that
+        # looks at the file more than once can find it gone and call it "no dump" - wg_popup reads it once
+        d = tempfile.mkdtemp()
+        try:
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+( end=$(( $(date +%s) + 40 )); while [ $(date +%s) -lt $end ]; do
+    printf '%s' '{{"popupGame":"/r/g.sfc","x":[]}}' > $F/qa_clip/t_wg.json.part; rm -f $F/qa_clip/t_wg.json
+    sleep 0.03; mv $F/qa_clip/t_wg.json.part $F/qa_clip/t_wg.json; sleep 0.03; done ) &
+w=$!
+ok=0; for k in 1 2 3 4 5 6 7 8; do [ "$(wg_popup)" = /r/g.sfc ] && ok=$((ok + 1)); done
+pkill -P $w 2>/dev/null; kill $w 2>/dev/null
+echo "ok=$ok"
+"""
+            r = subprocess.run(["sh", "-c", script], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=45)
+            self.assertIn("ok=8", r.stdout, r.stdout)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    # (748a, emulator review 45566681915: two INFRA stops whose kept dump held "popupGame" - the device's grep found nothing in
+    # the dump's one long line with non-ASCII text, and an armed confirmation went unseen the same way.) A grep standing in for
+    # that device grep: nothing found in a line longer than 4 KB that carries a non-ASCII byte; otherwise the real grep.
+    BROKEN_GREP = """#!/bin/sh
+for a in "$@"; do f="$a"; done
+if [ -f "$f" ]; then src="$f"; else src=-; fi
+t=$(mktemp); cat $( [ "$src" = - ] || echo "$src" ) > $t
+if LC_ALL=C awk 'length($0) > 4096 && /[\200-\377]/ { bad = 1 } END { exit bad ? 0 : 1 }' $t; then rm -f $t; exit 1; fi
+if [ "$src" = - ]; then /usr/bin/env -i PATH=/usr/bin:/bin grep "$@" < $t; else /usr/bin/env -i PATH=/usr/bin:/bin grep "$@"; fi; r=$?; rm -f $t; exit $r
+"""
+
+    def _long_dump(self, game):
+        nodes = ",".join('{"label":"Row %d \u00b7 \u203a","kind":"control","full":[0,0,10,10]}' % i for i in range(160))
+        return '{"screen":[960,640],"windows":[{"nodes":[%s]}],"popupGame":%s,"popupName":null}' % (nodes, game)
+
+    def _broken_grep_env(self, d):
+        b = os.path.join(d, "bin"); os.makedirs(b, exist_ok=True)
+        with open(os.path.join(b, "grep"), "w") as f: f.write(self.BROKEN_GREP)
+        os.chmod(os.path.join(b, "grep"), 0o755)
+        return {**os.environ, "PATH": b + ":" + os.environ["PATH"]}
+
+    def test_popup_read_needs_no_grep_on_a_long_non_ascii_dump(self):
+        d = tempfile.mkdtemp()
+        try:
+            fdir = os.path.join(d, "files"); os.makedirs(os.path.join(fdir, "qa_clip"))
+            env = self._broken_grep_env(d)
+            for game, want in (('"/r/Okami (USA).iso"', "/r/Okami (USA).iso"), ("null", "null")):
+                dump = self._long_dump(game)
+                self.assertGreater(len(dump.encode()), 4096)
+                with open(os.path.join(d, "dump.json"), "w", encoding="utf-8") as f: f.write(dump)
+                # the stand-in really misses it (as on the device) ...
+                r = subprocess.run(["sh", "-c", f"grep -o popupGame {d}/dump.json"], env=env, capture_output=True, text=True)
+                self.assertEqual(r.stdout, "")
+                # ... and wg_popup still reads the field (QaClip answers the request with that dump)
+                script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+. {self.DEV}/winguard.sh
+( while [ ! -e $F/qa_clip_req ]; do sleep 0.05; done; rm -f $F/qa_clip_req; cp {d}/dump.json $F/qa_clip/t_wg.json ) &
+echo "[$(wg_popup)]"
+"""
+                r = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, timeout=30)
+                self.assertIn(f"[{want}]", r.stdout, r.stdout + r.stderr)
+            # and the abort line's look at a late dump reads it the same way
+            with open(os.path.join(fdir, "qa_clip", "t_wg.json"), "w", encoding="utf-8") as f: f.write(self._long_dump("null"))
+            script = f"""P=com.shelf.launcher.qa; F={fdir}; TAG=t; WG_LOG={d}/log.txt
+logcat() {{ :; }}
+. {self.DEV}/winguard.sh
+wg_nodump_why
+"""
+            r = subprocess.run(["sh", "-c", script], env=env, capture_output=True, text=True, timeout=30)
+            self.assertIn('"popupGame":null; kept as t_wg_late.json', r.stdout, r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_armed_confirmation_seen_in_a_long_non_ascii_dump(self):
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = next(l for l in src.split("\n") if l.startswith("confirmtext() {"))
+        d = tempfile.mkdtemp()
+        try:
+            env = self._broken_grep_env(d)
+            armed = self._long_dump("null").replace('"Row 3 ', '"HIDE FROM LIBRARY/PRESS A AGAIN TO CONFIRM \u00b7 MOVE AWAY ', 1)
+            for name, text in (("armed", armed), ("plain", self._long_dump("null"))):
+                with open(os.path.join(d, name + ".json"), "w", encoding="utf-8") as f: f.write(text)
+            r = subprocess.run(["sh", "-c", f"{fn}\nconfirmtext {d}/armed.json && echo YES; confirmtext {d}/plain.json || echo NO;"
+                                f" confirmtext {d}/missing.json || echo GONE"], env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(r.stdout.split(), ["YES", "NO", "GONE"], r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_armed_remove_confirmation_counts(self):
+        # (751a, review 45593862011: "Press A again to remove" was shown on CASEFLOW / ORBIT / AIRY and called missing)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = next(l for l in src.split("\n") if l.startswith("confirmtext() {"))
+        d = tempfile.mkdtemp()
+        try:
+            env = self._broken_grep_env(d)
+            armed = self._long_dump("null").replace('"Row 3 ', '"Hide from library/Press A again to remove \u00b7 move away to can ', 1)
+            with open(os.path.join(d, "armed.json"), "w", encoding="utf-8") as f: f.write(armed)
+            with open(os.path.join(d, "plain.json"), "w", encoding="utf-8") as f: f.write(self._long_dump("null"))
+            r = subprocess.run(["sh", "-c", f"{fn}\nconfirmtext {d}/armed.json && echo YES; confirmtext {d}/plain.json || echo NO"],
+                               env=env, capture_output=True, text=True, timeout=30)
+            self.assertEqual(r.stdout.split(), ["YES", "NO"], r.stdout + r.stderr)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_hook_opened_layouts_never_press_a_on_the_home(self):
+        # (751a: Bubble home's home A unfolds the LiveArea, whose A is Start - the window comes from the QA hook)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertRegex(src, r'(?m)^HOOK_OPEN="[^"]*\bBUBBLES\b')
+        ow = src[src.index("openw() {"):]
+        ow = ow[:ow.index("wg_window; }")]
+        hook = ow.index('case " $HOOK_OPEN "')
+        self.assertLess(hook, ow.index("wg_key_home A; sleep 1.9"))
+        self.assertIn("voltcap_test_window true", ow[hook:ow.index("esac", hook)])
+
+    def test_green_core_home_is_two_step(self):
+        # (753a, review 45612718815: Green Core's home opens on its MENU page - one A opens GAMES, the window is one A further)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertRegex(src, r'(?m)^TWO_STEP="[^"]*\bGREENCORE\b')
+        self.assertRegex(src, r'(?m)^TWO_STEP="[^"]*\bCUBE\b')
+        ow = src[src.index("openw() {"):]
+        ow = ow[:ow.index("wg_window; }")]
+        two = ow.index('case " $TWO_STEP "')
+        self.assertLess(two, ow.index("wg_key_home A; sleep 1.9"))
+        self.assertIn("wg_window; return", ow[two:ow.index("esac", two)])
+
+    def test_cross_review_turns_its_menu_list_off_and_back_754a(self):
+        # (754a, review 45623176605: Cross's Achievements key opens the menu's own list (cross_trophies, on by default) - its window
+        # had no Achievements page, so the walk's Downs landed on Options: a false FAIL. The walk turns it off for the layout only,
+        # reads the old value from the app's own log and puts it back - also when the window does not open.)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = src[src.index("menu_ach_pref() {"):]
+        fn = fn[:fn.index("}") + 1]
+        out = subprocess.run(["sh", "-c", fn + '; menu_ach_pref CROSS; echo "|"; menu_ach_pref CRATE'], capture_output=True, text=True).stdout
+        self.assertEqual(out.split(), ["cross_trophies", "|"])
+        run = src[src.index("\nrun)\n"):]
+        run = run[:run.index("\nrestore)\n")]
+        off = run.index('voltcap_test_pref "$MP=false"')
+        self.assertLess(off, run.index("openw $lay $n"))
+        self.assertIn('voltcap_test_pref "$MP=${MP_OLD:-true}"; continue', run)
+        self.assertLess(run.index('A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1'), run.index('log "$lay done'))
+        sed = run[run.index("MP_OLD=$(logcat"):]
+        sed = sed[sed.index("sed -n"):sed.index(")\n")]
+        line = "11-25 13:47:01.000 E VoltcapTest: pref cross_trophies was true -> false"
+        out = subprocess.run(["sh", "-c", f"echo '{line}' | {sed}"], capture_output=True, text=True).stdout.strip()
+        self.assertEqual(out, "true")
+
+    def _menu_list_run(self, opened, closes):
+        # menu_list() of p2review.sh with every device call stubbed: the focus is the home ("MAIN") until the hook opens the
+        # list ("DLG" when [opened]); B closes it only when [closes]. Returns (log lines, keys pressed).
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        fn = src[src.index("pctexts() {"):src.index("\nP=com.shelf.launcher.qa;")]
+        d = tempfile.mkdtemp()
+        home = '{"windows":[{"texts":[{"text":"Okami (USA)","len":11,"full":[0,0,1,1]}]}]}'
+        lst = '{"windows":[{"texts":[{"text":"Okami (USA)","len":11},{"text":"2 / 5  \u00b7  40 %","len":15,"full":[0,0,1,1]}]}]}'
+        stubs = f"""
+O={d}; TAG=t; MP=cross_trophies; WG_MAIN=MAIN; FOC=MAIN; MIX=g
+log() {{ echo "LOG $*"; }}; A() {{ case "$*" in *voltcap_test_achlist*) [ {1 if opened else 0} = 1 ] && FOC=DLG;; esac; }}
+sleep() {{ :; }}; gate() {{ :; }}; qawins() {{ echo 1; }}; wg_home() {{ [ $FOC = MAIN ] || echo "ABORT home"; }}
+wg_focus() {{ echo $FOC; }}; wg_hash() {{ echo $1; }}; wg_popup() {{ echo null; }}; wg_nodump_why() {{ :; }}
+wg_dialog() {{ WG_DLG=$FOC; }}; wg_key_dlg() {{ echo "KEY $1"; [ {1 if closes else 0} = 1 ] && FOC=MAIN; }}
+wg_window() {{ echo "ABORT win"; }}; closewin() {{ :; }}
+shot() {{ case $1 in *_home) printf '%s' '{home}' > $O/${{TAG}}_$1.json;; *) [ $FOC = DLG ] && printf '%s' '{lst}' > $O/${{TAG}}_$1.json || printf '%s' '{home}' > $O/${{TAG}}_$1.json;; esac; }}
+"""
+        out = subprocess.run(["sh", "-c", stubs + fn + "\nmenu_list CROSS CROSS"], capture_output=True, text=True).stdout.splitlines()
+        return [l[4:] for l in out if l.startswith("LOG ")], [l[4:] for l in out if l.startswith("KEY ")], out
+
+    def test_cross_default_menu_list_is_checked_not_left_untested_755a(self):
+        # (755a, review 45633462166: the Cross walk was NOT TESTED only because its default Achievements list (cross_trophies on)
+        # was never opened. After the walk, with the setting back on, menu_list() opens it the way the Achievements key does,
+        # checks the menu's own list came up (a dialog has the focus, its "earned / total  ·  N %" line) and B closes it.)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        run = src[src.index("\nrun)\n"):]
+        run = run[:run.index("\nrestore)\n")]
+        note = [l for l in run.splitlines() if "off for this walk" in l]
+        self.assertTrue(note); self.assertNotIn("NOT TESTED", note[0])
+        back = run.index('A --es voltcap_test_pref "$MP=${MP_OLD:-true}"; sleep 1')
+        self.assertLess(back, run.index("menu_list $lay"))
+        self.assertLess(run.index("menu_list $lay"), run.index('log "$lay done'))
+        self.assertIn('if [ "${MP_OLD:-true}" = true ]; then menu_list', run)
+        logs, keys, _ = self._menu_list_run(opened=True, closes=True)
+        self.assertEqual(keys, ["B"])
+        self.assertTrue(any("opened (count lines 0 -> 1) and B closed it" in l for l in logs), logs)
+        self.assertFalse(any("FAIL" in l for l in logs), logs)
+        # not opened: FAIL, nothing pressed
+        logs, keys, _ = self._menu_list_run(opened=False, closes=True)
+        self.assertEqual(keys, [])
+        self.assertTrue(any(l.startswith("CROSS: FAIL - its Achievements did not open") for l in logs), logs)
+        # B leaves it open: FAIL, one more B (only while the list has the focus), never the success line
+        logs, keys, out = self._menu_list_run(opened=True, closes=False)
+        self.assertEqual(keys, ["B", "B"])
+        self.assertTrue(any("FAIL - B left the menu's achievement list open" in l for l in logs), logs)
+        self.assertFalse(any("B closed it" in l for l in logs), logs)
+
+    def test_the_main_window_is_not_a_game_window(self):
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_window; wg_key_win A', popup="/r/g.sfc", ty="BASE_APPLICATION")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_picker_or_another_game_aborts(self):
+        rc, keys, log = self.run_guard([self.MAIN], 'wg_home; wg_key_home A', mark="PICKER")
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("picker", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_window "/r/one.sfc"; wg_key_win A', popup="/r/two.sfc")
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_main_window_key_works_with_a_panel_open_and_aborts_elsewhere(self):
+        # 725b: wg_key_main - the B that closes the R1 panel: pressed while the confirmed main window holds the focus even when
+        # the mark no longer says HOME; another window in front (game window, quick settings) = ABORT, nothing pressed.
+        body = 'wg_home; echo "QUICK 1" > $F/voltcap_qa_screen; wg_key_main B'
+        rc, keys, log = self.run_guard([self.QA], body, ty="BASE_APPLICATION")   # abc1 = the QA app's main window here
+        self.assertEqual(rc, 0, log); self.assertEqual(keys, ["keyevent KEYCODE_BUTTON_B"])
+        shade = "Window{77 u0 NotificationShade}"
+        rc, keys, log = self.run_guard([self.QA, self.QA, shade], body, ty="BASE_APPLICATION")   # wg_home reads the focus twice
+        self.assertEqual(rc, 4); self.assertEqual(keys, []); self.assertIn("quick settings", log)
+        rc, keys, log = self.run_guard([self.QA], 'wg_key_main B')   # no confirmed main window: never a yes
+        self.assertEqual(rc, 4); self.assertEqual(keys, [])
+
+    def test_p2review_home_keys_go_through_the_guard(self):
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        self.assertIn("k_home() { gate; wg_key_home $1; }", src)
+        self.assertIn("k_home_any() { gate; wg_key_main $1; }", src)
+
+    def test_navigation_scripts_press_keys_only_through_the_guard(self):
+        for name in ("nav682j.sh", "p2review.sh"):
+            src = open(os.path.join(self.DEV, name)).read()
+            self.assertNotIn("input keyevent KEYCODE_BUTTON", src, name + " presses a button around the guard")
+            self.assertIn("winguard.sh", src)
+            # (682r) the window is closed by a checked closewin (B while the window holds the focus, until QaClip says none
+            # is open) - never two blind B presses
+            self.assertNotIn("k BUTTON_B 1.2; k BUTTON_B 1.4", src)
+            self.assertIn("closewin", src)
+
+    def test_emulator_trial_pushes_what_p2review_sources_682r(self):
+        # (682r, run 44339661824: winguard.sh was not pushed - p2review's "." on it ended the run before its first log line)
+        src = open(os.path.join(self.DEV, "p2review.sh")).read()
+        trial = open(os.path.join(os.path.dirname(self.DEV), "emulator", "run_trial.sh")).read()
+        push = next(l for l in trial.splitlines() if l.startswith("for f in ") and "p2review.sh" in l)
+        for dep in ("winguard.sh", "rec.sh"):
+            if dep in src: self.assertIn(dep, push, dep + " sourced by p2review.sh but not pushed to the emulator")
+
+class TestGfxDelta682ag(unittest.TestCase):
+    """682ag: the walk's frame times are the difference of two read-only gfxinfo dumps - never gfxinfo reset (it aborted the QA
+    app in hwui on the KONKR, run kg13)."""
+    DUMP = ("** Graphics info for pid 1 [com.shelf.launcher.qa] **\nStats since: 1ns\nTotal frames rendered: {f}\n"
+            "Janky frames: {j} (x%)\n90th percentile: 9ms\nHISTOGRAM: 5ms={a} 6ms=0 10ms={b} 20ms={c} 50ms={d}\n")
+
+    def setUp(self):
+        sys.path.insert(0, TOOLS)
+        import gfxdelta
+        self.g = gfxdelta
+
+    def test_the_walk_is_after_minus_before(self):
+        b = self.g.parse(self.DUMP.format(f=100, j=10, a=50, b=30, c=15, d=5))
+        a = self.g.parse(self.DUMP.format(f=200, j=30, a=80, b=60, c=40, d=20))
+        s = self.g.summary(self.g.delta(b, a))
+        self.assertEqual(100, s["frames"]); self.assertEqual(20.0, s["janky_pct"])
+        self.assertEqual(10, s["p50"]); self.assertEqual(50, s["p90"])
+
+    def test_a_restarted_process_counts_from_zero(self):
+        b = self.g.parse(self.DUMP.format(f=500, j=10, a=490, b=0, c=10, d=0))
+        a = self.g.parse(self.DUMP.format(f=40, j=4, a=30, b=6, c=4, d=0))
+        self.assertEqual(40, self.g.summary(self.g.delta(b, a))["frames"])
+
+    def test_p2review_never_resets_gfxinfo(self):
+        src = open(os.path.join(os.path.dirname(TOOLS), "device", "p2review.sh")).read()
+        code = "\n".join(l for l in src.splitlines() if not l.lstrip().startswith("#"))
+        self.assertNotIn("gfxinfo $P reset", code)
+        self.assertIn("_walk_gfx0.txt", code)
+
+    def test_detail_splits_ui_thread_and_gpu(self):
+        d0 = self.DUMP.format(f=100, j=10, a=50, b=30, c=15, d=5) + "Number Slow UI thread: 7\nGPU HISTOGRAM: 1ms=10 3ms=80 12ms=10\n"
+        d1 = self.DUMP.format(f=200, j=30, a=80, b=60, c=40, d=20) + "Number Slow UI thread: 27\nGPU HISTOGRAM: 1ms=10 3ms=120 12ms=70\n"
+        s = self.g.detail(self.g.delta(self.g.parse(d0), self.g.parse(d1)))
+        self.assertEqual(20, s["slow_ui"]); self.assertEqual(12, s["gpu_p90"]); self.assertIsNone(s["slow_draw"])
+
+    def test_a_dump_without_gpu_counters_reports_none(self):
+        s = self.g.detail(self.g.delta(None, self.g.parse(self.DUMP.format(f=10, j=1, a=9, b=1, c=0, d=0))))
+        self.assertNotIn("gpu_p50", s); self.assertIsNone(s["slow_ui"])
+
+
+class TestRow714Grader717a(unittest.TestCase):
+    """717a: row714.py grades the Tile home Row place / round buttons' spot run (HW-24 714a) from the QA app's rowtile lines;
+    a lost spot FAILs, an old build without the line is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s1 none MIDDLE:0.3000,0.2000", "expect s2 0.3000,0.2000 -",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowtile TILES MIDDLE->TOP spot=ROW shortcuts=none kept=MIDDLE:0.3000,0.2000",
+            "E VoltcapQA: 2 rowtile TILES TOP->MIDDLE spot=ROW shortcuts=0.3000,0.2000 kept=-"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row714
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowtile.txt"), "w").write("\n".join(rows) + "\n")
+        return row714.grade(d)[1]
+
+    def test_spot_back_at_its_place_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_spot_lost_fails(self):
+        lost = [self.ROWS[0], self.ROWS[1].replace("shortcuts=0.3000,0.2000", "shortcuts=none")]
+        self.assertEqual(self._grade(self.LOG, lost), "FAIL")
+
+    def test_old_build_or_wrong_setup_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, []), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        classic = [r.replace("TILES", "CLASSIC") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, classic), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_never_opens_r1_and_targets_the_qa_app(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("voltcap_test_pref"))
+        self.assertIn("voltcap_test_snapshot restore", sh)
+
+
+
+class TestRow714NextPress718a(unittest.TestCase):
+    """718a: row714.sh's NEXT steps (one press of the Row tile, the exact R1 handler) are graded on the place they land on:
+    a press that skips a place in the tile's own cycle FAILs even with the right spots."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242",
+           "expect s8 0.7000,0.7000 MIDDLE:0.3000,0.2000 BOTTOM", "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROW = "E VoltcapQA: 1 rowtile TILES MIDDLE->BOTTOM spot=ROW shortcuts=0.7000,0.7000 kept=MIDDLE:0.3000,0.2000"
+
+    def test_press_lands_on_the_next_place(self):
+        g = TestRow714Grader717a._grade
+        self.assertEqual(g(self, self.LOG, [self.ROW]), "PASS")
+        self.assertEqual(g(self, self.LOG, [self.ROW.replace("->BOTTOM", "->TOP")]), "FAIL")
+
+    def test_script_presses_round_the_whole_cycle(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row714.sh")) as f:
+            nxt = [ln.split()[-1] for ln in f.read().splitlines() if ln.startswith("dock ") and " NEXT " in ln]
+        self.assertEqual(nxt, ["BOTTOM", "TOP", "MIDDLE"])
+
+class TestRow716Grader719a(unittest.TestCase):
+    """719a: row716.py grades 716a's real combination (game header + info / news + every category + a song in the bar's
+    player): a column under the status bar FAILs, a combination that did not apply or an old build is INFRA, never PASS."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=font=1.3 real_pid=4242",
+           "expect b1 MIDDLE off", "expect c1 MIDDLE on", "expect c3 TOP on",
+           "restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    ROWS = ["E VoltcapQA: 1 rowcol CLASSIC MIDDLE top=120.0 bottom=330.0 bar=40.0 screen=448.0 legend=on header=off info=OFF cats=FULL player=off",
+            "E VoltcapQA: 2 rowcombo on header=true info=BOTH",
+            "E VoltcapQA: 3 rowcol CLASSIC MIDDLE top=44.0 bottom=420.0 bar=44.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on",
+            "E VoltcapQA: 4 rowcol CLASSIC TOP top=8.0 bottom=400.0 bar=0.0 screen=448.0 legend=on header=on info=BOTH cats=FULL player=on"]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import row716
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "rowcol.txt"), "w").write("\n".join(rows) + "\n")
+        return row716.grade(d)[1]
+
+    def test_column_below_the_bar_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_column_under_the_bar_fails(self):
+        under = [r.replace("top=44.0 bottom=420.0", "top=20.0 bottom=396.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, under), "FAIL")
+
+    def test_tall_column_may_spill_at_the_bottom(self):
+        tall = [r.replace("top=44.0 bottom=420.0", "top=44.0 bottom=470.0") for r in self.ROWS]
+        self.assertEqual(self._grade(self.LOG, tall), "PASS")
+
+    def test_combo_missing_old_build_or_wrong_layout_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("player=on", "player=off") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [self.ROWS[0]]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG, [r.replace("CLASSIC", "TILES") for r in self.ROWS]), "INFRA")
+
+    def test_682ar_a_line_left_over_before_the_first_step_is_skipped(self):
+        # (x1.3 on the KONKR / RP Classic: the scale change logged one rowcol of the place the home came back at)
+        extra = ["E VoltcapQA: 0 rowcol CLASSIC BOTTOM top=119.3 bottom=426.7 bar=36.0 screen=448.0 legend=off header=on info=OFF cats=FULL player=off"]
+        self.assertEqual(self._grade(self.LOG, extra + self.ROWS), "PASS")
+        # (but a wrong place is never skipped into a pass: the steps' own lines must be there)
+        self.assertEqual(self._grade(self.LOG, extra + [r.replace("MIDDLE", "BOTTOM") for r in self.ROWS]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_targets_the_qa_app_and_never_opens_r1(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "row716.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        self.assertNotIn("BUTTON_R1", sh)
+        self.assertNotIn("input tap", sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        self.assertTrue(keys and all("gate; input keyevent KEYCODE_BUTTON_B" in ln for ln in keys))
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index("A --es voltcap_test_rowcombo on"))
+        self.assertLess(sh.index("A --es voltcap_test_rowcombo off"), sh.index("A --es voltcap_test_snapshot restore"))
+
+
+class TestPlay720Grader720a(unittest.TestCase):
+    """720a: play720.py grades the real Edit Home D-pad move of the Voltcap row's added Play part (715a): a D-pad that goes the
+    wrong way, a move that does not save / undo / reset, or a key that misses Play FAILs; setup that did not apply, an old
+    build or a safety STOP is INFRA, never PASS. The script presses D-pad keys in Edit Home only on its EDIT mark, never A."""
+    LOG = ["target: serial=X model=GT78 package=com.shelf.launcher.qa versionName=0.6.74 scale=off real_pid=4242"] + \
+          ["expect " + e for e in ["r1 above", "r2 zone", "r3 edit", "r4 live+5", "r5 below", "r6 zone", "r7 live-1",
+                                   "r8 kept", "r9 kept", "r10 reset", "r11 above", "r12 zone"]] + \
+          ["restore: OK 120 settings", "real_after=4242 fatal=0", "DONE"]
+    H = "E VoltcapQA: 1 reach CLASSIC dock=%s header=off added=yes saved=%s live=%s drawn=%s above=%s up=%s down=%s buttons=1 zone=%s edit=%s"
+    ROWS = [H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "none", "off"),
+            H % ("MIDDLE", "0.440", "none", "0.440", "true", "HEADER", "-", "HEADER", "off"),
+            H % ("MIDDLE", "0.440", "0.440", "0.440", "true", "HEADER", "-", "none", "on"),
+            H % ("MIDDLE", "0.440", "0.540", "0.540", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "HEADER", "off"),
+            H % ("MIDDLE", "0.540", "0.520", "0.520", "false", "-", "HEADER", "none", "on"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "0.540", "none", "0.540", "false", "-", "HEADER", "none", "off"),
+            H % ("MIDDLE", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "none", "off"),
+            H % ("TOP", "none", "none", "0.120", "true", "HEADER", "-", "HEADER", "off")]
+
+    def _grade(self, log, rows):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools"))
+        import play720
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, "log.txt"), "w").write("\n".join(log) + "\n")
+        if rows is not None:
+            open(os.path.join(d, "reach.txt"), "w").write("\n".join(rows) + "\n")
+        return play720.grade(d)[1]
+
+    def _with(self, i, row):
+        r = list(self.ROWS); r[i] = row; return r
+
+    def test_good_run_passes(self):
+        self.assertEqual(self._grade(self.LOG, self.ROWS), "PASS")
+
+    def test_682ar_a_line_from_before_the_setup_is_skipped(self):
+        pre = self.H.replace("header=off added=yes", "header=on added=no") % (
+            "BOTTOM", "none", "none", "none", "true", "HEADER", "-", "none", "off")
+        self.assertEqual(self._grade(self.LOG, [pre] + self.ROWS), "PASS")
+        # (a setup that never applied stays INFRA)
+        self.assertEqual(self._grade(self.LOG, [pre] + [pre] * 12), "INFRA")
+
+    def test_682ar_undo_presses_are_spaced_past_the_hold_window(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "play720.sh")) as f:
+            sh = f.read()
+        self.assertIn("ek DPAD_UP; sleep 0.8; ek DPAD_UP; sleep 0.8; ek BUTTON_Y", sh)
+
+    def test_dpad_going_the_wrong_way_fails(self):
+        # 715a's bug: Play drawn below, the D-pad still goes up.
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("above=false up=- down=HEADER", "above=true up=HEADER down=-"))), "FAIL")
+        # Row at the top, Play above: the key did not reach it.
+        self.assertEqual(self._grade(self.LOG, self._with(11, self.ROWS[11].replace("zone=HEADER", "zone=none"))), "FAIL")
+
+    def test_move_save_undo_reset_are_checked(self):
+        self.assertEqual(self._grade(self.LOG, self._with(3, self.ROWS[3].replace("live=0.540", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(4, self.ROWS[4].replace("saved=0.540", "saved=0.440").replace("drawn=0.540", "drawn=0.560"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(6, self.ROWS[6].replace("live=0.520", "live=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(8, self.ROWS[8].replace("saved=0.540", "saved=0.500"))), "FAIL")
+        self.assertEqual(self._grade(self.LOG, self._with(9, self.ROWS[9].replace("saved=none", "saved=0.540"))), "FAIL")
+
+    def test_setup_missing_old_build_or_stop_is_infra(self):
+        self.assertEqual(self._grade(self.LOG, [r.replace("header=off", "header=on") for r in self.ROWS]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, self.ROWS[:3]), "INFRA")
+        self.assertEqual(self._grade(self.LOG, None), "INFRA")
+        self.assertEqual(self._grade(self.LOG[:4] + ["STOP Edit Home not open on CLASSIC:h_play", "DONE"], self.ROWS[:3]), "INFRA")
+
+    def test_bad_restore_or_production_touched_fails(self):
+        self.assertEqual(self._grade([l.replace("OK 120", "MISMATCH 3") for l in self.LOG], self.ROWS), "FAIL")
+        self.assertEqual(self._grade([l.replace("real_after=4242", "real_after=5151") for l in self.LOG], self.ROWS), "FAIL")
+
+    def test_script_presses_edit_keys_only_in_edit_home_and_never_a(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "device", "play720.sh")) as f:
+            sh = f.read()
+        self.assertIn("P=com.shelf.launcher.qa;", sh)
+        for bad in ("BUTTON_A", "DPAD_CENTER", "KEYCODE_ENTER", "BUTTON_R1", "input tap", "input swipe"):
+            self.assertNotIn(bad, sh)
+        keys = [ln for ln in sh.splitlines() if "input keyevent" in ln]
+        # only three places press keys: the picker's B, ek (Edit Home open on the Play part) and hk (Edit Home closed)
+        self.assertEqual(len(keys), 3)
+        self.assertTrue(any(ln.startswith("ek()") and '"EDIT $ID"' in ln for ln in keys))
+        self.assertTrue(any(ln.startswith("hk()") and '"HOME"' in ln for ln in keys))
+        body = sh.split("logcat -c", 1)[1]
+        self.assertNotIn("input keyevent", body)
+        self.assertLess(sh.index("voltcap_test_snapshot save"), sh.index('voltcap_test_pref "home_header=false"'))
+        self.assertLess(sh.index("E open; E select:$ID"), sh.index("ek DPAD_DOWN"))
+        self.assertLess(sh.rindex(" ek "), sh.index("voltcap_test_snapshot restore"))
 
 
 if __name__ == "__main__":

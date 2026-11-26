@@ -1,11 +1,5 @@
 package com.shelf.launcher.ui
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,9 +74,12 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
     // The coin dropping in (Layout options › Arcade sounds; nothing when off).
     androidx.compose.runtime.LaunchedEffect(Unit) { LayoutKitSounds.play(LayoutKit.ARCADE, KitSound.OPEN, null) }
     // INSERT COIN blinks (about once a second; still on Lite / with animations off).
-    val blink = if (reduced) null else rememberInfiniteTransition(label = "coin").animateFloat(
-        1f, 0f, infiniteRepeatable(tween(560, easing = LinearEasing), RepeatMode.Reverse), label = "coinBlink"
-    )
+    // (682aj, owner 23 Nov 18:23 - Arcade stutter: the blink was an endless animation stepped to on / off - it asked for a new
+    // frame of the whole cabinet, glowing text and all, 60+ times a second while only two changes a second show. Now the two
+    // changes are the only frames: the same 560 ms on, 560 ms dim.)
+    val blink = if (reduced) null else androidx.compose.runtime.produceState(1f) {
+        while (true) { kotlinx.coroutines.delay(ARCADE_BLINK_MS); value = if (value > 0.5f) 0f else 1f }
+    }
     Box(
         Modifier.size(w, h).graphicsLayer {
             // The tube switching on: a line across, then the picture opening out of it; off: back to the line, then a dot.
@@ -101,32 +98,47 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 // The top line: the game, like a high-score table's header.
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // (Update 478, D271: shrinks, then slides — a long name was cut at 2 lines.)
-                    WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.1f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
-                    if (ctx.page != WinPage.MAIN) Text(" " + arcadePageName(ctx.page), color = ArcCyan, fontSize = small, style = glow, maxLines = 1)
+                    WinFullText(ctx.name.uppercase(), color = ArcYellow, fontSize = big, maxLines = 2, lineHeight = big * 1.22f, style = glow.copy(shadow = Shadow(ArcPink, Offset(2f, 2f), 0f)), modifier = Modifier.weight(1f))
                 }
+                // (682p: the page's name on a line of its own - beside a long name at x1.3 the two ran over each other)
+                Spacer(Modifier.height(3.dp)) // (682ag: the title's pixel glyphs touched the line under it)
+                // (682ag, owner review 23 Nov: the cabinet's own screens carry their name as the panel's head - INSTRUCTIONS, HIGH
+                // SCORES, SERVICE MODE - so the line here only names the shared Performance page; its glyphs touched the title.)
+                if (ctx.page == WinPage.PERF) Text(arcadeNativePageName(ctx.page), color = ArcPink, fontSize = small, style = glow, maxLines = 1, lineHeight = small * ARCADE_LINE)
                 Text(listOfNotNull(ctx.console, ctx.year, ctx.developer).joinToString("  ·  ").uppercase(), color = ArcCyan, fontSize = small, maxLines = 2,
                     lineHeight = small * ARCADE_LINE, style = glow)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                 Row(Modifier.weight(1f).fillMaxWidth()) {
                     // The picture, INSERT COIN under it.
-                    Column(Modifier.weight(0.46f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    // (682r: on the cabinet's own screens the picture steps back - the table had a third of the width at x1.3)
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.40f else 0.32f).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcPink.copy(alpha = 0.7f), RoundedCornerShape(4.dp)).padding(3.dp).clip(RoundedCornerShape(3.dp)).background(Color.Black)) {
                             val shot = ctx.state.screenshots[ctx.g.stableKey]?.firstOrNull()
                             val pic = shot ?: ctx.backdrop ?: ctx.wide ?: ctx.cover
                             if (pic != null) AsyncImage(rememberStyleArtRequest(pic), ctx.name, Modifier.fillMaxSize().pixelArtwork(),
                                 contentScale = if (shot != null) ContentScale.Fit else ContentScale.Crop)
-                            else Text(ctx.name.uppercase(), color = ArcYellow, fontSize = line, style = glow, modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            // (682r: in the narrower picture of the cabinet's own screens the no-art name a size down - "COLOSS / US")
+                            // (682ag, owner review 23 Nov: "COLOSSU / S" on RP Classic x1.3 - whole words, a size down where one doesn't fit)
+                            else androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides glow) {
+                                WholeWordsText(ctx.name.uppercase(), color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, fontFamily = font,
+                                    lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
+                                    modifier = Modifier.align(Alignment.Center).padding(8.dp))
+                            }
                             Canvas(Modifier.fillMaxSize()) {
                                 var y = 0f
                                 while (y < size.height) { drawRect(Color.Black.copy(alpha = 0.2f), Offset(0f, y), Size(size.width, 1.5f)); y += 3.5f }
                             }
                         }
                         Spacer(Modifier.height(if (compact) 3.dp else 6.dp))
-                        Text("INSERT COIN", color = ArcYellow, fontSize = line, style = glow, maxLines = 1,
+                        // (682r, RP Classic x1.3: one line only, "INSERT" was all that showed under the narrower picture - it wraps
+                        // between its words now, a size down on the cabinet's own screens)
+                        Text("INSERT COIN", color = ArcYellow, fontSize = if (ctx.page == WinPage.MAIN) line else small, style = glow,
+                            lineHeight = (if (ctx.page == WinPage.MAIN) line else small) * ARCADE_LINE,
                             modifier = Modifier.graphicsLayer { alpha = blink?.value?.let { if (it > 0.5f) 1f else 0.15f } ?: 1f })
                     }
                     Spacer(Modifier.width(if (compact) 10.dp else 18.dp))
-                    Column(Modifier.weight(0.54f).fillMaxHeight()) {
+                    // (682ag: on the attract screen the menu takes 60 % - its words had 54 % at x1.3)
+                    Column(Modifier.weight(if (ctx.page == WinPage.MAIN) 0.60f else 0.68f).fillMaxHeight()) {
                         if (ctx.page == WinPage.MAIN) {
                             val s = rememberScrollState()
                             Column(Modifier.weight(1f).sceneFadeEdges(s).verticalScroll(s), verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 3.dp)) {
@@ -145,11 +157,19 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                                 }
                             }
                         } else {
-                            Box(Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcCyan.copy(alpha = 0.6f), RoundedCornerShape(4.dp)).clip(RoundedCornerShape(4.dp))) {
-                                ctx.pageBody(Modifier.fillMaxSize())
+                            // (682p, P2 batch 2: the cabinet's own screens - INSTRUCTIONS, HIGH SCORES, SERVICE MODE - WinPagesArcade.kt.)
+                            NativePages(ctx, Modifier.weight(1f).fillMaxWidth().border(2.dp, ArcCyan.copy(alpha = 0.6f), RoundedCornerShape(4.dp)).clip(RoundedCornerShape(4.dp)),
+                                label = "arcadePage", move = ::arcadeMove) { pg, pageLive ->
+                                ArcadePage(ctx, pg, pageLive, font, line, small, Modifier.fillMaxSize().padding(6.dp))
                             }
                             Spacer(Modifier.height(4.dp))
                             ctx.buttons.forEach { a -> ArcadeMenuRow(a, font, line, compact) }
+                            // (682af, KONKR x1.0 gk10: on SERVICE MODE - PRESS START alone - the screen above took the second row's room
+                            // and PRESS START sat a row lower than on the other screens. A page keeps two rows: the missing one is
+                            // held by an unseen row - no focus, touch or semantics (LocalMeasureOnly).)
+                            if (ctx.buttons.none { !it.primary && !it.back && !it.status }) Box(Modifier.graphicsLayer { alpha = 0f }.clearAndSetSemantics { statusProbe = true }) {
+                                androidx.compose.runtime.CompositionLocalProvider(LocalMeasureOnly provides true) { ArcadeMenuRow(PAGE_KEY_REF, font, line, compact) }
+                            }
                         }
                     }
                 }
@@ -158,7 +178,8 @@ internal fun ArcadeMenu(ctx: WinSceneCtx) {
                 Text(
                     listOfNotNull("PLAYED " + ctx.played.uppercase(), if (ctx.total > 0) "ACHIEVEMENTS ${ctx.earned}/${ctx.total}" else null, ctx.last?.let { "LAST " + it.uppercase() })
                         .joinToString("   "),
-                    color = ArcInk, fontSize = small, maxLines = 2, style = glow
+                    // (682ag: the pixel glyphs need their own line height - the two lines ran into each other at x1.3)
+                    color = ArcInk, fontSize = small, maxLines = 2, style = glow, lineHeight = small * ARCADE_LINE
                 )
             }
             // The tube: scan lines, its curve, the glass.
@@ -191,17 +212,21 @@ private fun ArcadeMenuRow(a: WinAction, font: androidx.compose.ui.text.font.Font
             Text("▶", color = if (on) Color(0xFF1A1300) else Color.Transparent, fontSize = size, style = TextStyle(fontFamily = font),
                 modifier = Modifier.clearAndSetSemantics {})
             Spacer(Modifier.width(6.dp))
-            Text(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
-                fontSize = size, maxLines = 2,
-                style = TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f)))
+            // (682ag, owner 23 Nov 11:21, RP Classic x1.3: "ACHIEVEMEN / TS" - the line keeps its words whole, a size down where
+            // the longest one doesn't fit, with the pixel font's own line height.)
+            androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides
+                TextStyle(fontFamily = font, shadow = if (on) null else Shadow(ArcCyan.copy(alpha = 0.45f), Offset.Zero, 8f))) {
+                WholeWordsText(a.label.uppercase(), color = if (on) Color(0xFF1A1300) else if (a.primary) ArcYellow else if (a.urgent) Color(0xFFFF8A3D) else ArcInk,
+                    fontSize = size, fontFamily = font, lineHeight = size * ARCADE_LINE, modifier = Modifier.weight(1f))
+            }
         }
     }
 }
 
-private fun arcadePageName(p: WinPage) = when (p) {
-    WinPage.MAIN -> ""; WinPage.DETAILS -> "GAME INFO"; WinPage.OPTIONS -> "OPTIONS"; WinPage.TROPHIES -> "ACHIEVEMENTS"; WinPage.PERF -> "PERFORMANCE"
-}
 
 
 /** Update 476 (D264): the arcade font's line height as a share of its size — room for its tall pixel glyphs and a gap. */
 internal const val ARCADE_LINE = 1.35f
+
+/** 682aj: INSERT COIN's half blink (ms) - one state change each, no frames between. */
+internal const val ARCADE_BLINK_MS = 560L

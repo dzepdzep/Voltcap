@@ -14,6 +14,11 @@ on:
 permissions:
   contents: read
 
+# (706a: Maven Central answered 429 to all three attempts on both runners (503d679). Google's Maven Central mirror is asked
+# first by Gradle (settings.gradle.kts) and by Robolectric's own android-all fetch (app/build.gradle.kts); 404 falls back.)
+env:
+  VOLTCAP_MAVEN_MIRROR: https://maven-central.storage-download.googleapis.com/maven2/
+
 concurrency:
   group: android-verify-${{ github.ref }}
   cancel-in-progress: true
@@ -56,14 +61,16 @@ jobs:
         # (673e, D325: the step's timeout never fired - the runner itself was lost. tools/ci/watchdog.py stops the tests before
         # the machine runs out of memory or at 35 min and says why in public annotations: memory, load, the test in flight,
         # the biggest processes. assembleDebug has its own step now, after the tests.)
+        # (681q: retry_infra.py re-runs Gradle only after a package-server 429 / 5xx with no code failure in the output - Maven
+        # Central's 429 turned f303833 red although the other image passed every test. Inside the watchdog: its 35 min still hold.)
         timeout-minutes: 40
-        run: python3 tools/ci/watchdog.py --progress app/build/test-progress.log --min-avail-mb 1500 --limit-min 35 -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest
+        run: python3 tools/ci/watchdog.py --progress app/build/test-progress.log --min-avail-mb 1500 --limit-min 35 -- python3 tools/ci/retry_infra.py -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:testDebugUnitTest
       - name: Name unfinished, failed and slow unit tests (public annotations)
         if: always()
         run: python3 tools/ci/test_progress.py app/build/test-progress.log
       - name: Build the debug APK (stubbed Discord SDK)
         timeout-minutes: 15
-        run: bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:assembleDebug
+        run: python3 tools/ci/retry_infra.py -- bash ./gradlew --no-daemon --stacktrace -PvoltcapCiWithoutDiscord=true :app:assembleDebug
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v4

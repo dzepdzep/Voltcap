@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 492 (3D media QA) — a game's Inspect piece held at a list of turns (TestHooks voltcap_test_inspect, preview only:
 # the game window opens with its piece out; nothing is launched, saved or changed). Screenshots to /sdcard/pc/TAG/.
 # sh insp492.sh TAG "Game_name" "yaw yaw …" [PITCH] [SHELL] [DISPLAY]

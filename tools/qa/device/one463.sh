@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # Update 463: one subject (line N of LIST) of the comparison sheet: front, 45, 75, 90, back. usage: sh one463.sh OUT LIST N
 P=com.shelf.launcher; OUT=$1; LIST=$2; n=$3; mkdir -p $OUT
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

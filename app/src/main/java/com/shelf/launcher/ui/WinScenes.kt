@@ -307,7 +307,9 @@ internal class WinSceneCtx(
     /** Popup motion work: open a page as its button does (B comes back onto that button). */
     val open: (WinPage) -> Unit = setPage,
     /** Popup motion work: the pages this window has as pages (L1 / R1 walk only these; the others open a list or a menu). */
-    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS)
+    val pages: Set<WinPage> = setOf(WinPage.MAIN, WinPage.DETAILS),
+    /** P2 (681a): the game's options, for a layout that lays its Options page out its own way (NativePageKit). */
+    val options: List<WinOption> = emptyList()
 ) {
     val played: String get() = stylePlaytime(playtime, lastPlayed != null)
     val last: String? get() = lastPlayed?.let { lastPlayedLabel(it) }
@@ -372,6 +374,13 @@ internal object WinClickProbe { @Volatile var clicks: Int = 0 }
  */
 @Composable
 internal fun SceneControl(a: WinAction, modifier: Modifier, minTouch: Dp = 0.dp, content: @Composable BoxScope.(Boolean) -> Unit) {
+    // (682ab: a page row's measuring reference - drawn, never focused, touched or heard - UniformKeyRow)
+    // (its touch size kept too: a row's room is the same seen or not - Arcade's 24 dp menu lines)
+    if (LocalMeasureOnly.current) {
+        Box(modifier.then(if (maxOf(minTouch, if (a.status) 24.dp else 0.dp) > 0.dp) Modifier.heightIn(min = maxOf(minTouch, if (a.status) 24.dp else 0.dp)) else Modifier),
+            contentAlignment = Alignment.Center) { content(false) }
+        return
+    }
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
     val sounds = LocalUiSounds.current
@@ -469,8 +478,12 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
     val tight = bigPageText() && ctx.maxH < 420.dp
     val accent = if (ctx.accent.luminance() > 0.6f) SheetRed else ctx.accent
     val scroll = rememberScrollState()
+    // (731a, P2 class C: the insert's other sheets - CONTENTS / CHECKLIST / SERVICE, WinPagesBox.kt - typed on the same paper
+    // between the title and the stamps; L1 / R1 turn them wherever the D-pad is.)
+    val onPage = ctx.page != WinPage.MAIN
+    val heading = rememberHeadingPage(ctx.page)
     Box(
-        Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+        Modifier.widthIn(max = w).heightIn(max = ctx.maxH).nativeBumpers(ctx)
             .graphicsLayer {
                 val k = ctx.reveal().coerceIn(0f, 1f)
                 // Out from behind the case (its left), turning to lie a little crooked.
@@ -495,7 +508,7 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             // tools and the Saves line started below the screen. Now the facts and the story scroll in the paper's middle; the
             // header, the title and the stamped actions stay put.)
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("INSERT · " + (if (ctx.page == WinPage.MAIN) "CONTENTS" else pageName(ctx.page).uppercase()), color = SheetMuted, fontSize = 11.sp,
+                Text("INSERT · " + boxPageName(heading), color = SheetMuted, fontSize = 11.sp,
                     fontFamily = mono, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                 Text(ctx.console.uppercase(), color = SheetMuted, fontSize = 11.sp, fontFamily = mono, maxLines = 1)
             }
@@ -509,6 +522,13 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
             Spacer(Modifier.height(if (tight) 5.dp else 8.dp))
             // (672c, KONKR x1.3 k673b: with the Saves line whole the story box had 24 px - a sliver that was also a D-pad stop
             // under the touch size. Under one line's room it gives its room away and is no stop; CONTENTS has the whole story.)
+            if (onPage) Column(Modifier.weight(1f).fillMaxWidth()) {
+                BoxPageHeading(nativeTabs(ctx.pages), if (heading == WinPage.MAIN) ctx.page else heading)
+                Spacer(Modifier.height(if (tight) 4.dp else 6.dp))
+                NativePages(ctx, Modifier.weight(1f).fillMaxWidth(), label = "boxPage", move = ::boxMove) { pg, pageLive ->
+                    BoxPage(ctx, pg, pageLive, accent, Modifier.fillMaxSize())
+                }
+            } else {
             var middleRoom by remember { androidx.compose.runtime.mutableIntStateOf(Int.MAX_VALUE) }
             val middleMin = with(androidx.compose.ui.platform.LocalDensity.current) { (16.sp.toPx() + 8.dp.toPx()).toInt() }
             val middleGone = middleRoom < middleMin
@@ -527,8 +547,11 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                             var x = 0f
                             while (x < size.width) { drawCircle(SheetRule, 1.1f, Offset(x, size.height - 2f)); x += 5f }
                         }
+                        // (731a, ShelfTextRoboTest BOX: an end-aligned value narrower than its room was laid out across the whole room
+                        // and reported running 212 px past its own box ('Never played', '140 / 160'). The leader already puts
+                        // the value at the right; a value that wraps fills its room either way.)
                         Text(value, color = SheetInk, fontSize = 13.sp, fontFamily = mono, fontWeight = FontWeight.Bold, maxLines = 3,
-                            textAlign = TextAlign.End, modifier = Modifier.widthIn(max = w * 0.55f))
+                            modifier = Modifier.widthIn(max = w * 0.55f))
                     }
                 }
                 // (Update 471, owner review: the whole story under the facts left it a sliver of the sheet to be read in. The
@@ -554,16 +577,15 @@ private fun BoxInsertSheet(ctx: WinSceneCtx) {
                 line("Last played", ctx.last)
                 if (ctx.total > 0) line("Achievements", "${ctx.earned} / ${ctx.total}")
                 if (!shortSheet) story(true)
-            } else {
-                // The other pages, on the same paper.
-                ctx.pageBody(Modifier.fillMaxWidth().height((ctx.maxH * 0.5f).coerceIn(180.dp, 360.dp)).clip(RoundedCornerShape(2.dp)))
+            }
             }
             }
             Spacer(Modifier.height(if (tight) 6.dp else 12.dp))
             // The actions, stamped.
             // (673g, owner brief 15 Nov: the stamps one row of identical stamps (UniformKeyRow) - Play shown by its icon and ink, not its
             // size; a lit stamp still tilts, never grows; the round stickers after them as a group of their own.)
-            UniformKeyRow(ctx.buttons, 10.dp) { a ->
+            // (731a: on a sheet the stamps keep two slots, Play the first, with or without the page's own stamp - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 10.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         val tilt by animateFloatAsState(if (on) -2.5f else 0f, spring(dampingRatio = 0.5f), label = "stampTilt")
                         Box(
@@ -648,7 +670,10 @@ private fun FileCardBack(ctx: WinSceneCtx) {
     // (674h, D332 x1.3: on the KONKR and the Flip 2 the name's three 26 sp lines and the 50 dp buttons left the inset - TIME and
     // the story - 0 px. A tight file writes the name smaller (two lines; it slides) and its buttons a little lower.)
     val tight = h < 420.dp
-    Box(Modifier.size(w, h)) {
+    // (732a, P2 class C: the file's own screens - DETAILS / STARS / OPTIONS, WinPagesFile.kt - on its inset panel; L1 / R1 turn
+    // them wherever the D-pad is. The top row names the page after the old one has gone.)
+    val heading = rememberHeadingPage(ctx.page)
+    Box(Modifier.size(w, h).nativeBumpers(ctx)) {
         // Its thickness.
         Box(Modifier.fillMaxSize().offset(0.dp, 9.dp).clip(shape).background(mixS(base, Color.Black, 0.5f)))
         Column(
@@ -664,7 +689,7 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                         .border(3.dp, mixS(base, Color.White, 0.45f), RoundedCornerShape(12.dp)).padding(horizontal = 14.dp, vertical = 5.dp)
                 ) { Text(ctx.console.uppercase(), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Black, maxLines = 1, style = FsOutline) }
                 Spacer(Modifier.weight(1f))
-                if (ctx.page != WinPage.MAIN) Text(pageName(ctx.page).uppercase(), color = ink, fontSize = 16.sp, fontWeight = FontWeight.Black, style = if (ink == Color.White) FsOutline else TextStyle())
+                if (ctx.page != WinPage.MAIN) FilePageHeading(nativeTabs(ctx.pages), if (heading == WinPage.MAIN) ctx.page else heading, ink)
                 Spacer(Modifier.width(14.dp))
                 Canvas(Modifier.size(26.dp)) { fsBigStar(yellow) }
                 Text(" × ${ctx.earned}" + (if (ctx.total > 0) " / ${ctx.total}" else ""), color = ink, fontSize = 20.sp, fontWeight = FontWeight.Black,
@@ -719,7 +744,11 @@ private fun FileCardBack(ctx: WinSceneCtx) {
                     Box(
                         Modifier.fillMaxSize().clip(RoundedCornerShape(14.dp)).background(mixS(base, Color.Black, 0.42f))
                             .border(3.dp, mixS(base, Color.Black, 0.6f), RoundedCornerShape(14.dp)).padding(6.dp)
-                    ) { ctx.pageBody(Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp))) }
+                    ) {
+                        NativePages(ctx, Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)), label = "filePage", move = ::fileMove) { pg, pageLive ->
+                            FilePage(ctx, pg, pageLive, base, tight, Modifier.fillMaxSize())
+                        }
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -729,7 +758,8 @@ private fun FileCardBack(ctx: WinSceneCtx) {
             // (674k, KONKR x1.3 k674k with More open: the round tools' row under the buttons left TIME 0 px - on a tight file
             // they stand beside the buttons, which share the rest of the row.)
             StackOrRow(tight && ctx.page == WinPage.MAIN && ctx.tools.isNotEmpty(), Modifier, 8.dp, { m -> Box(m) {
-            UniformKeyRow(ctx.buttons, 10.dp) { a ->
+            // (732a: on a page the fat buttons keep two slots, Play the first, with or without the page's own button - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 10.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                     SceneControl(a, Modifier) { on ->
                         Box(
                             Modifier.uniformFill()
@@ -798,9 +828,9 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.fsBigStar(color: Co
 
 internal val RecNavy = Color(0xFF2C4766)
 private val RecBand = Color(0xFF4C6A8E)
-private val RecPanel = Color(0xFFF7F9FC)
-private val RecInk = Color(0xFF1E2A3A)
-private val RecMuted = Color(0xFF4C5E76)
+internal val RecPanel = Color(0xFFF7F9FC)
+internal val RecInk = Color(0xFF1E2A3A)
+internal val RecMuted = Color(0xFF4C5E76)
 private val RecRed = Color(0xFFFF5A4E)
 
 /** A pixel-style frame: a dark edge, a white line inside it, cut corners. */
@@ -1032,7 +1062,9 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                     fun cell(label: String, value: String?) {
                         Row(Modifier.fillMaxWidth().padding(vertical = if (labStorage) 3.dp else 2.dp), verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(if (w < 560.dp) 100.dp else 118.dp).clip(CutCornerShape(4.dp)).background(RecBand).padding(horizontal = 8.dp, vertical = 3.dp)) {
-                                Text(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace, maxLines = 1)
+                                // (685a, H16 survey KONKR x1.3: "LAST PLAYED" did not fit the 100 dp label on one line and its
+                                // second word was dropped by maxLines = 1. Whole words now - two lines when it must.)
+                                WholeWordsText(label.uppercase(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace)
                             }
                             Spacer(Modifier.width(8.dp))
                             // (Batch 523: "Never playe" - the value took the room it wanted and was cut by the window's edge;
@@ -1094,10 +1126,26 @@ private fun ColumnScope.StorageRecordMain(ctx: WinSceneCtx, w: Dp, red: Color, l
                             }
                         } else
                             primary.forEach { a -> StorageKey(a.live(live), red, big = true, modifier = Modifier.fillMaxWidth()) }
-                        rest.chunked(storageKeysPerRow(w.value * 0.67f)).forEach { row ->
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }
-                                repeat(storageKeysPerRow(w.value * 0.67f) - row.size) { Spacer(Modifier.weight(1f)) }
+                        // (682z, D364 - RP Classic x1.3 pr14: "ACHIEVEMENT / S" - two cells a row still left the longest word wider
+                        // than its cell at the smallest readable size. The cells a row are counted from the menu's measured width
+                        // and the longest word as drawn at that size: fewer cells a row (down to one) rather than a broken word.)
+                        val wordMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 4)
+                        val dens = androidx.compose.ui.platform.LocalDensity.current
+                        // (measured in the style WholeWordsText draws with - the theme's own letter spacing included)
+                        val baseStyle = androidx.compose.material3.LocalTextStyle.current
+                        androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            val longest = rest.flatMap { it.label.uppercase().split(' ') }.maxByOrNull { it.length } ?: ""
+                            val wordPx = if (longest.isEmpty()) 0 else wordMeasurer.measure(longest, baseStyle.copy(fontSize = fitMin(12.sp),
+                                fontWeight = FontWeight.Black, fontFamily = FontFamily.Monospace), softWrap = false, maxLines = 1).size.width
+                            val perRow = storageCellsPerRow(with(dens) { maxWidth.toPx() }, wordPx.toFloat(), with(dens) { STORAGE_CELL_CHROME.toPx() },
+                                with(dens) { 2.dp.toPx() }, storageKeysPerRow(w.value * 0.67f))
+                            Column(verticalArrangement = Arrangement.spacedBy(if (labStorage) 6.dp else 2.dp)) {
+                                rest.chunked(perRow).forEach { row ->
+                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        row.forEach { a -> StorageKey(a.live(live), red, big = false, modifier = Modifier.weight(1f)) }
+                                        repeat(perRow - row.size) { Spacer(Modifier.weight(1f)) }
+                                    }
+                                }
                             }
                         }
                     }
@@ -1141,8 +1189,11 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
             // the room the name keeps beside the sprite, the console tag and the keys (their words measured as they are drawn)
             fun w(t: String, sp: androidx.compose.ui.unit.TextUnit, mono: Boolean = false) = measurer.measure(t, androidx.compose.ui.text.TextStyle(fontSize = sp,
                 fontWeight = FontWeight.Black, fontFamily = if (mono) FontFamily.Monospace else null)).size.width
-            val keysPx = ctx.buttons.sumOf { w("▶ ", 13.sp) + w(it.label.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
-                with(dens) { (8.dp * (ctx.buttons.size - 1).coerceAtLeast(0)).roundToPx() }
+            // (682y, KONKR / RPC pk14 / pr14: decided on each page's own keys, Options (Play alone) put its keys on the name line
+            // and Details under the sheet - Play jumped between pages. Every page decides as for Play and the page's own key.)
+            fun rowPx(labels: List<String>) = labels.sumOf { w("▶ ", 13.sp) + w(it.uppercase(), 13.sp, true) + with(dens) { 30.dp.roundToPx() } } +
+                with(dens) { (8.dp * (labels.size - 1).coerceAtLeast(0)).roundToPx() }
+            val keysPx = maxOf(rowPx(ctx.buttons.map { it.label }), rowPx(listOf(ctx.buttons.firstOrNull()?.label ?: "Play", "Full details")))
             val tagPx = w(ctx.console.uppercase(), 10.sp) + with(dens) { 20.dp.roundToPx() }
             val rowPx = with(dens) { (ctx.maxW * 0.94f - 24.dp - 20.dp).roundToPx() }
             val room = rowPx - keysPx - with(dens) { (30.dp + 10.dp + 10.dp).roundToPx() }
@@ -1180,10 +1231,9 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
         Spacer(Modifier.height(if (big) 6.dp else 8.dp))
         // (529r: with large text the sheet's page draws as a native page of the record - its tab names it, the name line is above -
         // so it spends no room on a second title or margin.)
+        // (682y, P2 batch 4: the sheet's own pages - the record's cells, its list with the pointer, its menu - WinPagesStorage.kt.)
         Box(Modifier.fillMaxWidth().weight(1f).pixelFrame(Color.White, 6.dp)) {
-            if (big) androidx.compose.runtime.CompositionLocalProvider(LocalNativePageHost provides NativePageHost(Color.Transparent, dark = false, showsCover = true, showsName = true)) {
-                ctx.pageFor(p, Modifier.fillMaxSize(), live)
-            } else ctx.pageFor(p, Modifier.fillMaxSize(), live)
+            StoragePage(ctx, p, red, live, Modifier.fillMaxSize().padding(if (big) 6.dp else 8.dp))
         }
         if (!inline) {
             Spacer(Modifier.height(8.dp))
@@ -1200,7 +1250,8 @@ private fun ColumnScope.StorageRecordPage(ctx: WinSceneCtx, p: WinPage, red: Col
 @OptIn(ExperimentalLayoutApi::class)
 private fun StoragePageKeys(ctx: WinSceneCtx, red: Color, live: Boolean, twoLine: Boolean = true) {
         // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow) - was a wrapping FlowRow of keys of every width.)
-        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine) { a ->
+        // (682y: two slots - Play keeps the first half with or without the page's own key)
+        UniformKeyRow(ctx.buttons.map { it.live(live) }, 8.dp, twoLine, slots = PAGE_SLOTS) { a ->
                 SceneControl(a, Modifier) { on ->
                     Box(Modifier.uniformFill().heightIn(min = 32.dp).pixelFrame(if (on) Color(0xFFE6EEF8) else Color.White, 5.dp).padding(horizontal = 10.dp, vertical = 5.dp),
                         contentAlignment = Alignment.CenterStart) {
@@ -1222,6 +1273,16 @@ private fun StackOrRow(row: Boolean, modifier: Modifier, gap: Dp, first: @Compos
 
 /** Batch 523: Storage's secondary keys per grid row - two beside the case (a window under 560 dp), else three. Pure. */
 internal fun storageKeysPerRow(windowDp: Float): Int = if (windowDp < 560f) 2 else 3
+
+/** D364 (682z): a Storage menu cell's room besides its word - the pointer (16 dp) and the row's padding (4 dp each side), +2 dp for rounding. */
+internal val STORAGE_CELL_CHROME = 26.dp
+
+/** D364 (682z, pure): cells a row where the longest word ([wordPx] at its smallest readable size) stays whole - at most [most], at least 1. */
+internal fun storageCellsPerRow(rowPx: Float, wordPx: Float, chromePx: Float, gapPx: Float, most: Int): Int {
+    var n = most
+    while (n > 1 && (rowPx - (n - 1) * gapPx) / n < wordPx + chromePx) n--
+    return n.coerceAtLeast(1)
+}
 
 /** Batch 523: one key of Storage's menu - the pointer, the label in whole words (one size, two lines at most), an even height. */
 @Composable
@@ -1285,6 +1346,9 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
     val flip = LocalSceneOrigin.current != null
     Column(
         Modifier.widthIn(max = w).heightIn(max = ctx.maxH)
+            // (733a, PlayPlace682ab CASEFLOW: a page sized by its content moved Play between Details and Extras - on its pages
+            // the case keeps one size, the whole stage, so the pills stay where they are.)
+            .then(if (ctx.page != WinPage.MAIN) Modifier.width(w).height(ctx.maxH) else Modifier)
             .pickupFlipTarget(flip)
             .graphicsLayer {
                 if (!flip) return@graphicsLayer
@@ -1298,13 +1362,18 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             .clip(RoundedCornerShape(16.dp))
             .background(Brush.verticalGradient(listOf(Color(0xFF23262E).copy(alpha = 0.95f), Color(0xFF0E0F13).copy(alpha = 0.97f))))
             .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(16.dp))
+            // (733a, P2 class C: L1 / R1 turn the case's own pages wherever the D-pad is.)
+            .nativeBumpers(ctx)
             .padding(14.dp)
     ) {
         // (Update 467, owner's Pokémon Stadium 2 screenshot: the whole window scrolled, so on the KONKR (960×640) with a
         // three-line story the Play / Details / Back / More row sat below the window's bottom edge, cut in half, reachable
         // only by scrolling. Now only the picture, screenshots, facts and story scroll — in the room the action row leaves;
         // the actions are measured first and always shown whole. QA gate: tools/qa/tools/geomcheck.py --clip, R26.)
-        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+        // (733a, P2 class C: on its pages the picture's glass well shows the case's own pages - DETAILS / EXTRAS / SETUP,
+        // WinPagesCase.kt - under a heading that names the page after the old one has gone; Info as before.)
+        if (ctx.page != WinPage.MAIN) CaseFlowPageArea(ctx, accent, Modifier.weight(1f, fill = false))
+        else Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
         // (Update 467: the picture gives way first — it leaves ~270 dp for the screenshots, facts, story and the action row —
         // so on a short screen the story still shows rather than scrolling away; on a tall one it's as before.)
         val mediaH = minOf(ctx.maxH * 0.42f, ctx.maxH - 270.dp).coerceIn(110.dp, 300.dp)
@@ -1353,7 +1422,7 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
                 }
                 // The glass's shine.
                 Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.10f), Color.Transparent, Color.Transparent))))
-            } else ctx.pageBody(Modifier.fillMaxSize())
+            }
         }
         if (ctx.page == WinPage.MAIN) {
             // The name band: its own room under the picture, an accent edge on the case's side.
@@ -1415,7 +1484,8 @@ private fun CaseFlowMedia(ctx: WinSceneCtx) {
             alpha = 0.25f + 0.75f * e
             translationY = (1f - e) * 14.dp.toPx()
         }, 10.dp, { m -> Box(m) {
-            UniformKeyRow(ctx.buttons, 8.dp) { a ->
+            // (733a: on a page the pills keep two slots, Play the first, with or without the page's own pill - PlayPlace682ab)
+            UniformKeyRow(ctx.buttons, 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a ->
                 SceneControl(a, Modifier) { on ->
                     // Update 487 (E7, owner-approved): Play is the glossy accent pill even while another key is lit (it looked
                     // like the glass keys), and the word on a lit pill is checked against its lighter top (white on lilac
@@ -1529,7 +1599,8 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
     val wideOk = w - consoleX >= 260.dp && h >= 280.dp
     val command = remember { androidx.compose.runtime.mutableStateOf("") }
     if (!wideOk) { OrbitTerminalNarrow(ctx, acts, glow, origin, clock); return }
-    Box(Modifier.size(w, h)) {
+    // (734b, P2 class C: L1 / R1 turn the console's own pages wherever the D-pad is - on an arc key too.)
+    Box(Modifier.size(w, h).nativeBumpers(ctx)) {
         val discCy = h / 2
         // The rings round the disc.
         Canvas(Modifier.offset(discCx - ringR * 1.05f, discCy - ringR * 1.05f).size(ringR * 2.1f)) {
@@ -1562,11 +1633,17 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
         OdFlyingDisc(ctx, origin, clock, Modifier.offset(discCx - discD / 2, discCy - discD / 2).size(discD))
         // The keys, fanned out on an arc to the disc's right.
         val n = acts.size
+        // (734b, PlayPlace682ab ORBIT: on Options the page has no key of its own (Full details / Full list), so the fan of
+        // two keys spread differently from the fan of three and Play moved 27 px. On a page the fan keeps PAGE_SLOTS places
+        // before Back - Play the first, the page's own key the second, empty when there is none - so Play stays put.)
+        val backs = acts.count { it.back }
+        val slotN = if (ctx.page != WinPage.MAIN) maxOf(n, PAGE_SLOTS + backs) else n
         // (Update 470, D212: 22° between keys, was 17° — neighbours' touch boxes crossed by 9 x 18 px at the fan's ends.)
-        val span = minOf(156f, (n - 1).coerceAtLeast(1) * 22f)
-        val stagger = minOf(0.035f, 0.22f / n.coerceAtLeast(1))
-        acts.forEachIndexed { i, a ->
-            val ang = if (n == 1) 0f else -span / 2f + span * i / (n - 1)
+        val span = minOf(156f, (slotN - 1).coerceAtLeast(1) * 22f)
+        val stagger = minOf(0.035f, 0.22f / slotN.coerceAtLeast(1))
+        acts.forEachIndexed { k, a ->
+            val i = if (k >= n - backs) k + (slotN - n) else k
+            val ang = if (slotN == 1) 0f else -span / 2f + span * i / (slotN - 1)
             val rad = Math.toRadians(ang.toDouble())
             val dx = kotlin.math.cos(rad).toFloat(); val dy = kotlin.math.sin(rad).toFloat()
             SceneControl(a, Modifier
@@ -1602,14 +1679,15 @@ private fun OrbitTerminal(ctx: WinSceneCtx) {
 private fun OrbitTerminalNarrow(ctx: WinSceneCtx, acts: List<WinAction>, glow: Color, origin: androidx.compose.ui.geometry.Rect?, clock: androidx.compose.runtime.FloatState) {
     val w = ctx.maxW; val h = ctx.maxH
     val discD = minOf(w * 0.34f, h * 0.3f)
-    Column(Modifier.size(w, h), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.size(w, h).nativeBumpers(ctx), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OdFlyingDisc(ctx, origin, clock, Modifier.size(discD))
             Box(Modifier.weight(1f).fillMaxHeight().graphicsLayer { val t = ((ctx.reveal() - 0.28f) / 0.54f).coerceIn(0f, 1f); alpha = t }) { OdConsole(ctx, glow, clock) }
         }
         // (674b, owner brief 15 Nov: one row of identical keys (UniformKeyRow), never wrapped.)
         Box(Modifier.graphicsLayer { alpha = ((ctx.reveal() - 0.45f) / 0.4f).coerceIn(0f, 1f) }) {
-            UniformKeyRow(acts, 8.dp) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
+            // (734b: on a page the keys keep two slots, Play the first, with or without the page's own key - PlayPlace682ab)
+            UniformKeyRow(acts, 8.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> SceneControl(a, Modifier) { on -> OdKey(a, on, glow, 40.dp, 104.dp) } }
         }
     }
 }
@@ -1667,12 +1745,43 @@ private fun OdKey(a: WinAction, on: Boolean, glow: Color, keyD: Dp, labelW: Dp) 
             Icon(icon, a.label, tint = if (on) Color(0xFF07132A) else if (a.urgent) Color(0xFFFFB74D) else Color(0xFFDDE6F2), modifier = Modifier.size(keyD * 0.5f))
         }
         if (labelW > 0.dp) Spacer(Modifier.width(6.dp))
-        if (labelW > 0.dp) Text(
-            a.label.uppercase(), color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 2,
-            letterSpacing = 1.sp, modifier = Modifier.widthIn(max = labelW),
-            style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
-        )
+        // (686a, H16 survey: at x1.3 "ACHIEVEMENTS" did not fit the 104 dp label and broke inside the word. The label keeps its
+        // words whole: its spacing narrows first, then its size steps down to the readable minimum - measured here, not by a
+        // BoxWithConstraints, because the key row sizes its keys from their intrinsic widths.)
+        if (labelW > 0.dp) {
+            val label = a.label.uppercase()
+            val measurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 8)
+            val base = androidx.compose.material3.LocalTextStyle.current
+            val maxPx = with(androidx.compose.ui.platform.LocalDensity.current) { labelW.roundToPx() }
+            val fit = remember(label, maxPx, base) {
+                odLabelFit(label, maxPx) { size, spacing ->
+                    label.split(' ').filter { it.isNotEmpty() }.maxOfOrNull { w ->
+                        measurer.measure(w, base.copy(fontSize = size, fontWeight = FontWeight.Bold, letterSpacing = spacing), softWrap = false, maxLines = 1).size.width
+                    } ?: 0
+                }
+            }
+            Text(
+                label, color = if (on) Color.White else Color(0xFFB8C4D6), fontSize = fit.first, fontWeight = FontWeight.Bold, maxLines = 2,
+                letterSpacing = fit.second, modifier = Modifier.widthIn(max = labelW),
+                style = if (on) TextStyle(shadow = Shadow(glow, Offset.Zero, 10f)) else TextStyle.Default
+            )
+        }
     }
+}
+
+/**
+ * 686a (pure): the Orbit key label's size and spacing - the design's 11 sp with 1 sp spacing when its widest word fits [maxPx],
+ * else the spacing narrows (0.5, 0 sp), then the size steps down to the readable minimum ([fitMin]); [widest] measures the
+ * widest word at a size and spacing. At the minimum a word that still cannot fit is left to wrap (never cut).
+ */
+internal fun odLabelFit(label: String, maxPx: Int, widest: (androidx.compose.ui.unit.TextUnit, androidx.compose.ui.unit.TextUnit) -> Int):
+    Pair<androidx.compose.ui.unit.TextUnit, androidx.compose.ui.unit.TextUnit> {
+    val steps = buildList {
+        add(11.sp to 1.sp); add(11.sp to 0.5.sp); add(11.sp to 0.sp)
+        var v = 10.5f; while (v >= fitMin(11.sp).value - 0.01f) { add(v.sp to 0.sp); v -= 0.5f }
+    }
+    if (label.isEmpty() || maxPx <= 0) return steps.first()
+    return steps.firstOrNull { (size, spacing) -> widest(size, spacing) <= maxPx } ?: steps.last()
 }
 
 /** The dark glass console with chrome edges: the name, readouts, achievements as numbered tracks, the save / performance lines. */
@@ -1697,24 +1806,39 @@ private fun OdConsole(ctx: WinSceneCtx, glow: Color, clock: androidx.compose.run
             }
             .padding(start = 20.dp, end = 18.dp, top = 14.dp, bottom = 12.dp)
     ) {
-        if (ctx.page != WinPage.MAIN) { ctx.pageBody(Modifier.fillMaxSize()); return@Box }
+        // (734b, P2 class C: on its pages the console shows its own screens - DATA / TRACKS / COMMANDS, WinPagesOrbit.kt -
+        // under a heading that names the page after the old one has gone; the CMD line stays under them. Info as before.)
+        if (ctx.page != WinPage.MAIN) {
+            Column(Modifier.fillMaxSize()) {
+                OrbitPageArea(ctx, glow, { (kotlin.math.sin(clock.floatValue * 3f) + 1f) / 2f }, Modifier.fillMaxWidth().weight(1f))
+                if (command.isNotEmpty()) Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("CMD", color = glow, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("▸ " + command.uppercase(), color = Color.White, fontSize = 13.sp, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold, maxLines = 2,
+                        style = TextStyle(shadow = Shadow(glow, Offset.Zero, 8f)))
+                }
+            }
+            return@Box
+        }
         val label = TextStyle(color = glow, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
         val scroll = rememberScrollState()
         // (Whatever the window's first focus did, it opens at the top.)
         LaunchedEffect(Unit) { kotlinx.coroutines.delay(450); scroll.scrollTo(0) }
         Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(scroll)) {
+            // (734b, ShelfTextRoboTest ORBIT x1.3: in the narrow console a long console name - SUPER NINTENDO ENTERTAINMENT SYSTEM -
+            // ran under READY (54 x 15 px). The DISC line keeps DISC and the READY lamp; the console name has its own line under it.)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("DISC", style = label)
-                Spacer(Modifier.width(8.dp))
-                // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
-                WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
-                    modifier = Modifier.weight(1f))
+                Spacer(Modifier.weight(1f).widthIn(min = 8.dp))
                 // A small LED, breathing.
                 Canvas(Modifier.size(8.dp)) { drawCircle(glow.copy(alpha = 0.55f + 0.45f * kotlin.math.sin(clock.floatValue * 3f).let { (it + 1f) / 2f })) }
                 Spacer(Modifier.width(5.dp))
                 Text("READY", style = label)
             }
+            // (Batch 522, popup sweep: two lines cut "SYSTEM" off. Whole: smaller, then sliding.)
+            WinFullText(ctx.console.uppercase(), color = Color(0xFFDDE6F2), fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp, maxLines = 2,
+                modifier = Modifier.fillMaxWidth().padding(top = 1.dp))
             Spacer(Modifier.height(2.dp))
             Text(ctx.name.uppercase(), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                 maxLines = 1, modifier = Modifier.basicMarquee().semantics { this[QaClip.Slides] = true }, style = TextStyle(shadow = Shadow(glow.copy(alpha = 0.8f), Offset.Zero, 12f)))
@@ -1807,8 +1931,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
     // (674e, D332 - x1.3: on the KONKR (a 334 dp panel) and with More open on the Flip 2 the name's two 28 sp lines, the console
     // and the LCD left the two fact lines 0 px. A tight panel writes the name smaller, the LCD smaller and the gaps closer.)
     val tight = h < 340.dp || (secondary.isNotEmpty() && h < 400.dp)
+    // (735a, P2 class C: L1 / R1 from anywhere in the panel - its own pages ABOUT / STARS / SETTINGS, WinPagesAiry.kt.)
     Column(
-        Modifier.size(w, h)
+        Modifier.size(w, h).nativeBumpers(ctx)
             .graphicsLayer { val k = ctx.reveal().coerceIn(0f, 1f); translationY = (1f - k) * 30.dp.toPx() }
             .drawBehind {
                 drawRoundRect(Color(0xFF1C3150).copy(alpha = 0.18f), Offset(0f, 18f), size, androidx.compose.ui.geometry.CornerRadius(32.dp.toPx()))
@@ -1853,7 +1978,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
                         Spacer(Modifier.height(10.dp))
                         StoryLines(it, Color(0xFF66707E), 13.sp, 18.sp, 4, Modifier.weight(1f, fill = false))
                     }
-                } else Box(Modifier.fillMaxSize().clip(RoundedCornerShape(18.dp)).background(Color(0xFFE9EFF6))) { ctx.pageBody(Modifier.fillMaxSize()) }
+                // (735a, P2 class C: on its pages the panel's right column shows its own pages - ABOUT / STARS / SETTINGS in the
+                // same soft bubbles, under a heading that names the page after the old one has gone. Info as before.)
+                } else AiryPageArea(ctx, accent, Modifier.fillMaxSize(), tight)
             }
         }
         Spacer(Modifier.height(if (tight) 6.dp else if (secondary.isEmpty()) 14.dp else 10.dp))
@@ -1864,7 +1991,9 @@ private fun AiryPanel(ctx: WinSceneCtx) {
         // scrolls a whole key at a time; the pills under them likewise - both were wrapping FlowRows.)
         // (674g, KONKR x1.3 k674f with More open: still ~20 dp short for the facts' second line - the round keys take their small
         // size there, Play's circle with them.)
-        UniformKeyRow(ctx.buttons + primaryTools, 14.dp) { a -> AiryKey(a, accent, small = tight && secondary.isNotEmpty()) }
+        // (735a: on its own pages the round keys keep two page slots, Play the first - it stays put from page to page; a tight
+        // panel's pages take the small keys, as More open does, so the first star on STARS stays whole at x1.3.)
+        UniformKeyRow(ctx.buttons + primaryTools, 14.dp, slots = if (ctx.page == WinPage.MAIN) 0 else PAGE_SLOTS) { a -> AiryKey(a, accent, small = tight && (secondary.isNotEmpty() || ctx.page != WinPage.MAIN)) }
         if (secondary.isNotEmpty()) Box(Modifier.padding(top = 6.dp)) { UniformKeyRow(secondary, 8.dp) { a -> AiryPill(a, accent) } }
         if (ctx.chips.isNotEmpty()) Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             ctx.chips.forEach { a ->
@@ -1942,6 +2071,18 @@ private fun NightStatus(ctx: WinSceneCtx) {
     val w = ctx.maxW; val h = ctx.maxH
     val anim = rememberAnimationsEnabled()
     val tabs = NIGHT_TABS
+    // (682ag, owner review 23 Nov, RP Classic x1.3: "ACHIEVEMENTS" / "SAVE SYNC" were cut in the fixed 26 % command column - the
+    // column is as wide as its longest command needs (26 % of the window at least, 34 % at most), the stats panel giving up
+    // the same width; the label still shrinks / slides only past that.)
+    val nightCmdMeasurer = androidx.compose.ui.text.rememberTextMeasurer(cacheSize = 12)
+    val nightCmdDens = androidx.compose.ui.platform.LocalDensity.current
+    val nightCmdBase = androidx.compose.material3.LocalTextStyle.current.copy(fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+    val nightCmdNeed = (ctx.buttons + ctx.tools).maxOfOrNull { a ->
+        with(nightCmdDens) { nightCmdMeasurer.measure(a.label.uppercase(), nightCmdBase.copy(fontSize = if (a.primary) 16.sp else 13.sp), softWrap = false, maxLines = 1).size.width.toDp() }
+    } ?: 0.dp
+    // (one margin on every page - the Status page's full column - so Play never moves between pages; PlayPlace 682ab)
+    val nightCmdRows = NIGHT_CMD_ROWS
+    val nightCmdW = nightCommandWidth(w - nightCmdDrift(nightCmdRows), nightCmdNeed)
     // Update 529 (owner: Persona 3 Reload-like motion): the panels come in along the menu's slant, layer after layer (banner,
     // cover, stats, commands - 70 ms apart), each easing out with a small turn that settles; closing runs the same way back,
     // the last in leaving first. A light edge crosses the window as it opens and closes, over slanted ribbons of the night at
@@ -2018,6 +2159,8 @@ private fun NightStatus(ctx: WinSceneCtx) {
                     Box(Modifier.fillMaxSize().offset(10.dp, 10.dp).clip(slantShape(0.12f)).background(hi.copy(alpha = 0.4f)))
                     Box(Modifier.fillMaxSize().clip(slantShape(0.12f)).background(Color.White).padding(5.dp).clip(slantShape(0.12f)).background(Color(col.bottom))) {
                         if (ctx.cover != null) SmartArt(ctx.cover, ctx.name, Modifier.fillMaxSize(), request = rememberCoverRequest(ctx.cover))
+                        // (682ag, owner review 23 Nov: no picture was an empty dark frame - the console's plate in the game's colour)
+                        else SceneNoArt(ctx, Modifier.fillMaxSize())
                     }
                 }
                 // The stats panel.
@@ -2025,12 +2168,30 @@ private fun NightStatus(ctx: WinSceneCtx) {
                 // settled panel should show it. The panel keeps its size while everything fits (×1.0 unchanged) and grows down
                 // to the cover frame's foot when the lines need it; only beyond that does it scroll.)
                 Box(
-                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f).heightIn(min = h * 0.56f, max = h * 0.70f).graphicsLayer { rotationZ = -2f }
+                    slide(2).padding(start = w * 0.33f, top = h * 0.2f).width(w * 0.38f - (nightCmdW - w * 0.26f)).heightIn(min = h * 0.56f, max = h * 0.70f)
+                        // (682bc, HW-29 rpop13_4 NIGHT x1.3: a turned panel reports straight boxes - 2 px read as a cut. QaClip.Tilted.)
+                        .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -2f }
                         .clip(slantShape(0.08f)).background(Brush.horizontalGradient(listOf(Color(col.top).copy(alpha = 0.95f), Color(col.bottom).copy(alpha = 0.92f))))
                         .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.08f)).padding(start = 34.dp, end = 26.dp, top = 14.dp, bottom = 14.dp)
                 ) {
-                    Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    // (682ag, owner 23 Nov 11:21, RP Classic x1.3: the lines under the panel's foot read as cut - the panel shows
+                    // that it scrolls (fading edge + the pages' scroll cue) and is a D-pad stop while it does, as Arctic's info list.)
+                    val nightStats = androidx.compose.foundation.rememberScrollState()
+                    Column(Modifier.sceneReadable(nightStats, hi, onlyWhenScrolls = true).pageScrollCue(nightStats, hi).sceneFadeEdges(nightStats).verticalScroll(nightStats)) {
                         val statIdx = intArrayOf(0)
+                        // (681t, H16 KONKR x1.3 k678n13: "ACHIEVED" / "RELEASED" broke inside the word in the fixed 96 dp / 40 %
+                        // label column. The column is as wide as the widest label needs (40 % of the row at least, as before;
+                        // 55 % of the row at most), and only where even that is too narrow the labels step down to the readable
+                        // minimum - whole words always, the slanted italic kept.)
+                        val labelBase = androidx.compose.material3.LocalTextStyle.current.copy(fontSize = 12.sp, fontWeight = FontWeight.Black,
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        val labelMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+                        val dens = androidx.compose.ui.platform.LocalDensity.current
+                        val nightLabels = nightStatLabels(ctx.total > 0)
+                        val (widestLabel, widestWord) = remember(nightLabels, labelBase, dens) {
+                            fun wd(t: String) = with(dens) { labelMeasurer.measure(t, labelBase, softWrap = false, maxLines = 1).size.width.toDp() }
+                            nightLabels.maxOf { wd(it) } to nightLabels.flatMap { it.split(' ') }.maxOf { wd(it) }
+                        }
                         @Composable
                         fun stat(label: String, value: String?) {
                             // (Update 513, Retroid Pocket Classic / Nova: the 96 dp label left the value ~60 dp — "PlayStat / ion". The label
@@ -2041,13 +2202,38 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                 val e = NightMotion.ease(NightMotion.layer(ctx.reveal(), 5.7f + idx, 0.035f, 0.4f))
                                 translationX = (1f - e) * 36.dp.toPx(); alpha = e
                             }) {
-                            val labelW = minOf(96.dp, maxWidth * 0.4f)
-                            Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(label, color = hi, fontSize = 12.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, modifier = Modifier.width(labelW))
+                            val labelW = nightLabelWidth(widestLabel, maxWidth)
+                            val labelSize = nightLabelSize(widestWord, labelW)
+                            // (682t, H16 survey x1.3: "PlayStation 2" broke as "PlayStatio / n 2" - beside the label column the value
+                            // keeps ~60 dp, and its longest word needs more even at the readable minimum. Such a value goes under its
+                            // label, across the whole row; every value that fits beside its label stays there (x1.0 unchanged).)
+                            val shown = value ?: "—"
+                            val valueWord = remember(shown, dens) {
+                                val longest = shown.split(' ', '\n').maxByOrNull { it.length } ?: ""
+                                with(dens) { labelMeasurer.measure(longest, labelBase.copy(fontSize = fitMin(15.sp), fontWeight = FontWeight.Bold,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Normal), softWrap = false, maxLines = 1).size.width.toDp() }
+                            }
+                            val labelText: @Composable (Modifier) -> Unit = { m ->
+                                Text(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    modifier = m)
+                            }
+                            // (682ag: also where the row itself is narrow - the stats panel gives the command column its room - the label
+                            // column there can't hold "ACHIEVED" whole at the readable minimum: under 96 dp for the value, stack.)
+                            if (nightValueStacks(valueWord, maxWidth - labelW) || maxWidth - labelW < 96.dp) Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                                // (682ag: over its value the label keeps its word whole too - the stats panel gives the wider command
+                                // column its room, and at KONKR x1.3 "ACHIEVED" broke at the panel's edge; the line's width keeps the
+                                // italic's lean inside it.)
+                                androidx.compose.runtime.CompositionLocalProvider(androidx.compose.material3.LocalTextStyle provides
+                                    androidx.compose.material3.LocalTextStyle.current.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)) {
+                                    WholeWordsText(label, color = hi, fontSize = labelSize.sp, fontWeight = FontWeight.Black, textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                                }
+                                WholeWordsText(shown, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth())
+                            } else Row(Modifier.fillMaxWidth().padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                labelText(Modifier.width(labelW).padding(end = NIGHT_LABEL_GAP))
                                 // (Update 470, rule 11: "HAL Laboratory" broke as "HAL / Laborator" with the "y" on a third, hidden line on the
                                 // KONKR — the value now shrinks a step or two to fit its two lines (down to the readable minimum). (A first try with
                                 // StableFullText kept two lines' room for every value: the rows spread and the last ran under the panel's edge.)
-                                WholeWordsText(value ?: "—", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                WholeWordsText(shown, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             }
                             }
                         }
@@ -2055,8 +2241,11 @@ private fun NightStatus(ctx: WinSceneCtx) {
                         stat("LAST", ctx.last)
                         if (ctx.total > 0) {
                             stat("ACHIEVED", "${ctx.earned} / ${ctx.total}")
-                            Box(Modifier.padding(start = 96.dp, top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
+                            // (681t: the bar starts under the values, wherever the label column ends.)
+                            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+                            Box(Modifier.padding(start = nightLabelWidth(widestLabel, maxWidth), top = 2.dp, bottom = 4.dp).fillMaxWidth().height(8.dp).clip(slantShape(0.8f)).background(Color.White.copy(alpha = 0.15f))) {
                                 Box(Modifier.fillMaxHeight().fillMaxWidth((ctx.earned.toFloat() / ctx.total).coerceIn(0f, 1f)).background(hi))
+                            }
                             }
                         }
                         stat("RELEASED", ctx.year)
@@ -2090,8 +2279,13 @@ private fun NightStatus(ctx: WinSceneCtx) {
         Column(
             // (Update 470, QA only: the commands hang turned 4° — their straight boxes cross by ~13 px though the turned keys
             // stay 3 px apart (k470f). Marked tilted like the rental tag; the tap test checks the crossing strip.)
-            slide(3).align(Alignment.TopEnd).padding(end = 6.dp, top = h * 0.2f).width(w * 0.26f)
-                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -4f },
+            // (682ag, owner 23 Nov 11:21, RP Classic x1.3: turned 4° about its top, the column's lower keys drift right by
+            // ~7 % of its height - ACHIEVEMENTS / SAVE SYNC ran off the screen's edge. The end margin takes that drift.)
+            slide(3).align(Alignment.TopEnd).padding(end = 6.dp + nightCmdDrift(nightCmdRows), top = h * 0.2f).width(nightCmdW)
+                // (682ae, PlayPlace RP Classic: turned about its middle, the column's turn moved Play 2 px with the number of
+                // commands under it (Options: Play alone). It turns about its top edge: Play stays put on every page.)
+                .then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer {
+                    rotationZ = -4f; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f) },
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             (ctx.buttons.filter { !it.back } + (if (ctx.page == WinPage.MAIN) ctx.tools else emptyList()) + ctx.buttons.filter { it.back }).forEachIndexed { ci, a ->
@@ -2118,7 +2312,9 @@ private fun NightStatus(ctx: WinSceneCtx) {
                                     }
                                 }
                                 .then(if (!on) Modifier.border(1.dp, hi.copy(alpha = 0.5f), slantShape(0.5f)) else Modifier)
-                                .padding(start = 22.dp), contentAlignment = Alignment.CenterStart
+                                // (682ag, RP Classic x1.3 rdg13: the word ran under the key's slanted end - "ACHIEVEMENT/" - the end keeps
+                                // the slant's room, so the label shrinks to fit whole before it ever slides)
+                                .padding(start = 22.dp, end = 14.dp), contentAlignment = Alignment.CenterStart
                         ) {
                             // (Phase 7, ShelfTextRoboTest: at ×1.3 "ACHIEVEMENTS" wrapped to a second line the 26 dp key cut off. One
                             // line that shrinks to a readable size, then slides - rule 11 - in the key's fixed height.)
@@ -2196,10 +2392,10 @@ private fun NightBannerWipe(page: WinPage, anim: Boolean, words: @Composable (Wi
 @Composable
 private fun NightPagePanel(ctx: WinSceneCtx, p: WinPage, live: Boolean, w: Dp, h: Dp, col: com.shelf.launcher.data.Features.NmColor, hi: Color, modifier: Modifier) {
     Box(
-        modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).graphicsLayer { rotationZ = -2f }
+        modifier.padding(start = w * 0.03f, top = h * 0.2f).size(w * 0.68f, h * 0.74f).then(if (QaTrace.on) Modifier.semantics { this[QaClip.Tilted] = true } else Modifier).graphicsLayer { rotationZ = -2f }
             .clip(slantShape(0.06f)).background(Brush.horizontalGradient(listOf(Color(col.top), Color(col.bottom))))
             .border(2.dp, hi.copy(alpha = 0.7f), slantShape(0.06f)).padding(start = 30.dp, end = 26.dp, top = 12.dp, bottom = 12.dp)
-    ) { ctx.pageFor(p, Modifier.fillMaxSize(), live) }
+    ) { NightPage(ctx, p, live, hi, Modifier.fillMaxSize()) } // (682ae, P2 batch 7: the status screen's own pages - WinPagesNight.kt)
 }
 
 /**
@@ -2214,3 +2410,53 @@ internal fun storyLead(story: String, max: Int = 200): Pair<String, Boolean> {
     val lead = t.substring(0, cut).trim()
     return lead to (lead.length < t.length)
 }
+
+
+/** 681t: the Night stats panel's labels, in their order (ACHIEVED only for a game with achievements). */
+internal fun nightStatLabels(achievements: Boolean): List<String> =
+    listOfNotNull("PLAY TIME", "LAST", if (achievements) "ACHIEVED" else null, "RELEASED", "MAKER", "KIND", "SYSTEM")
+
+/** 681t: the gap between a Night label and its value. */
+internal val NIGHT_LABEL_GAP = 4.dp
+
+/**
+ * 681t (pure, NightStatLabels681tTest): the Night label column - the widest label plus its gap, never narrower than before
+ * (96 dp, or 40 % of a narrow row), 55 % of the row at most so the values keep theirs (KONKR x1.3: the row is ~135 dp,
+ * "ACHIEVED" needs ~63 dp even at the 10 sp minimum).
+ */
+internal fun nightLabelWidth(widest: androidx.compose.ui.unit.Dp, row: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp {
+    val base = minOf(96.dp, row * 0.4f)
+    return (widest + NIGHT_LABEL_GAP + 1.dp).coerceAtLeast(base).coerceAtMost(maxOf(base, row * 0.55f))
+}
+
+/**
+ * 682t (pure, NightValueStack682tTest): a Night value goes under its label when its longest word, at the readable minimum
+ * ([fitMin] of 15 sp), is wider than the room beside the label column (2 % spare for rounding) - else it would break inside
+ * the word.
+ */
+internal fun nightValueStacks(longestWordAtMin: androidx.compose.ui.unit.Dp, beside: androidx.compose.ui.unit.Dp): Boolean =
+    longestWordAtMin.value > beside.value * 0.98f
+
+/**
+ * 681t (pure): the labels' size - 12 sp while the widest word fits the column, else stepped down in proportion, never under
+ * the readable minimum ([fitMin] of 12 sp = 10 sp).
+ */
+internal fun nightLabelSize(widestWord: androidx.compose.ui.unit.Dp, column: androidx.compose.ui.unit.Dp): Float {
+    // (3 % spare: the glyphs do not scale exactly in proportion, and the italic leans past the last letter)
+    val room = (column - NIGHT_LABEL_GAP - 1.dp).value * 0.97f
+    if (widestWord.value <= room || widestWord.value <= 0f) return 12f
+    return maxOf(fitMin(12.sp).value, kotlin.math.floor(12f * room / widestWord.value * 2f) / 2f)
+}
+
+
+/** 682ag (pure): Night menu's command column - room for the arrow (18 dp), the key's inset (22 dp), the longest label and the
+ *  slant and its end (26 dp); 26 % of the window at least, 34 % at most. */
+internal fun nightCommandWidth(window: androidx.compose.ui.unit.Dp, longestLabel: androidx.compose.ui.unit.Dp): androidx.compose.ui.unit.Dp =
+    (longestLabel + 18.dp + 22.dp + 26.dp).coerceIn(window * 0.26f, window * 0.34f)
+
+
+/** 682ag (pure): how far right the Night command column's last key drifts - the column turns 4° about its top edge, so a key
+ *  [rows] x 30 dp down moves right by that height x sin 4° (+2 dp for its slanted end). */
+internal const val NIGHT_CMD_ROWS = 7
+
+internal fun nightCmdDrift(rows: Int): androidx.compose.ui.unit.Dp = (30.dp * rows.coerceAtLeast(1)) * 0.0698f + 2.dp

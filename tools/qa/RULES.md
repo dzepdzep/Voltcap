@@ -230,3 +230,12 @@ The device side never uses an intent while a popup is up (an intent closes the p
 and More go through files (`qa_clip_req`, `qa_winmore_req`). Each defect is logged with layout, style, resolution,
 screenshot, cause and fix (POPUP_AUDIT). Regression fixtures: selftest TestClipGate / TestPopupGate (Pokémon Stadium 2
 before / after, a deliberately clipped button, the real KONKR action-row crop, n/a row styles).
+
+## R27 FOREGROUND FIGURES never cover a popup (permanent, owner 18 Nov 2026 — update 682u)
+A character or figure drawn in front of a layout's scene (today: the TV room's figure, `tv_room_front.png` over the set's
+screen; any future or selectable one) never obstructs an open popup, its text or its keys - at x1.0 and x1.3, while opening,
+closing and switching native pages. Both stay intact: the figure is never cut by the popup, hidden, teleported or popped
+away; the popup keeps its text and keys out of the figure's box (TV: `tvFrontKeepOut` - the screen's content starts past the
+figure, the panel under the set starts past it, the figure drawn in front as in the room). A new figure registers its box
+(as `TvScreen.front`) and the layout's window keeps out of it. Checked by `TvFrontKeepOut682uTest`; evidence on hardware:
+p2review TV shots with the figure in view. A popup over a figure with no keep-out is a FAIL.

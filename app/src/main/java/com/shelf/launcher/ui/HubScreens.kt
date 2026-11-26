@@ -31,7 +31,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -221,7 +220,7 @@ private fun HubGameRow(title: String, icon: String?, line: String, note: String?
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(14.sp), maxFontSize = 14.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                FullText(title, color = ShelfTheme.colors.textPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, modifier = Modifier.weight(1f, fill = false), reserve = false)
                 if (isNew) {
                     Spacer(Modifier.width(6.dp))
                     Box(Modifier.clip(uiRounded(50)).background(Ds.gold).padding(horizontal = 6.dp, vertical = 1.dp)) {
@@ -236,8 +235,8 @@ private fun HubGameRow(title: String, icon: String?, line: String, note: String?
         }
         Spacer(Modifier.width(12.dp))
         Column(horizontalAlignment = Alignment.End) {
-            Text(line, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp), fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            if (note != null) Text(note, color = if (note == "Mastered") Ds.gold else ShelfTheme.accent, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            FullText(line, color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
+            if (note != null) FullText(note, color = if (note == "Mastered") Ds.gold else ShelfTheme.accent, fontSize = 11.sp, maxLines = 1, reserve = false)
         }
     }
 }
@@ -254,8 +253,8 @@ private fun TimelineRow(a: RaRecentAchievement, onClick: (() -> Unit)?) {
         AsyncImage(model = RaBadges.url(a.BadgeName), contentDescription = null, modifier = Modifier.size(36.dp).clip(uiRounded(6.dp)))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(a.Title ?: "Achievement", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(13.sp), maxFontSize = 13.sp), fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(listOfNotNull(a.GameTitle, a.ConsoleName).joinToString(" · "), color = ShelfTheme.textMuted, fontSize = 11.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(11.sp), maxFontSize = 11.sp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+            FullText(a.Title ?: "Achievement", color = ShelfTheme.colors.textPrimary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, reserve = false)
+            FullText(listOfNotNull(a.GameTitle, a.ConsoleName).joinToString(" · "), color = ShelfTheme.textMuted, fontSize = 11.sp, maxLines = 2, reserve = false)
         }
         Text(a.Date?.drop(11)?.take(5) ?: "", color = ShelfTheme.textMuted, fontSize = 11.sp)
         a.Points?.let { Spacer(Modifier.width(10.dp)); Text("$it pts", color = ShelfTheme.textMuted, fontSize = 11.sp) }

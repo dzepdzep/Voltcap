@@ -1,3 +1,4 @@
+. "$(dirname "$0")/qaguard.sh" 2>/dev/null || . /data/local/tmp/vqa/qaguard.sh 2>/dev/null || { echo "qaguard.sh missing - push it beside this script" >&2; exit 3; } # (682ar, D390: a real end)
 # rapid.sh TAG "LAYOUTS" N GAP — rapid A B A B (GAP s) N times per layout, preview + launches blocked; end state per try
 P=com.shelf.launcher; OUT=/sdcard/pv/$1; rm -rf $OUT; mkdir -p $OUT; G=${4:-0.12}
 A() { am start -n $P/.MainActivity "$@" > /dev/null 2>&1; }

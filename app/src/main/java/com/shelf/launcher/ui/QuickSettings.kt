@@ -7,6 +7,7 @@ import com.shelf.launcher.data.withDockHere
 import com.shelf.launcher.data.statusOn
 import android.app.NotificationManager
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.AspectRatio
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.SpaceBar
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.CenterFocusStrong
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Layers
@@ -281,6 +283,7 @@ fun QuickSettingsCard(
     var showBattery by remember { mutableStateOf(false) }
     var showBatteryWatch by remember { mutableStateOf(false) }
     var showSaver by remember { mutableStateOf(false) } // (Update 187)
+    var showHeat by remember { mutableStateOf(false) } // (682bd: the heat guard tile's hold)
     var showProfile by remember { mutableStateOf(false) }
     // The game's power profile, short ("Own · Balanced"): a prefs read, off the main thread.
     val profileLabel by produceState<String?>(null, home?.gameKey, refresh, sync, showProfile) {
@@ -853,11 +856,24 @@ fun QuickSettingsCard(
                 } else
                 // (Update 315: Tile home's own place — in the middle by default; the Voltcap row keeps its own.)
                 add(R1Tile("rowpos", Icons.Filled.SwapVert, "Row\n" + a.dockHere.label, false) {
-                    val all = com.shelf.launcher.data.DockPosition.values()
                     // (Batch 521: on Tile home a new Row place also drops the game row's Edit Home move up / down and the
-                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.)
-                    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a)
-                    home.setAppearance(a.withDockHere(all[(a.dockHere.ordinal + 1) % all.size]))
+                    // round buttons' hand-placed spot by the tiles - both stayed at their old screen spot while the tiles moved.
+                    // 718a: one shared step - rowTilePress - so the QA hook `voltcap_test_dock` runs this exact change.)
+                    home.setAppearance(rowTilePress(a, rowTileNext(a)))
+                })
+            }
+            // 723a (owner Task 2): Focus position - where the game you're on stays across the screen while you browse (the
+            // Voltcap row's / Tile home's own "Game you're on"; FocusPosTile, r1TileFit). Press: the next choice; hold: the list.
+            if (FocusPosTile.applies(a.homeLayout)) {
+                val names = FocusPosTile.choices(a)
+                val cur = FocusPosTile.current(a)
+                add(R1Tile("focuspos", Icons.Filled.CenterFocusStrong, FocusPosTile.label(a), cur > 0,
+                    longAction = {
+                        choiceSheet = "Game you're on · " + a.homeLayout.label to names.mapIndexed { i, n ->
+                            R1Choice(n, i == cur) { home.setAppearance(FocusPosTile.pick(a, i)) }
+                        }
+                    }) {
+                    home.setAppearance(FocusPosTile.next(a))
                 })
             }
             // RomM (update 93): browse your RomM server and download games (only once it's set up — rommSetUp, r1TileFit).
@@ -1070,7 +1086,7 @@ fun QuickSettingsCard(
             // 0.6.18: hold Controller style: the handheld's own settings (Input › Controller style), else Voltcap's Controls.
             val hold: (() -> Unit)? = if (control == com.shelf.launcher.device.DeviceControl.CONTROLLER_STYLE || control == com.shelf.launcher.device.DeviceControl.TRIGGER_MODE) {
                 com.shelf.launcher.device.DeviceControls.handheldSettingsIntent(context)?.let { i -> { runCatching { context.startActivity(i) }; Unit } }
-            } else null
+            } else if (control == com.shelf.launcher.device.DeviceControl.HEAT_GUARD) { { showHeat = true } } else null
             add(R1Tile("dev_" + control.name, deviceIcon(control), deviceLabel(control, st.value), st.on, longAction = hold) {
                 scope.launch {
                     if (!st.supported) {
@@ -1267,9 +1283,10 @@ fun QuickSettingsCard(
                     },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                // (Update 709a, rule 11: the changed setting's name shows whole - a readable size, then a slide.)
+                FullText(
                     "Changed: $undoLabel", color = ShelfTheme.textMuted, fontSize = 12.sp, maxLines = 1,
-                    overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f), reserve = false
                 )
                 R1UndoPill("↶ Undo", accent = true) { R1Undo.undo { liveHome.value?.setAppearance?.invoke(it) } }
                 Spacer(Modifier.width(6.dp))
@@ -1404,8 +1421,9 @@ fun QuickSettingsCard(
                     RoundStep(if (p.id in hidden) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
                         if (p.id in hidden) "Show" else "Hide") { toggleHidden(p.id) }
                     Spacer(Modifier.width(8.dp))
-                    Text(p.label + if (p.id in hidden) " (hidden)" else "", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
-                        maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    // (Update 709a, rule 11: the picked tile's name wraps, shrinks readably, then slides - never "…".)
+                    FullText(p.label + if (p.id in hidden) " (hidden)" else "", color = ShelfTheme.colors.textPrimary, fontSize = 12.sp,
+                        maxLines = 2, modifier = Modifier.weight(1f), reserve = false)
                 }
                 Spacer(Modifier.height(4.dp))
             }
@@ -1433,6 +1451,7 @@ fun QuickSettingsCard(
     if (showSpacing && home != null) GameSpacingPopup(home, onDismiss = { showSpacing = false })
     if (showBatteryWatch) BatteryWatchPopup(onDismiss = { showBatteryWatch = false })
     if (showSaver) BatterySaverPopup(onDismiss = { showSaver = false })
+    if (showHeat) HeatGuardPopup(onDismiss = { showHeat = false; deviceRefresh++ })
     if (showBattery) BatteryChargePopup(onDismiss = { showBattery = false; refresh++ })
     if (showProfile && home != null) GameProfilePopup(home, onDismiss = { showProfile = false })
     if (showLights) {
@@ -1554,25 +1573,33 @@ private fun QuickTile(
         // Two caption lines at the system's font size too (a bigger font ran the second line into the row below).
         val captionH = maxOf(22.dp, with(androidx.compose.ui.platform.LocalDensity.current) { (10.5.sp * 2).toDp() } + 1.dp)
         Box(Modifier.fillMaxWidth().height(captionH), contentAlignment = Alignment.TopCenter) {
-            Text(
+            val capStyle = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
+            ))
+            val capLh = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em)
+            val spaced = label.trim().contains(' ') && !label.trim().contains('\n')
+            // (Update 709a, rule 11: a caption with spaces wrapped to two lines and ended in "…" when that was not enough -
+            // it now goes through FullText: two lines, a readable size, then a slide. The caption box has a fixed height,
+            // so no reserve.)
+            if (spaced) FullText(
+                label, color = ShelfTheme.colors.textPrimary, fontSize = 9.sp, lineHeight = capLh, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, textAlign = TextAlign.Center, style = capStyle, modifier = Modifier.fillMaxWidth(), reserve = false
+            ) else Text(
                 label,
                 color = ShelfTheme.colors.textPrimary,
                 fontSize = 9.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = 9.sp),
-                lineHeight = androidx.compose.ui.unit.TextUnit(1.167f, androidx.compose.ui.unit.TextUnitType.Em),
+                lineHeight = capLh,
                 fontWeight = FontWeight.SemiBold,
                 // (Update 274: a one-word label on one line, made smaller to fit — "Achievements" broke as "Achievement / s".)
                 // (Update 285, Toni: "a lot of stuff still written with …": a two-line caption ("Edit\nhome", "Look\nCovers",
-                // "Achievements\nFocus") has no space, so it was cut to one line — "Edit…", "Look…". A line break now gets its
-                // two lines, each kept on one line and made smaller to fit.)
-                maxLines = if (label.trim().contains(' ') || label.trim().contains('\n')) 2 else 1,
-                softWrap = label.trim().contains(' ') && !label.trim().contains('\n'),
+                // "Achievements\nFocus") gets its two lines, each kept on one line and made smaller to fit.)
+                maxLines = if (label.trim().contains('\n')) 2 else 1,
+                softWrap = false,
                 // (Compose lays a text that doesn't wrap and ends in "…" out as one line, whatever its line breaks —
-                // so the unwrapped captions are clipped instead; the font shrinks until each line fits.)
-                overflow = if (label.trim().contains(' ') && !label.trim().contains('\n')) TextOverflow.Ellipsis else TextOverflow.Clip,
+                // so the unwrapped captions are clipped; the font shrinks until each line fits.)
+                overflow = TextOverflow.Clip,
                 textAlign = TextAlign.Center,
-                style = uiFontStyle().merge(androidx.compose.ui.text.TextStyle(
-                    platformStyle = androidx.compose.ui.text.PlatformTextStyle(includeFontPadding = false)
-                )),
+                style = capStyle,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -1596,6 +1623,7 @@ private fun deviceLabel(c: com.shelf.launcher.device.DeviceControl, value: Strin
         com.shelf.launcher.device.DeviceControl.CPU_CAP -> "Power"
         com.shelf.launcher.device.DeviceControl.AUTO_TDP -> "AutoTDP"
         com.shelf.launcher.device.DeviceControl.UNDERCLOCK -> "Underclock"
+        com.shelf.launcher.device.DeviceControl.HEAT_GUARD -> "Heat guard"
     }
     // Controller layout names follow the legend's wording (Xbox / Retro).
     val v = value?.replace("Nintendo", "Retro")
@@ -1618,6 +1646,7 @@ private fun deviceIcon(c: com.shelf.launcher.device.DeviceControl): ImageVector 
     com.shelf.launcher.device.DeviceControl.CPU_CAP -> Icons.Filled.Memory
     com.shelf.launcher.device.DeviceControl.AUTO_TDP -> Icons.Filled.Speed
     com.shelf.launcher.device.DeviceControl.UNDERCLOCK -> Icons.Filled.DeveloperBoard
+    com.shelf.launcher.device.DeviceControl.HEAT_GUARD -> Icons.Filled.Thermostat
 }
 
 @Composable
@@ -2203,10 +2232,62 @@ internal enum class PopupStyle(val label: String, val short: String) {
 
 /**
  * Batch 521: Tile home's Row place (R1 Row tile, Top / Middle / Bottom) is the one that counts: the game row's Edit Home move
- * up / down and the round buttons' spot saved "by the tiles" are dropped (an "Anywhere" spot of the buttons stays).
+ * up / down is dropped (since Sprint 527 it no longer moves the row anyway) and the round buttons' spot saved "by the tiles"
+ * does not stay at its old screen spot while the tiles move (an "Anywhere" spot of the buttons stays).
+ * 714a (owner Task 1, "saved customizations kept, never silently erased"): that spot is no longer thrown away - it is put
+ * aside for the place it was made at ([tileRowPlaceSpots]) and comes back when the tiles return there, so Top -> Middle ->
+ * Top gives the buttons their hand-placed spot again. A place without one of its own shows the buttons at their normal spot.
  */
-internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings) {
+internal fun tileRowPlaceReset(a: com.shelf.launcher.data.AppearanceSettings, to: com.shelf.launcher.data.DockPosition) {
     LayoutParts.dropVerticalShift(LayoutParts.id(com.shelf.launcher.data.HomeLayout.TILES, "row"))
-    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW && HomeWidgets.position(HomeWidgets.SHORTCUTS) != null)
-        HomeWidgets.reset(HomeWidgets.SHORTCUTS)
+    if (a.shortcutSpot == com.shelf.launcher.data.ShortcutSpot.ROW) {
+        val now = com.shelf.launcher.data.Features.widgetPositions.value
+        val next = tileRowPlaceSpots(now, a.tileDockPosition, to)
+        if (next != now) com.shelf.launcher.data.Features.widgetPositions.value = next
+    }
+}
+
+/** 718a: the place one press of R1's Row tile moves to (Top -> Middle -> Bottom -> Top). Shared by the tile and the QA hook. */
+internal fun rowTileNext(a: com.shelf.launcher.data.AppearanceSettings): com.shelf.launcher.data.DockPosition {
+    val all = com.shelf.launcher.data.DockPosition.values()
+    return all[(a.dockHere.ordinal + 1) % all.size]
+}
+
+/**
+ * 718a: R1's Row tile change to [to] - Tile home's per-place reset ([tileRowPlaceReset]) and the new place - returning the
+ * appearance to apply. The tile saves it; the QA hook (`voltcap_test_dock`, LauncherScreen) previews it, so the hook runs the
+ * exact handler (owner 23 Nov 22:43: "verify it is the exact handler") without opening the R1 panel and its system tiles.
+ */
+internal fun rowTilePress(a: com.shelf.launcher.data.AppearanceSettings, to: com.shelf.launcher.data.DockPosition): com.shelf.launcher.data.AppearanceSettings {
+    if (a.homeLayout == com.shelf.launcher.data.HomeLayout.TILES) tileRowPlaceReset(a, to)
+    return a.withDockHere(to)
+}
+
+/** 714a: the key the round buttons' hand-placed spot is kept under while the tiles sit at another place than [place]. */
+internal fun tileRowSpotKey(place: com.shelf.launcher.data.DockPosition): String = "${HomeWidgets.SHORTCUTS}@${place.name}"
+
+/**
+ * 714a: [stored] (the widget_positions value) after the tiles move [from] one place [to] another: the round buttons' spot
+ * (if any) is kept aside for [from], and [to]'s own kept spot (if any) becomes the buttons' spot again; with none they sit
+ * at their normal spot. Every other widget is untouched; the same place twice changes nothing.
+ */
+internal fun tileRowPlaceSpots(stored: String, from: com.shelf.launcher.data.DockPosition, to: com.shelf.launcher.data.DockPosition): String {
+    if (from == to) return stored
+    val m = HomeWidgets.parse(stored).toMutableMap()
+    val now = m.remove(HomeWidgets.SHORTCUTS)
+    if (now != null) m[tileRowSpotKey(from)] = now else m.remove(tileRowSpotKey(from))
+    m.remove(tileRowSpotKey(to))?.let { m[HomeWidgets.SHORTCUTS] = it }
+    return HomeWidgets.format(m)
+}
+
+/**
+ * 717a: the QA log line of one Row tile change (`voltcap_test_dock`, logged as `rowtile <this>`), read by
+ * tools/qa/tools/row714.py: `TILES MIDDLE->TOP spot=ROW shortcuts=0.3000,0.2000 kept=MIDDLE:0.3000,0.2000`. `shortcuts=none`:
+ * the round buttons at their normal spot; `kept=` lists every place's put-aside spot (place order), `-` when none. Pure.
+ */
+internal fun rowTileQaLine(layout: String, from: String, to: String, spot: String, positions: String): String {
+    val m = HomeWidgets.parse(positions)
+    fun xy(p: Pair<Float, Float>) = "%.4f,%.4f".format(java.util.Locale.US, p.first, p.second)
+    val kept = com.shelf.launcher.data.DockPosition.values().mapNotNull { d -> m[tileRowSpotKey(d)]?.let { "${d.name}:${xy(it)}" } }
+    return "$layout $from->$to spot=$spot shortcuts=${m[HomeWidgets.SHORTCUTS]?.let(::xy) ?: "none"} kept=${kept.joinToString(";").ifEmpty { "-" }}"
 }

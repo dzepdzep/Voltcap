@@ -381,16 +381,19 @@ internal fun StatusBar(
         // With the player there it takes (nearly) all the spare room; the readouts get the rest.
         Box(Modifier.weight(if (nowPlaying != null) 0.001f else 1f).clipToBounds()) {
             if (progress.isNotEmpty() && !minimal && !(nowPlaying != null && widthDp < 600)) {
+                // (757a, rule 11: live counters that change every second would never be readable as a slide, and with the
+                // player there this box is nearly empty; they shrink to the readable minimum, then the whole readouts are in
+                // the Background work dialog - tap them, or Notifications > Background work.)
                 Text(
                     modifier = Modifier.tapOnly(onProgressClick),
-                    text = 
+                    text =
                     progress.joinToString("  ·  "),
                     color = barAccent,
                     fontSize = 12.sp, autoSize = androidx.compose.foundation.text.TextAutoSize.StepBased(minFontSize = com.shelf.launcher.ui.fitMin(12.sp), maxFontSize = 12.sp),
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
                     softWrap = false,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis // qa-ok: TRUNCATE (live counters in the status bar's leftover room; whole in the Background work dialog - tap, or Notifications)
                 )
             }
         }
@@ -459,10 +462,35 @@ internal fun PlainBattery(percent: Int, charging: Boolean, ink: Color, iconSize:
         val settle = HomeIdle.settled
         val rested = remember { booleanArrayOf(false, false) } // [0] settled here, [1] has run before
         val at = remember { floatArrayOf(CHARGE_STILL_PHASE) } // where the light stands (the state is read only while drawing)
-        LaunchedEffect(moving, settle) {
+        // (682at, owner 24 Nov - option 2: every press woke ~10 s of the light, and on the RP Classic each of its frames is a whole
+        // 40 ms window redraw. The light now runs only as charging feedback - when charging starts, when its level changes while
+        // charging, when Voltcap comes back to the front - a few sweeps at the full frame rate, then on to its still place and
+        // still until one of those changes. A press, a move between games, idling: nothing. ChargeLight.legacy: the old rule, QA A/B.)
+        val mayMove by androidx.compose.runtime.rememberUpdatedState(moving)
+        val active = rememberIsActive()
+        if (!ChargeLight.legacy.value) LaunchedEffect(charging, percent, active) {
+            if (!moving) { at[0] = CHARGE_STILL_PHASE; phase.floatValue = CHARGE_STILL_PHASE; return@LaunchedEffect }
+            ChargeLight.runs++
+            val start = androidx.compose.runtime.withFrameMillis { it }
+            var last = 0f
+            while (true) {
+                val stop = androidx.compose.runtime.withFrameMillis { t ->
+                    val raw = (t - start) / CHARGE_SWEEP_MS.toFloat()
+                    val p = raw - kotlin.math.floor(raw)
+                    // (the last sweep - or the moment it may no longer move: resting, a panel - runs on to the still place: no jump)
+                    val reached = (raw >= CHARGE_FEEDBACK_SWEEPS || !mayMove) && chargePhasePassed(last, p, CHARGE_STILL_PHASE)
+                    phase.floatValue = if (reached) CHARGE_STILL_PHASE else p
+                    at[0] = if (reached) CHARGE_STILL_PHASE else p
+                    last = p
+                    reached
+                }
+                if (stop) break
+            }
+        } else LaunchedEffect(moving, settle) {
             if (!moving) at[0] = CHARGE_STILL_PHASE
             if (!moving) { phase.floatValue = CHARGE_STILL_PHASE; return@LaunchedEffect }
             if (settle && rested[0]) return@LaunchedEffect
+            ChargeLight.runs++
             // (Back from a settle or a rest: on from where the light stands. The very first run: from the bottom, as before.)
             val from = if (rested[0] || rested[1]) at[0] else 0f
             rested[0] = false; rested[1] = true
@@ -512,6 +540,16 @@ internal fun chargingLevelIcon(percent: Int): androidx.compose.ui.graphics.vecto
     if (percent < 15) Icons.Filled.Battery1Bar else batteryIconFor(percent, false)
 
 internal const val CHARGE_SWEEP_MS = 1800L
+/** 682at: how many sweeps the charging light makes as feedback before it comes to rest (then on to its still place). */
+internal const val CHARGE_FEEDBACK_SWEEPS = 2
+
+/** 682at: QA-only same-build A/B for the charging light (`--es voltcap_test_chargelight legacy|new`, isolated QA app, session
+ *  only): legacy = the light runs ~10 s after every press (Update 511). */
+internal object ChargeLight {
+    val legacy = androidx.compose.runtime.mutableStateOf(false)
+    /** How many times the light has started running (a plain counter - tests and QA read it; nothing draws from it). */
+    @Volatile var runs = 0
+}
 /** Update 495: where the light rests while the animation is off (0 bottom … 1 top). */
 internal const val CHARGE_STILL_PHASE = 0.55f
 

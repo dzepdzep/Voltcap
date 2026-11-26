@@ -164,7 +164,7 @@ internal fun StyleArcade(c: StyleCtx, modifier: Modifier = Modifier) {
         if (z > 0f) { val s = 1f + 0.9f * z; scaleX = s; scaleY = s; transformOrigin = if (hall) TransformOrigin(0.5f, 0.4f) else TransformOrigin(0.2f, 0.42f) }
     }) {
         if (Features.arMode.state.value == Features.ArMode.HALL) ArcadeHallMode(c, g, launch, Modifier.fillMaxSize())
-        else ArcadeShowcase(c, g, launch, Modifier.fillMaxSize())
+        else vcTraceC("VC:arcShow") { ArcadeShowcase(c, g, launch, Modifier.fillMaxSize()) }
         // The dark as the camera reaches the monitor.
         Box(Modifier.fillMaxSize().graphicsLayer { alpha = (ArcadeNav.zoom.value * 0.85f).coerceIn(0f, 1f) }.background(Color.Black))
     }
@@ -244,7 +244,15 @@ private fun arcadeColorOf(g: Game): Color = if (Features.arcadeGameColors.state.
 @Composable
 private fun ArcadeMachine(
     c: StyleCtx, g: Game, build: CabBuild, color: () -> Color, w: Dp, h: Dp, view: () -> CabView, lit: () -> Float,
-    dim: () -> Float, live: Boolean, detail: Boolean, modifier: Modifier = Modifier
+    dim: () -> Float, live: Boolean, detail: Boolean, modifier: Modifier = Modifier,
+    /** (682aj, owner 23 Nov 18:23 - Arcade stutter, KONKR x1.0 kp10: the home repaints every frame (the scene behind it moves),
+     *  and every machine's body, scan lines, glass and sign were drawn again each time - ~8 ms issuing + ~11 ms GPU a frame
+     *  (Cinema: 2 + 5). A machine that isn't changing keeps its picture in its own layer ([arcadeCached]), drawn again only
+     *  when it changes. Not on the one you're on while it is lifted (a scaled picture would soften).) */
+    cache: Boolean = false,
+    /** 682aj: the body and side only (the big showcase machine: its screen stays live - clip, wake-up flash). Not in the hall,
+     *  where every machine turns and scales as the camera glides. */
+    cacheBody: Boolean = false
 ) {
     val model = cabModel(build)
     val density = LocalDensity.current
@@ -262,14 +270,14 @@ private fun ArcadeMachine(
     val sW = (s1 - s0).getDistance().roundToInt().coerceAtLeast(8); val sH = (s3 - s0).getDistance().roundToInt().coerceAtLeast(8)
     val (m0, m1, m3) = flat.marqueeQuad()
     val mW = (m1 - m0).getDistance().roundToInt().coerceAtLeast(8); val mH = (m3 - m0).getDistance().roundToInt().coerceAtLeast(4)
-    Box(modifier.size(w, h)) {
+    Box(modifier.size(w, h).arcadeCached(cache)) {
         val gloss = arcadeRoomGloss(Features.arRoom.state.value)
-        Canvas(Modifier.fillMaxSize()) { drawCabBody(frame(), cabPaint(build, color()), lit(), glow, detail, dim(), gloss) }
+        Canvas(Modifier.fillMaxSize().arcadeCached(cacheBody && !cache)) { drawCabBody(frame(), cabPaint(build, color()), lit(), glow, detail, dim(), gloss) }
         AffineBox(sW, sH, { frame().screenQuad() }, Modifier.then(if (live) Modifier.gameOrigin(g.stableKey, true) else Modifier)) {
             ArcadeScreen(c, g, live, detail, dim)
         }
-        AffineBox(mW, mH, { frame().marqueeQuad() }) { ArcadeMarqueeSign(c, g, lit, glow, detail) }
-        Canvas(Modifier.fillMaxSize()) { drawCabSide(frame(), cabPaint(build, color()), side, lit(), dim()) }
+        AffineBox(mW, mH, { frame().marqueeQuad() }) { ArcadeMarqueeSign(c, g, lit, glow, detail, live) }
+        Canvas(Modifier.fillMaxSize().arcadeCached(cacheBody && !cache)) { drawCabSide(frame(), cabPaint(build, color()), side, lit(), dim()) }
     }
 }
 
@@ -335,7 +343,7 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
             }
         } else if (g.sourceType == com.shelf.launcher.data.SourceType.APP) {
             AppIconArt(g.packageName, wide = true, modifier = Modifier.fillMaxSize())
-        } else ArcadeAttract(g, detail)
+        } else ArcadeAttract(g, detail, live)
         if (clip != null) androidx.compose.runtime.key(clip) {
             VideoBackdrop(clip, withSound = false, modifier = Modifier.fillMaxSize(), paused = HomeIdle.calm, fit = true, shade = false)
         }
@@ -365,7 +373,7 @@ private fun ArcadeScreen(c: StyleCtx, g: Game, live: Boolean, detail: Boolean, d
 
 /** A machine with no picture: its name in big letters on the tube, the console under it — an attract screen. */
 @Composable
-private fun ArcadeAttract(g: Game, detail: Boolean) {
+internal fun ArcadeAttract(g: Game, detail: Boolean, live: Boolean) {
     val titles = LocalTitleOptions.current
     Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF14104A), Color(0xFF05040F)))).padding(6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -373,16 +381,27 @@ private fun ArcadeAttract(g: Game, detail: Boolean) {
         // when even the smallest size doesn't fit.)
         // (676y, D342 - Nova x1.3: the console line under the name ran off the tube's foot. The name fits in what the console
         // line leaves.)
+        // (682as, owner 24 Nov - Arcade, RP Classic: a slide on any tube kept the whole home repainting at 60 fps for 30 s after
+        // every press (GPU 15 ms a frame). The tubes' words now wrap whole and size down to the tube's smallest size; only the
+        // machine you're on may still slide (a name that fits nowhere - it rests with the home), the others stay still - the
+        // whole name is on the machine you move onto and beside it. ArcadeTubeText.legacy: the old behaviour, QA A/B only.)
+        val legacy = ArcadeTubeText.legacy.value
         FitText(titles.display(g.name).uppercase(), Color(0xFFFFE15A), maxSize = if (detail) 20.sp else 10.sp, minSize = 6.sp, maxLines = 3,
             fontWeight = FontWeight.Black, textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont(), shadow = Shadow(Color(0xFFFF3D7F), Offset(2f, 2f), 0f)),
-            slideWhenCut = true, modifier = Modifier.weight(1f, fill = false))
-        if (detail) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
+            slideWhenCut = legacy || live, wholeWords = !legacy, stillWhenCut = !legacy && !live, modifier = Modifier.weight(1f, fill = false))
+        // (The console line: "PLAYSTATION 2" was a few px wider than the tube at 9 sp and slid for good. It steps down to 7 sp,
+        // then wraps at a space.)
+        if (detail) {
+            if (legacy) FullText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), 9.sp, maxLines = 1, fontFamily = pocketFont())
+            else FitText(titles.console(g.platform).uppercase(), Color(0xFF7FDBFF), maxSize = 9.sp, minSize = 7.sp, maxLines = 1,
+                textAlign = TextAlign.Center, style = TextStyle(fontFamily = pocketFont()), slideWhenCut = live, wholeWords = true, stillWhenCut = !live)
+        }
     }
 }
 
 /** The marquee's sign: the game's logo (Game names › Logos on), else its name in bold letters; dimmer while unlit. */
 @Composable
-private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Boolean, detail: Boolean) {
+private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Boolean, detail: Boolean, live: Boolean) {
     val titles = LocalTitleOptions.current
     val logo = if (titles.showLogos) c.logo(g) else null
     var failed by remember(logo) { mutableStateOf(false) }
@@ -403,7 +422,8 @@ private fun ArcadeMarqueeSign(c: StyleCtx, g: Game, lit: () -> Float, glow: Bool
                 titles.display(g.name).uppercase(), Color.White, maxSize = if (detail) 22.sp else 10.sp, minSize = 5.sp, maxLines = 2,
                 fontWeight = FontWeight.Black, textAlign = TextAlign.Center,
                 style = uiFontStyle().copy(fontStyle = FontStyle.Italic, shadow = Shadow(Color.Black.copy(alpha = 0.75f), Offset(0f, 2f), 6f)),
-                lineHeightRatio = 1.05f, slideWhenCut = true
+                lineHeightRatio = 1.05f, slideWhenCut = ArcadeTubeText.legacy.value || live,
+                wholeWords = !ArcadeTubeText.legacy.value, stillWhenCut = !ArcadeTubeText.legacy.value && !live
             )
         }
     }
@@ -427,7 +447,8 @@ internal fun ArcadeBackdrop(modifier: Modifier) {
 @Composable
 private fun ArcadeRoomBackdrop(horizon: Float, accent: Color, modifier: Modifier, calm: Boolean = false) {
     val room = Features.arRoom.state.value
-    Canvas(modifier.graphicsLayer()) { drawArcadeRoom(room, horizon, accent, calm) }
+    // (682aj: "its own layer" now keeps its picture - Auto only grouped it, the room was painted again every frame)
+    Canvas(modifier.arcadeCached(true)) { drawArcadeRoom(room, horizon, accent, calm) }
 }
 
 // ---- Showcase ----
@@ -458,7 +479,7 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
             val rowH = miniH + 14.dp
             val infoH = (fullH - rowH - 6.dp).coerceAtLeast(80.dp)
             // The light on the floor and wall round the big machine.
-            Canvas(Modifier.size(cabW * 1.6f, fullH).offset(x = -cabW * 0.3f)) {
+            Canvas(Modifier.size(cabW * 1.6f, fullH).offset(x = -cabW * 0.3f).arcadeCached(true)) {
                 drawRect(Brush.radialGradient(listOf(color.copy(alpha = 0.22f), color.copy(alpha = 0.05f), Color.Transparent),
                     center = Offset(size.width / 2f, size.height * 0.35f), radius = size.width * 0.75f))
             }
@@ -473,34 +494,35 @@ private fun ArcadeShowcase(c: StyleCtx, g: Game, launch: (Game) -> Unit, modifie
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "cabinet"), "Big cabinet")
                     .pointerInput(Unit) { detectTapGestures { c.actions.open() } }
             ) {
-                AnimatedContent(targetState = g, label = "arcadeBig", transitionSpec = { gameSwap() }) { shown ->
+                vcTraceC("VC:arcBigAC") { AnimatedContent(targetState = g, label = "arcadeBig", transitionSpec = { gameSwap() }) { shown ->
                     val b = cabBuildFor(pick, shown.platform)
                     val a = cabAspect(cabModel(b), big)
                     val hh = minOf(cabH, cabW / a)
                     Box(Modifier.size(cabW, cabH), contentAlignment = Alignment.BottomCenter) {
-                        ArcadeMachine(c, shown, b, { color }, hh * a, hh, { big }, { litAnim.value }, { 0f }, live = shown.stableKey == g.stableKey, detail = true)
+                        vcTraceC("VC:arcBig") { ArcadeMachine(c, shown, b, { color }, hh * a, hh, { big }, { litAnim.value }, { 0f }, live = shown.stableKey == g.stableKey, detail = true,
+                            cacheBody = true) }
                     }
-                }
+                } }
             }
             Column(
                 Modifier.offset(x = rightX).width(rightW).height(infoH)
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "info"), "Name, Play & Details")
             ) {
-                ArcadeCategory(c, compact)
+                vcTraceC("VC:arcCat") { ArcadeCategory(c, compact) }
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
                 AnimatedContent(
                     targetState = g, label = "arcadeInfo", transitionSpec = { gameSwap() },
                     contentAlignment = Alignment.TopStart,
                     modifier = Modifier.weight(1f).fillMaxWidth()
-                ) { shown -> ArcadeInfo(c, shown, richArcade(color), compact, plaque = compact) }   // (short screens: the plaque's 2 lines)
+                ) { shown -> vcTraceC("VC:arcInfo") { ArcadeInfo(c, shown, richArcade(color), compact, plaque = compact) } }   // (short screens: the plaque's 2 lines)
                 Spacer(Modifier.height(if (compact) 4.dp else 8.dp))
-                ArcadeButtons(c, g, richArcade(color), compact, launch)
+                vcTraceC("VC:arcBtns") { ArcadeButtons(c, g, richArcade(color), compact, launch) }
             }
-            ArcadeRow(
+            vcTraceC("VC:arcRow") { ArcadeRow(
                 c, miniH,
                 Modifier.offset(x = rightX, y = fullH - rowH).width(rightW).height(rowH)
                     .editablePart(LayoutParts.id(HomeLayout.ARCADE, "row"), "Row of cabinets")
-            )
+            ) }
         }
     }
 }
@@ -568,14 +590,15 @@ private fun ArcadeRow(c: StyleCtx, miniH: Dp, modifier: Modifier) {
                 val lift = styleLift(on && inGames)
                 val b = cabBuildFor(pick, gg.platform)
                 val col = arcadeColorOf(gg)
-                ArcadeMachine(
+                vcTraceC("VC:arcMini") { ArcadeMachine(
                     c, gg, b, { col }, miniW, miniH, { small }, { if (on) 0.9f else 0.25f }, { if (on) 0f else 0.25f }, live = false, detail = false,
+                    cache = !on,
                     modifier = Modifier
                         .offset { IntOffset((anchorX.toPx() + step.toPx() * (i - pos.value) - miniW.toPx() / 2f).roundToInt(), (floorY - miniH).roundToPx()) }
                         .zIndex(if (on) 2f else 1f)
                         .graphicsLayer { val s = 1f + 0.1f * lift; scaleX = s; scaleY = s; transformOrigin = TransformOrigin(0.5f, 1f) }
                         .pointerInput(real) { detectTapGestures { if (real == GridHome.focus) open() else select(real) } }
-                )
+                ) }
             }
         }
     }
@@ -893,3 +916,16 @@ private fun ArcadePush(label: String, color: Color, on: Boolean, compact: Boolea
         )
     }
 }
+
+/** 682aj: [on] - the part keeps its rendered picture in an offscreen layer and the screen reuses it until the part itself changes
+ *  (a moving / fading parent does not repaint it). Pure modifier choice; the look is the same. */
+internal fun Modifier.arcadeCached(on: Boolean): Modifier =
+    if (!on) this else this.graphicsLayer {
+        // (While the camera moves into the monitor the picture is scaled up to 1.9x: drawn live then, never a stretched copy.)
+        compositingStrategy = if (ArcadeNav.zoom.value > 0f) androidx.compose.ui.graphics.CompositingStrategy.Auto
+            else androidx.compose.ui.graphics.CompositingStrategy.Offscreen
+    }
+
+/** 682as: QA-only same-build A/B for the Arcade tubes' and signs' text (`--es voltcap_test_arattract legacy|new`, isolated QA app,
+ *  session only): legacy = every tube and sign slides where its words don't fit (before 682as). */
+internal object ArcadeTubeText { val legacy = androidx.compose.runtime.mutableStateOf(false) }

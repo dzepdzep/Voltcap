@@ -54,3 +54,30 @@ break at x1.3 on the category screen (D346, whole words), pixel-font x1.3 polish
 2. PC main tree: pull main, `assembleRelease` + compat, `freeze_rc.py 0.6.73 rc1`, apk_secret_scan, signer = v0.6.72's.
 3. Upgrade test on one handheld (owner picks which): the frozen RC over the real Voltcap, smoke test, data kept.
 4. Publish with release.ps1 0.6.73 and the notes above; production pins for 0.6.73.
+
+## GO progress (17 Nov, owner GO 15:22 + bridge authorization 16:09 Berlin)
+- Bridge check (678s) verified: on both runs the legacy-name check started only after both Ubuntu jobs completed and read
+  "result: success"; PR #21 stayed blocked until then. Branch protection unchanged.
+- PR #21 merged: main = a4012212 (app tree = eadd00f). PC main tree fast-forwarded from bundle voltcap_main_0673b.bundle
+  (sha c01d6bc6..., verified), Windows git status clean.
+- Signed build on the PC: release + compat 0.6.73 (80), frozen rc1: release 72a94b58..., compat 2b6b9e3c... (freeze --verify OK).
+  Secret scan clean (5 values, no credential fields); signer 88ce4b67... = v0.6.72's; debuggable=false; manifest, sync,
+  charging and settings scopes unchanged vs v0.6.72. RC hash lines kept in Claude outputs/backups/rc0673_SHA256SUMS.diff
+  (to main by PR after publishing; the publish tool needs a clean tree).
+- KONKR production (L2 read-only): 0.6.72 (79) = published Voltcap-0.6.72.apk (683d0079...); rollback copy in
+  Claude outputs/backups/konkr_prod_0.6.72_base_20261117.apk.
+- STOPPED before publishing: install_production only accepts published, pinned files, so a KONKR upgrade test before
+  publication is impossible with the current guard; the publish step was refused by the session's safety check. Owner choice.
+
+## PUBLISHED 17 Nov 2026 16:15:36 UTC - https://github.com/dzepdzep/Voltcap/releases/tag/v0.6.73
+- Order (owner option 2, 17 Nov 17:13 Berlin): test before publication with the exact files. A GitHub draft is not allowed for
+  this session type, so the frozen rc1 hashes were pinned on the PC before publication (backup production_pins.before0673.json),
+  the KONKR upgraded from the frozen file, then the release published; the pin edit was undone for the clean-tree publish and
+  the published pins added on the dev branch.
+- KONKR production upgrade (L3): 0.6.72 (79, = published 683d0079...) -> 0.6.73 (80) via install_production of
+  Voltcap-0.6.73-rc1-release-72a94b58.apk; firstInstallTime 2026-10-29 unchanged (data kept); Home -> Voltcap HomeAlias,
+  profile / library / Continue / achievements 72/75 shown, crash buffer 0 (screens/konkr_prod_0673_smoke.png). Rollback copy:
+  Claude outputs/backups/konkr_prod_0.6.72_base_20261117.apk. "What's new" left for the owner.
+- release.ps1 reused the up-to-date build: GitHub assets byte-identical to the tested rc1 -
+  Voltcap-0.6.73.apk 72a94b58..., Voltcap-0.6.73-compat.apk 2b6b9e3c..., profiles api28 97d8d7e8..., api31 2a5d15f6....
+  Tag v0.6.73 = main a4012212; releases/latest = v0.6.73.

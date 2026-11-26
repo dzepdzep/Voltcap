@@ -1,2 +1,3 @@
-holder: live-session v0.6.73 release (owner GO 17 Nov 15:22 Berlin)
-since: 2026-11-17T14:22:59Z
+holder: none
+since: 2026-11-25T22:36:00Z
+- live session 682bd released the lock (audit done: docs/claude/AUDIT_0.7.0.md)

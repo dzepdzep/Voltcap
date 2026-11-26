@@ -1,5 +1,6 @@
 package com.shelf.launcher.ui
 
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -635,9 +636,28 @@ private fun CubeCaption(c: StyleCtx, extra: Boolean, tint: Color, portrait: Bool
     }
 }
 
-/** (Update 239, #93: beside / under the docked cube — the category you're in, its count, how to turn it.) */
+/**
+ * (Update 239, #93: beside / under the docked cube — the category you're in, its count, how to turn it.)
+ * 679e (KONKR x1.3, k679p13: the "L2 · R2" row was cut to half its height under "2 games" - the dock is 640 px tall): when the
+ * label doesn't fit its height, the count and the turn row share one line instead of being clipped; with room, unchanged.
+ */
 @Composable
 private fun CubeDockLabel(c: StyleCtx, column: Boolean, on: Boolean, tint: Color) {
+    androidx.compose.ui.layout.SubcomposeLayout { cs ->
+        val loose = cs.copy(minHeight = 0, maxHeight = androidx.compose.ui.unit.Constraints.Infinity)
+        val tall = subcompose("probe") {
+            Box(Modifier.clearAndSetSemantics { statusProbe = true } /* measured only - QaClip skips it (677k) */) { CubeDockLabelBody(c, column, on, tint, compact = false) }
+        }.map { it.measure(loose) }
+        val compact = cs.hasBoundedHeight && (tall.maxOfOrNull { it.height } ?: 0) > cs.maxHeight
+        val ps = subcompose("real") { CubeDockLabelBody(c, column, on, tint, compact) }.map { it.measure(cs.copy(minHeight = 0)) }
+        val w = ps.maxOfOrNull { it.width } ?: 0
+        val h = ps.maxOfOrNull { it.height } ?: 0
+        layout(w.coerceIn(cs.minWidth, cs.maxWidth), h.coerceIn(cs.minHeight, cs.maxHeight)) { ps.forEach { it.place(0, 0) } }
+    }
+}
+
+@Composable
+private fun CubeDockLabelBody(c: StyleCtx, column: Boolean, on: Boolean, tint: Color, compact: Boolean) {
     val live by rememberUpdatedState(c)
     val multi = c.stops.size > 1
     Column(horizontalAlignment = if (column) Alignment.CenterHorizontally else Alignment.Start) {
@@ -645,11 +665,12 @@ private fun CubeDockLabel(c: StyleCtx, column: Boolean, on: Boolean, tint: Color
             c.categoryLabel, color = if (on) Color.White else Color.White.copy(alpha = 0.9f), fontSize = if (column) 15.sp else 18.sp,
             fontWeight = FontWeight.Bold, maxLines = 2, style = nameTextStyle(NameBackdrop.SHADOW)
         )
-        Text(
-            "${c.games.size} " + if (c.games.size == 1) "game" else "games", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1
-        )
-        if (multi) {
-            Spacer(Modifier.height(6.dp))
+        val count: @Composable () -> Unit = {
+            Text(
+                "${c.games.size} " + if (c.games.size == 1) "game" else "games", color = Color.White.copy(alpha = 0.65f), fontSize = 12.sp, maxLines = 1
+            )
+        }
+        val turn: @Composable () -> Unit = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CubePill(if (column) "▲" else "◀", null, false, tint, small = true) { live.actions.category(-1); cubeSound(UiSound.MOVE) }
                 Spacer(Modifier.width(6.dp))
@@ -657,6 +678,12 @@ private fun CubeDockLabel(c: StyleCtx, column: Boolean, on: Boolean, tint: Color
                 Spacer(Modifier.width(6.dp))
                 CubePill(if (column) "▼" else "▶", null, false, tint, small = true) { live.actions.category(1); cubeSound(UiSound.MOVE) }
             }
+        }
+        if (compact && multi) {
+            Row(verticalAlignment = Alignment.CenterVertically) { count(); Spacer(Modifier.width(10.dp)); turn() }
+        } else {
+            count()
+            if (multi) { Spacer(Modifier.height(6.dp)); turn() }
         }
     }
 }
