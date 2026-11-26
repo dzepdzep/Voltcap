@@ -1,3 +1,22 @@
+# Update 763a (26 Nov 2026, cloud run) - CI flake triage + P5 polish: System Vault's reader screen wraps, Wall's count whole
+- CI first: Verify 310 on 7c5bf06 (762a) RED on one of two runners: EndlessFillLitRoboTestShard3 [CASEFLOW n=5 fill=true]
+  "Unsupported concurrent change during composition" (Compose Recomposer.applyAndCheck; a state written by composition and by
+  another thread in the same frame). The twin runner (ubuntu-latest) ran the same suite on the same commit GREEN; 762a touched
+  only Slides' text (not Case flow). Recorded as flaky-test defect D358 (stack from the CI test report; the writer is not
+  identified - candidates noted); this push re-runs the suite. No assertion weakened.
+- P5 polish, System Vault: the reader's screen is ~202 dp of text width on the KONKR (640 x 427 dp); in monospace at x1.3 its
+  "READING  ·  <SYSTEM>" header and its count / favourites / maker / year line need ~280 dp and only slid on one line. Both now
+  wrap onto a second line first (VAULT_SCREEN_LINES = 2, reserved - the covers between them keep one height from system to
+  system: ~90 dp KONKR x1.3, ~36 dp on a 360 dp-high phone). Rack modules, reader, motion and keys (▲ ▼) unchanged.
+- Wall: the game count was a plain one-line Text in an editable box (cut when the box was made smaller in the wall editor) -
+  now FullText (shrink, then slide; no reserve; box unchanged).
+- Test: VaultWallText763aTest 3/3 (source guards fail on 762a), PlatformBrowserFullText678jTest 1/1 (FullText count 9 -> 10),
+  SlidesFactsFullText762aTest 2/2, CategoryLooksInventory759aTest 4/4, CategoryStable394Test. Compiled:
+  :app:compileDebugUnitTestKotlin (cloud). Static checks [PASS]. Full suite: CI. Hardware NOT TESTED (HW-24 763a).
+- Files: app/src/main/java/com/shelf/launcher/ui/CategoryLooks.kt, app/src/main/java/com/shelf/launcher/ui/PlatformBrowser.kt,
+  app/src/test/java/com/shelf/launcher/ui/VaultWallText763aTest.kt,
+  app/src/test/java/com/shelf/launcher/ui/PlatformBrowserFullText678jTest.kt; tools/qa/defects.json (D358); docs.
+
 # Update 762a (25 Nov 2026, cloud run) - matrix P5 polish: Slides' game count and maker / year line are never cut
 - CI first: Verify 310 on 776a3c1 (761a) GREEN.
 - P5 third-priority polish, third look (Slides). The slide's parts sit in boxes of a fixed share of the slide; the name and

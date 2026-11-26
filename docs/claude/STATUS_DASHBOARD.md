@@ -2,9 +2,9 @@
 
 ## OWNER SUMMARY (generated after every run - read this first)
 <!-- GEN:summary -->
-**1. LATEST UPDATE** - 762a · 2026-11-25 23:30 UTC · commit `this update (being pushed)` · CI: Verify 310 GREEN on 776a3c1 (761a) · effort: medium
+**1. LATEST UPDATE** - 763a · 2026-11-26 00:30 UTC · commit `this update (being pushed)` · CI: Verify 310 on 7c5bf06 (762a) RED on one of two runners - flaky Case flow test row (D358), twin runner green; this push re-runs it · effort: medium
 
-**2. WHAT CLAUDE JUST FIXED** - Slides (the category screen with one big slide per console): the line with the number of games and the line with the maker and year were simply cut off at their right edge when they did not fit - with bigger text (x1.3) the built-in 'MICROSOFT 2005' only just fit, and a longer maker name from scraped media or a part made smaller in the slide editor was cut. Both lines now get a little smaller and then slide, like the console name above them; nothing else on the slide moves. A one-minute handheld check is queued.
+**2. WHAT CLAUDE JUST FIXED** - System Vault (the category screen with consoles as modules in a rack and a reader): the reader's screen line 'READING - <console>' and the line with games, favourites, maker and year only slid sideways in one line with bigger text (x1.3), because the screen is narrow. Both now wrap onto a second line first; the cover pictures between them keep the same height for every console. On Wall, the number of games no longer gets cut when its box is made smaller in the wall editor. Also: one automatic test failed once on one of the two CI machines (a timing race in a test, the other machine passed the same code) - noted and being watched. A one-minute handheld check is queued.
 
 **3. LAST 24 HOURS** (most important first)
 - **QA tools** (755a): The emulator review of the new game-window pages now passes for every layout set, including Cross, whose default achievements list is now actually opened and closed in the review instead of being skipped. The review sheets are ready for you to look at, plus one question: which achievements view Cross should show by default.
@@ -24,7 +24,7 @@
 | Save Vault + Sync | `████████░░` 10/12 | `??????????` 2 Flip 2 dry runs (A2, A8); real Drive: 0 | `??????????` UNKNOWN | `░░░░░░░░░░` 0/12 |
 | Emulator QA (layouts) | `░░░░░░░░░░` 2/53 | emulator never counts as handheld | - | - |
 
-**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Vault, Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
+**5. WORKING ON NEXT** - now: Owner review of the native-page sheets (waiting on you); then: Category looks: polish of Grid / Dashboard / Constellation; Matrix rows still open without hardware (P8 performance notes, P12 accessibility labels)
 
 **6. WHAT YOU NEED TO DO** - **NONE urgent.** When convenient: 10 items (see Owner actions below); cloud work continues without them.
 

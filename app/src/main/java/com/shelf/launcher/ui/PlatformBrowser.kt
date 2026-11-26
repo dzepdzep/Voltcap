@@ -842,8 +842,11 @@ internal fun WallView(
                     if (art.logo != null || editing) Box(Modifier.offset(boxW * name.x, boxH * name.y).size(boxW * name.w, boxH * name.h).then(edit("NAME")), contentAlignment = Alignment.Center) {
                         FullText(t.label, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
                     }
+                    // (763a, P5 polish: the count was a plain one-line Text in a box of a fixed share of the wall - a box made
+                    // smaller in the wall editor, or a long count at x1.3, was simply cut. It shrinks to its readable minimum,
+                    // then slides, like the name line above; the box keeps its size.)
                     Box(Modifier.offset(boxW * countRect.x, boxH * countRect.y).size(boxW * countRect.w, boxH * countRect.h).then(edit("COUNT")), contentAlignment = Alignment.Center) {
-                        Text(countText(t), color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        FullText(countText(t), color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1, reserve = false)
                     }
                 }
             }

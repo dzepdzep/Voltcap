@@ -1293,6 +1293,17 @@ internal fun ConstellationLook(tiles: List<CategoryTile>, selected: Int, animate
 // 9. System Vault — modules in a recessed rack; the one you're on is ejected and carried into the reader
 // ---------------------------------------------------------------------------------------------
 
+/** (763a) The lines the reader's screen keeps for its "READING" header and its facts line (each wraps before it shrinks). */
+internal const val VAULT_SCREEN_LINES = 2
+
+/** (763a) The room left for the covers on the reader's screen of a look [h] dp high, with both text lines at text scale [scale]. */
+internal fun vaultCoverRoom(h: Float, scale: Float): Float {
+    val slotH = (h - 78f - 56f) / 5; val modH = slotH - 14f
+    val screen = (h - 78f - 56f + 16f) - (modH + 38f) - 16f - 24f
+    val text = VAULT_SCREEN_LINES * (11f + 12f) * scale * 1.35f + 16f
+    return screen - text
+}
+
 @Composable
 internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolean, onFocus: (Int) -> Unit, onPick: (Int) -> Unit) {
     val pos = rememberLookGlide(selected, animate)
@@ -1329,14 +1340,18 @@ internal fun VaultLook(tiles: List<CategoryTile>, selected: Int, animate: Boolea
             val current = shown == selected
             if (t != null) Column(Modifier.fillMaxSize().padding(start = 18.dp, end = 18.dp, top = modH + 38.dp, bottom = 16.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFF0A0C0E)).padding(12.dp)
                 .graphicsLayer { val m = move.now(); alpha = if (current) ((m - 0.8f) / 0.2f).coerceIn(0.3f, 1f) else 0.3f }) {
-                FullText("READING  ·  ${t.label.uppercase()}", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                // (763a, P5 polish: the reader's screen is ~200 dp wide on the KONKR (640 x 427 dp); in monospace at x1.3
+                // "READING  ·  PLAYSTATION PORTABLE" and "12 games  ·  3 fav  ·  Sony  ·  2004" need ~280 dp and only
+                // slid on one line. Both wrap onto a second line first; the two lines are always reserved, so the covers
+                // between them keep one height from system to system.)
+                FullText("READING  ·  ${t.label.uppercase()}", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace, maxLines = VAULT_SCREEN_LINES)
                 Spacer(Modifier.height(8.dp))
                 Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     t.coverSlides.take(5).forEach { u -> AsyncImage(u, null, contentScale = ContentScale.Crop, modifier = Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(3.dp))) }
                     if (t.coverSlides.isEmpty()) LookObject(t, Modifier.fillMaxSize())
                 }
                 Spacer(Modifier.height(8.dp))
-                FullText(listOfNotNull(lookCount(t), if (t.favorites > 0) "${t.favorites} fav" else null, lookFacts(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                FullText(listOfNotNull(lookCount(t), if (t.favorites > 0) "${t.favorites} fav" else null, lookFacts(t)).joinToString("  ·  "), color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontFamily = FontFamily.Monospace, maxLines = VAULT_SCREEN_LINES)
             }
         }
         // The modules. The middle slot holds the one you're on until it's carried away (its slot then stays empty).

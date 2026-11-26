@@ -73,6 +73,16 @@ hardware reruns without need; experiments on separate v0.6.74 branches; interrup
 blocking hardware, data-integrity risks or release authorization; no merge to main / publish without GO.
 
 
+**26 Nov 00:30 UTC, 763a (cloud, CI flake triage + P5 polish - System Vault / Wall):** Verify 310 on 7c5bf06 RED on ONE runner:
+EndlessFillLitRoboTestShard3 [CASEFLOW n=5 fill=true] "Unsupported concurrent change during composition"; the twin runner
+passed the same suite on the same commit and 762a touched only Slides' text -> flaky, recorded as D358 (tools/qa/defects.json,
+candidates listed; nothing weakened). Vault's reader header + facts line wrap onto a reserved second line (VAULT_SCREEN_LINES);
+Wall's count through FullText (VaultWallText763aTest 3/3; HW-24 763a).
+NEXT: check Verify 310 on this push FIRST - if the same D358 row (or another "concurrent change" Case flow row) fails again,
+fix it first (post the off-main-thread version bumps to the main thread, D358 candidates). Then P5 polish, next look: Grid
+(then Pocket Dashboard / Constellation) - cut or overlapping text at x1.3 by the same room arithmetic, ignored first presses
+(ONEPRESS), rule 14. P2: only on an owner push / review or a red CI.
+
 **25 Nov 23:30 UTC, 762a (cloud, P5 polish - Slides):** Verify 310 on 776a3c1 GREEN. Slides' game count and maker / year line
 now go through FullText (were plain clipping one-line Texts; KONKR maker box 192 dp, "MICROSOFT 2005" at x1.3 ~179 dp, scraped
 makers / editor-shrunk boxes were cut) - boxes unchanged (SlidesFactsFullText762aTest 2/2; HW-24 762a).

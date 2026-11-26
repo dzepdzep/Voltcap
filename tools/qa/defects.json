@@ -4064,6 +4064,14 @@
    "severity": "low",
    "status": "fixed in QA tooling 680b (badgecheck: a carousel-trimmed tile's badges are not cut, covers stacked behind a larger one are NOT TESTED; real collisions still FAIL; selftest TestBadgeCheckCarousel680b) - confirm on the next device run's dumps (HW-24)",
    "found": "2026-11-17"
+  },
+  {
+   "id": "D358",
+   "title": "Unit test EndlessFillLitRoboTestShard3.oneLitCopy[CASEFLOW n=5 fill=true] failed once in CI (Verify 310 on 7c5bf06, ubuntu-24.04 runner, 25 Nov 23:41 UTC): 'IllegalStateException: Unsupported concurrent change during composition. A state object was modified by composition as well as being modified outside composition' (Recomposer.applyAndCheck, test clock frame); the ubuntu-latest runner passed the same suite on the same commit; the change under test (762a) touched only Slides' text",
+   "rule": "QA-TOOL",
+   "severity": "low",
+   "status": "suspect (flaky: a global Compose state written during Case flow's composition and by a background thread in the same frame - the CI log shows an uncaught 'DefaultDispatcher-worker' exception just before; writer not identified. Candidates looked at in 763a: UserCovers.picks (written in composition by EnsureUserCovers once per JVM), version counters bumped off the main thread (SolidPiece.changed, Models3D colours, PackagingFacts, Packs.discFileNow's DiscShellFixes callback). Watch: a second failure of this kind -> post those bumps to the main thread / Snapshot.withMutableSnapshot and add a stress test)",
+   "found": "2026-11-25 CI run 45721667512 job 139581447441"
   }
  ]
 }

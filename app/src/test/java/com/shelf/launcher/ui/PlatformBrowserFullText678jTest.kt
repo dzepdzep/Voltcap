@@ -20,8 +20,8 @@ class PlatformBrowserFullText678jTest {
     @Test fun categoryScreenShowsTextWhole() {
         val s = source("PlatformBrowser.kt")
         assertEquals("no text cut with an ellipsis", 0, Regex("""TextOverflow\.Ellipsis""").findAll(s).count())
-        assertEquals("FullText uses (0 before + 7, + 2 in 762a: slide count + maker)", 9, Regex("""(?<![A-Za-z])FullText\(""").findAll(s).count())
-        assertEquals("every new FullText keeps the old box sizes (reserve = false)", 9, Regex("""reserve = false""").findAll(s).count())
+        assertEquals("FullText uses (0 before + 7, + 2 in 762a: slide count + maker, + 1 in 763a: wall count)", 10, Regex("""(?<![A-Za-z])FullText\(""").findAll(s).count())
+        assertEquals("every new FullText keeps the old box sizes (reserve = false)", 10, Regex("""reserve = false""").findAll(s).count())
         assertTrue("the logo-less name keeps its two lines and tight spacing",
             s.contains("FullText(tile.label, color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black, maxLines = 2, lineHeight = androidx.compose.ui.unit.TextUnit(1.059f, androidx.compose.ui.unit.TextUnitType.Em), reserve = false)"))
         assertTrue("the stage name stays centred in its padded box",

@@ -23,7 +23,7 @@ handheld evidence; **owner** = visual approval. Emulator: none of the 17 has an 
 | 10 | Channel Surf | CHANNEL | ChannelLook | ▲ ▼ | TV room | 527 (CRT roll) | Flip 2 before / after + KONKR 12 Nov | no |
 | 11 | Generations | GENERATIONS | GenerationsLook | ◀ ▶ (release order) | Timeline, Console stack | 761a (info block ends at the handheld lane) | KONKR 12 Nov | no |
 | 12 | Constellation | CONSTELLATION | ConstellationLook | ◀ ▶ | Orbit, Circuit, Cube, Bubbles | - | KONKR 12 Nov | no |
-| 13 | System Vault | VAULT | VaultLook | ▲ ▼ | Memory card, File select, Disc station | - | KONKR 12 Nov | no |
+| 13 | System Vault | VAULT | VaultLook | ▲ ▼ | Memory card, File select, Disc station | 763a (reader text wraps) | KONKR 12 Nov | no |
 | 14 | Pocket Dashboard | DASHBOARD | DashboardLook (Thor: row on the lower screen) | ◀ ▶ | Pocket classic, Pocket ribbon, Twin showcase / desk / icons, Panels, Dash | 759a | KONKR 12 Nov; Thor two-screen NOT TESTED | no |
 | 15 | Channel Menu | WIICHAN | WiiChannelLook | ◀ ▶ ▲ ▼ (4 across) | Channel grid (also its themed picker) | - | KONKR 12 Nov | no |
 | 16 | Cinema | CINEMA | CinemaLook | ◀ ▶ | Cinema (also its themed picker) | 527 (cross-fade, art under header) | Flip 2 before / after + KONKR 12 Nov | no |
@@ -59,7 +59,10 @@ Green Core, Pocket classic).
   slide; no reserve, boxes unchanged). `SlidesFactsFullText762aTest` 2/2. Hardware NOT TESTED (HW-24 762a).
 
 ## Remaining (from Sprint 527 + this pass)
-- Third-priority polish still to do: Vault, Grid / Dashboard / Constellation (Wall's header
+- 763a System Vault: the reader screen's "READING" header and facts line wrap onto a reserved second line before they
+  shrink / slide (KONKR text width ~202 dp, x1.3 monospace needs ~280); Wall's game count through FullText.
+  `VaultWallText763aTest` 3/3. Hardware NOT TESTED (HW-24 763a).
+- Third-priority polish still to do: Grid / Dashboard / Constellation (Wall's header
   collision was fixed in Sprint 528 - not re-checked on hardware).
 - One focused hardware pass of the 17 on the current dev build (KONKR x1.0 / x1.3; open each, ◀ ▶ / ▲ ▼ per the Keys column,
   A opens the category, B back) - queued as part of HW-24.
