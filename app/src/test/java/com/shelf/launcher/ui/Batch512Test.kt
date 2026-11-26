@@ -3,6 +3,7 @@ package com.shelf.launcher.ui
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.io.File
 
@@ -24,8 +25,14 @@ class Batch512Test {
         val g = gradle()
         // (QA builds may rename themselves with a suffix; the code is the release's.)
         val code = Regex("versionCode = (\\d+)\\b").find(g)!!.groupValues[1].toInt()
-        val patch = Regex("versionName = \"0\\.6\\.(\\d+)").find(g)!!.groupValues[1].toInt()
-        assertEquals(patch + 7, code)
+        // (0.6.x: code = patch + 7, ending at 0.6.73 = 80; from v0.7.0 (owner GO 26 Nov): 0.7.x = 81 + patch.)
+        val m = Regex("versionName = \"0\\.(\\d+)\\.(\\d+)").find(g)!!
+        val minor = m.groupValues[1].toInt(); val patch = m.groupValues[2].toInt()
+        when (minor) {
+            6 -> assertEquals(patch + 7, code)
+            7 -> assertEquals(81 + patch, code)
+            else -> fail("new minor version 0.$minor: extend this rule")
+        }
         assertTrue(code >= 77)
         assertTrue(g.contains("namespace = \"com.shelf.launcher\""))
     }
