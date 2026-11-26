@@ -1,5 +1,21 @@
 # v0.7.0 release readiness (25 Nov 2026, 23:40)
 
+# Update 26 Nov 2026, ~01:20 - release-candidate branch `claude/v070-rc`
+- RC = main + dev line (`claude/qa-0672-repair`) + P2 (`claude/v0674-native-pages`) + 681r (`claude/v0674-rescan-fix`, reviewed
+  against P2: kept P2's libApp hook and 681r's extraRoot / libdump hooks; run_trial push lists combined). A merge slip in
+  TestHooks.kt broke the first RC commit (08b08da, Verify FAIL) - fixed in 7eaccbd. **Verify GREEN on 04baf3f** (code identical
+  to 7eaccbd; later commits are QA scripts / builds.json only). RC QA build `qa-070rc-7eaccbd`.
+- HW-28 walk **x1.0: PASS on both** (P2 build): KONKR and RP Classic each 28 / 28 layouts, 0 launches, 28 destructive rows armed
+  and cancelled, fatal 0, restore diff 0 in all 7 batches. (Play-placement grading of the screenshots: NOT run - PC link lost.)
+- On the RC build: upgrade v0.6.73 QA -> RC **PASS 0 changes** (KONKR, 3 snapshots); RP Classic snapshots taken, diff NOT run
+  (PC link lost). 681r rescan walk (KONKR): **15 / 15 PASS** (only game deleted -> gone + category gone + All; twice; restart;
+  one of two; folder game; re-added keeps its identity); restored. SD card out / back: **NOT TESTED** - needs a person to pull
+  the RP Classic's card (the script waits for it; nothing is unmounted by software). Unit: RescanPrune681rTest PASS on RC.
+- Tuner targeted preview (QA app, simulated tuner): KONKR x1.0 captured (tools/qa/device/tunerprev.sh); KONKR x1.3 started,
+  RP Classic x1.0 / x1.3 NOT captured (PC link lost). Not approval.
+- 682e: examples sent to the owner; no behaviour change. Native runtimes: separate branch `claude/native-runtimes` (502bb65).
+
+
 (Same as the claude.ai project doc claude/RELEASE_0.7.0_READINESS.md. Full audit: docs/claude/AUDIT_0.7.0.md.)
 
 Status: **NOT ready. No merge, production install or release without the owner's GO.**
